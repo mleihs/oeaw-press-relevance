@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import Image from 'next/image';
 import { PressScoreBadge } from '@/components/score-bar';
-import { CapybaraLogo, CapybaraEmpty } from '@/components/capybara-logo';
+import { CapybaraEmpty } from '@/components/capybara-logo';
 import { PublicationStats, Publication } from '@/lib/types';
 import { getApiHeaders } from '@/lib/settings-store';
 import { decodeHtmlTitle } from '@/lib/html-utils';
@@ -95,7 +96,7 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-4">
-        <CapybaraLogo size="md" />
+        <Image src="/capybara-logo.png" alt="StoryScout" width={80} height={80} className="opacity-50" />
         <p className="text-sm text-neutral-500">Lade Dashboard...</p>
       </div>
     );
@@ -122,7 +123,14 @@ export default function DashboardPage() {
     <div className="space-y-6">
       {/* Hero */}
       <div className="flex items-center gap-5">
-        <CapybaraLogo size="lg" />
+        <Image
+          src="/capybara-logo.png"
+          alt="StoryScout Capybara"
+          width={120}
+          height={120}
+          className="shrink-0"
+          priority
+        />
         <div>
           <h1 className="text-2xl font-bold text-neutral-900">StoryScout</h1>
           <p className="text-neutral-500 mt-1">

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, use } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Publication } from '@/lib/types';
 import { getApiHeaders } from '@/lib/settings-store';
@@ -47,6 +48,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function PublicationDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const router = useRouter();
   const [pub, setPub] = useState<Publication | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -84,11 +86,9 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
   if (error || !pub) {
     return (
       <div className="max-w-4xl mx-auto space-y-4">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href="/publications">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Zurück zu Publikationen
-          </Link>
+        <Button variant="ghost" size="sm" onClick={() => router.back()}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Zurück
         </Button>
         <Card className="border-red-200">
           <CardContent className="p-6 text-center">
@@ -106,11 +106,9 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Back button */}
-      <Button variant="ghost" size="sm" asChild>
-        <Link href="/publications">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Zurück zu Publikationen
-        </Link>
+      <Button variant="ghost" size="sm" onClick={() => router.back()}>
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Zurück
       </Button>
 
       {/* Header */}

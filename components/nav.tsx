@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { BarChart3, Upload, BookOpen, Sparkles, Settings } from 'lucide-react';
-import { CapybaraLogo } from './capybara-logo';
 
 const links = [
   { href: '/', label: 'Dashboard', icon: BarChart3 },
@@ -20,9 +19,8 @@ export function Nav() {
   return (
     <header className="bg-[#0047bb] shadow-md">
       <div className="mx-auto flex h-14 max-w-7xl items-center px-4">
-        <Link href="/" className="mr-8 flex items-center gap-2.5 font-semibold text-lg text-white">
-          <CapybaraLogo size="sm" className="text-white" />
-          <span>StoryScout</span>
+        <Link href="/" className="mr-8 font-semibold text-lg text-white">
+          StoryScout
         </Link>
         <nav className="flex items-center gap-1">
           {links.map(({ href, label, icon: Icon }) => {
