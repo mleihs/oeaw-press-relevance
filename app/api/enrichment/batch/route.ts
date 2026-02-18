@@ -1,34 +1,89 @@
 import { NextRequest } from 'next/server';
 import { getSupabaseFromRequest, createSSEStream } from '@/lib/api-helpers';
 import { enrichFromCrossRef } from '@/lib/enrichment/crossref';
+import { enrichFromOpenAlex } from '@/lib/enrichment/openalex';
 import { enrichFromUnpaywall } from '@/lib/enrichment/unpaywall';
 import { enrichFromSemanticScholar } from '@/lib/enrichment/semantic-scholar';
+import { enrichFromPdf } from '@/lib/enrichment/pdf-extract';
 import { Publication, EnrichmentResult } from '@/lib/types';
 
-export const maxDuration = 60;
+export const maxDuration = 300;
+
+// Sources that require a DOI (order: CrossRef, OpenAlex, Unpaywall, then Semantic Scholar last)
+const PRE_PDF_SOURCES = ['crossref', 'openalex', 'unpaywall'] as const;
+const POST_PDF_SOURCES = ['semantic_scholar'] as const;
+
+type SourceName = 'crossref' | 'openalex' | 'unpaywall' | 'semantic_scholar';
+
+const SOURCE_FETCHERS: Record<SourceName, (doi: string) => Promise<EnrichmentResult | null>> = {
+  crossref: enrichFromCrossRef,
+  openalex: enrichFromOpenAlex,
+  unpaywall: enrichFromUnpaywall,
+  semantic_scholar: enrichFromSemanticScholar,
+};
+
+function truncate(text: string | undefined, max: number): string | undefined {
+  if (!text) return undefined;
+  return text.length > max ? text.slice(0, max) + '...' : text;
+}
+
+function isPdfUrl(url: string | null): boolean {
+  return !!url && /\.pdf$/i.test(url);
+}
 
 export async function POST(req: NextRequest) {
   const supabase = getSupabaseFromRequest(req);
   const body = await req.json();
-  const limit = Math.min(body.limit || 20, 50);
+  const limit = Math.min(body.limit || 20, 500);
+  const includePartial = body.include_partial === true;
+  const includeNoDoi = body.include_no_doi === true;
 
-  // Fetch publications needing enrichment
-  const { data: publications, error } = await supabase
+  const statusFilter = includePartial ? ['pending', 'partial'] : ['pending'];
+
+  // Query 1: publications with DOI (standard path)
+  let doiQuery = supabase
     .from('publications')
     .select('*')
-    .eq('enrichment_status', 'pending')
     .not('doi', 'is', null)
+    .in('enrichment_status', statusFilter)
     .order('created_at', { ascending: false })
     .limit(limit);
 
-  if (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+  const { data: doiPubs, error: doiError } = await doiQuery;
+
+  if (doiError) {
+    return new Response(JSON.stringify({ error: doiError.message }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });
   }
 
-  const pubs = (publications || []) as Publication[];
+  // Query 2: publications without DOI but with a .pdf URL (when requested)
+  let noDoiPubs: Publication[] = [];
+  if (includeNoDoi) {
+    const remaining = limit - (doiPubs?.length || 0);
+    if (remaining > 0) {
+      const { data, error } = await supabase
+        .from('publications')
+        .select('*')
+        .is('doi', null)
+        .like('url', '%.pdf')
+        .in('enrichment_status', statusFilter)
+        .order('created_at', { ascending: false })
+        .limit(remaining);
+
+      if (error) {
+        return new Response(JSON.stringify({ error: error.message }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      noDoiPubs = (data || []) as Publication[];
+    }
+  }
+
+  const pubs = [...((doiPubs || []) as Publication[]), ...noDoiPubs];
+
   if (pubs.length === 0) {
     return new Response(JSON.stringify({ message: 'No publications to enrich' }), {
       headers: { 'Content-Type': 'application/json' },
@@ -39,97 +94,391 @@ export async function POST(req: NextRequest) {
 
   // Process in background
   (async () => {
-    let processed = 0;
     let successful = 0;
+    let partial = 0;
+    let failed = 0;
+    let withAbstract = 0;
+    const sourceCounts: Record<string, number> = {};
 
-    for (const pub of pubs) {
-      processed++;
-      send('progress', {
-        processed,
+    for (let i = 0; i < pubs.length; i++) {
+      const pub = pubs[i];
+      const hasDoi = !!pub.doi;
+      const hasDirectPdf = isPdfUrl(pub.url);
+
+      send('pub_start', {
+        index: i,
         total: pubs.length,
-        current_title: pub.title,
+        title: pub.title,
+        doi: pub.doi,
+        no_doi: !hasDoi,
       });
 
-      if (!pub.doi) {
-        await supabase
-          .from('publications')
-          .update({ enrichment_status: 'failed' })
-          .eq('id', pub.id);
+      // ---------------------------------------------------------------
+      // DOI-less publications: PDF-only path
+      // ---------------------------------------------------------------
+      if (!hasDoi) {
+        // Send skipped events for all 4 API sources
+        for (const src of [...PRE_PDF_SOURCES, ...POST_PDF_SOURCES]) {
+          send('source_done', { index: i, source: src, status: 'skipped' });
+        }
+
+        if (hasDirectPdf) {
+          send('source_try', { index: i, source: 'pdf', status: 'loading' });
+          try {
+            const pdfResult = await enrichFromPdf(pub.url!);
+            if (pdfResult) {
+              const finalStatus = pdfResult.abstract ? 'enriched' : 'partial';
+              sourceCounts['pdf'] = (sourceCounts['pdf'] || 0) + 1;
+              if (pdfResult.abstract) { successful++; withAbstract++; } else { partial++; }
+
+              send('source_done', {
+                index: i,
+                source: 'pdf',
+                status: 'success',
+                found: { abstract: truncate(pdfResult.abstract, 120) },
+              });
+
+              await supabase
+                .from('publications')
+                .update({
+                  enrichment_status: finalStatus,
+                  enriched_abstract: pdfResult.abstract || null,
+                  enriched_source: 'pdf',
+                  full_text_snippet: pdfResult.full_text_snippet || null,
+                  word_count: pdfResult.word_count || 0,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('id', pub.id);
+
+              send('pub_done', {
+                index: i,
+                title: pub.title,
+                final_status: finalStatus,
+                sources_used: ['pdf'],
+                has_abstract: !!pdfResult.abstract,
+              });
+            } else {
+              send('source_done', { index: i, source: 'pdf', status: 'no_data' });
+              await supabase
+                .from('publications')
+                .update({ enrichment_status: 'failed', updated_at: new Date().toISOString() })
+                .eq('id', pub.id);
+              failed++;
+              send('pub_done', {
+                index: i,
+                title: pub.title,
+                final_status: 'failed',
+                sources_used: [],
+                has_abstract: false,
+              });
+            }
+          } catch (err) {
+            send('source_done', {
+              index: i,
+              source: 'pdf',
+              status: 'error',
+              error: err instanceof Error ? err.message : 'Unknown error',
+            });
+            await supabase
+              .from('publications')
+              .update({ enrichment_status: 'failed', updated_at: new Date().toISOString() })
+              .eq('id', pub.id);
+            failed++;
+            send('pub_done', {
+              index: i,
+              title: pub.title,
+              final_status: 'failed',
+              sources_used: [],
+              has_abstract: false,
+            });
+          }
+        } else {
+          // No DOI and no PDF URL — nothing we can do
+          send('source_done', { index: i, source: 'pdf', status: 'skipped' });
+          await supabase
+            .from('publications')
+            .update({ enrichment_status: 'failed', updated_at: new Date().toISOString() })
+            .eq('id', pub.id);
+          failed++;
+          send('pub_done', {
+            index: i,
+            title: pub.title,
+            final_status: 'failed',
+            sources_used: [],
+            has_abstract: false,
+          });
+        }
+
+        await new Promise(r => setTimeout(r, 100));
         continue;
       }
 
-      let result: EnrichmentResult | null = null;
+      // ---------------------------------------------------------------
+      // Publications WITH DOI: full cascade
+      // CrossRef -> OpenAlex -> Unpaywall -> [PDF from pub.url] -> Semantic Scholar
+      // ---------------------------------------------------------------
+      let mergedAbstract: string | undefined;
+      let mergedKeywords: string[] = [];
+      let mergedJournal: string | undefined;
+      let mergedSnippet: string | undefined;
+      let mergedWordCount = 0;
+      const sourcesUsed: string[] = [];
+      let apiPdfUrl: string | undefined; // Collected from API sources for fallback
 
-      // Try CrossRef first
-      try {
-        result = await enrichFromCrossRef(pub.doi);
-      } catch { /* continue to next source */ }
+      // Phase 1: CrossRef, OpenAlex, Unpaywall
+      for (const sourceName of PRE_PDF_SOURCES) {
+        send('source_try', { index: i, source: sourceName, status: 'loading' });
 
-      // Try Unpaywall if CrossRef didn't get abstract
-      if (!result?.abstract) {
         try {
-          const unpResult = await enrichFromUnpaywall(pub.doi);
-          if (unpResult) {
-            result = result
-              ? { ...result, ...unpResult, source: result.source }
-              : unpResult;
-          }
-        } catch { /* continue */ }
-      }
+          const result = await SOURCE_FETCHERS[sourceName](pub.doi!);
 
-      // Try Semantic Scholar as fallback
-      if (!result?.abstract) {
-        try {
-          const ssResult = await enrichFromSemanticScholar(pub.doi);
-          if (ssResult) {
-            result = result
-              ? {
-                  abstract: ssResult.abstract || result.abstract,
-                  keywords: result.keywords || ssResult.keywords,
-                  journal: result.journal || ssResult.journal,
-                  source: result.source || ssResult.source,
-                  full_text_snippet: ssResult.full_text_snippet || result.full_text_snippet,
-                  word_count: Math.max(result.word_count || 0, ssResult.word_count || 0),
+          if (result) {
+            sourcesUsed.push(sourceName);
+            sourceCounts[sourceName] = (sourceCounts[sourceName] || 0) + 1;
+
+            if (!mergedAbstract && result.abstract) {
+              mergedAbstract = result.abstract;
+            }
+            if (result.keywords) {
+              for (const kw of result.keywords) {
+                if (!mergedKeywords.includes(kw)) {
+                  mergedKeywords.push(kw);
                 }
-              : ssResult;
+              }
+            }
+            if (!mergedJournal && result.journal) {
+              mergedJournal = result.journal;
+            }
+            if (result.full_text_snippet && (!mergedSnippet || result.full_text_snippet.length > mergedSnippet.length)) {
+              mergedSnippet = result.full_text_snippet;
+            }
+            if (!apiPdfUrl && result.pdf_url) {
+              apiPdfUrl = result.pdf_url;
+            }
+            if (result.word_count && result.word_count > mergedWordCount) {
+              mergedWordCount = result.word_count;
+            }
+
+            send('source_done', {
+              index: i,
+              source: sourceName,
+              status: 'success',
+              found: {
+                abstract: truncate(result.abstract, 120),
+                journal: result.journal,
+                keywords: result.keywords?.slice(0, 5),
+              },
+            });
+          } else {
+            send('source_done', { index: i, source: sourceName, status: 'no_data' });
           }
-        } catch { /* continue */ }
+        } catch (err) {
+          send('source_done', {
+            index: i,
+            source: sourceName,
+            status: 'error',
+            error: err instanceof Error ? err.message : 'Unknown error',
+          });
+        }
+
+        await new Promise(r => setTimeout(r, 100));
       }
 
-      if (result) {
-        await supabase
-          .from('publications')
-          .update({
-            enrichment_status: 'enriched',
-            enriched_abstract: result.abstract || null,
-            enriched_keywords: result.keywords || null,
-            enriched_journal: result.journal || null,
-            enriched_source: result.source,
-            full_text_snippet: result.full_text_snippet || null,
-            word_count: result.word_count || 0,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', pub.id);
+      // Phase 2: Try direct PDF from pub.url (if it's a .pdf) — before Semantic Scholar
+      // Only if we don't have an abstract yet; direct ÖAW PDFs are fast and reliable
+      if (!mergedAbstract && hasDirectPdf) {
+        send('source_try', { index: i, source: 'pdf', status: 'loading' });
+        try {
+          const pdfResult = await enrichFromPdf(pub.url!);
+          if (pdfResult) {
+            sourcesUsed.push('pdf');
+            sourceCounts['pdf'] = (sourceCounts['pdf'] || 0) + 1;
+            if (pdfResult.abstract) {
+              mergedAbstract = pdfResult.abstract;
+            }
+            if (pdfResult.full_text_snippet && (!mergedSnippet || pdfResult.full_text_snippet.length > mergedSnippet.length)) {
+              mergedSnippet = pdfResult.full_text_snippet;
+            }
+            if (pdfResult.word_count && pdfResult.word_count > mergedWordCount) {
+              mergedWordCount = pdfResult.word_count;
+            }
+            send('source_done', {
+              index: i,
+              source: 'pdf',
+              status: 'success',
+              found: { abstract: truncate(pdfResult.abstract, 120) },
+            });
+          } else {
+            send('source_done', { index: i, source: 'pdf', status: 'no_data' });
+          }
+        } catch (err) {
+          send('source_done', {
+            index: i,
+            source: 'pdf',
+            status: 'error',
+            error: err instanceof Error ? err.message : 'Unknown error',
+          });
+        }
+      }
+
+      // Phase 3: Semantic Scholar (slowest — only if still missing data)
+      for (const sourceName of POST_PDF_SOURCES) {
+        send('source_try', { index: i, source: sourceName, status: 'loading' });
+
+        try {
+          const result = await SOURCE_FETCHERS[sourceName](pub.doi!);
+
+          if (result) {
+            sourcesUsed.push(sourceName);
+            sourceCounts[sourceName] = (sourceCounts[sourceName] || 0) + 1;
+
+            if (!mergedAbstract && result.abstract) {
+              mergedAbstract = result.abstract;
+            }
+            if (result.keywords) {
+              for (const kw of result.keywords) {
+                if (!mergedKeywords.includes(kw)) {
+                  mergedKeywords.push(kw);
+                }
+              }
+            }
+            if (!mergedJournal && result.journal) {
+              mergedJournal = result.journal;
+            }
+            if (result.full_text_snippet && (!mergedSnippet || result.full_text_snippet.length > mergedSnippet.length)) {
+              mergedSnippet = result.full_text_snippet;
+            }
+            if (!apiPdfUrl && result.pdf_url) {
+              apiPdfUrl = result.pdf_url;
+            }
+            if (result.word_count && result.word_count > mergedWordCount) {
+              mergedWordCount = result.word_count;
+            }
+
+            send('source_done', {
+              index: i,
+              source: sourceName,
+              status: 'success',
+              found: {
+                abstract: truncate(result.abstract, 120),
+                journal: result.journal,
+                keywords: result.keywords?.slice(0, 5),
+              },
+            });
+          } else {
+            send('source_done', { index: i, source: sourceName, status: 'no_data' });
+          }
+        } catch (err) {
+          send('source_done', {
+            index: i,
+            source: sourceName,
+            status: 'error',
+            error: err instanceof Error ? err.message : 'Unknown error',
+          });
+        }
+
+        await new Promise(r => setTimeout(r, 200));
+      }
+
+      // Phase 4: Fallback PDF — if still no abstract, try API-discovered PDF URL
+      // (only if different from pub.url which was already tried in Phase 2)
+      if (!mergedAbstract && apiPdfUrl && apiPdfUrl !== pub.url) {
+        // Only send PDF events if we didn't already try the direct PDF in Phase 2
+        if (!hasDirectPdf) {
+          send('source_try', { index: i, source: 'pdf', status: 'loading' });
+        }
+        try {
+          const pdfResult = await enrichFromPdf(apiPdfUrl);
+          if (pdfResult) {
+            if (!sourcesUsed.includes('pdf')) {
+              sourcesUsed.push('pdf');
+              sourceCounts['pdf'] = (sourceCounts['pdf'] || 0) + 1;
+            }
+            if (pdfResult.abstract) {
+              mergedAbstract = pdfResult.abstract;
+            }
+            if (pdfResult.full_text_snippet && (!mergedSnippet || pdfResult.full_text_snippet.length > mergedSnippet.length)) {
+              mergedSnippet = pdfResult.full_text_snippet;
+            }
+            if (pdfResult.word_count && pdfResult.word_count > mergedWordCount) {
+              mergedWordCount = pdfResult.word_count;
+            }
+            if (!hasDirectPdf) {
+              send('source_done', {
+                index: i,
+                source: 'pdf',
+                status: 'success',
+                found: { abstract: truncate(pdfResult.abstract, 120) },
+              });
+            }
+          } else if (!hasDirectPdf) {
+            send('source_done', { index: i, source: 'pdf', status: 'no_data' });
+          }
+        } catch (err) {
+          if (!hasDirectPdf) {
+            send('source_done', {
+              index: i,
+              source: 'pdf',
+              status: 'error',
+              error: err instanceof Error ? err.message : 'Unknown error',
+            });
+          }
+        }
+      }
+
+      // Determine final status
+      const hasAbstract = !!mergedAbstract;
+      const hasAnyData = sourcesUsed.length > 0;
+      let finalStatus: 'enriched' | 'partial' | 'failed';
+      if (hasAbstract) {
+        finalStatus = 'enriched';
         successful++;
+        withAbstract++;
+      } else if (hasAnyData) {
+        finalStatus = 'partial';
+        partial++;
       } else {
-        await supabase
-          .from('publications')
-          .update({
-            enrichment_status: 'failed',
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', pub.id);
+        finalStatus = 'failed';
+        failed++;
       }
 
-      // Rate limiting
-      await new Promise(r => setTimeout(r, 300));
+      // Persist to database
+      const enrichedSource = sourcesUsed.join('+') || null;
+
+      await supabase
+        .from('publications')
+        .update({
+          enrichment_status: finalStatus,
+          enriched_abstract: mergedAbstract || null,
+          enriched_keywords: mergedKeywords.length > 0 ? mergedKeywords.slice(0, 20) : null,
+          enriched_journal: mergedJournal || null,
+          enriched_source: enrichedSource,
+          full_text_snippet: mergedSnippet || null,
+          word_count: mergedWordCount,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', pub.id);
+
+      send('pub_done', {
+        index: i,
+        title: pub.title,
+        final_status: finalStatus,
+        sources_used: sourcesUsed,
+        has_abstract: hasAbstract,
+      });
+
+      // Small gap between publications
+      await new Promise(r => setTimeout(r, 100));
     }
 
     send('complete', {
-      processed,
+      processed: pubs.length,
       total: pubs.length,
       successful,
-      failed: processed - successful,
+      partial,
+      failed,
+      with_abstract: withAbstract,
+      sources: sourceCounts,
     });
     close();
   })();

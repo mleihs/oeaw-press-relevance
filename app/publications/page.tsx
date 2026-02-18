@@ -3,12 +3,13 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Publication } from '@/lib/types';
 import { PublicationTable } from '@/components/publication-table';
+import { EnrichmentModal } from '@/components/enrichment-modal';
 import { SSEProgress } from '@/components/sse-progress';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getApiHeaders, loadSettings } from '@/lib/settings-store';
-import { Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 
 export default function PublicationsPage() {
   const [publications, setPublications] = useState<Publication[]>([]);
@@ -18,6 +19,9 @@ export default function PublicationsPage() {
   const [enrichmentFilter, setEnrichmentFilter] = useState('');
   const [analysisFilter, setAnalysisFilter] = useState('');
   const [loading, setLoading] = useState(true);
+  const [enrichModalOpen, setEnrichModalOpen] = useState(false);
+  const [includePartial, setIncludePartial] = useState(false);
+  const [includeNoDoi, setIncludeNoDoi] = useState(false);
   const pageSize = 20;
 
   const fetchData = useCallback(async () => {
@@ -79,6 +83,7 @@ export default function PublicationsPage() {
               <option value="">All Enrichment</option>
               <option value="pending">Pending</option>
               <option value="enriched">Enriched</option>
+              <option value="partial">Partial</option>
               <option value="failed">Failed</option>
             </select>
             <select
@@ -95,15 +100,44 @@ export default function PublicationsPage() {
         </CardContent>
       </Card>
 
-      {/* Enrichment action */}
+      {/* Enrichment & Analysis actions */}
       <div className="grid gap-4 md:grid-cols-2">
-        <SSEProgress
-          title="Enrich Publications"
-          description="Fetch metadata from CrossRef, Unpaywall, and Semantic Scholar for publications with DOIs."
-          endpoint="/api/enrichment/batch"
-          requestBody={{ limit: 20 }}
-          onComplete={fetchData}
-        />
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Sparkles className="h-4 w-4" />
+              Enrich Publications
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-neutral-500">
+              Fetch metadata from CrossRef, OpenAlex, Unpaywall & Semantic Scholar for publications with DOIs.
+            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <Button onClick={() => setEnrichModalOpen(true)} size="sm">
+                Start Enrichment
+              </Button>
+              <label className="flex items-center gap-2 text-sm text-neutral-600 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={includePartial}
+                  onChange={(e) => setIncludePartial(e.target.checked)}
+                  className="rounded border-neutral-300"
+                />
+                Re-enrich partial
+              </label>
+              <label className="flex items-center gap-2 text-sm text-neutral-600 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={includeNoDoi}
+                  onChange={(e) => setIncludeNoDoi(e.target.checked)}
+                  className="rounded border-neutral-300"
+                />
+                Include no-DOI (PDF only)
+              </label>
+            </div>
+          </CardContent>
+        </Card>
         <SSEProgress
           title="Analyze Press Relevance"
           description={`Run LLM analysis using ${settings.llmModel} to score publications for press worthiness.`}
@@ -116,6 +150,16 @@ export default function PublicationsPage() {
           onComplete={fetchData}
         />
       </div>
+
+      {/* Enrichment Modal */}
+      <EnrichmentModal
+        open={enrichModalOpen}
+        onOpenChange={setEnrichModalOpen}
+        onComplete={fetchData}
+        includePartial={includePartial}
+        includeNoDoi={includeNoDoi}
+        limit={500}
+      />
 
       {/* Table */}
       {loading ? (

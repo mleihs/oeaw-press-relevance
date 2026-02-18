@@ -13,7 +13,7 @@ export interface Publication {
   citation: string | null;
   csv_uid: string | null;
   // Enrichment
-  enrichment_status: 'pending' | 'enriched' | 'failed';
+  enrichment_status: 'pending' | 'enriched' | 'partial' | 'failed';
   enriched_abstract: string | null;
   enriched_keywords: string[] | null;
   enriched_journal: string | null;
@@ -63,6 +63,7 @@ export interface EnrichmentResult {
   source: string;
   full_text_snippet?: string;
   word_count?: number;
+  pdf_url?: string;
 }
 
 export interface AnalysisResult {
@@ -85,9 +86,53 @@ export interface LLMResponse {
 export interface PublicationStats {
   total: number;
   enriched: number;
+  partial: number;
+  with_abstract: number;
   analyzed: number;
   avg_score: number | null;
   high_score_count: number;
+}
+
+export type EnrichmentSourceName = 'crossref' | 'openalex' | 'unpaywall' | 'semantic_scholar' | 'pdf';
+
+export type EnrichmentSourceStatus = 'waiting' | 'loading' | 'success' | 'no_data' | 'error' | 'skipped';
+
+export interface EnrichmentSourceEvent {
+  index: number;
+  source: EnrichmentSourceName;
+  status: EnrichmentSourceStatus;
+  found?: {
+    abstract?: string;
+    journal?: string;
+    keywords?: string[];
+    pdf_url?: string;
+  };
+  error?: string;
+}
+
+export interface EnrichmentPubStartEvent {
+  index: number;
+  total: number;
+  title: string;
+  doi: string | null;
+}
+
+export interface EnrichmentPubDoneEvent {
+  index: number;
+  title: string;
+  final_status: 'enriched' | 'partial' | 'failed';
+  sources_used: string[];
+  has_abstract: boolean;
+}
+
+export interface EnrichmentCompleteEvent {
+  processed: number;
+  total: number;
+  successful: number;
+  partial: number;
+  failed: number;
+  with_abstract: number;
+  sources: Record<string, number>;
 }
 
 export interface SSEEvent {
