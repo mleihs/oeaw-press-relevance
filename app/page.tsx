@@ -168,7 +168,7 @@ export default function DashboardPage() {
           title="Analysiert"
           value={stats?.analyzed || 0}
           icon={BarChart3}
-          subtitle={stats?.total ? `${Math.round((stats.analyzed / stats.total) * 100)}%` : undefined}
+          subtitle={stats?.total ? `Aktuellste ${Math.round((stats.analyzed / stats.total) * 100)}% aller Publikationen` : undefined}
         />
         <StatCard
           title="Hohes Story-Potenzial"
