@@ -13,6 +13,7 @@ export async function GET(req: NextRequest) {
     const analysisStatus = searchParams.get('analysis_status') || '';
     const publicationType = searchParams.get('publication_type') || '';
     const publishedAfter = searchParams.get('published_after') || '';
+    const minScore = searchParams.get('min_score') || '';
     const sortBy = searchParams.get('sort') || 'created_at';
     const sortOrder = searchParams.get('order') === 'asc' ? true : false;
     const statsOnly = searchParams.get('stats') === 'true';
@@ -88,6 +89,9 @@ export async function GET(req: NextRequest) {
     }
     if (publishedAfter) {
       query = query.gte('published_at', publishedAfter);
+    }
+    if (minScore) {
+      query = query.gte('press_score', parseFloat(minScore));
     }
 
     query = query.order(sortBy, { ascending: sortOrder }).range(from, to);

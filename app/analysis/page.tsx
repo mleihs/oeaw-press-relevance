@@ -7,25 +7,27 @@ import { AnalysisModal } from '@/components/analysis-modal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getApiHeaders } from '@/lib/settings-store';
+import { Slider } from '@/components/ui/slider';
 import { Download, ChevronLeft, ChevronRight, Brain, ArrowUp, ArrowDown } from 'lucide-react';
 import { SCORE_LABELS, SCORE_COLORS } from '@/lib/constants';
 
 const SORT_OPTIONS = [
+  { value: 'published_at', label: 'Veröffentlichungsdatum' },
   { value: 'press_score', label: 'StoryScore' },
   { value: 'storytelling_potential', label: 'Erzählpotenzial' },
   { value: 'societal_relevance', label: 'Gesellschaftl. Relevanz' },
   { value: 'novelty_factor', label: 'Neuheit' },
   { value: 'public_accessibility', label: 'Verständlichkeit' },
   { value: 'media_timeliness', label: 'Aktualität' },
-  { value: 'published_at', label: 'Datum' },
 ];
 
 export default function AnalysisPage() {
   const [publications, setPublications] = useState<Publication[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [sortBy, setSortBy] = useState('press_score');
+  const [sortBy, setSortBy] = useState('published_at');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [minScore, setMinScore] = useState(0);
   const [loading, setLoading] = useState(true);
   const [analysisModalOpen, setAnalysisModalOpen] = useState(false);
   const [dimensionAverages, setDimensionAverages] = useState<Record<string, number>>({});
@@ -41,6 +43,9 @@ export default function AnalysisPage() {
         order: sortOrder,
         analysis_status: 'analyzed',
       });
+      if (minScore > 0) {
+        params.set('min_score', (minScore / 100).toFixed(2));
+      }
 
       const res = await fetch(`/api/publications?${params}`, {
         headers: getApiHeaders(),
@@ -64,7 +69,7 @@ export default function AnalysisPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, sortBy, sortOrder]);
+  }, [page, sortBy, sortOrder, minScore]);
 
   useEffect(() => {
     fetchData();
@@ -159,39 +164,63 @@ export default function AnalysisPage() {
         onComplete={fetchData}
       />
 
-      {/* Sort controls — segmented button group */}
-      <div className="space-y-2">
-        <p className="text-sm text-neutral-500 font-medium">Sortieren nach:</p>
-        <div className="flex flex-wrap gap-1.5">
-          {SORT_OPTIONS.map((opt) => {
-            const isActive = sortBy === opt.value;
-            return (
-              <button
-                key={opt.value}
-                onClick={() => {
-                  if (isActive) {
-                    setSortOrder(o => o === 'asc' ? 'desc' : 'asc');
-                  } else {
-                    setSortBy(opt.value);
-                    setSortOrder('desc');
-                    setPage(1);
-                  }
-                }}
-                className={`inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'bg-[#0047bb] text-white shadow-sm'
-                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
-                }`}
-              >
-                {opt.label}
-                {isActive && (
-                  sortOrder === 'desc'
-                    ? <ArrowDown className="h-3.5 w-3.5" />
-                    : <ArrowUp className="h-3.5 w-3.5" />
-                )}
-              </button>
-            );
-          })}
+      {/* Sort & filter controls */}
+      <div className="flex flex-col md:flex-row md:items-end gap-6">
+        {/* Sort controls — segmented button group */}
+        <div className="space-y-2 flex-1">
+          <p className="text-sm text-neutral-500 font-medium">Sortieren nach:</p>
+          <div className="flex flex-wrap gap-1.5">
+            {SORT_OPTIONS.map((opt) => {
+              const isActive = sortBy === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  onClick={() => {
+                    if (isActive) {
+                      setSortOrder(o => o === 'asc' ? 'desc' : 'asc');
+                    } else {
+                      setSortBy(opt.value);
+                      setSortOrder('desc');
+                      setPage(1);
+                    }
+                  }}
+                  className={`inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                    isActive
+                      ? 'bg-[#0047bb] text-white shadow-sm'
+                      : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+                  }`}
+                >
+                  {opt.label}
+                  {isActive && (
+                    sortOrder === 'desc'
+                      ? <ArrowDown className="h-3.5 w-3.5" />
+                      : <ArrowUp className="h-3.5 w-3.5" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Min score slider */}
+        <div className="space-y-2 w-full md:w-64 shrink-0">
+          <p className="text-sm text-neutral-500 font-medium">
+            Mindest-Score: <span className="text-neutral-900">{minScore}%</span>
+          </p>
+          <Slider
+            value={[minScore]}
+            onValueChange={([v]) => { setMinScore(v); setPage(1); }}
+            min={0}
+            max={90}
+            step={5}
+            className="[&_[role=slider]]:bg-[#0047bb] [&_[role=slider]]:border-[#0047bb] [&_span:first-child>span]:bg-[#0047bb]"
+          />
+          <div className="flex justify-between text-[10px] text-neutral-400">
+            <span>0%</span>
+            <span>30%</span>
+            <span>60%</span>
+            <span>90%</span>
+          </div>
         </div>
       </div>
 

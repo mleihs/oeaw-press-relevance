@@ -12,7 +12,7 @@ import { CapybaraLogo } from '@/components/capybara-logo';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, ExternalLink, FileText, BookOpen, Brain, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, ExternalLink, FileText, BookOpen, Brain } from 'lucide-react';
 
 const SOURCE_LABELS: Record<string, string> = {
   crossref: 'CrossRef',
@@ -52,7 +52,6 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
   const [pub, setPub] = useState<Publication | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [reasoningOpen, setReasoningOpen] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -125,7 +124,7 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
           {pub.published_at && (
             <>
               <span className="text-neutral-300">|</span>
-              <span>{pub.published_at.slice(0, 4)}</span>
+              <span>{new Date(pub.published_at).toLocaleDateString('de-AT', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
             </>
           )}
         </div>
@@ -231,19 +230,11 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
               )}
             </div>
 
-            {/* Reasoning (collapsible) */}
+            {/* Reasoning */}
             {pub.reasoning && (
               <div>
-                <button
-                  onClick={() => setReasoningOpen(!reasoningOpen)}
-                  className="flex items-center gap-1 text-xs font-medium text-neutral-500 uppercase hover:text-neutral-700"
-                >
-                  Begründung
-                  {reasoningOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                </button>
-                {reasoningOpen && (
-                  <p className="text-sm text-neutral-600 mt-2">{pub.reasoning}</p>
-                )}
+                <h4 className="text-xs font-medium text-neutral-500 uppercase mb-1">Begründung</h4>
+                <p className="text-sm text-neutral-600">{pub.reasoning}</p>
               </div>
             )}
 
