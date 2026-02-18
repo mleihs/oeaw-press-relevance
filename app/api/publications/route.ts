@@ -43,18 +43,31 @@ export async function GET(req: NextRequest) {
         .select('*', { count: 'exact', head: true })
         .eq('analysis_status', 'analyzed');
 
-      const { data: scoreData } = await supabase
-        .from('publications')
-        .select('press_score')
-        .eq('analysis_status', 'analyzed')
-        .not('press_score', 'is', null);
+      // Fetch ALL scores — paginate past Supabase's 1000-row default limit
+      const allScores: number[] = [];
+      const batchSize = 1000;
+      for (let offset = 0; ; offset += batchSize) {
+        const { data: batch } = await supabase
+          .from('publications')
+          .select('press_score')
+          .eq('analysis_status', 'analyzed')
+          .not('press_score', 'is', null)
+          .range(offset, offset + batchSize - 1);
+        if (!batch || batch.length === 0) break;
+        allScores.push(...batch.map(d => d.press_score as number));
+        if (batch.length < batchSize) break;
+      }
 
       let avgScore: number | null = null;
       let highScoreCount = 0;
-      if (scoreData && scoreData.length > 0) {
-        const scores = scoreData.map(d => d.press_score as number);
-        avgScore = scores.reduce((a, b) => a + b, 0) / scores.length;
-        highScoreCount = scores.filter(s => s >= 0.6).length;
+      const scoreDistribution = new Array(10).fill(0);
+      if (allScores.length > 0) {
+        avgScore = allScores.reduce((a, b) => a + b, 0) / allScores.length;
+        highScoreCount = allScores.filter(s => s >= 0.6).length;
+        for (const s of allScores) {
+          const idx = Math.min(9, Math.floor(s * 10));
+          scoreDistribution[idx]++;
+        }
       }
 
       return NextResponse.json({
@@ -65,6 +78,7 @@ export async function GET(req: NextRequest) {
         analyzed: analyzed || 0,
         avg_score: avgScore,
         high_score_count: highScoreCount,
+        score_distribution: scoreDistribution,
       });
     }
 

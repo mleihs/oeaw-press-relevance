@@ -58,19 +58,9 @@ export default function DashboardPage() {
         const statsData = await statsRes.json();
         setStats(statsData);
 
-        // Load score distribution
-        const distRes = await fetch('/api/publications?analysis_status=analyzed&pageSize=2000&sort=press_score&order=asc', { headers });
-        if (distRes.ok) {
-          const distData = await distRes.json();
-          const pubs = (distData.publications || []) as Publication[];
-          const buckets = new Array(10).fill(0);
-          for (const p of pubs) {
-            if (p.press_score !== null) {
-              const idx = Math.min(9, Math.floor(p.press_score * 10));
-              buckets[idx]++;
-            }
-          }
-          setScoreDistribution(buckets);
+        // Score distribution is computed server-side in the stats response
+        if (statsData.score_distribution) {
+          setScoreDistribution(statsData.score_distribution);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Dashboard konnte nicht geladen werden');
