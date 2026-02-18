@@ -7,8 +7,18 @@ import { AnalysisModal } from '@/components/analysis-modal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getApiHeaders } from '@/lib/settings-store';
-import { Download, ChevronLeft, ChevronRight, Brain } from 'lucide-react';
+import { Download, ChevronLeft, ChevronRight, Brain, ArrowUp, ArrowDown } from 'lucide-react';
 import { SCORE_LABELS, SCORE_COLORS } from '@/lib/constants';
+
+const SORT_OPTIONS = [
+  { value: 'press_score', label: 'Presserelevanz' },
+  { value: 'storytelling_potential', label: 'Erzählpotenzial' },
+  { value: 'societal_relevance', label: 'Gesellschaftl. Relevanz' },
+  { value: 'novelty_factor', label: 'Neuheit' },
+  { value: 'public_accessibility', label: 'Verständlichkeit' },
+  { value: 'media_timeliness', label: 'Aktualität' },
+  { value: 'published_at', label: 'Datum' },
+];
 
 export default function AnalysisPage() {
   const [publications, setPublications] = useState<Publication[]>([]);
@@ -39,7 +49,6 @@ export default function AnalysisPage() {
       setPublications(data.publications || []);
       setTotal(data.total || 0);
 
-      // Calculate dimension averages from all results
       const pubs = data.publications || [];
       if (pubs.length > 0) {
         const dims = ['public_accessibility', 'societal_relevance', 'novelty_factor', 'storytelling_potential', 'media_timeliness'];
@@ -65,45 +74,33 @@ export default function AnalysisPage() {
 
   const handleExport = (format: 'csv' | 'json') => {
     const headers = getApiHeaders();
-    const params = new URLSearchParams();
-    // Build URL with auth headers as query params won't work for headers
     const url = `/api/export/${format}`;
     fetch(url, { headers })
       .then(res => res.blob())
       .then(blob => {
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = `oeaw-press-relevance.${format}`;
+        a.download = `oeaw-presserelevanz.${format}`;
         a.click();
         URL.revokeObjectURL(a.href);
       });
   };
 
-  const sortOptions = [
-    { value: 'press_score', label: 'Press Score' },
-    { value: 'published_at', label: 'Date' },
-    { value: 'societal_relevance', label: 'Societal Relevance' },
-    { value: 'public_accessibility', label: 'Accessibility' },
-    { value: 'novelty_factor', label: 'Novelty' },
-    { value: 'storytelling_potential', label: 'Storytelling' },
-    { value: 'media_timeliness', label: 'Timeliness' },
-  ];
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Press Relevance Analysis</h1>
-          <p className="text-neutral-500">{total} publications analyzed</p>
+          <h1 className="text-2xl font-bold">Presserelevanz-Analyse</h1>
+          <p className="text-neutral-500">{total} Publikationen analysiert</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => handleExport('csv')}>
             <Download className="mr-2 h-4 w-4" />
-            Export CSV
+            CSV exportieren
           </Button>
           <Button variant="outline" size="sm" onClick={() => handleExport('json')}>
             <Download className="mr-2 h-4 w-4" />
-            Export JSON
+            JSON exportieren
           </Button>
         </div>
       </div>
@@ -112,7 +109,7 @@ export default function AnalysisPage() {
       {Object.keys(dimensionAverages).length > 0 && (
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Dimension Averages (Current Page)</CardTitle>
+            <CardTitle className="text-base">Durchschnittswerte (aktuelle Seite)</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid gap-3 md:grid-cols-5">
@@ -142,16 +139,16 @@ export default function AnalysisPage() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <Brain className="h-4 w-4" />
-            Run Press Relevance Analysis
+            <Brain className="h-4 w-4 text-[#0047bb]" />
+            Presserelevanz-Analyse starten
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-sm text-neutral-500">
-            Analyze pending publications using LLM via OpenRouter.
+            Ausstehende Publikationen per LLM über OpenRouter analysieren.
           </p>
           <Button onClick={() => setAnalysisModalOpen(true)} size="sm">
-            Start Analysis
+            Analyse starten
           </Button>
         </CardContent>
       </Card>
@@ -162,31 +159,46 @@ export default function AnalysisPage() {
         onComplete={fetchData}
       />
 
-      {/* Sort controls */}
-      <div className="flex gap-3 items-center">
-        <span className="text-sm text-neutral-500">Sort by:</span>
-        <select
-          value={sortBy}
-          onChange={(e) => { setSortBy(e.target.value); setPage(1); }}
-          className="rounded-md border px-3 py-1.5 text-sm"
-        >
-          {sortOptions.map(opt => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
-          ))}
-        </select>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setSortOrder(o => o === 'asc' ? 'desc' : 'asc')}
-        >
-          {sortOrder === 'desc' ? 'Highest first' : 'Lowest first'}
-        </Button>
+      {/* Sort controls — segmented button group */}
+      <div className="space-y-2">
+        <p className="text-sm text-neutral-500 font-medium">Sortieren nach:</p>
+        <div className="flex flex-wrap gap-1.5">
+          {SORT_OPTIONS.map((opt) => {
+            const isActive = sortBy === opt.value;
+            return (
+              <button
+                key={opt.value}
+                onClick={() => {
+                  if (isActive) {
+                    setSortOrder(o => o === 'asc' ? 'desc' : 'asc');
+                  } else {
+                    setSortBy(opt.value);
+                    setSortOrder('desc');
+                    setPage(1);
+                  }
+                }}
+                className={`inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                  isActive
+                    ? 'bg-[#0047bb] text-white shadow-sm'
+                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+                }`}
+              >
+                {opt.label}
+                {isActive && (
+                  sortOrder === 'desc'
+                    ? <ArrowDown className="h-3.5 w-3.5" />
+                    : <ArrowUp className="h-3.5 w-3.5" />
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Results table */}
       {loading ? (
         <div className="flex justify-center py-12">
-          <div className="animate-spin h-8 w-8 border-4 border-neutral-200 border-t-neutral-800 rounded-full" />
+          <div className="animate-spin h-8 w-8 border-4 border-neutral-200 border-t-[#0047bb] rounded-full" />
         </div>
       ) : (
         <PublicationTable publications={publications} showScores />
@@ -195,7 +207,7 @@ export default function AnalysisPage() {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
-          <p className="text-sm text-neutral-500">Page {page} of {totalPages}</p>
+          <p className="text-sm text-neutral-500">Seite {page} von {totalPages}</p>
           <div className="flex gap-2">
             <Button
               variant="outline"

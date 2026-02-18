@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Publication } from '@/lib/types';
 import { doiToUrl } from '@/lib/enrichment/doi-utils';
 import { decodeHtmlTitle } from '@/lib/html-utils';
@@ -34,7 +35,7 @@ export function PublicationTable({ publications, showScores, showEnrichment, sor
   if (publications.length === 0) {
     return (
       <div className="text-center py-12 text-neutral-500">
-        No publications found.
+        Keine Publikationen gefunden.
       </div>
     );
   }
@@ -53,22 +54,22 @@ export function PublicationTable({ publications, showScores, showEnrichment, sor
             <th className="p-3 text-left font-medium w-8"></th>
             <th className={headerClass} onClick={() => onSort?.('title')}>
               <span className="inline-flex items-center gap-1">
-                Title {sortable && <SortIcon column="title" sortBy={sortBy} sortOrder={sortOrder} />}
+                Titel {sortable && <SortIcon column="title" sortBy={sortBy} sortOrder={sortOrder} />}
               </span>
             </th>
             <th className={headerClass} onClick={() => onSort?.('authors')}>
               <span className="inline-flex items-center gap-1">
-                Authors {sortable && <SortIcon column="authors" sortBy={sortBy} sortOrder={sortOrder} />}
+                Autoren {sortable && <SortIcon column="authors" sortBy={sortBy} sortOrder={sortOrder} />}
               </span>
             </th>
             <th className={headerClass} onClick={() => onSort?.('publication_type')}>
               <span className="inline-flex items-center gap-1">
-                Type {sortable && <SortIcon column="publication_type" sortBy={sortBy} sortOrder={sortOrder} />}
+                Typ {sortable && <SortIcon column="publication_type" sortBy={sortBy} sortOrder={sortOrder} />}
               </span>
             </th>
             <th className={headerClass} onClick={() => onSort?.('published_at')}>
               <span className="inline-flex items-center gap-1">
-                Year {sortable && <SortIcon column="published_at" sortBy={sortBy} sortOrder={sortOrder} />}
+                Jahr {sortable && <SortIcon column="published_at" sortBy={sortBy} sortOrder={sortOrder} />}
               </span>
             </th>
             {showEnrichment && (
@@ -131,7 +132,15 @@ function PublicationRow({
           </Button>
         </td>
         <td className="p-3 max-w-sm">
-          <div className="font-medium truncate">{decodeHtmlTitle(pub.title)}</div>
+          <div className="font-medium truncate">
+            <Link
+              href={`/publications/${pub.id}`}
+              className="hover:text-[#0047bb] hover:underline"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {decodeHtmlTitle(pub.title)}
+            </Link>
+          </div>
           {pub.institute && (
             <div className="text-xs text-neutral-500 truncate">{pub.institute}</div>
           )}
@@ -139,7 +148,7 @@ function PublicationRow({
         <td className="p-3 max-w-[140px] truncate">{pub.authors || '-'}</td>
         <td className="p-3 whitespace-nowrap">
           <Badge variant="outline" className="text-xs">
-            {pub.publication_type || 'Unknown'}
+            {pub.publication_type || 'Unbekannt'}
           </Badge>
         </td>
         <td className="p-3 whitespace-nowrap">{pub.published_at?.slice(0, 4) || '-'}</td>
@@ -175,6 +184,14 @@ function PublicationRow({
   );
 }
 
+const STATUS_LABELS: Record<string, string> = {
+  pending: 'Ausstehend',
+  enriched: 'Angereichert',
+  partial: 'Teilweise',
+  analyzed: 'Analysiert',
+  failed: 'Fehlgeschlagen',
+};
+
 function StatusBadge({ status }: { status: string }) {
   const colors: Record<string, string> = {
     pending: 'bg-neutral-100 text-neutral-600',
@@ -186,7 +203,7 @@ function StatusBadge({ status }: { status: string }) {
 
   return (
     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${colors[status] || colors.pending}`}>
-      {status}
+      {STATUS_LABELS[status] || status}
     </span>
   );
 }
@@ -209,7 +226,6 @@ const SOURCE_COLOR: Record<string, string> = {
 
 const MODEL_SHORT: Record<string, string> = Object.fromEntries(
   LLM_MODELS.map(m => {
-    // Extract short name: "DeepSeek Chat" -> "DeepSeek", "Claude Sonnet 4" -> "Sonnet 4"
     const short = m.label
       .replace('Claude ', '')
       .replace(' (Free)', '')
@@ -252,8 +268,8 @@ function ExpandedDetail({ pub, showScores }: { pub: Publication; showScores?: bo
     <div className="grid gap-4 md:grid-cols-2">
       <div className="space-y-3">
         <div>
-          <h4 className="text-xs font-medium text-neutral-500 uppercase mb-1">Abstract</h4>
-          <p className="text-sm">{pub.enriched_abstract || pub.abstract || 'No abstract available'}</p>
+          <h4 className="text-xs font-medium text-neutral-500 uppercase mb-1">Zusammenfassung</h4>
+          <p className="text-sm">{pub.enriched_abstract || pub.abstract || 'Keine Zusammenfassung verfügbar'}</p>
         </div>
         {pub.doi && (
           <div>
@@ -262,7 +278,7 @@ function ExpandedDetail({ pub, showScores }: { pub: Publication; showScores?: bo
               href={doiToUrl(pub.doi) || '#'}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sm text-blue-600 hover:underline inline-flex items-center gap-1"
+              className="text-sm text-[#0047bb] hover:underline inline-flex items-center gap-1"
             >
               {pub.doi} <ExternalLink className="h-3 w-3" />
             </a>
@@ -270,7 +286,7 @@ function ExpandedDetail({ pub, showScores }: { pub: Publication; showScores?: bo
         )}
         {pub.enriched_source && (
           <div>
-            <h4 className="text-xs font-medium text-neutral-500 uppercase mb-1">Enrichment Sources</h4>
+            <h4 className="text-xs font-medium text-neutral-500 uppercase mb-1">Enrichment-Quellen</h4>
             <div className="flex flex-wrap gap-1">
               {pub.enriched_source.split('+').map((src) => (
                 <Badge key={src} variant="outline" className="text-xs">
@@ -288,7 +304,7 @@ function ExpandedDetail({ pub, showScores }: { pub: Publication; showScores?: bo
         )}
         {pub.enriched_keywords && pub.enriched_keywords.length > 0 && (
           <div>
-            <h4 className="text-xs font-medium text-neutral-500 uppercase mb-1">Keywords</h4>
+            <h4 className="text-xs font-medium text-neutral-500 uppercase mb-1">Schlagwörter</h4>
             <div className="flex flex-wrap gap-1">
               {pub.enriched_keywords.map((kw, i) => (
                 <Badge key={i} variant="secondary" className="text-xs">{kw}</Badge>
@@ -304,7 +320,7 @@ function ExpandedDetail({ pub, showScores }: { pub: Publication; showScores?: bo
       {showScores && pub.analysis_status === 'analyzed' && (
         <div className="space-y-3">
           <div>
-            <h4 className="text-xs font-medium text-neutral-500 uppercase mb-1">Score Breakdown</h4>
+            <h4 className="text-xs font-medium text-neutral-500 uppercase mb-1">Score-Aufschlüsselung</h4>
             <div className="space-y-2">
               <ScoreBar dimension="public_accessibility" value={pub.public_accessibility} />
               <ScoreBar dimension="societal_relevance" value={pub.societal_relevance} />
@@ -321,25 +337,25 @@ function ExpandedDetail({ pub, showScores }: { pub: Publication; showScores?: bo
           )}
           {pub.suggested_angle && (
             <div>
-              <h4 className="text-xs font-medium text-neutral-500 uppercase mb-1">Suggested Angle</h4>
+              <h4 className="text-xs font-medium text-neutral-500 uppercase mb-1">Empfohlener Blickwinkel</h4>
               <p className="text-sm">{pub.suggested_angle}</p>
             </div>
           )}
           {pub.target_audience && (
             <div>
-              <h4 className="text-xs font-medium text-neutral-500 uppercase mb-1">Target Audience</h4>
+              <h4 className="text-xs font-medium text-neutral-500 uppercase mb-1">Zielgruppe</h4>
               <p className="text-sm">{pub.target_audience}</p>
             </div>
           )}
           {pub.reasoning && (
             <div>
-              <h4 className="text-xs font-medium text-neutral-500 uppercase mb-1">Reasoning</h4>
+              <h4 className="text-xs font-medium text-neutral-500 uppercase mb-1">Begründung</h4>
               <p className="text-sm text-neutral-600">{pub.reasoning}</p>
             </div>
           )}
           {pub.llm_model && (
             <div className="text-xs text-neutral-400">
-              Model: {pub.llm_model} | Cost: ${pub.analysis_cost?.toFixed(4) || '0'}
+              Modell: {pub.llm_model} | Kosten: ${pub.analysis_cost?.toFixed(4) || '0'}
             </div>
           )}
         </div>
@@ -355,14 +371,14 @@ function SnippetDisplay({ text }: { text: string }) {
 
   return (
     <div>
-      <h4 className="text-xs font-medium text-neutral-500 uppercase mb-1">Snippet</h4>
+      <h4 className="text-xs font-medium text-neutral-500 uppercase mb-1">Textauszug</h4>
       <p className="text-sm text-neutral-600 whitespace-pre-wrap">{display}</p>
       {isLong && (
         <button
           onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
-          className="text-xs text-blue-600 hover:underline mt-1"
+          className="text-xs text-[#0047bb] hover:underline mt-1"
         >
-          {expanded ? 'Show less' : 'Show more'}
+          {expanded ? 'Weniger anzeigen' : 'Mehr anzeigen'}
         </button>
       )}
     </div>

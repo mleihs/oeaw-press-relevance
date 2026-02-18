@@ -51,13 +51,13 @@ export function PressScoreBadge({ score }: PressScoreBadgeProps) {
   if (score === null) return <span className="text-neutral-400 text-sm">N/A</span>;
 
   const pct = Math.round(score * 100);
-  let bgColor = 'bg-neutral-100 text-neutral-700';
-  if (pct >= 70) bgColor = 'bg-green-100 text-green-800';
-  else if (pct >= 50) bgColor = 'bg-yellow-100 text-yellow-800';
+  let bgColor = 'bg-neutral-100 text-neutral-600';
+  if (pct >= 70) bgColor = 'bg-[#0047bb] text-white';
+  else if (pct >= 50) bgColor = 'bg-amber-100 text-amber-800';
   else if (pct >= 30) bgColor = 'bg-orange-100 text-orange-800';
 
   return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${bgColor}`}>
+    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold ${bgColor}`}>
       {pct}%
     </span>
   );

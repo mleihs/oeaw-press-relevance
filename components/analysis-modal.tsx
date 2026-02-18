@@ -321,12 +321,14 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
                 });
                 onComplete?.();
               } else if (eventType === 'error') {
-                // Parse friendly message from OpenRouter error JSON
-                let friendlyMsg = data.message || 'Unknown error';
-                if (friendlyMsg.includes('402') || friendlyMsg.includes('credits')) {
+                const rawMsg = data.message || 'Unknown error';
+                console.error('[Analysis Modal] SSE error event:', rawMsg);
+                // Show the actual error message — only override for specific known codes
+                let friendlyMsg = rawMsg;
+                if (/\b402\b/.test(rawMsg) && /insufficient.{0,20}credits/i.test(rawMsg)) {
                   friendlyMsg = 'OpenRouter-Guthaben aufgebraucht. Bitte Credits aufladen unter openrouter.ai/settings/keys';
-                } else if (friendlyMsg.includes('401')) {
-                  friendlyMsg = 'OpenRouter API-Key ungültig. Bitte in den Settings prüfen.';
+                } else if (/\b401\b/.test(rawMsg) && /unauthorized|invalid.{0,10}key/i.test(rawMsg)) {
+                  friendlyMsg = 'OpenRouter API-Key ungültig. Bitte in den Einstellungen prüfen.';
                 }
                 setErrors(prev => [...prev, friendlyMsg]);
                 // Stop UI on fatal errors
@@ -358,8 +360,8 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
   // Cost estimate based on selected model
   const selectedModel = LLM_MODELS.find(m => m.value === config.model);
   const costRate = selectedModel?.costPerMillionTokens ?? 1;
-  // Rough estimate: ~800 tokens per publication (prompt + response)
-  const estimatedCost = (config.limit * 800 * costRate) / 1_000_000;
+  // Rough estimate: ~600 tokens per publication (prompt + response)
+  const estimatedCost = (config.limit * 600 * costRate) / 1_000_000;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -368,12 +370,12 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
           <div className="flex items-center gap-3">
             <CapybaraAnalyst state={status} />
             <div className="flex-1 min-w-0">
-              <DialogTitle>Press Relevance Analysis</DialogTitle>
+              <DialogTitle>Presserelevanz-Analyse</DialogTitle>
               <DialogDescription>
-                {status === 'idle' && 'Score publications for press worthiness using LLM analysis.'}
-                {status === 'running' && `Analyzing ${progress.processed} / ${progress.total} publications...`}
-                {status === 'complete' && 'Analysis complete!'}
-                {status === 'error' && 'Analysis encountered an error.'}
+                {status === 'idle' && 'Publikationen per LLM auf Presserelevanz bewerten.'}
+                {status === 'running' && `Analysiere ${progress.processed} / ${progress.total} Publikationen...`}
+                {status === 'complete' && 'Analyse abgeschlossen!'}
+                {status === 'error' && 'Fehler bei der Analyse.'}
               </DialogDescription>
             </div>
             {status === 'running' && (
@@ -575,7 +577,7 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
                 <span>Tokens: {progress.tokensUsed.toLocaleString()}</span>
               )}
               {progress.cost > 0 && (
-                <span>Cost: ${progress.cost.toFixed(4)}</span>
+                <span>Kosten: ${progress.cost.toFixed(4)}</span>
               )}
               {apiKeyHint && (
                 <span className="text-neutral-400">Key: <span className="font-mono">{apiKeyHint}</span></span>
@@ -584,16 +586,16 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
           </div>
         )}
 
-        {/* Batch errors */}
-        {errors.length > 0 && status === 'running' && (
+        {/* Batch errors — show during running AND after complete/error */}
+        {errors.length > 0 && (status === 'running' || status === 'complete' || status === 'error') && (
           <div className="rounded-lg border border-amber-200 bg-amber-50 p-2 space-y-1">
             <p className="text-xs font-medium text-amber-700 flex items-center gap-1">
               <AlertCircle className="h-3 w-3" />
-              {errors.length} batch error{errors.length > 1 ? 's' : ''}
+              {errors.length} Batch-Fehler
             </p>
-            <div className="max-h-[60px] overflow-y-auto">
+            <div className="max-h-[120px] overflow-y-auto">
               {errors.map((err, i) => (
-                <p key={i} className="text-xs text-amber-600 truncate">{err}</p>
+                <p key={i} className="text-xs text-amber-600">{err}</p>
               ))}
             </div>
           </div>
@@ -602,22 +604,22 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
         {/* Complete summary */}
         {status === 'complete' && completeData && completeData.total > 0 && (
           <div className="rounded-lg border border-green-200 bg-green-50 p-3 space-y-2">
-            <p className="text-sm font-medium text-green-800">Analysis Complete</p>
+            <p className="text-sm font-medium text-green-800">Analyse abgeschlossen</p>
             <div className="flex flex-wrap gap-2">
               <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
-                {completeData.successful} analyzed
+                {completeData.successful} analysiert
               </Badge>
               {completeData.failed > 0 && (
                 <Badge className="bg-red-100 text-red-700 hover:bg-red-100">
-                  {completeData.failed} failed
+                  {completeData.failed} fehlgeschlagen
                 </Badge>
               )}
             </div>
             {completeData.tokensUsed > 0 && (
               <div className="flex flex-wrap gap-x-4 text-xs text-neutral-500 pt-1">
-                <span>Model: {selectedModel?.label}</span>
-                <span>Total tokens: {completeData.tokensUsed.toLocaleString()}</span>
-                <span>Total cost: ${completeData.cost.toFixed(4)}</span>
+                <span>Modell: {selectedModel?.label}</span>
+                <span>Tokens gesamt: {completeData.tokensUsed.toLocaleString()}</span>
+                <span>Kosten gesamt: ${completeData.cost.toFixed(4)}</span>
               </div>
             )}
           </div>
@@ -635,7 +637,7 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
           <div className="rounded-lg border border-red-200 bg-red-50 p-3 space-y-1">
             <p className="text-sm font-medium text-red-700 flex items-center gap-1">
               <AlertCircle className="h-4 w-4" />
-              Error
+              Fehler
             </p>
             <p className="text-sm text-red-600">{errorMessage}</p>
             {apiKeyHint && (
@@ -648,7 +650,7 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
           {status === 'idle' && (
             <Button onClick={startAnalysis} size="sm">
               <Play className="mr-2 h-4 w-4" />
-              Start Analysis
+              Analyse starten
             </Button>
           )}
           {status === 'running' && (
@@ -660,7 +662,7 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
           {(status === 'complete' || status === 'error') && (
             <Button onClick={reset} variant="outline" size="sm">
               <RotateCcw className="mr-2 h-4 w-4" />
-              {status === 'error' ? 'Retry' : 'Run Again'}
+              {status === 'error' ? 'Erneut versuchen' : 'Erneut starten'}
             </Button>
           )}
         </DialogFooter>

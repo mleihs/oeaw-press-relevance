@@ -50,11 +50,11 @@ export const SCORE_COLORS: Record<string, string> = {
 };
 
 export const SCORE_LABELS: Record<string, string> = {
-  public_accessibility: 'Accessibility',
-  societal_relevance: 'Societal Relevance',
-  novelty_factor: 'Novelty',
-  storytelling_potential: 'Storytelling',
-  media_timeliness: 'Timeliness',
+  public_accessibility: 'Verständlichkeit',
+  societal_relevance: 'Gesellschaftl. Relevanz',
+  novelty_factor: 'Neuheit',
+  storytelling_potential: 'Erzählpotenzial',
+  media_timeliness: 'Aktualität',
 };
 
 export interface LLMModel {

@@ -157,13 +157,13 @@ function SourceStatusIcon({ status }: { status: EnrichmentSourceStatus }) {
     case 'loading':
       return <span className="inline-block w-4 h-4 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin" />;
     case 'success':
-      return <span className="text-green-600 font-medium text-sm">found</span>;
+      return <span className="text-green-600 font-medium text-sm">gefunden</span>;
     case 'no_data':
-      return <span className="text-amber-500 text-sm">none</span>;
+      return <span className="text-amber-500 text-sm">nichts</span>;
     case 'error':
-      return <span className="text-red-500 text-sm">error</span>;
+      return <span className="text-red-500 text-sm">Fehler</span>;
     case 'skipped':
-      return <span className="text-neutral-400 text-sm italic">skipped</span>;
+      return <span className="text-neutral-400 text-sm italic">übersprungen</span>;
   }
 }
 
@@ -463,12 +463,12 @@ export function EnrichmentModal({
           <div className="flex items-center gap-3">
             <CapybaraSvg state={capybaraState} />
             <div className="flex-1 min-w-0">
-              <DialogTitle>Publication Enrichment</DialogTitle>
+              <DialogTitle>Publikationen anreichern</DialogTitle>
               <DialogDescription>
-                {status === 'idle' && 'Query CrossRef, OpenAlex, Unpaywall & Semantic Scholar for metadata.'}
-                {status === 'running' && `Processing ${pubIndex + 1} / ${pubTotal} publications...`}
-                {status === 'complete' && 'Enrichment complete!'}
-                {status === 'error' && 'Enrichment encountered an error.'}
+                {status === 'idle' && 'Metadaten von CrossRef, OpenAlex, Unpaywall & Semantic Scholar abrufen.'}
+                {status === 'running' && `Verarbeite ${pubIndex + 1} / ${pubTotal} Publikationen...`}
+                {status === 'complete' && 'Enrichment abgeschlossen!'}
+                {status === 'error' && 'Fehler beim Enrichment.'}
               </DialogDescription>
             </div>
             {status === 'running' && (
@@ -527,8 +527,8 @@ export function EnrichmentModal({
                   onChange={(e) => setConfig(c => ({ ...c, includePartial: e.target.checked }))}
                   className="rounded border-neutral-300"
                 />
-                <span>Re-enrich partial</span>
-                <span className="text-neutral-400 text-xs">(teilweise enriched erneut verarbeiten)</span>
+                <span>Teilweise erneut verarbeiten</span>
+                <span className="text-neutral-400 text-xs">(partial-Status nochmals enrichen)</span>
               </label>
               <label className="flex items-center gap-2 text-sm cursor-pointer">
                 <input
@@ -537,7 +537,7 @@ export function EnrichmentModal({
                   onChange={(e) => setConfig(c => ({ ...c, includeNoDoi: e.target.checked }))}
                   className="rounded border-neutral-300"
                 />
-                <span>Include no-DOI</span>
+                <span>Ohne DOI einschließen</span>
                 <span className="text-neutral-400 text-xs">(Publikationen ohne DOI via PDF enrichen)</span>
               </label>
             </div>
@@ -564,7 +564,7 @@ export function EnrichmentModal({
                 {currentPub.doi ? (
                   <p className="text-xs text-neutral-400 font-mono truncate">DOI: {currentPub.doi}</p>
                 ) : (
-                  <p className="text-xs text-amber-500 italic">No DOI</p>
+                  <p className="text-xs text-amber-500 italic">Kein DOI</p>
                 )}
                 {currentPub.hasCsvAbstract && (
                   <span className="inline-flex items-center rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-medium text-blue-700">
@@ -610,7 +610,7 @@ export function EnrichmentModal({
         {completed.length > 0 && (
           <div className="flex-1 min-h-0">
             <p className="text-xs font-medium text-neutral-500 mb-1">
-              Completed ({completed.length})
+              Abgeschlossen ({completed.length})
             </p>
             <div ref={logRef} className="max-h-[200px] overflow-y-auto rounded border p-2 bg-white">
               {completed.map((pub, i) => (
@@ -637,23 +637,23 @@ export function EnrichmentModal({
         {/* Final summary on complete */}
         {status === 'complete' && finalStats && (
           <div className="rounded-lg border border-green-200 bg-green-50 p-3 space-y-2">
-            <p className="text-sm font-medium text-green-800">Enrichment Complete</p>
+            <p className="text-sm font-medium text-green-800">Enrichment abgeschlossen</p>
             <div className="flex flex-wrap gap-2">
               <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
-                {finalStats.successful} enriched
+                {finalStats.successful} angereichert
               </Badge>
               {finalStats.partial > 0 && (
                 <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">
-                  {finalStats.partial} partial
+                  {finalStats.partial} teilweise
                 </Badge>
               )}
               {finalStats.failed > 0 && (
                 <Badge className="bg-red-100 text-red-700 hover:bg-red-100">
-                  {finalStats.failed} failed
+                  {finalStats.failed} fehlgeschlagen
                 </Badge>
               )}
               <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">
-                {finalStats.withAbstract} with abstract
+                {finalStats.withAbstract} mit Abstract
               </Badge>
             </div>
           </div>
@@ -677,7 +677,7 @@ export function EnrichmentModal({
           {status === 'idle' && (
             <Button onClick={startEnrichment} size="sm">
               <Play className="mr-2 h-4 w-4" />
-              Start Enrichment
+              Enrichment starten
             </Button>
           )}
           {status === 'running' && (
@@ -689,7 +689,7 @@ export function EnrichmentModal({
           {(status === 'complete' || status === 'error') && (
             <Button onClick={reset} variant="outline" size="sm">
               <RotateCcw className="mr-2 h-4 w-4" />
-              Run Again
+              Erneut starten
             </Button>
           )}
         </DialogFooter>

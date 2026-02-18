@@ -139,8 +139,10 @@ export async function POST(req: NextRequest) {
         }
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Unknown error';
-        const isFatal = message.includes('402') || message.includes('401') || message.includes('credits');
+        const isFatal = /\b402\b/.test(message) && /insufficient|credits/i.test(message)
+          || /\b401\b/.test(message) && /unauthorized|invalid/i.test(message);
 
+        console.error(`[Analysis] Batch error at index ${i}:`, message);
         send('error', { message, batch_start: i, fatal: isFatal });
 
         // Mark batch as failed

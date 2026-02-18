@@ -6,18 +6,18 @@ export default function UploadPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Upload Publications</h1>
+        <h1 className="text-2xl font-bold">Publikationen importieren</h1>
         <p className="text-neutral-500">
-          Import OeAW publications from a CSV file. Supports the standard HeboWebDB export format.
+          OeAW-Publikationen aus einer CSV-Datei importieren. Unterstützt das Standard-HeboWebDB-Exportformat.
         </p>
       </div>
 
       <CsvUploadZone />
 
       <div className="rounded-lg bg-neutral-100 p-4 text-sm text-neutral-600 space-y-2">
-        <p className="font-medium">Expected CSV Format</p>
+        <p className="font-medium">Erwartetes CSV-Format</p>
         <p>
-          The CSV should contain columns: <code className="bg-white px-1 rounded text-xs">original_title</code>,{' '}
+          Die CSV-Datei sollte folgende Spalten enthalten: <code className="bg-white px-1 rounded text-xs">original_title</code>,{' '}
           <code className="bg-white px-1 rounded text-xs">lead_author</code>,{' '}
           <code className="bg-white px-1 rounded text-xs">summary_en</code>,{' '}
           <code className="bg-white px-1 rounded text-xs">summary_de</code>,{' '}
@@ -28,7 +28,7 @@ export default function UploadPage() {
           <code className="bg-white px-1 rounded text-xs">organizational_units</code>
         </p>
         <p>
-          Deduplication is automatic: publications with matching titles, DOIs, or UIDs will be skipped.
+          Deduplizierung erfolgt automatisch: Publikationen mit übereinstimmenden Titeln, DOIs oder UIDs werden übersprungen.
         </p>
       </div>
     </div>

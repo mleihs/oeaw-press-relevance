@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "OeAW Press Relevance Analyzer",
-  description: "Analyze Austrian Academy of Sciences publications for press worthiness",
+  title: "OeAW Presserelevanz-Analyzer",
+  description: "Presserelevanz-Analyse für Publikationen der Österreichischen Akademie der Wissenschaften",
 };
 
 export default function RootLayout({
@@ -25,7 +25,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="de">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-neutral-50`}
       >

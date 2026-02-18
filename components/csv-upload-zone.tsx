@@ -26,7 +26,7 @@ export function CsvUploadZone() {
     setParseResult(null);
 
     if (!file.name.endsWith('.csv')) {
-      setError('Please upload a CSV file');
+      setError('Bitte laden Sie eine CSV-Datei hoch');
       return;
     }
 
@@ -34,7 +34,7 @@ export function CsvUploadZone() {
       const result = await parseCsvFile(file);
       setParseResult(result);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to parse CSV');
+      setError(err instanceof Error ? err.message : 'CSV konnte nicht gelesen werden');
     }
   }, []);
 
@@ -57,7 +57,6 @@ export function CsvUploadZone() {
     setError(null);
 
     try {
-      // Fetch existing titles/DOIs for dedup
       const settings = loadSettings();
       const supabase = getSupabaseClient(settings.supabaseUrl, settings.supabaseAnonKey);
 
@@ -80,12 +79,11 @@ export function CsvUploadZone() {
         setImportResult({ inserted: 0, errors: 0 });
         setImporting(false);
         if (duplicateCount > 0) {
-          setError(`All ${duplicateCount} publications already exist in the database.`);
+          setError(`Alle ${duplicateCount} Publikationen sind bereits in der Datenbank vorhanden.`);
         }
         return;
       }
 
-      // Import in chunks via API
       const chunkSize = 100;
       let totalInserted = 0;
       let totalErrors = 0;
@@ -112,10 +110,10 @@ export function CsvUploadZone() {
       });
 
       if (duplicateCount > 0) {
-        setError(`${duplicateCount} duplicates were skipped.`);
+        setError(`${duplicateCount} Duplikate wurden übersprungen.`);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Import failed');
+      setError(err instanceof Error ? err.message : 'Import fehlgeschlagen');
     } finally {
       setImporting(false);
     }
@@ -130,13 +128,13 @@ export function CsvUploadZone() {
         onDrop={handleDrop}
         className={`flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 transition-colors ${
           isDragging
-            ? 'border-blue-400 bg-blue-50'
+            ? 'border-[#0047bb] bg-blue-50'
             : 'border-neutral-300 bg-neutral-50 hover:border-neutral-400'
         }`}
       >
         <Upload className="mb-4 h-10 w-10 text-neutral-400" />
         <p className="mb-2 text-sm text-neutral-600">
-          Drag & drop a CSV file here, or click to browse
+          CSV-Datei hierher ziehen oder klicken zum Auswählen
         </p>
         <input
           type="file"
@@ -147,7 +145,7 @@ export function CsvUploadZone() {
         />
         <Button variant="outline" asChild>
           <label htmlFor="csv-file-input" className="cursor-pointer">
-            Choose File
+            Datei auswählen
           </label>
         </Button>
       </div>
@@ -167,13 +165,13 @@ export function CsvUploadZone() {
         <Card>
           <CardContent className="p-4 space-y-4">
             <div className="flex items-center gap-2">
-              <FileText className="h-5 w-5 text-blue-500" />
+              <FileText className="h-5 w-5 text-[#0047bb]" />
               <span className="font-medium">
-                {parseResult.publications.length} publications parsed
+                {parseResult.publications.length} Publikationen erkannt
               </span>
               {parseResult.skippedRows > 0 && (
                 <span className="text-sm text-neutral-500">
-                  ({parseResult.skippedRows} rows skipped)
+                  ({parseResult.skippedRows} Zeilen übersprungen)
                 </span>
               )}
             </div>
@@ -183,10 +181,10 @@ export function CsvUploadZone() {
               <table className="w-full text-sm">
                 <thead className="bg-neutral-50 sticky top-0">
                   <tr>
-                    <th className="p-2 text-left font-medium">Title</th>
-                    <th className="p-2 text-left font-medium">Authors</th>
-                    <th className="p-2 text-left font-medium">Type</th>
-                    <th className="p-2 text-left font-medium">Year</th>
+                    <th className="p-2 text-left font-medium">Titel</th>
+                    <th className="p-2 text-left font-medium">Autoren</th>
+                    <th className="p-2 text-left font-medium">Typ</th>
+                    <th className="p-2 text-left font-medium">Jahr</th>
                     <th className="p-2 text-left font-medium">DOI</th>
                   </tr>
                 </thead>
@@ -206,7 +204,7 @@ export function CsvUploadZone() {
               </table>
               {parseResult.publications.length > 20 && (
                 <div className="p-2 text-center text-sm text-neutral-500 bg-neutral-50">
-                  ... and {parseResult.publications.length - 20} more
+                  ... und {parseResult.publications.length - 20} weitere
                 </div>
               )}
             </div>
@@ -215,7 +213,7 @@ export function CsvUploadZone() {
             {!importResult && (
               <div className="flex items-center gap-4">
                 <Button onClick={handleImport} disabled={importing}>
-                  {importing ? 'Importing...' : `Import ${parseResult.publications.length} Publications`}
+                  {importing ? 'Importiere...' : `${parseResult.publications.length} Publikationen importieren`}
                 </Button>
                 {importing && (
                   <div className="flex-1">
@@ -230,9 +228,9 @@ export function CsvUploadZone() {
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-5 w-5 text-green-500" />
                 <span className="text-sm">
-                  <strong>{importResult.inserted}</strong> publications imported
+                  <strong>{importResult.inserted}</strong> Publikationen importiert
                   {importResult.errors > 0 && (
-                    <>, <strong className="text-red-600">{importResult.errors}</strong> errors</>
+                    <>, <strong className="text-red-600">{importResult.errors}</strong> Fehler</>
                   )}
                 </span>
               </div>
