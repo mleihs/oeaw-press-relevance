@@ -96,7 +96,7 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-4">
-        <Image src="/capybara-logo.png" alt="StoryScout" width={80} height={80} className="opacity-50" />
+        <Image src="/capybara-logo.png" alt="StoryScout" width={80} height={80} className="opacity-50 mix-blend-multiply" />
         <p className="text-sm text-neutral-500">Lade Dashboard...</p>
       </div>
     );
@@ -126,9 +126,9 @@ export default function DashboardPage() {
         <Image
           src="/capybara-logo.png"
           alt="StoryScout Capybara"
-          width={140}
-          height={140}
-          className="shrink-0"
+          width={150}
+          height={150}
+          className="shrink-0 mix-blend-multiply"
           priority
         />
         <div>
