@@ -126,8 +126,8 @@ export default function DashboardPage() {
         <Image
           src="/capybara-logo.png"
           alt="StoryScout Capybara"
-          width={150}
-          height={150}
+          width={160}
+          height={160}
           className="shrink-0 mix-blend-multiply"
           priority
         />
