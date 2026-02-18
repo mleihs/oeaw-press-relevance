@@ -22,7 +22,19 @@ export default function PublicationsPage() {
   const [enrichModalOpen, setEnrichModalOpen] = useState(false);
   const [includePartial, setIncludePartial] = useState(false);
   const [includeNoDoi, setIncludeNoDoi] = useState(false);
+  const [sortBy, setSortBy] = useState('created_at');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const pageSize = 20;
+
+  const handleSort = useCallback((column: string) => {
+    if (sortBy === column) {
+      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(column);
+      setSortOrder('asc');
+    }
+    setPage(1);
+  }, [sortBy]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -30,6 +42,8 @@ export default function PublicationsPage() {
       const params = new URLSearchParams({
         page: String(page),
         pageSize: String(pageSize),
+        sort: sortBy,
+        order: sortOrder,
       });
       if (search) params.set('search', search);
       if (enrichmentFilter) params.set('enrichment_status', enrichmentFilter);
@@ -46,7 +60,7 @@ export default function PublicationsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, enrichmentFilter, analysisFilter]);
+  }, [page, search, enrichmentFilter, analysisFilter, sortBy, sortOrder]);
 
   useEffect(() => {
     fetchData();
@@ -171,6 +185,9 @@ export default function PublicationsPage() {
           publications={publications}
           showScores
           showEnrichment
+          sortBy={sortBy}
+          sortOrder={sortOrder}
+          onSort={handleSort}
         />
       )}
 
