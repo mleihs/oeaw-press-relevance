@@ -36,6 +36,7 @@ interface SourceState {
 interface PubProgress {
   title: string;
   doi: string | null;
+  hasCsvAbstract: boolean;
   sources: Record<EnrichmentSourceName, SourceState>;
 }
 
@@ -51,12 +52,13 @@ type CapybaraState = 'idle' | 'working' | 'found' | 'error' | 'complete';
 
 const ALL_SOURCES: EnrichmentSourceName[] = ['crossref', 'openalex', 'unpaywall', 'semantic_scholar', 'pdf'];
 
-const SOURCE_LABELS: Record<EnrichmentSourceName, string> = {
+const SOURCE_LABELS: Record<string, string> = {
   crossref: 'CrossRef',
   openalex: 'OpenAlex',
   unpaywall: 'Unpaywall',
   semantic_scholar: 'Semantic Scholar',
   pdf: 'PDF Extract',
+  csv: 'CSV Abstract',
 };
 
 function emptySourceStates(): Record<EnrichmentSourceName, SourceState> {
@@ -351,6 +353,7 @@ export function EnrichmentModal({
         setCurrentPub({
           title: data.title as string,
           doi: data.doi as string | null,
+          hasCsvAbstract: data.has_csv_abstract === true,
           sources: emptySourceStates(),
         });
         setCapybaraState('working');
@@ -474,11 +477,18 @@ export function EnrichmentModal({
           <div className="rounded-lg border p-3 space-y-2 bg-neutral-50/50">
             <div className="space-y-0.5">
               <p className="text-sm font-medium truncate">{currentPub.title}</p>
-              {currentPub.doi ? (
-                <p className="text-xs text-neutral-400 font-mono truncate">DOI: {currentPub.doi}</p>
-              ) : (
-                <p className="text-xs text-amber-500 italic">No DOI &mdash; PDF only</p>
-              )}
+              <div className="flex items-center gap-2">
+                {currentPub.doi ? (
+                  <p className="text-xs text-neutral-400 font-mono truncate">DOI: {currentPub.doi}</p>
+                ) : (
+                  <p className="text-xs text-amber-500 italic">No DOI</p>
+                )}
+                {currentPub.hasCsvAbstract && (
+                  <span className="inline-flex items-center rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-medium text-blue-700">
+                    CSV abstract
+                  </span>
+                )}
+              </div>
             </div>
             <div className="space-y-1.5">
               {ALL_SOURCES.map(src => {

@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  // Query 2: publications without DOI but with a .pdf URL (when requested)
+  // Query 2: publications without DOI but with a .pdf URL or CSV abstract (when requested)
   let noDoiPubs: Publication[] = [];
   if (includeNoDoi) {
     const remaining = limit - (doiPubs?.length || 0);
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
         .from('publications')
         .select('*')
         .is('doi', null)
-        .like('url', '%.pdf')
+        .or('url.like.%.pdf,abstract.not.is.null')
         .in('enrichment_status', statusFilter)
         .order('created_at', { ascending: false })
         .limit(remaining);
@@ -104,6 +104,7 @@ export async function POST(req: NextRequest) {
       const pub = pubs[i];
       const hasDoi = !!pub.doi;
       const hasDirectPdf = isPdfUrl(pub.url);
+      const hasCsvAbstract = !!pub.abstract;
 
       send('pub_start', {
         index: i,
@@ -111,10 +112,11 @@ export async function POST(req: NextRequest) {
         title: pub.title,
         doi: pub.doi,
         no_doi: !hasDoi,
+        has_csv_abstract: hasCsvAbstract,
       });
 
       // ---------------------------------------------------------------
-      // DOI-less publications: PDF-only path
+      // DOI-less publications: CSV abstract + PDF path
       // ---------------------------------------------------------------
       if (!hasDoi) {
         // Send skipped events for all 4 API sources
@@ -122,55 +124,38 @@ export async function POST(req: NextRequest) {
           send('source_done', { index: i, source: src, status: 'skipped' });
         }
 
+        let noDoi_abstract: string | undefined = pub.abstract || undefined;
+        let noDoi_snippet: string | undefined;
+        let noDoi_wordCount = 0;
+        const noDoi_sources: string[] = [];
+
+        // Use CSV abstract if available
+        if (hasCsvAbstract) {
+          noDoi_sources.push('csv');
+          sourceCounts['csv'] = (sourceCounts['csv'] || 0) + 1;
+        }
+
+        // Try PDF extraction (for abstract if missing, or for snippet/word_count)
         if (hasDirectPdf) {
           send('source_try', { index: i, source: 'pdf', status: 'loading' });
           try {
             const pdfResult = await enrichFromPdf(pub.url!);
             if (pdfResult) {
-              const finalStatus = pdfResult.abstract ? 'enriched' : 'partial';
+              noDoi_sources.push('pdf');
               sourceCounts['pdf'] = (sourceCounts['pdf'] || 0) + 1;
-              if (pdfResult.abstract) { successful++; withAbstract++; } else { partial++; }
-
+              if (!noDoi_abstract && pdfResult.abstract) {
+                noDoi_abstract = pdfResult.abstract;
+              }
+              noDoi_snippet = pdfResult.full_text_snippet || undefined;
+              noDoi_wordCount = pdfResult.word_count || 0;
               send('source_done', {
                 index: i,
                 source: 'pdf',
                 status: 'success',
                 found: { abstract: truncate(pdfResult.abstract, 120) },
               });
-
-              await supabase
-                .from('publications')
-                .update({
-                  enrichment_status: finalStatus,
-                  enriched_abstract: pdfResult.abstract || null,
-                  enriched_source: 'pdf',
-                  full_text_snippet: pdfResult.full_text_snippet || null,
-                  word_count: pdfResult.word_count || 0,
-                  updated_at: new Date().toISOString(),
-                })
-                .eq('id', pub.id);
-
-              send('pub_done', {
-                index: i,
-                title: pub.title,
-                final_status: finalStatus,
-                sources_used: ['pdf'],
-                has_abstract: !!pdfResult.abstract,
-              });
             } else {
               send('source_done', { index: i, source: 'pdf', status: 'no_data' });
-              await supabase
-                .from('publications')
-                .update({ enrichment_status: 'failed', updated_at: new Date().toISOString() })
-                .eq('id', pub.id);
-              failed++;
-              send('pub_done', {
-                index: i,
-                title: pub.title,
-                final_status: 'failed',
-                sources_used: [],
-                has_abstract: false,
-              });
             }
           } catch (err) {
             send('source_done', {
@@ -179,35 +164,46 @@ export async function POST(req: NextRequest) {
               status: 'error',
               error: err instanceof Error ? err.message : 'Unknown error',
             });
-            await supabase
-              .from('publications')
-              .update({ enrichment_status: 'failed', updated_at: new Date().toISOString() })
-              .eq('id', pub.id);
-            failed++;
-            send('pub_done', {
-              index: i,
-              title: pub.title,
-              final_status: 'failed',
-              sources_used: [],
-              has_abstract: false,
-            });
           }
         } else {
-          // No DOI and no PDF URL — nothing we can do
           send('source_done', { index: i, source: 'pdf', status: 'skipped' });
-          await supabase
-            .from('publications')
-            .update({ enrichment_status: 'failed', updated_at: new Date().toISOString() })
-            .eq('id', pub.id);
-          failed++;
-          send('pub_done', {
-            index: i,
-            title: pub.title,
-            final_status: 'failed',
-            sources_used: [],
-            has_abstract: false,
-          });
         }
+
+        // Determine result
+        const hasAbstract = !!noDoi_abstract;
+        const hasAnyData = noDoi_sources.length > 0;
+        let finalStatus: 'enriched' | 'partial' | 'failed';
+        if (hasAbstract) {
+          finalStatus = 'enriched';
+          successful++;
+          withAbstract++;
+        } else if (hasAnyData) {
+          finalStatus = 'partial';
+          partial++;
+        } else {
+          finalStatus = 'failed';
+          failed++;
+        }
+
+        await supabase
+          .from('publications')
+          .update({
+            enrichment_status: finalStatus,
+            enriched_abstract: noDoi_abstract || null,
+            enriched_source: noDoi_sources.join('+') || null,
+            full_text_snippet: noDoi_snippet || null,
+            word_count: noDoi_wordCount,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', pub.id);
+
+        send('pub_done', {
+          index: i,
+          title: pub.title,
+          final_status: finalStatus,
+          sources_used: noDoi_sources,
+          has_abstract: hasAbstract,
+        });
 
         await new Promise(r => setTimeout(r, 100));
         continue;
@@ -216,14 +212,20 @@ export async function POST(req: NextRequest) {
       // ---------------------------------------------------------------
       // Publications WITH DOI: full cascade
       // CrossRef -> OpenAlex -> Unpaywall -> [PDF from pub.url] -> Semantic Scholar
+      // Pre-seed abstract from CSV if available (APIs still run for keywords/journal)
       // ---------------------------------------------------------------
-      let mergedAbstract: string | undefined;
+      let mergedAbstract: string | undefined = pub.abstract || undefined;
       let mergedKeywords: string[] = [];
       let mergedJournal: string | undefined;
       let mergedSnippet: string | undefined;
       let mergedWordCount = 0;
       const sourcesUsed: string[] = [];
       let apiPdfUrl: string | undefined; // Collected from API sources for fallback
+
+      if (hasCsvAbstract) {
+        sourcesUsed.push('csv');
+        sourceCounts['csv'] = (sourceCounts['csv'] || 0) + 1;
+      }
 
       // Phase 1: CrossRef, OpenAlex, Unpaywall
       for (const sourceName of PRE_PDF_SOURCES) {
