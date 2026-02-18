@@ -11,7 +11,7 @@ import { Download, ChevronLeft, ChevronRight, Brain, ArrowUp, ArrowDown } from '
 import { SCORE_LABELS, SCORE_COLORS } from '@/lib/constants';
 
 const SORT_OPTIONS = [
-  { value: 'press_score', label: 'Presserelevanz' },
+  { value: 'press_score', label: 'StoryScore' },
   { value: 'storytelling_potential', label: 'Erzählpotenzial' },
   { value: 'societal_relevance', label: 'Gesellschaftl. Relevanz' },
   { value: 'novelty_factor', label: 'Neuheit' },
@@ -80,7 +80,7 @@ export default function AnalysisPage() {
       .then(blob => {
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = `oeaw-presserelevanz.${format}`;
+        a.download = `storyscout-export.${format}`;
         a.click();
         URL.revokeObjectURL(a.href);
       });
@@ -90,7 +90,7 @@ export default function AnalysisPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Presserelevanz-Analyse</h1>
+          <h1 className="text-2xl font-bold">StoryScout Analyse</h1>
           <p className="text-neutral-500">{total} Publikationen analysiert</p>
         </div>
         <div className="flex gap-2">
@@ -140,7 +140,7 @@ export default function AnalysisPage() {
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <Brain className="h-4 w-4 text-[#0047bb]" />
-            Presserelevanz-Analyse starten
+            Analyse starten
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">

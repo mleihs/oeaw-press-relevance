@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
     return new Response(csv, {
       headers: {
         'Content-Type': 'text/csv; charset=utf-8',
-        'Content-Disposition': `attachment; filename="oeaw-press-relevance-${new Date().toISOString().slice(0, 10)}.csv"`,
+        'Content-Disposition': `attachment; filename="storyscout-${new Date().toISOString().slice(0, 10)}.csv"`,
       },
     });
   } catch (err) {

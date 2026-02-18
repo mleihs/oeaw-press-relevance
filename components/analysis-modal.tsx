@@ -370,9 +370,9 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
           <div className="flex items-center gap-3">
             <CapybaraAnalyst state={status} />
             <div className="flex-1 min-w-0">
-              <DialogTitle>Presserelevanz-Analyse</DialogTitle>
+              <DialogTitle>StoryScout Analyse</DialogTitle>
               <DialogDescription>
-                {status === 'idle' && 'Publikationen per LLM auf Presserelevanz bewerten.'}
+                {status === 'idle' && 'Publikationen per LLM auf Story-Potenzial bewerten.'}
                 {status === 'running' && `Analysiere ${progress.processed} / ${progress.total} Publikationen...`}
                 {status === 'complete' && 'Analyse abgeschlossen!'}
                 {status === 'error' && 'Fehler bei der Analyse.'}

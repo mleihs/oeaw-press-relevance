@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "OeAW Presserelevanz-Analyzer",
-  description: "Presserelevanz-Analyse für Publikationen der Österreichischen Akademie der Wissenschaften",
+  title: "StoryScout — ÖAW",
+  description: "StoryScout findet die besten Stories in Publikationen der Österreichischen Akademie der Wissenschaften",
 };
 
 export default function RootLayout({

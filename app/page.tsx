@@ -124,9 +124,9 @@ export default function DashboardPage() {
       <div className="flex items-center gap-5">
         <CapybaraLogo size="lg" />
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900">OeAW Presserelevanz-Analyzer</h1>
+          <h1 className="text-2xl font-bold text-neutral-900">StoryScout</h1>
           <p className="text-neutral-500 mt-1">
-            Finde die presserelevantesten Publikationen der Akademie der Wissenschaften
+            Finde die besten Stories in ÖAW-Publikationen
           </p>
         </div>
       </div>
@@ -157,7 +157,7 @@ export default function DashboardPage() {
           subtitle={stats?.total ? `${Math.round((stats.analyzed / stats.total) * 100)}%` : undefined}
         />
         <StatCard
-          title="Hohe Presserelevanz"
+          title="Hohes Story-Potenzial"
           value={stats?.high_score_count || 0}
           icon={TrendingUp}
           subtitle={stats?.avg_score !== null && stats?.avg_score !== undefined ? `Durchschnitt: ${Math.round(stats.avg_score * 100)}%` : undefined}
@@ -195,7 +195,7 @@ export default function DashboardPage() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
           <div>
-            <CardTitle className="text-base">Top 10 presserelevante Publikationen</CardTitle>
+            <CardTitle className="text-base">Top 10 Publikationen</CardTitle>
             <p className="text-xs text-neutral-500 mt-1">{getTimeRangeLabel(timePeriod)}</p>
           </div>
           <div className="flex rounded-lg border bg-neutral-50 p-0.5">
@@ -268,7 +268,7 @@ export default function DashboardPage() {
           <CardContent className="py-6">
             <CapybaraEmpty
               message="Noch keine Publikationen"
-              submessage="Laden Sie eine CSV-Datei hoch, um mit der Presserelevanz-Analyse zu starten."
+              submessage="Laden Sie eine CSV-Datei hoch, um mit StoryScout zu starten."
             />
             <div className="flex justify-center mt-4">
               <Button asChild>

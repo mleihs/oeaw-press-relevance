@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
     return new Response(JSON.stringify(data || [], null, 2), {
       headers: {
         'Content-Type': 'application/json',
-        'Content-Disposition': `attachment; filename="oeaw-press-relevance-${new Date().toISOString().slice(0, 10)}.json"`,
+        'Content-Disposition': `attachment; filename="storyscout-${new Date().toISOString().slice(0, 10)}.json"`,
       },
     });
   } catch (err) {

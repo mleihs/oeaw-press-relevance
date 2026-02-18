@@ -177,7 +177,7 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <Brain className="h-4 w-4 text-[#0047bb]" />
-              Presserelevanz-Analyse
+              StoryScout Analyse
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
@@ -193,9 +193,9 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
                 {pressScorePct}%
               </div>
               <div>
-                <p className="font-medium text-lg">Presserelevanz-Score</p>
+                <p className="font-medium text-lg">StoryScore</p>
                 <p className="text-sm text-neutral-500">
-                  {pressScorePct! >= 70 ? 'Hohe Presserelevanz' : pressScorePct! >= 50 ? 'Mittlere Presserelevanz' : 'Niedrige Presserelevanz'}
+                  {pressScorePct! >= 70 ? 'Hohes Story-Potenzial' : pressScorePct! >= 50 ? 'Mittleres Story-Potenzial' : 'Geringes Story-Potenzial'}
                 </p>
               </div>
             </div>

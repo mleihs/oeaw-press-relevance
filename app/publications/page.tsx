@@ -134,12 +134,12 @@ export default function PublicationsPage() {
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <Brain className="h-4 w-4 text-[#0047bb]" />
-              Presserelevanz analysieren
+              Story-Analyse
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-neutral-500">
-              LLM-Analyse zur Bewertung der Presserelevanz von Publikationen.
+              LLM-Analyse zur Bewertung des Story-Potenzials von Publikationen.
             </p>
             <Button onClick={() => setAnalysisModalOpen(true)} size="sm">
               Analyse starten
