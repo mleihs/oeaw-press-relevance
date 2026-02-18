@@ -8,7 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getApiHeaders } from '@/lib/settings-store';
 import { Slider } from '@/components/ui/slider';
-import { Download, ChevronLeft, ChevronRight, Brain, ArrowUp, ArrowDown } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Download, ChevronLeft, ChevronRight, Brain, ArrowUp, ArrowDown, ChevronDown } from 'lucide-react';
 import { SCORE_LABELS, SCORE_COLORS } from '@/lib/constants';
 
 const SORT_OPTIONS = [
@@ -76,6 +82,8 @@ export default function AnalysisPage() {
   }, [fetchData]);
 
   const totalPages = Math.ceil(total / pageSize);
+  const rangeStart = total > 0 ? (page - 1) * pageSize + 1 : 0;
+  const rangeEnd = Math.min(page * pageSize, total);
 
   const handleExport = (format: 'csv' | 'json') => {
     const headers = getApiHeaders();
@@ -93,21 +101,28 @@ export default function AnalysisPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">StoryScout Analyse</h1>
           <p className="text-neutral-500">{total} Publikationen analysiert</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => handleExport('csv')}>
-            <Download className="mr-2 h-4 w-4" />
-            CSV exportieren
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => handleExport('json')}>
-            <Download className="mr-2 h-4 w-4" />
-            JSON exportieren
-          </Button>
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm">
+              <Download className="mr-2 h-4 w-4" />
+              {total} Publikationen exportieren
+              <ChevronDown className="ml-2 h-3 w-3" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => handleExport('csv')}>
+              Als CSV exportieren
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleExport('json')}>
+              Als JSON exportieren
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Dimension averages */}
@@ -117,16 +132,16 @@ export default function AnalysisPage() {
             <CardTitle className="text-base">Durchschnittswerte (aktuelle Seite)</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-3 md:grid-cols-5">
+            <div className="grid gap-3 sm:grid-cols-5">
               {Object.entries(dimensionAverages).map(([dim, avg]) => (
                 <div key={dim} className="space-y-1">
                   <div className="flex justify-between text-xs">
                     <span className="text-neutral-500">{SCORE_LABELS[dim]}</span>
                     <span className="font-medium">{Math.round(avg * 100)}%</span>
                   </div>
-                  <div className="h-2 rounded-full bg-neutral-100 overflow-hidden">
+                  <div className="h-2 rounded-full bg-neutral-200 overflow-hidden">
                     <div
-                      className="h-full rounded-full"
+                      className="h-full rounded-full transition-all duration-300"
                       style={{
                         width: `${Math.round(avg * 100)}%`,
                         backgroundColor: SCORE_COLORS[dim],
@@ -211,15 +226,13 @@ export default function AnalysisPage() {
             value={[minScore]}
             onValueChange={([v]) => { setMinScore(v); setPage(1); }}
             min={0}
-            max={90}
+            max={100}
             step={5}
             className="[&_[role=slider]]:bg-[#0047bb] [&_[role=slider]]:border-[#0047bb] [&_span:first-child>span]:bg-[#0047bb]"
           />
           <div className="flex justify-between text-[10px] text-neutral-400">
             <span>0%</span>
-            <span>30%</span>
-            <span>60%</span>
-            <span>90%</span>
+            <span>100%</span>
           </div>
         </div>
       </div>
@@ -236,7 +249,9 @@ export default function AnalysisPage() {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
-          <p className="text-sm text-neutral-500">Seite {page} von {totalPages}</p>
+          <p className="text-sm text-neutral-500">
+            Zeige {rangeStart}–{rangeEnd} von {total.toLocaleString()} Publikationen
+          </p>
           <div className="flex gap-2">
             <Button
               variant="outline"

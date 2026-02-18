@@ -47,63 +47,139 @@ export function PublicationTable({ publications, showScores, showEnrichment, sor
     : 'p-3 text-left font-medium';
 
   return (
-    <div className="overflow-auto rounded-lg border">
-      <table className="w-full text-sm">
-        <thead className="bg-neutral-50">
-          <tr>
-            <th className="p-3 text-left font-medium w-8"></th>
-            <th className={headerClass} onClick={() => onSort?.('title')}>
-              <span className="inline-flex items-center gap-1">
-                Titel {sortable && <SortIcon column="title" sortBy={sortBy} sortOrder={sortOrder} />}
-              </span>
-            </th>
-            <th className={headerClass} onClick={() => onSort?.('authors')}>
-              <span className="inline-flex items-center gap-1">
-                Autoren {sortable && <SortIcon column="authors" sortBy={sortBy} sortOrder={sortOrder} />}
-              </span>
-            </th>
-            <th className={headerClass} onClick={() => onSort?.('publication_type')}>
-              <span className="inline-flex items-center gap-1">
-                Typ {sortable && <SortIcon column="publication_type" sortBy={sortBy} sortOrder={sortOrder} />}
-              </span>
-            </th>
-            <th className={headerClass} onClick={() => onSort?.('published_at')}>
-              <span className="inline-flex items-center gap-1">
-                Jahr {sortable && <SortIcon column="published_at" sortBy={sortBy} sortOrder={sortOrder} />}
-              </span>
-            </th>
-            {showEnrichment && (
-              <th className={headerClass} onClick={() => onSort?.('enrichment_status')}>
+    <>
+      {/* Desktop table — hidden below md */}
+      <div className="hidden md:block overflow-auto rounded-lg border">
+        <table className="w-full text-sm">
+          <thead className="bg-neutral-50">
+            <tr>
+              <th className="p-3 text-left font-medium w-8"></th>
+              <th className={headerClass} onClick={() => onSort?.('title')}>
                 <span className="inline-flex items-center gap-1">
-                  Enrichment {sortable && <SortIcon column="enrichment_status" sortBy={sortBy} sortOrder={sortOrder} />}
+                  Titel {sortable && <SortIcon column="title" sortBy={sortBy} sortOrder={sortOrder} />}
                 </span>
               </th>
-            )}
-            {showScores && (
-              <th className={headerClass} onClick={() => onSort?.('press_score')}>
+              <th className={headerClass} onClick={() => onSort?.('authors')}>
                 <span className="inline-flex items-center gap-1">
-                  Score {sortable && <SortIcon column="press_score" sortBy={sortBy} sortOrder={sortOrder} />}
+                  Autoren {sortable && <SortIcon column="authors" sortBy={sortBy} sortOrder={sortOrder} />}
                 </span>
               </th>
-            )}
-          </tr>
-        </thead>
-        <tbody>
-          {publications.map((pub) => (
-            <PublicationRow
-              key={pub.id}
-              pub={pub}
-              showScores={showScores}
-              showEnrichment={showEnrichment}
-              isExpanded={expandedId === pub.id}
-              onToggle={() => setExpandedId(expandedId === pub.id ? null : pub.id)}
-            />
-          ))}
-        </tbody>
-      </table>
-    </div>
+              <th className={headerClass} onClick={() => onSort?.('publication_type')}>
+                <span className="inline-flex items-center gap-1">
+                  Typ {sortable && <SortIcon column="publication_type" sortBy={sortBy} sortOrder={sortOrder} />}
+                </span>
+              </th>
+              <th className={headerClass} onClick={() => onSort?.('published_at')}>
+                <span className="inline-flex items-center gap-1">
+                  Jahr {sortable && <SortIcon column="published_at" sortBy={sortBy} sortOrder={sortOrder} />}
+                </span>
+              </th>
+              {showEnrichment && (
+                <th className={headerClass} onClick={() => onSort?.('enrichment_status')}>
+                  <span className="inline-flex items-center gap-1">
+                    Enrichment {sortable && <SortIcon column="enrichment_status" sortBy={sortBy} sortOrder={sortOrder} />}
+                  </span>
+                </th>
+              )}
+              {showScores && (
+                <th className={headerClass} onClick={() => onSort?.('press_score')}>
+                  <span className="inline-flex items-center gap-1">
+                    Score {sortable && <SortIcon column="press_score" sortBy={sortBy} sortOrder={sortOrder} />}
+                  </span>
+                </th>
+              )}
+            </tr>
+          </thead>
+          <tbody>
+            {publications.map((pub) => (
+              <PublicationRow
+                key={pub.id}
+                pub={pub}
+                showScores={showScores}
+                showEnrichment={showEnrichment}
+                isExpanded={expandedId === pub.id}
+                onToggle={() => setExpandedId(expandedId === pub.id ? null : pub.id)}
+              />
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Mobile card view — visible below md */}
+      <div className="md:hidden space-y-3">
+        {publications.map((pub) => (
+          <MobilePublicationCard
+            key={pub.id}
+            pub={pub}
+            showScores={showScores}
+            showEnrichment={showEnrichment}
+          />
+        ))}
+      </div>
+    </>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Mobile card
+// ---------------------------------------------------------------------------
+
+function MobilePublicationCard({
+  pub,
+  showScores,
+  showEnrichment,
+}: {
+  pub: Publication;
+  showScores?: boolean;
+  showEnrichment?: boolean;
+}) {
+  return (
+    <Link
+      href={`/publications/${pub.id}`}
+      className="block rounded-lg border bg-white p-4 hover:border-[#0047bb]/30 hover:shadow-sm transition-all"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <p className="font-medium text-sm leading-snug line-clamp-2">
+            {decodeHtmlTitle(pub.title)}
+          </p>
+          <p className="text-xs text-neutral-500 mt-1 truncate">
+            {pub.authors || 'Unbekannt'}
+          </p>
+        </div>
+        {showScores && (
+          <div className="shrink-0">
+            <PressScoreBadge score={pub.press_score} />
+          </div>
+        )}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-1.5 mt-2">
+        {pub.publication_type && (
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+            {pub.publication_type}
+          </Badge>
+        )}
+        {pub.published_at && (
+          <span className="text-[10px] text-neutral-400">{pub.published_at.slice(0, 4)}</span>
+        )}
+        {showEnrichment && (
+          <>
+            <StatusBadge status={pub.enrichment_status} />
+            {pub.enriched_source && <SourceBadges sources={pub.enriched_source} />}
+          </>
+        )}
+        {showScores && pub.analysis_status === 'analyzed' && pub.llm_model && (
+          <ModelBadge model={pub.llm_model} />
+        )}
+      </div>
+    </Link>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Desktop row
+// ---------------------------------------------------------------------------
 
 function PublicationRow({
   pub,

@@ -64,6 +64,8 @@ export interface EnrichmentResult {
   full_text_snippet?: string;
   word_count?: number;
   pdf_url?: string;
+  /** ISO 8601 date string (YYYY-MM-DD) extracted from source API */
+  published_at?: string;
 }
 
 export interface AnalysisResult {

@@ -452,9 +452,14 @@ export function EnrichmentModal({
 
   const pct = pubTotal > 0 ? Math.round(((pubIndex + 1) / pubTotal) * 100) : 0;
   const elapsed = Math.floor(elapsedMs / 1000);
-  const rate = elapsed > 0 && completed.length > 0
-    ? (completed.length / elapsed).toFixed(1)
-    : '0.0';
+  const rateNum = elapsed > 0 && completed.length > 0 ? completed.length / elapsed : 0;
+  const rate = rateNum.toFixed(1);
+  const remaining = pubTotal > 0 && rateNum > 0 ? Math.ceil((pubTotal - completed.length) / rateNum) : 0;
+  const etaText = remaining > 60
+    ? `~${Math.ceil(remaining / 60)} Min.`
+    : remaining > 0
+      ? `~${remaining} Sek.`
+      : '';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -472,9 +477,16 @@ export function EnrichmentModal({
               </DialogDescription>
             </div>
             {status === 'running' && (
-              <span className="text-xs text-neutral-400 tabular-nums shrink-0">
-                {Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2, '0')}
-              </span>
+              <div className="text-right shrink-0">
+                <span className="text-xs text-neutral-400 tabular-nums block">
+                  {Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2, '0')}
+                </span>
+                {etaText && (
+                  <span className="text-[10px] text-neutral-400 block">
+                    Restzeit: {etaText}
+                  </span>
+                )}
+              </div>
             )}
           </div>
         </DialogHeader>
@@ -514,7 +526,7 @@ export function EnrichmentModal({
                 />
               </div>
               <p className="text-xs text-neutral-400">
-                Die {config.limit} aktuellsten Publikationen werden enriched, die noch keine Metadaten haben.
+                Die {config.limit} neuesten Publikationen (nach Veröffentlichungsdatum) werden enriched, die noch keine Metadaten haben.
               </p>
             </div>
 

@@ -16,9 +16,16 @@ export function ScoreBar({ dimension, value, compact }: ScoreBarProps) {
   if (compact) {
     return (
       <div className="flex items-center gap-1.5">
-        <div className="h-2 w-16 rounded-full bg-neutral-100 overflow-hidden">
+        <div
+          className="h-2 w-16 rounded-full bg-neutral-200 overflow-hidden"
+          role="progressbar"
+          aria-valuenow={pct}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label={`${label}: ${pct}%`}
+        >
           <div
-            className="h-full rounded-full transition-all"
+            className="h-full rounded-full transition-all duration-300"
             style={{ width: `${pct}%`, backgroundColor: color }}
           />
         </div>
@@ -33,9 +40,16 @@ export function ScoreBar({ dimension, value, compact }: ScoreBarProps) {
         <span className="text-neutral-600">{label}</span>
         <span className="font-medium">{pct}%</span>
       </div>
-      <div className="h-2.5 w-full rounded-full bg-neutral-100 overflow-hidden">
+      <div
+        className="h-2.5 w-full rounded-full bg-neutral-200 overflow-hidden"
+        role="progressbar"
+        aria-valuenow={pct}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label={`${label}: ${pct}%`}
+      >
         <div
-          className="h-full rounded-full transition-all"
+          className="h-full rounded-full transition-all duration-300"
           style={{ width: `${pct}%`, backgroundColor: color }}
         />
       </div>
@@ -57,7 +71,10 @@ export function PressScoreBadge({ score }: PressScoreBadgeProps) {
   else if (pct >= 30) bgColor = 'bg-orange-100 text-orange-800';
 
   return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold ${bgColor}`}>
+    <span
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold ${bgColor}`}
+      aria-label={`StoryScore: ${pct}%`}
+    >
       {pct}%
     </span>
   );

@@ -1,7 +1,8 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import { Upload, FileText, AlertCircle, CheckCircle2 } from 'lucide-react';
+import Link from 'next/link';
+import { Upload, FileText, AlertCircle, CheckCircle2, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -225,14 +226,22 @@ export function CsvUploadZone() {
 
             {/* Import result */}
             {importResult && (
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-green-500" />
-                <span className="text-sm">
-                  <strong>{importResult.inserted}</strong> Publikationen importiert
-                  {importResult.errors > 0 && (
-                    <>, <strong className="text-red-600">{importResult.errors}</strong> Fehler</>
-                  )}
-                </span>
+              <div className="rounded-lg border border-green-200 bg-green-50 p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                  <span className="text-sm font-medium text-green-800">
+                    {importResult.inserted} Publikationen erfolgreich importiert
+                    {importResult.errors > 0 && (
+                      <span className="text-red-600 font-normal"> ({importResult.errors} Fehler)</span>
+                    )}
+                  </span>
+                </div>
+                <Button asChild size="sm" variant="outline">
+                  <Link href="/publications">
+                    Zu den Publikationen
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
               </div>
             )}
           </CardContent>

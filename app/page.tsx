@@ -47,6 +47,7 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('all');
   const [topLoading, setTopLoading] = useState(false);
+  const [scoreDistribution, setScoreDistribution] = useState<number[]>([]);
 
   useEffect(() => {
     async function loadStats() {
@@ -56,6 +57,21 @@ export default function DashboardPage() {
         if (!statsRes.ok) throw new Error('Statistiken konnten nicht geladen werden');
         const statsData = await statsRes.json();
         setStats(statsData);
+
+        // Load score distribution
+        const distRes = await fetch('/api/publications?analysis_status=analyzed&pageSize=2000&sort=press_score&order=asc', { headers });
+        if (distRes.ok) {
+          const distData = await distRes.json();
+          const pubs = (distData.publications || []) as Publication[];
+          const buckets = new Array(10).fill(0);
+          for (const p of pubs) {
+            if (p.press_score !== null) {
+              const idx = Math.min(9, Math.floor(p.press_score * 10));
+              buckets[idx]++;
+            }
+          }
+          setScoreDistribution(buckets);
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Dashboard konnte nicht geladen werden');
       } finally {
@@ -199,14 +215,28 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
 
+      {/* Score distribution chart */}
+      {scoreDistribution.some(v => v > 0) && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">StoryScore-Verteilung</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ScoreDistributionChart buckets={scoreDistribution} />
+          </CardContent>
+        </Card>
+      )}
+
       {/* Top publications with time filter */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
           <div>
-            <CardTitle className="text-base">Top 10 Publikationen</CardTitle>
+            <CardTitle className="text-base">Top 10 Publikationen (nach StoryScore)</CardTitle>
             <p className="text-xs text-neutral-500 mt-1">{getTimeRangeLabel(timePeriod)}</p>
           </div>
-          <div className="flex rounded-lg border bg-neutral-50 p-0.5">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-neutral-500 hidden sm:block">Zeitraum:</span>
+            <div className="flex rounded-lg border bg-neutral-50 p-0.5">
             {TIME_TABS.map((tab) => (
               <button
                 key={tab.value}
@@ -220,6 +250,7 @@ export default function DashboardPage() {
                 {tab.label}
               </button>
             ))}
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -314,5 +345,42 @@ function StatCard({
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+const BUCKET_LABELS = ['0-9%', '10-19%', '20-29%', '30-39%', '40-49%', '50-59%', '60-69%', '70-79%', '80-89%', '90-100%'];
+const BUCKET_COLORS = [
+  'bg-neutral-300', 'bg-neutral-300', 'bg-neutral-400',
+  'bg-orange-300', 'bg-orange-400',
+  'bg-amber-400', 'bg-amber-500',
+  'bg-[#0047bb]/60', 'bg-[#0047bb]/80', 'bg-[#0047bb]',
+];
+
+function ScoreDistributionChart({ buckets }: { buckets: number[] }) {
+  const max = Math.max(...buckets, 1);
+
+  return (
+    <div className="space-y-1">
+      <div className="flex items-end gap-1 h-32">
+        {buckets.map((count, i) => (
+          <div key={i} className="flex-1 flex flex-col items-center justify-end h-full">
+            {count > 0 && (
+              <span className="text-[10px] text-neutral-500 mb-0.5">{count}</span>
+            )}
+            <div
+              className={`w-full rounded-t ${BUCKET_COLORS[i]} transition-all duration-300`}
+              style={{ height: `${Math.max(count > 0 ? 4 : 0, (count / max) * 100)}%` }}
+            />
+          </div>
+        ))}
+      </div>
+      <div className="flex gap-1">
+        {BUCKET_LABELS.map((label, i) => (
+          <div key={i} className="flex-1 text-center text-[9px] text-neutral-400">
+            {label}
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }

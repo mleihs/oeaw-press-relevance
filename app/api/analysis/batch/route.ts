@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
   let query = supabase
     .from('publications')
     .select('*')
-    .order('created_at', { ascending: false })
+    .order('published_at', { ascending: false, nullsFirst: false })
     .limit(limit);
 
   if (!forceReanalyze) {

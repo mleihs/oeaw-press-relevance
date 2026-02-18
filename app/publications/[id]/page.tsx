@@ -12,7 +12,7 @@ import { CapybaraLogo } from '@/components/capybara-logo';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, ExternalLink, FileText, BookOpen, Brain } from 'lucide-react';
+import { ExternalLink, FileText, Brain, ChevronRight } from 'lucide-react';
 
 const SOURCE_LABELS: Record<string, string> = {
   crossref: 'CrossRef',
@@ -85,10 +85,7 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
   if (error || !pub) {
     return (
       <div className="max-w-4xl mx-auto space-y-4">
-        <Button variant="ghost" size="sm" onClick={() => router.back()}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Zurück
-        </Button>
+        <Breadcrumb />
         <Card className="border-red-200">
           <CardContent className="p-6 text-center">
             <p className="text-red-600 font-medium">{error || 'Publikation nicht gefunden'}</p>
@@ -104,11 +101,8 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      {/* Back button */}
-      <Button variant="ghost" size="sm" onClick={() => router.back()}>
-        <ArrowLeft className="mr-2 h-4 w-4" />
-        Zurück
-      </Button>
+      {/* Breadcrumb */}
+      <Breadcrumb title={decodeHtmlTitle(pub.title)} />
 
       {/* Header */}
       <div className="space-y-3">
@@ -168,7 +162,27 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
         </div>
       </div>
 
-      {/* Analysis card — prominently displayed if available */}
+      {/* Pitch — shown prominently above score breakdown if available */}
+      {hasAnalysis && pub.pitch_suggestion && (
+        <Card className="border-[#0047bb]/20 bg-[#0047bb]/[0.02]">
+          <CardContent className="p-5">
+            <h3 className="text-xs font-medium text-[#0047bb] uppercase mb-2">Pitch-Vorschlag</h3>
+            <p className="text-sm leading-relaxed">{pub.pitch_suggestion}</p>
+            {pub.suggested_angle && (
+              <p className="text-sm text-neutral-600 mt-3">
+                <span className="font-medium text-neutral-500">Blickwinkel:</span> {pub.suggested_angle}
+              </p>
+            )}
+            {pub.target_audience && (
+              <p className="text-sm text-neutral-600 mt-1">
+                <span className="font-medium text-neutral-500">Zielgruppe:</span> {pub.target_audience}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Analysis card */}
       {hasAnalysis && (
         <Card className="border-[#0047bb]/20">
           <CardHeader className="pb-3">
@@ -204,30 +218,6 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
               <ScoreBar dimension="novelty_factor" value={pub.novelty_factor} />
               <ScoreBar dimension="storytelling_potential" value={pub.storytelling_potential} />
               <ScoreBar dimension="media_timeliness" value={pub.media_timeliness} />
-            </div>
-
-            {/* Pitch */}
-            {pub.pitch_suggestion && (
-              <div className="rounded-lg bg-[#0047bb]/5 border border-[#0047bb]/10 p-4">
-                <h4 className="text-xs font-medium text-[#0047bb] uppercase mb-2">Pitch</h4>
-                <p className="text-sm leading-relaxed">{pub.pitch_suggestion}</p>
-              </div>
-            )}
-
-            {/* Angle & audience */}
-            <div className="grid gap-4 md:grid-cols-2">
-              {pub.suggested_angle && (
-                <div>
-                  <h4 className="text-xs font-medium text-neutral-500 uppercase mb-1">Empfohlener Blickwinkel</h4>
-                  <p className="text-sm">{pub.suggested_angle}</p>
-                </div>
-              )}
-              {pub.target_audience && (
-                <div>
-                  <h4 className="text-xs font-medium text-neutral-500 uppercase mb-1">Zielgruppe</h4>
-                  <p className="text-sm">{pub.target_audience}</p>
-                </div>
-              )}
             </div>
 
             {/* Reasoning */}
@@ -316,6 +306,22 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function Breadcrumb({ title }: { title?: string }) {
+  return (
+    <nav className="flex items-center gap-1.5 text-sm text-neutral-500">
+      <Link href="/publications" className="hover:text-[#0047bb] transition-colors">
+        Publikationen
+      </Link>
+      {title && (
+        <>
+          <ChevronRight className="h-3.5 w-3.5 text-neutral-400" />
+          <span className="text-neutral-700 truncate max-w-[300px]">{title}</span>
+        </>
+      )}
+    </nav>
   );
 }
 

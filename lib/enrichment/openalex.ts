@@ -81,6 +81,14 @@ export async function enrichFromOpenAlex(rawDoi: string): Promise<EnrichmentResu
     ? `${snippet}\n\nOpen access PDF: ${pdfUrl}`
     : snippet;
 
+  // Extract publication date — prefer full date, fallback to year
+  let publishedAt: string | undefined;
+  if (data.publication_date && /^\d{4}-\d{2}-\d{2}$/.test(data.publication_date)) {
+    publishedAt = data.publication_date;
+  } else if (data.publication_year) {
+    publishedAt = `${data.publication_year}-01-01`;
+  }
+
   if (!abstract && !journal && keywords.length === 0) return null;
 
   return {
@@ -91,5 +99,6 @@ export async function enrichFromOpenAlex(rawDoi: string): Promise<EnrichmentResu
     pdf_url: pdfUrl,
     full_text_snippet: fullSnippet || undefined,
     word_count: snippet ? snippet.split(/\s+/).length : 0,
+    published_at: publishedAt,
   };
 }

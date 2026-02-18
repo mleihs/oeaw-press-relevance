@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     .select('*')
     .not('doi', 'is', null)
     .in('enrichment_status', statusFilter)
-    .order('created_at', { ascending: false })
+    .order('published_at', { ascending: false, nullsFirst: false })
     .limit(limit);
 
   const { data: doiPubs, error: doiError } = await doiQuery;
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
         .is('doi', null)
         .or('url.like.%.pdf,abstract.not.is.null')
         .in('enrichment_status', statusFilter)
-        .order('created_at', { ascending: false })
+        .order('published_at', { ascending: false, nullsFirst: false })
         .limit(remaining);
 
       if (error) {
@@ -219,6 +219,7 @@ export async function POST(req: NextRequest) {
       let mergedJournal: string | undefined;
       let mergedSnippet: string | undefined;
       let mergedWordCount = 0;
+      let mergedPublishedAt: string | undefined; // Only fill if pub.published_at is empty
       const sourcesUsed: string[] = [];
       let apiPdfUrl: string | undefined; // Collected from API sources for fallback
 
@@ -259,6 +260,9 @@ export async function POST(req: NextRequest) {
             }
             if (result.word_count && result.word_count > mergedWordCount) {
               mergedWordCount = result.word_count;
+            }
+            if (!mergedPublishedAt && result.published_at) {
+              mergedPublishedAt = result.published_at;
             }
 
             send('source_done', {
@@ -356,6 +360,9 @@ export async function POST(req: NextRequest) {
             if (result.word_count && result.word_count > mergedWordCount) {
               mergedWordCount = result.word_count;
             }
+            if (!mergedPublishedAt && result.published_at) {
+              mergedPublishedAt = result.published_at;
+            }
 
             send('source_done', {
               index: i,
@@ -447,18 +454,25 @@ export async function POST(req: NextRequest) {
       // Persist to database
       const enrichedSource = sourcesUsed.join('+') || null;
 
+      const updatePayload: Record<string, unknown> = {
+        enrichment_status: finalStatus,
+        enriched_abstract: mergedAbstract || null,
+        enriched_keywords: mergedKeywords.length > 0 ? mergedKeywords.slice(0, 20) : null,
+        enriched_journal: mergedJournal || null,
+        enriched_source: enrichedSource,
+        full_text_snippet: mergedSnippet || null,
+        word_count: mergedWordCount,
+        updated_at: new Date().toISOString(),
+      };
+
+      // Fill published_at only if currently empty and we found a date
+      if (!pub.published_at && mergedPublishedAt) {
+        updatePayload.published_at = mergedPublishedAt;
+      }
+
       await supabase
         .from('publications')
-        .update({
-          enrichment_status: finalStatus,
-          enriched_abstract: mergedAbstract || null,
-          enriched_keywords: mergedKeywords.length > 0 ? mergedKeywords.slice(0, 20) : null,
-          enriched_journal: mergedJournal || null,
-          enriched_source: enrichedSource,
-          full_text_snippet: mergedSnippet || null,
-          word_count: mergedWordCount,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updatePayload)
         .eq('id', pub.id);
 
       send('pub_done', {
@@ -467,6 +481,7 @@ export async function POST(req: NextRequest) {
         final_status: finalStatus,
         sources_used: sourcesUsed,
         has_abstract: hasAbstract,
+        date_filled: !pub.published_at && !!mergedPublishedAt,
       });
 
       // Small gap between publications

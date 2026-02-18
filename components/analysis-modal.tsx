@@ -356,6 +356,13 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
 
   const pct = progress.total > 0 ? Math.round((progress.processed / progress.total) * 100) : 0;
   const elapsed = Math.floor(elapsedMs / 1000);
+  const analysisRate = elapsed > 0 && progress.processed > 0 ? progress.processed / elapsed : 0;
+  const analysisRemaining = progress.total > 0 && analysisRate > 0 ? Math.ceil((progress.total - progress.processed) / analysisRate) : 0;
+  const analysisEta = analysisRemaining > 60
+    ? `~${Math.ceil(analysisRemaining / 60)} Min.`
+    : analysisRemaining > 0
+      ? `~${analysisRemaining} Sek.`
+      : '';
 
   // Cost estimate based on selected model
   const selectedModel = LLM_MODELS.find(m => m.value === config.model);
@@ -379,9 +386,16 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
               </DialogDescription>
             </div>
             {status === 'running' && (
-              <span className="text-xs text-neutral-400 tabular-nums shrink-0">
-                {Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2, '0')}
-              </span>
+              <div className="text-right shrink-0">
+                <span className="text-xs text-neutral-400 tabular-nums block">
+                  {Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2, '0')}
+                </span>
+                {analysisEta && (
+                  <span className="text-[10px] text-neutral-400 block">
+                    Restzeit: {analysisEta}
+                  </span>
+                )}
+              </div>
             )}
           </div>
         </DialogHeader>
@@ -490,7 +504,7 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
                 />
               </div>
               <p className="text-xs text-neutral-400">
-                Die {config.limit} aktuellsten Publikationen werden analysiert, die noch nicht bewertet wurden.
+                Die {config.limit} neuesten Publikationen (nach Veröffentlichungsdatum) werden analysiert, die noch nicht bewertet wurden.
                 {config.forceReanalyze && ' (Force: bereits bewertete werden erneut analysiert.)'}
               </p>
             </div>

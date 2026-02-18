@@ -5,7 +5,7 @@ export async function enrichFromSemanticScholar(rawDoi: string): Promise<Enrichm
   const doi = cleanDoi(rawDoi);
   if (!doi) return null;
 
-  const fields = 'title,abstract,authors,year,openAccessPdf,citationCount,venue,tldr';
+  const fields = 'title,abstract,authors,year,publicationDate,openAccessPdf,citationCount,venue,tldr';
   const url = `https://api.semanticscholar.org/graph/v1/paper/DOI:${encodeURIComponent(doi)}?fields=${fields}`;
 
   const response = await fetch(url, {
@@ -29,6 +29,14 @@ export async function enrichFromSemanticScholar(rawDoi: string): Promise<Enrichm
     ? `${snippet}\n\nOpen access PDF: ${pdfUrl}`
     : snippet;
 
+  // Extract publication date — prefer full date, fallback to year
+  let publishedAt: string | undefined;
+  if (data.publicationDate && /^\d{4}-\d{2}-\d{2}$/.test(data.publicationDate)) {
+    publishedAt = data.publicationDate;
+  } else if (data.year) {
+    publishedAt = `${data.year}-01-01`;
+  }
+
   return {
     abstract,
     journal,
@@ -36,5 +44,6 @@ export async function enrichFromSemanticScholar(rawDoi: string): Promise<Enrichm
     pdf_url: pdfUrl,
     full_text_snippet: fullSnippet || undefined,
     word_count: snippet ? snippet.split(/\s+/).length : 0,
+    published_at: publishedAt,
   };
 }
