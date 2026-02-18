@@ -26,6 +26,16 @@ export async function GET(req: NextRequest) {
         .select('*', { count: 'exact', head: true })
         .eq('enrichment_status', 'enriched');
 
+      const { count: partialCount } = await supabase
+        .from('publications')
+        .select('*', { count: 'exact', head: true })
+        .eq('enrichment_status', 'partial');
+
+      const { count: withAbstractCount } = await supabase
+        .from('publications')
+        .select('*', { count: 'exact', head: true })
+        .not('enriched_abstract', 'is', null);
+
       const { count: analyzed } = await supabase
         .from('publications')
         .select('*', { count: 'exact', head: true })
@@ -48,6 +58,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({
         total: total || 0,
         enriched: enriched || 0,
+        partial: partialCount || 0,
+        with_abstract: withAbstractCount || 0,
         analyzed: analyzed || 0,
         avg_score: avgScore,
         high_score_count: highScoreCount,

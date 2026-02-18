@@ -3,9 +3,11 @@
 import { useState } from 'react';
 import { Publication } from '@/lib/types';
 import { doiToUrl } from '@/lib/enrichment/doi-utils';
+import { decodeHtmlTitle } from '@/lib/html-utils';
 import { PressScoreBadge, ScoreBar } from './score-bar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { LLM_MODELS } from '@/lib/constants';
 import { ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
 
 interface PublicationTableProps {
@@ -129,7 +131,7 @@ function PublicationRow({
           </Button>
         </td>
         <td className="p-3 max-w-sm">
-          <div className="font-medium truncate">{pub.title}</div>
+          <div className="font-medium truncate">{decodeHtmlTitle(pub.title)}</div>
           {pub.institute && (
             <div className="text-xs text-neutral-500 truncate">{pub.institute}</div>
           )}
@@ -153,7 +155,12 @@ function PublicationRow({
         )}
         {showScores && (
           <td className="p-3">
-            <PressScoreBadge score={pub.press_score} />
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <PressScoreBadge score={pub.press_score} />
+              {pub.analysis_status === 'analyzed' && pub.llm_model && (
+                <ModelBadge model={pub.llm_model} />
+              )}
+            </div>
           </td>
         )}
       </tr>
@@ -199,6 +206,30 @@ const SOURCE_COLOR: Record<string, string> = {
   semantic_scholar: 'bg-orange-100 text-orange-700',
   pdf: 'bg-rose-100 text-rose-700',
 };
+
+const MODEL_SHORT: Record<string, string> = Object.fromEntries(
+  LLM_MODELS.map(m => {
+    // Extract short name: "DeepSeek Chat" -> "DeepSeek", "Claude Sonnet 4" -> "Sonnet 4"
+    const short = m.label
+      .replace('Claude ', '')
+      .replace(' (Free)', '')
+      .replace('GPT-', 'GPT-');
+    return [m.value, short];
+  })
+);
+
+function ModelBadge({ model }: { model: string | null }) {
+  if (!model) return null;
+  const short = MODEL_SHORT[model] || model.split('/').pop() || model;
+  return (
+    <span
+      title={model}
+      className="inline-flex items-center rounded px-1 py-0.5 text-[10px] font-medium leading-none bg-indigo-50 text-indigo-600"
+    >
+      {short}
+    </span>
+  );
+}
 
 function SourceBadges({ sources }: { sources: string }) {
   return (

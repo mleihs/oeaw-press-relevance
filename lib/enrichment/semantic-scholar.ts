@@ -1,11 +1,12 @@
 import { EnrichmentResult } from '../types';
+import { cleanDoi } from './doi-utils';
 
-export async function enrichFromSemanticScholar(doi: string): Promise<EnrichmentResult | null> {
-  const cleanDoi = doi.replace(/^https?:\/\/doi\.org\//, '').trim();
-  if (!cleanDoi) return null;
+export async function enrichFromSemanticScholar(rawDoi: string): Promise<EnrichmentResult | null> {
+  const doi = cleanDoi(rawDoi);
+  if (!doi) return null;
 
   const fields = 'title,abstract,authors,year,openAccessPdf,citationCount,venue,tldr';
-  const url = `https://api.semanticscholar.org/graph/v1/paper/DOI:${encodeURIComponent(cleanDoi)}?fields=${fields}`;
+  const url = `https://api.semanticscholar.org/graph/v1/paper/DOI:${encodeURIComponent(doi)}?fields=${fields}`;
 
   const response = await fetch(url, {
     headers: {
@@ -32,6 +33,7 @@ export async function enrichFromSemanticScholar(doi: string): Promise<Enrichment
     abstract,
     journal,
     source: 'semantic_scholar',
+    pdf_url: pdfUrl,
     full_text_snippet: fullSnippet || undefined,
     word_count: snippet ? snippet.split(/\s+/).length : 0,
   };

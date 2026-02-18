@@ -8,6 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { parseCsvFile, deduplicatePublications, ParseResult } from '@/lib/csv-parser';
 import { PublicationInsert } from '@/lib/types';
 import { getApiHeaders } from '@/lib/settings-store';
+import { decodeHtmlTitle } from '@/lib/html-utils';
 import { getSupabaseClient } from '@/lib/supabase';
 import { loadSettings } from '@/lib/settings-store';
 
@@ -192,7 +193,7 @@ export function CsvUploadZone() {
                 <tbody>
                   {parseResult.publications.slice(0, 20).map((pub, i) => (
                     <tr key={i} className="border-t">
-                      <td className="p-2 max-w-xs truncate">{pub.title}</td>
+                      <td className="p-2 max-w-xs truncate">{decodeHtmlTitle(pub.title)}</td>
                       <td className="p-2 max-w-[120px] truncate">{pub.authors || '-'}</td>
                       <td className="p-2 whitespace-nowrap">{pub.publication_type || '-'}</td>
                       <td className="p-2 whitespace-nowrap">

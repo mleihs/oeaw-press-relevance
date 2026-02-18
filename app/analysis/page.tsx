@@ -3,11 +3,11 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Publication } from '@/lib/types';
 import { PublicationTable } from '@/components/publication-table';
-import { SSEProgress } from '@/components/sse-progress';
+import { AnalysisModal } from '@/components/analysis-modal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { getApiHeaders, loadSettings } from '@/lib/settings-store';
-import { Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import { getApiHeaders } from '@/lib/settings-store';
+import { Download, ChevronLeft, ChevronRight, Brain } from 'lucide-react';
 import { SCORE_LABELS, SCORE_COLORS } from '@/lib/constants';
 
 export default function AnalysisPage() {
@@ -17,6 +17,7 @@ export default function AnalysisPage() {
   const [sortBy, setSortBy] = useState('press_score');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [loading, setLoading] = useState(true);
+  const [analysisModalOpen, setAnalysisModalOpen] = useState(false);
   const [dimensionAverages, setDimensionAverages] = useState<Record<string, number>>({});
   const pageSize = 20;
 
@@ -61,7 +62,6 @@ export default function AnalysisPage() {
   }, [fetchData]);
 
   const totalPages = Math.ceil(total / pageSize);
-  const settings = loadSettings();
 
   const handleExport = (format: 'csv' | 'json') => {
     const headers = getApiHeaders();
@@ -139,15 +139,26 @@ export default function AnalysisPage() {
       )}
 
       {/* Run analysis */}
-      <SSEProgress
-        title="Run Press Relevance Analysis"
-        description={`Analyze pending publications using ${settings.llmModel} via OpenRouter.`}
-        endpoint="/api/analysis/batch"
-        requestBody={{
-          limit: 20,
-          batchSize: settings.batchSize,
-          minWordCount: settings.minWordCount,
-        }}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Brain className="h-4 w-4" />
+            Run Press Relevance Analysis
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-neutral-500">
+            Analyze pending publications using LLM via OpenRouter.
+          </p>
+          <Button onClick={() => setAnalysisModalOpen(true)} size="sm">
+            Start Analysis
+          </Button>
+        </CardContent>
+      </Card>
+
+      <AnalysisModal
+        open={analysisModalOpen}
+        onOpenChange={setAnalysisModalOpen}
         onComplete={fetchData}
       />
 

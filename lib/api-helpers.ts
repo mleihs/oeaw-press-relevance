@@ -11,7 +11,8 @@ export function getSupabaseFromRequest(req: NextRequest) {
 }
 
 export function getOpenRouterKey(req: NextRequest): string {
-  const key = req.headers.get('x-openrouter-key') || process.env.OPENROUTER_API_KEY || '';
+  // Env variable takes priority — it's the canonical key from the main app
+  const key = process.env.OPENROUTER_API_KEY || req.headers.get('x-openrouter-key') || '';
   if (!key) {
     throw new Error('OpenRouter API key not configured');
   }

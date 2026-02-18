@@ -80,9 +80,15 @@ export default function DashboardPage() {
         />
         <StatCard
           title="Enriched"
-          value={stats?.enriched || 0}
+          value={(stats?.enriched || 0) + (stats?.partial || 0)}
           icon={Sparkles}
-          subtitle={stats?.total ? `${Math.round((stats.enriched / stats.total) * 100)}%` : undefined}
+          subtitle={
+            stats?.with_abstract
+              ? `${stats.with_abstract} with abstract${stats.partial ? ` | ${stats.partial} partial` : ''}`
+              : stats?.total
+                ? `${Math.round(((stats.enriched + (stats.partial || 0)) / stats.total) * 100)}%`
+                : undefined
+          }
         />
         <StatCard
           title="Analyzed"

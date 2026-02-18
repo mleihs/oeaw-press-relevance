@@ -119,7 +119,9 @@ export default function SettingsPage() {
               className="w-full rounded-md border px-3 py-2 text-sm"
             >
               {LLM_MODELS.map(m => (
-                <option key={m.value} value={m.value}>{m.label}</option>
+                <option key={m.value} value={m.value}>
+                  {m.label} ({m.costPerMillionTokens === 0 ? 'gratis' : `$${m.costPerMillionTokens}/M tokens`})
+                </option>
               ))}
             </select>
           </div>

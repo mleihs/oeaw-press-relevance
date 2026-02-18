@@ -154,7 +154,7 @@ export interface AppSettings {
 
 export const DEFAULT_SETTINGS: AppSettings = {
   openrouterApiKey: '',
-  llmModel: 'anthropic/claude-sonnet-4',
+  llmModel: 'deepseek/deepseek-chat',
   minWordCount: 100,
   batchSize: 3,
   supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL || '',

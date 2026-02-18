@@ -12,6 +12,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { getApiHeaders } from '@/lib/settings-store';
 import { Play, Square, RotateCcw } from 'lucide-react';
 import type {
@@ -45,6 +47,12 @@ interface CompletedPub {
   finalStatus: 'enriched' | 'partial' | 'failed';
   sourcesUsed: string[];
   hasAbstract: boolean;
+}
+
+interface EnrichmentConfig {
+  limit: number;
+  includePartial: boolean;
+  includeNoDoi: boolean;
 }
 
 type ModalStatus = 'idle' | 'running' | 'complete' | 'error';
@@ -198,20 +206,19 @@ interface EnrichmentModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onComplete?: () => void;
-  includePartial?: boolean;
-  includeNoDoi?: boolean;
-  limit?: number;
 }
 
 export function EnrichmentModal({
   open,
   onOpenChange,
   onComplete,
-  includePartial = false,
-  includeNoDoi = false,
-  limit = 500,
 }: EnrichmentModalProps) {
   const [status, setStatus] = useState<ModalStatus>('idle');
+  const [config, setConfig] = useState<EnrichmentConfig>({
+    limit: 500,
+    includePartial: false,
+    includeNoDoi: false,
+  });
   const [currentPub, setCurrentPub] = useState<PubProgress | null>(null);
   const [completed, setCompleted] = useState<CompletedPub[]>([]);
   const [pubIndex, setPubIndex] = useState(0);
@@ -270,9 +277,16 @@ export function EnrichmentModal({
   }, []);
 
   const startEnrichment = useCallback(async () => {
-    reset();
     setStatus('running');
+    setCurrentPub(null);
+    setCompleted([]);
+    setPubIndex(0);
+    setPubTotal(0);
+    setElapsedMs(0);
     setCapybaraState('working');
+    setSourceCounts({});
+    setFinalStats(null);
+    setErrorMessage(null);
 
     const controller = new AbortController();
     abortRef.current = controller;
@@ -281,7 +295,11 @@ export function EnrichmentModal({
       const response = await fetch('/api/enrichment/batch', {
         method: 'POST',
         headers: getApiHeaders(),
-        body: JSON.stringify({ limit, include_partial: includePartial, include_no_doi: includeNoDoi }),
+        body: JSON.stringify({
+          limit: config.limit,
+          include_partial: config.includePartial,
+          include_no_doi: config.includeNoDoi,
+        }),
         signal: controller.signal,
       });
 
@@ -343,7 +361,7 @@ export function EnrichmentModal({
       setErrorMessage(err instanceof Error ? err.message : 'Connection failed');
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [limit, includePartial, includeNoDoi, reset]);
+  }, [config, reset]);
 
   const handleSSEEvent = useCallback((eventType: string, data: Record<string, unknown>) => {
     switch (eventType) {
@@ -460,6 +478,71 @@ export function EnrichmentModal({
             )}
           </div>
         </DialogHeader>
+
+        {/* Configuration (idle state) */}
+        {status === 'idle' && (
+          <div className="space-y-4">
+            {/* Sources info */}
+            <div className="rounded-lg border bg-neutral-50/50 p-3">
+              <p className="text-sm text-neutral-600">
+                Quellen: CrossRef, OpenAlex, Unpaywall, Semantic Scholar, PDF Extract
+              </p>
+            </div>
+
+            {/* Limit */}
+            <div className="space-y-1.5">
+              <Label htmlFor="enrich-limit" className="text-sm">
+                Publikationen zum Enrichen
+              </Label>
+              <div className="flex items-center gap-3">
+                <Input
+                  id="enrich-limit"
+                  type="number"
+                  min={1}
+                  max={1000}
+                  value={config.limit}
+                  onChange={(e) => setConfig(c => ({ ...c, limit: Math.min(1000, Math.max(1, parseInt(e.target.value) || 1)) }))}
+                  className="w-24"
+                />
+                <input
+                  type="range"
+                  min={1}
+                  max={1000}
+                  value={config.limit}
+                  onChange={(e) => setConfig(c => ({ ...c, limit: parseInt(e.target.value) }))}
+                  className="flex-1"
+                />
+              </div>
+              <p className="text-xs text-neutral-400">
+                Die {config.limit} aktuellsten Publikationen werden enriched, die noch keine Metadaten haben.
+              </p>
+            </div>
+
+            {/* Checkboxes */}
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={config.includePartial}
+                  onChange={(e) => setConfig(c => ({ ...c, includePartial: e.target.checked }))}
+                  className="rounded border-neutral-300"
+                />
+                <span>Re-enrich partial</span>
+                <span className="text-neutral-400 text-xs">(teilweise enriched erneut verarbeiten)</span>
+              </label>
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={config.includeNoDoi}
+                  onChange={(e) => setConfig(c => ({ ...c, includeNoDoi: e.target.checked }))}
+                  className="rounded border-neutral-300"
+                />
+                <span>Include no-DOI</span>
+                <span className="text-neutral-400 text-xs">(Publikationen ohne DOI via PDF enrichen)</span>
+              </label>
+            </div>
+          </div>
+        )}
 
         {/* Progress bar */}
         {status === 'running' && (
@@ -604,7 +687,7 @@ export function EnrichmentModal({
             </Button>
           )}
           {(status === 'complete' || status === 'error') && (
-            <Button onClick={startEnrichment} variant="outline" size="sm">
+            <Button onClick={reset} variant="outline" size="sm">
               <RotateCcw className="mr-2 h-4 w-4" />
               Run Again
             </Button>

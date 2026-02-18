@@ -3,17 +3,33 @@ import { getSupabaseFromRequest, getOpenRouterKey, getLLMModel, createSSEStream 
 import { analyzePublications, calculatePressScore } from '@/lib/analysis/openrouter';
 import { Publication } from '@/lib/types';
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 export async function POST(req: NextRequest) {
-  const supabase = getSupabaseFromRequest(req);
-  const apiKey = getOpenRouterKey(req);
-  const model = getLLMModel(req);
-  const body = await req.json();
-  const limit = Math.min(body.limit || 20, 100);
-  const batchSize = Math.min(body.batchSize || 3, 5);
-  const minWordCount = body.minWordCount || 0;
+  let supabase;
+  let apiKey: string;
+  let model: string;
+  let body: Record<string, unknown>;
+
+  try {
+    supabase = getSupabaseFromRequest(req);
+    apiKey = getOpenRouterKey(req);
+    model = getLLMModel(req);
+    body = await req.json();
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Configuration error';
+    return new Response(JSON.stringify({ error: message }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  const limit = Math.min((body.limit as number) || 20, 1000);
+  const batchSize = Math.min((body.batchSize as number) || 3, 5);
+  const minWordCount = (body.minWordCount as number) || 0;
   const forceReanalyze = body.forceReanalyze || false;
+  const enrichedOnly = body.enrichedOnly !== false; // default true
+  const includePartial = body.includePartial || false;
 
   // Fetch publications for analysis
   let query = supabase
@@ -24,6 +40,15 @@ export async function POST(req: NextRequest) {
 
   if (!forceReanalyze) {
     query = query.eq('analysis_status', 'pending');
+  }
+
+  // Filter by enrichment status — only analyze publications with content
+  if (enrichedOnly) {
+    if (includePartial) {
+      query = query.in('enrichment_status', ['enriched', 'partial']);
+    } else {
+      query = query.eq('enrichment_status', 'enriched');
+    }
   }
 
   if (minWordCount > 0) {
@@ -48,20 +73,34 @@ export async function POST(req: NextRequest) {
 
   const { stream, send, close } = createSSEStream();
 
+  // Masked key for client display (last 8 chars)
+  const maskedKey = apiKey.length > 8 ? '...' + apiKey.slice(-8) : '***';
+
   (async () => {
     let processed = 0;
     let successful = 0;
     let totalTokens = 0;
     let totalCost = 0;
 
+    // Send initial info with masked key
+    send('init', {
+      total: pubs.length,
+      model,
+      api_key_hint: maskedKey,
+    });
+
     // Process in batches
     for (let i = 0; i < pubs.length; i += batchSize) {
       const batch = pubs.slice(i, i + batchSize);
+      const batchIndex = Math.floor(i / batchSize) + 1;
+      const totalBatches = Math.ceil(pubs.length / batchSize);
 
       send('progress', {
         processed,
         total: pubs.length,
         current_title: batch[0].title,
+        batch_index: batchIndex,
+        total_batches: totalBatches,
         tokens_used: totalTokens,
         cost: totalCost,
       });
@@ -100,7 +139,9 @@ export async function POST(req: NextRequest) {
         }
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Unknown error';
-        send('error', { message, batch_start: i });
+        const isFatal = message.includes('402') || message.includes('401') || message.includes('credits');
+
+        send('error', { message, batch_start: i, fatal: isFatal });
 
         // Mark batch as failed
         for (const pub of batch) {
@@ -111,6 +152,12 @@ export async function POST(req: NextRequest) {
               updated_at: new Date().toISOString(),
             })
             .eq('id', pub.id);
+        }
+
+        // Stop immediately on billing/auth errors
+        if (isFatal) {
+          processed += batch.length;
+          break;
         }
       }
 

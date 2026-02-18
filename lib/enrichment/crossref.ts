@@ -1,10 +1,11 @@
 import { EnrichmentResult } from '../types';
+import { cleanDoi } from './doi-utils';
 
-export async function enrichFromCrossRef(doi: string): Promise<EnrichmentResult | null> {
-  const cleanDoi = doi.replace(/^https?:\/\/doi\.org\//, '').trim();
-  if (!cleanDoi) return null;
+export async function enrichFromCrossRef(rawDoi: string): Promise<EnrichmentResult | null> {
+  const doi = cleanDoi(rawDoi);
+  if (!doi) return null;
 
-  const url = `https://api.crossref.org/works/${encodeURIComponent(cleanDoi)}`;
+  const url = `https://api.crossref.org/works/${encodeURIComponent(doi)}`;
 
   const response = await fetch(url, {
     headers: {

@@ -57,21 +57,59 @@ export const SCORE_LABELS: Record<string, string> = {
   media_timeliness: 'Timeliness',
 };
 
-export const LLM_MODELS = [
-  { value: 'anthropic/claude-sonnet-4', label: 'Claude Sonnet 4' },
-  { value: 'anthropic/claude-3.5-sonnet', label: 'Claude 3.5 Sonnet' },
-  { value: 'deepseek/deepseek-chat', label: 'DeepSeek Chat' },
-  { value: 'meta-llama/llama-3.2-3b-instruct:free', label: 'Llama 3.2 3B (Free)' },
-  { value: 'google/gemini-2.0-flash-001', label: 'Gemini 2.0 Flash' },
-  { value: 'openai/gpt-4o-mini', label: 'GPT-4o Mini' },
+export interface LLMModel {
+  value: string;
+  label: string;
+  description: string;
+  tier: 'recommended' | 'budget' | 'balanced' | 'premium' | 'free';
+  costPerMillionTokens: number;
+}
+
+export const LLM_MODELS: LLMModel[] = [
+  {
+    value: 'deepseek/deepseek-chat',
+    label: 'DeepSeek Chat',
+    description: 'Bestes Preis-Leistungs-Verhältnis. Starke JSON-Ausgabe, gutes Deutsch, zuverlässige Bewertungen.',
+    tier: 'recommended',
+    costPerMillionTokens: 0.5,
+  },
+  {
+    value: 'google/gemini-2.0-flash-001',
+    label: 'Gemini 2.0 Flash',
+    description: 'Extrem günstig und schnell. Ideal für große Batches. Gute strukturierte Ausgabe.',
+    tier: 'budget',
+    costPerMillionTokens: 0.15,
+  },
+  {
+    value: 'openai/gpt-4o-mini',
+    label: 'GPT-4o Mini',
+    description: 'Solide Allround-Performance. Zuverlässiges JSON und gute Textqualität.',
+    tier: 'balanced',
+    costPerMillionTokens: 0.6,
+  },
+  {
+    value: 'anthropic/claude-3.5-haiku',
+    label: 'Claude 3.5 Haiku',
+    description: 'Schnell und günstig von Anthropic. Gute Textqualität für den Preis.',
+    tier: 'balanced',
+    costPerMillionTokens: 1.0,
+  },
+  {
+    value: 'anthropic/claude-sonnet-4',
+    label: 'Claude Sonnet 4',
+    description: 'Premium-Qualität. Beste Pitches und differenzierteste Bewertungen. Teuer.',
+    tier: 'premium',
+    costPerMillionTokens: 9.0,
+  },
+  {
+    value: 'meta-llama/llama-3.2-3b-instruct:free',
+    label: 'Llama 3.2 3B (Free)',
+    description: 'Kostenlos aber kleines Modell (3B Parameter). Deutsch-Qualität eingeschränkt, JSON manchmal fehlerhaft.',
+    tier: 'free',
+    costPerMillionTokens: 0.0,
+  },
 ];
 
-export const COST_PER_MILLION_TOKENS: Record<string, number> = {
-  'anthropic/claude-sonnet-4': 9.0,
-  'anthropic/claude-3.5-sonnet': 9.0,
-  'deepseek/deepseek-chat': 0.5,
-  'meta-llama/llama-3.2-3b-instruct:free': 0.0,
-  'google/gemini-2.0-flash-001': 0.15,
-  'openai/gpt-4o-mini': 0.6,
-  'openai/gpt-4o': 7.5,
-};
+export const COST_PER_MILLION_TOKENS: Record<string, number> = Object.fromEntries(
+  LLM_MODELS.map(m => [m.value, m.costPerMillionTokens])
+);

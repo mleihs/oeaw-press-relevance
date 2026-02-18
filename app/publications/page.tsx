@@ -4,12 +4,12 @@ import { useEffect, useState, useCallback } from 'react';
 import { Publication } from '@/lib/types';
 import { PublicationTable } from '@/components/publication-table';
 import { EnrichmentModal } from '@/components/enrichment-modal';
-import { SSEProgress } from '@/components/sse-progress';
+import { AnalysisModal } from '@/components/analysis-modal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { getApiHeaders, loadSettings } from '@/lib/settings-store';
-import { Search, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
+import { getApiHeaders } from '@/lib/settings-store';
+import { Search, ChevronLeft, ChevronRight, Sparkles, Brain } from 'lucide-react';
 
 export default function PublicationsPage() {
   const [publications, setPublications] = useState<Publication[]>([]);
@@ -20,8 +20,7 @@ export default function PublicationsPage() {
   const [analysisFilter, setAnalysisFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const [enrichModalOpen, setEnrichModalOpen] = useState(false);
-  const [includePartial, setIncludePartial] = useState(false);
-  const [includeNoDoi, setIncludeNoDoi] = useState(false);
+  const [analysisModalOpen, setAnalysisModalOpen] = useState(false);
   const [sortBy, setSortBy] = useState('created_at');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const pageSize = 20;
@@ -67,7 +66,6 @@ export default function PublicationsPage() {
   }, [fetchData]);
 
   const totalPages = Math.ceil(total / pageSize);
-  const settings = loadSettings();
 
   return (
     <div className="space-y-6">
@@ -125,44 +123,29 @@ export default function PublicationsPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-neutral-500">
-              Fetch metadata from CrossRef, OpenAlex, Unpaywall & Semantic Scholar for publications with DOIs.
+              Fetch metadata from CrossRef, OpenAlex, Unpaywall & Semantic Scholar.
             </p>
-            <div className="flex flex-wrap items-center gap-3">
-              <Button onClick={() => setEnrichModalOpen(true)} size="sm">
-                Start Enrichment
-              </Button>
-              <label className="flex items-center gap-2 text-sm text-neutral-600 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={includePartial}
-                  onChange={(e) => setIncludePartial(e.target.checked)}
-                  className="rounded border-neutral-300"
-                />
-                Re-enrich partial
-              </label>
-              <label className="flex items-center gap-2 text-sm text-neutral-600 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={includeNoDoi}
-                  onChange={(e) => setIncludeNoDoi(e.target.checked)}
-                  className="rounded border-neutral-300"
-                />
-                Include no-DOI (PDF only)
-              </label>
-            </div>
+            <Button onClick={() => setEnrichModalOpen(true)} size="sm">
+              Start Enrichment
+            </Button>
           </CardContent>
         </Card>
-        <SSEProgress
-          title="Analyze Press Relevance"
-          description={`Run LLM analysis using ${settings.llmModel} to score publications for press worthiness.`}
-          endpoint="/api/analysis/batch"
-          requestBody={{
-            limit: 20,
-            batchSize: settings.batchSize,
-            minWordCount: settings.minWordCount,
-          }}
-          onComplete={fetchData}
-        />
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Brain className="h-4 w-4" />
+              Analyze Press Relevance
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-neutral-500">
+              Run LLM analysis to score publications for press worthiness.
+            </p>
+            <Button onClick={() => setAnalysisModalOpen(true)} size="sm">
+              Start Analysis
+            </Button>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Enrichment Modal */}
@@ -170,9 +153,13 @@ export default function PublicationsPage() {
         open={enrichModalOpen}
         onOpenChange={setEnrichModalOpen}
         onComplete={fetchData}
-        includePartial={includePartial}
-        includeNoDoi={includeNoDoi}
-        limit={500}
+      />
+
+      {/* Analysis Modal */}
+      <AnalysisModal
+        open={analysisModalOpen}
+        onOpenChange={setAnalysisModalOpen}
+        onComplete={fetchData}
       />
 
       {/* Table */}
