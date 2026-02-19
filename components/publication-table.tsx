@@ -8,8 +8,9 @@ import { decodeHtmlTitle } from '@/lib/html-utils';
 import { PressScoreBadge, ScoreBar } from './score-bar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { LLM_MODELS } from '@/lib/constants';
-import { ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ChevronUp, ExternalLink, Info } from 'lucide-react';
 
 interface PublicationTableProps {
   publications: Publication[];
@@ -217,7 +218,7 @@ function PublicationRow({
               {decodeHtmlTitle(pub.title)}
             </Link>
           </div>
-          {pub.institute && (
+          {pub.institute && pub.institute !== '0' && (
             <div className="text-xs text-neutral-500 truncate">{pub.institute}</div>
           )}
         </td>
@@ -292,12 +293,31 @@ const SOURCE_SHORT: Record<string, string> = {
   pdf: 'PDF',
 };
 
+const SOURCE_LABELS: Record<string, string> = {
+  crossref: 'CrossRef',
+  openalex: 'OpenAlex',
+  unpaywall: 'Unpaywall',
+  semantic_scholar: 'Semantic Scholar',
+  pdf: 'PDF',
+  csv: 'CSV',
+};
+
 const SOURCE_COLOR: Record<string, string> = {
   crossref: 'bg-violet-100 text-violet-700',
   openalex: 'bg-sky-100 text-sky-700',
   unpaywall: 'bg-emerald-100 text-emerald-700',
   semantic_scholar: 'bg-orange-100 text-orange-700',
   pdf: 'bg-rose-100 text-rose-700',
+  csv: 'bg-teal-100 text-teal-700',
+};
+
+const SOURCE_DESCRIPTIONS: Record<string, string> = {
+  crossref: 'DOI-basierte Metadaten: Titel, Abstract, Journal, Autoren, ISSN und Lizenzinfos.',
+  openalex: 'Offene Forschungsdatenbank: Abstract, Zitationen, Themen-Tags und Open-Access-Status.',
+  unpaywall: 'Findet frei zugängliche PDF-Volltext-Links zu Publikationen.',
+  semantic_scholar: 'KI-gestützte Datenbank: Abstract, Zitationszahlen und Einfluss-Score.',
+  pdf: 'Direkter PDF-Download von der Publikations-URL — extrahiert den Volltext.',
+  csv: 'Abstract aus der ursprünglich importierten CSV-Datei übernommen.',
 };
 
 const MODEL_SHORT: Record<string, string> = Object.fromEntries(
@@ -363,11 +383,15 @@ function ExpandedDetail({ pub, showScores }: { pub: Publication; showScores?: bo
         {pub.enriched_source && (
           <div>
             <h4 className="text-xs font-medium text-neutral-500 uppercase mb-1">Enrichment-Quellen</h4>
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-wrap gap-1.5">
               {pub.enriched_source.split('+').map((src) => (
-                <Badge key={src} variant="outline" className="text-xs">
-                  {src}
-                </Badge>
+                <span
+                  key={src}
+                  className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${SOURCE_COLOR[src] || 'bg-neutral-100 text-neutral-600'}`}
+                >
+                  {SOURCE_LABELS[src] || src}
+                  <SourceInfoBubble source={src} />
+                </span>
               ))}
             </div>
           </div>
@@ -437,6 +461,28 @@ function ExpandedDetail({ pub, showScores }: { pub: Publication; showScores?: bo
         </div>
       )}
     </div>
+  );
+}
+
+function SourceInfoBubble({ source }: { source: string }) {
+  const desc = SOURCE_DESCRIPTIONS[source];
+  if (!desc) return null;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          className="text-current opacity-40 hover:opacity-80 transition-opacity ml-0.5"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Info className="h-3 w-3" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="max-w-52 font-normal">
+        {desc}
+      </TooltipContent>
+    </Tooltip>
   );
 }
 

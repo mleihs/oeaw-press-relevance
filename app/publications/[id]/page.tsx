@@ -12,7 +12,8 @@ import { CapybaraLogo } from '@/components/capybara-logo';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ExternalLink, FileText, Brain, ChevronRight } from 'lucide-react';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { ExternalLink, FileText, Brain, ChevronRight, Info } from 'lucide-react';
 
 const SOURCE_LABELS: Record<string, string> = {
   crossref: 'CrossRef',
@@ -20,6 +21,7 @@ const SOURCE_LABELS: Record<string, string> = {
   unpaywall: 'Unpaywall',
   semantic_scholar: 'Semantic Scholar',
   pdf: 'PDF',
+  csv: 'CSV',
 };
 
 const SOURCE_COLORS: Record<string, string> = {
@@ -28,6 +30,16 @@ const SOURCE_COLORS: Record<string, string> = {
   unpaywall: 'bg-emerald-100 text-emerald-700',
   semantic_scholar: 'bg-orange-100 text-orange-700',
   pdf: 'bg-rose-100 text-rose-700',
+  csv: 'bg-teal-100 text-teal-700',
+};
+
+const SOURCE_DESCRIPTIONS: Record<string, string> = {
+  crossref: 'DOI-basierte Metadaten: Titel, Abstract, Journal, Autoren, ISSN und Lizenzinfos.',
+  openalex: 'Offene Forschungsdatenbank: Abstract, Zitationen, Themen-Tags und Open-Access-Status.',
+  unpaywall: 'Findet frei zugängliche PDF-Volltext-Links zu Publikationen.',
+  semantic_scholar: 'KI-gestützte Datenbank: Abstract, Zitationszahlen und Einfluss-Score.',
+  pdf: 'Direkter PDF-Download von der Publikations-URL — extrahiert den Volltext.',
+  csv: 'Abstract aus der ursprünglich importierten CSV-Datei übernommen.',
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -258,6 +270,7 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
                     className={`inline-flex items-center rounded-md px-2.5 py-1 text-xs font-medium ${SOURCE_COLORS[src] || 'bg-neutral-100 text-neutral-600'}`}
                   >
                     {SOURCE_LABELS[src] || src}
+                    <SourceInfoBubble source={src} />
                   </span>
                 ))}
               </div>
@@ -322,6 +335,27 @@ function Breadcrumb({ title }: { title?: string }) {
         </>
       )}
     </nav>
+  );
+}
+
+function SourceInfoBubble({ source }: { source: string }) {
+  const desc = SOURCE_DESCRIPTIONS[source];
+  if (!desc) return null;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          className="text-current opacity-40 hover:opacity-80 transition-opacity ml-0.5"
+        >
+          <Info className="h-3 w-3" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="max-w-52 font-normal">
+        {desc}
+      </TooltipContent>
+    </Tooltip>
   );
 }
 
