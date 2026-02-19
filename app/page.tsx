@@ -5,12 +5,14 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
+import { RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer, Tooltip } from 'recharts';
 import { PressScoreBadge } from '@/components/score-bar';
 import { CapybaraEmpty } from '@/components/capybara-logo';
 import { PublicationStats, Publication } from '@/lib/types';
 import { getApiHeaders } from '@/lib/settings-store';
 import { decodeHtmlTitle } from '@/lib/html-utils';
-import { Upload, Sparkles, BookOpen, BarChart3, TrendingUp, AlertCircle } from 'lucide-react';
+import { SCORE_LABELS } from '@/lib/constants';
+import { Sparkles, BookOpen, BarChart3, TrendingUp, AlertCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 type TimePeriod = 'week' | 'month' | 'year' | 'all';
@@ -48,6 +50,8 @@ export default function DashboardPage() {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('all');
   const [topLoading, setTopLoading] = useState(false);
   const [scoreDistribution, setScoreDistribution] = useState<number[]>([]);
+  const [dimensionAvgs, setDimensionAvgs] = useState<Record<string, number>>({});
+  const [topKeywords, setTopKeywords] = useState<{ word: string; count: number }[]>([]);
 
   useEffect(() => {
     async function loadStats() {
@@ -61,6 +65,38 @@ export default function DashboardPage() {
         // Score distribution is computed server-side in the stats response
         if (statsData.score_distribution) {
           setScoreDistribution(statsData.score_distribution);
+        }
+
+        // Fetch analyzed publications for dimensions + keywords
+        const pubsRes = await fetch('/api/publications?analysis_status=analyzed&pageSize=500', { headers });
+        if (pubsRes.ok) {
+          const pubsData = await pubsRes.json();
+          const pubs: Publication[] = pubsData.publications || [];
+
+          // Dimension averages
+          const dims = ['public_accessibility', 'societal_relevance', 'novelty_factor', 'storytelling_potential', 'media_timeliness'] as const;
+          const avgs: Record<string, number> = {};
+          for (const dim of dims) {
+            const vals = pubs.filter(p => p[dim] != null).map(p => p[dim] as number);
+            avgs[dim] = vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+          }
+          setDimensionAvgs(avgs);
+
+          // Keyword frequencies
+          const freq: Record<string, number> = {};
+          for (const p of pubs) {
+            if (p.enriched_keywords) {
+              for (const kw of p.enriched_keywords) {
+                const normalized = kw.trim().toLowerCase();
+                if (normalized) freq[normalized] = (freq[normalized] || 0) + 1;
+              }
+            }
+          }
+          const sorted = Object.entries(freq)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 30)
+            .map(([word, count]) => ({ word, count }));
+          setTopKeywords(sorted);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Dashboard konnte nicht geladen werden');
@@ -185,9 +221,9 @@ export default function DashboardPage() {
         </CardHeader>
         <CardContent className="flex flex-wrap gap-3">
           <Button asChild>
-            <Link href="/upload">
-              <Upload className="mr-2 h-4 w-4" />
-              CSV importieren
+            <Link href="/analysis">
+              <Sparkles className="mr-2 h-4 w-4" />
+              Analyse anzeigen
             </Link>
           </Button>
           <Button variant="outline" asChild>
@@ -196,26 +232,8 @@ export default function DashboardPage() {
               Publikationen durchsuchen
             </Link>
           </Button>
-          <Button variant="outline" asChild>
-            <Link href="/analysis">
-              <Sparkles className="mr-2 h-4 w-4" />
-              Analyse anzeigen
-            </Link>
-          </Button>
         </CardContent>
       </Card>
-
-      {/* Score distribution chart */}
-      {scoreDistribution.some(v => v > 0) && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">StoryScore-Verteilung</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ScoreDistributionChart buckets={scoreDistribution} />
-          </CardContent>
-        </Card>
-      )}
 
       {/* Top publications with time filter */}
       <Card>
@@ -292,6 +310,44 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
 
+      {/* Score distribution chart */}
+      {scoreDistribution.some(v => v > 0) && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">StoryScore-Verteilung</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ScoreDistributionChart buckets={scoreDistribution} />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Dimensions radar */}
+      {Object.keys(dimensionAvgs).length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Dimensions-Profil (Durchschnitt)</CardTitle>
+            <p className="text-xs text-neutral-500">Durchschnittswerte aller analysierten Publikationen</p>
+          </CardHeader>
+          <CardContent>
+            <DimensionsRadar averages={dimensionAvgs} />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Top keywords cloud */}
+      {topKeywords.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Top Keywords</CardTitle>
+            <p className="text-xs text-neutral-500">Häufigste Schlagwörter aus angereicherten Publikationen</p>
+          </CardHeader>
+          <CardContent>
+            <KeywordCloud keywords={topKeywords} />
+          </CardContent>
+        </Card>
+      )}
+
       {stats?.total === 0 && (
         <Card className="border-dashed">
           <CardContent className="py-6">
@@ -338,6 +394,75 @@ function StatCard({
   );
 }
 
+function DimensionsRadar({ averages }: { averages: Record<string, number> }) {
+  const dims = ['public_accessibility', 'societal_relevance', 'novelty_factor', 'storytelling_potential', 'media_timeliness'];
+  const data = dims.map(dim => ({
+    dimension: SCORE_LABELS[dim],
+    value: Math.round((averages[dim] || 0) * 100),
+    fullMark: 100,
+  }));
+
+  if (data.every(d => d.value === 0)) return null;
+
+  return (
+    <ResponsiveContainer width="100%" height={280}>
+      <RadarChart data={data}>
+        <PolarGrid stroke="#e5e5e5" />
+        <PolarAngleAxis dataKey="dimension" tick={{ fontSize: 11, fill: '#737373' }} />
+        <Radar
+          dataKey="value"
+          stroke="#0047bb"
+          fill="#0047bb"
+          fillOpacity={0.15}
+          strokeWidth={2}
+          dot={{ r: 4, fill: '#0047bb' }}
+          animationDuration={800}
+        />
+        <Tooltip
+          formatter={(value) => [`${value}%`, 'Durchschnitt']}
+          contentStyle={{ fontSize: 12 }}
+        />
+      </RadarChart>
+    </ResponsiveContainer>
+  );
+}
+
+function KeywordCloud({ keywords }: { keywords: { word: string; count: number }[] }) {
+  if (keywords.length === 0) return null;
+
+  const max = Math.max(...keywords.map(k => k.count));
+  const [animated, setAnimated] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setAnimated(true), 50);
+    return () => clearTimeout(t);
+  }, []);
+
+  const getSize = (count: number) => 12 + (count / max) * 12;
+
+  return (
+    <div className="flex flex-wrap gap-2 justify-center items-baseline">
+      {keywords.map(({ word, count }, i) => (
+        <span
+          key={word}
+          className={`inline-block px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-700
+            hover:bg-[#0047bb] hover:text-white cursor-default
+            transition-all duration-500 ease-out`}
+          style={{
+            fontSize: `${getSize(count)}px`,
+            opacity: animated ? 1 : 0,
+            transform: animated ? 'scale(1)' : 'scale(0.5)',
+            transitionDelay: `${i * 30}ms`,
+          }}
+          title={`${count}× in Publikationen`}
+        >
+          {word}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 const BUCKET_LABELS = ['0-9%', '10-19%', '20-29%', '30-39%', '40-49%', '50-59%', '60-69%', '70-79%', '80-89%', '90-100%'];
 const BUCKET_COLORS = [
   'bg-neutral-300', 'bg-neutral-300', 'bg-neutral-400',
@@ -348,21 +473,38 @@ const BUCKET_COLORS = [
 
 function ScoreDistributionChart({ buckets }: { buckets: number[] }) {
   const max = Math.max(...buckets, 1);
+  const [animated, setAnimated] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setAnimated(true), 50);
+    return () => clearTimeout(t);
+  }, []);
 
   return (
     <div className="space-y-1">
       <div className="flex items-end gap-1 h-32">
-        {buckets.map((count, i) => (
-          <div key={i} className="flex-1 flex flex-col items-center justify-end h-full">
-            {count > 0 && (
-              <span className="text-[10px] text-neutral-500 mb-0.5">{count}</span>
-            )}
-            <div
-              className={`w-full rounded-t ${BUCKET_COLORS[i]} transition-all duration-300`}
-              style={{ height: `${Math.max(count > 0 ? 4 : 0, (count / max) * 100)}%` }}
-            />
-          </div>
-        ))}
+        {buckets.map((count, i) => {
+          const targetHeight = Math.max(count > 0 ? 4 : 0, (count / max) * 100);
+          return (
+            <div key={i} className="flex-1 flex flex-col items-center justify-end h-full">
+              {count > 0 && (
+                <span
+                  className={`text-[10px] text-neutral-500 mb-0.5 transition-opacity duration-300 ${animated ? 'opacity-100' : 'opacity-0'}`}
+                  style={{ transitionDelay: `${i * 50}ms` }}
+                >
+                  {count}
+                </span>
+              )}
+              <div
+                className={`w-full rounded-t ${BUCKET_COLORS[i]} transition-all duration-500 ease-out`}
+                style={{
+                  height: animated ? `${targetHeight}%` : '0%',
+                  transitionDelay: `${i * 50}ms`,
+                }}
+              />
+            </div>
+          );
+        })}
       </div>
       <div className="flex gap-1">
         {BUCKET_LABELS.map((label, i) => (
