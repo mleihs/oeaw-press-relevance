@@ -14,6 +14,7 @@ export async function GET(req: NextRequest) {
     const publicationType = searchParams.get('publication_type') || '';
     const publishedAfter = searchParams.get('published_after') || '';
     const minScore = searchParams.get('min_score') || '';
+    const excludeIta = searchParams.get('exclude_ita') === 'true';
     const sortBy = searchParams.get('sort') || 'created_at';
     const sortOrder = searchParams.get('order') === 'asc' ? true : false;
     const statsOnly = searchParams.get('stats') === 'true';
@@ -106,6 +107,13 @@ export async function GET(req: NextRequest) {
     }
     if (minScore) {
       query = query.gte('press_score', parseFloat(minScore));
+    }
+    if (excludeIta) {
+      query = query
+        .or('url.is.null,url.not.ilike.%oeaw.ac.at/ita/%')
+        .or('enriched_journal.is.null,enriched_journal.not.ilike.ITA-%')
+        .or('enriched_journal.is.null,enriched_journal.not.ilike.ITA %')
+        .not('title', 'ilike', '%ITA Dossier%');
     }
 
     query = query.order(sortBy, { ascending: sortOrder }).range(from, to);

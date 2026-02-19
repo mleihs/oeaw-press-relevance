@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getApiHeaders } from '@/lib/settings-store';
 import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,6 +35,7 @@ export default function AnalysisPage() {
   const [sortBy, setSortBy] = useState('published_at');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [minScore, setMinScore] = useState(0);
+  const [excludeIta, setExcludeIta] = useState(false);
   const [loading, setLoading] = useState(true);
   const [analysisModalOpen, setAnalysisModalOpen] = useState(false);
   const [dimensionAverages, setDimensionAverages] = useState<Record<string, number>>({});
@@ -51,6 +53,9 @@ export default function AnalysisPage() {
       });
       if (minScore > 0) {
         params.set('min_score', (minScore / 100).toFixed(2));
+      }
+      if (excludeIta) {
+        params.set('exclude_ita', 'true');
       }
 
       const res = await fetch(`/api/publications?${params}`, {
@@ -75,7 +80,7 @@ export default function AnalysisPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, sortBy, sortOrder, minScore]);
+  }, [page, sortBy, sortOrder, minScore, excludeIta]);
 
   useEffect(() => {
     fetchData();
@@ -180,9 +185,9 @@ export default function AnalysisPage() {
       />
 
       {/* Sort & filter controls */}
-      <div className="flex flex-col md:flex-row md:items-end gap-6">
-        {/* Sort controls — segmented button group */}
-        <div className="space-y-2 flex-1">
+      <div className="space-y-4">
+        {/* Row 1: Sort buttons — full width */}
+        <div className="space-y-2">
           <p className="text-sm text-neutral-500 font-medium">Sortieren nach:</p>
           <div className="flex flex-wrap gap-1.5">
             {SORT_OPTIONS.map((opt) => {
@@ -217,22 +222,37 @@ export default function AnalysisPage() {
           </div>
         </div>
 
-        {/* Min score slider */}
-        <div className="space-y-2 w-full md:w-64 shrink-0">
-          <p className="text-sm text-neutral-500 font-medium">
-            Mindest-Score: <span className="text-neutral-900">{minScore}%</span>
-          </p>
-          <Slider
-            value={[minScore]}
-            onValueChange={([v]) => { setMinScore(v); setPage(1); }}
-            min={0}
-            max={100}
-            step={5}
-            className="[&_[role=slider]]:bg-[#0047bb] [&_[role=slider]]:border-[#0047bb] [&_span:first-child>span]:bg-[#0047bb]"
-          />
-          <div className="flex justify-between text-[10px] text-neutral-400">
-            <span>0%</span>
-            <span>100%</span>
+        {/* Row 2: Filters — right-aligned */}
+        <div className="space-y-2">
+          <p className="text-sm text-neutral-500 font-medium">Filtern nach:</p>
+          <div className="flex flex-col sm:flex-row sm:items-end gap-4">
+          {/* Min score slider */}
+          <div className="space-y-2 w-full sm:w-64 shrink-0">
+            <p className="text-sm text-neutral-500 font-medium">
+              Mindest-Score: <span className="text-neutral-900">{minScore}%</span>
+            </p>
+            <Slider
+              value={[minScore]}
+              onValueChange={([v]) => { setMinScore(v); setPage(1); }}
+              min={0}
+              max={100}
+              step={5}
+              className="[&_[role=slider]]:bg-[#0047bb] [&_[role=slider]]:border-[#0047bb] [&_span:first-child>span]:bg-[#0047bb]"
+            />
+            <div className="flex justify-between text-[10px] text-neutral-400">
+              <span>0%</span>
+              <span>100%</span>
+            </div>
+          </div>
+
+          {/* ITA filter */}
+          <div className="space-y-2 shrink-0">
+            <p className="text-sm text-neutral-500 font-medium">ITA ausblenden</p>
+            <Switch
+              checked={excludeIta}
+              onCheckedChange={(v) => { setExcludeIta(v); setPage(1); }}
+            />
+          </div>
           </div>
         </div>
       </div>
