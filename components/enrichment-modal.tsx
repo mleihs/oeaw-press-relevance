@@ -55,8 +55,8 @@ interface EnrichmentConfig {
   includeNoDoi: boolean;
 }
 
-type ModalStatus = 'idle' | 'running' | 'complete' | 'error';
-type CapybaraState = 'idle' | 'working' | 'found' | 'error' | 'complete';
+type ModalStatus = 'idle' | 'running' | 'complete' | 'cancelled' | 'error';
+type CapybaraState = 'idle' | 'working' | 'found' | 'error' | 'complete' | 'cancelled';
 
 const ALL_SOURCES: EnrichmentSourceName[] = ['crossref', 'openalex', 'unpaywall', 'semantic_scholar', 'pdf'];
 
@@ -93,7 +93,9 @@ function CapybaraSvg({ state }: { state: CapybaraState }) {
           ? 'animate-capybara-scratch'
           : state === 'complete'
             ? 'animate-capybara-happy'
-            : '';
+            : state === 'cancelled'
+              ? 'animate-capybara-shrug'
+              : '';
 
   return (
     <div className={`relative w-16 h-16 ${animClass}`}>
@@ -352,8 +354,9 @@ export function EnrichmentModal({
       }
     } catch (err) {
       if ((err as Error).name === 'AbortError') {
-        setStatus('complete');
-        setCapybaraState('complete');
+        setStatus('cancelled');
+        setCapybaraState('cancelled');
+        setCurrentPub(null);
         return;
       }
       setStatus('error');
@@ -473,6 +476,7 @@ export function EnrichmentModal({
                 {status === 'idle' && 'Metadaten von CrossRef, OpenAlex, Unpaywall & Semantic Scholar abrufen.'}
                 {status === 'running' && `Verarbeite ${pubIndex + 1} / ${pubTotal} Publikationen...`}
                 {status === 'complete' && 'Enrichment abgeschlossen!'}
+                {status === 'cancelled' && `Enrichment abgebrochen — ${completed.length} von ${pubTotal} Publikationen verarbeitet.`}
                 {status === 'error' && 'Fehler beim Enrichment.'}
               </DialogDescription>
             </div>
@@ -633,7 +637,7 @@ export function EnrichmentModal({
         )}
 
         {/* Footer stats */}
-        {(status === 'running' || status === 'complete') && completed.length > 0 && (
+        {(status === 'running' || status === 'complete' || status === 'cancelled') && completed.length > 0 && (
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-neutral-500 border-t pt-2">
             {Object.entries(sourceCounts).map(([src, count]) => (
               <span key={src}>
@@ -671,6 +675,33 @@ export function EnrichmentModal({
           </div>
         )}
 
+        {/* Cancelled summary */}
+        {status === 'cancelled' && (
+          <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-3 space-y-2">
+            <p className="text-sm font-medium text-neutral-700">Enrichment abgebrochen</p>
+            <div className="flex flex-wrap gap-2">
+              <Badge className="bg-neutral-200 text-neutral-600 hover:bg-neutral-200">
+                {completed.length} / {pubTotal} verarbeitet
+              </Badge>
+              {completed.filter(p => p.finalStatus === 'enriched').length > 0 && (
+                <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
+                  {completed.filter(p => p.finalStatus === 'enriched').length} angereichert
+                </Badge>
+              )}
+              {completed.filter(p => p.finalStatus === 'partial').length > 0 && (
+                <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">
+                  {completed.filter(p => p.finalStatus === 'partial').length} teilweise
+                </Badge>
+              )}
+              {completed.filter(p => p.finalStatus === 'failed').length > 0 && (
+                <Badge className="bg-red-100 text-red-700 hover:bg-red-100">
+                  {completed.filter(p => p.finalStatus === 'failed').length} fehlgeschlagen
+                </Badge>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Error display */}
         {status === 'error' && errorMessage && (
           <div className="rounded-lg border border-red-200 bg-red-50 p-3">
@@ -698,7 +729,7 @@ export function EnrichmentModal({
               Stop
             </Button>
           )}
-          {(status === 'complete' || status === 'error') && (
+          {(status === 'complete' || status === 'cancelled' || status === 'error') && (
             <Button onClick={reset} variant="outline" size="sm">
               <RotateCcw className="mr-2 h-4 w-4" />
               Erneut starten
@@ -738,6 +769,14 @@ export function EnrichmentModal({
         }
         .animate-capybara-happy {
           animation: capybara-happy 1.5s ease-in-out infinite;
+        }
+        @keyframes capybara-shrug {
+          0%, 100% { transform: rotate(0deg); }
+          30% { transform: rotate(-4deg); }
+          70% { transform: rotate(4deg); }
+        }
+        .animate-capybara-shrug {
+          animation: capybara-shrug 2s ease-in-out infinite;
         }
       `}</style>
     </Dialog>

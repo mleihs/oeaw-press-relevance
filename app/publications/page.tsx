@@ -282,24 +282,41 @@ export default function PublicationsPage() {
         </CardContent>
       </Card>
 
-      {/* Enrichment & Analysis actions — compact toolbar */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <Button
-          variant="outline"
-          onClick={() => setEnrichModalOpen(true)}
-          className="flex-1 justify-start gap-2"
-        >
-          <Sparkles className="h-4 w-4 text-[#0047bb]" />
-          Publikationen anreichern
-        </Button>
-        <Button
-          variant="outline"
-          onClick={() => setAnalysisModalOpen(true)}
-          className="flex-1 justify-start gap-2"
-        >
-          <Brain className="h-4 w-4 text-[#0047bb]" />
-          Story-Analyse starten
-        </Button>
+      {/* Enrichment & Analysis actions */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-[#0047bb]" />
+              Enrichment starten
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-neutral-500">
+              Publikationen mit Metadaten aus CrossRef, OpenAlex und anderen Quellen anreichern.
+            </p>
+            <Button onClick={() => setEnrichModalOpen(true)} size="sm">
+              Enrichment starten
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Brain className="h-4 w-4 text-[#0047bb]" />
+              Analyse starten
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-neutral-500">
+              Ausstehende Publikationen per LLM über OpenRouter analysieren.
+            </p>
+            <Button onClick={() => setAnalysisModalOpen(true)} size="sm">
+              Analyse starten
+            </Button>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Enrichment Modal */}

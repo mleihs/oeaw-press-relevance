@@ -22,7 +22,7 @@ import { Play, Square, RotateCcw, AlertCircle, Info, Check } from 'lucide-react'
 // Types
 // ---------------------------------------------------------------------------
 
-type ModalStatus = 'idle' | 'running' | 'complete' | 'error';
+type ModalStatus = 'idle' | 'running' | 'complete' | 'cancelled' | 'error';
 
 interface AnalysisConfig {
   limit: number;
@@ -76,7 +76,9 @@ function CapybaraAnalyst({ state }: { state: ModalStatus }) {
         ? 'animate-capybara-happy'
         : state === 'error'
           ? 'animate-capybara-scratch'
-          : '';
+          : state === 'cancelled'
+            ? 'animate-capybara-shrug'
+            : '';
 
   return (
     <div className={`relative w-16 h-16 ${animClass}`}>
@@ -196,6 +198,7 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [elapsedMs, setElapsedMs] = useState(0);
   const [apiKeyHint, setApiKeyHint] = useState<string | null>(null);
+  const [keyBalance, setKeyBalance] = useState<{ limitRemaining: number | null; usage: number; limit: number | null; accountBalance: number | null; effectiveBudget: number | null } | null>(null);
 
   const abortRef = useRef<AbortController | null>(null);
   const startTimeRef = useRef<number>(0);
@@ -221,6 +224,7 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
     setErrors([]);
     setErrorMessage(null);
     setElapsedMs(0);
+    setKeyBalance(null);
   }, []);
 
   const stop = useCallback(() => {
@@ -299,6 +303,7 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
 
               if (eventType === 'init') {
                 setApiKeyHint(data.api_key_hint ?? null);
+                if (data.key_balance) setKeyBalance(data.key_balance);
               } else if (eventType === 'progress') {
                 setProgress({
                   processed: data.processed ?? 0,
@@ -325,8 +330,8 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
                 console.error('[Analysis Modal] SSE error event:', rawMsg);
                 // Show the actual error message — only override for specific known codes
                 let friendlyMsg = rawMsg;
-                if (/\b402\b/.test(rawMsg) && /insufficient.{0,20}credits/i.test(rawMsg)) {
-                  friendlyMsg = 'OpenRouter-Guthaben aufgebraucht. Bitte Credits aufladen unter openrouter.ai/settings/keys';
+                if (/\b402\b/.test(rawMsg) && /credits|afford|max_tokens|Budget|Guthaben/i.test(rawMsg)) {
+                  friendlyMsg = 'OpenRouter-Guthaben aufgebraucht. Bitte Credits aufladen auf openrouter.ai/settings/credits.';
                 } else if (/\b401\b/.test(rawMsg) && /unauthorized|invalid.{0,10}key/i.test(rawMsg)) {
                   friendlyMsg = 'OpenRouter API-Key ungültig. Bitte in den Einstellungen prüfen.';
                 }
@@ -345,7 +350,7 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
       }
     } catch (err) {
       if ((err as Error).name === 'AbortError') {
-        setStatus('complete');
+        setStatus('cancelled');
         return;
       }
       setStatus('error');
@@ -382,6 +387,7 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
                 {status === 'idle' && 'Publikationen per LLM auf Story-Potenzial bewerten.'}
                 {status === 'running' && `Analysiere ${progress.processed} / ${progress.total} Publikationen...`}
                 {status === 'complete' && 'Analyse abgeschlossen!'}
+                {status === 'cancelled' && `Analyse abgebrochen — ${progress.processed} von ${progress.total} Publikationen analysiert.`}
                 {status === 'error' && 'Fehler bei der Analyse.'}
               </DialogDescription>
             </div>
@@ -464,8 +470,8 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
               </div>
             </div>
 
-            {/* Cost estimate */}
-            <div className="rounded-lg border bg-neutral-50/50 p-3">
+            {/* Cost estimate + key balance */}
+            <div className="rounded-lg border bg-neutral-50/50 p-3 space-y-1.5">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-neutral-500">Geschätzte Kosten</span>
                 <span className="font-mono text-xs">
@@ -474,6 +480,20 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
                     : `~$${estimatedCost.toFixed(4)} für ${config.limit} Pubs`}
                 </span>
               </div>
+              {keyBalance && keyBalance.effectiveBudget !== null && (
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-neutral-400">Budget verbleibend</span>
+                  <span className={`font-mono ${keyBalance.effectiveBudget < 0.50 ? 'text-red-500 font-medium' : 'text-neutral-500'}`}>
+                    ${keyBalance.effectiveBudget.toFixed(4)}
+                  </span>
+                </div>
+              )}
+              {keyBalance && keyBalance.effectiveBudget !== null && keyBalance.effectiveBudget < 0.50 && keyBalance.effectiveBudget >= 0.01 && (
+                <div className="flex items-center gap-1.5 text-xs text-amber-600 bg-amber-50 rounded px-2 py-1">
+                  <AlertCircle className="h-3 w-3 shrink-0" />
+                  <span>Niedriges Guthaben — bald Credits aufladen auf openrouter.ai/settings/credits</span>
+                </div>
+              )}
             </div>
 
             {/* Limit */}
@@ -601,7 +621,7 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
         )}
 
         {/* Batch errors — show during running AND after complete/error */}
-        {errors.length > 0 && (status === 'running' || status === 'complete' || status === 'error') && (
+        {errors.length > 0 && (status === 'running' || status === 'complete' || status === 'cancelled' || status === 'error') && (
           <div className="rounded-lg border border-amber-200 bg-amber-50 p-2 space-y-1">
             <p className="text-xs font-medium text-amber-700 flex items-center gap-1">
               <AlertCircle className="h-3 w-3" />
@@ -639,6 +659,28 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
           </div>
         )}
 
+        {/* Cancelled summary */}
+        {status === 'cancelled' && (
+          <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-3 space-y-2">
+            <p className="text-sm font-medium text-neutral-700">Analyse abgebrochen</p>
+            <div className="flex flex-wrap gap-2">
+              <Badge className="bg-neutral-200 text-neutral-600 hover:bg-neutral-200">
+                {progress.processed} / {progress.total} verarbeitet
+              </Badge>
+              {progress.tokensUsed > 0 && (
+                <Badge variant="outline" className="text-neutral-500">
+                  {progress.tokensUsed.toLocaleString()} Tokens
+                </Badge>
+              )}
+              {progress.cost > 0 && (
+                <Badge variant="outline" className="text-neutral-500">
+                  ${progress.cost.toFixed(4)}
+                </Badge>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Complete but nothing to analyze */}
         {status === 'complete' && completeData && completeData.total === 0 && errorMessage && (
           <div className="rounded-lg border bg-neutral-50 p-3">
@@ -657,6 +699,14 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
             {apiKeyHint && (
               <p className="text-xs text-red-400 pt-1">Verwendeter Key: <span className="font-mono">{apiKeyHint}</span></p>
             )}
+            {keyBalance && keyBalance.effectiveBudget !== null && (
+              <p className="text-xs text-red-400">
+                Budget: ${keyBalance.effectiveBudget.toFixed(4)} verfügbar
+                {keyBalance.accountBalance !== null && ` (Account: $${keyBalance.accountBalance.toFixed(2)}`}
+                {keyBalance.accountBalance !== null && keyBalance.limitRemaining !== null && `, Key-Limit: $${keyBalance.limitRemaining.toFixed(2)}`}
+                {keyBalance.accountBalance !== null && ')'}
+              </p>
+            )}
           </div>
         )}
 
@@ -673,7 +723,7 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
               Stop
             </Button>
           )}
-          {(status === 'complete' || status === 'error') && (
+          {(status === 'complete' || status === 'cancelled' || status === 'error') && (
             <Button onClick={reset} variant="outline" size="sm">
               <RotateCcw className="mr-2 h-4 w-4" />
               {status === 'error' ? 'Erneut versuchen' : 'Erneut starten'}
@@ -705,6 +755,14 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
         }
         .animate-capybara-happy {
           animation: capybara-happy 1.5s ease-in-out infinite;
+        }
+        @keyframes capybara-shrug {
+          0%, 100% { transform: rotate(0deg); }
+          30% { transform: rotate(-4deg); }
+          70% { transform: rotate(4deg); }
+        }
+        .animate-capybara-shrug {
+          animation: capybara-shrug 2s ease-in-out infinite;
         }
       `}</style>
     </Dialog>

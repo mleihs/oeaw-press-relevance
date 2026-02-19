@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { getSupabaseFromRequest, getOpenRouterKey, getLLMModel, createSSEStream } from '@/lib/api-helpers';
-import { analyzePublications, calculatePressScore } from '@/lib/analysis/openrouter';
+import { analyzePublications, calculatePressScore, checkKeyBalance } from '@/lib/analysis/openrouter';
 import { Publication } from '@/lib/types';
 
 export const maxDuration = 300;
@@ -82,12 +82,31 @@ export async function POST(req: NextRequest) {
     let totalTokens = 0;
     let totalCost = 0;
 
-    // Send initial info with masked key
+    // Pre-flight: check key balance before starting
+    const keyInfo = await checkKeyBalance(apiKey);
+
+    // Send initial info with masked key and balance
     send('init', {
       total: pubs.length,
       model,
       api_key_hint: maskedKey,
+      key_balance: keyInfo,
     });
+
+    // Abort early if balance is insufficient (check effective budget = min of key limit and account balance)
+    if (keyInfo.effectiveBudget !== null && keyInfo.effectiveBudget < 0.01) {
+      const parts: string[] = [];
+      if (keyInfo.limitRemaining !== null) parts.push(`Key-Limit: $${keyInfo.limitRemaining.toFixed(4)} verbleibend`);
+      if (keyInfo.accountBalance !== null) parts.push(`Account-Guthaben: $${keyInfo.accountBalance.toFixed(4)}`);
+      const detail = parts.length > 0 ? ` (${parts.join(', ')})` : '';
+      send('error', {
+        message: `OpenRouter-Budget aufgebraucht: $${keyInfo.effectiveBudget.toFixed(4)} verfügbar${detail}. Bitte Credits aufladen auf openrouter.ai/settings/credits.`,
+        fatal: true,
+      });
+      send('complete', { processed: 0, total: pubs.length, successful: 0, failed: pubs.length, tokens_used: 0, cost: 0 });
+      close();
+      return;
+    }
 
     // Process in batches
     for (let i = 0; i < pubs.length; i += batchSize) {
@@ -139,7 +158,7 @@ export async function POST(req: NextRequest) {
         }
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Unknown error';
-        const isFatal = /\b402\b/.test(message) && /insufficient|credits/i.test(message)
+        const isFatal = /\b402\b/.test(message) && /credits|afford|max_tokens|Budget/i.test(message)
           || /\b401\b/.test(message) && /unauthorized|invalid/i.test(message);
 
         console.error(`[Analysis] Batch error at index ${i}:`, message);

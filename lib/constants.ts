@@ -71,7 +71,7 @@ export const LLM_MODELS: LLMModel[] = [
     label: 'DeepSeek Chat',
     description: 'Bestes Preis-Leistungs-Verhältnis. Starke JSON-Ausgabe, gutes Deutsch, zuverlässige Bewertungen.',
     tier: 'recommended',
-    costPerMillionTokens: 0.5,
+    costPerMillionTokens: 0.60,
   },
   {
     value: 'google/gemini-2.0-flash-001',

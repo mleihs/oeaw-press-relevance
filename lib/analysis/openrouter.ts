@@ -2,6 +2,57 @@ import { Publication, AnalysisResult, LLMResponse } from '../types';
 import { SCORE_WEIGHTS, COST_PER_MILLION_TOKENS } from '../constants';
 import { SYSTEM_PROMPT, buildEvaluationPrompt } from './prompts';
 
+export async function checkKeyBalance(apiKey: string): Promise<{
+  limitRemaining: number | null;
+  usage: number;
+  limit: number | null;
+  accountBalance: number | null;
+  effectiveBudget: number | null;
+}> {
+  const fallback = { limitRemaining: null, usage: 0, limit: null, accountBalance: null, effectiveBudget: null };
+  try {
+    const headers = { 'Authorization': `Bearer ${apiKey}` };
+    const opts = { headers, signal: AbortSignal.timeout(10000) };
+
+    const [keyRes, creditsRes] = await Promise.all([
+      fetch('https://openrouter.ai/api/v1/auth/key', opts),
+      fetch('https://openrouter.ai/api/v1/credits', opts).catch(() => null),
+    ]);
+
+    if (!keyRes.ok) return fallback;
+    const keyData = await keyRes.json();
+
+    const limitRemaining: number | null = keyData.data?.limit_remaining ?? null;
+    const usage: number = keyData.data?.usage ?? 0;
+    const limit: number | null = keyData.data?.limit ?? null;
+
+    // Account-level balance from /api/v1/credits
+    let accountBalance: number | null = null;
+    if (creditsRes && creditsRes.ok) {
+      const creditsData = await creditsRes.json();
+      const totalCredits = creditsData.data?.total_credits ?? null;
+      const totalUsage = creditsData.data?.total_usage ?? null;
+      if (totalCredits !== null && totalUsage !== null) {
+        accountBalance = totalCredits - totalUsage;
+      }
+    }
+
+    // Effective budget = the lower of key remaining and account balance
+    let effectiveBudget: number | null = null;
+    if (limitRemaining !== null && accountBalance !== null) {
+      effectiveBudget = Math.min(limitRemaining, accountBalance);
+    } else if (accountBalance !== null) {
+      effectiveBudget = accountBalance;
+    } else if (limitRemaining !== null) {
+      effectiveBudget = limitRemaining;
+    }
+
+    return { limitRemaining, usage, limit, accountBalance, effectiveBudget };
+  } catch {
+    return fallback;
+  }
+}
+
 export function calculatePressScore(result: AnalysisResult): number {
   let score = 0;
   for (const [dim, weight] of Object.entries(SCORE_WEIGHTS)) {
@@ -25,9 +76,9 @@ export async function analyzePublications(
 ): Promise<{ results: AnalysisResult[]; tokensUsed: number; cost: number }> {
   const prompt = buildEvaluationPrompt(publications);
 
-  // Real output is ~300-500 tokens per publication. Use 700/pub for headroom.
+  // Real output is ~300-400 tokens per publication. Use 500/pub for headroom.
   // Don't cap too low — truncated JSON is worse than a 402 retry.
-  let maxTokens = 700 * publications.length;
+  let maxTokens = 500 * publications.length;
 
   let lastError = '';
   for (let attempt = 0; attempt < 3; attempt++) {
@@ -55,16 +106,16 @@ export async function analyzePublications(
     if (response.status === 402) {
       const errorBody = await response.text();
 
-      // "Prompt tokens limit exceeded" → credits too low even for the prompt, no retry possible
+      // "Prompt tokens limit exceeded" → account credits too low even for the prompt, no retry possible
       if (errorBody.includes('Prompt tokens limit exceeded')) {
-        throw new Error(`OpenRouter: Credits reichen nicht für den Prompt. Bitte Key-Limit erhöhen auf openrouter.ai/settings/keys. (${errorBody})`);
+        throw new Error(`OpenRouter: Guthaben aufgebraucht — nicht genug Credits für den Prompt. Bitte Credits aufladen auf openrouter.ai/settings/credits. (${errorBody})`);
       }
 
       // "can only afford N" → retry with lower max_tokens
       const match = errorBody.match(/can only afford (\d+)/);
       if (match) {
         const affordable = parseInt(match[1], 10);
-        if (affordable > 300) {
+        if (affordable > 150) {
           maxTokens = affordable - 50;
           console.warn(`[Analysis] 402: retrying with max_tokens=${maxTokens} (attempt ${attempt + 1})`);
           lastError = errorBody;
