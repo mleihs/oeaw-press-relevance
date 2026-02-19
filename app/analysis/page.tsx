@@ -15,7 +15,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Download, ChevronLeft, ChevronRight, Brain, ArrowUp, ArrowDown, ChevronDown } from 'lucide-react';
+import { Download, ChevronLeft, ChevronRight, Brain, ArrowUp, ArrowDown, ChevronDown, Info } from 'lucide-react';
 import { SCORE_LABELS, SCORE_COLORS } from '@/lib/constants';
 
 const SORT_OPTIONS = [
@@ -246,8 +246,16 @@ export default function AnalysisPage() {
           </div>
 
           {/* ITA filter */}
-          <div className="space-y-2 shrink-0">
-            <p className="text-sm text-neutral-500 font-medium">ITA ausblenden</p>
+          <div className="shrink-0 flex items-center gap-2 sm:mb-[18px]">
+            <label className="text-sm text-neutral-500 font-medium inline-flex items-center gap-1 cursor-pointer">
+              ITA ausblenden
+              <span className="relative group">
+                <Info className="h-3.5 w-3.5 text-neutral-400 cursor-help" />
+                <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 rounded bg-neutral-800 text-white text-xs whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity">
+                  Temporärer Wunsch von Stefan
+                </span>
+              </span>
+            </label>
             <Switch
               checked={excludeIta}
               onCheckedChange={(v) => { setExcludeIta(v); setPage(1); }}
