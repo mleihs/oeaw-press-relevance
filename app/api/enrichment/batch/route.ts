@@ -5,6 +5,7 @@ import { enrichFromOpenAlex } from '@/lib/enrichment/openalex';
 import { enrichFromUnpaywall } from '@/lib/enrichment/unpaywall';
 import { enrichFromSemanticScholar } from '@/lib/enrichment/semantic-scholar';
 import { enrichFromPdf } from '@/lib/enrichment/pdf-extract';
+import { enrichFromWebDb, WEBDB_SOURCE_TAG } from '@/lib/enrichment/webdb-native';
 import { Publication, EnrichmentResult } from '@/lib/types';
 
 export const maxDuration = 300;
@@ -37,52 +38,73 @@ export async function POST(req: NextRequest) {
   const limit = Math.min(body.limit || 20, 500);
   const includePartial = body.include_partial === true;
   const includeNoDoi = body.include_no_doi === true;
+  const explicitIds: string[] | undefined =
+    Array.isArray(body.ids) && body.ids.every((x: unknown) => typeof x === 'string')
+      ? body.ids
+      : undefined;
 
-  const statusFilter = includePartial ? ['pending', 'partial'] : ['pending'];
+  let pubs: Publication[];
 
-  // Query 1: publications with DOI (standard path)
-  let doiQuery = supabase
-    .from('publications')
-    .select('*')
-    .not('doi', 'is', null)
-    .in('enrichment_status', statusFilter)
-    .order('published_at', { ascending: false, nullsFirst: false })
-    .limit(limit);
+  if (explicitIds && explicitIds.length > 0) {
+    // ID-based dispatch: caller pinpoints exactly which publications to enrich.
+    // Used by the Augment workflow to avoid status-filter side effects.
+    const { data, error } = await supabase
+      .from('publications')
+      .select('*')
+      .in('id', explicitIds.slice(0, limit));
 
-  const { data: doiPubs, error: doiError } = await doiQuery;
-
-  if (doiError) {
-    return new Response(JSON.stringify({ error: doiError.message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
-
-  // Query 2: publications without DOI but with a .pdf URL or CSV abstract (when requested)
-  let noDoiPubs: Publication[] = [];
-  if (includeNoDoi) {
-    const remaining = limit - (doiPubs?.length || 0);
-    if (remaining > 0) {
-      const { data, error } = await supabase
-        .from('publications')
-        .select('*')
-        .is('doi', null)
-        .or('url.like.%.pdf,abstract.not.is.null')
-        .in('enrichment_status', statusFilter)
-        .order('published_at', { ascending: false, nullsFirst: false })
-        .limit(remaining);
-
-      if (error) {
-        return new Response(JSON.stringify({ error: error.message }), {
-          status: 500,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      }
-      noDoiPubs = (data || []) as Publication[];
+    if (error) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
-  }
+    pubs = (data || []) as Publication[];
+  } else {
+    const statusFilter = includePartial ? ['pending', 'partial'] : ['pending'];
 
-  const pubs = [...((doiPubs || []) as Publication[]), ...noDoiPubs];
+    // Query 1: publications with DOI (standard path)
+    const { data: doiPubs, error: doiError } = await supabase
+      .from('publications')
+      .select('*')
+      .not('doi', 'is', null)
+      .in('enrichment_status', statusFilter)
+      .order('published_at', { ascending: false, nullsFirst: false })
+      .limit(limit);
+
+    if (doiError) {
+      return new Response(JSON.stringify({ error: doiError.message }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Query 2: publications without DOI but with a .pdf URL or CSV abstract (when requested)
+    let noDoiPubs: Publication[] = [];
+    if (includeNoDoi) {
+      const remaining = limit - (doiPubs?.length || 0);
+      if (remaining > 0) {
+        const { data, error } = await supabase
+          .from('publications')
+          .select('*')
+          .is('doi', null)
+          .or('url.like.%.pdf,abstract.not.is.null')
+          .in('enrichment_status', statusFilter)
+          .order('published_at', { ascending: false, nullsFirst: false })
+          .limit(remaining);
+
+        if (error) {
+          return new Response(JSON.stringify({ error: error.message }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
+        noDoiPubs = (data || []) as Publication[];
+      }
+    }
+
+    pubs = [...((doiPubs || []) as Publication[]), ...noDoiPubs];
+  }
 
   if (pubs.length === 0) {
     return new Response(JSON.stringify({ message: 'No publications to enrich' }), {
@@ -116,7 +138,7 @@ export async function POST(req: NextRequest) {
       });
 
       // ---------------------------------------------------------------
-      // DOI-less publications: CSV abstract + PDF path
+      // DOI-less publications: WebDB summary → CSV abstract → PDF path
       // ---------------------------------------------------------------
       if (!hasDoi) {
         // Send skipped events for all 4 API sources
@@ -128,6 +150,19 @@ export async function POST(req: NextRequest) {
         let noDoi_snippet: string | undefined;
         let noDoi_wordCount = 0;
         const noDoi_sources: string[] = [];
+
+        // Phase 0 (free): WebDB native press summary if present
+        const webdbHit = enrichFromWebDb(pub);
+        if (webdbHit) {
+          if (!noDoi_abstract && webdbHit.abstract) {
+            noDoi_abstract = webdbHit.abstract;
+          }
+          if (webdbHit.word_count && webdbHit.word_count > noDoi_wordCount) {
+            noDoi_wordCount = webdbHit.word_count;
+          }
+          noDoi_sources.push(WEBDB_SOURCE_TAG);
+          sourceCounts[WEBDB_SOURCE_TAG] = (sourceCounts[WEBDB_SOURCE_TAG] || 0) + 1;
+        }
 
         // Use CSV abstract if available
         if (hasCsvAbstract) {
@@ -222,6 +257,19 @@ export async function POST(req: NextRequest) {
       let mergedPublishedAt: string | undefined; // Only fill if pub.published_at is empty
       const sourcesUsed: string[] = [];
       let apiPdfUrl: string | undefined; // Collected from API sources for fallback
+
+      // Phase 0 (free): WebDB native press summary if present
+      const webdbHit = enrichFromWebDb(pub);
+      if (webdbHit) {
+        if (!mergedAbstract && webdbHit.abstract) {
+          mergedAbstract = webdbHit.abstract;
+        }
+        if (webdbHit.word_count && webdbHit.word_count > mergedWordCount) {
+          mergedWordCount = webdbHit.word_count;
+        }
+        sourcesUsed.push(WEBDB_SOURCE_TAG);
+        sourceCounts[WEBDB_SOURCE_TAG] = (sourceCounts[WEBDB_SOURCE_TAG] || 0) + 1;
+      }
 
       if (hasCsvAbstract) {
         sourcesUsed.push('csv');

@@ -35,7 +35,13 @@ export async function GET(
 
     const { data, error } = await supabase
       .from('publications')
-      .select('*')
+      .select(`
+        *,
+        publication_type_lookup:publication_types(id, webdb_uid, name_de, name_en),
+        person_publications(highlight, mahighlight, authorship, person:persons(*)),
+        orgunit_publications(highlight, orgunit:orgunits(id, webdb_uid, name_de, name_en, akronym_de, akronym_en, url_de, url_en)),
+        publication_projects(project:projects(*))
+      `)
       .eq('id', id)
       .single();
 
@@ -43,7 +49,32 @@ export async function GET(
       return NextResponse.json({ error: error.message }, { status: 404 });
     }
 
-    return NextResponse.json(data);
+    // Flatten the nested relations into a friendlier shape.
+    const out = {
+      ...data,
+      authors_resolved: (data.person_publications || [])
+        .filter((pp: { person: unknown }) => pp.person)
+        .map((pp: { person: Record<string, unknown>; authorship: string | null; highlight: boolean; mahighlight: boolean }) => ({
+          ...pp.person,
+          authorship: pp.authorship,
+          highlight: pp.highlight,
+          mahighlight: pp.mahighlight,
+        })),
+      orgunits: (data.orgunit_publications || [])
+        .filter((op: { orgunit: unknown }) => op.orgunit)
+        .map((op: { orgunit: Record<string, unknown>; highlight: boolean }) => ({
+          ...op.orgunit,
+          highlight: op.highlight,
+        })),
+      projects: (data.publication_projects || [])
+        .filter((pp: { project: unknown }) => pp.project)
+        .map((pp: { project: Record<string, unknown> }) => pp.project),
+    };
+    delete out.person_publications;
+    delete out.orgunit_publications;
+    delete out.publication_projects;
+
+    return NextResponse.json(out);
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     return NextResponse.json({ error: message }, { status: 500 });

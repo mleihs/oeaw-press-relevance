@@ -4,16 +4,27 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Publication } from '@/lib/types';
 import { doiToUrl } from '@/lib/enrichment/doi-utils';
-import { decodeHtmlTitle } from '@/lib/html-utils';
+import { displayTitle } from '@/lib/html-utils';
 import { PressScoreBadge, ScoreBar } from './score-bar';
+import { InfoBubble } from './info-bubble';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { LLM_MODELS } from '@/lib/constants';
-import { ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ChevronUp, ExternalLink, Info } from 'lucide-react';
+import {
+  ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ChevronUp, ExternalLink, Info,
+  ShieldCheck, Megaphone,
+} from 'lucide-react';
+
+// Publication rows from /api/publications now ride along with embedded
+// orgunit shortcuts. Anything optional gets duck-typed so existing callers
+// (analysis page) still type-check.
+type PublicationRow = Publication & {
+  orgunits?: Array<{ id: string; akronym_de: string | null; name_de: string }>;
+};
 
 interface PublicationTableProps {
-  publications: Publication[];
+  publications: PublicationRow[];
   showScores?: boolean;
   showEnrichment?: boolean;
   sortBy?: string;
@@ -86,6 +97,7 @@ export function PublicationTable({ publications, showScores, showEnrichment, sor
                 <th className={headerClass} onClick={() => onSort?.('press_score')}>
                   <span className="inline-flex items-center gap-1">
                     Score {sortable && <SortIcon column="press_score" sortBy={sortBy} sortOrder={sortOrder} />}
+                    <InfoBubble id="press_score" />
                   </span>
                 </th>
               )}
@@ -130,7 +142,7 @@ function MobilePublicationCard({
   showScores,
   showEnrichment,
 }: {
-  pub: Publication;
+  pub: PublicationRow;
   showScores?: boolean;
   showEnrichment?: boolean;
 }) {
@@ -142,10 +154,10 @@ function MobilePublicationCard({
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <p className="font-medium text-sm leading-snug line-clamp-2">
-            {decodeHtmlTitle(pub.title)}
+            {displayTitle(pub.original_title || pub.title, pub.citation)}
           </p>
           <p className="text-xs text-neutral-500 mt-1 truncate">
-            {pub.authors || 'Unbekannt'}
+            {pub.lead_author || pub.authors || 'Unbekannt'}
           </p>
         </div>
         {showScores && (
@@ -161,8 +173,25 @@ function MobilePublicationCard({
             {pub.publication_type}
           </Badge>
         )}
+        {pub.peer_reviewed && (
+          <Tooltip><TooltipTrigger asChild>
+            <span className="inline-flex items-center rounded-full bg-blue-100 text-blue-800 px-1.5 py-0.5 text-[10px] font-medium gap-0.5">
+              <ShieldCheck className="h-2.5 w-2.5" /> PR
+            </span>
+          </TooltipTrigger><TooltipContent>Peer-reviewed</TooltipContent></Tooltip>
+        )}
+        {pub.popular_science && (
+          <Tooltip><TooltipTrigger asChild>
+            <span className="inline-flex items-center rounded-full bg-purple-100 text-purple-800 px-1.5 py-0.5 text-[10px] font-medium gap-0.5">
+              <Megaphone className="h-2.5 w-2.5" /> PS
+            </span>
+          </TooltipTrigger><TooltipContent>Popular Science</TooltipContent></Tooltip>
+        )}
         {pub.published_at && (
           <span className="text-[10px] text-neutral-400">{pub.published_at.slice(0, 4)}</span>
+        )}
+        {pub.orgunits && pub.orgunits.length > 0 && (
+          <OrgunitChips orgunits={pub.orgunits} max={2} />
         )}
         {showEnrichment && (
           <>
@@ -189,7 +218,7 @@ function PublicationRow({
   isExpanded,
   onToggle,
 }: {
-  pub: Publication;
+  pub: PublicationRow;
   showScores?: boolean;
   showEnrichment?: boolean;
   isExpanded: boolean;
@@ -209,20 +238,36 @@ function PublicationRow({
           </Button>
         </td>
         <td className="p-3 max-w-sm">
-          <div className="font-medium truncate">
+          <div className="font-medium truncate flex items-center gap-1.5">
             <Link
               href={`/publications/${pub.id}`}
-              className="hover:text-[#0047bb] hover:underline"
+              className="hover:text-[#0047bb] hover:underline truncate"
               onClick={(e) => e.stopPropagation()}
             >
-              {decodeHtmlTitle(pub.title)}
+              {displayTitle(pub.original_title || pub.title, pub.citation)}
             </Link>
+            {pub.peer_reviewed && (
+              <Tooltip><TooltipTrigger asChild>
+                <ShieldCheck className="h-3 w-3 text-blue-600 shrink-0" />
+              </TooltipTrigger><TooltipContent>Peer-reviewed</TooltipContent></Tooltip>
+            )}
+            {pub.popular_science && (
+              <Tooltip><TooltipTrigger asChild>
+                <Megaphone className="h-3 w-3 text-purple-600 shrink-0" />
+              </TooltipTrigger><TooltipContent>Popular Science</TooltipContent></Tooltip>
+            )}
           </div>
-          {pub.institute && pub.institute !== '0' && (
-            <div className="text-xs text-neutral-500 truncate">{pub.institute}</div>
+          {pub.orgunits && pub.orgunits.length > 0 ? (
+            <div className="mt-0.5">
+              <OrgunitChips orgunits={pub.orgunits} max={3} />
+            </div>
+          ) : (
+            pub.institute && pub.institute !== '0' && (
+              <div className="text-xs text-neutral-500 truncate">{pub.institute}</div>
+            )
           )}
         </td>
-        <td className="p-3 max-w-[140px] truncate">{pub.authors || '-'}</td>
+        <td className="p-3 max-w-[140px] truncate">{pub.lead_author || pub.authors || '-'}</td>
         <td className="p-3 whitespace-nowrap">
           <Badge variant="outline" className="text-xs">
             {pub.publication_type || 'Unbekannt'}
@@ -300,6 +345,7 @@ const SOURCE_LABELS: Record<string, string> = {
   semantic_scholar: 'Semantic Scholar',
   pdf: 'PDF',
   csv: 'CSV',
+  hebowebdb_summary: 'WebDB',
 };
 
 const SOURCE_COLOR: Record<string, string> = {
@@ -309,6 +355,7 @@ const SOURCE_COLOR: Record<string, string> = {
   semantic_scholar: 'bg-orange-100 text-orange-700',
   pdf: 'bg-rose-100 text-rose-700',
   csv: 'bg-teal-100 text-teal-700',
+  hebowebdb_summary: 'bg-indigo-100 text-indigo-700',
 };
 
 const SOURCE_DESCRIPTIONS: Record<string, string> = {
@@ -318,6 +365,7 @@ const SOURCE_DESCRIPTIONS: Record<string, string> = {
   semantic_scholar: 'KI-gestützte Datenbank: Abstract, Zitationszahlen und Einfluss-Score.',
   pdf: 'Direkter PDF-Download von der Publikations-URL — extrahiert den Volltext.',
   csv: 'Abstract aus der ursprünglich importierten CSV-Datei übernommen.',
+  hebowebdb_summary: 'Vom Institut kuratierte Pressezusammenfassung (DE/EN) aus der WebDB.',
 };
 
 const MODEL_SHORT: Record<string, string> = Object.fromEntries(
@@ -356,6 +404,36 @@ function SourceBadges({ sources }: { sources: string }) {
         </span>
       ))}
     </>
+  );
+}
+
+function OrgunitChips({
+  orgunits,
+  max = 3,
+}: {
+  orgunits: Array<{ id: string; akronym_de: string | null; name_de: string }>;
+  max?: number;
+}) {
+  const visible = orgunits.slice(0, max);
+  const overflow = orgunits.length - visible.length;
+  return (
+    <span className="inline-flex flex-wrap items-center gap-1">
+      {visible.map((o) => (
+        <Tooltip key={o.id}>
+          <TooltipTrigger asChild>
+            <span className="inline-flex items-center rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-medium text-neutral-600">
+              {o.akronym_de || o.name_de.slice(0, 12)}
+            </span>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="max-w-xs">{o.name_de}</TooltipContent>
+        </Tooltip>
+      ))}
+      {overflow > 0 && (
+        <span className="inline-flex items-center rounded bg-neutral-200 px-1.5 py-0.5 text-[10px] font-medium text-neutral-500">
+          +{overflow}
+        </span>
+      )}
+    </span>
   );
 }
 

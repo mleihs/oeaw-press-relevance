@@ -148,6 +148,7 @@ export async function POST(req: NextRequest) {
               target_audience: result.target_audience,
               suggested_angle: result.suggested_angle,
               reasoning: result.reasoning,
+              haiku: result.haiku ?? null,
               llm_model: model,
               analysis_cost: cost / results.length,
               updated_at: new Date().toISOString(),

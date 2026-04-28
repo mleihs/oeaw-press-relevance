@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Newsreader } from "next/font/google";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 import "./globals.css";
 import { Nav } from "@/components/nav";
 import { Toaster } from "@/components/ui/sonner";
@@ -16,6 +17,13 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const newsreader = Newsreader({
+  variable: "--font-newsreader",
+  subsets: ["latin"],
+  weight: ["300", "400"],
+  style: ["normal", "italic"],
+});
+
 export const metadata: Metadata = {
   title: "StoryScout — ÖAW",
   description: "StoryScout findet die besten Stories in Publikationen der Österreichischen Akademie der Wissenschaften",
@@ -29,26 +37,28 @@ export default function RootLayout({
   return (
     <html lang="de">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-neutral-50 flex flex-col min-h-screen`}
+        className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable} antialiased bg-neutral-50 flex flex-col min-h-screen`}
       >
-        <PasswordGate>
-          <Nav />
-          <main className="mx-auto max-w-7xl w-full px-4 py-6 flex-1">
-            {children}
-          </main>
-          <footer className="border-t bg-white/50 mt-auto">
-            <div className="mx-auto max-w-7xl px-4 py-4 flex items-center justify-between text-xs text-neutral-400">
-              <span>StoryScout v0.1.0</span>
-              <div className="flex items-center gap-4">
-                <Link href="/settings" className="hover:text-neutral-600 transition-colors">
-                  Einstellungen
-                </Link>
-                <span>ÖAW</span>
+        <NuqsAdapter>
+          <PasswordGate>
+            <Nav />
+            <main className="mx-auto max-w-7xl w-full px-4 py-6 flex-1">
+              {children}
+            </main>
+            <footer className="border-t bg-white/50 mt-auto">
+              <div className="mx-auto max-w-7xl px-4 py-4 flex items-center justify-between text-xs text-neutral-400">
+                <span>StoryScout v0.1.0</span>
+                <div className="flex items-center gap-4">
+                  <Link href="/settings" className="hover:text-neutral-600 transition-colors">
+                    Einstellungen
+                  </Link>
+                  <span>ÖAW</span>
+                </div>
               </div>
-            </div>
-          </footer>
-          <Toaster />
-        </PasswordGate>
+            </footer>
+            <Toaster />
+          </PasswordGate>
+        </NuqsAdapter>
       </body>
     </html>
   );

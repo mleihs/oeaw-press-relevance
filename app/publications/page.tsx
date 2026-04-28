@@ -8,367 +8,390 @@ import { EnrichmentModal } from '@/components/enrichment-modal';
 import { AnalysisModal } from '@/components/analysis-modal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { Card, CardContent } from '@/components/ui/card';
 import { getApiHeaders } from '@/lib/settings-store';
-import { Search, ChevronLeft, ChevronRight, Sparkles, Brain, X, Bookmark, Plus, Trash2 } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, Sparkles, Brain } from 'lucide-react';
 
-interface SavedView {
-  name: string;
-  enrichmentFilter: string;
-  analysisFilter: string;
-  sortBy: string;
-  sortOrder: 'asc' | 'desc';
-}
+import { useFilters } from './use-filters';
+import { FILTER_DEFAULTS, PRESET_FIELDS, type FilterValues, type PresetKey } from './_filters';
+import { useLookups } from './_components/use-lookups';
+import { PresetBar } from './_components/preset-bar';
+import { ActiveFilters } from './_components/active-filters';
+import { ShowAllToggle } from './_components/show-all-toggle';
+import { FilterSheet } from './_components/filter-sheet';
+import { WISS_TYPE_UIDS } from './_constants';
+import { RotateCcw } from 'lucide-react';
 
-function loadSavedViews(): SavedView[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    return JSON.parse(localStorage.getItem('storyscout-saved-views') || '[]');
-  } catch {
-    return [];
-  }
-}
-
-function saveSavedViews(views: SavedView[]) {
-  localStorage.setItem('storyscout-saved-views', JSON.stringify(views));
-}
+const PAGE_SIZE = 20;
 
 export default function PublicationsPage() {
   const [publications, setPublications] = useState<Publication[]>([]);
   const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [enrichmentFilter, setEnrichmentFilter] = useState('');
-  const [analysisFilter, setAnalysisFilter] = useState('');
+  const [hidden, setHidden] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [enrichModalOpen, setEnrichModalOpen] = useState(false);
-  const [analysisModalOpen, setAnalysisModalOpen] = useState(false);
-  const [sortBy, setSortBy] = useState('created_at');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [savedViews, setSavedViews] = useState<SavedView[]>([]);
-  const pageSize = 20;
-  const searchInputRef = useRef<HTMLInputElement>(null);
+  const [enrichOpen, setEnrichOpen] = useState(false);
+  const [analysisOpen, setAnalysisOpen] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
 
-  // Load saved views on mount
-  useEffect(() => {
-    setSavedViews(loadSavedViews());
-  }, []);
+  const [filters, setFilters] = useFilters();
+  const lookups = useLookups();
 
-  const saveCurrentView = () => {
-    const name = prompt('Name für diese Ansicht:');
-    if (!name) return;
-    const view: SavedView = { name, enrichmentFilter, analysisFilter, sortBy, sortOrder };
-    const updated = [...savedViews, view];
-    setSavedViews(updated);
-    saveSavedViews(updated);
-  };
-
-  const applyView = (view: SavedView) => {
-    setEnrichmentFilter(view.enrichmentFilter);
-    setAnalysisFilter(view.analysisFilter);
-    setSortBy(view.sortBy);
-    setSortOrder(view.sortOrder);
-    setPage(1);
-  };
-
-  const deleteView = (index: number) => {
-    const updated = savedViews.filter((_, i) => i !== index);
-    setSavedViews(updated);
-    saveSavedViews(updated);
-  };
-
-  // Keyboard shortcuts
-  useKeyboardShortcuts({
-    onSearch: () => searchInputRef.current?.focus(),
-    onPrevPage: () => setPage(p => Math.max(1, p - 1)),
-    onNextPage: () => { const tp = Math.ceil(total / pageSize); setPage(p => Math.min(tp, p + 1)); },
-  });
-
-  // Search debounce (300ms)
+  const [searchInput, setSearchInput] = useState(filters.q);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const handleSearchChange = useCallback((value: string) => {
-    setSearch(value);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      setDebouncedSearch(value);
-      setPage(1);
-    }, 300);
-  }, []);
 
-  const handleSort = useCallback((column: string) => {
-    if (sortBy === column) {
-      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortBy(column);
-      setSortOrder('asc');
+  // Keep the visible search input in sync if the URL changes externally
+  // (e.g. preset clicked, filter chip removed, browser back).
+  useEffect(() => {
+    setSearchInput(filters.q);
+  }, [filters.q]);
+
+  const handleSearchChange = useCallback(
+    (v: string) => {
+      setSearchInput(v);
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
+        // Search is a modifier, not a preset-territory field — don't clear preset.
+        setFilters({ q: v, page: 1 });
+      }, 300);
+    },
+    [setFilters],
+  );
+
+  // What does a given preset prescribe for the preset-territory fields?
+  // Returns only the fields the preset CARES about. The applyPreset machinery
+  // resets all other preset-territory fields to defaults; modifier fields
+  // (search, oestat, units, dates, etc.) are never touched.
+  const getPresetSpec = useCallback(
+    (key: Exclude<PresetKey, 'custom'>): Partial<FilterValues> => {
+      switch (key) {
+        case 'pitch':
+          return { peer: 'yes', hasSumDe: true, minScore: 70, showAll: false };
+        case 'mahighlights':
+          return { maHl: true, showAll: true };
+        case 'popsci':
+          return { popsci: 'yes' };
+        case 'peer':
+          return { peer: 'yes' };
+        case 'wiss': {
+          const ids = (lookups?.publicationTypes ?? [])
+            .filter((t) => WISS_TYPE_UIDS.includes(t.webdb_uid))
+            .map((t) => t.id);
+          return { types: ids };
+        }
+      }
+    },
+    [lookups],
+  );
+
+  const applyPreset = useCallback(
+    (key: PresetKey) => {
+      // Toggle off the active preset: reset preset-territory only, preserve modifiers.
+      if (filters.preset === key) {
+        const reset: Partial<FilterValues> = { preset: 'custom', page: 1 };
+        for (const f of PRESET_FIELDS) {
+          (reset as Record<string, unknown>)[f] = FILTER_DEFAULTS[f];
+        }
+        setFilters(reset);
+        return;
+      }
+      if (key === 'custom') return;
+
+      // Switching presets: reset preset-territory to defaults, then apply the
+      // new preset's specific values. Modifier fields survive untouched.
+      const spec = getPresetSpec(key);
+      const patch: Partial<FilterValues> = { preset: key, page: 1 };
+      for (const f of PRESET_FIELDS) {
+        (patch as Record<string, unknown>)[f] = FILTER_DEFAULTS[f];
+      }
+      Object.assign(patch, spec);
+      setFilters(patch);
+    },
+    [filters.preset, getPresetSpec, setFilters],
+  );
+
+  // Detects when the active preset's territory has been hand-modified
+  // (e.g. user toggled `peer: yes` off after picking the Pitch preset).
+  // Lets us show a "Modifiziert · Zurücksetzen"-pill for one-click recovery.
+  const presetModified = (() => {
+    if (filters.preset === 'custom') return false;
+    const spec = getPresetSpec(filters.preset);
+    for (const f of PRESET_FIELDS) {
+      const expected = (spec as Record<string, unknown>)[f] ?? FILTER_DEFAULTS[f];
+      const actual = filters[f];
+      // Array equality (for `types`)
+      if (Array.isArray(expected) && Array.isArray(actual)) {
+        if (expected.length !== actual.length) return true;
+        if (expected.some((v, i) => v !== actual[i])) return true;
+      } else if (expected !== actual) {
+        return true;
+      }
     }
-    setPage(1);
-  }, [sortBy]);
+    return false;
+  })();
+
+  const resetPresetTerritory = useCallback(() => {
+    if (filters.preset === 'custom') return;
+    const spec = getPresetSpec(filters.preset);
+    const patch: Partial<FilterValues> = { page: 1 };
+    for (const f of PRESET_FIELDS) {
+      (patch as Record<string, unknown>)[f] = FILTER_DEFAULTS[f];
+    }
+    Object.assign(patch, spec);
+    setFilters(patch);
+  }, [filters.preset, getPresetSpec, setFilters]);
+
+  // Resets EVERYTHING (preset + all modifiers) to factory defaults except sort/order.
+  // Used by the empty-state escape hatch when filters conflict to zero.
+  const resetAllFilters = useCallback(() => {
+    setFilters({
+      ...FILTER_DEFAULTS,
+      sort: filters.sort,
+      order: filters.order,
+    });
+  }, [filters.sort, filters.order, setFilters]);
+
+  // True when any user-set filter — preset or modifier — diverges from defaults.
+  const hasAnyActiveFilter = (() => {
+    const ignore = new Set(['sort', 'order', 'page']);
+    for (const k of Object.keys(FILTER_DEFAULTS) as Array<keyof FilterValues>) {
+      if (ignore.has(k)) continue;
+      const def = FILTER_DEFAULTS[k];
+      const cur = filters[k];
+      if (Array.isArray(def) && Array.isArray(cur)) {
+        if (cur.length !== def.length) return true;
+      } else if (cur !== def) {
+        return true;
+      }
+    }
+    return false;
+  })();
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({
-        page: String(page),
-        pageSize: String(pageSize),
-        sort: sortBy,
-        order: sortOrder,
-      });
-      if (debouncedSearch) params.set('search', debouncedSearch);
-      if (enrichmentFilter) params.set('enrichment_status', enrichmentFilter);
-      if (analysisFilter) params.set('analysis_status', analysisFilter);
+      const p = new URLSearchParams();
+      p.set('page', String(filters.page));
+      p.set('pageSize', String(PAGE_SIZE));
+      p.set('sort', filters.sort);
+      p.set('order', filters.order);
+      if (filters.q) p.set('search', filters.q);
+      if (filters.enrich) p.set('enrichment_status', filters.enrich);
+      if (filters.analysis) p.set('analysis_status', filters.analysis);
+      if (filters.types.length) p.set('pub_type_ids', filters.types.join(','));
+      if (filters.units.length) p.set('orgunit_ids', filters.units.join(','));
+      if (filters.oestat.length) p.set('oestat6_ids', filters.oestat.join(','));
+      if (filters.oestat3.length) p.set('oestat3_domains', filters.oestat3.join(','));
+      if (filters.topUnitOnly) p.set('top_level_only', 'true');
+      if (filters.peer === 'yes') p.set('peer_reviewed', 'true');
+      if (filters.peer === 'no') p.set('peer_reviewed', 'false');
+      if (filters.popsci === 'yes') p.set('popular_science', 'true');
+      if (filters.popsci === 'no') p.set('popular_science', 'false');
+      if (filters.oa === 'yes') p.set('open_access', 'true');
+      if (filters.oa === 'no') p.set('open_access', 'false');
+      if (filters.hasSumDe) p.set('has_summary_de', 'true');
+      if (filters.hasSumEn) p.set('has_summary_en', 'true');
+      if (filters.hasPdf) p.set('has_pdf', 'true');
+      if (filters.hasDoi) p.set('has_doi', 'true');
+      if (filters.maHl) p.set('mahighlight', 'true');
+      if (filters.hl) p.set('highlight', 'true');
+      if (filters.from) p.set('from', filters.from);
+      if (filters.to) p.set('to', filters.to);
+      if (filters.minScore > 0) p.set('min_score', String(filters.minScore / 100));
+      if (!filters.showAll) p.set('default_eligible', 'true');
 
-      const res = await fetch(`/api/publications?${params}`, {
-        headers: getApiHeaders(),
-      });
+      const res = await fetch(`/api/publications?${p}`, { headers: getApiHeaders() });
       const data = await res.json();
       setPublications(data.publications || []);
       setTotal(data.total || 0);
+      setHidden(data.total_hidden || 0);
     } catch {
       // silently fail
     } finally {
       setLoading(false);
     }
-  }, [page, debouncedSearch, enrichmentFilter, analysisFilter, sortBy, sortOrder]);
+  }, [filters]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  const totalPages = Math.ceil(total / pageSize);
-  const activeFilterCount = (enrichmentFilter ? 1 : 0) + (analysisFilter ? 1 : 0);
-  const rangeStart = total > 0 ? (page - 1) * pageSize + 1 : 0;
-  const rangeEnd = Math.min(page * pageSize, total);
+  const handleSort = useCallback(
+    (column: string) => {
+      if (filters.sort === column) {
+        setFilters({ order: filters.order === 'asc' ? 'desc' : 'asc', page: 1 });
+      } else {
+        setFilters({ sort: column, order: 'asc', page: 1 });
+      }
+    },
+    [filters.sort, filters.order, setFilters],
+  );
 
-  const clearFilters = () => {
-    setEnrichmentFilter('');
-    setAnalysisFilter('');
-    setPage(1);
-  };
+  useKeyboardShortcuts({
+    onSearch: () => searchRef.current?.focus(),
+    onPrevPage: () => setFilters({ page: Math.max(1, filters.page - 1) }),
+    onNextPage: () => {
+      const tp = Math.ceil(total / PAGE_SIZE);
+      setFilters({ page: Math.min(tp || 1, filters.page + 1) });
+    },
+  });
+
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+  const rangeStart = total > 0 ? (filters.page - 1) * PAGE_SIZE + 1 : 0;
+  const rangeEnd = Math.min(filters.page * PAGE_SIZE, total);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div>
         <h1 className="text-2xl font-bold">Publikationen</h1>
-        <p className="text-neutral-500">{total.toLocaleString()} Publikationen in der Datenbank</p>
+        <p className="text-neutral-500">
+          {total.toLocaleString('de-AT')} Publikationen
+          {!filters.showAll && hidden > 0 && (
+            <span className="ml-2 text-neutral-400">
+              ({hidden.toLocaleString('de-AT')} ausgeblendet)
+            </span>
+          )}
+        </p>
       </div>
 
-      {/* Filters */}
       <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-center">
-            <div className="relative flex-1 min-w-[200px]">
+        <CardContent className="p-3 space-y-3">
+          <div className="flex flex-col lg:flex-row lg:items-center gap-3">
+            <div className="relative w-full lg:max-w-xs">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
               <Input
-                ref={searchInputRef}
-                placeholder="Titel suchen... (/ oder Cmd+K)"
-                value={search}
+                ref={searchRef}
+                value={searchInput}
                 onChange={(e) => handleSearchChange(e.target.value)}
-                className="pl-9"
+                placeholder="Titel suchen…  (/ oder ⌘K)"
+                className="pl-9 h-9"
               />
             </div>
-            <Select
-              value={enrichmentFilter || '_all'}
-              onValueChange={(v) => { setEnrichmentFilter(v === '_all' ? '' : v); setPage(1); }}
-            >
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Alle (Enrichment)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="_all">Alle (Enrichment)</SelectItem>
-                <SelectItem value="pending">Ausstehend</SelectItem>
-                <SelectItem value="enriched">Angereichert</SelectItem>
-                <SelectItem value="partial">Teilweise</SelectItem>
-                <SelectItem value="failed">Fehlgeschlagen</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select
-              value={analysisFilter || '_all'}
-              onValueChange={(v) => { setAnalysisFilter(v === '_all' ? '' : v); setPage(1); }}
-            >
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Alle (Analyse)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="_all">Alle (Analyse)</SelectItem>
-                <SelectItem value="pending">Ausstehend</SelectItem>
-                <SelectItem value="analyzed">Analysiert</SelectItem>
-                <SelectItem value="failed">Fehlgeschlagen</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {/* Saved views */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="h-9 gap-1.5">
-                  <Bookmark className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Ansichten</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {savedViews.length > 0 ? (
-                  <>
-                    {savedViews.map((view, i) => (
-                      <DropdownMenuItem
-                        key={i}
-                        className="flex items-center justify-between gap-4"
-                        onClick={() => applyView(view)}
-                      >
-                        <span>{view.name}</span>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); deleteView(i); }}
-                          className="text-neutral-400 hover:text-red-500 transition-colors"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </button>
-                      </DropdownMenuItem>
-                    ))}
-                    <DropdownMenuSeparator />
-                  </>
-                ) : (
-                  <div className="px-2 py-1.5 text-xs text-neutral-400">Keine gespeicherten Ansichten</div>
-                )}
-                <DropdownMenuItem onClick={saveCurrentView}>
-                  <Plus className="h-3.5 w-3.5 mr-2" />
-                  Aktuelle Ansicht speichern
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <div className="flex-1 min-w-0 flex items-center gap-2 flex-wrap">
+              <PresetBar active={filters.preset} onSelect={applyPreset} />
+              {presetModified && (
+                <button
+                  type="button"
+                  onClick={resetPresetTerritory}
+                  title="Voreinstellung des Presets wiederherstellen"
+                  className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-medium text-amber-800 hover:bg-amber-100 transition-colors"
+                >
+                  <RotateCcw className="h-3 w-3" />
+                  Preset modifiziert · zurücksetzen
+                </button>
+              )}
+            </div>
+            <div className="flex items-center gap-3">
+              <ShowAllToggle
+                showAll={filters.showAll}
+                onChange={(v) => setFilters({ showAll: v, page: 1 })}
+                hiddenCount={hidden}
+              />
+              <FilterSheet filters={filters} setFilters={setFilters} lookups={lookups} />
+            </div>
           </div>
 
-          {/* Active filter indicator */}
-          {activeFilterCount > 0 && (
-            <div className="flex items-center gap-2 mt-3 pt-3 border-t">
-              <Badge variant="secondary" className="text-xs">
-                {activeFilterCount} Filter aktiv
-              </Badge>
-              {enrichmentFilter && (
-                <Badge variant="outline" className="text-xs">
-                  Enrichment: {enrichmentFilter}
-                </Badge>
-              )}
-              {analysisFilter && (
-                <Badge variant="outline" className="text-xs">
-                  Analyse: {analysisFilter}
-                </Badge>
-              )}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearFilters}
-                className="text-xs h-6 px-2 text-neutral-500 hover:text-neutral-700"
-              >
-                <X className="h-3 w-3 mr-1" />
-                Filter zurücksetzen
-              </Button>
-            </div>
-          )}
+          <ActiveFilters filters={filters} setFilters={setFilters} lookups={lookups} />
         </CardContent>
       </Card>
 
-      {/* Enrichment & Analysis actions */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-[#0047bb]" />
-              Enrichment starten
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm text-neutral-500">
-              Publikationen mit Metadaten aus CrossRef, OpenAlex und anderen Quellen anreichern.
-            </p>
-            <Button onClick={() => setEnrichModalOpen(true)} size="sm">
-              Enrichment starten
+          <CardContent className="p-4 flex items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2 text-base font-medium">
+                <Sparkles className="h-4 w-4 text-[#0047bb]" /> Enrichment
+              </div>
+              <p className="text-xs text-neutral-500 mt-0.5">
+                Metadaten aus CrossRef + OpenAlex anreichern.
+              </p>
+            </div>
+            <Button onClick={() => setEnrichOpen(true)} size="sm">
+              Starten
             </Button>
           </CardContent>
         </Card>
-
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Brain className="h-4 w-4 text-[#0047bb]" />
-              Analyse starten
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm text-neutral-500">
-              Ausstehende Publikationen per LLM über OpenRouter analysieren.
-            </p>
-            <Button onClick={() => setAnalysisModalOpen(true)} size="sm">
-              Analyse starten
+          <CardContent className="p-4 flex items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2 text-base font-medium">
+                <Brain className="h-4 w-4 text-[#0047bb]" /> Analyse
+              </div>
+              <p className="text-xs text-neutral-500 mt-0.5">
+                LLM-Bewertung über OpenRouter.
+              </p>
+            </div>
+            <Button onClick={() => setAnalysisOpen(true)} size="sm">
+              Starten
             </Button>
           </CardContent>
         </Card>
       </div>
 
-      {/* Enrichment Modal */}
-      <EnrichmentModal
-        open={enrichModalOpen}
-        onOpenChange={setEnrichModalOpen}
-        onComplete={fetchData}
-      />
+      <EnrichmentModal open={enrichOpen} onOpenChange={setEnrichOpen} onComplete={fetchData} />
+      <AnalysisModal open={analysisOpen} onOpenChange={setAnalysisOpen} onComplete={fetchData} />
 
-      {/* Analysis Modal */}
-      <AnalysisModal
-        open={analysisModalOpen}
-        onOpenChange={setAnalysisModalOpen}
-        onComplete={fetchData}
-      />
-
-      {/* Table */}
       {loading ? (
         <div className="flex justify-center py-12">
           <div className="animate-spin h-8 w-8 border-4 border-neutral-200 border-t-[#0047bb] rounded-full" />
         </div>
+      ) : publications.length === 0 && hasAnyActiveFilter ? (
+        <Card className="border-dashed">
+          <CardContent className="px-6 py-10 text-center space-y-4">
+            <div>
+              <p className="text-base font-medium text-neutral-900">Keine Treffer</p>
+              <p className="mt-1 text-sm text-neutral-500">
+                Die aktive Filterkombination liefert keine Publikationen.
+                {filters.preset !== 'custom' && (
+                  <> Aktiver Preset: <strong>{filters.preset}</strong>.</>
+                )}
+              </p>
+              <p className="mt-2 text-xs text-neutral-400">
+                Tipp: einzelne Filter über die Chips oben entfernen, oder alles zurücksetzen.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {presetModified && (
+                <Button onClick={resetPresetTerritory} variant="outline" size="sm">
+                  <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+                  Preset-Modifikationen zurücknehmen
+                </Button>
+              )}
+              <Button onClick={resetAllFilters} variant="outline" size="sm">
+                Alle Filter zurücksetzen
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       ) : (
         <PublicationTable
           publications={publications}
           showScores
           showEnrichment
-          sortBy={sortBy}
-          sortOrder={sortOrder}
+          sortBy={filters.sort}
+          sortOrder={filters.order}
           onSort={handleSort}
         />
       )}
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-neutral-500">
-            Zeige {rangeStart}–{rangeEnd} von {total.toLocaleString()} Publikationen
+            Zeige {rangeStart}–{rangeEnd} von {total.toLocaleString('de-AT')}
           </p>
           <div className="flex gap-2">
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              disabled={page <= 1}
+              onClick={() => setFilters({ page: Math.max(1, filters.page - 1) })}
+              disabled={filters.page <= 1}
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-              disabled={page >= totalPages}
+              onClick={() => setFilters({ page: Math.min(totalPages, filters.page + 1) })}
+              disabled={filters.page >= totalPages}
             >
               <ChevronRight className="h-4 w-4" />
             </Button>

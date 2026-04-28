@@ -1,6 +1,8 @@
 'use client';
 
 import { SCORE_COLORS, SCORE_LABELS } from '@/lib/constants';
+import { InfoBubble } from '@/components/info-bubble';
+import type { EXPL } from '@/lib/explanations';
 
 interface ScoreBarProps {
   dimension: string;
@@ -8,10 +10,19 @@ interface ScoreBarProps {
   compact?: boolean;
 }
 
+const DIM_TO_EXPL: Record<string, keyof typeof EXPL> = {
+  public_accessibility: 'dim_public_accessibility',
+  societal_relevance: 'dim_societal_relevance',
+  novelty_factor: 'dim_novelty_factor',
+  storytelling_potential: 'dim_storytelling_potential',
+  media_timeliness: 'dim_media_timeliness',
+};
+
 export function ScoreBar({ dimension, value, compact }: ScoreBarProps) {
   const color = SCORE_COLORS[dimension] || '#6b7280';
   const label = SCORE_LABELS[dimension] || dimension;
   const pct = value !== null ? Math.round(value * 100) : 0;
+  const explId = DIM_TO_EXPL[dimension];
 
   if (compact) {
     return (
@@ -37,7 +48,10 @@ export function ScoreBar({ dimension, value, compact }: ScoreBarProps) {
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between text-sm">
-        <span className="text-neutral-600">{label}</span>
+        <span className="inline-flex items-center gap-1 text-neutral-600">
+          {label}
+          {explId && <InfoBubble id={explId} />}
+        </span>
         <span className="font-medium">{pct}%</span>
       </div>
       <div

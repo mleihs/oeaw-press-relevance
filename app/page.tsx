@@ -1,19 +1,22 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import { RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer, Tooltip } from 'recharts';
 import { PressScoreBadge } from '@/components/score-bar';
+import { InfoBubble } from '@/components/info-bubble';
+import type { EXPL } from '@/lib/explanations';
 import { CapybaraEmpty } from '@/components/capybara-logo';
 import { PublicationStats, Publication } from '@/lib/types';
 import { getApiHeaders } from '@/lib/settings-store';
-import { decodeHtmlTitle } from '@/lib/html-utils';
+import { displayTitle } from '@/lib/html-utils';
 import { SCORE_LABELS } from '@/lib/constants';
 import { Sparkles, BookOpen, BarChart3, TrendingUp, AlertCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { useLookups } from './publications/_components/use-lookups';
 
 type TimePeriod = 'week' | 'month' | 'year' | 'all';
 
@@ -53,11 +56,35 @@ export default function DashboardPage() {
   const [dimensionAvgs, setDimensionAvgs] = useState<Record<string, number>>({});
   const [topKeywords, setTopKeywords] = useState<{ word: string; count: number }[]>([]);
 
+  const lookups = useLookups();
+
+  // ITA + sub-units for bias-correction in the score-ranking panel.
+  // Bias correction, not hard exclusion: ITA pubs remain visible everywhere
+  // else (stats, search, list) — only the Top-10 panel down-weights them so
+  // a single overrepresented department doesn't dominate the dashboard view.
+  const itaSubtreeIds = useMemo(() => {
+    if (!lookups?.orgunits) return new Set<string>();
+    const root = lookups.orgunits.find((o) => o.akronym_de === 'ITA');
+    if (!root) return new Set<string>();
+    const ids = new Set<string>([root.id]);
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const o of lookups.orgunits) {
+        if (o.parent_id && ids.has(o.parent_id) && !ids.has(o.id)) {
+          ids.add(o.id);
+          changed = true;
+        }
+      }
+    }
+    return ids;
+  }, [lookups]);
+
   useEffect(() => {
     async function loadStats() {
       try {
         const headers = getApiHeaders();
-        const statsRes = await fetch('/api/publications?stats=true', { headers });
+        const statsRes = await fetch('/api/publications?stats=true&default_eligible=true', { headers });
         if (!statsRes.ok) throw new Error('Statistiken konnten nicht geladen werden');
         const statsData = await statsRes.json();
         setStats(statsData);
@@ -68,7 +95,7 @@ export default function DashboardPage() {
         }
 
         // Fetch analyzed publications for dimensions + keywords
-        const pubsRes = await fetch('/api/publications?analysis_status=analyzed&pageSize=500', { headers });
+        const pubsRes = await fetch('/api/publications?analysis_status=analyzed&pageSize=500&default_eligible=true', { headers });
         if (pubsRes.ok) {
           const pubsData = await pubsRes.json();
           const pubs: Publication[] = pubsData.publications || [];
@@ -112,11 +139,14 @@ export default function DashboardPage() {
       setTopLoading(true);
       try {
         const headers = getApiHeaders();
+        // Fetch a wider candidate window so client-side bias correction
+        // (ITA-subtree exclusion) still leaves enough rows to fill the Top-10.
         const params = new URLSearchParams({
           sort: 'press_score',
           order: 'desc',
-          pageSize: '10',
+          pageSize: '50',
           analysis_status: 'analyzed',
+          default_eligible: 'true',
         });
         const publishedAfter = getPublishedAfter(timePeriod);
         if (publishedAfter) params.set('published_after', publishedAfter);
@@ -124,7 +154,16 @@ export default function DashboardPage() {
         const topRes = await fetch(`/api/publications?${params}`, { headers });
         if (topRes.ok) {
           const topData = await topRes.json();
-          setTopPubs(topData.publications || []);
+          const allPubs: Publication[] = topData.publications || [];
+          const filtered = itaSubtreeIds.size > 0
+            ? allPubs.filter((p) => {
+                const orgs = (p as Publication & {
+                  orgunits?: Array<{ id: string }>;
+                }).orgunits;
+                return !(orgs ?? []).some((o) => itaSubtreeIds.has(o.id));
+              })
+            : allPubs;
+          setTopPubs(filtered.slice(0, 10));
         }
       } catch {
         // silently fail for top pubs
@@ -133,7 +172,7 @@ export default function DashboardPage() {
       }
     }
     loadTop();
-  }, [timePeriod]);
+  }, [timePeriod, itaSubtreeIds]);
 
   if (loading) {
     return (
@@ -185,29 +224,36 @@ export default function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-4">
         <StatCard
           title="Publikationen gesamt"
+          explId="stat_total_pubs"
           value={stats?.total || 0}
           icon={BookOpen}
+          subtitle={
+            stats?.peer_reviewed && stats?.total
+              ? `${stats.peer_reviewed.toLocaleString()} peer-reviewed (${Math.round(stats.peer_reviewed / stats.total * 100)}%)`
+              : undefined
+          }
         />
         <StatCard
-          title="Angereichert"
-          value={(stats?.enriched || 0) + (stats?.partial || 0)}
+          title="Popular Science"
+          explId="stat_popular_science"
+          value={stats?.popular_science || 0}
           icon={Sparkles}
           subtitle={
-            stats?.with_abstract
-              ? `${stats.with_abstract} mit Abstract${stats.partial ? ` | ${stats.partial} teilweise` : ''}`
-              : stats?.total
-                ? `${Math.round(((stats.enriched + (stats.partial || 0)) / stats.total) * 100)}%`
-                : undefined
+            stats?.popular_science && stats?.total
+              ? `${Math.round(stats.popular_science / stats.total * 100)}% aller Publikationen — Quellsignal`
+              : 'Vorklassifiziert in WebDB'
           }
         />
         <StatCard
           title="Analysiert"
+          explId="stat_analyzed"
           value={stats?.analyzed || 0}
           icon={BarChart3}
-          subtitle={stats?.total ? `Aktuellste ${Math.round((stats.analyzed / stats.total) * 100)}% aller Publikationen` : undefined}
+          subtitle={stats?.total ? `${Math.round((stats.analyzed / stats.total) * 100)}% aller Publikationen` : undefined}
         />
         <StatCard
           title="Hohes Story-Potenzial"
+          explId="stat_high_score"
           value={stats?.high_score_count || 0}
           icon={TrendingUp}
           subtitle={stats?.avg_score !== null && stats?.avg_score !== undefined ? `Durchschnitt: ${Math.round(stats.avg_score * 100)}%` : undefined}
@@ -239,7 +285,10 @@ export default function DashboardPage() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
           <div>
-            <CardTitle className="text-base">Top 10 Publikationen (nach StoryScore)</CardTitle>
+            <CardTitle className="text-base inline-flex items-center gap-1.5">
+              Top 10 Publikationen (nach StoryScore)
+              <InfoBubble id="top10_panel" size="md" />
+            </CardTitle>
             <p className="text-xs text-neutral-500 mt-1">{getTimeRangeLabel(timePeriod)}</p>
           </div>
           <div className="flex items-center gap-2">
@@ -279,7 +328,7 @@ export default function DashboardPage() {
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm truncate group-hover:text-[#0047bb]">
-                      {decodeHtmlTitle(pub.title)}
+                      {displayTitle(pub.title, pub.citation)}
                     </p>
                     <div className="flex items-center gap-2 mt-0.5">
                       <p className="text-xs text-neutral-500 truncate">
@@ -314,7 +363,10 @@ export default function DashboardPage() {
       {scoreDistribution.some(v => v > 0) && (
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">StoryScore-Verteilung</CardTitle>
+            <CardTitle className="text-base inline-flex items-center gap-1.5">
+              StoryScore-Verteilung
+              <InfoBubble id="score_distribution_chart" size="md" />
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <ScoreDistributionChart buckets={scoreDistribution} />
@@ -326,7 +378,10 @@ export default function DashboardPage() {
       {Object.keys(dimensionAvgs).length > 0 && (
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Dimensions-Profil (Durchschnitt)</CardTitle>
+            <CardTitle className="text-base inline-flex items-center gap-1.5">
+              Dimensions-Profil (Durchschnitt)
+              <InfoBubble id="dimensions_profile" size="md" />
+            </CardTitle>
             <p className="text-xs text-neutral-500">Durchschnittswerte aller analysierten Publikationen</p>
           </CardHeader>
           <CardContent>
@@ -339,7 +394,10 @@ export default function DashboardPage() {
       {topKeywords.length > 0 && (
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Top Keywords</CardTitle>
+            <CardTitle className="text-base inline-flex items-center gap-1.5">
+              Top Keywords
+              <InfoBubble id="top_keywords" size="md" />
+            </CardTitle>
             <p className="text-xs text-neutral-500">Häufigste Schlagwörter aus angereicherten Publikationen</p>
           </CardHeader>
           <CardContent>
@@ -369,11 +427,13 @@ export default function DashboardPage() {
 
 function StatCard({
   title,
+  explId,
   value,
   icon: Icon,
   subtitle,
 }: {
   title: string;
+  explId?: keyof typeof EXPL;
   value: number;
   icon: React.ComponentType<{ className?: string }>;
   subtitle?: string;
@@ -383,7 +443,10 @@ function StatCard({
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm text-neutral-500">{title}</p>
+            <p className="text-sm text-neutral-500 inline-flex items-center gap-1">
+              {title}
+              {explId && <InfoBubble id={explId} />}
+            </p>
             <p className="text-2xl font-bold">{value.toLocaleString()}</p>
             {subtitle && <p className="text-xs text-neutral-400">{subtitle}</p>}
           </div>

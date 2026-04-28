@@ -1,6 +1,10 @@
 import { Publication, AnalysisResult, LLMResponse } from '../types';
-import { SCORE_WEIGHTS, COST_PER_MILLION_TOKENS } from '../constants';
+import { COST_PER_MILLION_TOKENS } from '../constants';
 import { SYSTEM_PROMPT, buildEvaluationPrompt } from './prompts';
+import { calculatePressScore } from './score';
+
+// Re-export so existing imports from this module keep working.
+export { calculatePressScore };
 
 export async function checkKeyBalance(apiKey: string): Promise<{
   limitRemaining: number | null;
@@ -51,17 +55,6 @@ export async function checkKeyBalance(apiKey: string): Promise<{
   } catch {
     return fallback;
   }
-}
-
-export function calculatePressScore(result: AnalysisResult): number {
-  let score = 0;
-  for (const [dim, weight] of Object.entries(SCORE_WEIGHTS)) {
-    const val = result[dim as keyof AnalysisResult];
-    if (typeof val === 'number') {
-      score += val * weight;
-    }
-  }
-  return Math.round(score * 10000) / 10000;
 }
 
 export function estimateCost(tokenCount: number, model: string): number {

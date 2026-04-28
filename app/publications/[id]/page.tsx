@@ -1,19 +1,23 @@
 'use client';
 
 import { useEffect, useState, use } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Publication } from '@/lib/types';
+import { PublicationWithRelations } from '@/lib/types';
 import { getApiHeaders } from '@/lib/settings-store';
-import { decodeHtmlTitle } from '@/lib/html-utils';
+import { displayTitle } from '@/lib/html-utils';
 import { doiToUrl } from '@/lib/enrichment/doi-utils';
-import { ScoreBar, PressScoreBadge } from '@/components/score-bar';
+import { ScoreBar } from '@/components/score-bar';
+import { HaikuBlock } from '@/components/haiku-block';
+import { InfoBubble } from '@/components/info-bubble';
 import { CapybaraLogo } from '@/components/capybara-logo';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-import { ExternalLink, FileText, Brain, ChevronRight, Info } from 'lucide-react';
+import {
+  ExternalLink, FileText, Brain, ChevronRight, Info,
+  Award, ShieldCheck, Megaphone, Users, Building2, FolderOpen, BookText,
+  Mail, Crown,
+} from 'lucide-react';
 
 const SOURCE_LABELS: Record<string, string> = {
   crossref: 'CrossRef',
@@ -22,6 +26,7 @@ const SOURCE_LABELS: Record<string, string> = {
   semantic_scholar: 'Semantic Scholar',
   pdf: 'PDF',
   csv: 'CSV',
+  hebowebdb_summary: 'WebDB',
 };
 
 const SOURCE_COLORS: Record<string, string> = {
@@ -31,6 +36,7 @@ const SOURCE_COLORS: Record<string, string> = {
   semantic_scholar: 'bg-orange-100 text-orange-700',
   pdf: 'bg-rose-100 text-rose-700',
   csv: 'bg-teal-100 text-teal-700',
+  hebowebdb_summary: 'bg-indigo-100 text-indigo-700',
 };
 
 const SOURCE_DESCRIPTIONS: Record<string, string> = {
@@ -40,6 +46,7 @@ const SOURCE_DESCRIPTIONS: Record<string, string> = {
   semantic_scholar: 'KI-gestützte Datenbank: Abstract, Zitationszahlen und Einfluss-Score.',
   pdf: 'Direkter PDF-Download von der Publikations-URL — extrahiert den Volltext.',
   csv: 'Abstract aus der ursprünglich importierten CSV-Datei übernommen.',
+  hebowebdb_summary: 'Vom Institut kuratierte Pressezusammenfassung (DE/EN) aus der WebDB.',
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -58,10 +65,19 @@ const STATUS_COLORS: Record<string, string> = {
   failed: 'bg-red-100 text-red-700',
 };
 
+const OA_LABELS: Record<string, string> = {
+  oa_gold: 'OA Gold',
+  oa_postprint: 'OA Postprint',
+  oa_preprint: 'OA Preprint',
+  nicht_oacc: 'kein OA',
+  Open: 'OA',
+  Restricted: 'eingeschränkt',
+  Unknown: 'unbekannt',
+};
+
 export default function PublicationDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const router = useRouter();
-  const [pub, setPub] = useState<Publication | null>(null);
+  const [pub, setPub] = useState<PublicationWithRelations | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -71,11 +87,8 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
         const res = await fetch(`/api/publications/${id}`, {
           headers: getApiHeaders(),
         });
-        if (!res.ok) {
-          throw new Error('Publikation nicht gefunden');
-        }
-        const data = await res.json();
-        setPub(data);
+        if (!res.ok) throw new Error('Publikation nicht gefunden');
+        setPub(await res.json());
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Fehler beim Laden');
       } finally {
@@ -110,71 +123,156 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
   const doiUrl = doiToUrl(pub.doi);
   const hasAnalysis = pub.analysis_status === 'analyzed' && pub.press_score !== null;
   const pressScorePct = pub.press_score !== null ? Math.round(pub.press_score * 100) : null;
+  const titleForDisplay = displayTitle(pub.original_title || pub.title, pub.citation);
+  const isMaHighlighted = pub.authors_resolved?.some((a) => a.mahighlight);
+  const isHighlighted = pub.authors_resolved?.some((a) => a.highlight);
+  // Match the lead_author string (typically "Lastname, Firstname") against
+  // the resolved authors so the meta line can link to the person profile.
+  const leadAuthorPerson = (() => {
+    if (!pub.lead_author || !pub.authors_resolved?.length) return null;
+    const norm = (s: string) => s.toLowerCase().replace(/[\s,.\-]/g, '');
+    const target = norm(pub.lead_author);
+    return pub.authors_resolved.find(
+      (a) => norm(`${a.lastname}${a.firstname}`) === target ||
+             norm(`${a.firstname}${a.lastname}`) === target,
+    ) ?? null;
+  })();
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      {/* Breadcrumb */}
-      <Breadcrumb title={decodeHtmlTitle(pub.title)} />
+      <Breadcrumb title={titleForDisplay} />
 
       {/* Header */}
       <div className="space-y-3">
-        <h1 className="text-2xl font-bold leading-tight">{decodeHtmlTitle(pub.title)}</h1>
+        <div className="flex items-start gap-2">
+          <h1 className="text-2xl font-bold leading-tight flex-1">{titleForDisplay}</h1>
+          {isMaHighlighted && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Crown className="h-5 w-5 text-amber-500 mt-1.5 shrink-0" />
+              </TooltipTrigger>
+              <TooltipContent side="top">Akademie-Mitglieder-Highlight</TooltipContent>
+            </Tooltip>
+          )}
+          {isHighlighted && !isMaHighlighted && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Award className="h-5 w-5 text-orange-500 mt-1.5 shrink-0" />
+              </TooltipTrigger>
+              <TooltipContent side="top">Autor-Highlight</TooltipContent>
+            </Tooltip>
+          )}
+        </div>
+
+        {/* Lead author + date */}
         <div className="flex flex-wrap items-center gap-2 text-sm text-neutral-600">
-          {pub.authors && <span>{pub.authors}</span>}
-          {pub.institute && (
-            <>
-              <span className="text-neutral-300">|</span>
-              <span className="text-neutral-500">{pub.institute}</span>
-            </>
+          {pub.lead_author && (
+            leadAuthorPerson ? (
+              <Link
+                href={`/persons/${leadAuthorPerson.id}`}
+                className="font-medium text-neutral-700 hover:text-[#0047bb] transition-colors"
+              >
+                {pub.lead_author}
+              </Link>
+            ) : (
+              <span className="font-medium text-neutral-700">{pub.lead_author}</span>
+            )
           )}
           {pub.published_at && (
             <>
+              {pub.lead_author && <span className="text-neutral-300">|</span>}
+              <span>
+                {new Date(pub.published_at).toLocaleDateString('de-AT', {
+                  day: 'numeric', month: 'long', year: 'numeric',
+                })}
+              </span>
+            </>
+          )}
+          {pub.publication_type_lookup && (
+            <>
               <span className="text-neutral-300">|</span>
-              <span>{new Date(pub.published_at).toLocaleDateString('de-AT', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+              <span className="text-neutral-500">{pub.publication_type_lookup.name_de}</span>
             </>
           )}
         </div>
+
+        {/* Badges row */}
         <div className="flex flex-wrap items-center gap-2">
-          {pub.publication_type && (
-            <Badge variant="outline">{pub.publication_type}</Badge>
+          {pub.peer_reviewed && (
+            <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200 gap-1">
+              <ShieldCheck className="h-3 w-3" /> Peer-reviewed
+            </Badge>
           )}
-          {pub.open_access && (
-            <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200">Open Access</Badge>
+          {pub.popular_science && (
+            <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-200 gap-1">
+              <Megaphone className="h-3 w-3" /> Popular Science
+            </Badge>
+          )}
+          {pub.open_access_status && (
+            <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200">
+              {OA_LABELS[pub.open_access_status] || pub.open_access_status}
+            </Badge>
           )}
           <Badge className={STATUS_COLORS[pub.enrichment_status] || STATUS_COLORS.pending}>
             {STATUS_LABELS[pub.enrichment_status] || pub.enrichment_status}
           </Badge>
           {hasAnalysis && (
-            <Badge className={STATUS_COLORS.analyzed}>
-              {STATUS_LABELS.analyzed}
-            </Badge>
+            <Badge className={STATUS_COLORS.analyzed}>{STATUS_LABELS.analyzed}</Badge>
           )}
         </div>
+
+        {/* Institutes inline */}
+        {pub.orgunits && pub.orgunits.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5 text-sm">
+            <Building2 className="h-3.5 w-3.5 text-neutral-400" />
+            {pub.orgunits.map((o) => (
+              <Tooltip key={o.id}>
+                <TooltipTrigger asChild>
+                  {o.url_de ? (
+                    <a
+                      href={o.url_de}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="rounded-md bg-neutral-100 hover:bg-neutral-200 px-2 py-0.5 text-xs font-medium text-neutral-700 transition-colors"
+                    >
+                      {o.akronym_de || o.name_de}
+                    </a>
+                  ) : (
+                    <span className="rounded-md bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-700">
+                      {o.akronym_de || o.name_de}
+                    </span>
+                  )}
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs">{o.name_de}</TooltipContent>
+              </Tooltip>
+            ))}
+          </div>
+        )}
+
+        {/* Links row */}
         <div className="flex flex-wrap gap-3 text-sm">
           {doiUrl && (
-            <a
-              href={doiUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[#0047bb] hover:underline inline-flex items-center gap-1"
-            >
+            <a href={doiUrl} target="_blank" rel="noopener noreferrer"
+               className="text-[#0047bb] hover:underline inline-flex items-center gap-1">
               DOI: {pub.doi} <ExternalLink className="h-3 w-3" />
             </a>
           )}
-          {pub.url && (
-            <a
-              href={pub.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[#0047bb] hover:underline inline-flex items-center gap-1"
-            >
-              URL <ExternalLink className="h-3 w-3" />
+          {pub.website_link && (
+            <a href={pub.website_link} target="_blank" rel="noopener noreferrer"
+               className="text-[#0047bb] hover:underline inline-flex items-center gap-1">
+              Webseite <ExternalLink className="h-3 w-3" />
+            </a>
+          )}
+          {pub.download_link && (
+            <a href={pub.download_link} target="_blank" rel="noopener noreferrer"
+               className="text-[#0047bb] hover:underline inline-flex items-center gap-1">
+              PDF <ExternalLink className="h-3 w-3" />
             </a>
           )}
         </div>
       </div>
 
-      {/* Pitch — shown prominently above score breakdown if available */}
+      {/* Pitch */}
       {hasAnalysis && pub.pitch_suggestion && (
         <Card className="border-[#0047bb]/20 bg-[#0047bb]/[0.02]">
           <CardContent className="p-5">
@@ -194,6 +292,158 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
         </Card>
       )}
 
+      {/* Bilingual summaries from WebDB */}
+      {(pub.summary_de || pub.summary_en) && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <BookText className="h-4 w-4 text-[#0047bb]" />
+              Zusammenfassung (WebDB)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {pub.summary_de && (
+              <div>
+                <h4 className="text-xs font-medium text-neutral-500 uppercase mb-1">Deutsch</h4>
+                <p className="text-sm leading-relaxed whitespace-pre-wrap">{pub.summary_de}</p>
+              </div>
+            )}
+            {pub.summary_en && pub.summary_en !== pub.summary_de && (
+              <div>
+                <h4 className="text-xs font-medium text-neutral-500 uppercase mb-1">English</h4>
+                <p className="text-sm leading-relaxed whitespace-pre-wrap">{pub.summary_en}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Haiku — poetic distillation of the content, placed right after the summary */}
+      {pub.haiku && (
+        <Card>
+          <CardContent className="px-5 py-4">
+            <HaikuBlock haiku={pub.haiku} model={pub.llm_model} />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Authors */}
+      {pub.authors_resolved && pub.authors_resolved.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Users className="h-4 w-4 text-[#0047bb]" />
+              Autor:innen ({pub.authors_resolved.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="divide-y divide-neutral-100">
+              {pub.authors_resolved.map((a) => (
+                <li key={a.id} className="py-2.5 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 min-w-0">
+                    {a.mahighlight && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Crown className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                        </TooltipTrigger>
+                        <TooltipContent side="top">Eigen-Highlight (Person hat diese Pub im WebDB selbst markiert)</TooltipContent>
+                      </Tooltip>
+                    )}
+                    {!a.mahighlight && a.highlight && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Award className="h-3.5 w-3.5 text-orange-500 shrink-0" />
+                        </TooltipTrigger>
+                        <TooltipContent side="top">Highlight</TooltipContent>
+                      </Tooltip>
+                    )}
+                    <div className="min-w-0">
+                      <Link
+                        href={`/persons/${a.id}`}
+                        className="text-sm font-medium truncate hover:text-[#0047bb] block"
+                      >
+                        {a.degree_before && <span className="text-neutral-500 font-normal mr-1">{a.degree_before}</span>}
+                        {a.firstname} {a.lastname}
+                        {a.degree_after && <span className="text-neutral-500 font-normal ml-1">{a.degree_after}</span>}
+                        {a.deceased && <span className="text-neutral-400 ml-2 text-xs">†</span>}
+                      </Link>
+                      {a.oestat3_name_de && (
+                        <p className="text-xs text-neutral-500 truncate">{a.oestat3_name_de}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {a.email && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <a href={`mailto:${a.email}`} className="text-neutral-400 hover:text-[#0047bb]">
+                            <Mail className="h-3.5 w-3.5" />
+                          </a>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">{a.email}</TooltipContent>
+                      </Tooltip>
+                    )}
+                    {a.orcid && (
+                      <a
+                        href={`https://orcid.org/${a.orcid}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs font-mono text-neutral-400 hover:text-[#a6ce39]"
+                      >
+                        ORCID
+                      </a>
+                    )}
+                    {a.authorship && (
+                      <Badge variant="outline" className="text-[10px]">{a.authorship}</Badge>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Projects */}
+      {pub.projects && pub.projects.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <FolderOpen className="h-4 w-4 text-[#0047bb]" />
+              Projekte ({pub.projects.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {pub.projects.map((p) => {
+              const isActive =
+                p.ends_on && new Date(p.ends_on) > new Date() && !p.cancelled;
+              return (
+                <div key={p.id} className="text-sm border-l-2 border-neutral-200 pl-3">
+                  <div className="flex items-start gap-2">
+                    <p className="font-medium flex-1">{p.title_de || p.title_en}</p>
+                    {isActive && (
+                      <Badge className="bg-green-100 text-green-700 text-[10px]">aktiv</Badge>
+                    )}
+                    {p.cancelled && (
+                      <Badge className="bg-red-100 text-red-700 text-[10px]">abgebrochen</Badge>
+                    )}
+                  </div>
+                  {p.summary_de && (
+                    <p className="text-xs text-neutral-500 mt-1 line-clamp-3">{p.summary_de}</p>
+                  )}
+                  <p className="text-xs text-neutral-400 mt-1">
+                    {p.starts_on ? new Date(p.starts_on).getFullYear() : '?'}
+                    {' – '}
+                    {p.ends_on ? new Date(p.ends_on).getFullYear() : 'offen'}
+                    {p.thematic_focus_de && ` | ${p.thematic_focus_de}`}
+                  </p>
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Analysis card */}
       {hasAnalysis && (
         <Card className="border-[#0047bb]/20">
@@ -204,26 +454,27 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
-            {/* Overall score */}
             <div className="flex items-center gap-4">
               <div className={`flex items-center justify-center h-16 w-16 rounded-full text-xl font-bold ${
-                pressScorePct! >= 70
-                  ? 'bg-[#0047bb] text-white'
-                  : pressScorePct! >= 50
-                    ? 'bg-amber-100 text-amber-800'
-                    : 'bg-neutral-100 text-neutral-600'
+                pressScorePct! >= 70 ? 'bg-[#0047bb] text-white'
+                  : pressScorePct! >= 50 ? 'bg-amber-100 text-amber-800'
+                  : 'bg-neutral-100 text-neutral-600'
               }`}>
                 {pressScorePct}%
               </div>
               <div>
-                <p className="font-medium text-lg">StoryScore</p>
-                <p className="text-sm text-neutral-500">
-                  {pressScorePct! >= 70 ? 'Hohes Story-Potenzial' : pressScorePct! >= 50 ? 'Mittleres Story-Potenzial' : 'Geringes Story-Potenzial'}
+                <p className="font-medium text-lg flex items-center gap-1.5">
+                  StoryScore
+                  <InfoBubble id="press_score" size="md" />
+                </p>
+                <p className="text-sm text-neutral-500 inline-flex items-center gap-1">
+                  {pressScorePct! >= 70 ? 'Hohes Story-Potenzial'
+                    : pressScorePct! >= 50 ? 'Mittleres Story-Potenzial'
+                    : 'Geringes Story-Potenzial'}
+                  <InfoBubble id="score_band" />
                 </p>
               </div>
             </div>
-
-            {/* Dimension bars */}
             <div className="space-y-2">
               <ScoreBar dimension="public_accessibility" value={pub.public_accessibility} />
               <ScoreBar dimension="societal_relevance" value={pub.societal_relevance} />
@@ -231,19 +482,16 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
               <ScoreBar dimension="storytelling_potential" value={pub.storytelling_potential} />
               <ScoreBar dimension="media_timeliness" value={pub.media_timeliness} />
             </div>
-
-            {/* Reasoning */}
             {pub.reasoning && (
               <div>
                 <h4 className="text-xs font-medium text-neutral-500 uppercase mb-1">Begründung</h4>
                 <p className="text-sm text-neutral-600">{pub.reasoning}</p>
               </div>
             )}
-
-            {/* Model & cost */}
             {pub.llm_model && (
-              <div className="text-xs text-neutral-400 border-t pt-3">
+              <div className="text-xs text-neutral-400 border-t pt-3 inline-flex items-center gap-1">
                 Modell: {pub.llm_model} | Kosten: ${pub.analysis_cost?.toFixed(4) || '0'}
+                <InfoBubble id="ai_provenance" />
               </div>
             )}
           </CardContent>
@@ -255,11 +503,10 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <FileText className="h-4 w-4 text-[#0047bb]" />
-            Enrichment-Daten
+            Externe Anreicherung
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Sources */}
           {pub.enriched_source && (
             <div>
               <h4 className="text-xs font-medium text-neutral-500 uppercase mb-2">Quellen</h4>
@@ -276,24 +523,20 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
               </div>
             </div>
           )}
-
-          {/* Abstract */}
-          <div>
-            <h4 className="text-xs font-medium text-neutral-500 uppercase mb-1">Zusammenfassung</h4>
-            <p className="text-sm leading-relaxed">
-              {pub.enriched_abstract || pub.abstract || 'Keine Zusammenfassung verfügbar.'}
-            </p>
-          </div>
-
-          {/* Journal */}
+          {(pub.enriched_abstract || pub.abstract) && (
+            <div>
+              <h4 className="text-xs font-medium text-neutral-500 uppercase mb-1">Abstract</h4>
+              <p className="text-sm leading-relaxed">
+                {pub.enriched_abstract || pub.abstract}
+              </p>
+            </div>
+          )}
           {pub.enriched_journal && (
             <div>
               <h4 className="text-xs font-medium text-neutral-500 uppercase mb-1">Journal</h4>
               <p className="text-sm">{pub.enriched_journal}</p>
             </div>
           )}
-
-          {/* Keywords */}
           {pub.enriched_keywords && pub.enriched_keywords.length > 0 && (
             <div>
               <h4 className="text-xs font-medium text-neutral-500 uppercase mb-2">Schlagwörter</h4>
@@ -304,13 +547,7 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
               </div>
             </div>
           )}
-
-          {/* Full-text snippet */}
-          {pub.full_text_snippet && (
-            <CollapsibleSnippet text={pub.full_text_snippet} />
-          )}
-
-          {/* Word count */}
+          {pub.full_text_snippet && <CollapsibleSnippet text={pub.full_text_snippet} />}
           {pub.word_count > 0 && (
             <div className="text-xs text-neutral-400 border-t pt-3">
               {pub.word_count.toLocaleString()} Wörter angereicherter Inhalt
@@ -318,7 +555,47 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
           )}
         </CardContent>
       </Card>
+
+      {/* Citations (collapsible) */}
+      {(pub.citation_apa || pub.citation_de || pub.bibtex) && (
+        <CitationsCard pub={pub} />
+      )}
     </div>
+  );
+}
+
+function CitationsCard({ pub }: { pub: PublicationWithRelations }) {
+  const [open, setOpen] = useState(false);
+  const items = [
+    { key: 'apa', label: 'APA', text: pub.citation_apa },
+    { key: 'de', label: 'Deutsch', text: pub.citation_de },
+    { key: 'en', label: 'English', text: pub.citation_en },
+    { key: 'bibtex', label: 'BibTeX', text: pub.bibtex, mono: true },
+    { key: 'endnote', label: 'EndNote', text: pub.endnote, mono: true },
+    { key: 'ris', label: 'RIS', text: pub.ris, mono: true },
+  ].filter((i) => i.text);
+
+  return (
+    <Card>
+      <CardHeader className="pb-3 cursor-pointer" onClick={() => setOpen(!open)}>
+        <CardTitle className="text-base flex items-center justify-between">
+          <span>Zitate & Export ({items.length} Formate)</span>
+          <ChevronRight className={`h-4 w-4 transition-transform ${open ? 'rotate-90' : ''}`} />
+        </CardTitle>
+      </CardHeader>
+      {open && (
+        <CardContent className="space-y-3">
+          {items.map((i) => (
+            <div key={i.key}>
+              <h4 className="text-xs font-medium text-neutral-500 uppercase mb-1">{i.label}</h4>
+              <p className={`text-sm ${i.mono ? 'font-mono text-xs whitespace-pre-wrap break-all bg-neutral-50 p-2 rounded' : ''}`}>
+                {i.text}
+              </p>
+            </div>
+          ))}
+        </CardContent>
+      )}
+    </Card>
   );
 }
 
@@ -341,20 +618,14 @@ function Breadcrumb({ title }: { title?: string }) {
 function SourceInfoBubble({ source }: { source: string }) {
   const desc = SOURCE_DESCRIPTIONS[source];
   if (!desc) return null;
-
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <button
-          type="button"
-          className="text-current opacity-40 hover:opacity-80 transition-opacity ml-0.5"
-        >
+        <button type="button" className="text-current opacity-40 hover:opacity-80 transition-opacity ml-0.5">
           <Info className="h-3 w-3" />
         </button>
       </TooltipTrigger>
-      <TooltipContent side="top" className="max-w-52 font-normal">
-        {desc}
-      </TooltipContent>
+      <TooltipContent side="top" className="max-w-52 font-normal">{desc}</TooltipContent>
     </Tooltip>
   );
 }
@@ -363,16 +634,13 @@ function CollapsibleSnippet({ text }: { text: string }) {
   const [expanded, setExpanded] = useState(false);
   const isLong = text.length > 500;
   const display = isLong && !expanded ? text.slice(0, 500) + '...' : text;
-
   return (
     <div>
       <h4 className="text-xs font-medium text-neutral-500 uppercase mb-1">Textauszug</h4>
       <p className="text-sm text-neutral-600 whitespace-pre-wrap leading-relaxed">{display}</p>
       {isLong && (
-        <button
-          onClick={() => setExpanded(!expanded)}
-          className="text-xs text-[#0047bb] hover:underline mt-1"
-        >
+        <button onClick={() => setExpanded(!expanded)}
+          className="text-xs text-[#0047bb] hover:underline mt-1">
           {expanded ? 'Weniger anzeigen' : 'Mehr anzeigen'}
         </button>
       )}
