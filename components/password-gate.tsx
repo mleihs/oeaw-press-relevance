@@ -3,11 +3,11 @@
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 
-// B4: Password is read from server-passed env via NEXT_PUBLIC_GATE_PASSWORD,
-// with a stable dev default. Still client-readable (the gate is cosmetic;
-// real auth would be via middleware + cookie). At least rotateable now.
-const CORRECT_PASSWORD = process.env.NEXT_PUBLIC_GATE_PASSWORD || 'movefastandbreakthings';
-const STORAGE_KEY = 'storyscout-auth';
+// G1: Real auth via /api/auth/gate. The server compares against GATE_PASSWORD
+// (env-side only) and sets an HttpOnly cookie that the middleware checks on
+// every subsequent request. The password never lives in client JS anymore;
+// the only client responsibility is collecting it from the input.
+const STORAGE_KEY = 'storyscout-auth-marker';
 
 export function PasswordGate({ children }: { children: React.ReactNode }) {
   const [authenticated, setAuthenticated] = useState(false);
@@ -30,12 +30,24 @@ export function PasswordGate({ children }: { children: React.ReactNode }) {
     }
   }, [authenticated, checking]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === CORRECT_PASSWORD) {
-      sessionStorage.setItem(STORAGE_KEY, '1');
-      setAuthenticated(true);
-    } else {
+    try {
+      const res = await fetch('/api/auth/gate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      });
+      if (res.ok) {
+        sessionStorage.setItem(STORAGE_KEY, '1');
+        setAuthenticated(true);
+      } else {
+        setError(true);
+        setShaking(true);
+        setTimeout(() => setShaking(false), 500);
+        setTimeout(() => setError(false), 2000);
+      }
+    } catch {
       setError(true);
       setShaking(true);
       setTimeout(() => setShaking(false), 500);
