@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { getSupabaseFromRequest } from '@/lib/api-helpers';
+import { getSupabaseFromRequest, apiError } from '@/lib/api-helpers';
 import { Publication } from '@/lib/types';
 
 export async function GET(req: NextRequest) {
@@ -19,12 +19,7 @@ export async function GET(req: NextRequest) {
 
     const { data, error } = await query;
 
-    if (error) {
-      return new Response(JSON.stringify({ error: error.message }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
+    if (error) return apiError(error.message, 500);
 
     const pubs = (data || []) as Publication[];
 
@@ -60,10 +55,6 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    return new Response(JSON.stringify({ error: message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return apiError(err instanceof Error ? err.message : 'Unknown error', 500);
   }
 }

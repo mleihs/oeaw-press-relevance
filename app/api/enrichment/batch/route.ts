@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
-import { getSupabaseAdmin, createSSEStream } from '@/lib/api-helpers';
+import { getSupabaseAdmin, createSSEStream, apiError } from '@/lib/api-helpers';
+import { NextResponse } from 'next/server';
 import { enrichFromCrossRef } from '@/lib/enrichment/crossref';
 import { enrichFromOpenAlex } from '@/lib/enrichment/openalex';
 import { enrichFromUnpaywall } from '@/lib/enrichment/unpaywall';
@@ -44,11 +45,7 @@ export async function POST(req: NextRequest) {
     Array.isArray(body.ids) && body.ids.every((x: unknown) => typeof x === 'string' && UUID_RE.test(x as string))
       ? body.ids
       : undefined;
-  if (Array.isArray(body.ids) && !explicitIds) {
-    return new Response(JSON.stringify({ error: 'ids must be UUIDs' }), {
-      status: 400, headers: { 'Content-Type': 'application/json' },
-    });
-  }
+  if (Array.isArray(body.ids) && !explicitIds) return apiError('ids must be UUIDs', 400);
 
   let pubs: Publication[];
 
@@ -60,12 +57,7 @@ export async function POST(req: NextRequest) {
       .select('*')
       .in('id', explicitIds.slice(0, limit));
 
-    if (error) {
-      return new Response(JSON.stringify({ error: error.message }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
+    if (error) return apiError(error.message, 500);
     pubs = (data || []) as Publication[];
   } else {
     const statusFilter = includePartial ? ['pending', 'partial'] : ['pending'];
@@ -79,12 +71,7 @@ export async function POST(req: NextRequest) {
       .order('published_at', { ascending: false, nullsFirst: false })
       .limit(limit);
 
-    if (doiError) {
-      return new Response(JSON.stringify({ error: doiError.message }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
+    if (doiError) return apiError(doiError.message, 500);
 
     // Query 2: publications without DOI but with a .pdf URL or CSV abstract (when requested)
     let noDoiPubs: Publication[] = [];
@@ -100,12 +87,7 @@ export async function POST(req: NextRequest) {
           .order('published_at', { ascending: false, nullsFirst: false })
           .limit(remaining);
 
-        if (error) {
-          return new Response(JSON.stringify({ error: error.message }), {
-            status: 500,
-            headers: { 'Content-Type': 'application/json' },
-          });
-        }
+        if (error) return apiError(error.message, 500);
         noDoiPubs = (data || []) as Publication[];
       }
     }
@@ -113,11 +95,7 @@ export async function POST(req: NextRequest) {
     pubs = [...((doiPubs || []) as Publication[]), ...noDoiPubs];
   }
 
-  if (pubs.length === 0) {
-    return new Response(JSON.stringify({ message: 'No publications to enrich' }), {
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
+  if (pubs.length === 0) return NextResponse.json({ message: 'No publications to enrich' });
 
   const { stream, send, close } = createSSEStream();
 

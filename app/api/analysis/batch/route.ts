@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
-import { getSupabaseAdmin, getOpenRouterKey, getLLMModel, createSSEStream } from '@/lib/api-helpers';
+import { getSupabaseAdmin, getOpenRouterKey, getLLMModel, createSSEStream, apiError } from '@/lib/api-helpers';
+import { NextResponse } from 'next/server';
 import { analyzePublications, calculatePressScore, checkKeyBalance } from '@/lib/analysis/openrouter';
 import { Publication } from '@/lib/types';
 
@@ -17,11 +18,7 @@ export async function POST(req: NextRequest) {
     model = getLLMModel(req);
     body = await req.json();
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Configuration error';
-    return new Response(JSON.stringify({ error: message }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return apiError(err instanceof Error ? err.message : 'Configuration error', 400);
   }
 
   const limit = Math.min((body.limit as number) || 20, 1000);
@@ -57,18 +54,11 @@ export async function POST(req: NextRequest) {
 
   const { data: publications, error } = await query;
 
-  if (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
+  if (error) return apiError(error.message, 500);
 
   const pubs = (publications || []) as Publication[];
   if (pubs.length === 0) {
-    return new Response(JSON.stringify({ message: 'No publications to analyze' }), {
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return NextResponse.json({ message: 'No publications to analyze' });
   }
 
   const { stream, send, close } = createSSEStream();
