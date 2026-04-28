@@ -2,7 +2,7 @@
 
 **Version**: 1.0.0
 **Created**: 2026-02-13
-**Stack**: Next.js 16.1.6 / React 19 / Supabase / OpenRouter / Tailwind CSS 4
+**Stack**: Next.js 16.2 / React 19.2 / TypeScript 5.9 (target ES2022) / Supabase (RLS-locked, service-role for mutations) / OpenRouter / Tailwind CSS 4.2
 
 ---
 
@@ -43,9 +43,23 @@
    - 8.1 [CSV Import Pipeline](#81-csv-import-pipeline)
    - 8.2 [Enrichment Pipeline](#82-enrichment-pipeline)
    - 8.3 [Analysis Pipeline](#83-analysis-pipeline)
-9. [Configuration & Credentials](#9-configuration--credentials)
-10. [Deployment](#10-deployment)
-11. [Porting Notes](#11-porting-notes)
+9. [Researchers Feature](#9-researchers-feature-forscherinnen-ranking)
+10. [InfoBubble System](#10-infobubble-system)
+11. [Hybrid Filter Pattern](#11-hybrid-filter-pattern)
+12. [Title-Truncation Heuristic](#12-title-truncation-heuristic)
+13. [Configuration & Credentials](#9-configuration--credentials)
+14. [Deployment](#10-deployment)
+15. [Porting Notes](#11-porting-notes)
+
+> **Audit & hardening pass (2026-04-29)**: see commits `5f15503`,
+> `e2d1bcb`, `303945e`, `164eec2` for the consolidated security
+> (RLS lockdown + env-only Supabase keys + search-param escape +
+> SSE abort handling), WCAG 2.2 AA fixes (contrast, table semantics,
+> beeswarm a11y, sr-only chart equivalents, prefers-reduced-motion),
+> DRY consolidations (SOURCE_LABELS / SCORE_BANDs / LoadingState /
+> ÖAW-Blau theme token), and performance work (trigram indices,
+> INCLUDE-cols on person_publications, ÖSTAT6/highlight as PG
+> functions, dynamic recharts imports).
 
 ---
 
