@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
-    "target": "ES2017",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "target": "ES2022",
+    "lib": ["dom", "dom.iterable", "ES2022"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -13,6 +13,8 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "incremental": true,
+    "noImplicitOverride": true,
+    "useUnknownInCatchVariables": true,
     "plugins": [
       {
         "name": "next"

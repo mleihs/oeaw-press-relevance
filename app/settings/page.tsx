@@ -34,34 +34,23 @@ export default function SettingsPage() {
   };
 
   const testConnection = useCallback(async () => {
-    if (!settings.supabaseUrl || !settings.supabaseAnonKey) {
-      setConnectionStatus('error');
-      setConnectionError('URL und Anon Key müssen ausgefüllt sein.');
-      return;
-    }
-
     setConnectionStatus('testing');
     setConnectionError(null);
-
     try {
-      const url = settings.supabaseUrl.replace(/\/$/, '');
-      const res = await fetch(`${url}/rest/v1/publications?select=id&limit=1`, {
-        headers: {
-          'apikey': settings.supabaseAnonKey,
-          'Authorization': `Bearer ${settings.supabaseAnonKey}`,
-        },
-      });
+      // Hits the server-side route, which uses env-bound credentials.
+      const res = await fetch('/api/publications?page=1&pageSize=1');
       if (res.ok) {
         setConnectionStatus('success');
       } else {
+        const body = await res.json().catch(() => ({}));
         setConnectionStatus('error');
-        setConnectionError(`HTTP ${res.status}: ${res.statusText}`);
+        setConnectionError(body.error || `HTTP ${res.status}`);
       }
     } catch (err) {
       setConnectionStatus('error');
       setConnectionError(err instanceof Error ? err.message : 'Verbindung fehlgeschlagen');
     }
-  }, [settings.supabaseUrl, settings.supabaseAnonKey]);
+  }, []);
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -72,72 +61,42 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      {/* Supabase */}
+      {/* Supabase — server-configured, read-only here */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Supabase-Verbindung</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="supabase-url">Supabase URL</Label>
-            <Input
-              id="supabase-url"
-              placeholder="https://your-project.supabase.co"
-              value={settings.supabaseUrl}
-              onChange={(e) => { setSettings(s => ({ ...s, supabaseUrl: e.target.value })); setConnectionStatus('idle'); }}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="supabase-key">Supabase Anon Key</Label>
-            <div className="relative">
-              <Input
-                id="supabase-key"
-                type={showSupabaseKey ? 'text' : 'password'}
-                placeholder="eyJ..."
-                value={settings.supabaseAnonKey}
-                onChange={(e) => { setSettings(s => ({ ...s, supabaseAnonKey: e.target.value })); setConnectionStatus('idle'); }}
-                className="pr-10"
-              />
-              <button
-                type="button"
-                onClick={() => setShowSupabaseKey(!showSupabaseKey)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
-              >
-                {showSupabaseKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
+          <div className="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 p-3 text-xs text-amber-900">
+            <ShieldCheck className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
+            <div>
+              <p className="font-medium mb-0.5">Server-konfiguriert</p>
+              <p>
+                Supabase-Verbindung ist über Server-Env-Variablen (<code className="font-mono">SUPABASE_URL</code> + <code className="font-mono">SUPABASE_ANON_KEY</code>) gesetzt — der Browser kann die Verbindung nicht überschreiben. So ist sichergestellt, dass kein anonymer Besucher mit eigenem Key durch die App fragmentieren kann.
+              </p>
             </div>
           </div>
-
-          {/* Connection test */}
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={testConnection}
-              disabled={connectionStatus === 'testing' || !settings.supabaseUrl || !settings.supabaseAnonKey}
-            >
-              {connectionStatus === 'testing' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Verbindung testen
-            </Button>
-            {connectionStatus === 'success' && (
-              <span className="flex items-center gap-1.5 text-sm text-green-600">
-                <CheckCircle2 className="h-4 w-4" />
-                Verbindung erfolgreich
-              </span>
-            )}
-            {connectionStatus === 'error' && (
-              <span className="flex items-center gap-1.5 text-sm text-red-600">
-                <XCircle className="h-4 w-4" />
-                {connectionError || 'Verbindung fehlgeschlagen'}
-              </span>
-            )}
-          </div>
-
-          {/* Security note */}
-          <div className="flex items-start gap-2 rounded-lg bg-neutral-50 p-3 text-xs text-neutral-500">
-            <ShieldCheck className="h-4 w-4 shrink-0 text-neutral-400 mt-0.5" />
-            <span>API-Schlüssel werden nur lokal in Ihrem Browser gespeichert und niemals an unsere Server übertragen.</span>
-          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={testConnection}
+            disabled={connectionStatus === 'testing'}
+          >
+            {connectionStatus === 'testing' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Server-Verbindung testen
+          </Button>
+          {connectionStatus === 'success' && (
+            <span className="ml-3 inline-flex items-center gap-1.5 text-sm text-green-600">
+              <CheckCircle2 className="h-4 w-4" />
+              Verbindung erfolgreich
+            </span>
+          )}
+          {connectionStatus === 'error' && (
+            <span className="ml-3 inline-flex items-center gap-1.5 text-sm text-red-600">
+              <XCircle className="h-4 w-4" />
+              {connectionError || 'Verbindung fehlgeschlagen'}
+            </span>
+          )}
         </CardContent>
       </Card>
 

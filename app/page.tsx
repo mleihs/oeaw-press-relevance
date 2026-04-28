@@ -10,7 +10,7 @@ import { PressScoreBadge } from '@/components/score-bar';
 import { InfoBubble } from '@/components/info-bubble';
 import type { EXPL } from '@/lib/explanations';
 import { CapybaraEmpty } from '@/components/capybara-logo';
-import { PublicationStats, Publication } from '@/lib/types';
+import { PublicationStats, Publication, PublicationWithRelations } from '@/lib/types';
 import { getApiHeaders } from '@/lib/settings-store';
 import { displayTitle } from '@/lib/html-utils';
 import { SCORE_LABELS } from '@/lib/constants';
@@ -47,7 +47,7 @@ function getTimeRangeLabel(period: TimePeriod): string {
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<PublicationStats | null>(null);
-  const [topPubs, setTopPubs] = useState<Publication[]>([]);
+  const [topPubs, setTopPubs] = useState<PublicationWithRelations[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('all');
@@ -154,14 +154,9 @@ export default function DashboardPage() {
         const topRes = await fetch(`/api/publications?${params}`, { headers });
         if (topRes.ok) {
           const topData = await topRes.json();
-          const allPubs: Publication[] = topData.publications || [];
+          const allPubs: PublicationWithRelations[] = topData.publications || [];
           const filtered = itaSubtreeIds.size > 0
-            ? allPubs.filter((p) => {
-                const orgs = (p as Publication & {
-                  orgunits?: Array<{ id: string }>;
-                }).orgunits;
-                return !(orgs ?? []).some((o) => itaSubtreeIds.has(o.id));
-              })
+            ? allPubs.filter((p) => !(p.orgunits ?? []).some((o) => itaSubtreeIds.has(o.id)))
             : allPubs;
           setTopPubs(filtered.slice(0, 10));
         }
@@ -491,9 +486,8 @@ function DimensionsRadar({ averages }: { averages: Record<string, number> }) {
 }
 
 function KeywordCloud({ keywords }: { keywords: { word: string; count: number }[] }) {
-  if (keywords.length === 0) return null;
-
-  const max = Math.max(...keywords.map(k => k.count));
+  // Hooks must come BEFORE any early return — React hook count must be stable
+  // across renders or the second render after the dataset toggles produces a warning.
   const [animated, setAnimated] = useState(false);
 
   useEffect(() => {
@@ -501,6 +495,8 @@ function KeywordCloud({ keywords }: { keywords: { word: string; count: number }[
     return () => clearTimeout(t);
   }, []);
 
+  if (keywords.length === 0) return null;
+  const max = Math.max(...keywords.map(k => k.count));
   const getSize = (count: number) => 12 + (count / max) * 12;
 
   return (

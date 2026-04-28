@@ -76,7 +76,7 @@ export function ActivityChart({ data }: ActivityChartProps) {
                 border: '1px solid #e5e5e5',
                 padding: '6px 10px',
               }}
-              labelFormatter={(m: string) => m}
+              labelFormatter={(m) => String(m ?? '')}
             />
             <Bar dataKey="low" stackId="a" fill={BAND_COLORS.low} />
             <Bar dataKey="mid" stackId="a" fill={BAND_COLORS.mid} />

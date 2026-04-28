@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { getSupabaseFromRequest, createSSEStream } from '@/lib/api-helpers';
+import { getSupabaseAdmin, createSSEStream } from '@/lib/api-helpers';
 import { enrichFromCrossRef } from '@/lib/enrichment/crossref';
 import { enrichFromOpenAlex } from '@/lib/enrichment/openalex';
 import { enrichFromUnpaywall } from '@/lib/enrichment/unpaywall';
@@ -33,15 +33,22 @@ function isPdfUrl(url: string | null): boolean {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = getSupabaseFromRequest(req);
+  const supabase = getSupabaseAdmin(); // mutating route — needs service role
   const body = await req.json();
   const limit = Math.min(body.limit || 20, 500);
   const includePartial = body.include_partial === true;
   const includeNoDoi = body.include_no_doi === true;
+  // R3: validate UUID shape so we 400 instead of 500-ing on garbage input.
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const explicitIds: string[] | undefined =
-    Array.isArray(body.ids) && body.ids.every((x: unknown) => typeof x === 'string')
+    Array.isArray(body.ids) && body.ids.every((x: unknown) => typeof x === 'string' && UUID_RE.test(x as string))
       ? body.ids
       : undefined;
+  if (Array.isArray(body.ids) && !explicitIds) {
+    return new Response(JSON.stringify({ error: 'ids must be UUIDs' }), {
+      status: 400, headers: { 'Content-Type': 'application/json' },
+    });
+  }
 
   let pubs: Publication[];
 
@@ -123,6 +130,11 @@ export async function POST(req: NextRequest) {
     const sourceCounts: Record<string, number> = {};
 
     for (let i = 0; i < pubs.length; i++) {
+      if (req.signal.aborted) {
+        send('cancelled', { processed: i, total: pubs.length });
+        close();
+        return;
+      }
       const pub = pubs[i];
       const hasDoi = !!pub.doi;
       const hasDirectPdf = isPdfUrl(pub.url);

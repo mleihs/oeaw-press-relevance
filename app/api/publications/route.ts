@@ -66,7 +66,10 @@ export async function GET(req: NextRequest) {
     // ---------- parse params ----------
     const page = parseInt(searchParams.get('page') || '1');
     const pageSize = parseInt(searchParams.get('pageSize') || '20');
-    const search = searchParams.get('search') || '';
+    // R2: cap search to 200 chars (DoS guard) + B3: escape PostgREST .or() metacharacters
+    // (`,` `(` `)` `*` `\`) so a crafted query can't break out of the filter context.
+    const rawSearch = (searchParams.get('search') || '').slice(0, 200);
+    const search = rawSearch.replace(/[\\,()*]/g, (m) => '\\' + m);
     const enrichmentStatus = searchParams.get('enrichment_status') || '';
     const analysisStatus = searchParams.get('analysis_status') || '';
     const publicationType = searchParams.get('publication_type') || '';

@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { getSupabaseFromRequest, getOpenRouterKey, getLLMModel, createSSEStream } from '@/lib/api-helpers';
+import { getSupabaseAdmin, getOpenRouterKey, getLLMModel, createSSEStream } from '@/lib/api-helpers';
 import { analyzePublications, calculatePressScore, checkKeyBalance } from '@/lib/analysis/openrouter';
 import { Publication } from '@/lib/types';
 
@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
   let body: Record<string, unknown>;
 
   try {
-    supabase = getSupabaseFromRequest(req);
+    supabase = getSupabaseAdmin(); // mutating route — needs service role to bypass RLS
     apiKey = getOpenRouterKey(req);
     model = getLLMModel(req);
     body = await req.json();
@@ -108,8 +108,13 @@ export async function POST(req: NextRequest) {
       return;
     }
 
-    // Process in batches
+    // Process in batches — short-circuit on client disconnect (saves OpenRouter credits).
     for (let i = 0; i < pubs.length; i += batchSize) {
+      if (req.signal.aborted) {
+        send('cancelled', { processed, successful, total: pubs.length });
+        close();
+        return;
+      }
       const batch = pubs.slice(i, i + batchSize);
       const batchIndex = Math.floor(i / batchSize) + 1;
       const totalBatches = Math.ceil(pubs.length / batchSize);

@@ -27,8 +27,9 @@ export function getApiHeaders(): Record<string, string> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
-  if (settings.supabaseUrl) headers['x-supabase-url'] = settings.supabaseUrl;
-  if (settings.supabaseAnonKey) headers['x-supabase-key'] = settings.supabaseAnonKey;
+  // Supabase URL/Key are NEVER sent from the browser anymore (B2): they live in
+  // server env exclusively. Only OpenRouter key (user-owned) and model
+  // selection remain header-bound for per-user customization.
   if (settings.openrouterApiKey) headers['x-openrouter-key'] = settings.openrouterApiKey;
   if (settings.llmModel) headers['x-llm-model'] = settings.llmModel;
   return headers;

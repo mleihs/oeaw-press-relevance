@@ -53,7 +53,7 @@ export function useLeaderboard() {
   }, [
     filters.since, filters.metric, filters.scope,
     filters.external, filters.deceased, filters.memberOnly,
-    filters.includeIta, filters.includeOutreach, filters.metric, filters.oestat3,
+    filters.includeIta, filters.includeOutreach, filters.oestat3,
   ]);
 
   return { rows, loading, error };
@@ -106,7 +106,7 @@ export function useDistribution() {
   }, [
     filters.since, filters.metric, filters.scope,
     filters.external, filters.deceased, filters.memberOnly,
-    filters.includeIta, filters.includeOutreach, filters.metric, filters.oestat3,
+    filters.includeIta, filters.includeOutreach, filters.oestat3,
   ]);
 
   return { points, loading, error };

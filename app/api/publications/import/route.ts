@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseFromRequest } from '@/lib/api-helpers';
+import { getSupabaseAdmin } from '@/lib/api-helpers';
 import { PublicationInsert } from '@/lib/types';
 
 export async function POST(req: NextRequest) {
   try {
-    const supabase = getSupabaseFromRequest(req);
+    const supabase = getSupabaseAdmin(); // mutating route — needs service role
     const body = await req.json();
     const publications: PublicationInsert[] = body.publications;
     const batchName = body.batch || `import_${new Date().toISOString().slice(0, 10)}`;

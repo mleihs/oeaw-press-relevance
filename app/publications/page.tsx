@@ -83,14 +83,22 @@ export default function PublicationsPage() {
     [lookups],
   );
 
+  // Type-safe field copy helper: TS can prove K is the same on both sides per call,
+  // so we don't need `as Record<string, unknown>` escape hatches anywhere below.
+  const setField = <K extends keyof FilterValues>(
+    target: Partial<FilterValues>,
+    key: K,
+    value: FilterValues[K],
+  ) => {
+    target[key] = value;
+  };
+
   const applyPreset = useCallback(
     (key: PresetKey) => {
       // Toggle off the active preset: reset preset-territory only, preserve modifiers.
       if (filters.preset === key) {
         const reset: Partial<FilterValues> = { preset: 'custom', page: 1 };
-        for (const f of PRESET_FIELDS) {
-          (reset as Record<string, unknown>)[f] = FILTER_DEFAULTS[f];
-        }
+        for (const f of PRESET_FIELDS) setField(reset, f, FILTER_DEFAULTS[f]);
         setFilters(reset);
         return;
       }
@@ -100,9 +108,7 @@ export default function PublicationsPage() {
       // new preset's specific values. Modifier fields survive untouched.
       const spec = getPresetSpec(key);
       const patch: Partial<FilterValues> = { preset: key, page: 1 };
-      for (const f of PRESET_FIELDS) {
-        (patch as Record<string, unknown>)[f] = FILTER_DEFAULTS[f];
-      }
+      for (const f of PRESET_FIELDS) setField(patch, f, FILTER_DEFAULTS[f]);
       Object.assign(patch, spec);
       setFilters(patch);
     },
@@ -116,9 +122,8 @@ export default function PublicationsPage() {
     if (filters.preset === 'custom') return false;
     const spec = getPresetSpec(filters.preset);
     for (const f of PRESET_FIELDS) {
-      const expected = (spec as Record<string, unknown>)[f] ?? FILTER_DEFAULTS[f];
+      const expected = spec[f] ?? FILTER_DEFAULTS[f];
       const actual = filters[f];
-      // Array equality (for `types`)
       if (Array.isArray(expected) && Array.isArray(actual)) {
         if (expected.length !== actual.length) return true;
         if (expected.some((v, i) => v !== actual[i])) return true;
@@ -133,9 +138,7 @@ export default function PublicationsPage() {
     if (filters.preset === 'custom') return;
     const spec = getPresetSpec(filters.preset);
     const patch: Partial<FilterValues> = { page: 1 };
-    for (const f of PRESET_FIELDS) {
-      (patch as Record<string, unknown>)[f] = FILTER_DEFAULTS[f];
-    }
+    for (const f of PRESET_FIELDS) setField(patch, f, FILTER_DEFAULTS[f]);
     Object.assign(patch, spec);
     setFilters(patch);
   }, [filters.preset, getPresetSpec, setFilters]);
