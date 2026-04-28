@@ -287,11 +287,13 @@ export default function DashboardPage() {
             <p className="text-xs text-neutral-500 mt-1">{getTimeRangeLabel(timePeriod)}</p>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-neutral-500 hidden sm:block">Zeitraum:</span>
-            <div className="flex rounded-lg border bg-neutral-50 p-0.5">
+            <span id="time-tabs-label" className="text-xs text-neutral-500 hidden sm:block">Zeitraum:</span>
+            <div role="tablist" aria-labelledby="time-tabs-label" className="flex rounded-lg border bg-neutral-50 p-0.5">
             {TIME_TABS.map((tab) => (
               <button
                 key={tab.value}
+                role="tab"
+                aria-selected={timePeriod === tab.value}
                 onClick={() => setTimePeriod(tab.value)}
                 className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
                   timePeriod === tab.value
@@ -500,25 +502,38 @@ function KeywordCloud({ keywords }: { keywords: { word: string; count: number }[
   const getSize = (count: number) => 12 + (count / max) * 12;
 
   return (
-    <div className="flex flex-wrap gap-2 justify-center items-baseline">
-      {keywords.map(({ word, count }, i) => (
-        <span
-          key={word}
-          className={`inline-block px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-700
-            hover:bg-[#0047bb] hover:text-white cursor-default
-            transition-all duration-500 ease-out`}
-          style={{
-            fontSize: `${getSize(count)}px`,
-            opacity: animated ? 1 : 0,
-            transform: animated ? 'scale(1)' : 'scale(0.5)',
-            transitionDelay: `${i * 30}ms`,
-          }}
-          title={`${count}× in Publikationen`}
-        >
-          {word}
-        </span>
-      ))}
-    </div>
+    <>
+      <div
+        className="flex flex-wrap gap-2 justify-center items-baseline"
+        role="presentation"
+        aria-hidden="true"
+      >
+        {keywords.map(({ word, count }, i) => (
+          <span
+            key={word}
+            className={`inline-block px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-700
+              hover:bg-[#0047bb] hover:text-white cursor-default
+              transition-all duration-500 ease-out
+              motion-reduce:transition-none`}
+            style={{
+              fontSize: `${getSize(count)}px`,
+              opacity: animated ? 1 : 0,
+              transform: animated ? 'scale(1)' : 'scale(0.5)',
+              transitionDelay: `${i * 30}ms`,
+            }}
+            title={`${count}× in Publikationen`}
+          >
+            {word}
+          </span>
+        ))}
+      </div>
+      {/* W3: AT-friendly equivalent of the visual cloud. */}
+      <ul className="sr-only" aria-label="Top Keywords aus angereicherten Publikationen">
+        {keywords.map(({ word, count }) => (
+          <li key={word}>{word}: {count} mal</li>
+        ))}
+      </ul>
+    </>
   );
 }
 
@@ -540,22 +555,22 @@ function ScoreDistributionChart({ buckets }: { buckets: number[] }) {
   }, []);
 
   return (
-    <div className="space-y-1">
-      <div className="flex items-end gap-1 h-32">
+    <div className="space-y-1" role="presentation">
+      <div className="flex items-end gap-1 h-32" aria-hidden="true">
         {buckets.map((count, i) => {
           const targetHeight = Math.max(count > 0 ? 4 : 0, (count / max) * 100);
           return (
             <div key={i} className="flex-1 flex flex-col items-center justify-end h-full">
               {count > 0 && (
                 <span
-                  className={`text-[10px] text-neutral-500 mb-0.5 transition-opacity duration-300 ${animated ? 'opacity-100' : 'opacity-0'}`}
+                  className={`text-[10px] text-neutral-500 mb-0.5 transition-opacity duration-300 motion-reduce:transition-none ${animated ? 'opacity-100' : 'opacity-0'}`}
                   style={{ transitionDelay: `${i * 50}ms` }}
                 >
                   {count}
                 </span>
               )}
               <div
-                className={`w-full rounded-t ${BUCKET_COLORS[i]} transition-all duration-500 ease-out`}
+                className={`w-full rounded-t ${BUCKET_COLORS[i]} transition-all duration-500 ease-out motion-reduce:transition-none`}
                 style={{
                   height: animated ? `${targetHeight}%` : '0%',
                   transitionDelay: `${i * 50}ms`,
@@ -565,13 +580,19 @@ function ScoreDistributionChart({ buckets }: { buckets: number[] }) {
           );
         })}
       </div>
-      <div className="flex gap-1">
+      <div className="flex gap-1" aria-hidden="true">
         {BUCKET_LABELS.map((label, i) => (
-          <div key={i} className="flex-1 text-center text-[9px] text-neutral-400">
+          <div key={i} className="flex-1 text-center text-[9px] text-neutral-600">
             {label}
           </div>
         ))}
       </div>
+      {/* W3: AT-friendly equivalent of the visual chart. */}
+      <ul className="sr-only" aria-label="StoryScore-Verteilung">
+        {buckets.map((count, i) => (
+          <li key={i}>{BUCKET_LABELS[i]}: {count} Publikationen</li>
+        ))}
+      </ul>
     </div>
   );
 }

@@ -135,7 +135,18 @@ export function BeeswarmView({ points, loading, metric }: BeeswarmViewProps) {
       </div>
 
       <div ref={containerRef} className="relative">
-        <svg width={width} height={HEIGHT} className="block">
+        <svg
+          width={width}
+          height={HEIGHT}
+          className="block"
+          role="img"
+          aria-labelledby="beeswarm-title beeswarm-desc"
+        >
+          <title id="beeswarm-title">Verteilung der Forschenden nach {METRIC_SHORT_LABELS[metric]}</title>
+          <desc id="beeswarm-desc">
+            {points.length} Forschende, X-Achse zeigt {METRIC_SHORT_LABELS[metric]}, Punktgröße entspricht Anzahl Pubs.
+            Die vollständige Liste finden Sie als Tabelle unter dem Diagramm.
+          </desc>
           {/* X axis */}
           <line
             x1={PAD_X} x2={width - PAD_X}
@@ -166,6 +177,22 @@ export function BeeswarmView({ points, loading, metric }: BeeswarmViewProps) {
                   }}
                   onMouseEnter={() => setHoveredId(n.person_id)}
                   onMouseLeave={() => setHoveredId(null)}
+                  onFocus={() => setHoveredId(n.person_id)}
+                  onBlur={() => setHoveredId(null)}
+                  tabIndex={0}
+                  role="link"
+                  aria-label={`${n.firstname} ${n.lastname}, ${METRIC_SHORT_LABELS[metric]}: ${
+                    metric === 'avg_score' || metric === 'weighted_avg'
+                      ? Math.round(n.metric_value * 100) + '%'
+                      : n.metric_value
+                  }, ${n.pubs_total} Publikationen${n.is_member ? ', ÖAW-Mitglied' : ''}`}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      window.location.href = `/persons/${n.person_id}`;
+                    }
+                  }}
+                  className="focus:outline-none focus-visible:[&_circle]:stroke-[#0047bb] focus-visible:[&_circle]:stroke-[2px]"
                   style={{ cursor: 'pointer' }}
                 >
                   <circle

@@ -85,22 +85,32 @@ export function LeaderboardTable({ rows, loading }: LeaderboardTableProps) {
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border bg-white">
-      <div className="grid grid-cols-[44px_1fr_180px_200px_72px_80px_28px] items-center gap-x-3 border-b bg-neutral-50/60 px-4 py-2 text-[10px] font-medium uppercase tracking-wider text-neutral-500">
-        <div className="inline-flex items-center gap-1">Rang <InfoBubble id="rank" /></div>
-        <div>Forscher:in</div>
-        <div className="inline-flex items-center gap-1">Sektion <InfoBubble id="oestat3" /></div>
-        <div className="inline-flex items-center gap-1">{METRIC_SHORT_LABELS[metric]} <InfoBubble id={metric} /></div>
-        <div className="flex items-center justify-end gap-1 text-right">Pubs (Σ) <InfoBubble id="pubs_total" /></div>
-        <div className="flex items-center justify-end gap-1 text-right">12 M <InfoBubble id="sparkline" /></div>
-        <div />
+    <div
+      role="table"
+      aria-label="Forscher:innen-Rangliste"
+      className="overflow-hidden rounded-lg border bg-white"
+    >
+      <div role="rowgroup">
+        <div
+          role="row"
+          className="grid grid-cols-[44px_1fr_180px_200px_72px_80px_28px] items-center gap-x-3 border-b bg-neutral-50/60 px-4 py-2 text-[10px] font-medium uppercase tracking-wider text-neutral-500"
+        >
+          <div role="columnheader" className="inline-flex items-center gap-1">Rang <InfoBubble id="rank" /></div>
+          <div role="columnheader">Forscher:in</div>
+          <div role="columnheader" className="inline-flex items-center gap-1">Sektion <InfoBubble id="oestat3" /></div>
+          <div role="columnheader" className="inline-flex items-center gap-1">{METRIC_SHORT_LABELS[metric]} <InfoBubble id={metric} /></div>
+          <div role="columnheader" className="flex items-center justify-end gap-1 text-right">Pubs (Σ) <InfoBubble id="pubs_total" /></div>
+          <div role="columnheader" className="flex items-center justify-end gap-1 text-right">12 M <InfoBubble id="sparkline" /></div>
+          <div role="columnheader" aria-hidden="true" />
+        </div>
       </div>
 
-      <ul className="divide-y divide-neutral-100">
+      <ul role="rowgroup" className="divide-y divide-neutral-100">
         <AnimatePresence initial={false}>
           {rows.map((row) => (
             <motion.li
               key={row.person_id}
+              role="row"
               layout
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
@@ -110,14 +120,15 @@ export function LeaderboardTable({ rows, loading }: LeaderboardTableProps) {
             >
               <Link
                 href={`/persons/${row.person_id}`}
+                aria-label={`Rang ${row.rank_now}: ${row.firstname} ${row.lastname}, ${METRIC_SHORT_LABELS[metric]}: ${metricValue(row, metric)}`}
                 className="grid grid-cols-[44px_1fr_180px_200px_72px_80px_28px] items-center gap-x-3 px-4 py-3"
               >
-                <div className="flex items-center gap-1 text-sm font-medium tabular-nums text-neutral-700">
+                <div role="cell" className="flex items-center gap-1 text-sm font-medium tabular-nums text-neutral-700">
                   <span className="w-5 text-right">{row.rank_now}</span>
                   {rankIcon(row.rank_now)}
                 </div>
 
-                <div className="flex min-w-0 items-center gap-3">
+                <div role="cell" className="flex min-w-0 items-center gap-3">
                   <PersonAvatar
                     firstname={row.firstname}
                     lastname={row.lastname}
@@ -156,11 +167,11 @@ export function LeaderboardTable({ rows, loading }: LeaderboardTableProps) {
                   </div>
                 </div>
 
-                <div className="truncate text-xs text-neutral-500">
+                <div role="cell" className="truncate text-xs text-neutral-500">
                   {row.oestat3_name_de || <span className="text-neutral-300">—</span>}
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div role="cell" className="flex items-center gap-2">
                   <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-neutral-100">
                     <motion.div
                       className="h-full bg-[#0047bb]"
@@ -178,15 +189,15 @@ export function LeaderboardTable({ rows, loading }: LeaderboardTableProps) {
                   </span>
                 </div>
 
-                <div className="text-right text-xs tabular-nums text-neutral-500">
+                <div role="cell" className="text-right text-xs tabular-nums text-neutral-500">
                   {row.pubs_total}
                 </div>
 
-                <div className="flex justify-end text-[#0047bb]">
+                <div role="cell" className="flex justify-end text-[#0047bb]">
                   <Sparkline data={row.sparkline ?? []} width={70} height={20} stroke="currentColor" />
                 </div>
 
-                <div className="text-neutral-300 transition-colors group-hover:text-neutral-600">›</div>
+                <div role="cell" aria-hidden="true" className="text-neutral-300 transition-colors group-hover:text-neutral-600">›</div>
               </Link>
             </motion.li>
           ))}

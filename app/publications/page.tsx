@@ -246,10 +246,10 @@ export default function PublicationsPage() {
     <div className="space-y-5">
       <div>
         <h1 className="text-2xl font-bold">Publikationen</h1>
-        <p className="text-neutral-500">
+        <p className="text-neutral-500" role="status" aria-live="polite">
           {total.toLocaleString('de-AT')} Publikationen
           {!filters.showAll && hidden > 0 && (
-            <span className="ml-2 text-neutral-400">
+            <span className="ml-2 text-neutral-500">
               ({hidden.toLocaleString('de-AT')} ausgeblendet)
             </span>
           )}

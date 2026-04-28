@@ -19,13 +19,19 @@ type Props = {
 
 export function PresetBar({ active, onSelect }: Props) {
   return (
-    <div className="flex flex-wrap items-center gap-1.5">
+    <div
+      role="tablist"
+      aria-label="Filter-Presets"
+      className="flex flex-wrap items-center gap-1.5"
+    >
       {PRESET_CONFIG.map(({ key, label, Icon }) => {
         const isActive = active === key;
         return (
           <button
             key={key}
             type="button"
+            role="tab"
+            aria-selected={isActive}
             onClick={() => onSelect(key)}
             className={cn(
               'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors',

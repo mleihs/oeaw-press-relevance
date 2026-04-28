@@ -36,7 +36,7 @@ export function ScoreBar({ dimension, value, compact }: ScoreBarProps) {
           aria-label={`${label}: ${pct}%`}
         >
           <div
-            className="h-full rounded-full transition-all duration-300"
+            className="h-full rounded-full transition-all duration-300 motion-reduce:transition-none"
             style={{ width: `${pct}%`, backgroundColor: color }}
           />
         </div>
@@ -63,7 +63,7 @@ export function ScoreBar({ dimension, value, compact }: ScoreBarProps) {
         aria-label={`${label}: ${pct}%`}
       >
         <div
-          className="h-full rounded-full transition-all duration-300"
+          className="h-full rounded-full transition-all duration-300 motion-reduce:transition-none"
           style={{ width: `${pct}%`, backgroundColor: color }}
         />
       </div>

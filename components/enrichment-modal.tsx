@@ -186,7 +186,7 @@ function CompletedRow({ pub }: { pub: CompletedPub }) {
     pub.finalStatus === 'enriched'
       ? 'text-green-700'
       : pub.finalStatus === 'partial'
-        ? 'text-amber-600'
+        ? 'text-amber-800'
         : 'text-red-600';
 
   return (
@@ -660,7 +660,7 @@ export function EnrichmentModal({
                 {finalStats.successful} angereichert
               </Badge>
               {finalStats.partial > 0 && (
-                <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">
+                <Badge className="bg-amber-100 text-amber-900 hover:bg-amber-100">
                   {finalStats.partial} teilweise
                 </Badge>
               )}
@@ -690,7 +690,7 @@ export function EnrichmentModal({
                 </Badge>
               )}
               {completed.filter(p => p.finalStatus === 'partial').length > 0 && (
-                <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">
+                <Badge className="bg-amber-100 text-amber-900 hover:bg-amber-100">
                   {completed.filter(p => p.finalStatus === 'partial').length} teilweise
                 </Badge>
               )}

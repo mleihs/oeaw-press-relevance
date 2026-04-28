@@ -68,7 +68,7 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 p-3 text-xs text-amber-900">
-            <ShieldCheck className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
+            <ShieldCheck className="h-4 w-4 shrink-0 text-amber-800 mt-0.5" />
             <div>
               <p className="font-medium mb-0.5">Server-konfiguriert</p>
               <p>

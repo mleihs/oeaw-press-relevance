@@ -60,7 +60,7 @@ const STATUS_LABELS: Record<string, string> = {
 const STATUS_COLORS: Record<string, string> = {
   pending: 'bg-neutral-100 text-neutral-600',
   enriched: 'bg-[#0047bb]/10 text-[#0047bb]',
-  partial: 'bg-amber-100 text-amber-700',
+  partial: 'bg-amber-100 text-amber-900',
   analyzed: 'bg-green-100 text-green-700',
   failed: 'bg-red-100 text-red-700',
 };

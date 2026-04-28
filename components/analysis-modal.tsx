@@ -59,7 +59,7 @@ interface CompleteData {
 const TIER_STYLES: Record<string, { bg: string; text: string; label: string }> = {
   recommended: { bg: 'bg-green-100', text: 'text-green-700', label: 'Empfohlen' },
   budget: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Budget' },
-  balanced: { bg: 'bg-amber-100', text: 'text-amber-700', label: 'Ausgewogen' },
+  balanced: { bg: 'bg-amber-100', text: 'text-amber-900', label: 'Ausgewogen' },
   premium: { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Premium' },
   free: { bg: 'bg-neutral-100', text: 'text-neutral-600', label: 'Gratis' },
 };
@@ -489,7 +489,7 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
                 </div>
               )}
               {keyBalance && keyBalance.effectiveBudget !== null && keyBalance.effectiveBudget < 0.50 && keyBalance.effectiveBudget >= 0.01 && (
-                <div className="flex items-center gap-1.5 text-xs text-amber-600 bg-amber-50 rounded px-2 py-1">
+                <div className="flex items-center gap-1.5 text-xs text-amber-800 bg-amber-50 rounded px-2 py-1">
                   <AlertCircle className="h-3 w-3 shrink-0" />
                   <span>Niedriges Guthaben — bald Credits aufladen auf openrouter.ai/settings/credits</span>
                 </div>
@@ -623,13 +623,13 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
         {/* Batch errors — show during running AND after complete/error */}
         {errors.length > 0 && (status === 'running' || status === 'complete' || status === 'cancelled' || status === 'error') && (
           <div className="rounded-lg border border-amber-200 bg-amber-50 p-2 space-y-1">
-            <p className="text-xs font-medium text-amber-700 flex items-center gap-1">
+            <p className="text-xs font-medium text-amber-900 flex items-center gap-1">
               <AlertCircle className="h-3 w-3" />
               {errors.length} Batch-Fehler
             </p>
             <div className="max-h-[120px] overflow-y-auto">
               {errors.map((err, i) => (
-                <p key={i} className="text-xs text-amber-600">{err}</p>
+                <p key={i} className="text-xs text-amber-800">{err}</p>
               ))}
             </div>
           </div>

@@ -3,7 +3,10 @@
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 
-const CORRECT_PASSWORD = 'movefastandbreakthings';
+// B4: Password is read from server-passed env via NEXT_PUBLIC_GATE_PASSWORD,
+// with a stable dev default. Still client-readable (the gate is cosmetic;
+// real auth would be via middleware + cookie). At least rotateable now.
+const CORRECT_PASSWORD = process.env.NEXT_PUBLIC_GATE_PASSWORD || 'movefastandbreakthings';
 const STORAGE_KEY = 'storyscout-auth';
 
 export function PasswordGate({ children }: { children: React.ReactNode }) {
@@ -50,8 +53,15 @@ export function PasswordGate({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      {/* Blurred app content behind */}
-      <div className="blur-md pointer-events-none select-none opacity-40" aria-hidden>
+      {/* Blurred app content behind. `inert` blocks ALL keyboard/AT
+          interaction (W6) — without this, sighted-keyboard and AT users
+          could tab through the ghost UI behind the gate. */}
+      <div
+        className="blur-md pointer-events-none select-none opacity-40"
+        aria-hidden
+        // @ts-expect-error: inert is a valid HTML attribute (Baseline 2024+)
+        inert=""
+      >
         {children}
       </div>
 
@@ -126,6 +136,9 @@ export function PasswordGate({ children }: { children: React.ReactNode }) {
         }
         .animate-shake {
           animation: shake 0.4s ease-in-out;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .animate-shake { animation: none !important; }
         }
       `}</style>
     </>

@@ -318,7 +318,7 @@ function StatusBadge({ status }: { status: string }) {
   const colors: Record<string, string> = {
     pending: 'bg-neutral-100 text-neutral-600',
     enriched: 'bg-blue-100 text-blue-700',
-    partial: 'bg-amber-100 text-amber-700',
+    partial: 'bg-amber-100 text-amber-900',
     analyzed: 'bg-green-100 text-green-700',
     failed: 'bg-red-100 text-red-700',
   };
