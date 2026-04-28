@@ -33,13 +33,11 @@ export const OA_FALSE_VALUES = new Set([
   'nicht_oacc', 'Restricted', 'Unknown', '', '0',
 ]);
 
-export const SCORE_WEIGHTS: Record<string, number> = {
-  public_accessibility: 0.20,
-  societal_relevance: 0.25,
-  novelty_factor: 0.20,
-  storytelling_potential: 0.20,
-  media_timeliness: 0.15,
-};
+// Single source of truth for all consumers (UI + session-pipeline.mjs script).
+// JSON file because mjs scripts can't `import` from .ts at runtime; both can
+// import the same JSON cleanly. Dimension order = display order in the radar.
+import scoreWeightsJson from './score-weights.json';
+export const SCORE_WEIGHTS: Record<string, number> = scoreWeightsJson;
 
 export const SCORE_COLORS: Record<string, string> = {
   public_accessibility: '#3b82f6',

@@ -21,14 +21,9 @@ import { readFileSync } from 'fs';
 const PG_URL = process.env.PG_DATABASE_URL
   || 'postgresql://postgres:postgres@127.0.0.1:54422/postgres';
 
-// MUST stay in sync with lib/constants.ts SCORE_WEIGHTS.
-const SCORE_WEIGHTS = {
-  public_accessibility: 0.20,
-  societal_relevance:   0.25,
-  novelty_factor:       0.20,
-  storytelling_potential: 0.20,
-  media_timeliness:     0.15,
-};
+// Single source of truth: lib/score-weights.json. Both this script and
+// lib/constants.ts import it, so drift is impossible by construction.
+import SCORE_WEIGHTS from '../lib/score-weights.json' with { type: 'json' };
 
 const SESSION_MODEL_TAG = 'anthropic/claude-opus-4.7-session';
 const WEBDB_SOURCE_TAG = 'hebowebdb_summary';

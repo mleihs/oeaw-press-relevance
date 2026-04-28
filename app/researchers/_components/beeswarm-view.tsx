@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { forceSimulation, forceX, forceY, forceCollide } from 'd3-force';
 import { motion } from 'motion/react';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
@@ -46,6 +46,10 @@ const PAD_Y = 24;
 export function BeeswarmView({ points, loading, metric }: BeeswarmViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(960);
+  // P8: defer the width signal so resize-bursts don't trigger 140-tick force
+  // simulations on every mid-drag pixel; React only re-runs the layout effect
+  // when the deferred value catches up, after higher-priority work is done.
+  const deferredWidth = useDeferredValue(width);
   const [nodes, setNodes] = useState<Node[]>([]);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
@@ -77,7 +81,7 @@ export function BeeswarmView({ points, loading, metric }: BeeswarmViewProps) {
     }
     const max = Math.max(1, ...points.map((p) => p.metric_value));
     const min = 0;
-    const innerW = width - 2 * PAD_X;
+    const innerW = deferredWidth - 2 * PAD_X;
     const xScale = (v: number) =>
       PAD_X + ((v - min) / (max - min)) * innerW;
 
@@ -98,7 +102,7 @@ export function BeeswarmView({ points, loading, metric }: BeeswarmViewProps) {
       n.y = Math.max(PAD_Y + n.r, Math.min(HEIGHT - PAD_Y - n.r, n.y));
     }
     setNodes(initial.slice());
-  }, [points, width]);
+  }, [points, deferredWidth]);
 
   if (loading && points.length === 0) {
     return <LoadingState variant="text" label="Lade Verteilung …" />;
