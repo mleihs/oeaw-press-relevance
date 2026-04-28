@@ -57,6 +57,51 @@ export const SCORE_LABELS: Record<string, string> = {
   media_timeliness: 'Aktualität',
 };
 
+/**
+ * Press-Score band thresholds. Mirrored in PG functions
+ * (`supabase/migrations/20260428*.sql`) — keep these in sync. Used by:
+ * - PG functions: `band` column in researcher_detail.publications
+ * - PG functions: `count_high` filter (≥ SCORE_BAND_HIGH)
+ * - UI: PressScoreBadge color cutoff, ActivityChart legend, EXPL tooltips
+ */
+export const SCORE_BAND_HIGH = 0.7;
+export const SCORE_BAND_MID = 0.4;
+
+/**
+ * Single source of truth for enrichment-source labels and color tokens.
+ * Per-component overrides (e.g. enrichment-modal uses "PDF Extract") still
+ * live next to the component if intentionally different.
+ */
+export const SOURCE_LABELS: Record<string, string> = {
+  crossref: 'CrossRef',
+  openalex: 'OpenAlex',
+  unpaywall: 'Unpaywall',
+  semantic_scholar: 'Semantic Scholar',
+  pdf: 'PDF',
+  csv: 'CSV',
+  hebowebdb_summary: 'WebDB',
+};
+
+export const SOURCE_BADGE_CLASSES: Record<string, string> = {
+  crossref: 'bg-violet-100 text-violet-700',
+  openalex: 'bg-sky-100 text-sky-700',
+  unpaywall: 'bg-emerald-100 text-emerald-700',
+  semantic_scholar: 'bg-orange-100 text-orange-700',
+  pdf: 'bg-rose-100 text-rose-700',
+  csv: 'bg-teal-100 text-teal-700',
+  hebowebdb_summary: 'bg-indigo-100 text-indigo-700',
+};
+
+export const SOURCE_DESCRIPTIONS: Record<string, string> = {
+  crossref: 'DOI-basierte Metadaten: Titel, Abstract, Journal, Autoren, ISSN und Lizenzinfos.',
+  openalex: 'Offene Forschungsdatenbank: Abstract, Zitationen, Themen-Tags und Open-Access-Status.',
+  unpaywall: 'Findet frei zugängliche PDF-Volltext-Links zu Publikationen.',
+  semantic_scholar: 'KI-gestützte Datenbank: Abstract, Zitationszahlen und Einfluss-Score.',
+  pdf: 'Direkter PDF-Download von der Publikations-URL — extrahiert den Volltext.',
+  csv: 'Abstract aus der ursprünglich importierten CSV-Datei übernommen.',
+  hebowebdb_summary: 'Vom Institut kuratierte Pressezusammenfassung (DE/EN) aus der WebDB.',
+};
+
 export interface LLMModel {
   value: string;
   label: string;

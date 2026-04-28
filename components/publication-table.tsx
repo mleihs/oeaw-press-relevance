@@ -338,35 +338,11 @@ const SOURCE_SHORT: Record<string, string> = {
   pdf: 'PDF',
 };
 
-const SOURCE_LABELS: Record<string, string> = {
-  crossref: 'CrossRef',
-  openalex: 'OpenAlex',
-  unpaywall: 'Unpaywall',
-  semantic_scholar: 'Semantic Scholar',
-  pdf: 'PDF',
-  csv: 'CSV',
-  hebowebdb_summary: 'WebDB',
-};
-
-const SOURCE_COLOR: Record<string, string> = {
-  crossref: 'bg-violet-100 text-violet-700',
-  openalex: 'bg-sky-100 text-sky-700',
-  unpaywall: 'bg-emerald-100 text-emerald-700',
-  semantic_scholar: 'bg-orange-100 text-orange-700',
-  pdf: 'bg-rose-100 text-rose-700',
-  csv: 'bg-teal-100 text-teal-700',
-  hebowebdb_summary: 'bg-indigo-100 text-indigo-700',
-};
-
-const SOURCE_DESCRIPTIONS: Record<string, string> = {
-  crossref: 'DOI-basierte Metadaten: Titel, Abstract, Journal, Autoren, ISSN und Lizenzinfos.',
-  openalex: 'Offene Forschungsdatenbank: Abstract, Zitationen, Themen-Tags und Open-Access-Status.',
-  unpaywall: 'Findet frei zugängliche PDF-Volltext-Links zu Publikationen.',
-  semantic_scholar: 'KI-gestützte Datenbank: Abstract, Zitationszahlen und Einfluss-Score.',
-  pdf: 'Direkter PDF-Download von der Publikations-URL — extrahiert den Volltext.',
-  csv: 'Abstract aus der ursprünglich importierten CSV-Datei übernommen.',
-  hebowebdb_summary: 'Vom Institut kuratierte Pressezusammenfassung (DE/EN) aus der WebDB.',
-};
+import {
+  SOURCE_LABELS,
+  SOURCE_BADGE_CLASSES as SOURCE_COLOR,
+  SOURCE_DESCRIPTIONS,
+} from '@/lib/constants';
 
 const MODEL_SHORT: Record<string, string> = Object.fromEntries(
   LLM_MODELS.map(m => {

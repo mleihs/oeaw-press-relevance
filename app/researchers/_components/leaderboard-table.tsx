@@ -13,6 +13,7 @@ import { PersonAvatar } from './person-avatar';
 import { Sparkline } from './sparkline';
 import { TrendDelta } from './trend-delta';
 import { InfoBubble } from '@/components/info-bubble';
+import { LoadingState } from '@/components/loading-state';
 import { displayTitle } from '@/lib/html-utils';
 import { Crown, Award, Medal, BookOpen } from 'lucide-react';
 
@@ -67,11 +68,7 @@ export function LeaderboardTable({ rows, loading }: LeaderboardTableProps) {
     : 1;  // avg_score & weighted_avg are already 0..1
 
   if (loading && rows.length === 0) {
-    return (
-      <div className="rounded-lg border bg-white p-12 text-center text-sm text-neutral-400">
-        Lade Rangliste …
-      </div>
-    );
+    return <LoadingState variant="text" label="Lade Rangliste …" />;
   }
   if (!loading && rows.length === 0) {
     return (

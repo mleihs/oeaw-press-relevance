@@ -19,6 +19,7 @@ import { PresetBar } from './_components/preset-bar';
 import { ActiveFilters } from './_components/active-filters';
 import { ShowAllToggle } from './_components/show-all-toggle';
 import { FilterSheet } from './_components/filter-sheet';
+import { LoadingState } from '@/components/loading-state';
 import { WISS_TYPE_UIDS } from './_constants';
 import { RotateCcw } from 'lucide-react';
 
@@ -334,9 +335,7 @@ export default function PublicationsPage() {
       <AnalysisModal open={analysisOpen} onOpenChange={setAnalysisOpen} onComplete={fetchData} />
 
       {loading ? (
-        <div className="flex justify-center py-12">
-          <div className="animate-spin h-8 w-8 border-4 border-neutral-200 border-t-[#0047bb] rounded-full" />
-        </div>
+        <LoadingState label="Lade Publikationen …" />
       ) : publications.length === 0 && hasAnyActiveFilter ? (
         <Card className="border-dashed">
           <CardContent className="px-6 py-10 text-center space-y-4">

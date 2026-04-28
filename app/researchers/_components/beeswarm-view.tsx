@@ -7,6 +7,7 @@ import { motion } from 'motion/react';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { PersonAvatar } from './person-avatar';
 import { InfoBubble } from '@/components/info-bubble';
+import { LoadingState } from '@/components/loading-state';
 import {
   METRIC_SHORT_LABELS,
   type DistributionPoint,
@@ -100,16 +101,12 @@ export function BeeswarmView({ points, loading, metric }: BeeswarmViewProps) {
   }, [points, width]);
 
   if (loading && points.length === 0) {
-    return (
-      <div className="rounded-lg border bg-white p-12 text-center text-sm text-neutral-400">
-        Lade Verteilung …
-      </div>
-    );
+    return <LoadingState variant="text" label="Lade Verteilung …" />;
   }
 
   if (!loading && points.length === 0) {
     return (
-      <div className="rounded-lg border bg-white p-12 text-center text-sm text-neutral-400">
+      <div className="rounded-lg border bg-white p-12 text-center text-sm text-neutral-500">
         Keine Daten für die aktuellen Filter.
       </div>
     );
