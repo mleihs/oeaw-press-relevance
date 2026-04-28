@@ -6,9 +6,16 @@ import { ChevronLeft } from 'lucide-react';
 import { getApiHeaders } from '@/lib/settings-store';
 import { sincePresetToDate, type ResearcherDetail } from '@/lib/researchers';
 import { PersonHeader } from './_components/person-header';
-import { ActivityChart } from './_components/activity-chart';
+import dynamic from 'next/dynamic';
 import { CoauthorBlock } from './_components/coauthor-block';
 import { PubList } from './_components/pub-list';
+
+// Activity chart pulls in recharts (~100kB); lazy-load so first paint of
+// the detail header isn't blocked by the chart bundle.
+const ActivityChart = dynamic(
+  () => import('./_components/activity-chart').then((m) => m.ActivityChart),
+  { ssr: false, loading: () => <div className="h-[260px] rounded-lg border bg-white" aria-hidden /> },
+);
 
 const WINDOW = '12M' as const;
 const WINDOW_LABEL = 'letzte 12 Monate';

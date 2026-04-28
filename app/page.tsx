@@ -2,11 +2,18 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
-import { RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer, Tooltip } from 'recharts';
 import { PressScoreBadge } from '@/components/score-bar';
+
+// Recharts is ~100kB gz; lazy-load via next/dynamic so it only ships when
+// the dashboard actually has data to show in this card.
+const DimensionsRadar = dynamic(() => import('./_components/dimensions-radar'), {
+  ssr: false,
+  loading: () => <div className="h-[280px]" aria-hidden />,
+});
 import { InfoBubble } from '@/components/info-bubble';
 import type { EXPL } from '@/lib/explanations';
 import { CapybaraEmpty } from '@/components/capybara-logo';
@@ -451,39 +458,6 @@ function StatCard({
         </div>
       </CardContent>
     </Card>
-  );
-}
-
-function DimensionsRadar({ averages }: { averages: Record<string, number> }) {
-  const dims = ['public_accessibility', 'societal_relevance', 'novelty_factor', 'storytelling_potential', 'media_timeliness'];
-  const data = dims.map(dim => ({
-    dimension: SCORE_LABELS[dim],
-    value: Math.round((averages[dim] || 0) * 100),
-    fullMark: 100,
-  }));
-
-  if (data.every(d => d.value === 0)) return null;
-
-  return (
-    <ResponsiveContainer width="100%" height={280}>
-      <RadarChart data={data}>
-        <PolarGrid stroke="#e5e5e5" />
-        <PolarAngleAxis dataKey="dimension" tick={{ fontSize: 11, fill: '#737373' }} />
-        <Radar
-          dataKey="value"
-          stroke="#0047bb"
-          fill="#0047bb"
-          fillOpacity={0.15}
-          strokeWidth={2}
-          dot={{ r: 4, fill: '#0047bb' }}
-          animationDuration={800}
-        />
-        <Tooltip
-          formatter={(value) => [`${value}%`, 'Durchschnitt']}
-          contentStyle={{ fontSize: 12 }}
-        />
-      </RadarChart>
-    </ResponsiveContainer>
   );
 }
 

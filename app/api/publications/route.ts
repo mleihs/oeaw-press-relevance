@@ -22,17 +22,10 @@ const SENTINEL_UUID = '00000000-0000-0000-0000-000000000000';
 async function fetchPubIdsByOestat6(supabase: SB, oestat6Ids: string[]): Promise<Set<string>> {
   const ids = new Set<string>();
   if (oestat6Ids.length === 0) return ids;
-  const batch = 1000;
-  for (let offset = 0; offset < 50000; offset += batch) {
-    const { data, error } = await supabase
-      .from('publication_oestat6')
-      .select('publication_id')
-      .in('oestat6_id', oestat6Ids)
-      .range(offset, offset + batch - 1);
-    if (error || !data || data.length === 0) break;
-    for (const r of data) ids.add(r.publication_id as string);
-    if (data.length < batch) break;
-  }
+  // P3: single PG-function call replaces the previous 50× paginated round-trip.
+  const { data, error } = await supabase.rpc('pub_ids_by_oestat6', { p_oestat6_ids: oestat6Ids });
+  if (error || !data) return ids;
+  for (const r of data as Array<{ publication_id: string }>) ids.add(r.publication_id);
   return ids;
 }
 
@@ -44,17 +37,12 @@ async function fetchPubIdsByHighlight(
 ): Promise<Set<string>> {
   const ids = new Set<string>();
   if (!ma && !hl) return ids;
-  const batch = 1000;
-  for (let offset = 0; offset < 50000; offset += batch) {
-    let q = supabase.from('person_publications').select('publication_id');
-    if (ma && hl) q = q.or('mahighlight.eq.true,highlight.eq.true');
-    else if (ma) q = q.eq('mahighlight', true);
-    else if (hl) q = q.eq('highlight', true);
-    const { data, error } = await q.range(offset, offset + batch - 1);
-    if (error || !data || data.length === 0) break;
-    for (const r of data) ids.add(r.publication_id as string);
-    if (data.length < batch) break;
-  }
+  const { data, error } = await supabase.rpc('pub_ids_by_highlight', {
+    p_mahighlight: ma,
+    p_highlight: hl,
+  });
+  if (error || !data) return ids;
+  for (const r of data as Array<{ publication_id: string }>) ids.add(r.publication_id);
   return ids;
 }
 
