@@ -155,31 +155,15 @@ export async function GET(req: NextRequest) {
           .not('summary_en', 'is', null),
       );
 
-      const allScores: number[] = [];
-      const batchSize = 1000;
-      for (let offset = 0; ; offset += batchSize) {
-        const { data: batch } = await baseFilter(
-          supabase.from('publications')
-            .select('press_score')
-            .eq('analysis_status', 'analyzed')
-            .not('press_score', 'is', null),
-        ).range(offset, offset + batchSize - 1);
-        if (!batch || batch.length === 0) break;
-        allScores.push(...batch.map((d: { press_score: number }) => d.press_score));
-        if (batch.length < batchSize) break;
-      }
-
-      let avgScore: number | null = null;
-      let highScoreCount = 0;
-      const scoreDistribution = new Array(10).fill(0);
-      if (allScores.length > 0) {
-        avgScore = allScores.reduce((a, b) => a + b, 0) / allScores.length;
-        highScoreCount = allScores.filter((s) => s >= 0.6).length;
-        for (const s of allScores) {
-          const idx = Math.min(9, Math.floor(s * 10));
-          scoreDistribution[idx]++;
-        }
-      }
+      // P1: one PG call replaces the 1000-batch JS loop that pulled every
+      // press_score into Node memory just for histogram + avg + count. <50ms.
+      const { data: stats } = await supabase.rpc('publication_score_stats');
+      const statsRow = (Array.isArray(stats) ? stats[0] : stats) as
+        | { avg_score: number | null; high_score_count: number; score_distribution: number[] }
+        | undefined;
+      const avgScore = statsRow?.avg_score ?? null;
+      const highScoreCount = statsRow?.high_score_count ?? 0;
+      const scoreDistribution = statsRow?.score_distribution ?? new Array(10).fill(0);
 
       return NextResponse.json({
         total: total || 0,
