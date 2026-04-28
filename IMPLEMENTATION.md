@@ -156,7 +156,11 @@ oeaw-press-relevance/
 │   └── analysis/
 │       ├── openrouter.ts                  # OpenRouter API + scoring
 │       └── prompts.ts                     # LLM system + evaluation prompts
-├── supabase-schema.sql                    # Database DDL
+├── supabase/
+│   ├── config.toml                        # Local Supabase stack config
+│   └── migrations/                        # Versioned schema migrations
+│       ├── 20260427000001_initial.sql
+│       └── 20260427000002_constraints_and_indexes.sql
 ├── .env.local                             # Environment variable template
 ├── package.json                           # Dependencies
 ├── next.config.ts                         # Next.js configuration
@@ -173,7 +177,7 @@ oeaw-press-relevance/
 
 ## 3. Database Schema
 
-**File**: `supabase-schema.sql`
+**Files**: `supabase/migrations/*.sql` (apply with `supabase db push` or `supabase migration up --local`)
 
 A single `publications` table with 33 columns organized into four sections:
 
@@ -193,7 +197,7 @@ A single `publications` table with 33 columns organized into four sections:
 | `oa_type` | TEXT | NULL | OA variant (oa_gold, oa_postprint, etc.) |
 | `url` | TEXT | NULL | Website or download link |
 | `citation` | TEXT | NULL | Citation string (HTML stripped) |
-| `csv_uid` | TEXT | NULL | Original UID from HeboWebDB export |
+| `csv_uid` | TEXT | NULL | Original UID from WebDB export |
 
 ### Enrichment Fields (from APIs)
 
@@ -322,7 +326,7 @@ Central repository for all mapping tables and configuration values:
 
 **File**: `lib/csv-parser.ts` (177 lines)
 
-Handles client-side parsing of HeboWebDB CSV exports:
+Handles client-side parsing of WebDB CSV exports:
 
 **`parseCsvFile(file: File): Promise<ParseResult>`**
 
@@ -896,7 +900,7 @@ Runs on port 3000. Set environment variables in `.env.local` or shell environmen
 ### Supabase Setup
 
 1. Create project at supabase.com (free tier: 500 MB, 50K rows)
-2. Run `supabase-schema.sql` in the SQL Editor
+2. `supabase link --project-ref <ref>` then `supabase db push` (applies `supabase/migrations/`)
 3. Copy URL and anon key from Settings → API
 
 ---
@@ -929,3 +933,104 @@ This application was ported from the main OeAW Dashboard's Python/FastAPI backen
 - Multiple database tables and joins
 - Redis caching layer
 - FastAPI dependency injection
+
+---
+
+## 9. Researchers feature (Forscher:innen-Ranking)
+
+Added in late April 2026. Detail design and rationale: see `RESEARCHERS_PLAN.md` at repo root.
+
+### Architecture
+
+**Postgres-first**: aggregation, ranking, trend deltas, sparklines, top-pub, score bands, co-author counts and Bayesian shrinkage all live in three pure-SQL `LANGUAGE sql STABLE` functions, called via `supabase.rpc()`. The Next routes are 30-line wrappers that validate query params and forward.
+
+```
+top_researchers(p_since, p_metric, p_authorship_scope, p_oestat3_ids,
+                p_include_external, p_include_deceased, p_member_only,
+                p_min_value, p_limit, p_exclude_ita, p_exclude_outreach)
+  → rank_now, delta_count_high, is_newcomer, person fields,
+    member_type_de, count_high, sum_score, avg_score, weighted_avg,
+    pubs_total, self_highlight_count, top_pub jsonb (incl. citation),
+    sparkline jsonb (12 monthly buckets)
+
+researcher_distribution(<same filter set>, p_limit=500)
+  → person_id, lastname, firstname, oestat3_name_de,
+    metric_value, pubs_total, count_high, is_member
+
+researcher_detail(p_person_id, p_since, p_exclude_ita, p_exclude_outreach)
+  → person jsonb, stats jsonb, activity jsonb (24 monthly bands),
+    coauthors jsonb (top 10), publications jsonb (incl. citation)
+```
+
+Migrations `20260428000002` through `20260428000009` build these incrementally — indices first, then each function with its own evolution (ITA filter, outreach filter, weighted_avg, citation field).
+
+### Performance
+
+All three functions clock <50 ms on the local dataset (~37k pubs, 48k junction rows). Hot path covered by partial composite index `idx_pub_analyzed_window` on `(published_at, press_score) WHERE analysis_status = 'analyzed' AND press_score IS NOT NULL`.
+
+### UI
+
+```
+app/researchers/
+├── page.tsx                       # Spotlight + Tabs[Rangliste|Verteilung]
+├── _components/
+│   ├── spotlight-podium.tsx       # Top 3 hero, Newsreader serif, motion-number
+│   ├── leaderboard-table.tsx      # custom + motion.layout for FLIP reorder
+│   ├── beeswarm-view.tsx          # SVG + d3-force collision
+│   ├── filters-bar.tsx            # nuqs-bound, with InfoBubbles
+│   ├── person-avatar.tsx          # HSL-hash initials fallback
+│   ├── sparkline.tsx              # 60×16 SVG with stroke-draw animation
+│   └── trend-delta.tsx            # ▲ 3 / ▼ 2 / NEU
+├── _hooks/use-leaderboard.ts      # race-condition-safe fetcher
+└── _filters.ts                    # nuqs parsers + PRESET_FIELDS
+
+app/persons/[id]/
+├── page.tsx                       # detail page
+└── _components/
+    ├── person-header.tsx          # Avatar XL + 4 StatCards
+    ├── activity-chart.tsx         # Recharts BarChart, score-band colors
+    ├── coauthor-block.tsx         # avatar list with shared-pub counts
+    └── pub-list.tsx               # compact list with score chips
+
+lib/researchers.ts                 # shared TS types matching PG returns
+```
+
+### Metrics
+
+- `count_high`: pubs with `press_score ≥ 0.7`
+- `sum_score`: simple sum
+- `weighted_avg`: Bayesian-shrunk avg, IMDb formula `(n·avg + 3·prior) / (n+3)`, prior from current filter scope
+- `avg_score`: raw mean (informational, low-N flag in tooltip)
+- `pubs_total`: count of analyzed pubs
+
+Default sort is `count_high` — most reliable signal of "press-worthy producer."
+
+---
+
+## 10. InfoBubble system
+
+`components/info-bubble.tsx` + `lib/explanations.tsx`. 31 structured explanations (title/formula/body/example/note) keyed by id, referenced via `<InfoBubble id="…" />`.
+
+Trigger is a hybrid Popover: hover (with 120/150 ms delays) on pointer-fine devices, tap on touch, click-to-pin on either, focus on keyboard. `(hover: hover) and (pointer: fine)` media query for capability detection. Built per the research recommendation that shadcn/ui has no canonical hybrid recipe — Radix HoverCard alone breaks on touch.
+
+Globally toggleable: nav button writes to `localStorage` + custom event for cross-tab and same-tab sync. When off, `<InfoBubble>` returns `null`.
+
+Wired across: dashboard StatCards, top-10 panel, score distribution, dimensions radar, top keywords; researchers page (filters, spotlight, leaderboard headers, beeswarm); person detail (StatCards, activity chart, coauthors, pub list); publication detail (StoryScore, 5 ScoreBars, AI provenance, haiku eyebrow); publications table (score column header).
+
+---
+
+## 11. Hybrid filter pattern
+
+`app/publications/page.tsx` + `_filters.ts`. Linear/Notion convention: presets are *views* that reset preset-territory fields on switch; modifier fields (search, oestat, units, dates, etc.) survive every preset switch as user-set overlays.
+
+Defined by the `PRESET_FIELDS` constant in `_filters.ts` — currently `['peer', 'popsci', 'hasSumDe', 'minScore', 'showAll', 'maHl', 'types']`. Anything outside is a modifier.
+
+`presetModified` derived state shows a "Preset modifiziert · zurücksetzen"-pill when the user has hand-tweaked a preset-territory field. Empty-state has one-click "Preset-Modifikationen zurücknehmen" + "Alle Filter zurücksetzen" actions.
+
+---
+
+## 12. Title-truncation heuristic
+
+`displayTitle(primary, citation)` in `lib/html-utils.ts`. The WebDB import truncates titles at the first colon — full subtitle lives in `citation`. Heuristic extracts subtitle when citation segment starts with exactly `<dbTitle>:`. Conservative match avoids gluing author names; sanity cap at 260 chars guard against citation-parser noise. See memory `webdb_title_truncation.md`.
+
+Applied at: dashboard top-10, publications table, publication detail H1, spotlight pull-quote, person-detail PubList.
