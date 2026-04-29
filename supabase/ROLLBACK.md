@@ -280,6 +280,22 @@ dedup — task ID is the only reference we keep). If you need the mapping
 later, dump `(publications.id, meistertask_task_id)` to CSV before the
 DROP — there's no way to recover it from MeisterTask alone.
 
+### `20260429000006_meistertask_task_token.sql`
+
+Adds `publications.meistertask_task_token` for MeisterTask deep-link URLs
+(`/app/task/<token>` is the only format that opens a single task in the
+web UI; the numeric id form 404s with "Zugriff nicht möglich").
+
+```sql
+ALTER TABLE publications DROP COLUMN IF EXISTS meistertask_task_token;
+```
+
+**Data risk:** Drops the deep-link tokens. The numeric `meistertask_task_id`
+remains, so the API integration still works — only the UI deep-link breaks
+(falls back to project-board view in the button/table indicators). Tokens
+are recoverable per-task via `GET /tasks/{id}` against MeisterTask, but
+that's a O(N) reconciliation script's problem.
+
 ---
 
 ## When you actually need a rollback

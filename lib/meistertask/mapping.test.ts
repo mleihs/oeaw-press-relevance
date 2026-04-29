@@ -66,6 +66,7 @@ function makePub(overrides: Partial<Publication> = {}): Publication {
     created_at: '2026-04-29T00:00:00Z',
     updated_at: '2026-04-29T00:00:00Z',
     meistertask_task_id: null,
+    meistertask_task_token: null,
     ...overrides,
   };
 }

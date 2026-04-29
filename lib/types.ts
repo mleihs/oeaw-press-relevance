@@ -65,6 +65,8 @@ export interface Publication {
   updated_at: string;
   // MeisterTask one-way push (lib/meistertask/*). NULL = not pushed yet.
   meistertask_task_id: string | null;
+  // Short URL token for /app/task/<token> deep-links. Set by the same push.
+  meistertask_task_token: string | null;
 }
 
 export interface PublicationType {
