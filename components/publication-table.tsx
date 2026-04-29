@@ -157,7 +157,18 @@ function MobilePublicationCard({
           <p className="font-medium text-sm leading-snug line-clamp-2">
             {displayTitle(pub.original_title || pub.title, pub.citation)}
             {pub.meistertask_task_token && (
-              <ExternalLink className="inline-block h-3 w-3 ml-1 text-neutral-400 align-text-bottom" />
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  window.open(buildTaskUrl(pub.meistertask_task_token)!, '_blank', 'noopener');
+                }}
+                aria-label="In MeisterTask geöffnet"
+                className="inline-flex align-text-bottom ml-1 text-neutral-400 hover:text-[#0047bb]"
+              >
+                <ExternalLink className="h-3 w-3" />
+              </button>
             )}
           </p>
           <p className="text-xs text-neutral-500 mt-1 truncate">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { ExternalLink, Send, Loader2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -28,6 +28,18 @@ export function MeistertaskButton({ pub }: Props) {
         }
       : { kind: 'idle' },
   );
+
+  // Drop late setState if the user navigated away mid-fetch.
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+  const safeSetState = (s: State) => {
+    if (mountedRef.current) setState(s);
+  };
 
   const score = pub.press_score ?? 0;
   const belowThreshold = pub.press_score === null || score < PRESS_SCORE_PUSH_THRESHOLD;
@@ -86,7 +98,7 @@ export function MeistertaskButton({ pub }: Props) {
   }
 
   const onClick = async () => {
-    setState({ kind: 'pushing' });
+    safeSetState({ kind: 'pushing' });
     try {
       const res = await fetch('/api/meistertask/push', {
         method: 'POST',
@@ -96,7 +108,7 @@ export function MeistertaskButton({ pub }: Props) {
       const data = await res.json();
       if (!res.ok) {
         toast.error(`Push fehlgeschlagen: ${data.error ?? `HTTP ${res.status}`}`);
-        setState({ kind: 'idle' });
+        safeSetState({ kind: 'idle' });
         return;
       }
       const msg =
@@ -104,7 +116,7 @@ export function MeistertaskButton({ pub }: Props) {
           ? 'Bereits in MeisterTask vorhanden'
           : 'An MeisterTask gesendet';
       toast.success(msg);
-      setState({
+      safeSetState({
         kind: 'pushed',
         taskId: String(data.task_id),
         taskUrl: data.task_url || null,
@@ -112,7 +124,7 @@ export function MeistertaskButton({ pub }: Props) {
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Netzwerkfehler';
       toast.error(`Push fehlgeschlagen: ${msg}`);
-      setState({ kind: 'idle' });
+      safeSetState({ kind: 'idle' });
     }
   };
 
