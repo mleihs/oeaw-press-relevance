@@ -262,6 +262,24 @@ Data loss only matters once the table actually has rows; while it's a stub
 real users exist, this rollback is destructive — restore from snapshot
 instead.
 
+### `20260429000005_meistertask_task_id.sql`
+
+Adds `publications.meistertask_task_id` text column + partial index for
+MeisterTask one-way push dedup. Set by `/api/meistertask/push` after a
+successful upstream POST.
+
+```sql
+DROP INDEX IF EXISTS idx_publications_meistertask_task_id;
+ALTER TABLE publications DROP COLUMN IF EXISTS meistertask_task_id;
+```
+
+**Data risk:** Dropping the column loses the mapping between local
+publications and their MeisterTask task IDs. After rollback, re-pushing
+the same pubs will create duplicate tasks in MeisterTask (no upstream
+dedup — task ID is the only reference we keep). If you need the mapping
+later, dump `(publications.id, meistertask_task_id)` to CSV before the
+DROP — there's no way to recover it from MeisterTask alone.
+
 ---
 
 ## When you actually need a rollback

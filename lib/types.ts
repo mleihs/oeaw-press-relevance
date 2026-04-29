@@ -63,6 +63,8 @@ export interface Publication {
   import_batch: string | null;
   created_at: string;
   updated_at: string;
+  // MeisterTask one-way push (lib/meistertask/*). NULL = not pushed yet.
+  meistertask_task_id: string | null;
 }
 
 export interface PublicationType {
