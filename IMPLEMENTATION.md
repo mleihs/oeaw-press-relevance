@@ -1,962 +1,387 @@
 # OeAW Press Relevance Analyzer — Implementation Documentation
 
-**Version**: 1.0.0
-**Created**: 2026-02-13
-**Stack**: Next.js 16.2 / React 19.2 / TypeScript 5.9 (target ES2022) / Supabase (RLS-locked, service-role for mutations) / OpenRouter / Tailwind CSS 4.2
+**Version**: 2.0 (post-relational refactor)
+**Last refresh**: 2026-04-29
+**Stack**: Next.js 16.2 / React 19.2 / TypeScript 6.0 / Supabase (RLS + Service-Role) / OpenRouter / Tailwind CSS 4 / Vitest
+
+> **Important**: This document was rewritten 2026-04-29 after a series of audit
+> waves (A–F + G1–G4 + H1) and feature additions (Researchers, InfoBubble,
+> hybrid filter, WebDB ETL). The 1.0 version (2026-02) described a single-flat-
+> table architecture; that model was replaced by a relational schema in commit
+> `f134fb5` (WebDB ETL). For the deepest dive into individual subsystems,
+> follow the cross-references — this doc is an entry point, not a complete
+> duplicate of code-as-truth. When in doubt, the code wins.
+
+> **Audit history (2026-04-29)**: see commits `5f15503` (Wave A: Foundation +
+> Security + Correctness), `e2d1bcb` (Wave B: A11y bulk-fix WCAG 2.2 AA),
+> `303945e` (Wave C: DRY + Cleanup), `164eec2` (Wave D: Performance + DB),
+> `7bbbc95` (Wave E: error/loading/not-found boundaries), `e935778` (Wave F:
+> Patch deps), G1–G4 (auth gate, apiError rollout, publication_score_stats,
+> useDeferredValue + SCORE_WEIGHTS single source), `3fff8fc` (H1: AppSettings
+> cleanup + ScoreDimension type + x-llm-model header weg), `9fba2e9` (H2:
+> Vitest + 11 tests).
 
 ---
 
 ## Table of Contents
 
-1. [Architecture Overview](#1-architecture-overview)
-2. [Directory Structure](#2-directory-structure)
-3. [Database Schema](#3-database-schema)
-4. [Library Layer (`lib/`)](#4-library-layer)
-   - 4.1 [Type System (`types.ts`)](#41-type-system)
-   - 4.2 [Supabase Client (`supabase.ts`)](#42-supabase-client)
-   - 4.3 [Constants (`constants.ts`)](#43-constants)
-   - 4.4 [CSV Parser (`csv-parser.ts`)](#44-csv-parser)
-   - 4.5 [Settings Store (`settings-store.ts`)](#45-settings-store)
-   - 4.6 [API Helpers (`api-helpers.ts`)](#46-api-helpers)
-   - 4.7 [Enrichment Clients](#47-enrichment-clients)
-   - 4.8 [Analysis / LLM Integration](#48-analysis--llm-integration)
-5. [API Routes](#5-api-routes)
-   - 5.1 [Publications Import](#51-publications-import)
-   - 5.2 [Publications List & Stats](#52-publications-list--stats)
-   - 5.3 [Publications Single](#53-publications-single)
-   - 5.4 [Enrichment Batch (SSE)](#54-enrichment-batch-sse)
-   - 5.5 [Analysis Batch (SSE)](#55-analysis-batch-sse)
-   - 5.6 [Export CSV / JSON](#56-export-csv--json)
-6. [UI Components](#6-ui-components)
-   - 6.1 [Navigation](#61-navigation)
-   - 6.2 [Score Visualization](#62-score-visualization)
-   - 6.3 [Publication Table](#63-publication-table)
-   - 6.4 [CSV Upload Zone](#64-csv-upload-zone)
-   - 6.5 [SSE Progress Card](#65-sse-progress-card)
-7. [Pages](#7-pages)
-   - 7.1 [Dashboard (`/`)](#71-dashboard)
-   - 7.2 [Upload (`/upload`)](#72-upload)
-   - 7.3 [Publications (`/publications`)](#73-publications)
-   - 7.4 [Analysis (`/analysis`)](#74-analysis)
-   - 7.5 [Settings (`/settings`)](#75-settings)
-8. [Data Flow](#8-data-flow)
-   - 8.1 [CSV Import Pipeline](#81-csv-import-pipeline)
-   - 8.2 [Enrichment Pipeline](#82-enrichment-pipeline)
-   - 8.3 [Analysis Pipeline](#83-analysis-pipeline)
-9. [Researchers Feature](#9-researchers-feature-forscherinnen-ranking)
-10. [InfoBubble System](#10-infobubble-system)
-11. [Hybrid Filter Pattern](#11-hybrid-filter-pattern)
-12. [Title-Truncation Heuristic](#12-title-truncation-heuristic)
-13. [Configuration & Credentials](#9-configuration--credentials)
-14. [Deployment](#10-deployment)
-15. [Porting Notes](#11-porting-notes)
-
-> **Audit & hardening pass (2026-04-29)**: see commits `5f15503`,
-> `e2d1bcb`, `303945e`, `164eec2` for the consolidated security
-> (RLS lockdown + env-only Supabase keys + search-param escape +
-> SSE abort handling), WCAG 2.2 AA fixes (contrast, table semantics,
-> beeswarm a11y, sr-only chart equivalents, prefers-reduced-motion),
-> DRY consolidations (SOURCE_LABELS / SCORE_BANDs / LoadingState /
-> ÖAW-Blau theme token), and performance work (trigram indices,
-> INCLUDE-cols on person_publications, ÖSTAT6/highlight as PG
-> functions, dynamic recharts imports).
+1. [Architecture at a glance](#1-architecture-at-a-glance)
+2. [Source-of-truth map](#2-source-of-truth-map)
+3. [Database schema (relational)](#3-database-schema-relational)
+4. [API surface](#4-api-surface)
+5. [Library layer](#5-library-layer)
+6. [Test layer](#6-test-layer)
+7. [Auth gate](#7-auth-gate)
+8. [Data pipelines](#8-data-pipelines)
+9. [Researchers feature (Forscher:innen-Ranking)](#9-researchers-feature-forscherinnen-ranking)
+10. [InfoBubble system](#10-infobubble-system)
+11. [Hybrid filter pattern](#11-hybrid-filter-pattern)
+12. [Title-truncation heuristic](#12-title-truncation-heuristic)
+13. [Configuration & deployment](#13-configuration--deployment)
+14. [Migration rollback strategy](#14-migration-rollback-strategy)
+15. [Porting notes (historical)](#15-porting-notes-historical)
 
 ---
 
-## 1. Architecture Overview
+## 1. Architecture at a glance
 
-The application is a **single Next.js project** that combines frontend UI and backend API routes, designed for Vercel deployment with Supabase as the managed database.
+Single Next.js 16 App-Router project. Three layers:
+
+- **Postgres is the real backend.** Aggregation, ranking, sparkline generation,
+  Bayessche Glättung, score-band classification all live as
+  `LANGUAGE sql STABLE` functions in `supabase/migrations/*.sql`. API routes
+  are thin Zod-validated wrappers around `supabase.rpc(...)`.
+- **Next.js API routes** handle all mutations and the LLM-call coordination
+  (enrichment pipeline, analysis batch). SSE streaming for the long jobs.
+- **Client UI** is `nuqs`-bound: filter state lives in the URL, not in a
+  global store. Co-located routing privates per page (`_components`, `_hooks`,
+  `_filters`).
 
 ```
-┌──────────────────────────────────────────────────────────┐
-│                      Browser (Client)                     │
-│                                                          │
-│  ┌─────────┐  ┌───────────┐  ┌──────────┐  ┌─────────┐ │
-│  │Dashboard │  │  Upload   │  │  Pubs    │  │Analysis │ │
-│  │  page    │  │   page    │  │  page    │  │  page   │ │
-│  └────┬─────┘  └────┬──────┘  └────┬─────┘  └────┬────┘ │
-│       │              │              │              │      │
-│       │   PapaParse  │              │              │      │
-│       │   (client-   │              │              │      │
-│       │    side CSV)  │              │              │      │
-│       └──────┬───────┘──────┬───────┘──────┬───────┘      │
-│              │              │              │              │
-│         fetch() + SSE EventSource (headers from localStorage)
-└──────────────┼──────────────┼──────────────┼──────────────┘
-               │              │              │
-┌──────────────┼──────────────┼──────────────┼──────────────┐
-│              │    Next.js API Routes (Serverless)          │
-│              │              │              │              │
-│  ┌───────────▼──┐  ┌───────▼──────┐  ┌───▼──────────┐   │
-│  │ /api/pubs/   │  │ /api/enrich/ │  │ /api/analysis│   │
-│  │   import     │  │   batch      │  │   /batch     │   │
-│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘   │
-│         │                 │                  │           │
-│         │     ┌───────────┤                  │           │
-│         │     │           │                  │           │
-│   ┌─────▼─────▼───┐  ┌───▼───────┐  ┌──────▼────────┐  │
-│   │   Supabase    │  │ CrossRef  │  │  OpenRouter   │  │
-│   │   (Postgres)  │  │ Unpaywall │  │  (LLM API)   │  │
-│   │               │  │ Sem.Schol.│  │              │  │
-│   └───────────────┘  └───────────┘  └──────────────┘  │
-└──────────────────────────────────────────────────────────┘
+TYPO3 WebDB (mysqldump.sql.gz)
+  └─ scripts/webdb-import.mjs ─→ Supabase (relational tables)
+                                  ├─ Enrichment (CrossRef → OpenAlex →
+                                  │                Unpaywall → Semantic Scholar
+                                  │                → PDF → WebDB-native)
+                                  └─ LLM scoring (OpenRouter / claude-code session)
+                                       └─→ writes back press_score + 5 dim
+                                           scores + pitch + angle + reasoning
+                                           + haiku per publication
 ```
 
-**Key design decisions**:
-
-- **Client-side CSV parsing**: PapaParse runs in the browser to avoid Vercel's 4.5 MB serverless body size limit. The parsed JSON is then sent to the API in 100-row chunks.
-- **SSE for long operations**: Enrichment and analysis use Server-Sent Events streaming to keep connections alive within Vercel's 60-second streaming timeout (set via `maxDuration = 60`).
-- **Credentials via headers**: The user's API keys are stored in `localStorage` and sent as custom HTTP headers (`x-supabase-url`, `x-supabase-key`, `x-openrouter-key`, `x-llm-model`) on every API request. This avoids storing secrets server-side while keeping the app stateless.
-- **Single flat table**: All data lives in one `publications` table — no joins, no foreign keys. Fields progress through statuses: `pending` → `enriched`/`failed` → `analyzed`/`failed`.
+The `publications` table is the central row, joined to `persons`, `orgunits`,
+`projects`, `oestat6_categories` via M:N junction tables.
 
 ---
 
-## 2. Directory Structure
+## 2. Source-of-truth map
 
-```
-oeaw-press-relevance/
-├── app/
-│   ├── layout.tsx                         # Root layout: Nav + Toaster
-│   ├── page.tsx                           # Dashboard page
-│   ├── upload/page.tsx                    # CSV upload page
-│   ├── publications/page.tsx              # Browse + filter page
-│   ├── analysis/page.tsx                  # Results + export page
-│   ├── settings/page.tsx                  # Configuration page
-│   ├── globals.css                        # Tailwind + shadcn CSS variables
-│   └── api/
-│       ├── publications/
-│       │   ├── import/route.ts            # POST: bulk insert
-│       │   ├── route.ts                   # GET: list + stats
-│       │   └── [id]/route.ts             # GET + DELETE: single pub
-│       ├── enrichment/
-│       │   └── batch/route.ts             # POST → SSE: enrichment
-│       ├── analysis/
-│       │   └── batch/route.ts             # POST → SSE: LLM analysis
-│       └── export/
-│           ├── csv/route.ts               # GET: CSV download
-│           └── json/route.ts              # GET: JSON download
-├── components/
-│   ├── nav.tsx                            # Top navigation bar
-│   ├── publication-table.tsx              # Expandable data table
-│   ├── score-bar.tsx                      # Score bars + badges
-│   ├── csv-upload-zone.tsx                # Drag-and-drop uploader
-│   ├── sse-progress.tsx                   # Reusable SSE progress card
-│   └── ui/                                # 13 shadcn/ui components
-│       ├── button.tsx
-│       ├── card.tsx
-│       ├── badge.tsx
-│       ├── progress.tsx
-│       ├── input.tsx
-│       ├── tabs.tsx
-│       ├── table.tsx
-│       ├── dialog.tsx
-│       ├── label.tsx
-│       ├── select.tsx
-│       ├── separator.tsx
-│       ├── sonner.tsx
-│       └── textarea.tsx
-├── lib/
-│   ├── types.ts                           # All TypeScript interfaces
-│   ├── supabase.ts                        # Supabase client factory
-│   ├── constants.ts                       # Mappings, weights, models
-│   ├── csv-parser.ts                      # PapaParse + field mapping
-│   ├── settings-store.ts                  # localStorage persistence
-│   ├── api-helpers.ts                     # Server-side utilities
-│   ├── utils.ts                           # cn() classname merge (shadcn)
-│   ├── enrichment/
-│   │   ├── crossref.ts                    # CrossRef API client
-│   │   ├── unpaywall.ts                   # Unpaywall API client
-│   │   └── semantic-scholar.ts            # Semantic Scholar API client
-│   └── analysis/
-│       ├── openrouter.ts                  # OpenRouter API + scoring
-│       └── prompts.ts                     # LLM system + evaluation prompts
-├── supabase/
-│   ├── config.toml                        # Local Supabase stack config
-│   └── migrations/                        # Versioned schema migrations
-│       ├── 20260427000001_initial.sql
-│       └── 20260427000002_constraints_and_indexes.sql
-├── .env.local                             # Environment variable template
-├── package.json                           # Dependencies
-├── next.config.ts                         # Next.js configuration
-├── tailwind.config.ts                     # Tailwind configuration
-├── tsconfig.json                          # TypeScript configuration
-├── components.json                        # shadcn/ui configuration
-└── README.md                              # Setup guide
-```
+Where each kind of fact lives. When in doubt, edit the source listed here —
+this doc gets stale, the code does not.
 
-**File count**: 30 application files (excluding `node_modules/`, `ui/` components, and config)
-**Lines of code**: ~2,700 (application code only)
+| Topic | Authoritative source |
+|---|---|
+| DB schema, indices, Postgres functions | `supabase/migrations/*.sql` (chronological) |
+| Score weights | `lib/score-weights.json` (consumed by both UI and `scripts/session-pipeline.mjs`) |
+| Score-band thresholds (0.7 high, 0.4 mid) | `lib/constants.ts` + mirrored in PG functions |
+| Metric / filter explanations shown in tooltips | `lib/explanations.tsx` (`EXPL` map) |
+| Researchers feature design | `RESEARCHERS_PLAN.md` |
+| Filter preset behavior, modifier semantics | `app/publications/_filters.ts` + `_constants.ts` |
+| WebDB-title truncation heuristic | `lib/html-utils.ts:displayTitle` (memory: `webdb_title_truncation.md`) |
+| Mahighlight semantics | `lib/explanations.tsx:mahighlight_self` (memory: `mahighlight_semantics.md`) |
+| Auth flow | `middleware.ts` + `app/api/auth/gate/route.ts` |
+| Migration rollback strategy | `supabase/ROLLBACK.md` |
+| Test coverage (current scope) | `lib/scoring.test.ts`, `lib/html-utils.test.ts`, `app/publications/_constants.test.ts` |
+| Bayes-smoothing JS port (matches PG `weighted_avg`) | `lib/scoring.ts:bayesSmooth` |
+| Press-score formula JS port | `lib/scoring.ts:computePressScore` |
 
 ---
 
-## 3. Database Schema
+## 3. Database schema (relational)
 
-**Files**: `supabase/migrations/*.sql` (apply with `supabase db push` or `supabase migration up --local`)
+Schema went from "single flat publications table" (v1.0, 2026-02) to a proper
+relational model in `f134fb5` (WebDB ETL, 2026-04-27). Authoritative source:
+`supabase/migrations/*.sql`.
 
-A single `publications` table with 33 columns organized into four sections:
+### Core tables
 
-### Core Fields (from CSV import)
+- **`publications`** — central row; ~40 columns covering identity (`webdb_uid`,
+  `doi`), WebDB metadata (`title`, `summary_de/en`, `citation_apa/de/en/bibtex/ris/endnote`,
+  `peer_reviewed`, `popular_science`, `archived`), enrichment state
+  (`enriched_abstract`, `enriched_keywords`, `enriched_journal`,
+  `enriched_source`, `full_text_snippet`, `word_count`), and LLM analysis
+  (`press_score`, 5 dimension scores, `pitch_suggestion`, `suggested_angle`,
+  `target_audience`, `reasoning`, `haiku`, `llm_model`, `analysis_cost`).
+- **`persons`** — researchers (`firstname`, `lastname`, `degree_before/after`,
+  `email`, `orcid`, `oestat3_name_de/en`, `external`, `deceased`, `portrait`,
+  `slug`, `member_type_id`).
+- **`orgunits`** — institutional tree (`name_de`, `akronym_de`, `parent_id` for
+  recursive hierarchy, `type_id` → `orgunit_types`).
+- **`projects`** — research projects (`title`, `summary`, `thematic_focus`,
+  `funding_type`, `starts_on/ends_on`, `cancelled`).
+- **`lectures`** — public talks (`lecture_date`, `city`, `event_name`,
+  `popular_science`).
+- **`oestat6_categories`** — Austrian 6-digit science classification (~1411
+  codes, `oestat3` = uid / 1000).
+- Lookup tables: `publication_types`, `orgunit_types`, `member_types`,
+  `lecture_types`, `extunits`.
 
-| Column | Type | Default | Description |
-|--------|------|---------|-------------|
-| `id` | UUID | `gen_random_uuid()` | Primary key |
-| `title` | TEXT NOT NULL | — | Publication title (max 500 chars from CSV) |
-| `authors` | TEXT | NULL | Lead author(s) |
-| `abstract` | TEXT | NULL | English or German summary |
-| `doi` | TEXT | NULL | Digital Object Identifier |
-| `published_at` | DATE | NULL | Publication date |
-| `publication_type` | TEXT | NULL | Mapped from type code (26 types) |
-| `institute` | TEXT | NULL | Organizational unit at OeAW |
-| `open_access` | BOOLEAN | FALSE | Open access flag |
-| `oa_type` | TEXT | NULL | OA variant (oa_gold, oa_postprint, etc.) |
-| `url` | TEXT | NULL | Website or download link |
-| `citation` | TEXT | NULL | Citation string (HTML stripped) |
-| `csv_uid` | TEXT | NULL | Original UID from WebDB export |
+### Junction tables (M:N)
 
-### Enrichment Fields (from APIs)
+- `person_publications (person_id, publication_id, authorship, highlight, mahighlight)`
+- `person_orgunits (person_id, orgunit_id)` — current state only, no temporal
+  versioning (known limitation: a researcher's history pre-affiliation-change
+  is mis-attributed to current orgunit)
+- `orgunit_publications (orgunit_id, publication_id, highlight)`
+- `publication_projects`, `publication_oestat6s`, `lecture_persons`,
+  `lecture_orgunits`
 
-| Column | Type | Default | Description |
-|--------|------|---------|-------------|
-| `enrichment_status` | TEXT | 'pending' | pending / enriched / failed |
-| `enriched_abstract` | TEXT | NULL | Abstract from CrossRef or Semantic Scholar |
-| `enriched_keywords` | TEXT[] | NULL | Subject keywords array |
-| `enriched_journal` | TEXT | NULL | Journal or venue name |
-| `enriched_source` | TEXT | NULL | Which API succeeded (crossref, unpaywall, semantic_scholar) |
-| `full_text_snippet` | TEXT | NULL | Extended content or PDF URL |
-| `word_count` | INTEGER | 0 | Word count of enriched content |
+### Materialized view
 
-### Analysis Fields (from LLM)
+`publication_oestat6_matview` (migration `20260427000004`) — pre-computed
+pub × oestat6 join for faster domain-level filtering. Refresh policy not yet
+documented; this MV pre-dates the "no MVs in MVP" leitprinzip in
+`RESEARCHERS_PLAN.md`. **TODO**: document refresh strategy or remove if no
+longer load-bearing.
 
-| Column | Type | Default | Description |
-|--------|------|---------|-------------|
-| `analysis_status` | TEXT | 'pending' | pending / analyzed / failed |
-| `press_score` | FLOAT | NULL | Weighted composite score (0.0–1.0) |
-| `public_accessibility` | FLOAT | NULL | Dimension score (0.0–1.0) |
-| `societal_relevance` | FLOAT | NULL | Dimension score (0.0–1.0) |
-| `novelty_factor` | FLOAT | NULL | Dimension score (0.0–1.0) |
-| `storytelling_potential` | FLOAT | NULL | Dimension score (0.0–1.0) |
-| `media_timeliness` | FLOAT | NULL | Dimension score (0.0–1.0) |
-| `pitch_suggestion` | TEXT | NULL | 4–6 sentence German press pitch |
-| `target_audience` | TEXT | NULL | Suggested media outlets |
-| `suggested_angle` | TEXT | NULL | One-sentence German narrative angle |
-| `reasoning` | TEXT | NULL | 2–3 sentence scoring rationale |
-| `llm_model` | TEXT | NULL | Model used (e.g., anthropic/claude-sonnet-4) |
-| `analysis_cost` | FLOAT | NULL | Estimated API cost in USD |
+### Postgres functions
 
-### Metadata
+Called via `supabase.rpc(...)`:
 
-| Column | Type | Default | Description |
-|--------|------|---------|-------------|
-| `import_batch` | TEXT | NULL | Batch identifier for grouping imports |
-| `created_at` | TIMESTAMPTZ | `NOW()` | Record creation timestamp |
-| `updated_at` | TIMESTAMPTZ | `NOW()` | Last modification timestamp |
+- **`top_researchers(p_since, p_metric, p_authorship_scope, p_oestat3_ids,
+  p_include_external, p_include_deceased, p_member_only, p_min_value,
+  p_exclude_ita, p_exclude_outreach, p_limit)`** — leaderboard with rank,
+  delta, is_newcomer, sparkline, top_pub jsonb (incl. citation).
+- **`researcher_distribution(...)`** — flattened points for the Beeswarm.
+- **`researcher_detail(p_person_id, p_since, p_exclude_ita, p_exclude_outreach)`**
+  — person, stats, activity histogram (24 monthly bands), coauthors, publications.
+- **`publication_score_stats(p_since)`** — score-distribution buckets +
+  dimension averages for the dashboard.
+- **`pub_ids_by_oestat6(...)`**, **`pub_ids_by_highlight(...)`** — filter helpers.
 
-### Indexes
+### RLS lockdown
 
-| Index | Column(s) | Type | Purpose |
-|-------|-----------|------|---------|
-| `idx_pub_doi` | doi | btree | DOI lookups for dedup and enrichment |
-| `idx_pub_analysis` | analysis_status | btree | Filter pending/analyzed/failed |
-| `idx_pub_enrichment` | enrichment_status | btree | Filter enrichment queue |
-| `idx_pub_score` | press_score DESC | btree | Top-N score queries |
-| `idx_pub_date` | published_at DESC | btree | Chronological sorting |
-| `idx_pub_title` | title | GIN (pg_trgm) | Case-insensitive title search |
-
-### Row Level Security
-
-RLS is enabled with a permissive policy (`USING (true) WITH CHECK (true)`) since this is a single-user tool using the anon key.
+Migration `20260428000010_rls_lockdown.sql` enabled RLS with permissive policies
+(single-user-tool semantics; mutations gated server-side via service-role key
+in `getSupabaseAdmin()`).
 
 ---
 
-## 4. Library Layer
+## 4. API surface
 
-### 4.1 Type System
+All routes are gated by `middleware.ts`; unauthenticated calls get 401 JSON.
+Server-side uses env-bound credentials exclusively (no client-side Supabase
+header overrides — closed by audit B2 + H1).
 
-**File**: `lib/types.ts` (118 lines)
+### Reads (gated, env-credentialed)
 
-Defines all TypeScript interfaces used across the application:
+| Route | Purpose | Backed by |
+|---|---|---|
+| `GET /api/publications` | List + filter + `stats=true` mode | direct queries + filter-helper RPCs |
+| `GET /api/publications/[id]` | Single pub with relations | direct query |
+| `GET /api/researchers/top` | Leaderboard | RPC `top_researchers` |
+| `GET /api/researchers/distribution` | Beeswarm points | RPC `researcher_distribution` |
+| `GET /api/persons/[id]` | Person profile + stats + activity | RPC `researcher_detail` |
+| `GET /api/orgunits` | Orgunit tree (lookup) | direct query |
+| `GET /api/publication-types` | Type enum (lookup) | direct query |
+| `GET /api/oestat6` | Oestat6 categories (lookup) | direct query |
+| `GET /api/webdb/status` | ETL sync status | direct query |
+| `GET /api/export/csv` | Filtered CSV export | direct query |
+| `GET /api/export/json` | Filtered JSON export | direct query |
 
-| Interface | Purpose |
-|-----------|---------|
-| `Publication` | Full database row with all 33 fields |
-| `PublicationInsert` | Subset for CSV import (enrichment/analysis fields omitted) |
-| `EnrichmentResult` | Return type from enrichment API clients |
-| `AnalysisResult` | Single publication evaluation from LLM (5 scores + text fields) |
-| `LLMResponse` | Top-level LLM response wrapper (`{ evaluations: AnalysisResult[] }`) |
-| `PublicationStats` | Dashboard aggregate stats |
-| `SSEEvent` | Server-Sent Event payload |
-| `AppSettings` | User configuration (API keys, model, parameters) |
+### Mutations (use `getSupabaseAdmin()` service-role bypass)
 
-`DEFAULT_SETTINGS` constant provides fallback values:
-- LLM model: `anthropic/claude-sonnet-4`
-- Min word count: `100`
-- Batch size: `3`
-- Supabase credentials: from `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` env vars
+| Route | Purpose |
+|---|---|
+| `POST /api/publications/import` | Bulk insert from CSV (chunks of 100) |
+| `POST /api/enrichment/batch` | SSE-streaming enrichment (CrossRef → OpenAlex → Unpaywall → Semantic Scholar → PDF → WebDB-native) |
+| `POST /api/analysis/batch` | SSE-streaming LLM evaluation via OpenRouter |
 
-### 4.2 Supabase Client
+### Auth
 
-**File**: `lib/supabase.ts` (28 lines)
+| Route | Purpose |
+|---|---|
+| `POST /api/auth/gate` | Login: validates `GATE_PASSWORD`, sets HttpOnly `gate` cookie |
+| `DELETE /api/auth/gate` | Logout (clears cookie) |
 
-Two factory functions:
+### Per-request header overrides (client → server)
 
-- **`getSupabaseClient(url?, anonKey?)`** — Returns a cached Supabase client. Re-creates the client only if credentials change. Used on the client side (browser). Falls back to env vars if no arguments provided.
-
-- **`createServerClient(url, anonKey)`** — Creates a fresh (non-cached) client for API route handlers. Always receives credentials from request headers.
-
-### 4.3 Constants
-
-**File**: `lib/constants.ts` (78 lines)
-
-Central repository for all mapping tables and configuration values:
-
-**Publication Type Map** (26 entries): Maps CSV type codes (`"0"` through `"26"`) to human-readable names. Example: `"1"` → `"Journal Article"`, `"6"` → `"Conference Paper"`.
-
-**Open Access Values**:
-- True set: `oa_gold`, `oa_postprint`, `oa_preprint`, `Open`, `1`, `oacc`
-- False set: `nicht_oacc`, `Restricted`, `Unknown`, `""`, `0`
-
-**Score Weights** (must sum to 1.0):
-
-| Dimension | Weight | Color |
-|-----------|--------|-------|
-| `public_accessibility` | 0.20 | #3b82f6 (blue) |
-| `societal_relevance` | 0.25 | #10b981 (green) |
-| `novelty_factor` | 0.20 | #f59e0b (amber) |
-| `storytelling_potential` | 0.20 | #8b5cf6 (purple) |
-| `media_timeliness` | 0.15 | #ef4444 (red) |
-
-**LLM Models** (6 options):
-
-| Model ID | Label | Cost per 1M tokens |
-|----------|-------|---------------------|
-| `anthropic/claude-sonnet-4` | Claude Sonnet 4 | $9.00 |
-| `anthropic/claude-3.5-sonnet` | Claude 3.5 Sonnet | $9.00 |
-| `deepseek/deepseek-chat` | DeepSeek Chat | $0.50 |
-| `meta-llama/llama-3.2-3b-instruct:free` | Llama 3.2 3B (Free) | $0.00 |
-| `google/gemini-2.0-flash-001` | Gemini 2.0 Flash | $0.15 |
-| `openai/gpt-4o-mini` | GPT-4o Mini | $0.60 |
-
-### 4.4 CSV Parser
-
-**File**: `lib/csv-parser.ts` (177 lines)
-
-Handles client-side parsing of WebDB CSV exports:
-
-**`parseCsvFile(file: File): Promise<ParseResult>`**
-
-1. Reads the file using PapaParse with `header: true`, `skipEmptyLines: true`, UTF-8 encoding
-2. Strips BOM from header names
-3. For each row:
-   - Skips rows without a title
-   - Truncates title to 500 characters
-   - Maps `type` code via `PUBLICATION_TYPE_MAP` (defaults to "Other")
-   - Parses `open_access` against `OA_TRUE_VALUES` (rejects strings > 30 chars)
-   - Converts `pub_date` from Unix timestamp (seconds) to ISO date string, validates year 1900–2100
-   - Prefers English summary over German; prefers English citation over German
-   - Strips HTML from citations
-   - Prefers `website_link` over `download_link` for URL
-   - Removes NUL bytes (`\x00`) from all text fields
-
-**`deduplicatePublications(newPubs, existingTitles, existingDois, existingUids)`**
-
-Three-layer deduplication:
-1. **Title** (case-insensitive) — against DB + within batch
-2. **DOI** (case-insensitive) — against DB + within batch
-3. **UID** (exact match) — against DB only
-
-Returns `{ unique: PublicationInsert[], duplicateCount: number }`.
-
-### 4.5 Settings Store
-
-**File**: `lib/settings-store.ts` (36 lines)
-
-Browser-side persistence using `localStorage` with key `oeaw-press-relevance-settings`.
-
-- **`loadSettings()`** — Merges stored JSON with `DEFAULT_SETTINGS`. Returns defaults on server side or parse error.
-- **`saveSettings(settings)`** — Serializes to `localStorage`.
-- **`getApiHeaders()`** — Builds HTTP headers from current settings:
-  - `Content-Type: application/json`
-  - `x-supabase-url: <url>` (if configured)
-  - `x-supabase-key: <anonKey>` (if configured)
-  - `x-openrouter-key: <apiKey>` (if configured)
-  - `x-llm-model: <model>` (if configured)
-
-### 4.6 API Helpers
-
-**File**: `lib/api-helpers.ts` (49 lines)
-
-Server-side utilities for API route handlers:
-
-- **`getSupabaseFromRequest(req)`** — Extracts Supabase credentials from `x-supabase-url` and `x-supabase-key` headers, falls back to env vars, throws if missing.
-- **`getOpenRouterKey(req)`** — Extracts from `x-openrouter-key` header or `OPENROUTER_API_KEY` env var.
-- **`getLLMModel(req)`** — Extracts from `x-llm-model` header, defaults to `anthropic/claude-sonnet-4`.
-- **`createSSEStream()`** — Creates an SSE streaming helper:
-  - Returns `{ stream: ReadableStream, send(event, data), close() }`
-  - `send()` formats as standard SSE: `event: {name}\ndata: {JSON}\n\n`
-  - Used by enrichment and analysis batch routes
-
-### 4.7 Enrichment Clients
-
-Three API clients implementing the same pattern: clean DOI → fetch → parse → return `EnrichmentResult | null`.
-
-#### CrossRef (`lib/enrichment/crossref.ts`, 40 lines)
-
-- **Endpoint**: `https://api.crossref.org/works/{DOI}`
-- **User-Agent**: `OeAW-Press-Relevance/1.0 (mailto:admin@oeaw.ac.at)`
-- **Timeout**: 10 seconds
-- **Extracts**: abstract (HTML-stripped), keywords (from `subject`, max 20), journal (from `container-title[0]`)
-- **Returns**: `{ abstract, keywords, journal, source: 'crossref', full_text_snippet, word_count }`
-
-#### Unpaywall (`lib/enrichment/unpaywall.ts`, 29 lines)
-
-- **Endpoint**: `https://api.unpaywall.org/v2/{DOI}?email=admin@oeaw.ac.at`
-- **Timeout**: 10 seconds
-- **Checks**: `is_oa` flag — returns null if not open access
-- **Extracts**: journal name, best OA location PDF URL
-- **Returns**: `{ journal, source: 'unpaywall', full_text_snippet: "Open access PDF available: {url}", word_count: 0 }`
-
-#### Semantic Scholar (`lib/enrichment/semantic-scholar.ts`, 39 lines)
-
-- **Endpoint**: `https://api.semanticscholar.org/graph/v1/paper/DOI:{DOI}?fields=title,abstract,authors,year,openAccessPdf,citationCount,venue,tldr`
-- **User-Agent**: `OeAW-Press-Relevance/1.0`
-- **Timeout**: 10 seconds
-- **Extracts**: abstract (falls back to TLDR AI summary), venue as journal, OA PDF URL
-- **Returns**: `{ abstract, journal, source: 'semantic_scholar', full_text_snippet, word_count }`
-
-### 4.8 Analysis / LLM Integration
-
-#### Prompts (`lib/analysis/prompts.ts`, 58 lines)
-
-**System prompt**: Establishes a persona as a senior science communication expert at OeAW who regularly pitches to Austrian media (ORF, Der Standard, Die Presse, APA, Wiener Zeitung). Instructs the model to respond with valid JSON only.
-
-**`buildEvaluationPrompt(publications)`**: Constructs the user message:
-- For each publication: title, authors (first 3), institute, published date, keywords (first 8), content (first 500 words)
-- Content priority: `enriched_abstract` > `abstract` > `citation`
-- Requests 9 fields per publication: 5 numeric scores (0.0–1.0), `pitch_suggestion` (German, 4–6 sentences), `target_audience`, `suggested_angle` (German, 1 sentence), `reasoning` (2–3 sentences)
-- Specifies exact JSON response format with `publication_index` for mapping
-
-#### OpenRouter Client (`lib/analysis/openrouter.ts`, 83 lines)
-
-**`analyzePublications(publications, apiKey, model)`**:
-- Sends POST to `https://openrouter.ai/api/v1/chat/completions`
-- Headers: `Authorization: Bearer {key}`, `HTTP-Referer`, `X-Title`
-- Parameters: `temperature: 0.4`, `max_tokens: 1500 * publications.length`, `response_format: { type: 'json_object' }`
-- Timeout: 60 seconds
-- Parses response JSON; falls back to extracting JSON from markdown code blocks
-- Returns `{ results: AnalysisResult[], tokensUsed: number, cost: number }`
-
-**`calculatePressScore(result)`**:
-```
-press_score = Σ (dimension_score × weight)
-            = 0.20 × public_accessibility
-            + 0.25 × societal_relevance
-            + 0.20 × novelty_factor
-            + 0.20 × storytelling_potential
-            + 0.15 × media_timeliness
-```
-Rounded to 4 decimal places.
-
-**`estimateCost(tokenCount, model)`**: Looks up cost per million tokens from `COST_PER_MILLION_TOKENS` (defaults to $5.00 for unknown models). Returns `(tokenCount / 1,000,000) × rate`.
+The only remaining client→server header is `x-openrouter-key` — a legitimate
+"bring your own key" pattern for users who want to own their OpenRouter cost.
+The `x-llm-model` header is set per-batch directly by `AnalysisModal` (no longer
+by `getApiHeaders()`); model selection is per-batch, not a global pref.
 
 ---
 
-## 5. API Routes
+## 5. Library layer
 
-All routes extract Supabase credentials from request headers via `getSupabaseFromRequest()`. Error responses follow the pattern `{ error: string }` with appropriate HTTP status codes.
+**`lib/types.ts`** — all TypeScript interfaces. Key types: `Publication`,
+`PublicationWithRelations` (with `authors_resolved`, `orgunits`, `projects`),
+`Person`, `Orgunit`, `Project`, `EnrichmentResult`, `AnalysisResult`,
+`PublicationStats`, `AppSettings` (only `openrouterApiKey`, `minWordCount`,
+`batchSize` after H1 cleanup).
 
-### 5.1 Publications Import
+**`lib/constants.ts`** — `PUBLICATION_TYPE_MAP`, `OA_TRUE/FALSE_VALUES`,
+`SCORE_WEIGHTS` typed with `satisfies Record<ScoreDimension, number>` (a
+broken `score-weights.json` becomes a typecheck error, not a runtime
+surprise), `SCORE_DIMENSIONS` (the const tuple driving display order),
+`SCORE_COLORS`, `SCORE_LABELS`, `SCORE_BAND_HIGH = 0.7`, `SCORE_BAND_MID = 0.4`,
+`SOURCE_LABELS / BADGE_CLASSES / DESCRIPTIONS`, `LLM_MODELS`.
 
-**`POST /api/publications/import`** — `app/api/publications/import/route.ts` (49 lines)
+**`lib/scoring.ts`** — pure JS port of two formulas: `bayesSmooth(n, avg,
+prior, k=3)` mirrors the PG function from
+`20260428000008_researchers_weighted_avg.sql`; `computePressScore(dimensions)`
+mirrors the SQL aggregation. Both covered by `lib/scoring.test.ts` so a
+`score-weights.json` edit can't silently drift.
 
-Receives client-parsed publications and inserts them into Supabase.
+**`lib/explanations.tsx`** — `EXPL` map, ~40 entries. Central source of truth
+for every UI tooltip ("what does this number mean / how was it computed?")
+via `<InfoBubble id="..." />`. Editing wording in one place updates Spotlight,
+Table, Detail, Dashboard, Researchers — no drift.
 
-**Request**:
-```json
-{
-  "publications": [ PublicationInsert, ... ],
-  "batch": "import_2026-02-13"          // optional, defaults to date-based
-}
-```
+**`lib/html-utils.ts`** — `decodeHtmlTitle` (HTML entities + `<SUP>/<SUB>` →
+Unicode super/subscript) and `displayTitle` (citation-based subtitle extension
+for WebDB-truncated titles). Tested in `lib/html-utils.test.ts`.
 
-**Processing**: Splits into chunks of 100, inserts via `supabase.from('publications').insert(chunk).select('id')`. Adds `import_batch` field to each row. Continues on chunk failures and accumulates counts.
+**`lib/researchers.ts`** — type defs for the leaderboard surface
+(`LeaderboardMetric`, `AuthorshipScope`, `TopResearcherRow`,
+`DistributionPoint`, `ResearcherDetail`), `METRIC_LABELS`, `SINCE_PRESETS`.
 
-**Response**:
-```json
-{ "inserted": 2450, "errors": 3, "total": 2453 }
-```
+**`lib/api-helpers.ts`** — `getSupabaseFromRequest` (env-only),
+`getSupabaseAdmin` (service-role for mutations), `getOpenRouterKey`
+(env-priority + header fallback), `getLLMModel` (env `LLM_DEFAULT_MODEL`
+fallback before hardcode), `createSSEStream`, `apiError`.
 
-### 5.2 Publications List & Stats
+**`lib/supabase.ts`** — `getSupabaseClient()` (browser-side, env-only after
+H1) and `createServerClient(url, key)` (server-side wrapper).
 
-**`GET /api/publications`** — `app/api/publications/route.ts` (96 lines)
+**`lib/settings-store.ts`** — localStorage settings (only OpenRouter-Key + UI
+prefs `minWordCount` / `batchSize` after H1) + `getApiHeaders()` (sends
+Content-Type + optional `x-openrouter-key` only).
 
-Two modes controlled by the `stats` query parameter.
+**`lib/csv-parser.ts`** — PapaParse + WebDB header → schema mapping +
+3-layer dedup (title + DOI + UID).
 
-**Stats mode** (`?stats=true`):
-```json
-{
-  "total": 2500,
-  "enriched": 1200,
-  "analyzed": 800,
-  "avg_score": 0.5432,
-  "high_score_count": 120     // press_score >= 0.6
-}
-```
-Executes 4 separate count queries plus a score aggregation query.
+**`lib/use-info-bubbles.ts`**, **`lib/use-keyboard-shortcuts.ts`** — UI hooks
+(global tooltip toggle, ⌘K / search shortcuts, J/K-style page nav).
 
-**List mode** (default):
-| Param | Default | Description |
-|-------|---------|-------------|
-| `page` | 1 | Page number |
-| `pageSize` | 20 | Results per page |
-| `search` | — | Case-insensitive title search (ilike) |
-| `enrichment_status` | — | Filter: pending / enriched / failed |
-| `analysis_status` | — | Filter: pending / analyzed / failed |
-| `publication_type` | — | Exact match |
-| `sort` | created_at | Sort column |
-| `order` | desc | asc or desc |
+**`lib/enrichment/`** — 6 source-specific fetchers (`crossref`, `openalex`,
+`unpaywall`, `semantic-scholar`, `pdf-extract`, `webdb-native`). Each returns
+`EnrichmentResult | null`. Pipeline orchestration in
+`app/api/enrichment/batch/route.ts`.
 
-```json
-{
-  "publications": [ Publication, ... ],
-  "total": 2500,
-  "page": 1,
-  "pageSize": 20
-}
-```
-
-### 5.3 Publications Single
-
-**`GET /api/publications/[id]`** — Returns full Publication object or 404.
-
-**`DELETE /api/publications/[id]`** — Deletes publication, returns `{ "success": true }`.
-
-### 5.4 Enrichment Batch (SSE)
-
-**`POST /api/enrichment/batch`** — `app/api/enrichment/batch/route.ts` (145 lines)
-
-**Max duration**: 60 seconds (Vercel streaming)
-
-**Request**: `{ "limit": 20 }` (max 50)
-
-**Behavior**:
-1. Queries up to `limit` publications where `enrichment_status = 'pending'` and `doi IS NOT NULL`, ordered by `created_at DESC`
-2. Returns simple JSON `{ "message": "No publications to enrich" }` if none found
-3. Otherwise returns SSE stream and processes in background:
-
-**For each publication**:
-1. Try CrossRef → extract abstract, keywords, journal
-2. If no abstract yet: try Unpaywall → get OA PDF link, journal
-3. If still no abstract: try Semantic Scholar → abstract or TLDR, venue, PDF
-4. Merge best fields from all sources that responded
-5. Update DB row with enrichment data or mark as failed
-6. Wait 300ms (rate limiting)
-
-**SSE events**:
-- `progress`: `{ processed, total, current_title }`
-- `complete`: `{ processed, total, successful, failed }`
-
-### 5.5 Analysis Batch (SSE)
-
-**`POST /api/analysis/batch`** — `app/api/analysis/batch/route.ts` (144 lines)
-
-**Max duration**: 60 seconds (Vercel streaming)
-
-**Request**:
-```json
-{
-  "limit": 20,              // max 100
-  "batchSize": 3,           // publications per LLM call, max 5
-  "minWordCount": 100,      // filter by enriched word count
-  "forceReanalyze": false   // re-analyze already-scored publications
-}
-```
-
-**Behavior**:
-1. Queries publications: if `forceReanalyze` is false, only `analysis_status = 'pending'`; optionally filtered by `word_count >= minWordCount`
-2. Processes in batches of `batchSize`:
-   - Calls `analyzePublications()` with the batch
-   - Calculates `press_score` via weighted average
-   - Updates each DB row with all score dimensions + text fields
-   - On LLM error: marks batch as failed, sends error event
-3. 1-second delay between batches
-
-**SSE events**:
-- `progress`: `{ processed, total, current_title, tokens_used, cost }`
-- `error`: `{ message, batch_start }`
-- `complete`: `{ processed, total, successful, failed, tokens_used, cost }`
-
-### 5.6 Export CSV / JSON
-
-**`GET /api/export/csv`** — Downloads analyzed publications as CSV with 19 columns. Content-Disposition attachment with date-stamped filename. Proper CSV escaping (quotes, commas, newlines).
-
-**`GET /api/export/json`** — Downloads as pretty-printed JSON (2-space indent). Same filtering and sorting.
-
-Both accept `?analyzed=false` to include all publications.
+**`lib/analysis/openrouter.ts`** + **`lib/analysis/prompts.ts`** — LLM call
+coordination + system/evaluation prompt templates.
 
 ---
 
-## 6. UI Components
+## 6. Test layer
 
-### 6.1 Navigation
+`vitest` with Node environment (no jsdom — pure unit tests).
 
-**File**: `components/nav.tsx` (46 lines)
+- **`lib/scoring.test.ts`** — `bayesSmooth` (1-pub-wonder pulled to prior, many
+  pubs converge to own avg), `computePressScore` (all-1s → 1.0; mixed input
+  → documented weighted formula), `SCORE_WEIGHTS` sum = 1.0.
+- **`lib/html-utils.test.ts`** — `decodeHtmlTitle` (SUP/SUB → Unicode + entity
+  decoding + tag-strip + whitespace collapse), `displayTitle` (null citation,
+  prefix-match extension, no-match unchanged).
+- **`app/publications/_constants.test.ts`** — pin of
+  `ELIGIBILITY_EXCLUDE_TYPE_UIDS = [5, 7, 8, 13, 15, 19, 23]`. The list is
+  duplicated server-side in `app/api/publications/route.ts:15`; this test
+  catches drift on the client side.
 
-Fixed top navigation bar with 5 links. Highlights the active route using `usePathname()`. Links: Dashboard (BarChart3), Upload (Upload), Publications (BookOpen), Analysis (Sparkles), Settings (Settings). Icons from Lucide React.
+Run: `npm test` (run-once, CI-style) or `npm run test:watch`.
 
-### 6.2 Score Visualization
-
-**File**: `components/score-bar.tsx` (65 lines)
-
-**`ScoreBar`**: Renders a single dimension score as a colored progress bar.
-- Normal mode: label + percentage + full-width bar
-- Compact mode: 64px mini-bar + percentage text
-- Color and label looked up from `SCORE_COLORS` and `SCORE_LABELS`
-
-**`PressScoreBadge`**: Renders the composite press score as a colored pill:
-- >= 70%: green background
-- >= 50%: yellow background
-- >= 30%: orange background
-- < 30%: neutral background
-- null: "N/A" text
-
-### 6.3 Publication Table
-
-**File**: `components/publication-table.tsx` (223 lines)
-
-Expandable data table with 5–7 columns.
-
-**Columns**: expand toggle, title (+ institute subtitle), authors, publication type badge, year, enrichment status (optional), press score badge (optional).
-
-**Expanded detail view** (two-column grid):
-- **Left**: abstract (enriched preferred), DOI link, journal, keyword badges
-- **Right** (if scores shown): 5 score bars, pitch suggestion (blue box), suggested angle, target audience, reasoning, model + cost info
-
-**StatusBadge** component: color-coded pills for pending/enriched/analyzed/failed.
-
-### 6.4 CSV Upload Zone
-
-**File**: `components/csv-upload-zone.tsx` (245 lines)
-
-Complete upload workflow in one component:
-
-1. **Drop zone**: Drag-and-drop area with file input fallback, validates `.csv` extension
-2. **Parse**: Calls `parseCsvFile()` client-side, shows error on failure
-3. **Preview table**: First 20 rows with columns: title, authors, type, year, DOI. Shows "+N more" if truncated.
-4. **Dedup check**: Fetches existing titles/DOIs/UIDs from Supabase, runs `deduplicatePublications()`
-5. **Import**: Sends unique publications to `/api/publications/import` in 100-row chunks with progress bar
-6. **Result**: Shows inserted count, error count, duplicate warning
-
-### 6.5 SSE Progress Card
-
-**File**: `components/sse-progress.tsx` (211 lines)
-
-Reusable component for any SSE-streaming API endpoint.
-
-**Props**: `title`, `description`, `endpoint` (API URL), `requestBody`, `onComplete` callback
-
-**State machine**: `idle` → `running` → `complete` | `error`
-
-**SSE parsing**: Reads response body as stream, buffers incomplete lines, parses `event:` and `data:` lines, dispatches state updates.
-
-**Display by state**:
-- **Idle**: Description text + green "Start" button
-- **Running**: Progress bar, X/Y count, percentage, current publication title, running cost/tokens
-- **Complete**: Success/failed counts, total cost/tokens, "Run Again" button
-- **Error**: Error message, "Retry" button
-
-Handles both SSE streams and plain JSON responses (e.g., when there are no publications to process).
+**Not yet covered**: PG functions themselves (would need pg-tap or an
+integration-test setup against a local Supabase) and React components (would
+need jsdom + @testing-library/react). The first test layer targets the pure
+logic that can be wrong without a DB.
 
 ---
 
-## 7. Pages
+## 7. Auth gate
 
-### 7.1 Dashboard (`/`)
+Middleware-based (`middleware.ts`, since G1 / commit `23d27f3`).
 
-**File**: `app/page.tsx` (207 lines)
+Login flow:
+1. `POST /api/auth/gate` with `{ password }` validates against `GATE_PASSWORD`
+   env var.
+2. On success, sets HttpOnly `gate` cookie containing SHA-256 of the password.
+3. Pre-computed `GATE_TOKEN = sha256(GATE_PASSWORD)` lives in env so the
+   middleware can compare without hashing per request.
+4. Middleware blocks all non-public paths if cookie missing or doesn't match.
+5. API requests get 401 JSON; page requests redirect to `/` (where the gate
+   UI lives).
 
-- Fetches stats via `GET /api/publications?stats=true`
-- Fetches top 10 via `GET /api/publications?sort=press_score&order=desc&pageSize=10&analysis_status=analyzed`
-- **4 stat cards**: Total Publications, Enriched (with percentage), Analyzed (with percentage), High Potential (with average score)
-- **Quick Actions**: Upload CSV, Browse Publications, View Analysis buttons
-- **Top 10 list**: Ranked publications with title, authors, institute, pitch snippet, score badge
-- **Empty state**: Upload prompt when no publications exist
-- **Error state**: Connection error with link to Settings
+**Public paths** (no gate): `/api/auth/gate`, `/robots.txt`, `/favicon.ico`,
+`/_next/*`, `/capybara*.png`.
 
-### 7.2 Upload (`/upload`)
+If `GATE_TOKEN` isn't set in env, middleware passes through (dev mode); the
+client-side `<PasswordGate>` component is the fallback UI.
 
-**File**: `app/upload/page.tsx` (37 lines)
-
-- Renders `CsvUploadZone` component
-- Shows expected CSV format documentation with column names
-- Notes automatic deduplication behavior
-
-### 7.3 Publications (`/publications`)
-
-**File**: `app/publications/page.tsx` (162 lines)
-
-- **Filter bar**: Search input (title), enrichment status dropdown, analysis status dropdown
-- **Action cards**: Two `SSEProgress` cards for enrichment (20 pubs) and analysis (20 pubs)
-- **Data table**: `PublicationTable` with scores and enrichment status columns
-- **Pagination**: 20 per page, previous/next buttons
-- Auto-refreshes table when enrichment or analysis completes
-
-### 7.4 Analysis (`/analysis`)
-
-**File**: `app/analysis/page.tsx` (211 lines)
-
-- **Dimension averages**: 5 colored progress bars showing page-level averages
-- **Analysis runner**: `SSEProgress` card for batch LLM analysis
-- **Sort controls**: Dropdown (7 options) + ascending/descending toggle
-- **Results table**: `PublicationTable` filtered to `analysis_status=analyzed`
-- **Export**: CSV and JSON download buttons (fetch with headers → blob → download)
-- **Pagination**: 20 per page
-
-### 7.5 Settings (`/settings`)
-
-**File**: `app/settings/page.tsx` (179 lines)
-
-Three configuration sections, all persisted to `localStorage`:
-
-1. **Supabase Connection**: URL input + anon key (password masked, toggle visibility). Green checkmark when both configured.
-2. **LLM Configuration**: OpenRouter API key (masked) + model dropdown (6 options from `LLM_MODELS`).
-3. **Analysis Parameters**: Min word count (0–1000), batch size (1–5, clamped).
-
-Save and Reset buttons with toast notifications.
+**Multi-user TODO**: real multi-user (Supabase Auth + DB-backed `user_settings`
+table for per-user OpenRouter keys + UI prefs) is the obvious next foundation
+step. Today not blocking — single-password-gate is acceptable until the press
+team grows past 1 person actively configuring.
 
 ---
 
-## 8. Data Flow
+## 8. Data pipelines
 
-### 8.1 CSV Import Pipeline
+### CSV import (legacy path, browser-side)
 
-```
-User drops CSV file
-       │
-       ▼
-PapaParse (client-side, in browser)
-  - header: true
-  - skipEmptyLines: true
-  - BOM-aware header transform
-       │
-       ▼
-Row-by-row mapping:
-  - stripHtml(citation)
-  - PUBLICATION_TYPE_MAP[type]
-  - OA_TRUE_VALUES.has(open_access)
-  - Unix timestamp → ISO date
-  - summary_en || summary_de → abstract
-  - website_link || download_link → url
-       │
-       ▼
-ParseResult { publications[], errors[], totalRows, skippedRows }
-       │
-       ▼
-User sees preview table (first 20 rows)
-       │
-       ▼
-User clicks "Import"
-       │
-       ▼
-Fetch existing titles/DOIs/UIDs from Supabase
-       │
-       ▼
-deduplicatePublications() — 3-layer dedup (title, DOI, UID)
-       │
-       ▼
-POST /api/publications/import (chunks of 100)
-       │
-       ▼
-Supabase INSERT ... SELECT 'id'
-       │
-       ▼
-Result: { inserted, errors, duplicateCount }
-```
+`app/upload/page.tsx` + `components/csv-upload-zone.tsx`: PapaParse → schema
+mapping → 3-layer dedup (title + DOI + UID) → chunks of 100 →
+`POST /api/publications/import`.
 
-### 8.2 Enrichment Pipeline
+### WebDB relational ETL (current path, script-side)
 
-```
-POST /api/enrichment/batch { limit: 20 }
-       │
-       ▼
-Query: enrichment_status='pending' AND doi IS NOT NULL
-       │
-       ▼
-For each publication (sequential, SSE streaming):
-       │
-       ├──► CrossRef: GET https://api.crossref.org/works/{DOI}
-       │      → abstract, keywords, journal
-       │
-       ├──► Unpaywall: GET https://api.unpaywall.org/v2/{DOI}?email=...
-       │      → OA PDF URL, journal (only if is_oa=true)
-       │
-       └──► Semantic Scholar: GET https://api.semanticscholar.org/graph/v1/paper/DOI:{DOI}
-              → abstract, TLDR, venue, PDF URL
-       │
-       ▼
-Merge best results from all sources
-       │
-       ▼
-UPDATE publications SET enrichment_status='enriched',
-  enriched_abstract=..., enriched_keywords=...,
-  enriched_journal=..., enriched_source=...,
-  full_text_snippet=..., word_count=...
-       │
-       ▼
-SSE: { processed, total, current_title }
-       │
-       ▼
-300ms delay → next publication
-       │
-       ▼
-SSE: { complete, successful, failed }
-```
+`scripts/webdb-import.mjs` reads a TYPO3 mysqldump (`*.sql.gz`), decompresses
+with `mysql2`, walks TYPO3 table prefixes (publications, persons, orgunits,
+projects, junctions), normalizes IDs to UUIDs, upserts into Supabase keyed on
+`webdb_uid`. Idempotent — re-runs only update changed rows.
 
-### 8.3 Analysis Pipeline
+Status visible in the UI: `GET /api/webdb/status` → counts + last-synced
+timestamp shown on `/upload`.
 
-```
-POST /api/analysis/batch { limit: 20, batchSize: 3 }
-       │
-       ▼
-Query: analysis_status='pending' (or all if forceReanalyze)
-       │
-       ▼
-Split into batches of batchSize
-       │
-       ▼
-For each batch:
-       │
-       ├──► buildEvaluationPrompt(batch)
-       │      Content: enriched_abstract > abstract > citation (500 words)
-       │      Authors: first 3
-       │      Keywords: first 8
-       │
-       ├──► POST https://openrouter.ai/api/v1/chat/completions
-       │      model: user-selected
-       │      temperature: 0.4
-       │      max_tokens: 1500 × batch.length
-       │      response_format: json_object
-       │
-       ├──► Parse JSON response (fallback: extract from code block)
-       │
-       └──► For each result:
-              press_score = 0.20 × public_accessibility
-                          + 0.25 × societal_relevance
-                          + 0.20 × novelty_factor
-                          + 0.20 × storytelling_potential
-                          + 0.15 × media_timeliness
-              │
-              ▼
-              UPDATE publications SET analysis_status='analyzed',
-                press_score=..., public_accessibility=..., ...,
-                pitch_suggestion=..., target_audience=...,
-                suggested_angle=..., reasoning=...,
-                llm_model=..., analysis_cost=...
-       │
-       ▼
-SSE: { processed, total, current_title, tokens_used, cost }
-       │
-       ▼
-1s delay → next batch
-       │
-       ▼
-SSE: { complete, successful, failed, tokens_used, cost }
-```
+### Enrichment pipeline
 
----
+`POST /api/enrichment/batch` streams progress via SSE while iterating:
+**CrossRef → OpenAlex → Unpaywall → Semantic Scholar → PDF extraction →
+WebDB-native** (each pub tries sources in order until success). Best fields
+merged across sources. 300 ms pacing between pubs. Truncates abstracts at
+5000 chars.
 
-## 9. Configuration & Credentials
+### Analysis pipeline
 
-All credentials are passed per-request via HTTP headers. The flow:
+`POST /api/analysis/batch` streams progress via SSE. Configurable `batchSize`
+(1–5 pubs per LLM call), `minWordCount`, `forceReanalyze`, `enrichedOnly`.
+Reads model from `x-llm-model` header (set by `AnalysisModal`) → falls back
+to `LLM_DEFAULT_MODEL` env → hardcoded `anthropic/claude-sonnet-4`. Computes
+`press_score` server-side via the documented weighted formula (see
+`lib/scoring.ts:computePressScore` for the JS mirror). 1-second pacing between
+batches. Writes back per-row scoring + Pitch + Angle + Reasoning + Haiku.
 
-1. User enters keys on the Settings page
-2. Settings saved to `localStorage` (key: `oeaw-press-relevance-settings`)
-3. Every API call reads settings via `getApiHeaders()` and attaches:
-   - `x-supabase-url` → Supabase project URL
-   - `x-supabase-key` → Supabase anon key
-   - `x-openrouter-key` → OpenRouter API key
-   - `x-llm-model` → Selected model identifier
-4. API route handlers extract these via `getSupabaseFromRequest()`, `getOpenRouterKey()`, `getLLMModel()`
-5. If headers are missing, falls back to environment variables (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `OPENROUTER_API_KEY`)
+### Session-pipeline (interactive scoring)
 
-**`.env.local` template**:
-```
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-OPENROUTER_API_KEY=
-```
-
-Environment variables take effect without Settings page configuration. Both mechanisms work simultaneously (headers take precedence).
-
----
-
-## 10. Deployment
-
-### Vercel (Recommended)
-
-```bash
-npx vercel --prod
-```
-
-Set environment variables in Vercel project settings. The app uses:
-- `maxDuration = 60` on SSE routes (within Vercel hobby tier streaming limit)
-- Client-side CSV parsing (avoids 4.5 MB body size limit)
-- No Docker, no persistent server processes
-
-### Self-hosted
-
-```bash
-npm run build
-npm start
-```
-
-Runs on port 3000. Set environment variables in `.env.local` or shell environment.
-
-### Supabase Setup
-
-1. Create project at supabase.com (free tier: 500 MB, 50K rows)
-2. `supabase link --project-ref <ref>` then `supabase db push` (applies `supabase/migrations/`)
-3. Copy URL and anon key from Settings → API
-
----
-
-## 11. Porting Notes
-
-This application was ported from the main OeAW Dashboard's Python/FastAPI backend. Key translation decisions:
-
-| Aspect | Python Original | TypeScript Port |
-|--------|----------------|-----------------|
-| CSV parsing | `csv.DictReader` with encoding fallbacks | PapaParse with `header: true` |
-| HTML stripping | `re.sub(r'<[^>]+>', '', text)` | Same regex via `String.replace()` |
-| NUL byte handling | `.replace('\x00', '')` | `.replace(/\x00/g, '')` |
-| Date parsing | `datetime.fromtimestamp(int(pub_date))` | `new Date(ts * 1000).toISOString()` |
-| Type mapping | Python dict `PUBLICATION_TYPE_MAP` | TypeScript `Record<string, string>` |
-| Enrichment APIs | `aiohttp` async sessions | `fetch()` with `AbortSignal.timeout()` |
-| LLM API | `aiohttp.post()` to OpenRouter | `fetch()` to OpenRouter |
-| Score calculation | `sum(scores[dim] * weights[dim])` | Same via `Object.entries()` loop |
-| Database | Direct Supabase REST via `postgrest-py` | `@supabase/supabase-js` client |
-| Embeddings | `sentence-transformers` (768-dim) | **Not ported** (not needed for press relevance) |
-| Progress tracking | In-memory dict + polling endpoint | SSE streaming (real-time) |
-| Configuration | Database `extraction_settings` table | `localStorage` + HTTP headers |
-| Background tasks | `asyncio.create_task()` | Streaming response with async IIFE |
-
-**Intentionally omitted** from the standalone app:
-- Vector embeddings and FAISS similarity search (not used in press relevance flow)
-- BERTopic topic extraction
-- Article ingestion (RSS, NewsAPI, Bluesky)
-- Topic-to-publication matching
-- Multiple database tables and joins
-- Redis caching layer
-- FastAPI dependency injection
+`scripts/session-pipeline.mjs` — runs scoring batches inside a Claude Code
+session (no API cost; `llm_model = anthropic/claude-opus-4-7-session`).
+Imports `lib/score-weights.json` directly via `with { type: 'json' }`, so the
+formula stays in lockstep with the UI/test code.
 
 ---
 
 ## 9. Researchers feature (Forscher:innen-Ranking)
 
-Added in late April 2026. Detail design and rationale: see `RESEARCHERS_PLAN.md` at repo root.
+Added late April 2026. Detail design + rationale: see `RESEARCHERS_PLAN.md` at
+the repo root.
 
 ### Architecture
 
-**Postgres-first**: aggregation, ranking, trend deltas, sparklines, top-pub, score bands, co-author counts and Bayesian shrinkage all live in three pure-SQL `LANGUAGE sql STABLE` functions, called via `supabase.rpc()`. The Next routes are 30-line wrappers that validate query params and forward.
+**Postgres-first**: aggregation, ranking, trend deltas, sparklines, top-pub,
+score bands, co-author counts and Bayesian shrinkage all live in three pure-SQL
+`LANGUAGE sql STABLE` functions, called via `supabase.rpc()`. The Next routes
+are 30-line wrappers that validate query params and forward.
 
 ```
 top_researchers(p_since, p_metric, p_authorship_scope, p_oestat3_ids,
@@ -976,11 +401,16 @@ researcher_detail(p_person_id, p_since, p_exclude_ita, p_exclude_outreach)
     coauthors jsonb (top 10), publications jsonb (incl. citation)
 ```
 
-Migrations `20260428000002` through `20260428000009` build these incrementally — indices first, then each function with its own evolution (ITA filter, outreach filter, weighted_avg, citation field).
+Migrations `20260428000002` through `20260428000009` build these incrementally —
+indices first, then each function with its own evolution (ITA filter,
+outreach filter, weighted_avg, citation field).
 
 ### Performance
 
-All three functions clock <50 ms on the local dataset (~37k pubs, 48k junction rows). Hot path covered by partial composite index `idx_pub_analyzed_window` on `(published_at, press_score) WHERE analysis_status = 'analyzed' AND press_score IS NOT NULL`.
+All three functions clock <50 ms on the local dataset (~37k pubs, 48k junction
+rows). Hot path covered by partial composite index `idx_pub_analyzed_window`
+on `(published_at, press_score) WHERE analysis_status = 'analyzed' AND
+press_score IS NOT NULL`.
 
 ### UI
 
@@ -1013,7 +443,8 @@ lib/researchers.ts                 # shared TS types matching PG returns
 
 - `count_high`: pubs with `press_score ≥ 0.7`
 - `sum_score`: simple sum
-- `weighted_avg`: Bayesian-shrunk avg, IMDb formula `(n·avg + 3·prior) / (n+3)`, prior from current filter scope
+- `weighted_avg`: Bayesian-shrunk avg, IMDb formula `(n·avg + 3·prior) / (n+3)`,
+  prior from current filter scope
 - `avg_score`: raw mean (informational, low-N flag in tooltip)
 - `pubs_total`: count of analyzed pubs
 
@@ -1023,28 +454,156 @@ Default sort is `count_high` — most reliable signal of "press-worthy producer.
 
 ## 10. InfoBubble system
 
-`components/info-bubble.tsx` + `lib/explanations.tsx`. 31 structured explanations (title/formula/body/example/note) keyed by id, referenced via `<InfoBubble id="…" />`.
+`components/info-bubble.tsx` + `lib/explanations.tsx`. ~40 structured
+explanations (title / formula / body / example / note) keyed by id, referenced
+via `<InfoBubble id="…" />`.
 
-Trigger is a hybrid Popover: hover (with 120/150 ms delays) on pointer-fine devices, tap on touch, click-to-pin on either, focus on keyboard. `(hover: hover) and (pointer: fine)` media query for capability detection. Built per the research recommendation that shadcn/ui has no canonical hybrid recipe — Radix HoverCard alone breaks on touch.
+Trigger is a hybrid Popover: hover (with 120/150 ms delays) on pointer-fine
+devices, tap on touch, click-to-pin on either, focus on keyboard.
+`(hover: hover) and (pointer: fine)` media query for capability detection.
+Built per the research recommendation that shadcn/ui has no canonical hybrid
+recipe — Radix HoverCard alone breaks on touch.
 
-Globally toggleable: nav button writes to `localStorage` + custom event for cross-tab and same-tab sync. When off, `<InfoBubble>` returns `null`.
+Globally toggleable: nav button writes to `localStorage` + custom event for
+cross-tab and same-tab sync. When off, `<InfoBubble>` returns `null`.
 
-Wired across: dashboard StatCards, top-10 panel, score distribution, dimensions radar, top keywords; researchers page (filters, spotlight, leaderboard headers, beeswarm); person detail (StatCards, activity chart, coauthors, pub list); publication detail (StoryScore, 5 ScoreBars, AI provenance, haiku eyebrow); publications table (score column header).
+Wired across: dashboard StatCards, top-10 panel, score distribution,
+dimensions radar, top keywords; researchers page (filters, spotlight,
+leaderboard headers, beeswarm); person detail (StatCards, activity chart,
+coauthors, pub list); publication detail (StoryScore, 5 ScoreBars, AI
+provenance, haiku eyebrow); publications table (score column header).
 
 ---
 
 ## 11. Hybrid filter pattern
 
-`app/publications/page.tsx` + `_filters.ts`. Linear/Notion convention: presets are *views* that reset preset-territory fields on switch; modifier fields (search, oestat, units, dates, etc.) survive every preset switch as user-set overlays.
+`app/publications/page.tsx` + `_filters.ts`. Linear/Notion convention: presets
+are *views* that reset preset-territory fields on switch; modifier fields
+(search, oestat, units, dates, etc.) survive every preset switch as user-set
+overlays.
 
-Defined by the `PRESET_FIELDS` constant in `_filters.ts` — currently `['peer', 'popsci', 'hasSumDe', 'minScore', 'showAll', 'maHl', 'types']`. Anything outside is a modifier.
+Defined by the `PRESET_FIELDS` constant in `_filters.ts` — currently
+`['peer', 'popsci', 'hasSumDe', 'minScore', 'showAll', 'maHl', 'types']`.
+Anything outside is a modifier.
 
-`presetModified` derived state shows a "Preset modifiziert · zurücksetzen"-pill when the user has hand-tweaked a preset-territory field. Empty-state has one-click "Preset-Modifikationen zurücknehmen" + "Alle Filter zurücksetzen" actions.
+`presetModified` derived state shows a "Preset modifiziert · zurücksetzen"-pill
+when the user has hand-tweaked a preset-territory field. Empty-state has
+one-click "Preset-Modifikationen zurücknehmen" + "Alle Filter zurücksetzen"
+actions.
 
 ---
 
 ## 12. Title-truncation heuristic
 
-`displayTitle(primary, citation)` in `lib/html-utils.ts`. The WebDB import truncates titles at the first colon — full subtitle lives in `citation`. Heuristic extracts subtitle when citation segment starts with exactly `<dbTitle>:`. Conservative match avoids gluing author names; sanity cap at 260 chars guard against citation-parser noise. See memory `webdb_title_truncation.md`.
+`displayTitle(primary, citation)` in `lib/html-utils.ts`. The WebDB import
+truncates titles at the first colon — full subtitle lives in `citation`.
+Heuristic extracts subtitle when the citation segment starts with exactly
+`<dbTitle>:`. Conservative match avoids gluing author names; sanity cap at
+260 chars guards against citation-parser noise. See memory
+`webdb_title_truncation.md`.
 
-Applied at: dashboard top-10, publications table, publication detail H1, spotlight pull-quote, person-detail PubList.
+Applied at: dashboard top-10, publications table, publication detail H1,
+spotlight pull-quote, person-detail PubList. Tested in
+`lib/html-utils.test.ts` for null-citation, prefix-match-extension, and
+no-match-unchanged cases.
+
+---
+
+## 13. Configuration & deployment
+
+### Required environment variables
+
+```
+# Server-side credentials (NEVER committed, NEVER exposed to browser)
+SUPABASE_URL=                    # full https URL of the Supabase project
+SUPABASE_ANON_KEY=               # public anon key (RLS-protected reads)
+SUPABASE_SERVICE_ROLE_KEY=       # service-role key (mutations bypass RLS)
+OPENROUTER_API_KEY=              # default OpenRouter key (user can override per-request)
+LLM_DEFAULT_MODEL=               # optional: default model id (else 'anthropic/claude-sonnet-4')
+
+# Auth gate
+GATE_PASSWORD=                   # plaintext password (server-only)
+GATE_TOKEN=                      # sha256(GATE_PASSWORD), pre-computed for fast middleware compare
+
+# Browser-readable (legacy path; kept for the CSV-upload-zone direct Supabase call)
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+```
+
+### Local development
+
+```bash
+# Local Supabase stack (custom ports 544xx to coexist with sibling projects;
+# see memory: local_supabase_ports.md):
+supabase start
+# → API:    http://localhost:54421
+# → DB:     postgres://...:54422
+# → Studio: http://localhost:54423
+
+npm run dev      # Next.js on http://localhost:3000
+npm run typecheck
+npm run lint
+npm test         # vitest run-once
+```
+
+### Vercel deployment
+
+```bash
+npx vercel --prod
+```
+
+Set the env vars above in the Vercel project settings. The app uses:
+- `maxDuration = 60` on SSE routes (within Vercel hobby tier streaming limit)
+- Client-side CSV parsing (avoids 4.5 MB body size limit on serverless)
+- No Docker, no persistent server processes
+
+### Self-hosted
+
+```bash
+npm run build && npm start    # port 3000
+```
+
+---
+
+## 14. Migration rollback strategy
+
+See `supabase/ROLLBACK.md` for the per-migration reverse playbook. We don't
+ship `*_down.sql` files — the rollback approach is documented per-migration
+in the cookbook so the recovery path is explicit when something goes wrong
+in production.
+
+Short version:
+- Most additive migrations (CREATE INDEX, CREATE FUNCTION) → drop equivalents.
+- Schema changes (ALTER TABLE … ADD COLUMN, junction-table inserts) → require
+  per-case data preservation.
+- The `publication_oestat6_matview` is the one MV; refresh policy still TBD
+  (see Section 3).
+
+---
+
+## 15. Porting notes (historical)
+
+This application was originally ported from the main OeAW Dashboard's
+Python/FastAPI backend. Most of the "porting decisions" are no longer
+load-bearing (the relational schema replaces the flat-table assumption from
+the port era), but for archeologists:
+
+| Aspect | Python original | Current TypeScript |
+|---|---|---|
+| CSV parsing | `csv.DictReader` w/ encoding fallbacks | PapaParse (`header: true`) |
+| HTML stripping | `re.sub(r'<[^>]+>', '', text)` | Same regex via `String.replace()` |
+| Date parsing | `datetime.fromtimestamp(int(pub_date))` | `new Date(ts * 1000).toISOString()` |
+| LLM API | `aiohttp.post()` | `fetch()` to OpenRouter |
+| Score calculation | `sum(scores[dim] * weights[dim])` | `lib/scoring.ts:computePressScore` |
+| DB access | `postgrest-py` direct | `@supabase/supabase-js` via `supabase.rpc(...)` |
+| Background tasks | `asyncio.create_task()` | SSE streaming (real-time progress) |
+| Embeddings (FAISS) | Used | **Not ported** — could be added (pgvector) for semantic search |
+| Topic extraction | BERTopic | Not ported |
+
+**Intentionally omitted** from this standalone tool:
+- Vector embeddings + FAISS similarity search (pgvector is the migration path
+  if/when semantic search becomes a priority)
+- BERTopic topic extraction
+- Article ingestion (RSS, NewsAPI, Bluesky)
+- Topic-to-publication matching
+- Redis caching layer
