@@ -244,6 +244,24 @@ DROP FUNCTION IF EXISTS publication_score_stats(date);
 Dashboard score-distribution + dimensions-radar will fail to load. UI shows
 the error state.
 
+### `20260429000004_users_stub.sql`
+
+Adds `users` + `user_settings` tables, the `trg_set_updated_at` trigger
+function, and two BEFORE-UPDATE triggers. Stub only — no UI is wired.
+
+```sql
+DROP TRIGGER IF EXISTS user_settings_set_updated_at ON user_settings;
+DROP TRIGGER IF EXISTS users_set_updated_at ON users;
+DROP FUNCTION IF EXISTS trg_set_updated_at();   -- only if no other table uses it
+DROP TABLE IF EXISTS user_settings;             -- DESTRUCTIVE: loses all per-user prefs
+DROP TABLE IF EXISTS users CASCADE;             -- DESTRUCTIVE: loses all user records
+```
+
+Data loss only matters once the table actually has rows; while it's a stub
+(no UI wiring), the rollback is harmless. Once Supabase Auth is wired and
+real users exist, this rollback is destructive — restore from snapshot
+instead.
+
 ---
 
 ## When you actually need a rollback

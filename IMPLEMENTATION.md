@@ -319,10 +319,13 @@ Login flow:
 If `GATE_TOKEN` isn't set in env, middleware passes through (dev mode); the
 client-side `<PasswordGate>` component is the fallback UI.
 
-**Multi-user TODO**: real multi-user (Supabase Auth + DB-backed `user_settings`
-table for per-user OpenRouter keys + UI prefs) is the obvious next foundation
-step. Today not blocking — single-password-gate is acceptable until the press
-team grows past 1 person actively configuring.
+**Multi-user state**: schema foundation exists (`users` + `user_settings`
+tables, migration `20260429000004_users_stub.sql`) but no UI is wired yet.
+RLS is enabled with no policies — only the service-role client can write.
+Next step: Supabase Auth integration + per-row policies keyed on
+`auth.uid() = id`, then move localStorage AppSettings reads/writes to the
+DB-backed `user_settings`. Today the single-password-gate continues to be
+the only auth boundary.
 
 ---
 
