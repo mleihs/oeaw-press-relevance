@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Publication } from '@/lib/types';
 import { doiToUrl } from '@/lib/enrichment/doi-utils';
 import { displayTitle } from '@/lib/html-utils';
+import { buildTaskUrl } from '@/lib/meistertask/urls';
 import { PressScoreBadge, ScoreBar } from './score-bar';
 import { InfoBubble } from './info-bubble';
 import { Badge } from '@/components/ui/badge';
@@ -155,7 +156,7 @@ function MobilePublicationCard({
         <div className="flex-1 min-w-0">
           <p className="font-medium text-sm leading-snug line-clamp-2">
             {displayTitle(pub.original_title || pub.title, pub.citation)}
-            {pub.meistertask_task_id && (
+            {pub.meistertask_task_token && (
               <ExternalLink className="inline-block h-3 w-3 ml-1 text-neutral-400 align-text-bottom" />
             )}
           </p>
@@ -259,10 +260,10 @@ function PublicationRow({
                 <Megaphone className="h-3 w-3 text-purple-600 shrink-0" />
               </TooltipTrigger><TooltipContent>Popular Science</TooltipContent></Tooltip>
             )}
-            {pub.meistertask_task_id && (
+            {pub.meistertask_task_token && (
               <Tooltip><TooltipTrigger asChild>
                 <a
-                  href={`https://www.meistertask.com/app/task/${pub.meistertask_task_token}`}
+                  href={buildTaskUrl(pub.meistertask_task_token)!}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}

@@ -1,8 +1,9 @@
-// Single source of truth for the MeisterTask integration constants.
-// Threshold is checked server-side by /api/meistertask/push and mirrored
-// in the UI button's disabled state — both must read from here.
+// The push threshold reuses SCORE_BAND_HIGH from lib/constants — same
+// semantic ("press-worthy band"), single source mirrored to PG functions.
+// SCORE_HIGH_THRESHOLD is a within-band sub-classifier for the 2-label
+// split (Hoch vs. Mittel) and is local to this integration.
 
-export const PRESS_SCORE_PUSH_THRESHOLD = 0.7;
+export { SCORE_BAND_HIGH as PRESS_SCORE_PUSH_THRESHOLD } from '../constants';
 export const SCORE_HIGH_THRESHOLD = 0.85;
 
 export const MEISTERTASK_API_BASE = 'https://www.meistertask.com/api';

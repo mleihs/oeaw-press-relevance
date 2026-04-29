@@ -2,30 +2,29 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { ExternalLink, Send, Loader2 } from 'lucide-react';
+import { ExternalLink, Send, Loader2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { PRESS_SCORE_PUSH_THRESHOLD } from '@/lib/meistertask/constants';
+import { buildTaskUrl } from '@/lib/meistertask/urls';
 import type { Publication } from '@/lib/types';
 
 type State =
   | { kind: 'idle' }
   | { kind: 'pushing' }
-  | { kind: 'pushed'; taskId: string; taskUrl: string };
+  | { kind: 'pushed'; taskId: string; taskUrl: string | null };
 
 interface Props {
   pub: Pick<Publication, 'id' | 'press_score' | 'meistertask_task_id' | 'meistertask_task_token'>;
 }
 
 export function MeistertaskButton({ pub }: Props) {
-  // Initial state derives from server-data: if there's already a task_id,
-  // the button starts in `pushed`. Otherwise idle.
   const [state, setState] = useState<State>(() =>
-    pub.meistertask_task_id && pub.meistertask_task_token
+    pub.meistertask_task_id
       ? {
           kind: 'pushed',
           taskId: pub.meistertask_task_id,
-          taskUrl: `https://www.meistertask.com/app/task/${pub.meistertask_task_token}`,
+          taskUrl: buildTaskUrl(pub.meistertask_task_token),
         }
       : { kind: 'idle' },
   );
@@ -33,7 +32,6 @@ export function MeistertaskButton({ pub }: Props) {
   const score = pub.press_score ?? 0;
   const belowThreshold = pub.press_score === null || score < PRESS_SCORE_PUSH_THRESHOLD;
 
-  // Disabled state: rendered only when idle (already-pushed wins precedence).
   if (state.kind === 'idle' && belowThreshold) {
     const tooltip =
       pub.press_score === null
@@ -43,7 +41,6 @@ export function MeistertaskButton({ pub }: Props) {
       <Tooltip>
         <TooltipTrigger asChild>
           <span>
-            {/* span wrapper because disabled buttons swallow pointer events */}
             <Button variant="outline" size="sm" disabled className="gap-1.5">
               <Send className="h-3.5 w-3.5" />
               An MeisterTask senden
@@ -56,17 +53,25 @@ export function MeistertaskButton({ pub }: Props) {
   }
 
   if (state.kind === 'pushed') {
+    if (state.taskUrl) {
+      return (
+        <Button
+          asChild
+          variant="outline"
+          size="sm"
+          className="gap-1.5 text-[#0047bb] border-[#0047bb]/30 hover:bg-[#0047bb]/[0.04]"
+        >
+          <a href={state.taskUrl} target="_blank" rel="noopener noreferrer">
+            <ExternalLink className="h-3.5 w-3.5" />
+            In MeisterTask geöffnet
+          </a>
+        </Button>
+      );
+    }
     return (
-      <Button
-        asChild
-        variant="outline"
-        size="sm"
-        className="gap-1.5 text-[#0047bb] border-[#0047bb]/30 hover:bg-[#0047bb]/[0.04]"
-      >
-        <a href={state.taskUrl} target="_blank" rel="noopener noreferrer">
-          <ExternalLink className="h-3.5 w-3.5" />
-          In MeisterTask geöffnet
-        </a>
+      <Button variant="outline" size="sm" disabled className="gap-1.5">
+        <Check className="h-3.5 w-3.5" />
+        An MeisterTask gesendet
       </Button>
     );
   }
@@ -80,7 +85,6 @@ export function MeistertaskButton({ pub }: Props) {
     );
   }
 
-  // idle + above threshold
   const onClick = async () => {
     setState({ kind: 'pushing' });
     try {
@@ -91,20 +95,20 @@ export function MeistertaskButton({ pub }: Props) {
       });
       const data = await res.json();
       if (!res.ok) {
-        const msg = data.error ?? `HTTP ${res.status}`;
-        toast.error(`Push fehlgeschlagen: ${msg}`);
+        toast.error(`Push fehlgeschlagen: ${data.error ?? `HTTP ${res.status}`}`);
         setState({ kind: 'idle' });
         return;
       }
-      // success or already_pushed — both yield task_id + task_url
-      const taskId = String(data.task_id);
-      const taskUrl = data.task_url ?? `https://www.meistertask.com/app/task/${taskId}`;
       const msg =
         data.status === 'already_pushed'
           ? 'Bereits in MeisterTask vorhanden'
           : 'An MeisterTask gesendet';
       toast.success(msg);
-      setState({ kind: 'pushed', taskId, taskUrl });
+      setState({
+        kind: 'pushed',
+        taskId: String(data.task_id),
+        taskUrl: data.task_url || null,
+      });
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Netzwerkfehler';
       toast.error(`Push fehlgeschlagen: ${msg}`);

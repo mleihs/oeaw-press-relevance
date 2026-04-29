@@ -42,19 +42,28 @@ export class MeistertaskRateLimitError extends MeistertaskApiError {
   }
 }
 
-// Token-bucket limiter. Single-tenant assumption: one server instance, one
-// token. If we ever scale to multiple Vercel instances sharing this token,
-// move the bucket to Redis or accept a higher empirical 429-rate.
+// Token-bucket limiter, serialized via a promise chain so that concurrent
+// acquire() callers can't all read `slots <= 0` at once and burst past the
+// limit. Single-tenant per Lambda instance — Vercel may run multiple
+// instances in parallel, so this is best-effort; for hard guarantees use
+// Redis or accept a higher empirical 429-rate.
 class RateLimiter {
   private slots: number;
   private lastRefill: number;
+  private chain: Promise<void> = Promise.resolve();
 
   constructor(private rps: number) {
     this.slots = rps;
     this.lastRefill = Date.now();
   }
 
-  async acquire(): Promise<void> {
+  acquire(): Promise<void> {
+    const next = this.chain.then(() => this.takeSlot());
+    this.chain = next.catch(() => {});
+    return next;
+  }
+
+  private async takeSlot(): Promise<void> {
     this.refill();
     if (this.slots <= 0) {
       await new Promise((r) => setTimeout(r, Math.ceil(1000 / this.rps)));
@@ -131,4 +140,16 @@ async function safeJson(res: Response): Promise<unknown> {
   } catch {
     return {};
   }
+}
+
+// Module-scope singleton so the rate-limiter token-bucket survives across
+// requests within the same Lambda instance. A fresh `new MeistertaskClient`
+// per request would reset the bucket every time and defeat the limiter.
+let cached: { token: string; client: MeistertaskClient } | null = null;
+
+export function getMeistertaskClient(token: string): MeistertaskClient {
+  if (cached?.token !== token) {
+    cached = { token, client: new MeistertaskClient(token) };
+  }
+  return cached.client;
 }
