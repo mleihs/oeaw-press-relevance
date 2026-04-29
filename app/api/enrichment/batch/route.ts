@@ -240,7 +240,7 @@ export async function POST(req: NextRequest) {
       // Pre-seed abstract from CSV if available (APIs still run for keywords/journal)
       // ---------------------------------------------------------------
       let mergedAbstract: string | undefined = pub.abstract || undefined;
-      let mergedKeywords: string[] = [];
+      const mergedKeywords: string[] = [];
       let mergedJournal: string | undefined;
       let mergedSnippet: string | undefined;
       let mergedWordCount = 0;
