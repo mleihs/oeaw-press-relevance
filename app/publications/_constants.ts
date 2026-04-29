@@ -1,14 +1,7 @@
-// publication_type webdb_uids treated as press-eligible by default.
-// Excluded when showAll=false: theses, posters, scripts, encyclopedia stubs, reviews.
-export const ELIGIBILITY_EXCLUDE_TYPE_UIDS = [
-  5,  // Buch- oder Aufsatzbesprechung
-  7,  // Diplomarbeit / Bakkalaureatsarbeit
-  8,  // Dissertation
-  13, // Habilitationsschrift
-  15, // Konferenzbeitrag: Poster (in Proceedingsband)
-  19, // Skriptum
-  23, // kurze Lexikonbeiträge, summarisch
-];
+// ELIGIBILITY_EXCLUDE_TYPE_UIDS lives in lib/eligibility.ts so the server route
+// (app/api/publications/route.ts) and any client-side filter UI share one source.
+// Re-exported here for convenience if the publications page wants to read it.
+export { ELIGIBILITY_EXCLUDE_TYPE_UIDS } from '@/lib/eligibility';
 
 // publication_type webdb_uids forming the "Wissenschaftlich" preset.
 export const WISS_TYPE_UIDS = [

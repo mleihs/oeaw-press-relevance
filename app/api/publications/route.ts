@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseFromRequest } from '@/lib/api-helpers';
+import { ELIGIBILITY_EXCLUDE_TYPE_UIDS } from '@/lib/eligibility';
 
 type SB = ReturnType<typeof getSupabaseFromRequest>;
 
@@ -10,9 +11,6 @@ function csv(s: string | null): string[] {
     .map((x) => x.trim())
     .filter(Boolean);
 }
-
-// publication_type webdb_uids excluded from the press-eligible default view.
-const ELIGIBILITY_EXCLUDE_TYPE_UIDS = [5, 7, 8, 13, 15, 19, 23];
 
 // Sentinel UUID guaranteed not to match any row — used when a pre-fetch returns 0 IDs
 // so .in('id', [sentinel]) yields no results (vs. matching everything on an empty list).
