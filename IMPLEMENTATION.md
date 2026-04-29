@@ -40,6 +40,7 @@
 13. [Configuration & deployment](#13-configuration--deployment)
 14. [Migration rollback strategy](#14-migration-rollback-strategy)
 15. [Porting notes (historical)](#15-porting-notes-historical)
+16. [MeisterTask integration](#16-meistertask-integration)
 
 ---
 
@@ -525,6 +526,13 @@ GATE_TOKEN=                      # sha256(GATE_PASSWORD), pre-computed for fast 
 # Browser-readable (legacy path; kept for the CSV-upload-zone direct Supabase call)
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
+
+# MeisterTask one-way push (lib/meistertask/*) — see Section 16
+MEISTERTASK_API_TOKEN=             # PAT from mindmeister.com/api, scope=meistertask
+MEISTERTASK_PROJECT_ID=            # numeric, target project
+MEISTERTASK_DEFAULT_SECTION_ID=    # numeric, Inbox-section where new tasks land
+MEISTERTASK_HIGH_LABEL_ID=         # optional — Score-Hoch-Label (≥85%)
+MEISTERTASK_MID_LABEL_ID=          # optional — Score-Mittel-Label (70–84%)
 ```
 
 ### Local development
@@ -604,3 +612,65 @@ the port era), but for archeologists:
 - Article ingestion (RSS, NewsAPI, Bluesky)
 - Topic-to-publication matching
 - Redis caching layer
+
+---
+
+## 16. MeisterTask integration
+
+One-way push of high-scoring publications to a MeisterTask project as Tasks
+for the press team. Shipped 2026-04-29 (commits MT1–MT3, MT1b). Replaces
+the original "build our own kanban UI" plan from `editorial_pipeline_proposal.md`
+— external tool the press team already uses, far less build effort.
+
+### Files
+
+| Layer | Path |
+|---|---|
+| Schema | `supabase/migrations/20260429000005_meistertask_task_id.sql` |
+| Schema | `supabase/migrations/20260429000006_meistertask_task_token.sql` |
+| Lib | `lib/meistertask/{client,mapping,constants}.ts` |
+| Tests | `lib/meistertask/mapping.test.ts` (10 tests) |
+| Route | `app/api/meistertask/push/route.ts` |
+| UI button | `app/publications/[id]/_components/meistertask-button.tsx` |
+| UI indicator | `components/publication-table.tsx` (inline ExternalLink-Icon) |
+
+### Idempotency + race safety
+
+Two-stage:
+1. On `POST /api/meistertask/push`, early-return if `pub.meistertask_task_id`
+   is already set (no upstream call).
+2. After successful upstream `POST /sections/{id}/tasks`, the local DB UPDATE
+   is conditional: `WHERE meistertask_task_id IS NULL`. Concurrent pushes
+   can only commit once. The loser writes an orphan task in MeisterTask,
+   recoverable via the `<!-- pub-id: <uuid> -->` HTML-marker the mapping
+   appends to every notes-footer (markdown renders it invisible;
+   `GET /tasks/{id}` reads it back for reconciliation scripts later).
+
+### URL forms
+
+| Use | Form |
+|---|---|
+| API canonical | numeric `task.id` (e.g. `224409300`) — for `GET /tasks/{id}` |
+| Web UI deep-link | token (e.g. `u9Qg4K51`) — `/app/task/<token>` |
+
+The numeric form `/app/task/<id>` 404s in the web UI ("Zugriff nicht möglich"),
+empirically verified during MT3 smoke-test. Both stored side by side; the
+button + indicator URLs are built from the token.
+
+### Threshold + scoring band
+
+`PRESS_SCORE_PUSH_THRESHOLD = 0.7` in `lib/meistertask/constants.ts` — read
+by both the backend route guard and the frontend button's disabled state.
+Single source of truth.
+
+`SCORE_HIGH_THRESHOLD = 0.85` decides label assignment when
+`MEISTERTASK_HIGH_LABEL_ID` + `MEISTERTASK_MID_LABEL_ID` are both set.
+Below 0.85: mid-label. Above-or-equal: high-label. Below-0.7 never gets
+pushed, so a "low" band would be dead — only two labels exist.
+
+### Status
+
+MVP shipped (single-pub push, single-button UI, no bulk, no two-way
+sync, no setup wizard). Memory `meistertask_integration.md` has
+the full design backstory + pending V2 ideas (bulk push, polling
+worker for "task moved to done → mark coverage").

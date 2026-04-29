@@ -1,7 +1,7 @@
 # TECH_HANDOVER
 
-**Last refresh:** 2026-04-29 (after H9 ship)
-**Branch state at handover:** `main`, in sync with `origin/main` after H1–H9 push.
+**Last refresh:** 2026-04-29 (after MT3 ship — MeisterTask-Integration MVP)
+**Branch state at handover:** `main`, **4 commits ahead of `origin/main`** (MT1, MT2, MT1b, MT3 — push pending).
 
 This is the technical handover doc — distinct from `HANDOVER.md`, which is the
 ongoing scoring-session log. If you're picking this up after a `/clear` or in
@@ -22,6 +22,11 @@ a fresh session, read this first. It cross-references everything else.
 | H7 | `eec3c1e` | `ELIGIBILITY_EXCLUDE_TYPE_UIDS` in `lib/eligibility.ts` extrahiert (Drift strukturell unmöglich, nicht nur getestet) |
 | H8 | `d99ad09` | `users` + `user_settings` Schema-Stub (Multi-User Foundation, `20260429000004_users_stub.sql`) |
 | H9 | `dfd71ba` | GitHub Action CI (typecheck + lint + test + audit) + Lint-Schulden auf warn degradiert |
+| H10 | `ad6bd76` | TECH_HANDOVER.md + Memory-Files für saubere Session-Übergabe |
+| MT1 | `3a78611` | `publications.meistertask_task_id` Spalte + Index + Type (Schema für Push-Dedup) |
+| MT2 | `cf87ece` | `lib/meistertask/` (client + mapping + 10 Tests, 21/21 grün) |
+| MT1b | `15114d1` | `meistertask_task_token` Spalte (deep-link URL — `/app/task/<token>` ist die einzige funktionierende Form) |
+| MT3 | `ae2e856` | `/api/meistertask/push` + Button + Tabellen-Indikator + Smoke-Test gegen Press-Triage (DEV) |
 
 Davor (gleicher Tag, früher in der Session): Lucide 1.x, TypeScript 6.0.3,
 shadcn 4.6, plus die G1–G4-Wellen (Auth-Gate, apiError, publication_score_stats,
@@ -108,21 +113,16 @@ Session/Branch — bewusst NICHT in den H1–H9-Cleanup mitgenommen.
    integration + per-row RLS-Policies + Settings-UI von localStorage auf
    `user_settings` umstellen. ~2–3 Tage.
 
-4. **MeisterTask-Integration (one-way push)** — Memory:
-   `meistertask_integration.md`. Statt eigene Kanban-UI zu bauen
-   (Editorial Pipeline #1), pushen wir hochbewertete Pubs als Tasks in
-   ein bestehendes MeisterTask-Projekt der Pressestelle. Senken den
-   Build-Aufwand drastisch und treffen den realen Workflow der
-   Press-Officer (die MeisterTask schon kennen). Wechselwirkung mit #1:
-   wenn MeisterTask der Pipeline-Träger wird, ist die `pitch_log`-Tabelle
-   nur noch Spiegel für Outcome-Metrik. **API-Research erledigt** —
-   Memory hat: Auth via PAT (nie ablaufend), Base-URL + 9 Endpoint-Mappings,
-   Task-Create-Schema, Mapping `publication → task` mit Markdown-Notes
-   + Score-Band-Labels, Dedup via `meistertask_task_id`-Spalte (kein
-   Idempotency-Header), 12-File MVP-Plan, ~1.5–2 Tage Aufwand.
-   Hard-Constraints: keine nativen Webhooks (Two-way-Sync = polling oder
-   Zapier), Custom-Fields nur in Business-Plan, Rate-Limit ~5 rps
-   defensiv (undocumented). Vor Start: 6 Klärungsfragen in der Memory.
+4. **MeisterTask-Integration (one-way push)** — ✅ **MVP shipped 2026-04-29**
+   in MT1/MT2/MT1b/MT3. Siehe `IMPLEMENTATION.md` Section 16 für die
+   Code-Map, Memory `meistertask_integration.md` für Backstory + offene
+   V2-Ideen (Bulk-Push, Polling-Worker für „Task moved to Done →
+   coverage"). Setup im DEV: Project `Press-Triage (DEV)` (9147401),
+   Inbox-Section (37295389), 2 Score-Band-Labels (Score Hoch / Score
+   Mittel) — alle IDs in `.env.local`. Pre-Production-TODOs: PAT
+   rotieren (Discovery-Token ist im git-history des HANDOVER), eigenes
+   Press-Stelle-Projekt anlegen statt Matthias-privat-Workspace, dann
+   Vercel-Env-Vars setzen.
 
 Niedriger priorisierte aber konkrete Vorschläge aus dem Review (siehe
 HANDOVER.md-Vorgängerantworten oder `git log` für die Architektur-Antwort):
