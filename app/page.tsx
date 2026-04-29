@@ -415,11 +415,11 @@ export default function DashboardPage() {
           <CardContent className="py-6">
             <CapybaraEmpty
               message="Noch keine Publikationen"
-              submessage="Laden Sie eine CSV-Datei hoch, um mit StoryScout zu starten."
+              submessage="Importieren Sie zuerst einen WebDB-Datenbankabzug, um zu starten."
             />
             <div className="flex justify-center mt-4">
               <Button asChild>
-                <Link href="/upload">CSV importieren</Link>
+                <Link href="/upload">Zum WebDB-Import</Link>
               </Button>
             </div>
           </CardContent>

@@ -163,22 +163,6 @@ export interface PublicationWithRelations extends Publication {
   projects?: Project[];
 }
 
-export interface PublicationInsert {
-  title: string;
-  authors?: string | null;
-  abstract?: string | null;
-  doi?: string | null;
-  published_at?: string | null;
-  publication_type?: string | null;
-  institute?: string | null;
-  open_access?: boolean;
-  oa_type?: string | null;
-  url?: string | null;
-  citation?: string | null;
-  csv_uid?: string | null;
-  import_batch?: string | null;
-}
-
 export interface EnrichmentResult {
   abstract?: string;
   keywords?: string[];

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from './supabase';
+import { createClient } from '@supabase/supabase-js';
 
 /**
  * Server-only Supabase client. Reads URL+key from env exclusively — clients
@@ -13,7 +13,7 @@ export function getSupabaseFromRequest(_req: NextRequest) {
   if (!url || !key) {
     throw new Error('Supabase credentials not configured (set SUPABASE_URL + SUPABASE_ANON_KEY in env)');
   }
-  return createServerClient(url, key);
+  return createClient(url, key);
 }
 
 /**
@@ -27,7 +27,7 @@ export function getSupabaseAdmin() {
   if (!url || !serviceKey) {
     throw new Error('SUPABASE_SERVICE_ROLE_KEY not configured (mutating routes need it after RLS lockdown)');
   }
-  return createServerClient(url, serviceKey);
+  return createClient(url, serviceKey);
 }
 
 /**

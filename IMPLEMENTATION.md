@@ -328,13 +328,7 @@ team grows past 1 person actively configuring.
 
 ## 8. Data pipelines
 
-### CSV import (legacy path, browser-side)
-
-`app/upload/page.tsx` + `components/csv-upload-zone.tsx`: PapaParse → schema
-mapping → 3-layer dedup (title + DOI + UID) → chunks of 100 →
-`POST /api/publications/import`.
-
-### WebDB relational ETL (current path, script-side)
+### WebDB relational ETL (the only ingest path)
 
 `scripts/webdb-import.mjs` reads a TYPO3 mysqldump (`*.sql.gz`), decompresses
 with `mysql2`, walks TYPO3 table prefixes (publications, persons, orgunits,
