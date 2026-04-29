@@ -11,6 +11,7 @@ import { HaikuBlock } from '@/components/haiku-block';
 import { InfoBubble } from '@/components/info-bubble';
 import { SOURCE_LABELS, SOURCE_BADGE_CLASSES as SOURCE_COLORS, SOURCE_DESCRIPTIONS } from '@/lib/constants';
 import { CapybaraLogo } from '@/components/capybara-logo';
+import { MeistertaskButton } from './_components/meistertask-button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
@@ -259,6 +260,9 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
                 <span className="font-medium text-neutral-500">Zielgruppe:</span> {pub.target_audience}
               </p>
             )}
+            <div className="mt-4 pt-4 border-t border-[#0047bb]/10 flex justify-end">
+              <MeistertaskButton pub={pub} />
+            </div>
           </CardContent>
         </Card>
       )}

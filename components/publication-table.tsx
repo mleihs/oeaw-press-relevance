@@ -155,6 +155,9 @@ function MobilePublicationCard({
         <div className="flex-1 min-w-0">
           <p className="font-medium text-sm leading-snug line-clamp-2">
             {displayTitle(pub.original_title || pub.title, pub.citation)}
+            {pub.meistertask_task_id && (
+              <ExternalLink className="inline-block h-3 w-3 ml-1 text-neutral-400 align-text-bottom" />
+            )}
           </p>
           <p className="text-xs text-neutral-500 mt-1 truncate">
             {pub.lead_author || pub.authors || 'Unbekannt'}
@@ -255,6 +258,19 @@ function PublicationRow({
               <Tooltip><TooltipTrigger asChild>
                 <Megaphone className="h-3 w-3 text-purple-600 shrink-0" />
               </TooltipTrigger><TooltipContent>Popular Science</TooltipContent></Tooltip>
+            )}
+            {pub.meistertask_task_id && (
+              <Tooltip><TooltipTrigger asChild>
+                <a
+                  href={`https://www.meistertask.com/app/task/${pub.meistertask_task_token}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-neutral-400 hover:text-[#0047bb] shrink-0"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              </TooltipTrigger><TooltipContent>In MeisterTask geöffnet</TooltipContent></Tooltip>
             )}
           </div>
           {pub.orgunits && pub.orgunits.length > 0 ? (
