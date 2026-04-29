@@ -37,7 +37,19 @@ export const OA_FALSE_VALUES = new Set([
 // JSON file because mjs scripts can't `import` from .ts at runtime; both can
 // import the same JSON cleanly. Dimension order = display order in the radar.
 import scoreWeightsJson from './score-weights.json';
-export const SCORE_WEIGHTS: Record<string, number> = scoreWeightsJson;
+
+export const SCORE_DIMENSIONS = [
+  'public_accessibility',
+  'societal_relevance',
+  'novelty_factor',
+  'storytelling_potential',
+  'media_timeliness',
+] as const;
+export type ScoreDimension = (typeof SCORE_DIMENSIONS)[number];
+
+// `satisfies` enforces shape: a missing or extra key in score-weights.json
+// becomes a typecheck error, not a runtime surprise.
+export const SCORE_WEIGHTS = scoreWeightsJson satisfies Record<ScoreDimension, number>;
 
 export const SCORE_COLORS: Record<string, string> = {
   public_accessibility: '#3b82f6',

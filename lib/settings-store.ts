@@ -27,10 +27,9 @@ export function getApiHeaders(): Record<string, string> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
-  // Supabase URL/Key are NEVER sent from the browser anymore (B2): they live in
-  // server env exclusively. Only OpenRouter key (user-owned) and model
-  // selection remain header-bound for per-user customization.
+  // Supabase URL/Key are server-env exclusively (B2). LLM model selection is
+  // per-batch and set inside the AnalysisModal — not a global localStorage pref.
+  // Only the OpenRouter key (user-owned for cost ownership) is header-bound.
   if (settings.openrouterApiKey) headers['x-openrouter-key'] = settings.openrouterApiKey;
-  if (settings.llmModel) headers['x-llm-model'] = settings.llmModel;
   return headers;
 }

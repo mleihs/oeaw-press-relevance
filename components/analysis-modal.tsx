@@ -182,7 +182,7 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
     includePartial: false,
     forceReanalyze: false,
     minWordCount: settings.minWordCount || 100,
-    model: settings.llmModel || 'deepseek/deepseek-chat',
+    model: 'deepseek/deepseek-chat',
   });
   const [progress, setProgress] = useState<ProgressData>({
     processed: 0,

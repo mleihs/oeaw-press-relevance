@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AppSettings, DEFAULT_SETTINGS } from '@/lib/types';
-import { LLM_MODELS } from '@/lib/constants';
 import { loadSettings, saveSettings } from '@/lib/settings-store';
 import { Save, CheckCircle2, Eye, EyeOff, Loader2, XCircle, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
@@ -126,21 +125,11 @@ export default function SettingsPage() {
               </button>
             </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="model">LLM-Modell</Label>
-            <select
-              id="model"
-              value={settings.llmModel}
-              onChange={(e) => setSettings(s => ({ ...s, llmModel: e.target.value }))}
-              className="w-full rounded-md border px-3 py-2 text-sm"
-            >
-              {LLM_MODELS.map(m => (
-                <option key={m.value} value={m.value}>
-                  {m.label} ({m.costPerMillionTokens === 0 ? 'gratis' : `$${m.costPerMillionTokens}/M Tokens`})
-                </option>
-              ))}
-            </select>
-          </div>
+          <p className="text-xs text-neutral-500">
+            Modell-Wahl erfolgt pro Batch direkt im Analyse-Dialog (Publikationen → Analyse starten).
+            Kein globales LLM-Default in den Einstellungen, weil unterschiedliche Batches
+            unterschiedliche Preis-Qualitäts-Profile sinnvoll machen.
+          </p>
         </CardContent>
       </Card>
 

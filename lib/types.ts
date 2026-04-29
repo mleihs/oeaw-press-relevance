@@ -275,18 +275,12 @@ export interface SSEEvent {
 
 export interface AppSettings {
   openrouterApiKey: string;
-  llmModel: string;
   minWordCount: number;
   batchSize: number;
-  supabaseUrl: string;
-  supabaseAnonKey: string;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
   openrouterApiKey: '',
-  llmModel: 'deepseek/deepseek-chat',
   minWordCount: 100,
   batchSize: 3,
-  supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
 };

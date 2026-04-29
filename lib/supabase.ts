@@ -4,12 +4,12 @@ let cachedClient: SupabaseClient | null = null;
 let cachedUrl = '';
 let cachedKey = '';
 
-export function getSupabaseClient(url?: string, anonKey?: string): SupabaseClient {
-  const supabaseUrl = url || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-  const supabaseAnonKey = anonKey || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+export function getSupabaseClient(): SupabaseClient {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error('Supabase URL and anon key are required. Set them in environment variables or settings.');
+    throw new Error('Supabase URL and anon key are required. Set NEXT_PUBLIC_SUPABASE_URL + NEXT_PUBLIC_SUPABASE_ANON_KEY in env.');
   }
 
   if (cachedClient && cachedUrl === supabaseUrl && cachedKey === supabaseAnonKey) {

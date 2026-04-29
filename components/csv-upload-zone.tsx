@@ -11,7 +11,6 @@ import { PublicationInsert } from '@/lib/types';
 import { getApiHeaders } from '@/lib/settings-store';
 import { decodeHtmlTitle } from '@/lib/html-utils';
 import { getSupabaseClient } from '@/lib/supabase';
-import { loadSettings } from '@/lib/settings-store';
 
 export function CsvUploadZone() {
   const [isDragging, setIsDragging] = useState(false);
@@ -58,8 +57,7 @@ export function CsvUploadZone() {
     setError(null);
 
     try {
-      const settings = loadSettings();
-      const supabase = getSupabaseClient(settings.supabaseUrl, settings.supabaseAnonKey);
+      const supabase = getSupabaseClient();
 
       const { data: existing } = await supabase
         .from('publications')

@@ -48,7 +48,7 @@ export function apiError(message: string, status = 400) {
 }
 
 export function getLLMModel(req: NextRequest): string {
-  return req.headers.get('x-llm-model') || 'anthropic/claude-sonnet-4';
+  return req.headers.get('x-llm-model') || process.env.LLM_DEFAULT_MODEL || 'anthropic/claude-sonnet-4';
 }
 
 export function createSSEStream() {
