@@ -202,12 +202,7 @@ SUPABASE_SERVICE_ROLE_KEY=<Production-service-role-Key aus Supabase-Studio → P
 OPENROUTER_API_KEY=<Production OpenRouter Key, ggf. derselbe wie lokal>
 ```
 
-**WICHTIG: GATE_PASSWORD soll für Production rotiert werden.** Der lokale `movefastandbreakthings` ist im git-history und Plan-Doc dokumentiert — als Production-Password ungeeignet. User generiert neues Password, plus den GATE_TOKEN als sha256-Hash:
-
-```bash
-GATE_PWD="<neues passwort>"
-echo -n "$GATE_PWD" | sha256sum   # → in GATE_TOKEN
-```
+**Hinweis:** `GATE_PASSWORD` bleibt für Production temporär gleich wie lokal (`movefastandbreakthings`). Production ist erstmal nur ein Build-Test-Target, keine echte Pressestelle-Nutzung. Wenn das später real wird: rotieren.
 
 ### Set-Befehl pattern
 
