@@ -57,11 +57,17 @@ export async function middleware(req: NextRequest) {
     return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
   }
 
+  // Root path renders the gate UI (PasswordGate wraps the layout). Letting
+  // it through unauthenticated is required — otherwise the redirect-to-root
+  // below loops forever (`/` → `/` → `/`). Anything sensitive on the page
+  // is gated client-side by PasswordGate; API calls from it still get 401.
+  if (pathname === '/') return NextResponse.next();
+
   // Page requests: redirect to root (where the gate UI is).
   // Preserve the intended destination as `?next=` for post-login redirect.
   const url = req.nextUrl.clone();
   url.pathname = '/';
-  if (pathname !== '/') url.searchParams.set('next', pathname);
+  url.searchParams.set('next', pathname);
   return NextResponse.redirect(url);
 }
 
