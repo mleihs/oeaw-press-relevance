@@ -54,23 +54,43 @@ export function getLLMModel(req: NextRequest): string {
 export function createSSEStream() {
   const encoder = new TextEncoder();
   let controller: ReadableStreamDefaultController | null = null;
+  let closed = false;
 
   const stream = new ReadableStream({
     start(c) {
       controller = c;
     },
+    cancel() {
+      // Consumer aborted (client disconnect / fetch timeout). Mark closed so
+      // subsequent server-side send/close become no-ops instead of throwing
+      // "Invalid state: Controller is already closed" — that error escapes as
+      // an unhandledRejection and accumulated over many batches it killed the
+      // dev server (2026-05-01 incident, ~88 enrichment batches in).
+      closed = true;
+      controller = null;
+    },
   });
 
   function send(event: string, data: unknown) {
-    if (controller) {
+    if (closed || !controller) return;
+    try {
       controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
+    } catch {
+      // Race between cancel() and a pending enqueue. Treat as closed.
+      closed = true;
+      controller = null;
     }
   }
 
   function close() {
-    if (controller) {
+    if (closed || !controller) return;
+    try {
       controller.close();
+    } catch {
+      // Already closed by the consumer side.
     }
+    closed = true;
+    controller = null;
   }
 
   return { stream, send, close };
