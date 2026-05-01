@@ -71,8 +71,7 @@ export function PasswordGate({ children }: { children: React.ReactNode }) {
       <div
         className="blur-md pointer-events-none select-none opacity-40"
         aria-hidden
-        // @ts-expect-error: inert is a valid HTML attribute (Baseline 2024+)
-        inert=""
+        inert
       >
         {children}
       </div>

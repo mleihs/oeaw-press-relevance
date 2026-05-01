@@ -58,19 +58,6 @@ export function HaikuBlock({ haiku, model }: HaikuBlockProps) {
         <p>5 — 7 — 5</p>
         {model && <p className="mt-1 normal-case tracking-normal text-neutral-400">{model.split('/').pop()}</p>}
       </div>
-
-      <style jsx global>{`
-        @keyframes haikuFade {
-          from {
-            opacity: 0;
-            transform: translateY(2px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
     </section>
   );
 }
