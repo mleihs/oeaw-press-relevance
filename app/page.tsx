@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,7 +23,6 @@ import { displayTitle } from '@/lib/html-utils';
 import { SCORE_LABELS } from '@/lib/constants';
 import { Sparkles, BookOpen, BarChart3, TrendingUp, AlertCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { useLookups } from './publications/_components/use-lookups';
 
 type TimePeriod = 'week' | 'month' | 'year' | 'all';
 
@@ -62,30 +61,6 @@ export default function DashboardPage() {
   const [scoreDistribution, setScoreDistribution] = useState<number[]>([]);
   const [dimensionAvgs, setDimensionAvgs] = useState<Record<string, number>>({});
   const [topKeywords, setTopKeywords] = useState<{ word: string; count: number }[]>([]);
-
-  const lookups = useLookups();
-
-  // ITA + sub-units for bias-correction in the score-ranking panel.
-  // Bias correction, not hard exclusion: ITA pubs remain visible everywhere
-  // else (stats, search, list) — only the Top-10 panel down-weights them so
-  // a single overrepresented department doesn't dominate the dashboard view.
-  const itaSubtreeIds = useMemo(() => {
-    if (!lookups?.orgunits) return new Set<string>();
-    const root = lookups.orgunits.find((o) => o.akronym_de === 'ITA');
-    if (!root) return new Set<string>();
-    const ids = new Set<string>([root.id]);
-    let changed = true;
-    while (changed) {
-      changed = false;
-      for (const o of lookups.orgunits) {
-        if (o.parent_id && ids.has(o.parent_id) && !ids.has(o.id)) {
-          ids.add(o.id);
-          changed = true;
-        }
-      }
-    }
-    return ids;
-  }, [lookups]);
 
   useEffect(() => {
     async function loadStats() {
@@ -142,39 +117,42 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
     async function loadTop() {
       setTopLoading(true);
       try {
         const headers = getApiHeaders();
-        // Fetch a wider candidate window so client-side bias correction
-        // (ITA-subtree exclusion) still leaves enough rows to fill the Top-10.
+        // ITA-subtree exclusion is enforced server-side by exclude_ita=true,
+        // which translates to a single indexed predicate on the cached
+        // publications.is_ita_subtree column (set by the ETL after every
+        // webdb-import). No client-side filtering needed.
         const params = new URLSearchParams({
           sort: 'press_score',
           order: 'desc',
-          pageSize: '50',
+          pageSize: '10',
           analysis_status: 'analyzed',
           default_eligible: 'true',
+          exclude_ita: 'true',
         });
         const publishedAfter = getPublishedAfter(timePeriod);
         if (publishedAfter) params.set('published_after', publishedAfter);
 
         const topRes = await fetch(`/api/publications?${params}`, { headers });
+        if (cancelled) return;
         if (topRes.ok) {
           const topData = await topRes.json();
-          const allPubs: PublicationWithRelations[] = topData.publications || [];
-          const filtered = itaSubtreeIds.size > 0
-            ? allPubs.filter((p) => !(p.orgunits ?? []).some((o) => itaSubtreeIds.has(o.id)))
-            : allPubs;
-          setTopPubs(filtered.slice(0, 10));
+          if (cancelled) return;
+          setTopPubs((topData.publications || []) as PublicationWithRelations[]);
         }
       } catch {
         // silently fail for top pubs
       } finally {
-        setTopLoading(false);
+        if (!cancelled) setTopLoading(false);
       }
     }
     loadTop();
-  }, [timePeriod, itaSubtreeIds]);
+    return () => { cancelled = true; };
+  }, [timePeriod]);
 
   if (loading) {
     return (

@@ -272,12 +272,11 @@ export async function GET(req: NextRequest) {
         query = query.in('id', arr.length ? arr : [SENTINEL_UUID]);
       }
 
+      // ITA-subtree filter via cached boolean column (set by ETL after
+      // every webdb-import). One indexed clause, no URL bloat from a
+      // 365-element NOT-IN list, no client-side filter race.
       if (excludeIta) {
-        query = query
-          .or('url.is.null,url.not.ilike.%oeaw.ac.at/ita/%')
-          .or('enriched_journal.is.null,enriched_journal.not.ilike.ITA-%')
-          .or('enriched_journal.is.null,enriched_journal.not.ilike.ITA %')
-          .not('title', 'ilike', '%ITA Dossier%');
+        query = query.eq('is_ita_subtree', false);
       }
 
       if (applyEligibility && defaultEligible && badTypeIds.length) {
@@ -329,6 +328,7 @@ export async function GET(req: NextRequest) {
     }
 
     type Row = {
+      id: string;
       orgunit_publications?: Array<{ orgunit?: { id: string; akronym_de: string; name_de: string } }>;
       [k: string]: unknown;
     };
