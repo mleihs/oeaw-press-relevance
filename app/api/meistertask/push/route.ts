@@ -7,7 +7,6 @@ import {
   MeistertaskApiError,
 } from '@/lib/meistertask/client';
 import { mapPublicationToTask } from '@/lib/meistertask/mapping';
-import { PRESS_SCORE_PUSH_THRESHOLD } from '@/lib/meistertask/constants';
 import { buildTaskUrl } from '@/lib/meistertask/urls';
 import type { Publication } from '@/lib/types';
 
@@ -53,13 +52,6 @@ export async function POST(req: NextRequest) {
       task_id: pub.meistertask_task_id,
       task_url: buildTaskUrl(pub.meistertask_task_token),
     });
-  }
-
-  if (pub.press_score === null || pub.press_score < PRESS_SCORE_PUSH_THRESHOLD) {
-    return apiError(
-      `Score ${pub.press_score ?? 'null'} below push threshold ${PRESS_SCORE_PUSH_THRESHOLD}`,
-      400,
-    );
   }
 
   const taskBody = mapPublicationToTask(pub, {

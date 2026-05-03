@@ -17,9 +17,11 @@ const DimensionsRadar = dynamic(() => import('./_components/dimensions-radar'), 
 import { InfoBubble } from '@/components/info-bubble';
 import type { EXPL } from '@/lib/explanations';
 import { CapybaraEmpty } from '@/components/capybara-logo';
+import { ChangelogPanel } from '@/components/changelog-panel';
 import { PublicationStats, Publication, PublicationWithRelations } from '@/lib/types';
 import { getApiHeaders } from '@/lib/settings-store';
 import { displayTitle } from '@/lib/html-utils';
+import { displayAuthor, displayInstitute } from '@/lib/publication-display';
 import { SCORE_LABELS } from '@/lib/constants';
 import { Sparkles, BookOpen, BarChart3, TrendingUp, AlertCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -56,7 +58,7 @@ export default function DashboardPage() {
   const [topPubs, setTopPubs] = useState<PublicationWithRelations[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [timePeriod, setTimePeriod] = useState<TimePeriod>('all');
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>('month');
   const [topLoading, setTopLoading] = useState(false);
   const [scoreDistribution, setScoreDistribution] = useState<number[]>([]);
   const [dimensionAvgs, setDimensionAvgs] = useState<Record<string, number>>({});
@@ -183,21 +185,24 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* Hero */}
-      <div className="flex items-center gap-5">
-        <Image
-          src="/capybara-logo.png"
-          alt="StoryScout Capybara"
-          width={160}
-          height={160}
-          className="shrink-0 mix-blend-multiply"
-          priority
-        />
-        <div>
-          <h1 className="text-2xl font-bold text-neutral-900">StoryScout</h1>
-          <p className="text-neutral-500 mt-1">
-            Finde die besten Stories in ÖAW-Publikationen
-          </p>
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex items-center gap-5">
+          <Image
+            src="/capybara-logo.png"
+            alt="StoryScout Capybara"
+            width={160}
+            height={160}
+            className="shrink-0 mix-blend-multiply"
+            priority
+          />
+          <div>
+            <h1 className="text-2xl font-bold text-neutral-900">StoryScout</h1>
+            <p className="text-neutral-500 mt-1">
+              Finde die besten Stories in ÖAW-Publikationen
+            </p>
+          </div>
         </div>
+        <ChangelogPanel />
       </div>
 
       {/* Stats cards */}
@@ -299,7 +304,9 @@ export default function DashboardPage() {
             </div>
           ) : topPubs.length > 0 ? (
             <div className="space-y-2">
-              {topPubs.map((pub, i) => (
+              {topPubs.map((pub, i) => {
+                const institute = displayInstitute(pub);
+                return (
                 <Link
                   key={pub.id}
                   href={`/publications/${pub.id}`}
@@ -314,7 +321,7 @@ export default function DashboardPage() {
                     </p>
                     <div className="flex items-center gap-2 mt-0.5">
                       <p className="text-xs text-neutral-500 truncate">
-                        {pub.authors || 'Unbekannt'} {pub.institute ? `| ${pub.institute}` : ''}
+                        {displayAuthor(pub)}{institute ? ` | ${institute}` : ''}
                       </p>
                       {pub.publication_type && (
                         <Badge variant="outline" className="text-[10px] px-1.5 py-0">{pub.publication_type}</Badge>
@@ -331,7 +338,8 @@ export default function DashboardPage() {
                   </div>
                   <PressScoreBadge score={pub.press_score} />
                 </Link>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="text-center py-8 text-sm text-neutral-500">

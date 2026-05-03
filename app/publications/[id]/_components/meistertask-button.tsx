@@ -4,8 +4,6 @@ import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { ExternalLink, Send, Loader2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-import { PRESS_SCORE_PUSH_THRESHOLD } from '@/lib/meistertask/constants';
 import { buildTaskUrl } from '@/lib/meistertask/urls';
 import type { Publication } from '@/lib/types';
 
@@ -40,29 +38,6 @@ export function MeistertaskButton({ pub }: Props) {
   const safeSetState = (s: State) => {
     if (mountedRef.current) setState(s);
   };
-
-  const score = pub.press_score ?? 0;
-  const belowThreshold = pub.press_score === null || score < PRESS_SCORE_PUSH_THRESHOLD;
-
-  if (state.kind === 'idle' && belowThreshold) {
-    const tooltip =
-      pub.press_score === null
-        ? 'Pub noch nicht analysiert (kein Score)'
-        : `Score ${Math.round(score * 100)}% — Schwellwert ${Math.round(PRESS_SCORE_PUSH_THRESHOLD * 100)}%`;
-    return (
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span>
-            <Button variant="outline" size="sm" disabled className="gap-1.5">
-              <Send className="h-3.5 w-3.5" />
-              An MeisterTask senden
-            </Button>
-          </span>
-        </TooltipTrigger>
-        <TooltipContent side="top">{tooltip}</TooltipContent>
-      </Tooltip>
-    );
-  }
 
   if (state.kind === 'pushed') {
     if (state.taskUrl) {
