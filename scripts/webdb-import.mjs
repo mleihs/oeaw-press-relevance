@@ -303,7 +303,7 @@ async function importLectures() {
 }
 
 // ============================================================
-// 3. Publications. Match by DOI when possible (preserves analysis).
+// 3. Publications. Idempotent upsert by webdb_uid; analysis preserved.
 // ============================================================
 
 async function importPublications() {
@@ -320,12 +320,15 @@ async function importPublications() {
     WHERE deleted=0`);
   log(`Importing publications (${rows.length} rows)`);
 
-  // Source-of-truth model: the WebDB dump is canonical. We upsert by webdb_uid.
-  // Analysis history that lived on prior CSV-imported rows is intentionally
-  // not preserved here; if the user wants it, they re-run analysis after the
-  // import (or merge from prod via a separate pgcopy).
+  // Source-of-truth model: the WebDB dump is canonical for the columns it
+  // owns. Upsert by webdb_uid; analysis fields (analysis_status, reasoning,
+  // pitch_suggestion, suggested_angle, press_score, llm_model, haiku,
+  // target_audience, score components) are NOT in the insertable object,
+  // so ON CONFLICT DO UPDATE leaves them untouched. Pubs missing from the
+  // new dump get archived=true, not deleted, so FKs and analysis history
+  // remain intact.
   const transformed = rows.map((r) => {
-    const doiClean = extractDoi(r.doi_link);
+    const doiClean = extractDoiWithFallback(r);
     return {
       webdb_uid: r.uid,
       title: r.original_title || '(untitled)',
@@ -374,9 +377,26 @@ async function importPublications() {
     }
   }
 
-  // Wipe and reload. CASCADE clears junction tables that FK into publications.
-  await pgClient.query('TRUNCATE publications RESTART IDENTITY CASCADE');
-  log(`  truncated publications; loading ${transformed.length} rows`);
+  // Pre-clean: TYPO3 sometimes recreates a publication with a fresh webdb_uid
+  // but the same DOI (e.g. data cleanup, duplicate merge). When that happens,
+  // the old local row would block the new INSERT via the DOI unique constraint.
+  // Archive the orphaned local rows and null their DOI before the upsert so
+  // the dump's authoritative row can take over the DOI.
+  const dumpUids = transformed.map((r) => r.webdb_uid);
+  const dumpDois = transformed.map((r) => r.doi).filter(Boolean);
+  if (dumpDois.length > 0) {
+    const preCleanResult = await pgClient.query(
+      `UPDATE publications
+          SET archived = true, doi = NULL, synced_at = NOW()
+        WHERE archived = false
+          AND webdb_uid <> ALL($1::int[])
+          AND doi = ANY($2::text[])`,
+      [dumpUids, dumpDois],
+    );
+    log(`  pre-cleaned ${preCleanResult.rowCount} stale rows whose DOIs collide with the dump`);
+  }
+
+  log(`  upserting ${transformed.length} rows (analysis fields preserved)`);
   const insertable = transformed.map((r) => ({ ...r, synced_at: new Date().toISOString() }));
   await upsert(
     'publications',
@@ -384,6 +404,17 @@ async function importPublications() {
     'webdb_uid',
     Object.keys(insertable[0]).filter((k) => k !== 'webdb_uid'),
   );
+
+  // Archive remaining publications absent from the new dump (TYPO3 soft-delete
+  // or visibility change). archived=true preserves analysis + downstream FKs.
+  const archResult = await pgClient.query(
+    `UPDATE publications
+        SET archived = true, synced_at = NOW()
+      WHERE archived = false
+        AND webdb_uid <> ALL($1::int[])`,
+    [dumpUids],
+  );
+  log(`  archived ${archResult.rowCount} publications absent from dump`);
 }
 
 // ============================================================
@@ -438,6 +469,22 @@ async function importJunctions() {
     await pgClient.query('TRUNCATE orgunit_publications');
     await upsert('orgunit_publications', filtered, 'orgunit_id, publication_id',
       ['highlight', 'sorting']);
+
+    // Refresh the cached publications.is_ita_subtree boolean. Same predicate
+    // as the migration's initial backfill — flips the column for any pub
+    // whose ITA-membership changed since the previous import.
+    const itaRefresh = await pgClient.query(`
+      WITH ita_pubs AS (
+        SELECT DISTINCT op.publication_id AS pid
+        FROM orgunit_publications op
+        JOIN orgunits o ON o.id = op.orgunit_id
+        WHERE o.akronym_de ILIKE 'ITA%'
+      )
+      UPDATE publications p
+      SET is_ita_subtree = (p.id IN (SELECT pid FROM ita_pubs))
+      WHERE p.is_ita_subtree IS DISTINCT FROM (p.id IN (SELECT pid FROM ita_pubs))
+    `);
+    log(`  refreshed is_ita_subtree on ${itaRefresh.rowCount} publications`);
   }
 
   // publication_projects
@@ -578,7 +625,36 @@ async function fkMap(table) {
 function extractDoi(doiLink) {
   if (!doiLink) return null;
   const m = doiLink.match(/10\.\d{4,9}\/[^\s]+/);
-  return m ? m[0].toLowerCase() : null;
+  return m ? cleanDoi(m[0]) : null;
+}
+
+// Pubs ohne `doi_link` (z.B. Bücher/Buchkapitel/Preprints) tragen den DOI oft
+// trotzdem in bibtex (`doi = {...}`) oder im citation_apa-Rendering.
+// Reihenfolge: doi_link → bibtex → citation_apa → citation_de/en. Erst-Treffer gewinnt.
+function extractDoiWithFallback(row) {
+  const direct = extractDoi(row.doi_link);
+  if (direct) return direct;
+  // bibtex: doi = {10.xxx/yyy} oder doi = "10.xxx/yyy"
+  if (row.bibtex) {
+    const m = row.bibtex.match(/doi\s*=\s*[{"]([^}"]+)[}"]/i);
+    if (m && /^10\.\d{4,9}\//.test(m[1])) return cleanDoi(m[1]);
+  }
+  // citation_apa/_de/_en: meist HTML, freier DOI-Match. ?ct=…/v\d+-Suffixe abschneiden.
+  for (const field of ['citation_apa', 'citation_de', 'citation_en']) {
+    const v = row[field];
+    if (!v) continue;
+    const m = v.match(/10\.\d{4,9}\/[^\s<>"',\\]+/);
+    if (m) return cleanDoi(m[0]);
+  }
+  return null;
+}
+
+function cleanDoi(s) {
+  // Trailing-Punkte, Query-Strings, Versions-Suffixe (v1, v2) konservativ entfernen.
+  return s
+    .replace(/[.,;:]+$/, '')
+    .replace(/\?.*$/, '')
+    .toLowerCase();
 }
 
 function normalizeDoi(s) {

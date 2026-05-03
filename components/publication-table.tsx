@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Publication } from '@/lib/types';
 import { doiToUrl } from '@/lib/enrichment/doi-utils';
 import { displayTitle } from '@/lib/html-utils';
+import { displayAuthor } from '@/lib/publication-display';
 import { buildTaskUrl } from '@/lib/meistertask/urls';
 import { PressScoreBadge, ScoreBar } from './score-bar';
 import { InfoBubble } from './info-bubble';
@@ -172,7 +173,7 @@ function MobilePublicationCard({
             )}
           </p>
           <p className="text-xs text-neutral-500 mt-1 truncate">
-            {pub.lead_author || pub.authors || 'Unbekannt'}
+            {displayAuthor(pub)}
           </p>
         </div>
         {showScores && (
@@ -285,17 +286,13 @@ function PublicationRow({
               </TooltipTrigger><TooltipContent>In MeisterTask geöffnet</TooltipContent></Tooltip>
             )}
           </div>
-          {pub.orgunits && pub.orgunits.length > 0 ? (
+          {pub.orgunits && pub.orgunits.length > 0 && (
             <div className="mt-0.5">
               <OrgunitChips orgunits={pub.orgunits} max={3} />
             </div>
-          ) : (
-            pub.institute && pub.institute !== '0' && (
-              <div className="text-xs text-neutral-500 truncate">{pub.institute}</div>
-            )
           )}
         </td>
-        <td className="p-3 max-w-[140px] truncate">{pub.lead_author || pub.authors || '-'}</td>
+        <td className="p-3 max-w-[140px] truncate">{pub.lead_author?.trim() || '-'}</td>
         <td className="p-3 whitespace-nowrap">
           <Badge variant="outline" className="text-xs">
             {pub.publication_type || 'Unbekannt'}

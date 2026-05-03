@@ -1,6 +1,6 @@
-import { Publication, AnalysisResult, LLMResponse } from '../types';
+import { AnalysisResult, LLMResponse } from '../types';
 import { COST_PER_MILLION_TOKENS } from '../constants';
-import { SYSTEM_PROMPT, buildEvaluationPrompt } from './prompts';
+import { SYSTEM_PROMPT, buildEvaluationPrompt, PublicationForPrompt } from './prompts';
 import { calculatePressScore } from './score';
 
 // Re-export so existing imports from this module keep working.
@@ -63,7 +63,7 @@ export function estimateCost(tokenCount: number, model: string): number {
 }
 
 export async function analyzePublications(
-  publications: Publication[],
+  publications: PublicationForPrompt[],
   apiKey: string,
   model: string
 ): Promise<{ results: AnalysisResult[]; tokensUsed: number; cost: number }> {

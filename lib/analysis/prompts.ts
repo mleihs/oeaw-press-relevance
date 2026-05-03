@@ -1,5 +1,10 @@
 import { Publication } from '../types';
 
+/** A publication enriched with the orgunits join, for use in the LLM prompt. */
+export type PublicationForPrompt = Publication & {
+  orgunits?: Array<{ akronym_de: string | null; name_de: string }>;
+};
+
 export const SYSTEM_PROMPT = `You are a senior science communication expert at the Austrian Academy of Sciences (OeAW). Your expertise is identifying which research publications would interest journalists and the general public. You work in the communications department and regularly pitch stories to Austrian media outlets (ORF, Der Standard, Die Presse, APA, Wiener Zeitung, etc.). You evaluate research for its press-worthiness based on accessibility, societal relevance, novelty, storytelling potential, and media timeliness. Form your judgment primarily from the content itself. Structured source signals (peer_reviewed, popular_science) are weak context, not endorsements — popular_science=true means the originating institute marked the publication as potentially press-relevant, but institutes apply this flag inconsistently and self-promotionally, so do not let it drive the scoring. Always respond with valid JSON only.`;
 
 function wordTruncate(text: string, maxWords: number): string {
@@ -33,22 +38,17 @@ function pickContent(pub: Publication): { text: string; kind: string } | null {
 }
 
 function authorsLine(pub: Publication): string {
-  if (pub.lead_author?.trim()) {
-    const lead = pub.lead_author.trim();
-    if (pub.authors?.trim()) {
-      const all = pub.authors.split(/[;,]/).map((s) => s.trim()).filter(Boolean);
-      const others = all.filter((a) => !a.includes(lead.split(',')[0])).slice(0, 2);
-      return others.length > 0 ? `${lead}; co-authors: ${others.join(', ')}` : lead;
-    }
-    return lead;
-  }
-  if (pub.authors?.trim()) {
-    return pub.authors.split(/[;,]/).slice(0, 3).map((s) => s.trim()).join(', ');
-  }
-  return 'Unbekannt';
+  return pub.lead_author?.trim() || 'Unbekannt';
 }
 
-export function buildEvaluationPrompt(publications: Publication[]): string {
+function instituteLine(pub: PublicationForPrompt): string {
+  const list = (pub.orgunits || [])
+    .map((o) => o.akronym_de?.trim() || o.name_de?.trim())
+    .filter((s): s is string => Boolean(s));
+  return list.length > 0 ? list.join('; ') : 'N/A';
+}
+
+export function buildEvaluationPrompt(publications: PublicationForPrompt[]): string {
   const pubDescriptions = publications.map((pub, idx) => {
     const content = pickContent(pub);
     const keywords = pub.enriched_keywords?.slice(0, 8).join(', ') || 'N/A';
@@ -64,7 +64,7 @@ export function buildEvaluationPrompt(publications: Publication[]): string {
     return `--- Publication ${idx + 1} ---
 ${titleLine}
 Autor:innen: ${authorsLine(pub)}
-Institut: ${pub.institute || 'N/A'}
+Institut: ${instituteLine(pub)}
 Erschienen: ${pub.published_at || 'N/A'}
 Source-Signals (WebDB): ${sourceSignals}
 Keywords: ${keywords}

@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { getSupabaseAdmin, getOpenRouterKey, getLLMModel, createSSEStream, apiError } from '@/lib/api-helpers';
 import { NextResponse } from 'next/server';
 import { analyzePublications, calculatePressScore, checkKeyBalance } from '@/lib/analysis/openrouter';
-import { Publication } from '@/lib/types';
+import type { PublicationForPrompt } from '@/lib/analysis/prompts';
 
 export const maxDuration = 300;
 
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
   // Fetch publications for analysis
   let query = supabase
     .from('publications')
-    .select('*')
+    .select('*, orgunit_publications(orgunit:orgunits(akronym_de, name_de))')
     .order('published_at', { ascending: false, nullsFirst: false })
     .limit(limit);
 
@@ -56,7 +56,17 @@ export async function POST(req: NextRequest) {
 
   if (error) return apiError(error.message, 500);
 
-  const pubs = (publications || []) as Publication[];
+  type Row = Record<string, unknown> & {
+    orgunit_publications?: Array<{ orgunit?: { akronym_de: string | null; name_de: string } }>;
+  };
+  const pubs: PublicationForPrompt[] = ((publications || []) as Row[]).map((r) => {
+    const orgunits = (r.orgunit_publications || [])
+      .map((op) => op.orgunit)
+      .filter((o): o is { akronym_de: string | null; name_de: string } => Boolean(o));
+    const out = { ...r, orgunits };
+    delete out.orgunit_publications;
+    return out as unknown as PublicationForPrompt;
+  });
   if (pubs.length === 0) {
     return NextResponse.json({ message: 'No publications to analyze' });
   }

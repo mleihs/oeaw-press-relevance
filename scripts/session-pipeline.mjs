@@ -225,8 +225,10 @@ async function cmdCandidates(opts, positional) {
   const requireMahighlight = opts['mahighlight'] === true || opts['mahighlight'] === 'true';
   const requirePopSci = opts['popular-science'] === true || opts['popular-science'] === 'true';
   const includeIta = opts['include-ita'] === true || opts['include-ita'] === 'true';
+  const apiEnriched = opts['api-enriched'] === true || opts['api-enriched'] === 'true';
   const fromDate = opts['from'] || null;
   const toDate = opts['to'] || null;
+  const importedAfter = opts['imported-after'] || null;
 
   // Default: nur Pubs mit tatsächlich vorhandener Inhalts-Substanz.
   // Ein Status 'enriched' allein reicht nicht — manche Pubs haben den Loop ohne
@@ -262,6 +264,16 @@ async function cmdCandidates(opts, positional) {
     params.push(toDate);
     conditions.push(`p.published_at <= $${params.length}`);
   }
+  if (importedAfter) {
+    params.push(importedAfter);
+    conditions.push(`p.created_at >= $${params.length}`);
+  }
+  if (apiEnriched) {
+    // Pubs mit enriched_keywords IS NOT NULL haben den API-Cascade-Loop hinter sich
+    // (CrossRef/OpenAlex haben Keywords gesetzt). Schließt enrich-free-only Pubs aus,
+    // die nur summary_de in enriched_abstract gespiegelt haben.
+    conditions.push('p.enriched_keywords IS NOT NULL');
+  }
   if (requireMahighlight) {
     conditions.push(`EXISTS (
       SELECT 1 FROM person_publications pp
@@ -277,8 +289,6 @@ async function cmdCandidates(opts, positional) {
         p.title,
         p.original_title,
         p.lead_author,
-        p.authors,
-        p.institute,
         p.published_at::text AS published_at,
         p.peer_reviewed,
         p.popular_science,
@@ -320,23 +330,12 @@ async function cmdCandidates(opts, positional) {
         if (words.length > 500) content = words.slice(0, 500).join(' ') + '…';
       }
 
-      let coAuthors = [];
-      if (row.authors && row.lead_author) {
-        const all = row.authors.split(/[;,]/).map((s) => s.trim()).filter(Boolean);
-        const leadFirst = row.lead_author.split(',')[0].trim();
-        coAuthors = all.filter((a) => !a.includes(leadFirst)).slice(0, 2);
-      } else if (row.authors) {
-        coAuthors = row.authors.split(/[;,]/).slice(0, 3).map((s) => s.trim()).filter(Boolean);
-      }
-
       return {
         id: row.id,
         webdb_uid: row.webdb_uid,
         title: row.title,
         original_title: row.original_title && row.original_title !== row.title ? row.original_title : null,
         lead_author: row.lead_author,
-        co_authors: coAuthors,
-        institute: row.institute,
         institute_akronyms: row.institute_akronyms || [],
         published_at: row.published_at,
         peer_reviewed: row.peer_reviewed,
@@ -357,8 +356,10 @@ async function cmdCandidates(opts, positional) {
         require_mahighlight: requireMahighlight,
         require_popular_science: requirePopSci,
         include_ita: includeIta,
+        api_enriched: apiEnriched,
         from: fromDate,
         to: toDate,
+        imported_after: importedAfter,
       },
       publications: pubs,
     }, null, 2));
@@ -371,19 +372,46 @@ async function cmdEnrichApi(opts) {
   const maxBatches = opts['max-batches'] ? parseInt(opts['max-batches'], 10) : Infinity;
   const includeNoDoi = opts['include-no-doi'] === true || opts['include-no-doi'] === 'true';
   const includePartial = opts['include-partial'] === true || opts['include-partial'] === 'true';
+  const importedAfter = opts['imported-after'] || null;
   const apiUrl = opts['api-url'] || 'http://localhost:3000/api/enrichment/batch';
+
+  // imported-after: nur Pubs, die seit DATE neu in die DB kamen, anreichern.
+  // Geht NICHT über die Standard-Pool-Abfrage der API (die filtert nicht nach
+  // created_at), sondern wir holen IDs vorab und schicken sie via {ids:[...]}.
+  let scopedIds = null;
+  if (importedAfter) {
+    scopedIds = await withClient(async (c) => {
+      const statusList = includePartial ? ['pending', 'partial'] : ['pending'];
+      const r = await c.query(
+        `SELECT id::text FROM publications
+         WHERE archived = false
+           AND created_at >= $1
+           AND enrichment_status = ANY($2)
+           ${includeNoDoi ? '' : "AND doi IS NOT NULL AND doi != ''"}
+         ORDER BY published_at DESC NULLS LAST`,
+        [importedAfter, statusList],
+      );
+      return r.rows.map((row) => row.id);
+    });
+    log(`imported-after=${importedAfter}: ${scopedIds.length} Pubs zu anreichern.`);
+  }
 
   if (!apply) {
     log(`[DRY-RUN] enrich-api würde gegen ${apiUrl} loopen:`);
     log(`  per-batch=${perBatch}, max-batches=${maxBatches === Infinity ? '∞ (bis Pool leer)' : maxBatches}`);
     log(`  include-no-doi=${includeNoDoi}`);
     log(`  include-partial=${includePartial}`);
+    if (importedAfter) log(`  scope: ${scopedIds.length} IDs (imported_after=${importedAfter})`);
     log('Mit --apply den tatsächlichen Loop starten.');
     return;
   }
 
   try {
-    const ping = await fetch('http://localhost:3000/', { signal: AbortSignal.timeout(5000) });
+    const ping = await fetch('http://localhost:3000/', {
+      signal: AbortSignal.timeout(5000),
+      headers: process.env.GATE_COOKIE ? { Cookie: `gate=${process.env.GATE_COOKIE}` } : {},
+      redirect: 'manual',
+    });
     if (!ping.ok) throw new Error(`Status ${ping.status}`);
   } catch (e) {
     log(`Server nicht erreichbar (${e.message}). Bitte 'npm run dev' starten.`);
@@ -402,34 +430,50 @@ async function cmdEnrichApi(opts) {
   let batchN = 0;
   let totalProcessed = 0;
   let totalSuccessful = 0;
+  // Bei imported-after iterieren wir über die vorab geholte ID-Liste in Slices
+  // — das ist sauberer als die Pool-Abfrage, die created_at nicht filtert.
+  let scopedCursor = 0;
   while (batchN < maxBatches) {
-    const pendingCnt = await withClient(async (c) => {
-      const r = await c.query(
-        `SELECT count(*)::int AS n FROM publications p
-         WHERE p.archived = false AND p.enrichment_status IN ${statusInList}
-         ${includeNoDoi ? '' : 'AND p.doi IS NOT NULL'}
-         AND ${itaCondition(includeIta)}`,
-      );
-      return r.rows[0].n;
-    });
-    if (pendingCnt === 0) {
-      log(`Queue leer (${includeNoDoi ? 'inkl. ohne DOI' : 'nur DOI-Pubs'}, status=${statusInList}) — fertig nach ${batchN} Batches. Total: ${totalProcessed} processed, ${totalSuccessful} successful.`);
-      break;
+    let postBody;
+    let pendingCnt;
+    if (scopedIds) {
+      const slice = scopedIds.slice(scopedCursor, scopedCursor + perBatch);
+      if (slice.length === 0) {
+        log(`Scoped queue leer (imported-after=${importedAfter}) — fertig nach ${batchN} Batches. Total: ${totalProcessed} processed, ${totalSuccessful} successful.`);
+        break;
+      }
+      pendingCnt = scopedIds.length - scopedCursor;
+      postBody = { ids: slice, limit: slice.length, include_partial: includePartial };
+      scopedCursor += slice.length;
+    } else {
+      pendingCnt = await withClient(async (c) => {
+        const r = await c.query(
+          `SELECT count(*)::int AS n FROM publications p
+           WHERE p.archived = false AND p.enrichment_status IN ${statusInList}
+           ${includeNoDoi ? '' : 'AND p.doi IS NOT NULL'}
+           AND ${itaCondition(includeIta)}`,
+        );
+        return r.rows[0].n;
+      });
+      if (pendingCnt === 0) {
+        log(`Queue leer (${includeNoDoi ? 'inkl. ohne DOI' : 'nur DOI-Pubs'}, status=${statusInList}) — fertig nach ${batchN} Batches. Total: ${totalProcessed} processed, ${totalSuccessful} successful.`);
+        break;
+      }
+      postBody = { limit: perBatch, include_no_doi: includeNoDoi, include_partial: includePartial };
     }
     batchN++;
-    log(`[Batch ${batchN}] ${pendingCnt} pending; POST limit=${perBatch}…`);
+    log(`[Batch ${batchN}] ${pendingCnt} pending; POST limit=${postBody.limit}…`);
 
     const t0 = Date.now();
     let resp;
     try {
       resp = await fetch(apiUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          limit: perBatch,
-          include_no_doi: includeNoDoi,
-          include_partial: includePartial,
-        }),
+        headers: {
+          'Content-Type': 'application/json',
+          ...(process.env.GATE_COOKIE ? { Cookie: `gate=${process.env.GATE_COOKIE}` } : {}),
+        },
+        body: JSON.stringify(postBody),
         signal: AbortSignal.timeout(360_000),
       });
     } catch (e) {
@@ -519,7 +563,11 @@ async function cmdEnrichAugment(opts) {
   }
 
   try {
-    const ping = await fetch('http://localhost:3000/', { signal: AbortSignal.timeout(5000) });
+    const ping = await fetch('http://localhost:3000/', {
+      signal: AbortSignal.timeout(5000),
+      headers: process.env.GATE_COOKIE ? { Cookie: `gate=${process.env.GATE_COOKIE}` } : {},
+      redirect: 'manual',
+    });
     if (!ping.ok) throw new Error(`Status ${ping.status}`);
   } catch (e) {
     log(`Server nicht erreichbar (${e.message}). Bitte 'npm run dev' starten.`);
@@ -778,6 +826,103 @@ async function cmdApply(opts, positional) {
   });
 }
 
+// DOI-Helfer (gespiegelt aus webdb-import.mjs, damit der Backfill nicht den ETL-Modul
+// importieren muss — webdb-import.mjs ist ein Skript mit top-level await, das beim
+// Import sofort die ETL-Pipeline anstoßen würde).
+function _cleanDoi(s) {
+  return s.replace(/[.,;:]+$/, '').replace(/\?.*$/, '').toLowerCase();
+}
+function _extractDoiFromRow(row) {
+  if (row.doi_link) {
+    const m = row.doi_link.match(/10\.\d{4,9}\/[^\s]+/);
+    if (m) return _cleanDoi(m[0]);
+  }
+  if (row.bibtex) {
+    const m = row.bibtex.match(/doi\s*=\s*[{"]([^}"]+)[}"]/i);
+    if (m && /^10\.\d{4,9}\//.test(m[1])) return _cleanDoi(m[1]);
+  }
+  for (const f of ['citation_apa', 'citation_de', 'citation_en']) {
+    const v = row[f];
+    if (!v) continue;
+    const m = v.match(/10\.\d{4,9}\/[^\s<>"',\\]+/);
+    if (m) return _cleanDoi(m[0]);
+  }
+  return null;
+}
+
+async function cmdDoiBackfill(opts) {
+  const apply = opts.apply === true || opts.apply === 'true';
+
+  await withClient(async (c) => {
+    // Pool: Pubs ohne DOI, aber mit bibtex/citation-Felder, die einen DOI enthalten
+    // könnten. Filter im SQL spart das Durchsehen aller 38k Pubs.
+    const r = await c.query(`
+      SELECT id, doi_link, bibtex, citation_apa, citation_de, citation_en
+      FROM publications
+      WHERE archived = false
+        AND (doi IS NULL OR doi = '')
+        AND (
+          bibtex ~* 'doi\\s*=' OR
+          citation_apa ~* '10\\.[0-9]{4,9}/' OR
+          citation_de ~* '10\\.[0-9]{4,9}/' OR
+          citation_en ~* '10\\.[0-9]{4,9}/'
+        )
+    `);
+    log(`Kandidaten ohne DOI mit DOI-Spuren in citation/bibtex: ${r.rows.length}`);
+
+    // Existierende DOIs für Duplikat-Check vorab in einem Set.
+    const existing = await c.query(`SELECT doi FROM publications WHERE doi IS NOT NULL AND doi != ''`);
+    const existingSet = new Set(existing.rows.map((row) => row.doi));
+
+    const updates = [];
+    const dupes = [];
+    const noMatch = [];
+    for (const row of r.rows) {
+      const doi = _extractDoiFromRow(row);
+      if (!doi) { noMatch.push(row.id); continue; }
+      if (existingSet.has(doi)) { dupes.push({ id: row.id, doi }); continue; }
+      existingSet.add(doi); // gegen Doppel-Treffer im selben Lauf
+      updates.push({ id: row.id, doi });
+    }
+
+    log(`  → DOI extrahierbar:    ${updates.length}`);
+    log(`  → DOI-Konflikt (skip): ${dupes.length}`);
+    log(`  → kein Match:          ${noMatch.length}`);
+    if (updates.length > 0) {
+      log(`  Stichprobe:`);
+      for (const u of updates.slice(0, 5)) log(`    ${u.id} -> ${u.doi}`);
+    }
+
+    if (!apply) {
+      log(`[DRY-RUN] Mit --apply die ${updates.length} DOIs setzen.`);
+      return;
+    }
+
+    if (updates.length === 0) {
+      log('Nichts zu tun.');
+      return;
+    }
+
+    let written = 0;
+    await c.query('BEGIN');
+    try {
+      for (const u of updates) {
+        const w = await c.query(
+          `UPDATE publications SET doi = $1, updated_at = NOW()
+           WHERE id = $2 AND (doi IS NULL OR doi = '')`,
+          [u.doi, u.id],
+        );
+        written += w.rowCount;
+      }
+      await c.query('COMMIT');
+    } catch (e) {
+      await c.query('ROLLBACK');
+      throw e;
+    }
+    log(`OK — ${written} DOIs geschrieben.`);
+  });
+}
+
 async function main() {
   const [, , cmd, ...rest] = process.argv;
   if (!cmd || cmd === '--help' || cmd === '-h') {
@@ -791,14 +936,21 @@ Commands:
              [--max-batches N]          via POST gegen laufende /api/enrichment/batch.
              [--include-no-doi]         Default per-batch=15. Server muss laufen.
              [--include-partial]        Auch 'partial' Pubs durchschicken.
+             [--imported-after DATE]    Nur Pubs mit created_at >= DATE; IDs vorab
+                                        gezogen, ID-basiert per {ids:[]} dispatched.
   enrich-augment [--apply]              Pool-A-mit-DOI durch API-Cascade (additiv).
                                         enriched_abstract (summary_de) bleibt geschützt.
                                         Setzt temporär auf 'partial', loopt enrich-api.
+  doi-backfill [--apply]                DOIs aus bibtex/citation_apa/_de/_en in die
+                                        doi-Spalte rückführen (Pubs ohne DOI). ETL nimmt
+                                        bislang nur doi_link; ~700-1300 Pubs haben den
+                                        DOI nur in citation/bibtex stehen.
   candidates [N] [filters]              N Kandidaten als JSON auf stdout
                                         Default-Filter: enrichment_status IN (enriched,partial)
                                         Filters: --only-summary-de, --mahighlight,
                                                  --popular-science, --from YYYY-MM-DD,
-                                                 --to YYYY-MM-DD
+                                                 --to YYYY-MM-DD, --imported-after DATE,
+                                                 --api-enriched (nur mit OpenAlex-Keywords)
   apply [<file>|-] [--apply] [--force]  Evaluation-JSON aus Datei/stdin, validieren,
                                         mit --apply schreiben. Default skip wenn
                                         analysis_status='analyzed', --force überschreibt.
@@ -816,6 +968,7 @@ Env: PG_DATABASE_URL (default ${PG_URL})
       case 'enrich-free':    await cmdEnrichFree(args); break;
       case 'enrich-api':     await cmdEnrichApi(args); break;
       case 'enrich-augment': await cmdEnrichAugment(args); break;
+      case 'doi-backfill':   await cmdDoiBackfill(args); break;
       case 'candidates':     await cmdCandidates(args, positional); break;
       case 'apply':          await cmdApply(args, positional); break;
       default:

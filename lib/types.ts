@@ -6,7 +6,6 @@ export interface Publication {
   // Source-of-truth (WebDB)
   title: string;
   original_title: string | null;
-  authors: string | null;
   lead_author: string | null;
   abstract: string | null;
   summary_de: string | null;
@@ -16,7 +15,6 @@ export interface Publication {
   published_at: string | null;
   publication_type: string | null;
   publication_type_id: string | null;
-  institute: string | null;
   open_access: boolean;
   open_access_status: string | null;
   oa_type: string | null;
