@@ -5,9 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { AppSettings, DEFAULT_SETTINGS } from '@/lib/types';
 import { loadSettings, saveSettings } from '@/lib/settings-store';
-import { Save, CheckCircle2, Eye, EyeOff, Loader2, XCircle, ShieldCheck } from 'lucide-react';
+import { useInfoBubblesEnabled } from '@/lib/use-info-bubbles';
+import { Save, CheckCircle2, Eye, EyeOff, Loader2, XCircle, ShieldCheck, Info } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function SettingsPage() {
@@ -16,6 +18,7 @@ export default function SettingsPage() {
   const [showSupabaseKey, setShowSupabaseKey] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [bubblesOn, setBubblesOn] = useInfoBubblesEnabled();
 
   useEffect(() => {
     setSettings(loadSettings());
@@ -59,6 +62,32 @@ export default function SettingsPage() {
           Konfigurieren Sie Ihre API-Schlüssel und Analyse-Parameter. Alle Einstellungen werden im Browser gespeichert.
         </p>
       </div>
+
+      {/* Display preferences */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Darstellung</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1">
+              <Label htmlFor="bubbles-toggle" className="flex items-center gap-2">
+                <Info className="h-4 w-4 text-neutral-400" />
+                Erklärungs-Bubbles
+              </Label>
+              <p className="text-xs text-neutral-500">
+                Kleine Info-Symbole neben Fachbegriffen wie „Press-Score" oder „Eigen-Highlight". Bei AUS verschwinden sie aus der gesamten App.
+              </p>
+            </div>
+            <Switch
+              id="bubbles-toggle"
+              checked={bubblesOn}
+              onCheckedChange={setBubblesOn}
+              aria-label="Erklärungs-Bubbles umschalten"
+            />
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Supabase — server-configured, read-only here */}
       <Card>
