@@ -29,7 +29,7 @@ export const SCORE_BAND_STORY_LABEL: Record<ScoreBand, string> = {
 };
 
 export const BAND_BADGE_CLASSES: Record<ScoreBand, string> = {
-  high: 'bg-[#0047bb] text-white',
+  high: 'bg-brand text-white',
   mid: 'bg-amber-100 text-amber-800',
   low: 'bg-orange-100 text-orange-800',
   very_low: 'bg-neutral-100 text-neutral-600',
@@ -37,7 +37,7 @@ export const BAND_BADGE_CLASSES: Record<ScoreBand, string> = {
 };
 
 export const BAND_HERO_CLASSES: Record<ScoreBand, string> = {
-  high: 'bg-[#0047bb] text-white',
+  high: 'bg-brand text-white',
   mid: 'bg-amber-100 text-amber-800',
   low: 'bg-neutral-100 text-neutral-600',
   very_low: 'bg-neutral-100 text-neutral-600',

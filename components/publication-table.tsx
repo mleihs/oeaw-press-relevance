@@ -151,7 +151,7 @@ function MobilePublicationCard({
   return (
     <Link
       href={`/publications/${pub.id}`}
-      className="block rounded-lg border bg-white p-4 hover:border-[#0047bb]/30 hover:shadow-sm transition-all"
+      className="block rounded-lg border bg-white p-4 hover:border-brand/30 hover:shadow-sm transition-all"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
@@ -166,7 +166,7 @@ function MobilePublicationCard({
                   window.open(buildTaskUrl(pub.meistertask_task_token)!, '_blank', 'noopener');
                 }}
                 aria-label="In MeisterTask geöffnet"
-                className="inline-flex align-text-bottom ml-1 text-neutral-400 hover:text-[#0047bb]"
+                className="inline-flex align-text-bottom ml-1 text-neutral-400 hover:text-brand"
               >
                 <ExternalLink className="h-3 w-3" />
               </button>
@@ -257,7 +257,7 @@ function PublicationRow({
           <div className="font-medium truncate flex items-center gap-1.5">
             <Link
               href={`/publications/${pub.id}`}
-              className="hover:text-[#0047bb] hover:underline truncate"
+              className="hover:text-brand hover:underline truncate"
               onClick={(e) => e.stopPropagation()}
             >
               {displayTitle(pub.original_title || pub.title, pub.citation)}
@@ -279,7 +279,7 @@ function PublicationRow({
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
-                  className="text-neutral-400 hover:text-[#0047bb] shrink-0"
+                  className="text-neutral-400 hover:text-brand shrink-0"
                 >
                   <ExternalLink className="h-3 w-3" />
                 </a>
@@ -437,7 +437,7 @@ function ExpandedDetail({ pub, showScores }: { pub: Publication; showScores?: bo
               href={doiToUrl(pub.doi) || '#'}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sm text-[#0047bb] hover:underline inline-flex items-center gap-1"
+              className="text-sm text-brand hover:underline inline-flex items-center gap-1"
             >
               {pub.doi} <ExternalLink className="h-3 w-3" />
             </a>
@@ -561,7 +561,7 @@ function SnippetDisplay({ text }: { text: string }) {
       {isLong && (
         <button
           onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
-          className="text-xs text-[#0047bb] hover:underline mt-1"
+          className="text-xs text-brand hover:underline mt-1"
         >
           {expanded ? 'Weniger anzeigen' : 'Mehr anzeigen'}
         </button>

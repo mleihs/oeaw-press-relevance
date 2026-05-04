@@ -138,7 +138,7 @@ export function LeaderboardTable({ rows, loading }: LeaderboardTableProps) {
                       </span>
                       {row.member_type_de && (
                         <span
-                          className="inline-flex items-center gap-0.5 rounded-sm bg-[#0047bb]/10 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider text-[#0047bb]"
+                          className="inline-flex items-center gap-0.5 rounded-sm bg-brand/10 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider text-brand"
                           title={row.member_type_de}
                         >
                           ÖAW-Mitglied
@@ -171,7 +171,7 @@ export function LeaderboardTable({ rows, loading }: LeaderboardTableProps) {
                 <div role="cell" className="flex items-center gap-2">
                   <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-neutral-100">
                     <motion.div
-                      className="h-full bg-[#0047bb]"
+                      className="h-full bg-brand"
                       initial={{ width: 0 }}
                       animate={{ width: `${Math.min(100, metricBarValue(row, metric, max) * 100)}%` }}
                       transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
@@ -190,7 +190,7 @@ export function LeaderboardTable({ rows, loading }: LeaderboardTableProps) {
                   {row.pubs_total}
                 </div>
 
-                <div role="cell" className="flex justify-end text-[#0047bb]">
+                <div role="cell" className="flex justify-end text-brand">
                   <Sparkline data={row.sparkline ?? []} width={70} height={20} stroke="currentColor" />
                 </div>
 

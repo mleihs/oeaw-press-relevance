@@ -174,7 +174,7 @@ export default function DashboardPage() {
             <p className="font-medium text-red-800">Verbindungsfehler</p>
             <p className="text-sm text-red-600">{error}</p>
             <p className="text-sm text-neutral-500 mt-1">
-              Prüfen Sie die Supabase-Konfiguration in den <Link href="/settings" className="underline text-[#0047bb]">Einstellungen</Link>.
+              Prüfen Sie die Supabase-Konfiguration in den <Link href="/settings" className="underline text-brand">Einstellungen</Link>.
             </p>
           </div>
         </CardContent>
@@ -281,7 +281,7 @@ export default function DashboardPage() {
                 onClick={() => setTimePeriod(tab.value)}
                 className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
                   timePeriod === tab.value
-                    ? 'bg-[#0047bb] text-white shadow-sm'
+                    ? 'bg-brand text-white shadow-sm'
                     : 'text-neutral-600 hover:text-neutral-900'
                 }`}
               >
@@ -294,7 +294,7 @@ export default function DashboardPage() {
         <CardContent>
           {topLoading ? (
             <div className="flex justify-center py-8">
-              <div className="animate-spin h-6 w-6 border-2 border-neutral-200 border-t-[#0047bb] rounded-full" />
+              <div className="animate-spin h-6 w-6 border-2 border-neutral-200 border-t-brand rounded-full" />
             </div>
           ) : topPubs.length > 0 ? (
             <div className="space-y-2">
@@ -306,11 +306,11 @@ export default function DashboardPage() {
                   href={`/publications/${pub.id}`}
                   className="flex items-start gap-3 rounded-lg p-3 hover:bg-neutral-50 transition-colors group"
                 >
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#0047bb] text-white text-xs font-bold">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand text-white text-xs font-bold">
                     {i + 1}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate group-hover:text-[#0047bb]">
+                    <p className="font-medium text-sm truncate group-hover:text-brand">
                       {displayTitle(pub.title, pub.citation)}
                     </p>
                     <div className="flex items-center gap-2 mt-0.5">
@@ -434,7 +434,7 @@ function StatCard({
             <p className="text-2xl font-bold">{value.toLocaleString()}</p>
             {subtitle && <p className="text-xs text-neutral-400">{subtitle}</p>}
           </div>
-          <Icon className="h-8 w-8 text-[#0047bb]/20" />
+          <Icon className="h-8 w-8 text-brand/20" />
         </div>
       </CardContent>
     </Card>
@@ -466,7 +466,7 @@ function KeywordCloud({ keywords }: { keywords: { word: string; count: number }[
           <span
             key={word}
             className={`inline-block px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-700
-              hover:bg-[#0047bb] hover:text-white cursor-default
+              hover:bg-brand hover:text-white cursor-default
               transition-all duration-500 ease-out
               motion-reduce:transition-none`}
             style={{
@@ -496,7 +496,7 @@ const BUCKET_COLORS = [
   'bg-neutral-300', 'bg-neutral-300', 'bg-neutral-400',
   'bg-orange-300', 'bg-orange-400',
   'bg-amber-400', 'bg-amber-500',
-  'bg-[#0047bb]/60', 'bg-[#0047bb]/80', 'bg-[#0047bb]',
+  'bg-brand/60', 'bg-brand/80', 'bg-brand',
 ];
 
 function ScoreDistributionChart({ buckets }: { buckets: number[] }) {

@@ -124,7 +124,7 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
             leadAuthorPerson ? (
               <Link
                 href={`/persons/${leadAuthorPerson.id}`}
-                className="font-medium text-neutral-700 hover:text-[#0047bb] transition-colors"
+                className="font-medium text-neutral-700 hover:text-brand transition-colors"
               >
                 {pub.lead_author}
               </Link>
@@ -207,19 +207,19 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
         <div className="flex flex-wrap gap-3 text-sm">
           {doiUrl && (
             <a href={doiUrl} target="_blank" rel="noopener noreferrer"
-               className="text-[#0047bb] hover:underline inline-flex items-center gap-1">
+               className="text-brand hover:underline inline-flex items-center gap-1">
               DOI: {pub.doi} <ExternalLink className="h-3 w-3" />
             </a>
           )}
           {pub.website_link && (
             <a href={pub.website_link} target="_blank" rel="noopener noreferrer"
-               className="text-[#0047bb] hover:underline inline-flex items-center gap-1">
+               className="text-brand hover:underline inline-flex items-center gap-1">
               Webseite <ExternalLink className="h-3 w-3" />
             </a>
           )}
           {pub.download_link && (
             <a href={pub.download_link} target="_blank" rel="noopener noreferrer"
-               className="text-[#0047bb] hover:underline inline-flex items-center gap-1">
+               className="text-brand hover:underline inline-flex items-center gap-1">
               PDF <ExternalLink className="h-3 w-3" />
             </a>
           )}
@@ -228,9 +228,9 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
 
       {/* Pitch */}
       {hasAnalysis && pub.pitch_suggestion && (
-        <Card className="border-[#0047bb]/20 bg-[#0047bb]/[0.02]">
+        <Card className="border-brand/20 bg-brand/[0.02]">
           <CardContent className="p-5">
-            <h3 className="text-xs font-medium text-[#0047bb] uppercase mb-2">Pitch-Vorschlag</h3>
+            <h3 className="text-xs font-medium text-brand uppercase mb-2">Pitch-Vorschlag</h3>
             <p className="text-sm leading-relaxed">{pub.pitch_suggestion}</p>
             {pub.suggested_angle && (
               <p className="text-sm text-neutral-600 mt-3">
@@ -242,7 +242,7 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
                 <span className="font-medium text-neutral-500">Zielgruppe:</span> {pub.target_audience}
               </p>
             )}
-            <div className="mt-4 pt-4 border-t border-[#0047bb]/10 flex justify-end">
+            <div className="mt-4 pt-4 border-t border-brand/10 flex justify-end">
               <MeistertaskButton pub={pub} />
             </div>
           </CardContent>
@@ -254,7 +254,7 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
-              <BookText className="h-4 w-4 text-[#0047bb]" />
+              <BookText className="h-4 w-4 text-brand" />
               Zusammenfassung (WebDB)
             </CardTitle>
           </CardHeader>
@@ -289,7 +289,7 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
-              <Users className="h-4 w-4 text-[#0047bb]" />
+              <Users className="h-4 w-4 text-brand" />
               Autor:innen ({pub.authors_resolved.length})
             </CardTitle>
           </CardHeader>
@@ -317,7 +317,7 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
                     <div className="min-w-0">
                       <Link
                         href={`/persons/${a.id}`}
-                        className="text-sm font-medium truncate hover:text-[#0047bb] block"
+                        className="text-sm font-medium truncate hover:text-brand block"
                       >
                         {a.degree_before && <span className="text-neutral-500 font-normal mr-1">{a.degree_before}</span>}
                         {a.firstname} {a.lastname}
@@ -333,7 +333,7 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
                     {a.email && (
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <a href={`mailto:${a.email}`} className="text-neutral-400 hover:text-[#0047bb]">
+                          <a href={`mailto:${a.email}`} className="text-neutral-400 hover:text-brand">
                             <Mail className="h-3.5 w-3.5" />
                           </a>
                         </TooltipTrigger>
@@ -366,7 +366,7 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
-              <FolderOpen className="h-4 w-4 text-[#0047bb]" />
+              <FolderOpen className="h-4 w-4 text-brand" />
               Projekte ({pub.projects.length})
             </CardTitle>
           </CardHeader>
@@ -403,10 +403,10 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
 
       {/* Analysis card */}
       {hasAnalysis && (
-        <Card className="border-[#0047bb]/20">
+        <Card className="border-brand/20">
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
-              <Brain className="h-4 w-4 text-[#0047bb]" />
+              <Brain className="h-4 w-4 text-brand" />
               StoryScout Analyse
             </CardTitle>
           </CardHeader>
@@ -455,7 +455,7 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <FileText className="h-4 w-4 text-[#0047bb]" />
+            <FileText className="h-4 w-4 text-brand" />
             Externe Anreicherung
           </CardTitle>
         </CardHeader>
@@ -515,7 +515,7 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
 function Breadcrumb({ title }: { title?: string }) {
   return (
     <nav className="flex items-center gap-1.5 text-sm text-neutral-500">
-      <Link href="/publications" className="hover:text-[#0047bb] transition-colors">
+      <Link href="/publications" className="hover:text-brand transition-colors">
         Publikationen
       </Link>
       {title && (
@@ -553,7 +553,7 @@ function CollapsibleSnippet({ text }: { text: string }) {
       <p className="text-sm text-neutral-600 whitespace-pre-wrap leading-relaxed">{display}</p>
       {isLong && (
         <button onClick={() => setExpanded(!expanded)}
-          className="text-xs text-[#0047bb] hover:underline mt-1">
+          className="text-xs text-brand hover:underline mt-1">
           {expanded ? 'Weniger anzeigen' : 'Mehr anzeigen'}
         </button>
       )}

@@ -12,7 +12,7 @@ interface PubListProps {
 }
 
 const BAND_BG = {
-  high: 'bg-[#0047bb] text-white',
+  high: 'bg-brand text-white',
   mid:  'bg-amber-100 text-amber-800',
   low:  'bg-neutral-100 text-neutral-500',
 };
@@ -58,7 +58,7 @@ export function PubList({ publications }: PubListProps) {
                     <span className="text-neutral-400">{p.authorship}</span>
                   )}
                   {p.mahighlight && (
-                    <span className="inline-flex items-center gap-0.5 text-[#0047bb]">
+                    <span className="inline-flex items-center gap-0.5 text-brand">
                       <Star className="h-2.5 w-2.5 fill-current" />
                       Eigen-Highlight
                       <InfoBubble id="mahighlight_self" />

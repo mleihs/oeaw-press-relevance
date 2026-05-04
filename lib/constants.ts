@@ -1,3 +1,14 @@
+/**
+ * OeAW brand colour. Mirrors `--color-brand` in `app/globals.css` (Tailwind v4
+ * `@theme`) — Tailwind utility classes (`bg-brand`, `text-brand`, `border-brand`,
+ * including opacity modifiers like `bg-brand/10`) read from the CSS variable.
+ *
+ * This JS constant exists for the small set of places that pass colour as a
+ * string (SVG fill/stroke attributes, recharts colour props) where Tailwind
+ * utilities don't apply.
+ */
+export const BRAND_HEX = '#0047bb';
+
 export const PUBLICATION_TYPE_MAP: Record<string, string> = {
   '0': 'Other',
   '1': 'Journal Article',
@@ -190,7 +201,7 @@ export const STATUS_LABELS: Record<string, string> = {
 
 export const STATUS_COLORS: Record<string, string> = {
   pending: 'bg-neutral-100 text-neutral-600',
-  enriched: 'bg-[#0047bb]/10 text-[#0047bb]',
+  enriched: 'bg-brand/10 text-brand',
   partial: 'bg-amber-100 text-amber-900',
   analyzed: 'bg-green-100 text-green-700',
   failed: 'bg-red-100 text-red-700',

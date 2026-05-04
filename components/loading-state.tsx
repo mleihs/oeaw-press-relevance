@@ -11,7 +11,7 @@
  */
 type Variant = 'spinner' | 'text' | 'panel';
 
-const SPINNER = 'animate-spin motion-reduce:animate-none rounded-full border-neutral-200 border-t-[#0047bb]';
+const SPINNER = 'animate-spin motion-reduce:animate-none rounded-full border-neutral-200 border-t-brand';
 
 export function LoadingState({
   variant = 'panel',

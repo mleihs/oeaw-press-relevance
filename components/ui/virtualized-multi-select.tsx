@@ -296,7 +296,7 @@ function RowItem({
       <span
         className={cn(
           'flex items-center justify-center h-4 w-4 rounded border shrink-0',
-          checked ? 'bg-[#0047bb] border-[#0047bb] text-white' : 'border-neutral-300 bg-white',
+          checked ? 'bg-brand border-brand text-white' : 'border-neutral-300 bg-white',
         )}
       >
         {checked && <Check className="h-3 w-3" />}

@@ -29,7 +29,7 @@ export function Nav() {
   const [bubblesOn, setBubblesOn] = useInfoBubblesEnabled();
 
   return (
-    <header className="bg-[#0047bb] shadow-md">
+    <header className="bg-brand shadow-md">
       <div className="mx-auto flex h-14 max-w-7xl items-center px-4">
         <Link href="/" className="mr-8 font-semibold text-lg text-white">
           StoryScout
@@ -94,7 +94,7 @@ export function Nav() {
                 <span className="sr-only">Navigation öffnen</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-64 bg-[#0047bb] border-[#0047bb] text-white p-0">
+            <SheetContent side="left" className="w-64 bg-brand border-brand text-white p-0">
               <SheetHeader className="px-4 pt-4 pb-2">
                 <SheetTitle className="text-white text-lg font-semibold">StoryScout</SheetTitle>
               </SheetHeader>

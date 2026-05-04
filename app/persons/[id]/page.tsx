@@ -90,7 +90,7 @@ function BackLink() {
   return (
     <Link
       href="/researchers"
-      className="inline-flex items-center gap-1 text-xs text-neutral-500 hover:text-[#0047bb]"
+      className="inline-flex items-center gap-1 text-xs text-neutral-500 hover:text-brand"
     >
       <ChevronLeft className="h-3 w-3" />
       Zurück zur Forscher:innen-Übersicht

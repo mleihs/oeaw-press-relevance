@@ -1,7 +1,7 @@
 'use client';
 
 import { RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer, Tooltip } from 'recharts';
-import { SCORE_LABELS } from '@/lib/constants';
+import { SCORE_LABELS, BRAND_HEX } from '@/lib/constants';
 
 // Extracted from app/page.tsx so the heavy recharts bundle (~100kB gz) loads
 // only when the dashboard's averages section is actually present.
@@ -22,11 +22,11 @@ export default function DimensionsRadar({ averages }: { averages: Record<string,
         <PolarAngleAxis dataKey="dimension" tick={{ fontSize: 11, fill: '#737373' }} />
         <Radar
           dataKey="value"
-          stroke="#0047bb"
-          fill="#0047bb"
+          stroke={BRAND_HEX}
+          fill={BRAND_HEX}
           fillOpacity={0.15}
           strokeWidth={2}
-          dot={{ r: 4, fill: '#0047bb' }}
+          dot={{ r: 4, fill: BRAND_HEX }}
           animationDuration={800}
         />
         <Tooltip

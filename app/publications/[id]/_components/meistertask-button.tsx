@@ -46,7 +46,7 @@ export function MeistertaskButton({ pub }: Props) {
           asChild
           variant="outline"
           size="sm"
-          className="gap-1.5 text-[#0047bb] border-[#0047bb]/30 hover:bg-[#0047bb]/[0.04]"
+          className="gap-1.5 text-brand border-brand/30 hover:bg-brand/[0.04]"
         >
           <a href={state.taskUrl} target="_blank" rel="noopener noreferrer">
             <ExternalLink className="h-3.5 w-3.5" />

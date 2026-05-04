@@ -96,9 +96,9 @@ export function CapybaraLogo({ size = 'md', className }: CapybaraLogoProps) {
       <ellipse cx="42" cy="103" rx="8" ry="3" fill="#6B4E0A" />
       <ellipse cx="78" cy="103" rx="8" ry="3" fill="#6B4E0A" />
       {/* Magnifying glass held by right paw */}
-      <circle cx="95" cy="82" r="12" stroke="#0047bb" strokeWidth="3" fill="white" fillOpacity="0.3" />
-      <circle cx="95" cy="82" r="9" stroke="#0047bb" strokeWidth="1.5" fill="white" fillOpacity="0.15" />
-      <line x1="104" y1="91" x2="112" y2="102" stroke="#0047bb" strokeWidth="4" strokeLinecap="round" />
+      <circle cx="95" cy="82" r="12" stroke="var(--color-brand)" strokeWidth="3" fill="white" fillOpacity="0.3" />
+      <circle cx="95" cy="82" r="9" stroke="var(--color-brand)" strokeWidth="1.5" fill="white" fillOpacity="0.15" />
+      <line x1="104" y1="91" x2="112" y2="102" stroke="var(--color-brand)" strokeWidth="4" strokeLinecap="round" />
       {/* Glint on magnifying glass */}
       <path d="M89 76 Q91 74 93 76" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round" opacity="0.6" />
     </svg>

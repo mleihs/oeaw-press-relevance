@@ -17,7 +17,7 @@ export function TrendDelta({ delta, isNewcomer, className, size = 'sm' }: TrendD
   if (isNewcomer) {
     return (
       <span
-        className={cn('inline-flex items-center gap-1 font-medium text-[#0047bb]', text, className)}
+        className={cn('inline-flex items-center gap-1 font-medium text-brand', text, className)}
         aria-label="Neu im Ranking"
         title="Neu im Ranking"
       >

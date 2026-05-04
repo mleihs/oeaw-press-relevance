@@ -56,7 +56,7 @@ export default function ImportPage() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <FileArchive className="h-4 w-4 text-[#0047bb]" />
+            <FileArchive className="h-4 w-4 text-brand" />
             Quellformat
           </CardTitle>
         </CardHeader>
@@ -89,7 +89,7 @@ export default function ImportPage() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <Terminal className="h-4 w-4 text-[#0047bb]" />
+            <Terminal className="h-4 w-4 text-brand" />
             Import ausführen
           </CardTitle>
         </CardHeader>
@@ -126,7 +126,7 @@ export default function ImportPage() {
       <Card>
         <CardHeader className="pb-3 flex flex-row items-center justify-between space-y-0">
           <CardTitle className="text-base flex items-center gap-2">
-            <Database className="h-4 w-4 text-[#0047bb]" />
+            <Database className="h-4 w-4 text-brand" />
             Aktueller Datenstand
           </CardTitle>
           <button

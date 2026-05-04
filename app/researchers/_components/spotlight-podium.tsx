@@ -46,11 +46,11 @@ export function SpotlightPodium({ rows, metric }: SpotlightPodiumProps) {
   return (
     <section
       aria-label="Spotlight: Top 3"
-      className="relative overflow-hidden rounded-xl border bg-gradient-to-br from-white via-white to-[#0047bb]/[0.03] p-6"
+      className="relative overflow-hidden rounded-xl border bg-gradient-to-br from-white via-white to-brand/[0.03] p-6"
     >
       <div className="mb-5 flex items-baseline justify-between">
         <div>
-          <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-[#0047bb]">
+          <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-brand">
             <Sparkles className="mr-1 inline h-3 w-3 -translate-y-px" />
             Im Spotlight
           </p>
@@ -87,7 +87,7 @@ export function SpotlightPodium({ rows, metric }: SpotlightPodiumProps) {
                     {meta.label}
                   </span>
                   {row.member_type_de && (
-                    <span className="inline-flex items-center gap-1 rounded-sm bg-[#0047bb]/10 px-1.5 py-0.5 text-[#0047bb]">
+                    <span className="inline-flex items-center gap-1 rounded-sm bg-brand/10 px-1.5 py-0.5 text-brand">
                       ÖAW-Mitglied
                       <InfoBubble id="member_oeaw" />
                     </span>
@@ -124,7 +124,7 @@ export function SpotlightPodium({ rows, metric }: SpotlightPodiumProps) {
                       <span className="text-base text-neutral-400">{metricSuffix(metric)}</span>
                     </div>
                   </div>
-                  <div className="flex flex-col items-end text-[#0047bb] opacity-70">
+                  <div className="flex flex-col items-end text-brand opacity-70">
                     <Sparkline data={row.sparkline ?? []} width={80} height={26} stroke="currentColor" />
                     <span className="mt-0.5 inline-flex items-center gap-0.5 text-[9px] uppercase tracking-wider text-neutral-400 opacity-60">
                       12 M

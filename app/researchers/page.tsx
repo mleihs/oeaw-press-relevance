@@ -20,7 +20,7 @@ export default function ResearchersPage() {
         <header className="flex items-center justify-between">
           <div>
             <h1 className="flex items-center gap-2 text-2xl font-light tracking-tight">
-              <Users className="h-5 w-5 text-[#0047bb]" />
+              <Users className="h-5 w-5 text-brand" />
               Forscher:innen
             </h1>
             <p className="mt-1 text-sm text-neutral-500">

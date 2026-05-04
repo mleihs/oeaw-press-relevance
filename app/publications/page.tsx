@@ -349,7 +349,7 @@ export default function PublicationsPage() {
           <CardContent className="p-4 flex items-center justify-between gap-3">
             <div>
               <div className="flex items-center gap-2 text-base font-medium">
-                <Sparkles className="h-4 w-4 text-[#0047bb]" /> Enrichment
+                <Sparkles className="h-4 w-4 text-brand" /> Enrichment
               </div>
               <p className="text-xs text-neutral-500 mt-0.5">
                 Metadaten aus CrossRef + OpenAlex anreichern.
@@ -364,7 +364,7 @@ export default function PublicationsPage() {
           <CardContent className="p-4 flex items-center justify-between gap-3">
             <div>
               <div className="flex items-center gap-2 text-base font-medium">
-                <Brain className="h-4 w-4 text-[#0047bb]" /> Analyse
+                <Brain className="h-4 w-4 text-brand" /> Analyse
               </div>
               <p className="text-xs text-neutral-500 mt-0.5">
                 LLM-Bewertung über OpenRouter.

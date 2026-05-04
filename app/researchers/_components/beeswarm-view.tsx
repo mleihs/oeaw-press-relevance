@@ -8,6 +8,7 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/h
 import { PersonAvatar } from './person-avatar';
 import { InfoBubble } from '@/components/info-bubble';
 import { LoadingState } from '@/components/loading-state';
+import { BRAND_HEX } from '@/lib/constants';
 import {
   METRIC_SHORT_LABELS,
   type DistributionPoint,
@@ -29,7 +30,7 @@ interface Node extends DistributionPoint {
 
 // Deterministic palette for sektion colors. Up to 12 oestat3 categories cycle through.
 const SECTION_COLORS = [
-  '#0047bb', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4',
+  BRAND_HEX, '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4',
   '#84cc16', '#ec4899', '#f97316', '#14b8a6', '#a855f7', '#64748b',
 ];
 function colorFor(sektion: string | null): string {
@@ -193,7 +194,7 @@ export function BeeswarmView({ points, loading, metric }: BeeswarmViewProps) {
                       window.location.href = `/persons/${n.person_id}`;
                     }
                   }}
-                  className="focus:outline-none focus-visible:[&_circle]:stroke-[#0047bb] focus-visible:[&_circle]:stroke-[2px]"
+                  className="focus:outline-none focus-visible:[&_circle]:stroke-brand focus-visible:[&_circle]:stroke-[2px]"
                   style={{ cursor: 'pointer' }}
                 >
                   <circle
@@ -202,7 +203,7 @@ export function BeeswarmView({ points, loading, metric }: BeeswarmViewProps) {
                     r={n.r}
                     fill={colorFor(n.oestat3_name_de)}
                     fillOpacity={n.is_member ? 0.92 : 0.55}
-                    stroke={n.is_member ? '#0047bb' : 'white'}
+                    stroke={n.is_member ? BRAND_HEX : 'white'}
                     strokeWidth={n.is_member ? 1.2 : 0.5}
                   />
                 </motion.g>
@@ -213,7 +214,7 @@ export function BeeswarmView({ points, loading, metric }: BeeswarmViewProps) {
                   <div className="min-w-0 flex-1">
                     <Link
                       href={`/persons/${n.person_id}`}
-                      className="block truncate text-sm font-medium hover:text-[#0047bb]"
+                      className="block truncate text-sm font-medium hover:text-brand"
                     >
                       {n.firstname} {n.lastname}
                     </Link>
@@ -228,7 +229,7 @@ export function BeeswarmView({ points, loading, metric }: BeeswarmViewProps) {
                       <span>{n.pubs_total} Pubs</span>
                     </div>
                     {n.is_member && (
-                      <p className="mt-1 inline-flex rounded-sm bg-[#0047bb]/10 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider text-[#0047bb]">
+                      <p className="mt-1 inline-flex rounded-sm bg-brand/10 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider text-brand">
                         ÖAW-Mitglied
                       </p>
                     )}
@@ -252,7 +253,7 @@ export function BeeswarmView({ points, loading, metric }: BeeswarmViewProps) {
               </span>
             ))}
             <span className="ml-auto inline-flex items-center gap-1.5">
-              <span className="inline-block h-2 w-2 rounded-full border border-[#0047bb] bg-[#0047bb]/90" />
+              <span className="inline-block h-2 w-2 rounded-full border border-brand bg-brand/90" />
               Akademie-Mitglied
             </span>
           </div>

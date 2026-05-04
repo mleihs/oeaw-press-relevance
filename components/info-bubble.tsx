@@ -136,8 +136,8 @@ export function InfoBubble({
           className={cn(
             'inline-flex shrink-0 items-center justify-center rounded text-current',
             'opacity-40 hover:opacity-90 transition-opacity',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0047bb]/50 focus-visible:opacity-100',
-            pinned && 'opacity-100 text-[#0047bb]',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 focus-visible:opacity-100',
+            pinned && 'opacity-100 text-brand',
             className,
           )}
         >

@@ -2,6 +2,7 @@
 
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { InfoBubble } from '@/components/info-bubble';
+import { BRAND_HEX } from '@/lib/constants';
 import type { ActivityMonth } from '@/lib/researchers';
 
 interface ActivityChartProps {
@@ -9,7 +10,7 @@ interface ActivityChartProps {
 }
 
 const BAND_COLORS = {
-  high: '#0047bb',
+  high: BRAND_HEX,
   mid:  '#fbbf24',
   low:  '#cbd5e1',
 };

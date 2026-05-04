@@ -36,7 +36,7 @@ export function PresetBar({ active, onSelect }: Props) {
             className={cn(
               'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors',
               isActive
-                ? 'bg-[#0047bb] text-white border-[#0047bb] shadow-sm'
+                ? 'bg-brand text-white border-brand shadow-sm'
                 : 'bg-white border-neutral-200 text-neutral-700 hover:border-neutral-400 hover:bg-neutral-50',
             )}
           >

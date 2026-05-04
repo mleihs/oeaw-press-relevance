@@ -6,6 +6,7 @@ import { AnimateNumber } from 'motion-number';
 import { PersonAvatar } from '@/app/researchers/_components/person-avatar';
 import { TrendDelta } from '@/app/researchers/_components/trend-delta';
 import { InfoBubble } from '@/components/info-bubble';
+import { BRAND_HEX } from '@/lib/constants';
 import type { EXPL } from '@/lib/explanations';
 import type { ResearcherDetailPerson, ResearcherDetailStats } from '@/lib/researchers';
 
@@ -21,7 +22,7 @@ export function PersonHeader({ person, stats, windowLabel }: PersonHeaderProps) 
   const deltaTotal = stats.pubs_total - stats.prev_pubs_total;
 
   return (
-    <header className="rounded-xl border bg-gradient-to-br from-white to-[#0047bb]/[0.03] p-6">
+    <header className="rounded-xl border bg-gradient-to-br from-white to-brand/[0.03] p-6">
       <div className="flex flex-col gap-6 md:flex-row md:items-start">
         <PersonAvatar
           firstname={person.firstname}
@@ -44,7 +45,7 @@ export function PersonHeader({ person, stats, windowLabel }: PersonHeaderProps) 
             <div className="flex flex-wrap items-center gap-1.5">
               {person.member_type_de && (
                 <span
-                  className="inline-flex items-center gap-1 rounded-md bg-[#0047bb]/10 px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-[#0047bb]"
+                  className="inline-flex items-center gap-1 rounded-md bg-brand/10 px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-brand"
                   title={person.member_type_de}
                 >
                   ÖAW-Mitglied
@@ -76,7 +77,7 @@ export function PersonHeader({ person, stats, windowLabel }: PersonHeaderProps) 
               href={`https://orcid.org/${person.orcid}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-3 inline-flex items-center gap-1 text-xs text-neutral-500 hover:text-[#0047bb]"
+              className="mt-3 inline-flex items-center gap-1 text-xs text-neutral-500 hover:text-brand"
             >
               ORCID: {person.orcid}
               <ExternalLink className="h-3 w-3" />
@@ -93,7 +94,7 @@ export function PersonHeader({ person, stats, windowLabel }: PersonHeaderProps) 
           delta={deltaHigh}
           deltaExplId="delta_count_high"
           explId="count_high"
-          color="#0047bb"
+          color={BRAND_HEX}
         />
         <StatCard
           label="Σ Press-Score"
