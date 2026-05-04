@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { BarChart3, Upload, BookOpen, Sparkles, Settings, Menu, Users, Info } from 'lucide-react';
+import { BarChart3, Upload, BookOpen, Settings, Menu, Users, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useInfoBubblesEnabled } from '@/lib/use-info-bubbles';
 import {
@@ -17,7 +17,6 @@ import {
 
 const links = [
   { href: '/', label: 'Dashboard', icon: BarChart3 },
-  { href: '/analysis', label: 'Analyse', icon: Sparkles },
   { href: '/publications', label: 'Publikationen', icon: BookOpen },
   { href: '/researchers', label: 'Forscher:innen', icon: Users },
   { href: '/upload', label: 'Import', icon: Upload },

@@ -252,12 +252,6 @@ export default function DashboardPage() {
         </CardHeader>
         <CardContent className="flex flex-wrap gap-3">
           <Button asChild>
-            <Link href="/analysis">
-              <Sparkles className="mr-2 h-4 w-4" />
-              Analyse anzeigen
-            </Link>
-          </Button>
-          <Button variant="outline" asChild>
             <Link href="/publications">
               <BookOpen className="mr-2 h-4 w-4" />
               Publikationen durchsuchen

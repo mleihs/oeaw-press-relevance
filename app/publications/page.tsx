@@ -8,9 +8,16 @@ import { EnrichmentModal } from '@/components/enrichment-modal';
 import { AnalysisModal } from '@/components/analysis-modal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { getApiHeaders } from '@/lib/settings-store';
-import { Search, ChevronLeft, ChevronRight, Sparkles, Brain } from 'lucide-react';
+import { SCORE_LABELS, SCORE_COLORS } from '@/lib/constants';
+import { Search, ChevronLeft, ChevronRight, Sparkles, Brain, Download, ChevronDown } from 'lucide-react';
 
 import { useFilters } from './use-filters';
 import { FILTER_DEFAULTS, PRESET_FIELDS, type FilterValues, type PresetKey } from './_filters';
@@ -32,6 +39,7 @@ export default function PublicationsPage() {
   const [loading, setLoading] = useState(true);
   const [enrichOpen, setEnrichOpen] = useState(false);
   const [analysisOpen, setAnalysisOpen] = useState(false);
+  const [dimAvgs, setDimAvgs] = useState<Record<string, number>>({});
   const searchRef = useRef<HTMLInputElement>(null);
 
   const [filters, setFilters] = useFilters();
@@ -205,15 +213,38 @@ export default function PublicationsPage() {
 
       const res = await fetch(`/api/publications?${p}`, { headers: getApiHeaders() });
       const data = await res.json();
-      setPublications(data.publications || []);
+      const pubs: Publication[] = data.publications || [];
+      setPublications(pubs);
       setTotal(data.total || 0);
       setHidden(data.total_hidden || 0);
+
+      const dims = ['public_accessibility', 'societal_relevance', 'novelty_factor', 'storytelling_potential', 'media_timeliness'] as const;
+      const avgs: Record<string, number> = {};
+      for (const dim of dims) {
+        const vals = pubs
+          .map((pub) => pub[dim])
+          .filter((v): v is number => v !== null);
+        if (vals.length > 0) avgs[dim] = vals.reduce((a, b) => a + b, 0) / vals.length;
+      }
+      setDimAvgs(avgs);
     } catch {
       // silently fail
     } finally {
       setLoading(false);
     }
   }, [filters]);
+
+  const handleExport = useCallback((format: 'csv' | 'json') => {
+    fetch(`/api/export/${format}`, { headers: getApiHeaders() })
+      .then((res) => res.blob())
+      .then((blob) => {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `storyscout-export.${format}`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+      });
+  }, []);
 
   useEffect(() => {
     fetchData();
@@ -245,16 +276,31 @@ export default function PublicationsPage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-bold">Publikationen</h1>
-        <p className="text-neutral-500" role="status" aria-live="polite">
-          {total.toLocaleString('de-AT')} Publikationen
-          {!filters.showAll && hidden > 0 && (
-            <span className="ml-2 text-neutral-500">
-              ({hidden.toLocaleString('de-AT')} ausgeblendet)
-            </span>
-          )}
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold">Publikationen</h1>
+          <p className="text-neutral-500" role="status" aria-live="polite">
+            {total.toLocaleString('de-AT')} Publikationen
+            {!filters.showAll && hidden > 0 && (
+              <span className="ml-2 text-neutral-500">
+                ({hidden.toLocaleString('de-AT')} ausgeblendet)
+              </span>
+            )}
+          </p>
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm">
+              <Download className="mr-2 h-4 w-4" />
+              Exportieren
+              <ChevronDown className="ml-2 h-3 w-3" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => handleExport('csv')}>Als CSV</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleExport('json')}>Als JSON</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <Card>
@@ -333,6 +379,32 @@ export default function PublicationsPage() {
 
       <EnrichmentModal open={enrichOpen} onOpenChange={setEnrichOpen} onComplete={fetchData} />
       <AnalysisModal open={analysisOpen} onOpenChange={setAnalysisOpen} onComplete={fetchData} />
+
+      {Object.keys(dimAvgs).length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Durchschnittswerte (aktuelle Seite)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 sm:grid-cols-5">
+              {Object.entries(dimAvgs).map(([dim, avg]) => (
+                <div key={dim} className="space-y-1">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-neutral-500">{SCORE_LABELS[dim]}</span>
+                    <span className="font-medium">{Math.round(avg * 100)}%</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-neutral-200 overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-300 motion-reduce:transition-none"
+                      style={{ width: `${Math.round(avg * 100)}%`, backgroundColor: SCORE_COLORS[dim] }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {loading ? (
         <LoadingState label="Lade Publikationen …" />
