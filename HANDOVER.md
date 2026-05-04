@@ -1,17 +1,109 @@
 # HANDOVER — Session-basierte Bewertung aller Non-ITA-Pubs
 
-Snapshot 2026-04-28 (Ende Session 15) nach **zehnter Re-Eval-Charge der unmatched-original Pubs**. Session 6 Top-50, Session 7 die nächsten 50, Session 8 die nächsten 50, Session 9 die nächsten 50, Session 10 die nächsten 50 (0.375 → 0.33), Session 11 die nächsten 50 (0.3275 → 0.2925), Session 12 die nächsten 50 (0.5175 → 0.26 — durch erweiterten Filter mit `Spezialfachpresse` und `Kein eigenständiger Pressewinkel` rutschten höhergescorte Pubs in den Pool), Session 13 die nächsten 50 (0.26 → 0.225 — Wiener-Template-Kategorie auf 0 eliminiert), Session 14 die nächsten 50 (0.2225 → 0.175 — RICAM-Math/IWF-Astro/ESI-Material-Spezialbänder), Session 15 die nächsten 50 (0.175 → 0.149 — RICAM-Egger-Numerik-Linie 17 Pubs / ESI-Material 13 Pubs / IWF-Plasma 5 Pubs).
+## Update 2026-05-01 — DOI-Backfill aus citation_apa/bibtex
+
+**Befund:** Der ETL (`scripts/webdb-import.mjs`) hat DOIs bislang nur aus `doi_link` extrahiert. Im WebDB-Dump trägt die Mehrheit der Pubs ihren DOI jedoch in `bibtex` (`doi = {…}`) oder im HTML-Rendering von `citation_apa`. Resultat: 1.748 Pubs ohne DOI hatten DOI-Spuren in citation/bibtex. Das ist kein Import-Bug im engen Sinn, aber ein Auslassungs-Gap, der die API-Anreicherbarkeit stark drückte.
+
+**Fixe:**
+- `extractDoiWithFallback(row)` in `scripts/webdb-import.mjs` — Reihenfolge `doi_link → bibtex → citation_apa → citation_de → citation_en`. Künftige ETL-Läufe greifen automatisch.
+- Neuer Befehl `node scripts/session-pipeline.mjs doi-backfill [--apply]` mit Duplikat-Check (nur DOIs schreiben, die noch nicht zu anderen Pubs gehören).
+
+**Apply-Ergebnis:** 611 DOIs neu geschrieben (1.107 Konflikte übersprungen — typischerweise Sammelband-Beiträge mit identischem Verlags-DOI im bibtex; 30 ohne Match). Bei den am 2026-04-30 importierten neuen Pubs wuchs DOI-fähig von 191 auf 302 (+111).
+
+**Folge-Wirkung:** Pool-B-DOI-Pubs sind jetzt höher → API-Anreicherungs-Loop trifft mehr; künftige Charges können größer werden.
 
 ---
 
-## Aktueller Stand (Stand 2026-04-28, Ende Session 15)
+Snapshot 2026-04-29 (Ende Session 20) nach **dritter Re-Eval-Charge des Reasoning-Substanz-Sweeps**. Session 6 Top-50, Session 7 die nächsten 50, Session 8 die nächsten 50, Session 9 die nächsten 50, Session 10 die nächsten 50 (0.375 → 0.33), Session 11 die nächsten 50 (0.3275 → 0.2925), Session 12 die nächsten 50 (0.5175 → 0.26), Session 13 die nächsten 50 (0.26 → 0.225 — Wiener-Template-Kategorie auf 0 eliminiert), Session 14 die nächsten 50 (0.2225 → 0.175), Session 15 die nächsten 50 (0.175 → 0.149), Session 16 die nächsten 50 (0.1475 → 0.13), Session 17 die letzten 44 (0.13 → 0.09 — Defekt-Pool des erweiterten Filters auf 0 geleert), Session 18 die ersten 50 der Reasoning-<180-Linie (0.7225 → 0.475), Session 19 die nächsten 50 (0.47 → 0.375), **Session 20 die nächsten 50 (Score-Range 0.393 → 0.288 — thematisch breit: ÖAI/IQOQI WIEN/IWF/HEPHY/ISF/IFI)**.
+
+---
+
+## Aktueller Stand (Stand 2026-04-29, Ende Session 20)
+
+- **7148 Pubs analyzed** (unverändert seit Session 6)
+- **Pool A no ITA: 1353** (Re-Eval ändert Pool nicht)
+- **Charge Session 20 abgeschlossen**: 50 historisch zu kurze Reasonings re-evaluiert auf den strengen Korridor 200-300. SQL-Verification der 50 IDs: 0 still_short_180, 0 still_below_strict_200, avg reasoning 260 Zeichen, avg pitch 512 Zeichen.
+- **Globaler Reasoning-Substanz-Stand vor Charge:** 1483 Pubs mit Reasoning < 180; **nach Charge: 1433** (exakt −50). lt_150 fiel von 813 auf 780 (−33).
+- **Defekt-Pool des erweiterten Filters bleibt auf 0** (alle sechs Kategorien: pwert / reine_fp / spezial_fp / generic / kein_eigen / wiener) — Session 20 hat keine Defekte eingeführt.
+- **Kein aktiver Hintergrund-Loop**
+
+### Was in Session 20 (2026-04-29, Charge 24) passiert ist
+
+- 50 Pubs gezogen mit Filter `LENGTH(reasoning) < 180` ORDER BY press_score DESC, Score-Range **0.393 → 0.288** — Charge eine Stufe niedriger als Session 19 (dort 0.47 → 0.375). Reasoning-Längen vor Charge: 82 → 178 (Median 138).
+- Charge thematisch breit gestreut: ÖAI 11 (3 Horejs Balkan: Annulets Amzabegovo/Svinjarička, Living off the Land Balkan dairying, Neolithic Annulets Begleitband Leskovac; 2 Gavranovic Bronze/Iron Age: Cross-crafting Polen, Wicina Metal Supply; 3 Rebay-Salisbury: Inzersdorf 14C-Friedhof, Perdigoes Amelogenin Iberien, Getzersdorf-Fibel-Metallographie; 1 Hagel Oxus-Auloi Tadschikistan; 1 Bader Tell-el-Retaba Kupfer Ägypten; 1 Bioarch Lafnitz Wörterberg La-Tène), IQOQI WIEN 7 (2 Brukner: Quanten-Zeno-Paradoxon, Quantum theory macroscopic Bell-Verstoss; 1 Aspelmeyer Vanadium-qudit-SiC 16-dim; 2 Huber-Programm: HD-QKD-Framework PRL, Roadmap Quantum Thermodynamics; 1 Mueller gravity-mediated entanglement infinite-dim; 1 Navascues Diósi-Penrose-GIE; 1 Zeilinger/Huber multi-partite high-dim non-locality), IQOQI IBK 1 (Pichler Rydberg-Gates Mikrowellen-Kopplung), IWF 6 (2 Helling: stagnant-lid Biosphere CO2-Spektrum, TRAPPIST-1 Magma-Ozean CO2/H2O; 1 Nakamura blue-aurora Frankreich; 1 Fossati GAPS WASP-76b CO+Fe; 1 Allgemein RPWI/JUICE Jupiter-Eismonde; 1 Woitke Herbig-Disk-Survey Orion), HEPHY 3 (Pradler DM-Subhalo Stellar-Streams LSST, COSINUS DAMA/LIBRA-Test Gran Sasso, Krause BitHEP 1-bit-Gewichte), ESI 1 (Keckes/Kiener Na-S Festkoerper Polysulfide), RICAM 2 (Grohs EffDI Superspreading, Gerardo-Giorda 3-State-Cell-Death Esophageal Ablation), ITA 2 (Stromnetze 2013 Demand-Response, Wegweiser-CIVISTI 2014), ISF 3 (Laback Threat-looming EEG, Laback Acoustic-illusions Sound-installations, Hoeschele Terrestrial-Mammals Anthropogener Lärm), IGF 2 (Bender Suburbanisierung, Gravey Pléiades-4D-Landslide La Valette), IFI 2 (Mongols-Baghdad-Intro Medieval Worlds, Persische Bücher Mongol-Baghdad), IKW 1 (Memory Holocaust postkommunistische Museen Radonic ERC GMM), ISA 2 (Tibetan-Building-Craft Sammelband, Werner-Finke-Kurden-Sammlung Weltmuseum Wien), ISR 1 (Musil Synthetische Wiener Registerdaten), ACDH 1 (Andrews Life-Narrative-Digital Workshop 2023), IHB 1 (Schmitt Stavropoleos-Manuskript Athos→Bukarest), ohne Akronym 3 (Korman 9 Ukraine LGM-Feuer, Karolingischer Matthäus-Kommentar Cod. 940 ÖNB, MINDS JWST SY Cha).
+- Pubs in 4 Lese-Chunks à 13/13/12/12 (`/tmp/c1.txt … /tmp/c4.txt`) gedumpt, einzeln gelesen, individuell bewertet. 0 Pubs mit mahighlight_n>0 in dieser Charge — kein SQL-Lookup nötig.
+- `/tmp/build_chunk_revisions.py` aus Vorlage `scripts/eval_chunk_template.py` kopiert. Strategie: vorhandene Pitches/Angles übernommen wenn substantiell und im Korridor (Pitch 350-650, Angle 50-200), 19 von 50 Pitches umgeschrieben — Schwerpunkt auf Pitches mit Anti-Pattern-Prefixes wie "Wiener Hochenergiephysik-Institut", "Grazer Weltraumforschungs-Gruppe", "Wiener OeAI-Studie", "Wiener IQOQI-Gruppe" plus zwei mit Unsinns-Phrasen ("Hammer-Bit-Auflösung", "Tee-Klang-Speicher"); alle 50 Reasonings auf 200-300 gehoben; alle Haikus neu für Eindeutigkeit. Beim ersten Run flaggte das Skript 2 false-positive Bindestrich-Tippfehler (legitime Gedankenstriche vor Großbuchstaben in Pub 3 und Pub 48); auf "naemlich"-Konstruktion umgestellt, zweiter Run sauber.
+- **Pitch-Längen 357–644 Zeichen (Median 528, im Soll-Korridor 350-650)**, **Reasoning 219–296 Zeichen (Median 262, deutlich über Substanz-Schwelle 220 und im strengen Korridor 200-300)**, Angle 50–117 (Median 82).
+- Sanity-Checks im Skript: keine Pressewertbar-Floskel, keine reine Fachpresse, keine Spezialfachpresse, keine generic Angles, keine Wiener-Templates, keine Variablennamen, alle pitch/angle/haiku unique, keine Akronym-Inferenz-Fabrikation.
+- **Akronym-Inferenz-Disziplin**: Beim Carolingian-Matthew-Kommentar (Pub 6) "intellektuelle Werkstatt der Karolingerzeit" als Formulierung statt "Mittelalter" gewählt, weil das Wort "Mittelalter" nicht im 170-Zeichen-Content steht. Beim Wicina-Iron-Age (Pub 18) "Bernsteinstrasse" beibehalten, weil das im Content explizit als "Amber Route" benannt ist.
+- **Anti-Template-Disziplin**: Sechs Pitches mit Institutsnamen-Prefix umgeschrieben — "Wiener Hochenergiephysik-Institut der OeAW" (Pub 2 HEPHY Pradler, Pub 28 HEPHY COSINUS), "Wiener OeAI-Studie" (Pub 8 Gavranovic Bronze), "Grazer Weltraumforschungs-Gruppe" (Pub 9 Helling Biosphere, Pub 26 Fossati WASP-76b, Pub 30 Helling TRAPPIST-1, Pub 37 IWF JUICE, Pub 49 Woitke Herbig), "Wiener IQOQI-Gruppe" (Pub 32 Aspelmeyer Vanadium), "aus dem Wiener Forschungsumfeld" (Pub 6 Carolingian Matthew). Jeder dieser Pitches hat jetzt einen eigenen Hook, der die spezifische Story benennt statt das Institut.
+- `apply --apply --force` → 50/50 updated; SQL-Verification der 50 IDs: 0/0 (lt_180/lt_200), min 219, avg 260, max 296; pitch min 357, avg 512, max 644; alle Defekt-Filter 0/0/0/0/0/0; missing_haiku 0.
+- Globaler Stand vor Charge: lt_180=1483, lt_150=813; nach Charge: **lt_180=1433, lt_150=780** (lt_180 exakt −50, lt_150 −33). Avg Reasoning global: 234 (unverändert, weil Korpus mit den restlichen kurzen Reasonings dominiert).
+- **Differenzierungs-Disziplin in homogenen Clustern**: Drei OeAI-Rebay-Salisbury-Pubs (Inzersdorf-14C / Perdigoes-Amelogenin / Getzersdorf-Fibel) jeweils auf eigenen Anker mit eigenen Audiences. Drei OeAI-Horejs-Balkan-Pubs (Annulets Amzabegovo/Svinjarička / Living-off-the-Land Lipid-Analyse / Annulets-Begleitband Leskovac) trotz nahem Topic auf je eigenen Erzähl-Anker. Zwei IWF-Helling-Pubs (Stagnant-lid-Biosphere / TRAPPIST-1-Magma-Ozean) auf je eigene Habitabilitäts-Frage. Zwei IQOQI-Brukner-Pubs (Quanten-Zeno / Quantum-macroscopic) sauber differenziert. Zwei Mongol-Baghdad-Pubs (Einleitung / Persische Bücher) auf je eigene These. Zwei ISF-Laback-Pubs (Threat-looming EEG / Acoustic-illusions Sound-installations) auf je eigenen Anker.
+- **Folge-Baustelle**: Bei aktuellem Tempo (50 Pubs/Session) sind die verbleibenden 1433 Pubs mit Reasoning < 180 in ~29 Sessions abgearbeitet. Die 780 unter 150 Zeichen bleiben besonders dringlich; in der nächsten Charge (Score-Band ~0.288 → 0.25) sollten weitere lt_150-Treffer dabei sein.
+
+### Was in Session 19 (2026-04-29, Charge 23) passiert ist
+
+- 50 Pubs gezogen mit Filter `LENGTH(reasoning) < 180` ORDER BY press_score DESC, Score-Range **0.47 → 0.375** — Charge eine Stufe niedriger als Session 18 (dort 0.7225 → 0.475). Reasoning-Längen vor Charge: 62 → 179 (Median 153,5).
+- Charge thematisch breit gestreut: ÖAI 7 (Matrilineare Aegaeis Horejs / Manot Cave Einwoegerer / Jodlowno-Hortfund Gavranovic / Aulos Pompeji Hagel / Carnuntum-Statthalter Gugl / Tell Brak ArchScience / Bronze-Urn Balkan Horejs/Gavranovic/Rebay-Salisbury), IGF 7 (Mountain Resilience CHLS Keiler / Hochebenkar UAV-LiDAR Fischer / Highland Tourism Ruiz Peyre / RGV Intercomparison Fischer / Alpine Commons Bender / Arctic Char POPs / Arctic Char Mercury), VID 5 (Demografie OstEuropa / Stadt-Land-Erstgeburt Buber-Ennser / Health Expectancy Luy mahighlight / Mortality Estimation Luy / Indonesia Diabetes Education Luy), ACDH 5 (Markovic Musikwiss-Disziplin / Andrews MLLMs / GPT-4 Doc-Retrieval / Cryptologia-Manuskript / Women Opera Venice FBS), IWF 5 (INFREP Erdbeben / XUE 10 JWST Woitke / Magnetic Reconnection Nakamura / Skorpion Stinger / LP 890-9 Helling), ESI 4 (Cu CO2-Reduktion Cordill+Eckert / Metallglas Wasserspaltung / H2 Direct Reduction Eckert / + ESI/IWF-Skorpion), IMAFO 4 (Beyond East/West Kurzfilm Popovic / Byzanz Migration Rapp / Netzwerktheorie Preiser-Kapeller / Armenian Eyewitnesses Rapp), IKW 2 (Akademische Freiheit / Maria Ana Portraits via IHB), IHB 2 (Maria Ana Kaiserhof / Romanian Hospital Libya Schmitt), CMC 2 (Gender Media Pedagogy Eberwein / European Media Systems Eberwein), IFI 1 (Romanovs Tuerkisch), IQOQI Wien 2 (Quantum Clock Huber / Axiom of Choice Brukner), ISA 1 (Malaria Tansania Suedostasien), ISR 1 (Waxeggalm Dendro 2008), 4 ohne Akronym (Hofburg-Eisen / 2× MINDS-JWST / UNESCO Mountain Biosphere).
+- Pubs in 4 Lese-Chunks à 13/13/12/12 (`/tmp/c1.txt … /tmp/c4.txt`) gedumpt, einzeln gelesen, individuell bewertet.
+- `/tmp/build_chunk_revisions.py` aus Vorlage `scripts/eval_chunk_template.py` kopiert. Strategie: vorhandene Pitches/Angles übernommen wenn im Korridor, gezielt 7 Pitches umgeschrieben (zu kurz, zu lang oder mit Ungenauigkeiten); alle 50 Reasonings auf 200-300 Zeichen gehoben; alle Haikus neu für Eindeutigkeit. Beim ersten Run flaggte das Skript 49 zu lange Reasonings (302–383) und 1 zu langen Pitch (Pub 29 IHB Schmitt 661 Zeichen) — `/tmp/trim_reasonings.py` mit 50 Replacements geschrieben, in einem Durchlauf appliziert. Zweiter Run zeigte 1 Reasoning 304 (Pub 13 Jodlowno) — gezielter Edit, dritter Run sauber.
+- **Pitch-Längen 451–614 Zeichen (Median 535, sauber im Soll-Korridor 350–650)**, **Reasoning 240–298 Zeichen (Median 274, deutlich über Substanz-Schwelle 220 und im strengen Korridor 200–300)**, Angle 77–131 (Median 100).
+- Sanity-Checks im Skript: keine Pressewertbar-Floskel, keine reine Fachpresse, keine Spezialfachpresse, keine generic Angles, keine Wiener-Templates, keine Variablennamen, alle pitch/angle/haiku unique, keine Akronym-Inferenz-Fabrikation, keine Bindestrich-Tippfehler (Komma-/Doppelpunkt-Stil von Anfang an).
+- **Akronym-Inferenz-Disziplin Pub 21 (Maria Ana / kaiserlicher Wiener Hof)**: Im Pitch ursprünglich „Habsburg" naheliegend, aber nicht wörtlich im Content (der spricht von „corte imperial de Viena", „archiduque y emperador Fernando III"). Pitch und Angle stattdessen mit „Wiener Kaiserhof" formuliert, kein Habsburg-Stempel.
+- **Mahighlight-Disziplin Pub 16 (VID Luy Health Expectancy)**: Vor dem Schreiben SQL-Lookup gegen `persons + member_types` — markierende Person Paola Di Giulio hat `member_type_id IS NULL`, ist also kein Akademie-Mitglied (90% der mahighlights sind das nicht, vgl. mahighlight_semantics.md). Im Pitch Person konkret namentlich genannt mit „persoenliches Highlight im WebDB", nicht „Akademie-Mitglied".
+- `apply --apply --force` → 50/50 updated; SQL-Verification der 50 IDs: 0/0 (lt_180/lt_200), min 240, avg 274, max 298; pitch min 451, avg 535, max 614; alle Defekt-Filter 0/0/0/0/0; missing_haiku 0.
+- Globaler Stand vor Charge: lt_180=1533, lt_150=836; nach Charge: **lt_180=1483, lt_150=813** (lt_180 exakt −50, lt_150 −23). Avg Reasoning global: 234 (Korpus mit den noch nicht reparierten Sessions 7-14-Pubs).
+- **Differenzierungs-Disziplin in homogenen Clustern**: Drei VID-Luy-Pubs (Health Expectancy mahighlight / Mortality Estimation Data-scarce / Indonesia Diabetes-Bildung) jeweils auf eigenen Anker mit eigenen Audiences. Zwei MINDS-JWST-Pubs ohne Akronym (Pub 22 C-rich-Sample 10 vs. Pub 43 Wasser-Detektion in 5 weiteren) sauber differenziert. Zwei IGF-Fischer-Pubs (Hochebenkar UAV-LiDAR Boulder-Tracking vs. RGV Intercomparison drei Methoden) auf je eigene Methodik-Geschichte. Zwei IGF-Arctic-Char-Pubs (POPs vs. Quecksilber) trotz nahem Topic auf je eigenen Erzähl-Anker (Klima-Mobilisierung vs. See-fuer-See-Variabilität).
+- **Folge-Baustelle**: Bei aktuellem Tempo (50 Pubs/Session) sind die verbleibenden 1483 Pubs mit Reasoning < 180 in ~30 Sessions abgearbeitet. Die 813 unter 150 Zeichen bleiben besonders dringlich; in der nächsten Charge (Score-Band ~0.375 → 0.33) sollten weitere lt_150-Treffer dabei sein.
+
+### Was in Session 18 (2026-04-29, Charge 22) passiert ist
+
+- 50 Pubs gezogen mit Filter `LENGTH(reasoning) < 180` ORDER BY press_score DESC, Score-Range **0.7225 → 0.475** — die Linie greift höhergescorte Pubs als der Defekt-Pool, weil hohe Scores aus Sessions 7-14 mit kurzen Reasonings nicht in die alten Defekt-Filter fielen. Reasoning-Längen vor Charge: 80 → 179 (Median ca. 158).
+- Charge thematisch breit: VID 7 (Ukraine-Refugees, Lutz/Fischler, Mismatches Mobilität, Yearbook 2025, Risk-Taking, Wohnen+Familie, Africa YoGL), IHB 7 (Albanien-Strandbuden, NÖ-Tschechien-Grenze, DPs-Lexikon, Beyond Yugoslavia, Remigration), ÖAI 10 (Eiszeitkleidung Kammern-Grubgraben, Ice Age Begleitband, Bronze NÖ DNA, Ollersdorf Gravettien, Ägypten-Chronologie, Egyptian Blue, Mutterschaft, Pannonien-Limes, Pflanzratgeber Zirbitzkogel + 1), IKW 4 (Babyn Yar, Sydow NS-Ethno, UniGraz Erinnerung, Religion+Belonging via ISR), ISR 4 (Hitzewahrnehmung Wien, BLUEMAP-Daten, Sustainable Settlements + ISR/IGF Alpenflora-Samen), IMAFO 3 (Hexenprozesse, Tambora 1816, Pest-Schutz — alles Preiser-Kapeller-Podcast), IGF 3 (Gepatschferner-Albedo, Ruiz-Peyre Highlands-3, Alpenflora-Samen via ISR), HEPHY 2 (COSINUS-Supernova, LHC-Trigger), IQOQI 2 (Lichtschrauben Zeilinger, Quantum-Hardware-Roadmap Bernien), GMI 1 (Tree-Ring DL Preprint), ACDH 2 (LexAT21, Bairische Dialekte), SMI 1 (Bronze Geschlecht), BIODIV-A 1 (Characeen Atlas), IWF 1 (Weltraumschrott Laser), ITA 2 (AI Ethics, PED Energie — schon analyzed, daher in der Linie).
+- Pubs in 4 Lese-Chunks à 13/13/12/12 (`/tmp/c1.txt … /tmp/c4.txt`) gedumpt, einzeln gelesen, individuell bewertet.
+- `/tmp/build_chunk_revisions.py` aus Vorlage `scripts/eval_chunk_template.py` kopiert. Strategie wie im Resume-Prompt: vorhandene Pitches/Angles übernommen wenn im Korridor, nur 12 zu kurze (10) oder zu lange (2) Pitches umgeschrieben; alle 50 Reasonings auf 200-300 Zeichen gehoben; alle Haikus neu für Eindeutigkeit. Beim ersten Run flaggte das Skript 16 zu lange Reasonings (302–329 Zeichen) — gezielte Streichungen am Satzende, zweiter Run sauber.
+- **Pitch-Längen 375–584 Zeichen (Median 462, sauber im Soll-Korridor 350–550)**, **Reasoning 243–300 Zeichen (Median 281, deutlich über Substanz-Schwelle 220 und im strengen Korridor 200–300 — vergleichbar mit Session 17 Median 284)**, Angle 63–173 (Median 94).
+- Sanity-Checks im Skript: keine Pressewertbar-Floskel, keine reine Fachpresse, keine Spezialfachpresse, keine generic Angles, keine Wiener-Templates, keine Variablennamen, alle pitch/angle/haiku unique, keine Akronym-Inferenz-Fabrikation, keine Bindestrich-Tippfehler (Komma-/Doppelpunkt-Stil von Anfang an).
+- `apply --apply --force` → 50/50 updated; SQL-Verification der 50 IDs: 0/0 (lt_180/lt_200), min 243, avg 280, max 300; alle Defekt-Filter 0/0/0/0/0; missing_haiku 0.
+- Globaler Stand vor Charge: lt_180=1583, lt_150=886; nach Charge: **lt_180=1533, lt_150=836** (jeweils exakt −50). Avg Reasoning global: 233 (Korpus mit den noch nicht reparierten Sessions 7-14-Pubs).
+- **Differenzierungs-Disziplin in homogenen Clustern**: Drei IMAFO-Preiser-Kapeller-Podcasts (Hexenprozesse / Tambora-Sommer 1816 / Pest-Covid) jeweils auf eigenen Erzähl-Anker mit eigenen Audiences und eigenen Haikus; vier ÖAI-Eiszeit-/Gravettien-Pubs (Kammern-Grubgraben Pelzkleidung / Ice Age Begleitband / Ollersdorf-Gravettien / Egyptian-Blue Aguntum) jeweils mit eigenem Fundort-Anker; sieben VID-Demografie-Pubs nach Themenfeld differenziert (Refugee-Werte / Generationen-Gespräch / Health-Mismatch / Yearbook / Pension+Risiko / Wohnen+Elternschaft / Africa-YoGL).
+- **Folge-Baustelle**: Bei aktuellem Tempo (50 Pubs/Session) sind die verbleibenden 1533 Pubs mit Reasoning < 180 in ~31 Sessions abgearbeitet. Die 836 unter 150 Zeichen sind besonders dringlich; die ersten 50 dieser Charge waren alle 80–179 Zeichen, die nächsten 50 nach Score sortiert dürften ähnlich liegen.
+
+### Was in Session 17 (2026-04-29, Charge 21) passiert ist
 
 - **7148 Pubs analyzed** (unverändert seit Session 6)
 - **Pool A no ITA: 1353**
-- **Charge Session 15 abgeschlossen**: 50 weitere unmatched-original Pubs individuell re-evaluiert (Score-Range 0.175 → 0.149), `--apply --force` durchgelaufen
-- **Unique-defective-Set (erweiterter Filter) sank von 144 auf 94** (exakt −50)
-- **Defekt-Breakdown nach erweitertem Filter:** 94 Pwert-Reasoning (−50), 69 „reine Fachpresse"-Audience (−23), 68 generic angle „keine breitenwirksame/starke eigenständige" (−23), 0 Wiener-Template (unverändert), 21 „Kein eigenständiger Pressewinkel"-Angles (−20), 21 „Spezialfachpresse"-Audiences (−19)
+- **Charge Session 17 abgeschlossen**: 44 letzte unmatched-original Pubs individuell re-evaluiert (Score-Range 0.13 → 0.09), `--apply --force` durchgelaufen
+- **Unique-defective-Set (erweiterter Filter) sank von 44 auf 0** (exakt −44)
+- **Defekt-Breakdown nach erweitertem Filter:** 0 Pwert-Reasoning (−44), 0 „reine Fachpresse"-Audience (−37), 0 generic angle „keine breitenwirksame/starke eigenständige" (−37), 0 Wiener-Template (unverändert), 0 „Kein eigenständiger Pressewinkel"-Angles (−6), 0 „Spezialfachpresse"-Audiences (−6) — **alle sechs Defekt-Kategorien auf 0**, der gesamte ursprünglich identifizierte Defekt-Pool des erweiterten Filters ist abgearbeitet
 - **Kein aktiver Hintergrund-Loop**
+
+### Was in Session 17 (2026-04-29, Charge 21) passiert ist
+
+- 44 unmatched-original Pubs gezogen mit erweitertem Filter, Score-Range 0.13 → 0.09 — **gesamter Restpool des unique-defective-Sets**
+- Charge sehr RICAM-lastig (20: 5 RICAM-QMC Median-/Lattice-/dim-unabhängig-Konvergenz, 6 RICAM-Schicho Wilf-Zeilberger / pennies+marbles / Galois-Henneberg / positroidal / piecewise-linear-Wang-Sun-Vermutung / planare-Mechanismen-Distanz, 5 RICAM-Egger Chemotaxis / Hysterese / Energie-Regularisierung / Direction-Asymptotic / Strict-Proto-Diff, 2 RICAM-Grohs Phaseless-Square-Root + Fock-Phase-Retrieval, 2 RICAM-Kunisch Low-Regret-Shape + QMC-Gauss-PDE, 1 RICAM-DM Euler-Kronecker-Kummer), HEPHY (7: 6 Schwanda Belle/Belle-II Charm-/Tau-Spektroskopie+CP+LFV, 1 CMS-Higgs+bb), IQOQI Wien (6: 2 Castro_Ruiz QRF, 2 Müller QRF/Postulate-Response, 1 Brukner Coherence, 1 Navascués+Aspelmeyer glocal-observables-quantum-gravity), IWF Nakamura (6: Solar-1D-Heat / DF-vs-Magnetopause / Mercury-Double-Beam / Magnetotail-ML / ELFIN-Substurm-Growth / Mars-Bow-Shock-IMF), ACDH-Services (2 veld-conllu-Software), ISF (1 Mild-Distributions-Axiomatic), ohne Akronym (2: Bubble-Wall-NEQFT, Belle-Tau-axion-LFV).
+- Pubs in 4 Lese-Chunks à 11 (`/tmp/c1.txt … /tmp/c4.txt`) gedumpt, einzeln gelesen, individuell bewertet.
+- `/tmp/build_chunk_revisions.py` aus Vorlage `scripts/eval_chunk_template.py` kopiert und mit 44 add(...)-Aufrufen befüllt. Beim ersten Run flaggte das Skript 21 zu lange Reasonings (301–356 Zeichen, Memory-Schwelle 200–300). Mechanisch durch gezielte Wort-Streichungen auf Korridor gekürzt; zweiter Run sauber durch.
+- **Pitch-Längen 361–552 Zeichen (Median 470, sauber im Soll-Korridor 350–550)**, **Reasoning 243–299 Zeichen (Median 284, deutlich über Substanz-Schwelle 220 und im strengen Korridor 200–300 — bisher beste Reasoning-Substanz seit Session 6)**, Angle 111–171 (Median 136)
+- Sanity-Checks im Skript: keine Pressewertbar-Floskel, keine reine Fachpresse, keine Spezialfachpresse-Floskel, keine generic Angles, keine Wiener-Templates, keine Variablennamen, alle pitch/angle/haiku unique, keine Akronym-Inferenz-Fabrikation, keine Bindestrich-Tippfehler (durch konsequenten Komma-/Doppelpunkt-Stil von Anfang an vermieden — kein einziger Bindestrich-Fehlalarm in dieser Session)
+- `apply --apply --force` → 44/44 updated; SQL-Verification der 44 IDs: 0/0/0/0/0/0
+- Globaler Stand vor Charge: 44 unique-defective; nach Charge: **0** (exakt −44, Pool geleert). pwert 44→0 (−44), reine_fp 37→0 (−37), generic 37→0 (−37), wiener 0→0, kein_eigen 6→0 (−6), spezial_fp 6→0 (−6).
+- **Differenzierungs-Disziplin in homogenen Clustern**: 5 RICAM-QMC-Pubs jeweils mit eigenem QMC-Anwendungs-Anker (Risiko-Quantil-Schätzung / Importance-Sampling-Praxis / multivariate Approximation / starke Tractability / parametrische PDE-Strömungssimulation), 6 RICAM-Schicho-Pubs nach Forschungsgegenstand differenziert (Wilf-Zeilberger / Pennies+Marbles / Galois-Henneberg / Cluster-Algebren-Positroidal / piecewise-linear-Wang-Sun / Punkt-Konfigurationen-Distanz), 6 IWF-Nakamura-Pubs nach Mission/Anwendung (Solar-Korona / Magnetschweif-Magnetopause / Mercury-BepiColombo / KI-Magnetschweif-ML / ELFIN-Substurm / Mars-MAVEN), 6 HEPHY-Schwanda-Pubs auf je eigenen Hadronen-Kanal (B → K\*γ / D → KsKs / Λc-Charm-Baryon-5x / D → π0π0 / τ-LFV / Ξc+).
+- **ABSCHLUSS DES DEFEKT-POOLS**: Mit Session 17 ist das gesamte unique-defective-Set des erweiterten Filters (Sessions 12–17 hatten es identifiziert + abgearbeitet) **vollständig geleert**. Offene Folge-Baustelle (separate Re-Eval-Linie, **NICHT** im aktuellen Pool enthalten): 1454 Pubs mit Reasoning < 180 Zeichen aus Sessions 7–14 (Stichprobe), 782 unter 150 Zeichen — historische Substanz-Schwächen, die in den ursprünglichen Score-Sweeps nicht aufgefallen waren. Falls anstehend: Defekt-Filter um `LENGTH(reasoning) < 180` erweitern und als eigene Reparatur-Linie fortführen.
+
+### Was in Session 16 (2026-04-28, Charge 20) passiert ist
+
+- 50 unmatched-original Pubs gezogen mit erweitertem Filter, Score-Range 0.1475 → 0.13
+- Charge sehr RICAM-Numerik-lastig (25): Egger-Hysterese + Egger-Cahn-Hilliard + Egger-Quasi-Newton + Egger-NL-Akustik + Sadiq-Cauchy-Poisson + Dewar-Reflexionsgraphen + Pan-Median-Lattice + Hilany-Polynom-Polytope + Dewar-Erdős-Distanz + Aichinger-Volterra-Heston-Optionen + Senapati-Minnaert + Gangl-Eddy-Maschinen + Clarke-Hadamard + Gfrerer-SCD-Newton + Roche-Newton-Convexity + Brunk-CHF + Brunk-Phasensep-Polymer + Halla-Anisotrop-PML + Bauer-Unwucht + Kokkinos-4Rich + Pan-QMC-Boundary + Breiten-Mortensen + Challa-p-Parts + Mukherjee-Bubbly + Ali-Topology. IWF Graz Weltraumphysik (11): Di-Bartolomeo-BepiColombo-DD + Lee-Geostat-Electron + Wang-WDTC-ML + Rollero-Venus-Plasma + Kansara-PCM-Schwerkraft + Wedlund-Mars-Mirror + Fu-Magnetopause-Interchange + Grimmich-Magnetopause-Dev + Zou-Mars-Turbulenz + Baraka-MMS-Reconnection + Fu-DipFront-KH. IQOQI Wien (5): Puig-Many-Body-Metrology + Carette-OpQRF + Hausmann-Page-Wootters + Oeckl-QFT-Spectral + Soulas-NoSig-Microcausality. ACDH-Software (4): Apache-Jena-Fuseki + NoSketchEngine-dockerized + VOICE-API + ELTeC-conllu-stats. ESI Leoben (2): Du-Cu-Nanopart + Raznjevic-LSGM-Brennstoffzelle. HEPHY (2): Belle-II-Lepton-Universalität + Herweg-SiPM-PET. 1 Beitrag ohne klares ÖAW-Akronym (Herweg-PET — Datensatz nennt keine ÖAW-Beteiligung; im Reasoning vermerkt).
+- Pubs in 4 Lese-Chunks à 12–13 gedumpt (`/tmp/c1.txt … /tmp/c4.txt`), einzeln gelesen, individuell bewertet.
+- `/tmp/build_chunk_revisions.py` aus Vorlage `scripts/eval_chunk_template.py` kopiert und mit 50 add(...)-Aufrufen befüllt. Beim ersten Run flaggte das Skript 6 zu kurze Reasonings (185–196 Zeichen) und 5 falsch positive Bindestrich-Tippfehler (legitimer Gedankenstrich " - " vor Großbuchstabe-Wort). Bindestriche durch Kommata/Doppelpunkte ersetzt, Reasonings gezielt um 5–15 Zeichen erweitert. Quote-Falle umgangen — durchgängig deutsche Umlaute mit ASCII-Apostroph in Python-Strings.
+- **Pitch-Längen 439–558 Zeichen (Median 493, sauber im Soll-Korridor 350–550)**, Reasoning 201–271 (Median 224, **klar im Soll-Korridor 200–280** und deutlich besser als Session 15 mit 186), Angle 74–121 (Median 96)
+- Mustermüdigkeits-Warner schlug einmal an für Pubs 21–30 (Median 218 < 220-Schwelle), aber alle Reasonings ≥200 — Substanz-Schwelle gehalten.
+- Sanity-Checks im Skript: keine Pressewertbar-Floskel, keine reine Fachpresse, keine Spezialfachpresse-Floskel, keine generic Angles, keine Wiener-Templates, keine Variablennamen, alle pitch/angle/haiku unique, keine Akronym-Inferenz-Fabrikation
+- `apply --apply --force` → 50/50 updated; SQL-Verification: alle 50 IDs sauber (0/0/0/0/0/0)
+- Globaler Stand vor Charge: 94 unique-defective; nach Charge: 44 (exakt −50). pwert 94→44 (−50), reine_fp 69→37 (−32), generic 68→37 (−31), wiener 0→0 (unverändert), kein_eigen 21→6 (−15), spezial_fp 21→6 (−15).
+- **Differenzierungs-Disziplin**: 25 RICAM-Numerik-Pubs jeweils auf eigenen Anwendungs-Anker gesetzt — Cauchy-Poisson auf Tomografie, Reflexionsgraphen auf Tragwerksmechanik, Median-Lattice auf Statistik, Volterra-Heston auf Asiatische Optionen, Minnaert auf Materialprüfung, Eddy-Current auf E-Maschinen-Auslegung, Hadamard-Bergman auf Matroid-Theorie, SCD-Newton auf Tomografie-Bildrekonstruktion, Roche-Newton auf Erdős-Distanzen, CHF auf Tumormodell/Reservoir, CH-Feedback auf Materialherstellung, Hysterese-Newton auf E-Komponenten, Polymer-Phasensep auf Bioplastik, PML auf Geophysik/Materialprüfung, Unwucht-FE auf E-Auto-NVH, Quasi-Newton-Magnetfeld auf E-Maschinen, 4Rich-Pencils auf Inzidenzgeometrie, QMC-BD auf Bayes-Statistik, Mortensen-Hessian auf Robotik, p-Parts auf zerstörungsfreie Prüfung, Bubbly-Time-Domain auf Ultraschall/Schaum, Topology-Optim auf Leichtbau. Zwei Egger-Cahn-Hilliard-Pubs (Brunk-CHF + Egger-Feedback) sauber via verschiedene Phasenfeld-Anwendungen differenziert.
 
 ### Was in Session 15 (2026-04-28, Charge 19) passiert ist
 
@@ -327,29 +419,101 @@ Output liest sich wie ein Memo aus der Pressestelle, nicht wie ein DB-Dump. Vera
 
 ---
 
-## Resume-Prompt für nächste Session (NEU 2026-04-28 Ende Session 15)
+## Resume-Prompt für nächste Session (NEU 2026-04-29 Ende Session 19)
 
-> Resume OeAW Press Relevance Analyzer — Re-Eval der verbleibenden 94 unmatched-original Pubs.
+> Resume OeAW Press Relevance Analyzer — Reasoning-Substanz-Sweep läuft. Zweite 50er-Charge in Session 19 abgeschlossen, **lt_180 von 1533 auf 1483 gefallen** (exakt −50), lt_150 von 836 auf 813 (−23). Nächste Charge der höchstgescorten Pubs mit `LENGTH(reasoning) < 180` ziehen.
+>
+> **Erst lesen (in dieser Reihenfolge):**
+> - `HANDOVER.md` (oberer Block „Aktueller Stand Ende Session 19" und „Was in Session 19 passiert ist")
+> - `~/.claude/projects/-home-mleihs-dev-oeaw-press-release/memory/session_quality_drift.md` — Substanz vor Geschwindigkeit, Mustermüdigkeit alle 10 Pubs prüfen, Akronym-Inferenz=Fabrikation, Sanity-Checks streng von Anfang an
+> - `memory/pitch_angle_craft.md` — Längen-Standards (Pitch 350-550, Reasoning 200-300 strikt, Score-Bias-Korrektur novelty -0.10 / timeliness -0.05 / societal -0.05)
+> - `memory/publication_evaluation_rules.md` (Anti-Fabrikation, mahighlight, keine relativen Einordnungen)
+> - `memory/mahighlight_semantics.md` (90% der mahighlights von Nicht-Mitgliedern — vor jedem Schreiben SQL-Lookup)
+> - `memory/scoring_session_workflow.md` (Punkt 5: keine Templates)
+>
+> **Stand:** 7148 lokal analyzed (unverändert). Reasoning-Substanz-Schwäche: 1483 Pubs mit Reasoning < 180, 813 davon < 150. Defekt-Pool des erweiterten Filters: 0 (bleibt leer). Pool A no ITA: 1353. Kein aktiver Hintergrund-Loop.
+>
+> **Was zu tun ist:** Nächste 50er-Charge der höchstgescorten Pubs mit `LENGTH(reasoning) < 180` ziehen, individuell re-evaluieren, apply --apply --force, Status-Check, dann nächste Charge.
+>
+> **Workflow:**
+>
+> 1. `node scripts/session-pipeline.mjs status`
+> 2. SQL-Query mit `LENGTH(p.reasoning) < 180` und Filter gegen `e88d7adc-...` ORDER BY press_score DESC LIMIT 50, JSON-Strip wie in Session-19-Workflow.
+> 3. 4 Lese-Chunks à 12-13 (`/tmp/c1.txt … /tmp/c4.txt`) per `python3` mit `textwrap.fill` schreiben, einzeln per Read-Tool laden.
+> 4. `cp scripts/eval_chunk_template.py /tmp/build_chunk_revisions.py` — `add(...)`-Aufrufe pro Pub füllen. Wichtig: Pubs in dieser Linie haben oft schon brauchbare Pitches und Angles (alte Sessions 7-14) — primär Reasoning auf 200-300 Zeichen heben (Median ≥220 anstreben), Pitch und Angle nur dann anfassen, wenn sie selbst defekt sind. Haikus neu für Eindeutigkeit.
+> 5. `python3 /tmp/build_chunk_revisions.py` (mit `expected_count=50` in der validate-Zeile) — bei Verletzung Exit 1, Korrektur, neu durchlaufen.
+> 6. `node scripts/session-pipeline.mjs apply /tmp/chunk_revisions.json --apply --force`
+> 7. SQL-Verification der 50 IDs (still_short_180=0, still_below_strict_200=0). Globale lt_180/lt_150-Counts gegenchecken.
+> 8. Ziel: lt_180 sinkt um exakt 50 mit jeder Charge. HANDOVER mit Session-20-Block updaten.
+>
+> **Längen-Standards (Skript-Schwellen):** Pitch 350–650, Reasoning 200–300 strikt, Angle 50–200. Median Reasoning ≥220 anstreben (Session 17: 284, Session 18: 281, Session 19: 274).
+>
+> **Quote-Falle (Sessions 7-19 erfolgreich umgangen):** Keine typografischen deutschen Quotes („"), nur ASCII-Apostroph (') in Python-Strings. Deutsche Umlaute in UTF-8 problemlos. „Pressewertbarkeit" im Reasoning vermeiden.
+>
+> **Bindestrich-Falle:** Sanity-Check `[a-zäöüß]\s+-\s+[A-ZÄÖÜ][a-zäöüß]+` flaggt Gedankenstriche " - X" vor Großbuchstabe-Wort. Lösung von Anfang an: Komma oder Doppelpunkt statt Gedankenstrich. Sessions 18 und 19 dadurch 0 Bindestrich-Fehlalarme.
+>
+> **Effiziente Reasoning-Korrektur (neu in Session 19 etabliert):** Beim ersten Run flaggt das Skript erfahrungsgemäß 30-50 Reasonings als zu lang. Statt 50 einzelne Edits zu machen, ein Helfer-Skript `/tmp/trim_reasonings.py` mit `FIXES = [(alt, neu), ...]`-Liste schreiben und in einem Durchlauf applizieren — spart Zeit und Tokens. Vorlage in Session-19-Block. Verbleibende Einzelfälle (1-2 Pubs noch knapp über 300) per `Edit`-Tool gezielt nachschärfen.
+>
+> **Score-Bias-Korrektur (Memory pitch_angle_craft):** novelty −0,10 vom Bauchgefühl, timeliness −0,05, societal −0,05. public_accessibility nicht standardmäßig 0,15 — bei lebensweltlich relatable Themen ruhig 0,30+.
+>
+> **Strategischer Hinweis Session 19:** In dieser Linie sind die Pitches/Angles aus Sessions 7-14 oft schon brauchbar (Median 535 Zeichen in Session 19 vs. 462 in Session 18; Korridor 350-650 hilft). Hauptarbeit ist konsequentes Reasoning-Hochziehen. Akronym-Inferenz-Fallen treten bei kaiserlich-österreichischen Themen besonders häufig auf (Habsburg, Mittelalter, k.u.k.) — bei jedem nicht wörtlich belegten Begriff durch konservative Formulierung ersetzen („Wiener Kaiserhof" statt „Habsburg"). Mahighlight-Lookup vor jedem Pitch obligatorisch (90% der mahighlights sind keine Akademie-Mitglieder).
+>
+> **Daten-Bug:** Pub `e88d7adc-8024-4870-9545-3812886fa027` (content_source=summary_de aus fremder Single-Cell-Proteomics-Studie via Crossfeed) im SQL-Query ausschließen.
+>
+> **Output-Budget-Ehrlichkeit (Memory `session_quality_drift.md` Punkt 1):** Wenn das Output-Budget für 50 Pubs nicht reicht, lieber 35-40 Pubs richtig bewerten und ehrlich melden, als 50 Pubs flach durchzuziehen. Session 17 hat 44 Pubs sauber geschafft (Median 284), Session 18 50 Pubs (Median 281), Session 19 50 Pubs (Median 274).
+
+## Resume-Prompt (alt, Ende Session 17)
+
+> Resume OeAW Press Relevance Analyzer — **Defekt-Pool des erweiterten Filters geleert (Stand Ende Session 17)**. Optionale Folge-Linie: 1454 Pubs mit Reasoning < 180 Zeichen aus Sessions 7–14 (782 unter 150) als historische Substanz-Schwächen reparieren.
 >
 > **Erst lesen:**
-> - `HANDOVER.md` (vor allem den oberen Block „Aktueller Stand Ende Session 15" und „Was in Session 15 passiert ist")
-> - `~/.claude/projects/-home-mleihs-dev-oeaw-press-release/memory/pitch_angle_craft.md` — kompletter Standard inkl. Score-Drift-Tabelle, Längen-Standards und 9-Punkt-Pitch-Prozess
+> - `HANDOVER.md` (oberer Block „Aktueller Stand Ende Session 17" und „Was in Session 17 passiert ist")
+> - `memory/session_quality_drift.md` — vier Lehren: Substanz vor Geschwindigkeit, Mustermüdigkeit alle 10 Pubs prüfen, Akronym-Inferenz=Fabrikation, Sanity-Checks streng von Anfang an
+> - `memory/pitch_angle_craft.md` — Längen-Standards (Pitch 350-550, Reasoning 180-280, Score-Bias-Korrektur novelty -0.10 / timeliness -0.05 / societal -0.05)
 > - `memory/publication_evaluation_rules.md` (Anti-Fabrikation)
 > - `memory/scoring_session_workflow.md` (Punkt 5: keine Templates)
 >
-> **Stand:** 7148 lokal analyzed (unverändert seit Session 6). Unique-defective-Set 94 (von 144 vor Session 15 gefallen, exakt −50). Defekt-Breakdown: **94 Pwert-Reasoning, 69 „reine Fachpresse"-Audience, 68 generic angle „keine breitenwirksame/starke eigenständige", 0 Wiener-Template (unverändert), 21 „Kein eigenständiger Pressewinkel", 21 „Spezialfachpresse"**. Bei jeder pwert-Charge sinken kein_eigen und spezial_fp mit (in Session 15: −20 bzw. −19).
+> **Stand:** 7148 lokal analyzed. **Unique-defective-Set des erweiterten Filters: 0** (von 44 vor Session 17 auf 0 gefallen). Alle sechs Defekt-Kategorien (pwert / reine_fp / spezial_fp / generic / kein_eigen / wiener) auf 0. Pool A no ITA: 1353. Kein aktiver Hintergrund-Loop.
 >
-> **Was zu tun ist:** Charge zu 50 (oder kleiner — bei 94 Restpool sind das fast 2 Sessions; die letzte könnte ~44 Pubs umfassen) der höchstgescorten verbleibenden 94 ziehen, individuell re-evaluieren mit dem dort dokumentierten Standard (Pitch 350–550 Zeichen, Reasoning 180–280, Audience konkret, Angle mit Anker, Score-Bias bewusst nach unten korrigieren, Haiku neu), `apply --apply --force`, dann Status-Check und nächste Charge. Score-Range wird nun unter 0.149 starten — Restpool ist konzentriert in den tiefsten Score-Bändern, vermutlich RICAM-Mathematik-Detail (weitere Egger-Numerik-Linien, Schicho-Algebra, Scherzer-Streutheorie), HEPHY-Detektorelektronik, IQOQI-Theorie-Detail, IWF-Astro-Routine, ältere Konferenzbeiträge ohne DOI.
+> **Was als nächstes anstehen kann (Optionen):**
 >
-> **Erweiterter Filter (Standard seit Session 12):** `reasoning ILIKE '%pressewertbar%' OR target_audience ILIKE '%reine Fachpresse%' OR target_audience ILIKE '%Spezialfachpresse%' OR suggested_angle ILIKE '%keine breitenwirksame%' OR suggested_angle ILIKE '%keine starke eigenständige%' OR suggested_angle ILIKE '%Kein eigenständiger Pressewinkel%' OR pitch_suggestion ILIKE 'Eine Studie aus dem Wiener%'`. Wiener-Template ist seit Session 13 dauerhaft 0 — der Filter-Term könnte gestrichen werden, schadet aber auch nicht.
+> **Option A (empfohlen, falls Zeit für Re-Eval):** Reasoning-Substanz-Sweep. Defekt-Filter um `LENGTH(reasoning) < 180` erweitern und in 50er-Chargen abarbeiten. Etwa 1454 Pubs betroffen, 782 davon unter 150 Zeichen — historische Schwächen, die in den ursprünglichen Score-Sweeps nicht aufgefallen waren. Workflow identisch zum Session-12-bis-17-Workflow (4 Lese-Chunks à 12–13, build_chunk_revisions.py mit 50 add-Aufrufen, Sanity-Checks, --apply --force).
 >
-> **Quote-Falle (Session 7–15 erfolgreich umgangen):** Statt typografische deutsche Quotes (`„` / `"`) zu verwenden und mit ASCII `"` als String-Delimiter zu mischen — durchgängig auf typografische Quotes verzichten und ASCII-Apostroph (`'`) verwenden. Deutsche Umlaute sind in UTF-8-Python-Strings problemlos. Vorsicht „Pressewertbarkeit" im Reasoning — das matcht den `pressewertbar`-Filter; entweder als „Pressestoryline" / „Pressewert" formulieren oder weglassen.
+> **Option B (Pool-A-Reduktion):** Neue Bewertungen aus dem laufenden Pool A no ITA (1353 offen) ziehen. Workflow per `node scripts/session-pipeline.mjs candidates 100 > /tmp/batch.json`, einzeln aus Content bewerten + Haiku, dann `apply /tmp/evals.json --apply`.
 >
-> **Lese-Chunks:** 4 Chunks à 12–13 Pubs (`/tmp/c1.txt` … `/tmp/c4.txt`) — 25er-Chunks sprengen das Token-Limit.
+> **Option C (Pool-B-Enrichment):** API-Cascade auf 5456 DOI-Pubs in Pool B no ITA (~23h Laufzeit) per `nohup node scripts/session-pipeline.mjs enrich-api --apply > /tmp/enrich-api.log 2>&1 &`. Erzeugt neue Pool-A-Pubs mit summary_de.
 >
-> **Output-Budget-Disziplin:** Realistic ~50 Pubs pro Session (Session 7–15 haben das bestätigt). Session 15 Pitch-Median 481 (sauber im Soll-Korridor 350–550, kürzer als Session 14 weil Inhaltsdichte tiefer), Reasoning-Median 186 (knapp am unteren Rand des Korridors 180–280 — zukünftige Sessions: pro Pub 1–2 zusätzliche Sätze zu Vermittelbarkeit/Aktualität).
+> **Workflow (Option A, Reasoning-Substanz-Sweep):**
+> 1. `node scripts/session-pipeline.mjs status`
+> 2. SQL-Query für 50 Pubs mit `LENGTH(reasoning) < 180` ORDER BY press_score DESC ziehen, `/tmp/next_chunk_clean.json` schreiben
+> 3. 4 Lese-Chunks à 12–13 (`/tmp/c1.txt … /tmp/c4.txt`)
+> 4. `cp scripts/eval_chunk_template.py /tmp/build_chunk_revisions.py` — `add(...)`-Aufrufe pro Pub füllen
+> 5. `python3 /tmp/build_chunk_revisions.py` — bei Verletzung Exit 1, Korrektur, neu durchlaufen
+> 6. `node scripts/session-pipeline.mjs apply /tmp/chunk_revisions.json --apply --force`
+> 7. SQL-Verification der 50 IDs (`LENGTH(reasoning) >= 180` für alle)
+> 8. Globale Reasoning-Substanz-Verteilung gegenchecken
 >
-> **Strategischer Hinweis Session 15:** RICAM-Egger-Numerik-Pubs erfordern bewusste Anwendungs-Anker-Differenzierung — derselbe Methodenkern (Massenlumping, Energie-Erhalt, Galerkin-Konvergenz) bekommt je nach physikalischem Kontext unterschiedliche Story-Anker: Pipelines, Reservoirs, E-Maschinen, Glasfasern, Antennen, Spinodale, Korrosion, etc. **Bei Peer/Preprint-Paaren** (in Session 15: Polymer-Wohlgestelltheit zwei Versionen von Egger): Pitches müssen sich differenzieren, nicht nur Haikus — beide Versionen kennzeichnen + bei Preprint methodischen Knackpunkt betonen, bei peer-reviewed inhaltlichen Hauptbefund.
+> **Quote-Falle (Sessions 7–17 erfolgreich umgangen):** Keine typografischen deutschen Quotes („"), nur ASCII-Apostroph (') in Python-Strings. Deutsche Umlaute in UTF-8 problemlos. „Pressewertbarkeit" im Reasoning vermeiden — matcht den pwert-Filter.
+>
+> **Bindestrich-Falle (Session 16):** Der Sanity-Check `[a-zäöüß]\s+-\s+[A-ZÄÖÜ][a-zäöüß]+` flaggt legitime Gedankenstriche " - X" vor Großbuchstabe-Wort als möglichen Tippfehler. Lösung von Anfang an: Gedankenstriche durch Kommata oder Doppelpunkte ersetzen. In Session 17 dadurch 0 Bindestrich-Fehlalarme.
+>
+> **Output-Budget (Session 17 hat das verschärft gehalten):** Pitch-Median 470, Reasoning-Median 284 (deutlich über Substanz-Schwelle 220 und sauber im strengen Korridor 200–300, beste Reasoning-Substanz seit Session 6). Strict-Korridor 200–300 hält und liefert dimensional begründete drei-Satz-Reasonings.
+>
+> **Strategischer Hinweis Session 17:** Bei der letzten Charge mit 5 sehr ähnlichen RICAM-QMC-Pubs und 6 sehr ähnlichen RICAM-Schicho-Pubs sowie 6 IWF-Nakamura-Pubs und 6 HEPHY-Schwanda-Pubs hat konsequente Anker-Differenzierung pro Pub funktioniert: jedem Pub einen eigenen Anwendungs-/Methoden-/Mission-Anker geben (z.B. QMC: Risiko-Quantil-Schätzung vs. Importance-Sampling vs. multivariate Approximation vs. starke Tractability vs. PDE-Gauss; HEPHY: B→K\*γ vs. D→KsKs vs. Λc-5x vs. D→π0π0 vs. τ-LFV vs. Ξc+; Nakamura: Solar-Korona vs. DF/Magnetopause vs. Mercury-BepiColombo vs. ML-Magnetschweif vs. ELFIN-Substurm vs. Mars-MAVEN). Diese Disziplin ist auch für die Reasoning-Sweep-Linie hilfreich, weil dort viele kurze Reasonings aus früheren Sessions repariert werden müssen.
+>
+> **ABSCHLUSS-VERMERK:** Mit Ende Session 17 ist der gesamte ursprünglich identifizierte Defekt-Pool des erweiterten Filters abgearbeitet. Sessions 6–17 (insgesamt 12 Re-Eval-Chargen, 594 Pubs) haben Reasonings ohne „Pressewertbar"-Floskel, Audiences ohne „reine Fachpresse"/„Spezialfachpresse", Angles ohne generic-Phrasen, Pitches ohne „Wiener"-Template etabliert.
+
+## Resume-Prompt (alt, Ende Session 16)
+
+> Resume OeAW Press Relevance Analyzer — Re-Eval der verbleibenden 44 unmatched-original Pubs (letzte Charge des Defekt-Pools).
+>
+> Stand: 44 unique-defective. Charge zu ~44 ziehen, individuell re-evaluieren, apply --apply --force.
+
+## Resume-Prompt (alt, Ende Session 15)
+
+> Resume OeAW Press Relevance Analyzer — Re-Eval der verbleibenden 94 unmatched-original Pubs.
+>
+> Stand: 94 unique-defective. Charge zu 50 ziehen, individuell re-evaluieren, apply --apply --force.
 
 ## Resume-Prompt (alt, Ende Session 14)
 
