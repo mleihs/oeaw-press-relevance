@@ -530,47 +530,7 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
           )}
         </CardContent>
       </Card>
-
-      {/* Citations (collapsible) */}
-      {(pub.citation_apa || pub.citation_de || pub.bibtex) && (
-        <CitationsCard pub={pub} />
-      )}
     </div>
-  );
-}
-
-function CitationsCard({ pub }: { pub: PublicationWithRelations }) {
-  const [open, setOpen] = useState(false);
-  const items = [
-    { key: 'apa', label: 'APA', text: pub.citation_apa },
-    { key: 'de', label: 'Deutsch', text: pub.citation_de },
-    { key: 'en', label: 'English', text: pub.citation_en },
-    { key: 'bibtex', label: 'BibTeX', text: pub.bibtex, mono: true },
-    { key: 'endnote', label: 'EndNote', text: pub.endnote, mono: true },
-    { key: 'ris', label: 'RIS', text: pub.ris, mono: true },
-  ].filter((i) => i.text);
-
-  return (
-    <Card>
-      <CardHeader className="pb-3 cursor-pointer" onClick={() => setOpen(!open)}>
-        <CardTitle className="text-base flex items-center justify-between">
-          <span>Zitate & Export ({items.length} Formate)</span>
-          <ChevronRight className={`h-4 w-4 transition-transform ${open ? 'rotate-90' : ''}`} />
-        </CardTitle>
-      </CardHeader>
-      {open && (
-        <CardContent className="space-y-3">
-          {items.map((i) => (
-            <div key={i.key}>
-              <h4 className="text-xs font-medium text-neutral-500 uppercase mb-1">{i.label}</h4>
-              <p className={`text-sm ${i.mono ? 'font-mono text-xs whitespace-pre-wrap break-all bg-neutral-50 p-2 rounded' : ''}`}>
-                {i.text}
-              </p>
-            </div>
-          ))}
-        </CardContent>
-      )}
-    </Card>
   );
 }
 
