@@ -1,7 +1,7 @@
 'use client';
 
 import { SCORE_COLORS, SCORE_LABELS } from '@/lib/constants';
-import { getScoreBand, BAND_BADGE_CLASSES } from '@/lib/score-utils';
+import { getScoreBandClass, type ScoreBandVariant } from '@/lib/score-utils';
 import { InfoBubble } from '@/components/info-bubble';
 import type { EXPL } from '@/lib/explanations';
 
@@ -74,13 +74,14 @@ export function ScoreBar({ dimension, value, compact }: ScoreBarProps) {
 
 interface PressScoreBadgeProps {
   score: number | null;
+  variant?: ScoreBandVariant;
 }
 
-export function PressScoreBadge({ score }: PressScoreBadgeProps) {
+export function PressScoreBadge({ score, variant = 'badge' }: PressScoreBadgeProps) {
   if (score === null) return <span className="text-neutral-400 text-sm">N/A</span>;
 
   const pct = Math.round(score * 100);
-  const bgColor = BAND_BADGE_CLASSES[getScoreBand(score)];
+  const bgColor = getScoreBandClass(score, variant);
 
   return (
     <span

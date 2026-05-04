@@ -17,7 +17,7 @@ import {
   STATUS_COLORS,
   OA_LABELS,
 } from '@/lib/constants';
-import { getScoreBand, BAND_HERO_CLASSES, SCORE_BAND_STORY_LABEL } from '@/lib/score-utils';
+import { getScoreBandClass, getScoreBandStoryLabel } from '@/lib/score-utils';
 import { CapybaraLogo } from '@/components/capybara-logo';
 import { MeistertaskButton } from './_components/meistertask-button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -398,7 +398,7 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
           <CardContent className="space-y-5">
             <div className="flex items-center gap-4">
               <div className={`flex items-center justify-center h-16 w-16 rounded-full text-xl font-bold ${
-                BAND_HERO_CLASSES[getScoreBand(pub.press_score)]
+                getScoreBandClass(pub.press_score, 'hero')
               }`}>
                 {pressScorePct}%
               </div>
@@ -408,7 +408,7 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
                   <InfoBubble id="press_score" size="md" />
                 </p>
                 <p className="text-sm text-neutral-500 inline-flex items-center gap-1">
-                  {SCORE_BAND_STORY_LABEL[getScoreBand(pub.press_score)]}
+                  {getScoreBandStoryLabel(pub.press_score)}
                   <InfoBubble id="score_band" />
                 </p>
               </div>
