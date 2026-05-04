@@ -295,15 +295,19 @@ export default function PublicationsPage() {
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm">
+            <Button
+              variant="outline"
+              size="sm"
+              title="Exportiert alle analysierten Publikationen — die aktuell aktiven Filter werden NICHT angewendet."
+            >
               <Download className="mr-2 h-4 w-4" />
               Exportieren
               <ChevronDown className="ml-2 h-3 w-3" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => handleExport('csv')}>Als CSV</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleExport('json')}>Als JSON</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleExport('csv')}>Als CSV (alle analysierten)</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleExport('json')}>Als JSON (alle analysierten)</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -388,7 +392,9 @@ export default function PublicationsPage() {
       {Object.keys(dimAvgs).length > 0 && (
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Durchschnittswerte (aktuelle Seite)</CardTitle>
+            <CardTitle className="text-base">
+              Durchschnitt dieser {publications.length} Publikationen
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid gap-3 sm:grid-cols-5">
