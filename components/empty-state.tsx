@@ -36,9 +36,9 @@ export function EmptyState({
       : 'py-8 text-center';
 
   return (
-    <div className={cn(wrapper, className)} role="status">
+    <div className={cn(wrapper, className)}>
       {icon && (
-        <div className="mx-auto mb-3 text-neutral-400 [&>svg]:mx-auto [&>svg]:h-8 [&>svg]:w-8">
+        <div className="mx-auto mb-3 flex h-8 w-8 items-center justify-center text-neutral-400">
           {icon}
         </div>
       )}
