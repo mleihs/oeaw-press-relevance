@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Publication } from '@/lib/types';
 import { useKeyboardShortcuts } from '@/lib/use-keyboard-shortcuts';
 import { PublicationTable } from '@/components/publication-table';
@@ -33,18 +34,22 @@ import { RotateCcw } from 'lucide-react';
 
 const PAGE_SIZE = 20;
 
+interface PublicationsResponse {
+  publications: Publication[];
+  total: number;
+  total_hidden: number;
+}
+
+const PUBS_QUERY_KEY = 'publications-list';
+
 export default function PublicationsPage() {
-  const [publications, setPublications] = useState<Publication[]>([]);
-  const [total, setTotal] = useState(0);
-  const [hidden, setHidden] = useState(0);
-  const [loading, setLoading] = useState(true);
   const [enrichOpen, setEnrichOpen] = useState(false);
   const [analysisOpen, setAnalysisOpen] = useState(false);
-  const [dimAvgs, setDimAvgs] = useState<Record<string, number>>({});
   const searchRef = useRef<HTMLInputElement>(null);
 
   const [filters, setFilters] = useFilters();
   const lookups = useLookups();
+  const queryClient = useQueryClient();
 
   const [searchInput, setSearchInput] = useState(filters.q);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -179,61 +184,67 @@ export default function PublicationsPage() {
     return false;
   })();
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const p = new URLSearchParams();
-      p.set('page', String(filters.page));
-      p.set('pageSize', String(PAGE_SIZE));
-      p.set('sort', filters.sort);
-      p.set('order', filters.order);
-      if (filters.q) p.set('search', filters.q);
-      if (filters.enrich) p.set('enrichment_status', filters.enrich);
-      if (filters.analysis) p.set('analysis_status', filters.analysis);
-      if (filters.types.length) p.set('pub_type_ids', filters.types.join(','));
-      if (filters.units.length) p.set('orgunit_ids', filters.units.join(','));
-      if (filters.oestat.length) p.set('oestat6_ids', filters.oestat.join(','));
-      if (filters.oestat3.length) p.set('oestat3_domains', filters.oestat3.join(','));
-      if (filters.topUnitOnly) p.set('top_level_only', 'true');
-      if (filters.peer === 'yes') p.set('peer_reviewed', 'true');
-      if (filters.peer === 'no') p.set('peer_reviewed', 'false');
-      if (filters.popsci === 'yes') p.set('popular_science', 'true');
-      if (filters.popsci === 'no') p.set('popular_science', 'false');
-      if (filters.oa === 'yes') p.set('open_access', 'true');
-      if (filters.oa === 'no') p.set('open_access', 'false');
-      if (filters.hasSumDe) p.set('has_summary_de', 'true');
-      if (filters.hasSumEn) p.set('has_summary_en', 'true');
-      if (filters.hasPdf) p.set('has_pdf', 'true');
-      if (filters.hasDoi) p.set('has_doi', 'true');
-      if (filters.maHl) p.set('mahighlight', 'true');
-      if (filters.hl) p.set('highlight', 'true');
-      if (filters.from) p.set('from', filters.from);
-      if (filters.to) p.set('to', filters.to);
-      if (filters.minScore > 0) p.set('min_score', String(filters.minScore / 100));
-      if (!filters.showAll) p.set('default_eligible', 'true');
-
-      const res = await fetch(`/api/publications?${p}`, { headers: getApiHeaders() });
-      const data = await res.json();
-      const pubs: Publication[] = data.publications || [];
-      setPublications(pubs);
-      setTotal(data.total || 0);
-      setHidden(data.total_hidden || 0);
-
-      const dims = ['public_accessibility', 'societal_relevance', 'novelty_factor', 'storytelling_potential', 'media_timeliness'] as const;
-      const avgs: Record<string, number> = {};
-      for (const dim of dims) {
-        const vals = pubs
-          .map((pub) => pub[dim])
-          .filter((v): v is number => v !== null);
-        if (vals.length > 0) avgs[dim] = vals.reduce((a, b) => a + b, 0) / vals.length;
-      }
-      setDimAvgs(avgs);
-    } catch {
-      // silently fail
-    } finally {
-      setLoading(false);
-    }
+  const queryString = useMemo(() => {
+    const p = new URLSearchParams();
+    p.set('page', String(filters.page));
+    p.set('pageSize', String(PAGE_SIZE));
+    p.set('sort', filters.sort);
+    p.set('order', filters.order);
+    if (filters.q) p.set('search', filters.q);
+    if (filters.enrich) p.set('enrichment_status', filters.enrich);
+    if (filters.analysis) p.set('analysis_status', filters.analysis);
+    if (filters.types.length) p.set('pub_type_ids', filters.types.join(','));
+    if (filters.units.length) p.set('orgunit_ids', filters.units.join(','));
+    if (filters.oestat.length) p.set('oestat6_ids', filters.oestat.join(','));
+    if (filters.oestat3.length) p.set('oestat3_domains', filters.oestat3.join(','));
+    if (filters.topUnitOnly) p.set('top_level_only', 'true');
+    if (filters.peer === 'yes') p.set('peer_reviewed', 'true');
+    if (filters.peer === 'no') p.set('peer_reviewed', 'false');
+    if (filters.popsci === 'yes') p.set('popular_science', 'true');
+    if (filters.popsci === 'no') p.set('popular_science', 'false');
+    if (filters.oa === 'yes') p.set('open_access', 'true');
+    if (filters.oa === 'no') p.set('open_access', 'false');
+    if (filters.hasSumDe) p.set('has_summary_de', 'true');
+    if (filters.hasSumEn) p.set('has_summary_en', 'true');
+    if (filters.hasPdf) p.set('has_pdf', 'true');
+    if (filters.hasDoi) p.set('has_doi', 'true');
+    if (filters.maHl) p.set('mahighlight', 'true');
+    if (filters.hl) p.set('highlight', 'true');
+    if (filters.from) p.set('from', filters.from);
+    if (filters.to) p.set('to', filters.to);
+    if (filters.minScore > 0) p.set('min_score', String(filters.minScore / 100));
+    if (!filters.showAll) p.set('default_eligible', 'true');
+    return p.toString();
   }, [filters]);
+
+  const { data, isLoading: loading } = useQuery<PublicationsResponse>({
+    queryKey: [PUBS_QUERY_KEY, queryString],
+    queryFn: async () => {
+      const res = await fetch(`/api/publications?${queryString}`, { headers: getApiHeaders() });
+      return res.json();
+    },
+    placeholderData: (prev) => prev,
+  });
+
+  const publications = data?.publications ?? [];
+  const total = data?.total ?? 0;
+  const hidden = data?.total_hidden ?? 0;
+
+  const dimAvgs = useMemo(() => {
+    const dims = ['public_accessibility', 'societal_relevance', 'novelty_factor', 'storytelling_potential', 'media_timeliness'] as const;
+    const out: Record<string, number> = {};
+    for (const dim of dims) {
+      const vals = publications
+        .map((pub) => pub[dim])
+        .filter((v): v is number => v !== null);
+      if (vals.length > 0) out[dim] = vals.reduce((a, b) => a + b, 0) / vals.length;
+    }
+    return out;
+  }, [publications]);
+
+  const refetch = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: [PUBS_QUERY_KEY] });
+  }, [queryClient]);
 
   const handleExport = useCallback((format: 'csv' | 'json') => {
     fetch(`/api/export/${format}`, { headers: getApiHeaders() })
@@ -246,10 +257,6 @@ export default function PublicationsPage() {
         URL.revokeObjectURL(a.href);
       });
   }, []);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
 
   const handleSort = useCallback(
     (column: string) => {
@@ -378,8 +385,8 @@ export default function PublicationsPage() {
         </Card>
       </div>
 
-      <EnrichmentModal open={enrichOpen} onOpenChange={setEnrichOpen} onComplete={fetchData} />
-      <AnalysisModal open={analysisOpen} onOpenChange={setAnalysisOpen} onComplete={fetchData} />
+      <EnrichmentModal open={enrichOpen} onOpenChange={setEnrichOpen} onComplete={refetch} />
+      <AnalysisModal open={analysisOpen} onOpenChange={setAnalysisOpen} onComplete={refetch} />
 
       {Object.keys(dimAvgs).length > 0 && (
         <Card>

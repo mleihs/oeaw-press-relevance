@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Database, FileArchive, Terminal, Info, RefreshCcw } from 'lucide-react';
@@ -21,25 +21,15 @@ interface SyncCounts {
 }
 
 export default function ImportPage() {
-  const [counts, setCounts] = useState<SyncCounts | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  async function load() {
-    setLoading(true);
-    setError(null);
-    try {
+  const { data: counts, error, isFetching, refetch } = useQuery<SyncCounts>({
+    queryKey: ['webdb-status'],
+    queryFn: async () => {
       const res = await fetch('/api/webdb/status', { headers: getApiHeaders() });
       if (!res.ok) throw new Error('Status nicht abrufbar');
-      setCounts(await res.json());
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Fehler');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => { load(); }, []);
+      return res.json();
+    },
+  });
+  const errorMessage = error instanceof Error ? error.message : null;
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -130,16 +120,16 @@ export default function ImportPage() {
             Aktueller Datenstand
           </CardTitle>
           <button
-            onClick={load}
+            onClick={() => refetch()}
             className="inline-flex items-center gap-1 rounded border px-2 py-1 text-xs hover:bg-neutral-50"
           >
-            <RefreshCcw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCcw className={`h-3 w-3 ${isFetching ? 'animate-spin' : ''}`} />
             aktualisieren
           </button>
         </CardHeader>
         <CardContent>
-          {error ? (
-            <p className="text-sm text-red-600">{error}</p>
+          {errorMessage ? (
+            <p className="text-sm text-red-600">{errorMessage}</p>
           ) : counts ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <Stat label="Publikationen" value={counts.publications} />

@@ -1,10 +1,13 @@
 'use client';
 
-import { use, useEffect, useState } from 'react';
+import { use } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
 import { getApiHeaders } from '@/lib/settings-store';
 import { sincePresetToDate, type ResearcherDetail } from '@/lib/researchers';
+import { EmptyState } from '@/components/empty-state';
+import { LoadingState } from '@/components/loading-state';
 import { PersonHeader } from './_components/person-header';
 import dynamic from 'next/dynamic';
 import { CoauthorBlock } from './_components/coauthor-block';
@@ -22,39 +25,34 @@ const WINDOW_LABEL = 'letzte 12 Monate';
 
 export default function PersonDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const [detail, setDetail] = useState<ResearcherDetail | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const since = sincePresetToDate(WINDOW);
 
-  useEffect(() => {
-    const since = sincePresetToDate(WINDOW);
-    fetch(`/api/persons/${id}?since=${since}`, { headers: getApiHeaders() })
-      .then(async (r) => {
-        const d = await r.json();
-        if (!r.ok) throw new Error(d.error ?? `HTTP ${r.status}`);
-        return d;
-      })
-      .then((d) => setDetail(d))
-      .catch((e) => setError(e.message ?? 'Fetch failed'));
-  }, [id]);
+  const { data: detail, error, isLoading } = useQuery<ResearcherDetail>({
+    queryKey: ['person-detail', id, since],
+    queryFn: async () => {
+      const r = await fetch(`/api/persons/${id}?since=${since}`, { headers: getApiHeaders() });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error ?? `HTTP ${r.status}`);
+      return d;
+    },
+  });
 
   if (error) {
     return (
       <div className="space-y-4">
         <BackLink />
         <div className="rounded-lg border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
-          Fehler beim Laden: {error}
+          Fehler beim Laden: {error.message}
         </div>
       </div>
     );
   }
 
-  if (!detail) {
+  if (isLoading || !detail) {
     return (
       <div className="space-y-4">
         <BackLink />
-        <div className="rounded-lg border bg-white p-12 text-center text-sm text-neutral-400">
-          Lade Profil …
-        </div>
+        <LoadingState label="Lade Profil …" />
       </div>
     );
   }
@@ -63,9 +61,7 @@ export default function PersonDetailPage({ params }: { params: Promise<{ id: str
     return (
       <div className="space-y-4">
         <BackLink />
-        <div className="rounded-lg border bg-white p-12 text-center text-sm text-neutral-400">
-          Person nicht gefunden.
-        </div>
+        <EmptyState title="Person nicht gefunden." />
       </div>
     );
   }

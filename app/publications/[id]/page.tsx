@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import { use, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { PublicationWithRelations } from '@/lib/types';
 import { getApiHeaders } from '@/lib/settings-store';
@@ -31,28 +32,16 @@ import {
 
 export default function PublicationDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const [pub, setPub] = useState<PublicationWithRelations | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: pub, error, isLoading } = useQuery<PublicationWithRelations>({
+    queryKey: ['publication-detail', id],
+    queryFn: async () => {
+      const res = await fetch(`/api/publications/${id}`, { headers: getApiHeaders() });
+      if (!res.ok) throw new Error('Publikation nicht gefunden');
+      return res.json();
+    },
+  });
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const res = await fetch(`/api/publications/${id}`, {
-          headers: getApiHeaders(),
-        });
-        if (!res.ok) throw new Error('Publikation nicht gefunden');
-        setPub(await res.json());
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Fehler beim Laden');
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, [id]);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-4">
         <CapybaraLogo size="md" />
@@ -62,12 +51,13 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
   }
 
   if (error || !pub) {
+    const message = error instanceof Error ? error.message : 'Publikation nicht gefunden';
     return (
       <div className="max-w-4xl mx-auto space-y-4">
         <Breadcrumb />
         <Card className="border-red-200">
           <CardContent className="p-6 text-center">
-            <p className="text-red-600 font-medium">{error || 'Publikation nicht gefunden'}</p>
+            <p className="text-red-600 font-medium">{message}</p>
           </CardContent>
         </Card>
       </div>

@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -56,107 +57,79 @@ function getTimeRangeLabel(period: TimePeriod): string {
 }
 
 export default function DashboardPage() {
-  const [stats, setStats] = useState<PublicationStats | null>(null);
-  const [topPubs, setTopPubs] = useState<PublicationWithRelations[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('month');
-  const [topLoading, setTopLoading] = useState(false);
-  const [scoreDistribution, setScoreDistribution] = useState<number[]>([]);
-  const [dimensionAvgs, setDimensionAvgs] = useState<Record<string, number>>({});
-  const [topKeywords, setTopKeywords] = useState<{ word: string; count: number }[]>([]);
 
-  useEffect(() => {
-    async function loadStats() {
-      try {
-        const headers = getApiHeaders();
-        const statsRes = await fetch('/api/publications?stats=true&default_eligible=true', { headers });
-        if (!statsRes.ok) throw new Error('Statistiken konnten nicht geladen werden');
-        const statsData = await statsRes.json();
-        setStats(statsData);
+  const statsQuery = useQuery<PublicationStats & { score_distribution?: number[] }>({
+    queryKey: ['dashboard-stats'],
+    queryFn: async () => {
+      const r = await fetch('/api/publications?stats=true&default_eligible=true', { headers: getApiHeaders() });
+      if (!r.ok) throw new Error('Statistiken konnten nicht geladen werden');
+      return r.json();
+    },
+  });
 
-        // Score distribution is computed server-side in the stats response
-        if (statsData.score_distribution) {
-          setScoreDistribution(statsData.score_distribution);
+  const analyzedQuery = useQuery<{ publications?: Publication[] }>({
+    queryKey: ['dashboard-analyzed-pubs'],
+    queryFn: async () => {
+      const r = await fetch('/api/publications?analysis_status=analyzed&pageSize=500&default_eligible=true', { headers: getApiHeaders() });
+      if (!r.ok) throw new Error('Analyzed pubs not loaded');
+      return r.json();
+    },
+  });
+
+  const topQuery = useQuery<{ publications?: PublicationWithRelations[] }>({
+    queryKey: ['dashboard-top', timePeriod],
+    queryFn: async () => {
+      // ITA-subtree exclusion is enforced server-side by exclude_ita=true,
+      // which translates to a single indexed predicate on the cached
+      // publications.is_ita_subtree column (set by the ETL after every
+      // webdb-import). No client-side filtering needed.
+      const params = new URLSearchParams({
+        sort: 'press_score',
+        order: 'desc',
+        pageSize: '10',
+        analysis_status: 'analyzed',
+        default_eligible: 'true',
+        exclude_ita: 'true',
+      });
+      const publishedAfter = getPublishedAfter(timePeriod);
+      if (publishedAfter) params.set('published_after', publishedAfter);
+      const r = await fetch(`/api/publications?${params}`, { headers: getApiHeaders() });
+      if (!r.ok) throw new Error('Top pubs not loaded');
+      return r.json();
+    },
+  });
+
+  const stats = statsQuery.data ?? null;
+  const scoreDistribution = stats?.score_distribution ?? [];
+  const topPubs = topQuery.data?.publications ?? [];
+  const loading = statsQuery.isLoading;
+  const topLoading = topQuery.isLoading;
+  const error = statsQuery.error instanceof Error ? statsQuery.error.message : null;
+
+  const { dimensionAvgs, topKeywords } = useMemo(() => {
+    const pubs: Publication[] = analyzedQuery.data?.publications ?? [];
+    const dims = ['public_accessibility', 'societal_relevance', 'novelty_factor', 'storytelling_potential', 'media_timeliness'] as const;
+    const avgs: Record<string, number> = {};
+    for (const dim of dims) {
+      const vals = pubs.filter(p => p[dim] != null).map(p => p[dim] as number);
+      avgs[dim] = vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+    }
+    const freq: Record<string, number> = {};
+    for (const p of pubs) {
+      if (p.enriched_keywords) {
+        for (const kw of p.enriched_keywords) {
+          const normalized = kw.trim().toLowerCase();
+          if (normalized) freq[normalized] = (freq[normalized] || 0) + 1;
         }
-
-        // Fetch analyzed publications for dimensions + keywords
-        const pubsRes = await fetch('/api/publications?analysis_status=analyzed&pageSize=500&default_eligible=true', { headers });
-        if (pubsRes.ok) {
-          const pubsData = await pubsRes.json();
-          const pubs: Publication[] = pubsData.publications || [];
-
-          // Dimension averages
-          const dims = ['public_accessibility', 'societal_relevance', 'novelty_factor', 'storytelling_potential', 'media_timeliness'] as const;
-          const avgs: Record<string, number> = {};
-          for (const dim of dims) {
-            const vals = pubs.filter(p => p[dim] != null).map(p => p[dim] as number);
-            avgs[dim] = vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
-          }
-          setDimensionAvgs(avgs);
-
-          // Keyword frequencies
-          const freq: Record<string, number> = {};
-          for (const p of pubs) {
-            if (p.enriched_keywords) {
-              for (const kw of p.enriched_keywords) {
-                const normalized = kw.trim().toLowerCase();
-                if (normalized) freq[normalized] = (freq[normalized] || 0) + 1;
-              }
-            }
-          }
-          const sorted = Object.entries(freq)
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 30)
-            .map(([word, count]) => ({ word, count }));
-          setTopKeywords(sorted);
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Dashboard konnte nicht geladen werden');
-      } finally {
-        setLoading(false);
       }
     }
-    loadStats();
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    async function loadTop() {
-      setTopLoading(true);
-      try {
-        const headers = getApiHeaders();
-        // ITA-subtree exclusion is enforced server-side by exclude_ita=true,
-        // which translates to a single indexed predicate on the cached
-        // publications.is_ita_subtree column (set by the ETL after every
-        // webdb-import). No client-side filtering needed.
-        const params = new URLSearchParams({
-          sort: 'press_score',
-          order: 'desc',
-          pageSize: '10',
-          analysis_status: 'analyzed',
-          default_eligible: 'true',
-          exclude_ita: 'true',
-        });
-        const publishedAfter = getPublishedAfter(timePeriod);
-        if (publishedAfter) params.set('published_after', publishedAfter);
-
-        const topRes = await fetch(`/api/publications?${params}`, { headers });
-        if (cancelled) return;
-        if (topRes.ok) {
-          const topData = await topRes.json();
-          if (cancelled) return;
-          setTopPubs((topData.publications || []) as PublicationWithRelations[]);
-        }
-      } catch {
-        // silently fail for top pubs
-      } finally {
-        if (!cancelled) setTopLoading(false);
-      }
-    }
-    loadTop();
-    return () => { cancelled = true; };
-  }, [timePeriod]);
+    const keywords = Object.entries(freq)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 30)
+      .map(([word, count]) => ({ word, count }));
+    return { dimensionAvgs: avgs, topKeywords: keywords };
+  }, [analyzedQuery.data]);
 
   if (loading) {
     return (
