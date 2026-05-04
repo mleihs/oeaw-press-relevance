@@ -1,10 +1,9 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
 import { useQueryStates } from 'nuqs';
 import { filterParsers } from '../_filters';
 import { sincePresetToDate, defaultMinValueFor, type TopResearcherRow, type DistributionPoint } from '@/lib/researchers';
-import { getApiHeaders } from '@/lib/settings-store';
+import { useApiQuery } from '@/lib/use-api-query';
 
 function buildResearcherParams(
   filters: ReturnType<typeof useQueryStates<typeof filterParsers>>[0],
@@ -30,41 +29,27 @@ function buildResearcherParams(
 export function useLeaderboard() {
   const [filters] = useQueryStates(filterParsers, { shallow: false });
   const params = buildResearcherParams(filters, 50);
-
-  const { data, error, isLoading } = useQuery<{ rows?: TopResearcherRow[]; error?: string }>({
-    queryKey: ['researchers-top', params.toString()],
-    queryFn: async () => {
-      const r = await fetch(`/api/researchers/top?${params}`, { headers: getApiHeaders() });
-      return r.json();
-    },
-  });
-
-  const apiError = data?.error ?? null;
-  const message = error instanceof Error ? error.message : null;
+  const { data, error, isLoading } = useApiQuery<{ rows?: TopResearcherRow[] }>(
+    ['researchers-top', params.toString()],
+    `/api/researchers/top?${params}`,
+  );
   return {
-    rows: apiError ? [] : data?.rows ?? [],
+    rows: data?.rows ?? [],
     loading: isLoading,
-    error: apiError ?? message,
+    error: error?.message ?? null,
   };
 }
 
 export function useDistribution() {
   const [filters] = useQueryStates(filterParsers, { shallow: false });
   const params = buildResearcherParams(filters, 500);
-
-  const { data, error, isLoading } = useQuery<{ points?: DistributionPoint[]; error?: string }>({
-    queryKey: ['researchers-distribution', params.toString()],
-    queryFn: async () => {
-      const r = await fetch(`/api/researchers/distribution?${params}`, { headers: getApiHeaders() });
-      return r.json();
-    },
-  });
-
-  const apiError = data?.error ?? null;
-  const message = error instanceof Error ? error.message : null;
+  const { data, error, isLoading } = useApiQuery<{ points?: DistributionPoint[] }>(
+    ['researchers-distribution', params.toString()],
+    `/api/researchers/distribution?${params}`,
+  );
   return {
-    points: apiError ? [] : data?.points ?? [],
+    points: data?.points ?? [],
     loading: isLoading,
-    error: apiError ?? message,
+    error: error?.message ?? null,
   };
 }
