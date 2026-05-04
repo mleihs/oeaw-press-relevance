@@ -1,10 +1,9 @@
 'use client';
 
 import { use, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { PublicationWithRelations } from '@/lib/types';
-import { getApiHeaders } from '@/lib/settings-store';
+import { useApiQuery } from '@/lib/use-api-query';
 import { displayTitle } from '@/lib/html-utils';
 import { doiToUrl } from '@/lib/enrichment/doi-utils';
 import { ScoreBar } from '@/components/score-bar';
@@ -32,14 +31,10 @@ import {
 
 export default function PublicationDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { data: pub, error, isLoading } = useQuery<PublicationWithRelations>({
-    queryKey: ['publication-detail', id],
-    queryFn: async () => {
-      const res = await fetch(`/api/publications/${id}`, { headers: getApiHeaders() });
-      if (!res.ok) throw new Error('Publikation nicht gefunden');
-      return res.json();
-    },
-  });
+  const { data: pub, error, isLoading } = useApiQuery<PublicationWithRelations>(
+    ['publication-detail', id],
+    `/api/publications/${id}`,
+  );
 
   if (isLoading) {
     return (

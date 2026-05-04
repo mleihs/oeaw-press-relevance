@@ -850,6 +850,189 @@ function _extractDoiFromRow(row) {
   return null;
 }
 
+// Haiku-Patch: gezieltes UPDATE *nur* der `haiku`-Spalte mit Concurrency-Check.
+// Vom session-pipeline `apply`-Pfad bewusst getrennt, weil dort eine vollstaendige
+// Bewertung (10+ Felder) verlangt wird; reine Haiku-Korrekturen sollen die anderen
+// Felder NICHT anfassen. Pattern folgt `doi-backfill`: Pre-Flight, Single-Field-
+// UPDATE in Transaction, automatisches updated_at = NOW() (loest die `prod_haiku_drift`-
+// Falle, in der direkte SQL-Patches kein updated_at touchten).
+//
+// Input-JSON: { phase, rationale, patches: [{ id, current_haiku, new_haiku, reason }] }
+// Idempotent: zweiter Lauf no-op (current_haiku stimmt nicht mehr mit DB ueberein,
+// die Funktion erkennt "already-at-target" und ueberspringt sauber).
+const ASCII_REPLACEMENT_WORDS = [
+  'waechst', 'traegt', 'fuer', 'prueft', 'haengt', 'zaehlt', 'faellt',
+  'fliesst', 'schliesst', 'taeuscht', 'klaert', 'gewaehlt', 'praegt',
+  'zurueck', 'Heisses', 'Mass ', 'Waerme', 'Kohaerenz', 'naehrt',
+  'Woerter', 'Schluessel', 'Gluehn', 'stoeren', 'Koerpers',
+  'Tueren', 'fluechten', 'gehoert', 'koennen', 'muessen',
+  'fuehrt', 'fuehlt', 'staerker', 'naeher', 'spueren',
+  'haelt', 'erfuellt', 'erzaehlt', 'kuerzer', 'vorueber', 'faengt',
+  'Pruefung', 'Geschaeft', 'Buehne', 'Faehigkeit', 'zerbroeselt',
+  'draengt', 'Stueck', 'oeffnet', 'loest', 'heiss ', 'duennen',
+  'laeuft', 'Koerner', 'hoert', 'Gespraech', 'taeuschend',
+];
+
+function validateNewHaiku(haiku, { allowArchaic = false } = {}) {
+  const errors = [];
+  if (typeof haiku !== 'string') {
+    errors.push('new_haiku must be string');
+    return errors;
+  }
+  if (haiku.includes('\n')) errors.push('contains newline (use " / " separator)');
+  if (/[‘’']/.test(haiku)) errors.push('contains apostrophe');
+  const parts = haiku.split(' / ').map((s) => s.trim()).filter(Boolean);
+  if (parts.length !== 3) errors.push(`has ${parts.length} parts (need 3 via " / ")`);
+  if (!allowArchaic) {
+    for (const w of ASCII_REPLACEMENT_WORDS) {
+      if (haiku.includes(w)) {
+        errors.push(`ASCII-replacement "${w.trim()}" (use real umlaut)`);
+      }
+    }
+  }
+  return errors;
+}
+
+async function cmdHaikuPatch(opts, positional) {
+  const apply = opts.apply === true || opts.apply === 'true';
+  const allowArchaic = opts['allow-archaic'] === true || opts['allow-archaic'] === 'true';
+
+  if (positional.length === 0) {
+    log('Usage: haiku-patch <patch-file.json> [--apply] [--allow-archaic]');
+    process.exit(1);
+  }
+  const patchFile = positional[0];
+  const raw = readFileSync(patchFile, 'utf8');
+  const data = JSON.parse(raw);
+  const patches = Array.isArray(data) ? data : (data.patches || []);
+  if (!Array.isArray(patches) || patches.length === 0) {
+    log('Keine patches in Input-Datei.');
+    process.exit(1);
+  }
+
+  log(`${patches.length} Patches geladen aus ${patchFile}.`);
+  log(`Phase: ${data.phase || '(none)'}`);
+  if (data.rationale) log(`Rationale: ${data.rationale}`);
+
+  for (const p of patches) {
+    for (const k of ['id', 'current_haiku', 'new_haiku']) {
+      if (!(k in p)) {
+        log(`Patch fehlt Feld "${k}" (id=${p.id || '?'})`);
+        process.exit(1);
+      }
+    }
+  }
+
+  const validationErrors = [];
+  for (const p of patches) {
+    const errs = validateNewHaiku(p.new_haiku, { allowArchaic });
+    if (errs.length > 0) validationErrors.push({ id: p.id, errors: errs });
+  }
+  if (validationErrors.length > 0) {
+    log(`! ${validationErrors.length} Patches haben Format-Validation-Fehler:`);
+    for (const v of validationErrors.slice(0, 10)) {
+      log(`    ${v.id.slice(0, 8)}: ${v.errors.join('; ')}`);
+    }
+    log('Bitte korrigieren (oder --allow-archaic falls bewusst archaische Form).');
+    process.exit(1);
+  }
+  log(`Alle ${patches.length} new_haiku-Werte passieren Format-Validation.`);
+
+  await withClient(async (c) => {
+    const ids = patches.map((p) => p.id);
+    const r = await c.query(
+      `SELECT id, haiku FROM publications WHERE id = ANY($1::uuid[])`,
+      [ids],
+    );
+    const dbHaikuById = new Map(r.rows.map((row) => [row.id, row.haiku]));
+
+    const ready = [];
+    const skipMissing = [];
+    const skipMismatch = [];
+
+    for (const p of patches) {
+      const dbHaiku = dbHaikuById.get(p.id);
+      if (dbHaiku === undefined) { skipMissing.push(p.id); continue; }
+      if (dbHaiku !== p.current_haiku) {
+        if (dbHaiku === p.new_haiku) {
+          skipMismatch.push({ id: p.id, reason: 'already-at-target' });
+        } else {
+          skipMismatch.push({ id: p.id, reason: 'current-haiku-mismatch', db_haiku: dbHaiku });
+        }
+        continue;
+      }
+      ready.push(p);
+    }
+
+    log('');
+    log('Pre-flight:');
+    log(`  → ready to apply:                       ${ready.length}`);
+    log(`  → skip (id not in DB):                  ${skipMissing.length}`);
+    log(`  → skip (already-at-target / mismatch):  ${skipMismatch.length}`);
+    for (const id of skipMissing.slice(0, 5)) log(`    missing: ${id}`);
+    for (const s of skipMismatch.slice(0, 5)) log(`    skip   : ${s.id.slice(0, 8)} — ${s.reason}`);
+
+    if (ready.length === 0) { log('Nothing to apply.'); return; }
+
+    log('');
+    log('Diff-Vorschau (max 5):');
+    for (const p of ready.slice(0, 5)) {
+      log(`  ${p.id.slice(0, 8)}  reason=${p.reason || '-'}`);
+      log(`    ALT: ${p.current_haiku.replace(/\n/g, ' | ')}`);
+      log(`    NEU: ${p.new_haiku}`);
+    }
+    if (ready.length > 5) log(`    ... (${ready.length - 5} weitere)`);
+
+    if (!apply) {
+      log('');
+      log(`[DRY-RUN] Mit --apply tatsaechlich in DB schreiben.`);
+      return;
+    }
+
+    log('');
+    log(`[APPLY] BEGIN transaction...`);
+    let written = 0;
+    await c.query('BEGIN');
+    try {
+      for (const p of ready) {
+        // WHERE haiku = current_haiku schuetzt nochmals gegen Concurrency innerhalb
+        // der Transaktion (Race zwischen Pre-Flight und UPDATE).
+        const w = await c.query(
+          `UPDATE publications
+             SET haiku = $1, updated_at = NOW()
+           WHERE id = $2 AND haiku = $3`,
+          [p.new_haiku, p.id, p.current_haiku],
+        );
+        written += w.rowCount;
+      }
+      await c.query('COMMIT');
+    } catch (e) {
+      await c.query('ROLLBACK');
+      throw e;
+    }
+    log(`OK — ${written}/${ready.length} haikus geschrieben.`);
+
+    const logEntry = {
+      run_at: new Date().toISOString(),
+      env: PG_URL.includes('127.0.0.1') ? 'local' : 'remote',
+      patch_file: patchFile,
+      phase: data.phase || null,
+      applied_ids: ready.map((p) => p.id),
+      skipped_missing: skipMissing,
+      skipped_mismatch: skipMismatch.map((s) => ({ id: s.id, reason: s.reason })),
+      written,
+    };
+    const auditPath = patchFile.replace(/\/[^/]+\.json$/, '/applied-log.jsonl');
+    try {
+      const { appendFileSync } = await import('fs');
+      appendFileSync(auditPath, JSON.stringify(logEntry) + '\n');
+      log(`Audit-log appended: ${auditPath}`);
+    } catch (e) {
+      log(`! Audit-log write failed: ${e.message}`);
+    }
+  });
+}
+
 async function cmdDoiBackfill(opts) {
   const apply = opts.apply === true || opts.apply === 'true';
 
@@ -954,6 +1137,13 @@ Commands:
   apply [<file>|-] [--apply] [--force]  Evaluation-JSON aus Datei/stdin, validieren,
                                         mit --apply schreiben. Default skip wenn
                                         analysis_status='analyzed', --force überschreibt.
+  haiku-patch <file> [--apply]          Gezieltes UPDATE *nur* der haiku-Spalte.
+              [--allow-archaic]         Input: {patches:[{id, current_haiku, new_haiku, reason}]}.
+                                        Verifiziert current_haiku vs DB (concurrency-safe,
+                                        idempotent), validiert new_haiku-Format
+                                        (3 Teile via " / ", keine \\n / Apostrophe / ASCII-
+                                        Umlaute). Setzt updated_at=NOW(). Audit nach
+                                        <patches-dir>/applied-log.jsonl.
 
 Modell-Tag bei Session-Scoring: ${SESSION_MODEL_TAG}
 Env: PG_DATABASE_URL (default ${PG_URL})
@@ -971,6 +1161,7 @@ Env: PG_DATABASE_URL (default ${PG_URL})
       case 'doi-backfill':   await cmdDoiBackfill(args); break;
       case 'candidates':     await cmdCandidates(args, positional); break;
       case 'apply':          await cmdApply(args, positional); break;
+      case 'haiku-patch':    await cmdHaikuPatch(args, positional); break;
       default:
         log(`Unbekanntes Kommando: ${cmd}`);
         process.exit(1);

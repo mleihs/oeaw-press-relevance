@@ -1,0 +1,128 @@
+{
+  "phase": "phase1-newline-ascii",
+  "created_at": "2026-05-04T20:55:00Z",
+  "rationale": "Phase 1 mech. Fix der 21 Newline-Haikus aus dem Findings-Sweep 2026-05-04. Recherche-bestaetigt (HAIKU_RESEARCH_DE.md + _EN.md): Komposita ok, Sozialleistung (9 Silben) durchgelassen, AAR2 in Phase 3 verschoben (Pseudo-Tiefe), CLARIN inhalts-edit \"verschmaelt\" -> \"verschmaeht\" (kein archaisches Wort, keine Goethe-Schiller-Apokope-Tradition).",
+  "expected_count": 20,
+  "patches": [
+    {
+      "id": "5c9085d8-ab65-45f9-9878-0f8aa975e94e",
+      "current_haiku": "Pruefung im Browser\ndas Kind sieht durch die Schranke\nDaten bleiben dicht",
+      "new_haiku": "Prüfung im Browser / das Kind sieht durch die Schranke / Daten bleiben dicht",
+      "reason": "newline -> \" / \"; ASCII-Umlaute"
+    },
+    {
+      "id": "968bf7e4-ef77-4212-a7cb-9ec2eafe0782",
+      "current_haiku": "Bretter und Geschaeft\nder Hof gibt das letzte Wort\nBuehne traegt den Streit",
+      "new_haiku": "Bretter und Geschäft / der Hof gibt das letzte Wort / Bühne trägt den Streit",
+      "reason": "newline -> \" / \"; ASCII-Umlaute"
+    },
+    {
+      "id": "4a32d19c-56dd-459c-a97b-ec8d5d387031",
+      "current_haiku": "Wiege haelt das Jahr\ndie Faehigkeit ruht sich aus\nlange dauert es",
+      "new_haiku": "Wiege hält das Jahr / die Fähigkeit ruht sich aus / lange dauert es",
+      "reason": "newline -> \" / \"; ASCII-Umlaute"
+    },
+    {
+      "id": "58c3df68-7433-42f7-b725-41a229ef5995",
+      "current_haiku": "Umfrage spricht laut\nder Sender praegt das Vertrauen\nWahrheit haengt am Bild",
+      "new_haiku": "Umfrage spricht laut / der Sender prägt das Vertrauen / Wahrheit hängt am Bild",
+      "reason": "newline -> \" / \"; ASCII-Umlaute"
+    },
+    {
+      "id": "57d7ab36-2524-4277-9d16-e94dce27996f",
+      "current_haiku": "Frauen leben weit\ndie Jahre sind nicht leicht erfuellt\nMass haelt nicht alles",
+      "new_haiku": "Frauen leben weit / die Jahre sind nicht leicht erfüllt / Maß hält nicht alles",
+      "reason": "newline -> \" / \"; ASCII-Umlaute"
+    },
+    {
+      "id": "88032b05-588b-4ff3-a7a4-8d06ad36e79e",
+      "current_haiku": "Stift wird angegriffen\ndie Geduld zerbroeselt im Druck\nWahrheit ringt um Raum",
+      "new_haiku": "Stift wird angegriffen / die Geduld zerbröselt im Druck / Wahrheit ringt um Raum",
+      "reason": "newline -> \" / \"; ASCII-Umlaute"
+    },
+    {
+      "id": "af4a0927-be49-4256-bfe0-444d21cd3b7b",
+      "current_haiku": "Krise rief den Rat\ndas Vertrauen schwankt im Gang\nPolitik traegt mit",
+      "new_haiku": "Krise rief den Rat / das Vertrauen schwankt im Gang / Politik trägt mit",
+      "reason": "newline -> \" / \"; ASCII-Umlaute"
+    },
+    {
+      "id": "8e530433-3b3f-4611-84ee-bd19a1e64dbf",
+      "current_haiku": "Streit traegt seinen Mann\nder Konflikt naehrt die Stimme\nRat sucht andre Form",
+      "new_haiku": "Streit trägt seinen Mann / der Konflikt nährt die Stimme / Rat sucht andre Form",
+      "reason": "newline -> \" / \"; ASCII-Umlaute"
+    },
+    {
+      "id": "07468254-77a2-493d-9dd3-591f3b89fe0f",
+      "current_haiku": "Netz fehlt fuer den Tag\ndie Krise spricht in Spitzen\nGesprach bleibt das Mass",
+      "new_haiku": "Netz fehlt für den Tag / die Krise spricht in Spitzen / Gespräch bleibt das Maß",
+      "reason": "newline -> \" / \"; ASCII-Umlaute"
+    },
+    {
+      "id": "6e35c077-7a25-4333-9c29-686de51f131e",
+      "current_haiku": "Algorithmus zaehlt\nSozialleistung wird gewogen\nMensch faellt aus dem Bild",
+      "new_haiku": "Algorithmus zählt / Sozialleistung wird gewogen / Mensch fällt aus dem Bild",
+      "reason": "newline -> \" / \"; ASCII-Umlaute"
+    },
+    {
+      "id": "60735065-c1e9-4b16-af37-35bcc06c2012",
+      "current_haiku": "Akku ruht im Auto\nim Speicher faengt es neu an\nEnergie bleibt drin",
+      "new_haiku": "Akku ruht im Auto / im Speicher fängt es neu an / Energie bleibt drin",
+      "reason": "newline -> \" / \"; ASCII-Umlaute"
+    },
+    {
+      "id": "39f4ef5b-1ddb-4826-aa04-9524784de7dd",
+      "current_haiku": "Stimme wird vermehrt\nBilder finden ihren Lauf\nDemokratie wankt",
+      "new_haiku": "Stimme wird vermehrt / Bilder finden ihren Lauf / Demokratie wankt",
+      "reason": "newline -> \" / \"; ASCII-Umlaute"
+    },
+    {
+      "id": "042a0095-db2a-4d8c-a966-6e5dddd57a96",
+      "current_haiku": "Korn waechst nahe heim\ndie Kette wird kuerzer fein\nTisch bleibt regional",
+      "new_haiku": "Korn wächst nahe heim / die Kette wird kürzer fein / Tisch bleibt regional",
+      "reason": "newline -> \" / \"; ASCII-Umlaute"
+    },
+    {
+      "id": "4713092a-18e5-4373-989e-4b3be45a42bf",
+      "current_haiku": "Maschine schreibt scharf\ndie Stimme klingt taeuschend echt\nWahl ringt um den Grund",
+      "new_haiku": "Maschine schreibt scharf / die Stimme klingt täuschend echt / Wahl ringt um den Grund",
+      "reason": "newline -> \" / \"; ASCII-Umlaute"
+    },
+    {
+      "id": "d28a02d8-1ca0-48ce-8fd3-be2caf3f2e59",
+      "current_haiku": "Eis schwindet im Tal\ndas halbe Grad geht vorueber\nBerg steht ohne Mantel",
+      "new_haiku": "Eis schwindet im Tal / das halbe Grad geht vorüber / Berg steht ohne Mantel",
+      "reason": "newline -> \" / \"; ASCII-Umlaute"
+    },
+    {
+      "id": "4f4e0ca4-18a9-4ac4-bca2-01fbac3d6a01",
+      "current_haiku": "Werkzeug am Ufer\nStein erzaehlt von Werkstatt-Tag\nSee haelt sein Geheimnis",
+      "new_haiku": "Werkzeug am Ufer / Stein erzählt von Werkstatt-Tag / See hält sein Geheimnis",
+      "reason": "newline -> \" / \"; ASCII-Umlaute"
+    },
+    {
+      "id": "221f64ba-b20e-458e-b48c-6d7413e4b9c2",
+      "current_haiku": "Profil wird gestellt\ndie Hilfe folgt der Maschine\nMensch sucht den Schalter",
+      "new_haiku": "Profil wird gestellt / die Hilfe folgt der Maschine / Mensch sucht den Schalter",
+      "reason": "newline -> \" / \"; ASCII-Umlaute"
+    },
+    {
+      "id": "faf2dc1e-d2c5-40e1-993d-0c9f6f8d4f47",
+      "current_haiku": "Lehrsaal lernt mit Bot\ndie Regel folgt der Maschine\nStimme bleibt verschmaelt",
+      "new_haiku": "Lehrsaal lernt mit Bot / die Regel folgt der Maschine / Stimme bleibt verschmäht",
+      "reason": "newline -> \" / \"; ASCII-Umlaute; inhalts-edit (verschmaelt -> verschmaeht laut Recherche)"
+    },
+    {
+      "id": "70f72448-58a9-4d60-af4e-657c5bdc0c71",
+      "current_haiku": "Wasser draengt die Stadt\ndas Konzert teilt den Verkehr\nSpur folgt dem Verlauf",
+      "new_haiku": "Wasser drängt die Stadt / das Konzert teilt den Verkehr / Spur folgt dem Verlauf",
+      "reason": "newline -> \" / \"; ASCII-Umlaute"
+    },
+    {
+      "id": "637992fb-fce6-4d6a-b719-9cb428a66f09",
+      "current_haiku": "Berg traegt Erinnerung\nPark und Dorf finden zusammen\nalte Wege gehn",
+      "new_haiku": "Berg trägt Erinnerung / Park und Dorf finden zusammen / alte Wege gehn",
+      "reason": "newline -> \" / \"; ASCII-Umlaute"
+    }
+  ]
+}

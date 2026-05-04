@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { Publication } from '@/lib/types';
+import { useApiQuery } from '@/lib/use-api-query';
 import { useKeyboardShortcuts } from '@/lib/use-keyboard-shortcuts';
 import { PublicationTable } from '@/components/publication-table';
 import { EnrichmentModal } from '@/components/enrichment-modal';
@@ -217,14 +218,10 @@ export default function PublicationsPage() {
     return p.toString();
   }, [filters]);
 
-  const { data, isLoading: loading } = useQuery<PublicationsResponse>({
-    queryKey: [PUBS_QUERY_KEY, queryString],
-    queryFn: async () => {
-      const res = await fetch(`/api/publications?${queryString}`, { headers: getApiHeaders() });
-      return res.json();
-    },
-    placeholderData: (prev) => prev,
-  });
+  const { data, isLoading: loading } = useApiQuery<PublicationsResponse>(
+    [PUBS_QUERY_KEY, queryString],
+    `/api/publications?${queryString}`,
+  );
 
   const publications = data?.publications ?? [];
   const total = data?.total ?? 0;

@@ -1,13 +1,13 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import { PressScoreBadge } from '@/components/score-bar';
+import { useApiQuery } from '@/lib/use-api-query';
 
 // Recharts is ~100kB gz; lazy-load via next/dynamic so it only ships when
 // the dashboard actually has data to show in this card.
@@ -22,7 +22,6 @@ import type { EXPL } from '@/lib/explanations';
 import { CapybaraEmpty } from '@/components/capybara-logo';
 import { ChangelogPanel } from '@/components/changelog-panel';
 import { PublicationStats, Publication, PublicationWithRelations } from '@/lib/types';
-import { getApiHeaders } from '@/lib/settings-store';
 import { displayTitle } from '@/lib/html-utils';
 import { displayAuthor, displayInstitute } from '@/lib/publication-display';
 import { SCORE_LABELS } from '@/lib/constants';
@@ -59,53 +58,47 @@ function getTimeRangeLabel(period: TimePeriod): string {
 export default function DashboardPage() {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('month');
 
-  const statsQuery = useQuery<PublicationStats & { score_distribution?: number[] }>({
-    queryKey: ['dashboard-stats'],
-    queryFn: async () => {
-      const r = await fetch('/api/publications?stats=true&default_eligible=true', { headers: getApiHeaders() });
-      if (!r.ok) throw new Error('Statistiken konnten nicht geladen werden');
-      return r.json();
-    },
-  });
+  const statsQuery = useApiQuery<PublicationStats & { score_distribution?: number[] }>(
+    ['dashboard-stats'],
+    '/api/publications?stats=true&default_eligible=true',
+  );
 
-  const analyzedQuery = useQuery<{ publications?: Publication[] }>({
-    queryKey: ['dashboard-analyzed-pubs'],
-    queryFn: async () => {
-      const r = await fetch('/api/publications?analysis_status=analyzed&pageSize=500&default_eligible=true', { headers: getApiHeaders() });
-      if (!r.ok) throw new Error('Analyzed pubs not loaded');
-      return r.json();
-    },
-  });
+  const analyzedQuery = useApiQuery<{ publications?: Publication[] }>(
+    ['dashboard-analyzed-pubs'],
+    '/api/publications?analysis_status=analyzed&pageSize=500&default_eligible=true',
+  );
 
-  const topQuery = useQuery<{ publications?: PublicationWithRelations[] }>({
-    queryKey: ['dashboard-top', timePeriod],
-    queryFn: async () => {
-      // ITA-subtree exclusion is enforced server-side by exclude_ita=true,
-      // which translates to a single indexed predicate on the cached
-      // publications.is_ita_subtree column (set by the ETL after every
-      // webdb-import). No client-side filtering needed.
-      const params = new URLSearchParams({
-        sort: 'press_score',
-        order: 'desc',
-        pageSize: '10',
-        analysis_status: 'analyzed',
-        default_eligible: 'true',
-        exclude_ita: 'true',
-      });
-      const publishedAfter = getPublishedAfter(timePeriod);
-      if (publishedAfter) params.set('published_after', publishedAfter);
-      const r = await fetch(`/api/publications?${params}`, { headers: getApiHeaders() });
-      if (!r.ok) throw new Error('Top pubs not loaded');
-      return r.json();
-    },
-  });
+  // ITA-subtree exclusion is enforced server-side via exclude_ita=true,
+  // which translates to a single indexed predicate on the cached
+  // publications.is_ita_subtree column (set by the ETL after every
+  // webdb-import). No client-side filtering needed.
+  const topUrl = (() => {
+    const params = new URLSearchParams({
+      sort: 'press_score',
+      order: 'desc',
+      pageSize: '10',
+      analysis_status: 'analyzed',
+      default_eligible: 'true',
+      exclude_ita: 'true',
+    });
+    const publishedAfter = getPublishedAfter(timePeriod);
+    if (publishedAfter) params.set('published_after', publishedAfter);
+    return `/api/publications?${params}`;
+  })();
+  const topQuery = useApiQuery<{ publications?: PublicationWithRelations[] }>(
+    ['dashboard-top', timePeriod],
+    topUrl,
+  );
 
   const stats = statsQuery.data ?? null;
   const scoreDistribution = stats?.score_distribution ?? [];
   const topPubs = topQuery.data?.publications ?? [];
   const loading = statsQuery.isLoading;
   const topLoading = topQuery.isLoading;
-  const error = statsQuery.error instanceof Error ? statsQuery.error.message : null;
+  // Surface the first error from any of the three queries — previously only
+  // statsQuery was checked, leaving analyzedQuery + topQuery failures silent.
+  const firstError = statsQuery.error ?? analyzedQuery.error ?? topQuery.error;
+  const error = firstError?.message ?? null;
 
   const { dimensionAvgs, topKeywords } = useMemo(() => {
     const pubs: Publication[] = analyzedQuery.data?.publications ?? [];

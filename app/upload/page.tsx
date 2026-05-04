@@ -1,10 +1,9 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Database, FileArchive, Terminal, Info, RefreshCcw } from 'lucide-react';
-import { getApiHeaders } from '@/lib/settings-store';
+import { useApiQuery } from '@/lib/use-api-query';
 
 interface SyncCounts {
   publications: number;
@@ -21,15 +20,11 @@ interface SyncCounts {
 }
 
 export default function ImportPage() {
-  const { data: counts, error, isFetching, refetch } = useQuery<SyncCounts>({
-    queryKey: ['webdb-status'],
-    queryFn: async () => {
-      const res = await fetch('/api/webdb/status', { headers: getApiHeaders() });
-      if (!res.ok) throw new Error('Status nicht abrufbar');
-      return res.json();
-    },
-  });
-  const errorMessage = error instanceof Error ? error.message : null;
+  const { data: counts, error, isFetching, refetch } = useApiQuery<SyncCounts>(
+    ['webdb-status'],
+    '/api/webdb/status',
+  );
+  const errorMessage = error?.message ?? null;
 
   return (
     <div className="space-y-6 max-w-4xl">

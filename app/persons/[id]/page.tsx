@@ -1,10 +1,9 @@
 'use client';
 
 import { use } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
-import { getApiHeaders } from '@/lib/settings-store';
+import { useApiQuery } from '@/lib/use-api-query';
 import { sincePresetToDate, type ResearcherDetail } from '@/lib/researchers';
 import { EmptyState } from '@/components/empty-state';
 import { LoadingState } from '@/components/loading-state';
@@ -27,15 +26,10 @@ export default function PersonDetailPage({ params }: { params: Promise<{ id: str
   const { id } = use(params);
   const since = sincePresetToDate(WINDOW);
 
-  const { data: detail, error, isLoading } = useQuery<ResearcherDetail>({
-    queryKey: ['person-detail', id, since],
-    queryFn: async () => {
-      const r = await fetch(`/api/persons/${id}?since=${since}`, { headers: getApiHeaders() });
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.error ?? `HTTP ${r.status}`);
-      return d;
-    },
-  });
+  const { data: detail, error, isLoading } = useApiQuery<ResearcherDetail>(
+    ['person-detail', id, since],
+    `/api/persons/${id}?since=${since}`,
+  );
 
   if (error) {
     return (
