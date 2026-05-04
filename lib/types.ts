@@ -65,6 +65,30 @@ export interface Publication {
   meistertask_task_id: string | null;
   // Short URL token for /app/task/<token> deep-links. Set by the same push.
   meistertask_task_token: string | null;
+  // Triage-loop decision state (migration 20260504000001). See TRIAGE_LOOP_PLAN.md.
+  decision: 'undecided' | 'pitch' | 'hold' | 'skip';
+  decided_at: string | null;
+  decided_by: string | null;
+  decision_rationale: string | null;
+  snooze_until: string | null;
+  flag_count: number;
+  flag_notes: FlagNote[];
+  decided_in_session: string | null;
+}
+
+export interface FlagNote {
+  by: string;
+  note: string;
+  at: string;
+}
+
+export interface ReviewSession {
+  id: string;
+  occurred_at: string;
+  attendees: string[] | null;
+  facilitator: string | null;
+  notes: string | null;
+  created_at: string;
 }
 
 export interface PublicationType {

@@ -65,6 +65,14 @@ function makePub(overrides: Partial<Publication> = {}): Publication {
     updated_at: '2026-04-29T00:00:00Z',
     meistertask_task_id: null,
     meistertask_task_token: null,
+    decision: 'undecided',
+    decided_at: null,
+    decided_by: null,
+    decision_rationale: null,
+    snooze_until: null,
+    flag_count: 0,
+    flag_notes: [],
+    decided_in_session: null,
     ...overrides,
   };
 }
