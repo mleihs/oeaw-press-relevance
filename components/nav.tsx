@@ -17,9 +17,9 @@ import {
 
 const links = [
   { href: '/', label: 'Dashboard', icon: BarChart3 },
+  { href: '/analysis', label: 'Analyse', icon: Sparkles },
   { href: '/publications', label: 'Publikationen', icon: BookOpen },
   { href: '/researchers', label: 'Forscher:innen', icon: Users },
-  { href: '/analysis', label: 'Analyse', icon: Sparkles },
   { href: '/upload', label: 'Import', icon: Upload },
   { href: '/settings', label: 'Einstellungen', icon: Settings },
 ];

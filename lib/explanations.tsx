@@ -275,7 +275,7 @@ export const EXPL: Record<string, Explanation> = {
         Person hat ein Eintrag in <Code>persons.member_type_id</Code> mit Bezug auf
         <Code>member_types</Code> — also in einer Akademie-Klasse aufgenommen
         (Wirklich, Korrespondierend In-/Ausland, Junge Akademie, Ehrenmitglied
-        etc.). Stammdaten aus dem WebDB.
+        etc.). Stammdaten aus der WebDB.
       </Para>
     ),
     note: (
@@ -386,9 +386,10 @@ export const EXPL: Record<string, Explanation> = {
     title: 'Haiku',
     body: (
       <Para>
-        Drei Zeilen 5–7–5 Silben, vom selben Sprachmodell als Memorabilität-Hilfe für
-        die Pressestelle generiert. Soll den Kerngedanken als Bild verdichten — keine
-        Eigennamen, keine Fachbegriffe.
+        Drei Zeilen mit 5-7-5 Silben, vom Sprachmodell erzeugt. Verdichtet den
+        Kerngedanken zu einem Bild und dient der Pressestelle als merkbarer
+        Lesezeichen-Text. Regeln: keine Eigennamen, keine Fachbegriffe, echte
+        deutsche Umlaute.
       </Para>
     ),
   },
@@ -401,7 +402,7 @@ export const EXPL: Record<string, Explanation> = {
           markiert (<Code>person_publications.mahighlight = true</Code>).
         </Para>
         <Para>
-          Trotz <Code>ma</Code>-Präfix (TYPO3-Legacy: „Mitglied der Akademie") <strong>kein
+          Trotz <Code>ma</Code>-Präfix (Typo3-Legacy: „Mitglied der Akademie") <strong>kein
           Akademie-Endorsement</strong> — empirisch stammen 90 % der gesetzten Marker
           von Nicht-Mitgliedern. Eine Pub kann von mehreren Personen markiert werden.
         </Para>
@@ -467,7 +468,7 @@ export const EXPL: Record<string, Explanation> = {
     body: (
       <Para>
         Anzahl Datensätze in der lokalen <Code>publications</Code>-Tabelle, synchronisiert
-        aus dem TYPO3-WebDB. Beinhaltet alle Publikationsformate (Fachartikel,
+        aus der Typo3-WebDB. Beinhaltet alle Publikationsformate (Fachartikel,
         Buchkapitel, Multimedia, Sonstige) ohne Filter.
       </Para>
     ),
@@ -477,7 +478,7 @@ export const EXPL: Record<string, Explanation> = {
     body: (
       <>
         <Para>
-          Anzahl Pubs mit <Code>popular_science = true</Code> aus dem WebDB. Markierung
+          Anzahl Pubs mit <Code>popular_science = true</Code> aus der WebDB. Markierung
           erfolgt durch das publizierende Institut, ist aber nicht streng kuratiert —
           deshalb fließt das Flag <strong>nicht</strong> in den StoryScore ein.
         </Para>

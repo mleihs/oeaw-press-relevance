@@ -47,7 +47,7 @@ export default function ImportPage() {
         <h1 className="text-2xl font-bold">WebDB-Import</h1>
         <p className="text-neutral-500">
           Die Datenquelle für die Plattform ist der vollständige WebDB-Export
-          (TYPO3 / MySQL). Publikationen, Personen, Organisationseinheiten,
+          (Typo3 / MySQL). Publikationen, Personen, Organisationseinheiten,
           Projekte, Vorträge und Verknüpfungen werden in Postgres gespiegelt.
         </p>
       </div>
@@ -75,7 +75,7 @@ export default function ImportPage() {
             Junction-Tabellen.
           </p>
           <p>
-            Beim Import werden TYPO3-Versions- und Mirror-Artefakte ignoriert
+            Beim Import werden Typo3-Versions- und Mirror-Artefakte ignoriert
             (<code className="font-mono text-xs">t3ver_*</code>,{' '}
             <code className="font-mono text-xs">*_mirror</code>), gelöschte
             Datensätze (<code className="font-mono text-xs">deleted=1</code>)
