@@ -12,7 +12,7 @@ import { InfoBubble } from './info-bubble';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-import { LLM_MODELS } from '@/lib/constants';
+import { LLM_MODELS, STATUS_LABELS, STATUS_COLORS } from '@/lib/constants';
 import {
   ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ChevronUp, ExternalLink, Info,
   ShieldCheck, Megaphone,
@@ -331,25 +331,9 @@ function PublicationRow({
   );
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  pending: 'Ausstehend',
-  enriched: 'Angereichert',
-  partial: 'Teilweise',
-  analyzed: 'Analysiert',
-  failed: 'Fehlgeschlagen',
-};
-
 function StatusBadge({ status }: { status: string }) {
-  const colors: Record<string, string> = {
-    pending: 'bg-neutral-100 text-neutral-600',
-    enriched: 'bg-blue-100 text-blue-700',
-    partial: 'bg-amber-100 text-amber-900',
-    analyzed: 'bg-green-100 text-green-700',
-    failed: 'bg-red-100 text-red-700',
-  };
-
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${colors[status] || colors.pending}`}>
+    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[status] || STATUS_COLORS.pending}`}>
       {STATUS_LABELS[status] || status}
     </span>
   );

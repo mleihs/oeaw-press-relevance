@@ -68,14 +68,21 @@ export const SCORE_LABELS: Record<string, string> = {
 };
 
 /**
- * Press-Score band thresholds. Mirrored in PG functions
- * (`supabase/migrations/20260428*.sql`) — keep these in sync. Used by:
- * - PG functions: `band` column in researcher_detail.publications
- * - PG functions: `count_high` filter (≥ SCORE_BAND_HIGH)
- * - UI: PressScoreBadge color cutoff, ActivityChart legend, EXPL tooltips
+ * Press-Score band thresholds for the UI. Used by `getScoreBand` in
+ * `lib/score-utils.ts` and consumers (PressScoreBadge, ScoreDonut, ActivityChart
+ * legend, EXPL tooltips).
+ *
+ * - HIGH = 0.7 — also used by PG `count_high` filter and `top_researchers`.
+ * - MID  = 0.5 — UI-only ("Mittleres Story-Potenzial"). NOTE: the
+ *                researcher-detail PG functions (supabase/migrations/20260428*)
+ *                use a separate 0.4 mid threshold for the per-pub band column,
+ *                hardcoded there — intentionally not centralized because it
+ *                serves a different purpose (researcher-aggregate banding).
+ * - LOW  = 0.3 — UI-only (orange → neutral cutoff in PressScoreBadge).
  */
 export const SCORE_BAND_HIGH = 0.7;
-export const SCORE_BAND_MID = 0.4;
+export const SCORE_BAND_MID = 0.5;
+export const SCORE_BAND_LOW = 0.3;
 
 /**
  * Single source of truth for enrichment-source labels and color tokens.
@@ -168,3 +175,38 @@ export const LLM_MODELS: LLMModel[] = [
 export const COST_PER_MILLION_TOKENS: Record<string, number> = Object.fromEntries(
   LLM_MODELS.map(m => [m.value, m.costPerMillionTokens])
 );
+
+/**
+ * Enrichment / analysis status pipeline. Used in the detail header and the
+ * publication-table StatusBadge.
+ */
+export const STATUS_LABELS: Record<string, string> = {
+  pending: 'Ausstehend',
+  enriched: 'Angereichert',
+  partial: 'Teilweise',
+  analyzed: 'Analysiert',
+  failed: 'Fehlgeschlagen',
+};
+
+export const STATUS_COLORS: Record<string, string> = {
+  pending: 'bg-neutral-100 text-neutral-600',
+  enriched: 'bg-[#0047bb]/10 text-[#0047bb]',
+  partial: 'bg-amber-100 text-amber-900',
+  analyzed: 'bg-green-100 text-green-700',
+  failed: 'bg-red-100 text-red-700',
+};
+
+/**
+ * Open-Access status labels. WebDB delivers a heterogeneous mix
+ * (CrossRef-style `oa_gold`, free-text `Open`/`Restricted`, `nicht_oacc`).
+ * Falls back to the raw value if no label is mapped.
+ */
+export const OA_LABELS: Record<string, string> = {
+  oa_gold: 'OA Gold',
+  oa_postprint: 'OA Postprint',
+  oa_preprint: 'OA Preprint',
+  nicht_oacc: 'kein OA',
+  Open: 'OA',
+  Restricted: 'eingeschränkt',
+  Unknown: 'unbekannt',
+};

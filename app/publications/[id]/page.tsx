@@ -9,7 +9,15 @@ import { doiToUrl } from '@/lib/enrichment/doi-utils';
 import { ScoreBar } from '@/components/score-bar';
 import { HaikuBlock } from '@/components/haiku-block';
 import { InfoBubble } from '@/components/info-bubble';
-import { SOURCE_LABELS, SOURCE_BADGE_CLASSES as SOURCE_COLORS, SOURCE_DESCRIPTIONS } from '@/lib/constants';
+import {
+  SOURCE_LABELS,
+  SOURCE_BADGE_CLASSES as SOURCE_COLORS,
+  SOURCE_DESCRIPTIONS,
+  STATUS_LABELS,
+  STATUS_COLORS,
+  OA_LABELS,
+} from '@/lib/constants';
+import { getScoreBand, BAND_HERO_CLASSES, SCORE_BAND_STORY_LABEL } from '@/lib/score-utils';
 import { CapybaraLogo } from '@/components/capybara-logo';
 import { MeistertaskButton } from './_components/meistertask-button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,32 +28,6 @@ import {
   Award, ShieldCheck, Megaphone, Users, Building2, FolderOpen, BookText,
   Mail, Crown,
 } from 'lucide-react';
-
-const STATUS_LABELS: Record<string, string> = {
-  pending: 'Ausstehend',
-  enriched: 'Angereichert',
-  partial: 'Teilweise',
-  analyzed: 'Analysiert',
-  failed: 'Fehlgeschlagen',
-};
-
-const STATUS_COLORS: Record<string, string> = {
-  pending: 'bg-neutral-100 text-neutral-600',
-  enriched: 'bg-[#0047bb]/10 text-[#0047bb]',
-  partial: 'bg-amber-100 text-amber-900',
-  analyzed: 'bg-green-100 text-green-700',
-  failed: 'bg-red-100 text-red-700',
-};
-
-const OA_LABELS: Record<string, string> = {
-  oa_gold: 'OA Gold',
-  oa_postprint: 'OA Postprint',
-  oa_preprint: 'OA Preprint',
-  nicht_oacc: 'kein OA',
-  Open: 'OA',
-  Restricted: 'eingeschränkt',
-  Unknown: 'unbekannt',
-};
 
 export default function PublicationDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -431,9 +413,7 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
           <CardContent className="space-y-5">
             <div className="flex items-center gap-4">
               <div className={`flex items-center justify-center h-16 w-16 rounded-full text-xl font-bold ${
-                pressScorePct! >= 70 ? 'bg-[#0047bb] text-white'
-                  : pressScorePct! >= 50 ? 'bg-amber-100 text-amber-800'
-                  : 'bg-neutral-100 text-neutral-600'
+                BAND_HERO_CLASSES[getScoreBand(pub.press_score)]
               }`}>
                 {pressScorePct}%
               </div>
@@ -443,9 +423,7 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
                   <InfoBubble id="press_score" size="md" />
                 </p>
                 <p className="text-sm text-neutral-500 inline-flex items-center gap-1">
-                  {pressScorePct! >= 70 ? 'Hohes Story-Potenzial'
-                    : pressScorePct! >= 50 ? 'Mittleres Story-Potenzial'
-                    : 'Geringes Story-Potenzial'}
+                  {SCORE_BAND_STORY_LABEL[getScoreBand(pub.press_score)]}
                   <InfoBubble id="score_band" />
                 </p>
               </div>
