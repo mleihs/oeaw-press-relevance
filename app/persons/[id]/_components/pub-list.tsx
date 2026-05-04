@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { motion } from 'motion/react';
 import { Star } from 'lucide-react';
 import { InfoBubble } from '@/components/info-bubble';
+import { EmptyState } from '@/components/empty-state';
 import { displayTitle } from '@/lib/html-utils';
 import type { PersonPublicationRow } from '@/lib/researchers';
 
@@ -19,11 +20,7 @@ const BAND_BG = {
 
 export function PubList({ publications }: PubListProps) {
   if (!publications || publications.length === 0) {
-    return (
-      <div className="rounded-lg border bg-white p-12 text-center text-sm text-neutral-400">
-        Keine bewerteten Publikationen im Zeitraum.
-      </div>
-    );
+    return <EmptyState title="Keine bewerteten Publikationen im Zeitraum." />;
   }
 
   return (

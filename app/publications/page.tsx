@@ -6,6 +6,7 @@ import { useKeyboardShortcuts } from '@/lib/use-keyboard-shortcuts';
 import { PublicationTable } from '@/components/publication-table';
 import { EnrichmentModal } from '@/components/enrichment-modal';
 import { AnalysisModal } from '@/components/analysis-modal';
+import { EmptyState } from '@/components/empty-state';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -409,20 +410,23 @@ export default function PublicationsPage() {
       {loading ? (
         <LoadingState label="Lade Publikationen …" />
       ) : publications.length === 0 && hasAnyActiveFilter ? (
-        <Card className="border-dashed">
-          <CardContent className="px-6 py-10 text-center space-y-4">
-            <div>
-              <p className="text-base font-medium text-neutral-900">Keine Treffer</p>
-              <p className="mt-1 text-sm text-neutral-500">
+        <EmptyState
+          className="border-dashed"
+          title="Keine Treffer"
+          body={
+            <>
+              <p>
                 Die aktive Filterkombination liefert keine Publikationen.
                 {filters.preset !== 'custom' && (
                   <> Aktiver Preset: <strong>{filters.preset}</strong>.</>
                 )}
               </p>
-              <p className="mt-2 text-xs text-neutral-400">
+              <p className="mt-2 text-neutral-400">
                 Tipp: einzelne Filter über die Chips oben entfernen, oder alles zurücksetzen.
               </p>
-            </div>
+            </>
+          }
+          action={
             <div className="flex flex-wrap items-center justify-center gap-2">
               {presetModified && (
                 <Button onClick={resetPresetTerritory} variant="outline" size="sm">
@@ -434,8 +438,8 @@ export default function PublicationsPage() {
                 Alle Filter zurücksetzen
               </Button>
             </div>
-          </CardContent>
-        </Card>
+          }
+        />
       ) : (
         <PublicationTable
           publications={publications}

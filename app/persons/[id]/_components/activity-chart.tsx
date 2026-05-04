@@ -2,6 +2,7 @@
 
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { InfoBubble } from '@/components/info-bubble';
+import { EmptyState } from '@/components/empty-state';
 import { BRAND_HEX } from '@/lib/constants';
 import type { ActivityMonth } from '@/lib/researchers';
 
@@ -18,11 +19,7 @@ const BAND_COLORS = {
 export function ActivityChart({ data }: ActivityChartProps) {
   const total = data.reduce((s, d) => s + d.high + d.mid + d.low, 0);
   if (total === 0) {
-    return (
-      <div className="rounded-lg border bg-white p-12 text-center text-sm text-neutral-400">
-        Keine Aktivität im gewählten Zeitraum.
-      </div>
-    );
+    return <EmptyState title="Keine Aktivität im gewählten Zeitraum." />;
   }
   return (
     <div className="rounded-lg border bg-white p-5">

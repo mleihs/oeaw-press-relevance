@@ -14,6 +14,7 @@ import { Sparkline } from './sparkline';
 import { TrendDelta } from './trend-delta';
 import { InfoBubble } from '@/components/info-bubble';
 import { LoadingState } from '@/components/loading-state';
+import { EmptyState } from '@/components/empty-state';
 import { displayTitle } from '@/lib/html-utils';
 import { Crown, Award, Medal, BookOpen } from 'lucide-react';
 
@@ -72,12 +73,10 @@ export function LeaderboardTable({ rows, loading }: LeaderboardTableProps) {
   }
   if (!loading && rows.length === 0) {
     return (
-      <div className="rounded-lg border bg-white p-12 text-center">
-        <p className="text-sm font-medium">Keine Forschenden mit den aktuellen Filtern</p>
-        <p className="mt-1 text-xs text-neutral-500">
-          Filter lockern, Zeitraum erweitern oder Co-Autor:innen einbeziehen.
-        </p>
-      </div>
+      <EmptyState
+        title="Keine Forschenden mit den aktuellen Filtern"
+        body="Filter lockern, Zeitraum erweitern oder Co-Autor:innen einbeziehen."
+      />
     );
   }
 

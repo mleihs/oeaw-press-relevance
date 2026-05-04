@@ -15,6 +15,8 @@ const DimensionsRadar = dynamic(() => import('./_components/dimensions-radar'), 
   loading: () => <div className="h-[280px]" aria-hidden />,
 });
 import { InfoBubble } from '@/components/info-bubble';
+import { LoadingState } from '@/components/loading-state';
+import { EmptyState } from '@/components/empty-state';
 import type { EXPL } from '@/lib/explanations';
 import { CapybaraEmpty } from '@/components/capybara-logo';
 import { ChangelogPanel } from '@/components/changelog-panel';
@@ -293,9 +295,7 @@ export default function DashboardPage() {
         </CardHeader>
         <CardContent>
           {topLoading ? (
-            <div className="flex justify-center py-8">
-              <div className="animate-spin h-6 w-6 border-2 border-neutral-200 border-t-brand rounded-full" />
-            </div>
+            <LoadingState label="Lade Top-Publikationen …" />
           ) : topPubs.length > 0 ? (
             <div className="space-y-2">
               {topPubs.map((pub, i) => {
@@ -336,9 +336,7 @@ export default function DashboardPage() {
               })}
             </div>
           ) : (
-            <div className="text-center py-8 text-sm text-neutral-500">
-              Keine analysierten Publikationen in diesem Zeitraum.
-            </div>
+            <EmptyState variant="inline" title="Keine analysierten Publikationen in diesem Zeitraum." />
           )}
         </CardContent>
       </Card>

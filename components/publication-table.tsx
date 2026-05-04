@@ -9,6 +9,7 @@ import { displayAuthor } from '@/lib/publication-display';
 import { buildTaskUrl } from '@/lib/meistertask/urls';
 import { PressScoreBadge, ScoreBar } from './score-bar';
 import { InfoBubble } from './info-bubble';
+import { EmptyState } from './empty-state';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
@@ -47,11 +48,7 @@ export function PublicationTable({ publications, showScores, showEnrichment, sor
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   if (publications.length === 0) {
-    return (
-      <div className="text-center py-12 text-neutral-500">
-        Keine Publikationen gefunden.
-      </div>
-    );
+    return <EmptyState variant="inline" title="Keine Publikationen gefunden." />;
   }
 
   const sortable = !!onSort;
