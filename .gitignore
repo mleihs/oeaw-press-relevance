@@ -51,3 +51,7 @@ next-env.d.ts
 
 # python bytecode (from helper scripts)
 __pycache__/
+
+# haiku-patch audit log: env-specific run history, not source.
+# Patch JSONs (the inputs) ARE tracked; this is the per-run audit trail.
+patches/haiku/applied-log.jsonl
