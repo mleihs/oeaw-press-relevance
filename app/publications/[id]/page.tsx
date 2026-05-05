@@ -9,6 +9,7 @@ import { doiToUrl } from '@/lib/enrichment/doi-utils';
 import { ScoreBar } from '@/components/score-bar';
 import { HaikuBlock } from '@/components/haiku-block';
 import { PublicationFlag } from '@/components/publication-flag';
+import { DecisionToolbar } from '@/components/decision-toolbar';
 import { InfoBubble } from '@/components/info-bubble';
 import {
   SOURCE_LABELS,
@@ -214,6 +215,9 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
           )}
         </div>
       </div>
+
+      {/* Decision-Toolbar */}
+      <DecisionToolbar pub={pub} />
 
       {/* Pitch */}
       {hasAnalysis && pub.pitch_suggestion && (

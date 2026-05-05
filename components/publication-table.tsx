@@ -14,6 +14,7 @@ import { HaikuBlock } from './haiku-block';
 import { MeistertaskButton } from '@/app/publications/[id]/_components/meistertask-button';
 import { EmptyState } from './empty-state';
 import { PublicationFlag } from './publication-flag';
+import { DecisionToolbar } from './decision-toolbar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
@@ -38,6 +39,10 @@ interface PublicationTableProps {
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
   onSort?: (column: string) => void;
+  /** /review-Modus: zeigt Decision-Toolbar im Expand und triggert lazy-session-create. */
+  inSession?: boolean;
+  /** Callback nach erfolgreicher Decision (für /review: Karte ausblenden). */
+  onDecided?: (pubId: string) => void;
 }
 
 function SortIcon({ column, sortBy, sortOrder }: { column: string; sortBy?: string; sortOrder?: 'asc' | 'desc' }) {
@@ -49,7 +54,7 @@ function SortIcon({ column, sortBy, sortOrder }: { column: string; sortBy?: stri
     : <ArrowDown className="h-3 w-3 text-neutral-700" />;
 }
 
-export function PublicationTable({ publications, showScores, showEnrichment, sortBy, sortOrder, onSort }: PublicationTableProps) {
+export function PublicationTable({ publications, showScores, showEnrichment, sortBy, sortOrder, onSort, inSession, onDecided }: PublicationTableProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   if (publications.length === 0) {
@@ -119,6 +124,8 @@ export function PublicationTable({ publications, showScores, showEnrichment, sor
                 showEnrichment={showEnrichment}
                 isExpanded={expandedId === pub.id}
                 onToggle={() => setExpandedId(expandedId === pub.id ? null : pub.id)}
+                inSession={inSession}
+                onDecided={onDecided}
               />
             ))}
           </tbody>
@@ -244,12 +251,16 @@ function PublicationRow({
   showEnrichment,
   isExpanded,
   onToggle,
+  inSession,
+  onDecided,
 }: {
   pub: PublicationRow;
   showScores?: boolean;
   showEnrichment?: boolean;
   isExpanded: boolean;
   onToggle: () => void;
+  inSession?: boolean;
+  onDecided?: (pubId: string) => void;
 }) {
   // 5 base cols (expand, flag, title, authors, type, year) + optional enrichment/scores
   const colCount = 6 + (showEnrichment ? 1 : 0) + (showScores ? 1 : 0);
@@ -343,7 +354,14 @@ function PublicationRow({
       {isExpanded && (
         <tr className="border-t bg-neutral-50/50">
           <td colSpan={colCount} className="p-4">
-            <ExpandedDetail pub={pub} showScores={showScores} />
+            <div className="space-y-4" onClick={(e) => e.stopPropagation()}>
+              <DecisionToolbar
+                pub={pub}
+                inSession={inSession}
+                onDecided={() => onDecided?.(pub.id)}
+              />
+              <ExpandedDetail pub={pub} showScores={showScores} />
+            </div>
           </td>
         </tr>
       )}

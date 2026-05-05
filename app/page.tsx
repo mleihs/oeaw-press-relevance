@@ -25,7 +25,7 @@ import { PublicationStats, PublicationWithRelations } from '@/lib/types';
 import { displayTitle } from '@/lib/html-utils';
 import { displayAuthor, displayInstitute } from '@/lib/publication-display';
 import { SCORE_LABELS } from '@/lib/constants';
-import { Sparkles, BookOpen, BarChart3, TrendingUp, AlertCircle, Pin } from 'lucide-react';
+import { Sparkles, BookOpen, BarChart3, TrendingUp, AlertCircle, Pin, ClipboardCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { PublicationFlag } from '@/components/publication-flag';
 
@@ -211,25 +211,22 @@ export default function DashboardPage() {
               Publikationen durchsuchen
             </Link>
           </Button>
-          {(() => {
-            const n = flaggedQuery.data?.total ?? 0;
-            if (n === 0) {
-              return (
-                <span className="inline-flex items-center text-sm text-neutral-500 px-3">
-                  <Pin className="mr-2 h-4 w-4 text-neutral-400" />
-                  Keine Pubs für die nächste Sitzung geflaggt
-                </span>
-              );
-            }
-            return (
-              <Button asChild variant="outline" className="border-amber-300 text-amber-900 hover:bg-amber-50">
-                <Link href="/publications?flagged=true">
-                  <Pin className="mr-2 h-4 w-4 fill-amber-400 text-amber-500" />
-                  {n} {n === 1 ? 'Pub' : 'Pubs'} geflaggt für Sitzung
-                </Link>
-              </Button>
-            );
-          })()}
+          <Button asChild variant="outline" className="border-amber-300 text-amber-900 hover:bg-amber-50">
+            <Link href="/review">
+              <ClipboardCheck className="mr-2 h-4 w-4" />
+              Zur Triage-Sitzung
+              {(() => {
+                const n = flaggedQuery.data?.total ?? 0;
+                if (n === 0) return null;
+                return (
+                  <span className="ml-2 inline-flex items-center gap-1 text-xs text-amber-700">
+                    <Pin className="h-3 w-3 fill-amber-400 text-amber-500" />
+                    {n} geflaggt
+                  </span>
+                );
+              })()}
+            </Link>
+          </Button>
         </CardContent>
       </Card>
 
