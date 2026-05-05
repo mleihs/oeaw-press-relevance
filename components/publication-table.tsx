@@ -10,6 +10,7 @@ import { buildTaskUrl } from '@/lib/meistertask/urls';
 import { PressScoreBadge, ScoreBar } from './score-bar';
 import { InfoBubble } from './info-bubble';
 import { EmptyState } from './empty-state';
+import { PublicationFlag } from './publication-flag';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
@@ -65,15 +66,18 @@ export function PublicationTable({ publications, showScores, showEnrichment, sor
           <thead className="bg-neutral-50">
             <tr>
               <th className="p-3 text-left font-medium w-8"></th>
+              <th className="p-3 text-left font-medium w-8"></th>
               <th className={headerClass} onClick={() => onSort?.('title')}>
                 <span className="inline-flex items-center gap-1">
                   Titel {sortable && <SortIcon column="title" sortBy={sortBy} sortOrder={sortOrder} />}
                 </span>
               </th>
-              <th className={headerClass} onClick={() => onSort?.('authors')}>
-                <span className="inline-flex items-center gap-1">
-                  Autoren {sortable && <SortIcon column="authors" sortBy={sortBy} sortOrder={sortOrder} />}
-                </span>
+              {/* Sortierung weg: lead_author-Strings sind heterogen formatiert
+                  (lastname-only, "Lastname, Initials", "Firstname Lastname",
+                  vereinzelt nur Vorname etc.) — alphabetisch zu sortieren ist
+                  nicht aussagekräftig fürs Press-Team. */}
+              <th className="p-3 text-left font-medium">
+                <span>Autor:innen</span>
               </th>
               <th className={headerClass} onClick={() => onSort?.('publication_type')}>
                 <span className="inline-flex items-center gap-1">
@@ -151,6 +155,12 @@ function MobilePublicationCard({
       className="block rounded-lg border bg-white p-4 hover:border-brand/30 hover:shadow-sm transition-all"
     >
       <div className="flex items-start justify-between gap-3">
+        <div
+          className="shrink-0 -mt-1 -ml-1"
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+        >
+          <PublicationFlag pubId={pub.id} flagNotes={pub.flag_notes ?? []} size="sm" />
+        </div>
         <div className="flex-1 min-w-0">
           <p className="font-medium text-sm leading-snug line-clamp-2">
             {displayTitle(pub.original_title || pub.title, pub.citation)}
@@ -237,7 +247,8 @@ function PublicationRow({
   isExpanded: boolean;
   onToggle: () => void;
 }) {
-  const colCount = 5 + (showEnrichment ? 1 : 0) + (showScores ? 1 : 0);
+  // 5 base cols (expand, flag, title, authors, type, year) + optional enrichment/scores
+  const colCount = 6 + (showEnrichment ? 1 : 0) + (showScores ? 1 : 0);
 
   return (
     <>
@@ -249,6 +260,13 @@ function PublicationRow({
           <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
             {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </Button>
+        </td>
+        <td className="p-3" onClick={(e) => e.stopPropagation()}>
+          <PublicationFlag
+            pubId={pub.id}
+            flagNotes={pub.flag_notes ?? []}
+            size="sm"
+          />
         </td>
         <td className="p-3 max-w-sm">
           <div className="font-medium truncate flex items-center gap-1.5">

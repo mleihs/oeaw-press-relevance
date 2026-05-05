@@ -640,6 +640,17 @@ try {
   await importLectures();
   await importPublications();
   await importJunctions();
+  // WebDB pflegt das skalare lead_author-Feld manuell — bei Buchkapiteln und
+  // Tagungsbeiträgen ist es oft leer, obwohl die Junction person_publications
+  // Autor:innen kennt. Ohne Backfill zeigt UI „Unbekannt". Idempotent.
+  // Migration: 20260505000003.
+  const ladr = await pgClient.query('SELECT backfill_lead_author_from_persons() AS filled');
+  log(`Backfilled lead_author from person_publications: ${ladr.rows[0].filled} pubs`);
+  // published_at-Backfill aus bibtex/citation/ris/endnote — WebDB pflegt
+  // pub_date oft nicht, aber im bibtex steht das Erscheinungsjahr fast
+  // immer. Idempotent. Migration: 20260505000004.
+  const yr = await pgClient.query('SELECT backfill_published_at_from_text() AS filled');
+  log(`Backfilled published_at from bibtex/citation: ${yr.rows[0].filled} pubs`);
   log('Refreshing publication_oestat6 matview…');
   await pgClient.query('REFRESH MATERIALIZED VIEW CONCURRENTLY publication_oestat6');
   log(`DONE in ${((Date.now() - t0) / 1000).toFixed(1)}s`);

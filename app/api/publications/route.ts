@@ -190,7 +190,7 @@ export async function GET(req: NextRequest) {
       in: (col: string, vals: unknown[]) => AnyQuery;
       is: (col: string, val: unknown) => AnyQuery;
       or: (filters: string) => AnyQuery;
-      order: (col: string, opts: { ascending: boolean }) => AnyQuery;
+      order: (col: string, opts: { ascending: boolean; nullsFirst?: boolean }) => AnyQuery;
       range: (a: number, b: number) => AnyQuery;
     };
 
@@ -265,7 +265,13 @@ export async function GET(req: NextRequest) {
       supabase.from('publications').select(selectStr, { count: 'exact' }) as unknown as AnyQuery,
       true,
     );
-    const mainQuery = mainBuilder.order(sortBy, { ascending: sortOrder }).range(fromIdx, toIdx);
+    // NULLS LAST: Pubs ohne Wert (z.B. published_at NULL bei 595 Pubs aus
+    // unvollständigen WebDB-Einträgen) verschwinden ans Ende statt oben in
+    // der DESC-sortierten Liste zu erscheinen — sonst dominiert das die #1-
+    // Ansicht des Press-Teams. Gilt für alle Sort-Spalten (sicheres Default).
+    const mainQuery = mainBuilder
+      .order(sortBy, { ascending: sortOrder, nullsFirst: false })
+      .range(fromIdx, toIdx);
 
     // ---------- count-without-eligibility for total_hidden ----------
     const noEligPromise = defaultEligible
