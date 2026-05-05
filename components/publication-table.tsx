@@ -67,10 +67,10 @@ export function PublicationTable({ publications, showScores, showEnrichment, sor
             <tr>
               <th className="p-3 text-left font-medium w-8"></th>
               <th className="p-3 text-left font-medium w-8"></th>
-              <th className={headerClass} onClick={() => onSort?.('title')}>
-                <span className="inline-flex items-center gap-1">
-                  Titel {sortable && <SortIcon column="title" sortBy={sortBy} sortOrder={sortOrder} />}
-                </span>
+              {/* Sortierung weg: alphabetisch nach Titel ist für Press-Triage
+                  nicht relevant — was zählt ist Datum/Score/Status. */}
+              <th className="p-3 text-left font-medium">
+                <span>Titel</span>
               </th>
               {/* Sortierung weg: lead_author-Strings sind heterogen formatiert
                   (lastname-only, "Lastname, Initials", "Firstname Lastname",
