@@ -11,6 +11,7 @@
 
 import mysql from 'mysql2/promise';
 import pg from 'pg';
+import { extractDoiFromRow } from './lib/doi-extract.mjs';
 
 const MYSQL = {
   host: process.env.MYSQL_HOST || '127.0.0.1',
@@ -328,7 +329,7 @@ async function importPublications() {
   // new dump get archived=true, not deleted, so FKs and analysis history
   // remain intact.
   const transformed = rows.map((r) => {
-    const doiClean = extractDoiWithFallback(r);
+    const doiClean = extractDoiFromRow(r);
     return {
       webdb_uid: r.uid,
       title: r.original_title || '(untitled)',
@@ -622,44 +623,8 @@ async function fkMap(table) {
   return m;
 }
 
-function extractDoi(doiLink) {
-  if (!doiLink) return null;
-  const m = doiLink.match(/10\.\d{4,9}\/[^\s]+/);
-  return m ? cleanDoi(m[0]) : null;
-}
-
-// Pubs ohne `doi_link` (z.B. Bücher/Buchkapitel/Preprints) tragen den DOI oft
-// trotzdem in bibtex (`doi = {...}`) oder im citation_apa-Rendering.
-// Reihenfolge: doi_link → bibtex → citation_apa → citation_de/en. Erst-Treffer gewinnt.
-function extractDoiWithFallback(row) {
-  const direct = extractDoi(row.doi_link);
-  if (direct) return direct;
-  // bibtex: doi = {10.xxx/yyy} oder doi = "10.xxx/yyy"
-  if (row.bibtex) {
-    const m = row.bibtex.match(/doi\s*=\s*[{"]([^}"]+)[}"]/i);
-    if (m && /^10\.\d{4,9}\//.test(m[1])) return cleanDoi(m[1]);
-  }
-  // citation_apa/_de/_en: meist HTML, freier DOI-Match. ?ct=…/v\d+-Suffixe abschneiden.
-  for (const field of ['citation_apa', 'citation_de', 'citation_en']) {
-    const v = row[field];
-    if (!v) continue;
-    const m = v.match(/10\.\d{4,9}\/[^\s<>"',\\]+/);
-    if (m) return cleanDoi(m[0]);
-  }
-  return null;
-}
-
-function cleanDoi(s) {
-  // Trailing-Punkte, Query-Strings, Versions-Suffixe (v1, v2) konservativ entfernen.
-  return s
-    .replace(/[.,;:]+$/, '')
-    .replace(/\?.*$/, '')
-    .toLowerCase();
-}
-
-function normalizeDoi(s) {
-  return s.replace(/^https?:\/\/(dx\.)?doi\.org\//i, '').trim().toLowerCase();
-}
+// DOI-Extraction-Helfer leben in scripts/lib/doi-extract.mjs (geteilt mit
+// session-pipeline.mjs doi-backfill, damit ETL und Bestand nicht driften).
 
 // ============================================================
 // Main

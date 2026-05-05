@@ -107,7 +107,7 @@ export const SOURCE_LABELS: Record<string, string> = {
   semantic_scholar: 'Semantic Scholar',
   pdf: 'PDF',
   csv: 'CSV',
-  hebowebdb_summary: 'WebDB',
+  webdb_summary: 'WebDB',
 };
 
 export const SOURCE_BADGE_CLASSES: Record<string, string> = {
@@ -117,7 +117,7 @@ export const SOURCE_BADGE_CLASSES: Record<string, string> = {
   semantic_scholar: 'bg-orange-100 text-orange-700',
   pdf: 'bg-rose-100 text-rose-700',
   csv: 'bg-teal-100 text-teal-700',
-  hebowebdb_summary: 'bg-indigo-100 text-indigo-700',
+  webdb_summary: 'bg-indigo-100 text-indigo-700',
 };
 
 export const SOURCE_DESCRIPTIONS: Record<string, string> = {
@@ -127,7 +127,7 @@ export const SOURCE_DESCRIPTIONS: Record<string, string> = {
   semantic_scholar: 'KI-gestützte Datenbank: Abstract, Zitationszahlen und Einfluss-Score.',
   pdf: 'Direkter PDF-Download von der Publikations-URL — extrahiert den Volltext.',
   csv: 'Abstract aus der ursprünglich importierten CSV-Datei übernommen.',
-  hebowebdb_summary: 'Vom Institut kuratierte Pressezusammenfassung (DE/EN) aus der WebDB.',
+  webdb_summary: 'Vom Institut kuratierte Pressezusammenfassung (DE/EN) aus der WebDB.',
 };
 
 export interface LLMModel {

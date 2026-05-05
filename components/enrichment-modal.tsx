@@ -67,7 +67,7 @@ const SOURCE_LABELS: Record<string, string> = {
   semantic_scholar: 'Semantic Scholar',
   pdf: 'PDF Extract',
   csv: 'CSV Abstract',
-  hebowebdb_summary: 'WebDB',
+  webdb_summary: 'WebDB',
 };
 
 function emptySourceStates(): Record<EnrichmentSourceName, SourceState> {

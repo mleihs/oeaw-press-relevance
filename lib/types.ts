@@ -232,6 +232,14 @@ export interface PublicationStats {
   avg_score: number | null;
   high_score_count: number;
   score_distribution?: number[];
+  dimension_avgs?: {
+    public_accessibility?: number;
+    societal_relevance?: number;
+    novelty_factor?: number;
+    storytelling_potential?: number;
+    media_timeliness?: number;
+  };
+  top_keywords?: { word: string; count: number }[];
 }
 
 export type EnrichmentSourceName = 'crossref' | 'openalex' | 'unpaywall' | 'semantic_scholar' | 'pdf';
@@ -288,10 +296,14 @@ export interface AppSettings {
   openrouterApiKey: string;
   minWordCount: number;
   batchSize: number;
+  // Used as the `by` field for flag notes and decision attribution.
+  // Empty string falls back to "team" server-side.
+  reviewerName: string;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
   openrouterApiKey: '',
   minWordCount: 100,
   batchSize: 3,
+  reviewerName: '',
 };

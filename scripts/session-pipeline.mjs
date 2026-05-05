@@ -17,6 +17,7 @@
 
 import pg from 'pg';
 import { readFileSync } from 'fs';
+import { extractDoiFromRow, DOI_CANDIDATE_WHERE_CLAUSE } from './lib/doi-extract.mjs';
 
 const PG_URL = process.env.PG_DATABASE_URL
   || 'postgresql://postgres:postgres@127.0.0.1:54422/postgres';
@@ -26,7 +27,7 @@ const PG_URL = process.env.PG_DATABASE_URL
 import SCORE_WEIGHTS from '../lib/score-weights.json' with { type: 'json' };
 
 const SESSION_MODEL_TAG = 'anthropic/claude-opus-4.7-session';
-const WEBDB_SOURCE_TAG = 'hebowebdb_summary';
+const WEBDB_SOURCE_TAG = 'webdb_summary';
 
 // ITA-Subtree-Exclusion: Pubs die zu ITA oder einer Sub-Unit gehören werden
 // per Default aus Scoring + Enrichment ausgeschlossen. ITA-Scores kommen aus
@@ -826,29 +827,8 @@ async function cmdApply(opts, positional) {
   });
 }
 
-// DOI-Helfer (gespiegelt aus webdb-import.mjs, damit der Backfill nicht den ETL-Modul
-// importieren muss — webdb-import.mjs ist ein Skript mit top-level await, das beim
-// Import sofort die ETL-Pipeline anstoßen würde).
-function _cleanDoi(s) {
-  return s.replace(/[.,;:]+$/, '').replace(/\?.*$/, '').toLowerCase();
-}
-function _extractDoiFromRow(row) {
-  if (row.doi_link) {
-    const m = row.doi_link.match(/10\.\d{4,9}\/[^\s]+/);
-    if (m) return _cleanDoi(m[0]);
-  }
-  if (row.bibtex) {
-    const m = row.bibtex.match(/doi\s*=\s*[{"]([^}"]+)[}"]/i);
-    if (m && /^10\.\d{4,9}\//.test(m[1])) return _cleanDoi(m[1]);
-  }
-  for (const f of ['citation_apa', 'citation_de', 'citation_en']) {
-    const v = row[f];
-    if (!v) continue;
-    const m = v.match(/10\.\d{4,9}\/[^\s<>"',\\]+/);
-    if (m) return _cleanDoi(m[0]);
-  }
-  return null;
-}
+// DOI-Extraction-Helfer leben in scripts/lib/doi-extract.mjs (geteilt mit
+// webdb-import.mjs ETL).
 
 // Haiku-Patch: gezieltes UPDATE *nur* der `haiku`-Spalte mit Concurrency-Check.
 // Vom session-pipeline `apply`-Pfad bewusst getrennt, weil dort eine vollstaendige
@@ -1037,21 +1017,18 @@ async function cmdDoiBackfill(opts) {
   const apply = opts.apply === true || opts.apply === 'true';
 
   await withClient(async (c) => {
-    // Pool: Pubs ohne DOI, aber mit bibtex/citation-Felder, die einen DOI enthalten
-    // könnten. Filter im SQL spart das Durchsehen aller 38k Pubs.
+    // Kandidaten-Filter aus dem geteilten doi-extract-Modul; SELECT-Liste deckt
+    // alle Felder ab, die extractDoiFromRow durchsucht.
     const r = await c.query(`
-      SELECT id, doi_link, bibtex, citation_apa, citation_de, citation_en
+      SELECT id, doi_link, bibtex,
+             citation_apa, citation_de, citation_en,
+             citation, citation_cbe, citation_harvard, citation_mla, citation_vancouver,
+             endnote, ris,
+             website_link, download_link, url
       FROM publications
-      WHERE archived = false
-        AND (doi IS NULL OR doi = '')
-        AND (
-          bibtex ~* 'doi\\s*=' OR
-          citation_apa ~* '10\\.[0-9]{4,9}/' OR
-          citation_de ~* '10\\.[0-9]{4,9}/' OR
-          citation_en ~* '10\\.[0-9]{4,9}/'
-        )
+      WHERE archived = false AND ${DOI_CANDIDATE_WHERE_CLAUSE}
     `);
-    log(`Kandidaten ohne DOI mit DOI-Spuren in citation/bibtex: ${r.rows.length}`);
+    log(`Kandidaten ohne DOI mit DOI-Spuren in irgendeinem Feld: ${r.rows.length}`);
 
     // Existierende DOIs für Duplikat-Check vorab in einem Set.
     const existing = await c.query(`SELECT doi FROM publications WHERE doi IS NOT NULL AND doi != ''`);
@@ -1061,7 +1038,7 @@ async function cmdDoiBackfill(opts) {
     const dupes = [];
     const noMatch = [];
     for (const row of r.rows) {
-      const doi = _extractDoiFromRow(row);
+      const doi = extractDoiFromRow(row);
       if (!doi) { noMatch.push(row.id); continue; }
       if (existingSet.has(doi)) { dupes.push({ id: row.id, doi }); continue; }
       existingSet.add(doi); // gegen Doppel-Treffer im selben Lauf

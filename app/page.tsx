@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,7 +21,7 @@ import { EmptyState } from '@/components/empty-state';
 import type { EXPL } from '@/lib/explanations';
 import { CapybaraEmpty } from '@/components/capybara-logo';
 import { ChangelogPanel } from '@/components/changelog-panel';
-import { PublicationStats, Publication, PublicationWithRelations } from '@/lib/types';
+import { PublicationStats, PublicationWithRelations } from '@/lib/types';
 import { displayTitle } from '@/lib/html-utils';
 import { displayAuthor, displayInstitute } from '@/lib/publication-display';
 import { SCORE_LABELS } from '@/lib/constants';
@@ -58,14 +58,13 @@ function getTimeRangeLabel(period: TimePeriod): string {
 export default function DashboardPage() {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('month');
 
-  const statsQuery = useApiQuery<PublicationStats & { score_distribution?: number[] }>(
+  // statsQuery liefert seit 2026-05-05 auch dimension_avgs + top_keywords aus
+  // einer PG-Funktion (publication_dashboard_aggregates). Vorher gab es einen
+  // zweiten Query, der bis zu 500 Pubs gezogen hat, nur um clientseitig 5
+  // Mittelwerte und 30 Top-Keywords zu berechnen — ~3 MB Network → 2 KB JSON.
+  const statsQuery = useApiQuery<PublicationStats>(
     ['dashboard-stats'],
     '/api/publications?stats=true&default_eligible=true',
-  );
-
-  const analyzedQuery = useApiQuery<{ publications?: Publication[] }>(
-    ['dashboard-analyzed-pubs'],
-    '/api/publications?analysis_status=analyzed&pageSize=500&default_eligible=true',
   );
 
   // ITA-subtree exclusion is enforced server-side via exclude_ita=true,
@@ -95,34 +94,13 @@ export default function DashboardPage() {
   const topPubs = topQuery.data?.publications ?? [];
   const loading = statsQuery.isLoading;
   const topLoading = topQuery.isLoading;
-  // Surface the first error from any of the three queries — previously only
-  // statsQuery was checked, leaving analyzedQuery + topQuery failures silent.
-  const firstError = statsQuery.error ?? analyzedQuery.error ?? topQuery.error;
+  const firstError = statsQuery.error ?? topQuery.error;
   const error = firstError?.message ?? null;
 
-  const { dimensionAvgs, topKeywords } = useMemo(() => {
-    const pubs: Publication[] = analyzedQuery.data?.publications ?? [];
-    const dims = ['public_accessibility', 'societal_relevance', 'novelty_factor', 'storytelling_potential', 'media_timeliness'] as const;
-    const avgs: Record<string, number> = {};
-    for (const dim of dims) {
-      const vals = pubs.filter(p => p[dim] != null).map(p => p[dim] as number);
-      avgs[dim] = vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
-    }
-    const freq: Record<string, number> = {};
-    for (const p of pubs) {
-      if (p.enriched_keywords) {
-        for (const kw of p.enriched_keywords) {
-          const normalized = kw.trim().toLowerCase();
-          if (normalized) freq[normalized] = (freq[normalized] || 0) + 1;
-        }
-      }
-    }
-    const keywords = Object.entries(freq)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 30)
-      .map(([word, count]) => ({ word, count }));
-    return { dimensionAvgs: avgs, topKeywords: keywords };
-  }, [analyzedQuery.data]);
+  // dimension_avgs + top_keywords kommen jetzt aus stats (PG-Funktion).
+  // Konvertierung in das Render-Shape, das die unteren Karten erwarten.
+  const dimensionAvgs: Record<string, number> = stats?.dimension_avgs ?? {};
+  const topKeywords = stats?.top_keywords ?? [];
 
   if (loading) {
     return (

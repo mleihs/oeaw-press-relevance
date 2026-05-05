@@ -137,7 +137,7 @@ lib/researchers.ts                 # shared TS types
 - **Hybrid-Filter-Pattern** (`app/publications/page.tsx`): Linear-/Notion-Style. Presets gelten als Views — beim Switch werden NUR Preset-Territory-Felder zurückgesetzt, Modifier (Suche, oestat, Datum, …) survive. „Modifiziert · zurücksetzen"-Pille bei Abweichung. Empty-State mit One-Click-Recovery-Aktionen.
 - **`displayTitle()`-Heuristik** (`lib/html-utils.ts`): WebDB-Import schneidet Titel am ersten Doppelpunkt; voller Titel steckt nur in `citation`. Konservative Extension nur bei exaktem `<title>:`-Prefix-Match. Angewandt im Dashboard, der Pub-Tabelle, der Pub-Detail-H1, dem Spotlight, der Person-Detail-PubList.
 - **Renames** für semantische Korrektheit:
-  - HeboWebDB → WebDB überall in der UI (Source-Tag-Wert `'hebowebdb_summary'` bleibt aus DB-Kompat-Gründen, aber das Label ist „WebDB")
+  - HeboWebDB → WebDB überall: Source-Tag wurde 2026-05-05 von `'hebowebdb_summary'` zu `'webdb_summary'` umbenannt (Code + DB-Migration), Label ist „WebDB".
   - „Akademie-Highlights" → „Eigen-Highlights" (90 % der mahighlights stammen empirisch von Nicht-Mitgliedern, siehe Memory `mahighlight_semantics.md`)
 - **Haiku-Block-Position**: aus dem Analyse-Card raus, eigene Card direkt unter „Zusammenfassung" auf der Pub-Detail-Seite. Newsreader-Serif, Editorial-Luxe-Layout. Prompt aktualisiert: „echte Umlaute, kein ae/oe/ue/ss".
 - **Lead-Autor:in-Verlinkung** im Pub-Detail: Header-Meta-Zeile linkt jetzt auf `/persons/[id]` via Namens-Match gegen `authors_resolved`.

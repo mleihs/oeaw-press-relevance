@@ -163,6 +163,16 @@ export async function GET(req: NextRequest) {
       const highScoreCount = statsRow?.high_score_count ?? 0;
       const scoreDistribution = statsRow?.score_distribution ?? new Array(10).fill(0);
 
+      // Dashboard-Aggregates: 5 dim-avgs + top-30 keywords. Vorher zog der
+      // Client 500 Pubs, um das clientseitig zu rechnen — jetzt 2 KB JSON
+      // aus einer PG-Funktion. Siehe Migration 20260505000001.
+      const { data: aggregates } = await supabase.rpc('publication_dashboard_aggregates');
+      const aggRow = (Array.isArray(aggregates) ? aggregates[0] : aggregates) as
+        | { dimension_avgs: Record<string, number>; top_keywords: { word: string; count: number }[] }
+        | undefined;
+      const dimensionAvgs = aggRow?.dimension_avgs ?? {};
+      const topKeywords = aggRow?.top_keywords ?? [];
+
       return NextResponse.json({
         total: total || 0,
         enriched: enriched || 0,
@@ -175,6 +185,8 @@ export async function GET(req: NextRequest) {
         avg_score: avgScore,
         high_score_count: highScoreCount,
         score_distribution: scoreDistribution,
+        dimension_avgs: dimensionAvgs,
+        top_keywords: topKeywords,
       });
     }
 

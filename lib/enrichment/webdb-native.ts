@@ -11,7 +11,7 @@
 
 import type { EnrichmentResult, Publication } from '../types';
 
-export const WEBDB_SOURCE_TAG = 'hebowebdb_summary';
+export const WEBDB_SOURCE_TAG = 'webdb_summary';
 
 function wordCount(text: string | null | undefined): number {
   if (!text) return 0;
