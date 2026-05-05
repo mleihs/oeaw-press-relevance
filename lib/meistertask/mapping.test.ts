@@ -72,6 +72,10 @@ function makePub(overrides: Partial<Publication> = {}): Publication {
     snooze_until: null,
     flag_notes: [],
     decided_in_session: null,
+    press_release_url: null,
+    press_release_at: null,
+    press_release_lang: null,
+    press_release_title: null,
     ...overrides,
   };
 }

@@ -21,7 +21,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip
 import { LLM_MODELS, STATUS_LABELS, STATUS_COLORS } from '@/lib/constants';
 import {
   ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ChevronUp, ExternalLink, Info,
-  ShieldCheck, Megaphone,
+  ShieldCheck, Megaphone, Newspaper,
 } from 'lucide-react';
 
 // Publication rows from /api/publications now ride along with embedded
@@ -207,6 +207,25 @@ function MobilePublicationCard({
             {pub.publication_type}
           </Badge>
         )}
+        {pub.press_release_url && (
+          <Tooltip><TooltipTrigger asChild>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                window.open(pub.press_release_url!, '_blank', 'noopener');
+              }}
+              aria-label="ÖAW-Pressemitteilung öffnen"
+              className="inline-flex items-center rounded-full bg-emerald-100 text-emerald-800 px-1.5 py-0.5 text-[10px] font-medium gap-0.5"
+            >
+              <Newspaper className="h-2.5 w-2.5" /> Press-Release
+            </button>
+          </TooltipTrigger><TooltipContent className="max-w-xs">
+            {pub.press_release_title ?? 'ÖAW-Pressemitteilung'}
+            {pub.press_release_at && <span className="block text-neutral-300">vom {pub.press_release_at}</span>}
+          </TooltipContent></Tooltip>
+        )}
         {pub.peer_reviewed && (
           <Tooltip><TooltipTrigger asChild>
             <span className="inline-flex items-center rounded-full bg-blue-100 text-blue-800 px-1.5 py-0.5 text-[10px] font-medium gap-0.5">
@@ -302,6 +321,24 @@ function PublicationRow({
               <Tooltip><TooltipTrigger asChild>
                 <Megaphone className="h-3 w-3 text-purple-600 shrink-0" />
               </TooltipTrigger><TooltipContent>Popular Science</TooltipContent></Tooltip>
+            )}
+            {pub.press_release_url && (
+              <Tooltip><TooltipTrigger asChild>
+                <a
+                  href={pub.press_release_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-emerald-600 hover:text-emerald-700 shrink-0"
+                  aria-label={`ÖAW-Pressemitteilung: ${pub.press_release_title ?? ''}`}
+                >
+                  <Newspaper className="h-3 w-3" />
+                </a>
+              </TooltipTrigger><TooltipContent className="max-w-xs">
+                ÖAW-Pressemitteilung
+                {pub.press_release_title && <><br/><span className="font-medium">{pub.press_release_title}</span></>}
+                {pub.press_release_at && <><br/><span className="text-neutral-300">vom {pub.press_release_at}</span></>}
+              </TooltipContent></Tooltip>
             )}
             {pub.meistertask_task_token && (
               <Tooltip><TooltipTrigger asChild>

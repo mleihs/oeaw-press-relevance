@@ -174,6 +174,15 @@ export function ActiveFilters({ filters, setFilters, lookups }: Props) {
       remove: () => setFilters({ flagged: false, page: 1 }),
     });
   }
+  if (filters.pressReleased !== 'any') {
+    chips.push({
+      key: 'pressReleased',
+      label: filters.pressReleased === 'yes'
+        ? 'Bereits Pressemitteilung'
+        : 'Ohne Pressemitteilung',
+      remove: () => setFilters({ pressReleased: 'any', page: 1 }),
+    });
+  }
 
   if (filters.from) {
     chips.push({

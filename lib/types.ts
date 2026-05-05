@@ -75,6 +75,12 @@ export interface Publication {
   snooze_until: string | null;
   flag_notes: FlagNote[];
   decided_in_session: string | null;
+  // Cross-reference to existing ÖAW-Hauptseite press release (TYPO3).
+  // Set by scripts/seed-press-releases or migrations/data/seed_press_releases_*.
+  press_release_url: string | null;
+  press_release_at: string | null;
+  press_release_lang: 'de' | 'en' | null;
+  press_release_title: string | null;
 }
 
 export interface FlagNote {

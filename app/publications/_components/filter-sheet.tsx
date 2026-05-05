@@ -95,6 +95,7 @@ function countDimensionalFilters(f: FilterValues): number {
   if (f.hasSumDe || f.hasSumEn || f.hasPdf || f.hasDoi) n++;
   if (f.maHl || f.hl) n++;
   if (f.flagged) n++;
+  if (f.pressReleased !== 'any') n++;
   if (f.from || f.to) n++;
   if (f.minScore > 0) n++;
   if (f.enrich || f.analysis) n++;
@@ -408,6 +409,14 @@ function CurationFacet({
           label="Geflaggt für Sitzung"
           onChange={(v) => setFilters({ flagged: v, page: 1 })}
         />
+      </div>
+      <div className="mt-3">
+        <Row label="ÖAW-Pressemitteilung">
+          <TriStateTabs
+            value={filters.pressReleased}
+            onChange={(pressReleased) => setFilters({ pressReleased, page: 1 })}
+          />
+        </Row>
       </div>
     </FacetSection>
   );

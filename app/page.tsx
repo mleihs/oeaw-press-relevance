@@ -25,7 +25,7 @@ import { PublicationStats, PublicationWithRelations } from '@/lib/types';
 import { displayTitle } from '@/lib/html-utils';
 import { displayAuthor, displayInstitute } from '@/lib/publication-display';
 import { SCORE_LABELS } from '@/lib/constants';
-import { Sparkles, BookOpen, BarChart3, TrendingUp, AlertCircle, Pin, ClipboardCheck } from 'lucide-react';
+import { Sparkles, BookOpen, BarChart3, TrendingUp, AlertCircle, Pin, ClipboardCheck, Newspaper } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { PublicationFlag } from '@/components/publication-flag';
 
@@ -101,6 +101,14 @@ export default function DashboardPage() {
   const flaggedQuery = useApiQuery<{ total?: number }>(
     ['dashboard-flagged'],
     '/api/publications?flagged=true&pageSize=1',
+  );
+
+  // Press-Released-Count: pubs die schon eine ÖAW-Pressemitteilung haben
+  // (cross-reference aus TYPO3-news per DOI). Zeigt dem Press-Team auf einen
+  // Blick wie viele Papers schon gepressed sind.
+  const pressReleasedQuery = useApiQuery<{ total?: number }>(
+    ['dashboard-press-released'],
+    '/api/publications?press_released=true&pageSize=1',
   );
 
   const stats = statsQuery.data ?? null;
@@ -233,6 +241,18 @@ export default function DashboardPage() {
               })()}
             </Link>
           </Button>
+          {(() => {
+            const n = pressReleasedQuery.data?.total ?? 0;
+            if (n === 0) return null;
+            return (
+              <Button asChild variant="outline" className="border-emerald-300 text-emerald-900 hover:bg-emerald-50">
+                <Link href="/publications?pressReleased=yes">
+                  <Newspaper className="mr-2 h-4 w-4" />
+                  {n} mit ÖAW-Pressemitteilung
+                </Link>
+              </Button>
+            );
+          })()}
         </CardContent>
       </Card>
 

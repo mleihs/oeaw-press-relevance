@@ -28,7 +28,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip
 import {
   ExternalLink, FileText, Brain, ChevronRight, Info,
   Award, ShieldCheck, Megaphone, Users, Building2, FolderOpen, BookText,
-  Mail, Crown,
+  Mail, Crown, Newspaper,
 } from 'lucide-react';
 
 export default function PublicationDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -218,6 +218,33 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
 
       {/* Decision-Toolbar */}
       <DecisionToolbar pub={pub} />
+
+      {/* ÖAW-Pressemitteilung (cross-reference zur TYPO3-news) */}
+      {pub.press_release_url && (
+        <Card className="border-emerald-300 bg-emerald-50/40">
+          <CardContent className="p-4 flex items-start gap-3">
+            <Newspaper className="h-5 w-5 text-emerald-700 mt-0.5 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <h3 className="text-xs font-medium text-emerald-900 uppercase tracking-wide">
+                Bereits ÖAW-Pressemitteilung
+              </h3>
+              <a
+                href={pub.press_release_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block mt-1 font-medium text-emerald-900 hover:underline"
+              >
+                {pub.press_release_title ?? pub.press_release_url}
+                <ExternalLink className="inline-block h-3 w-3 ml-1 align-text-top" />
+              </a>
+              <p className="text-xs text-emerald-700 mt-1">
+                {pub.press_release_at && <>veröffentlicht am {pub.press_release_at} </>}
+                {pub.press_release_lang && <>· {pub.press_release_lang.toUpperCase()}</>}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Pitch */}
       {hasAnalysis && pub.pitch_suggestion && (

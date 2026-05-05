@@ -96,6 +96,7 @@ export async function GET(req: NextRequest) {
     const mahighlight = searchParams.get('mahighlight') === 'true';
     const highlight = searchParams.get('highlight') === 'true';
     const flagged = searchParams.get('flagged') === 'true';
+    const pressReleased = searchParams.get('press_released');  // 'true' | 'false' | null
     const defaultEligible = searchParams.get('default_eligible') === 'true';
     const includeArchived = searchParams.get('include_archived') === 'true';
     const sortBy = searchParams.get('sort') || 'published_at';
@@ -186,6 +187,8 @@ export async function GET(req: NextRequest) {
       if (hasSummaryEn) query = query.not('summary_en', 'is', null);
       if (hasPdf) query = query.not('download_link', 'is', null);
       if (hasDoi) query = query.not('doi', 'is', null);
+      if (pressReleased === 'true') query = query.not('press_release_url', 'is', null);
+      if (pressReleased === 'false') query = query.is('press_release_url', null);
 
       if (orgunitId) query = query.eq('orgunit_publications.orgunit_id', orgunitId);
       if (effectiveOrgunitIds.length) {

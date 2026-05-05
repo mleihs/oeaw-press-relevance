@@ -214,6 +214,8 @@ export default function PublicationsPage() {
     if (filters.from) p.set('from', filters.from);
     if (filters.to) p.set('to', filters.to);
     if (filters.minScore > 0) p.set('min_score', String(filters.minScore / 100));
+    if (filters.pressReleased === 'yes') p.set('press_released', 'true');
+    if (filters.pressReleased === 'no') p.set('press_released', 'false');
     if (!filters.showAll) p.set('default_eligible', 'true');
     return p.toString();
   }, [filters]);
