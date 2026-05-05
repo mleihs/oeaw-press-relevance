@@ -167,6 +167,13 @@ export function ActiveFilters({ filters, setFilters, lookups }: Props) {
       remove: () => setFilters({ hl: false, page: 1 }),
     });
   }
+  if (filters.flagged) {
+    chips.push({
+      key: 'flagged',
+      label: 'Geflaggt für Sitzung',
+      remove: () => setFilters({ flagged: false, page: 1 }),
+    });
+  }
 
   if (filters.from) {
     chips.push({

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Pin, Loader2, Trash2 } from 'lucide-react';
+import { Pin, Loader2, Trash2, Check, Pause, X as XIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import type { FlagNote } from '@/lib/types';
 import { loadSettings, getApiHeaders } from '@/lib/settings-store';
@@ -18,6 +18,43 @@ interface PublicationFlagProps {
   onChange?: (notes: FlagNote[]) => void;
   /** Compact mode for tight rows; default = normal. */
   size?: 'sm' | 'md';
+  /** Triage decision-state — switches the icon to reflect lifecycle. */
+  decision?: 'undecided' | 'pitch' | 'hold' | 'skip' | null;
+}
+
+/** Icon + visual styling per decision state. The Pin only shows for undecided;
+ *  pitch/hold/skip get state-specific icons so the row's lifecycle is glanceable. */
+function decisionVisuals(decision: PublicationFlagProps['decision'], iAmFlagging: boolean) {
+  switch (decision) {
+    case 'pitch':
+      return {
+        Icon: Check,
+        iconClass: 'fill-none',
+        buttonClass: 'text-green-600 hover:bg-green-50',
+        tooltip: 'Entschieden: Pitch',
+      };
+    case 'hold':
+      return {
+        Icon: Pause,
+        iconClass: 'fill-none',
+        buttonClass: 'text-blue-600 hover:bg-blue-50',
+        tooltip: 'Entschieden: Hold',
+      };
+    case 'skip':
+      return {
+        Icon: XIcon,
+        iconClass: 'fill-none',
+        buttonClass: 'text-neutral-500 hover:bg-neutral-100',
+        tooltip: 'Entschieden: Skip',
+      };
+    default:
+      return {
+        Icon: Pin,
+        iconClass: iAmFlagging ? 'fill-amber-400' : '',
+        buttonClass: `text-neutral-400 hover:text-amber-500 hover:bg-amber-50 ${iAmFlagging ? 'text-amber-500' : ''}`,
+        tooltip: null,
+      };
+  }
 }
 
 function norm(name: string): string {
@@ -37,7 +74,7 @@ function formatRelative(iso: string): string {
   return new Date(iso).toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit' });
 }
 
-export function PublicationFlag({ pubId, flagNotes, onChange, size = 'md' }: PublicationFlagProps) {
+export function PublicationFlag({ pubId, flagNotes, onChange, size = 'md', decision }: PublicationFlagProps) {
   // reviewerName is read on every popover open (not on every render) so a
   // freshly-edited name is picked up without a remount.
   const [reviewerName, setReviewerName] = useState(() =>
@@ -116,6 +153,8 @@ export function PublicationFlag({ pubId, flagNotes, onChange, size = 'md' }: Pub
 
   const iconSize = size === 'sm' ? 'h-3.5 w-3.5' : 'h-4 w-4';
   const buttonSize = size === 'sm' ? 'h-6 w-6' : 'h-7 w-7';
+  const visuals = decisionVisuals(decision, iAmFlagging);
+  const StateIcon = visuals.Icon;
 
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
@@ -124,12 +163,12 @@ export function PublicationFlag({ pubId, flagNotes, onChange, size = 'md' }: Pub
           <PopoverTrigger asChild>
             <button
               type="button"
-              aria-label={iAmFlagging ? 'Mein Flag bearbeiten' : 'Pub flaggen'}
-              className={`relative inline-flex items-center justify-center rounded ${buttonSize} text-neutral-400 hover:text-amber-500 hover:bg-amber-50 transition-colors ${iAmFlagging ? 'text-amber-500' : ''}`}
+              aria-label={visuals.tooltip ?? (iAmFlagging ? 'Mein Flag bearbeiten' : 'Pub flaggen')}
+              className={`relative inline-flex items-center justify-center rounded ${buttonSize} ${visuals.buttonClass} transition-colors`}
               onClick={(e) => e.stopPropagation()}
             >
-              <Pin className={`${iconSize} ${iAmFlagging ? 'fill-amber-400' : ''}`} />
-              {totalCount > 1 && (
+              <StateIcon className={`${iconSize} ${visuals.iconClass}`} />
+              {totalCount > 1 && !visuals.tooltip && (
                 <span className="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[14px] h-[14px] px-1 rounded-full bg-amber-500 text-white text-[9px] font-semibold leading-none">
                   {totalCount}
                 </span>
@@ -138,11 +177,13 @@ export function PublicationFlag({ pubId, flagNotes, onChange, size = 'md' }: Pub
           </PopoverTrigger>
         </TooltipTrigger>
         <TooltipContent side="top">
-          {totalCount === 0
-            ? 'Pub flaggen für die nächste Sitzung'
-            : totalCount === 1 && iAmFlagging
-              ? 'Du hast diese Pub geflaggt'
-              : `${totalCount} Flag${totalCount > 1 ? 's' : ''}`}
+          {visuals.tooltip
+            ? visuals.tooltip
+            : totalCount === 0
+              ? 'Pub flaggen für die nächste Sitzung'
+              : totalCount === 1 && iAmFlagging
+                ? 'Du hast diese Pub geflaggt'
+                : `${totalCount} Flag${totalCount > 1 ? 's' : ''}`}
         </TooltipContent>
       </Tooltip>
       <PopoverContent

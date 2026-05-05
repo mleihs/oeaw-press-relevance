@@ -8,6 +8,7 @@ import { displayTitle } from '@/lib/html-utils';
 import { doiToUrl } from '@/lib/enrichment/doi-utils';
 import { ScoreBar } from '@/components/score-bar';
 import { HaikuBlock } from '@/components/haiku-block';
+import { PublicationFlag } from '@/components/publication-flag';
 import { InfoBubble } from '@/components/info-bubble';
 import {
   SOURCE_LABELS,
@@ -85,6 +86,9 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
       <div className="space-y-3">
         <div className="flex items-start gap-2">
           <h1 className="text-2xl font-bold leading-tight flex-1">{titleForDisplay}</h1>
+          <div className="mt-0.5 shrink-0">
+            <PublicationFlag pubId={pub.id} flagNotes={pub.flag_notes ?? []} decision={pub.decision} />
+          </div>
           {isMaHighlighted && (
             <Tooltip>
               <TooltipTrigger asChild>

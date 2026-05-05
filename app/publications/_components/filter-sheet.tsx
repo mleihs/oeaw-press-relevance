@@ -94,6 +94,7 @@ function countDimensionalFilters(f: FilterValues): number {
   if (f.oa !== 'any') n++;
   if (f.hasSumDe || f.hasSumEn || f.hasPdf || f.hasDoi) n++;
   if (f.maHl || f.hl) n++;
+  if (f.flagged) n++;
   if (f.from || f.to) n++;
   if (f.minScore > 0) n++;
   if (f.enrich || f.analysis) n++;
@@ -401,6 +402,11 @@ function CurationFacet({
           active={filters.hl}
           label="Highlight"
           onChange={(v) => setFilters({ hl: v, page: 1 })}
+        />
+        <ToggleChip
+          active={filters.flagged}
+          label="Geflaggt für Sitzung"
+          onChange={(v) => setFilters({ flagged: v, page: 1 })}
         />
       </div>
     </FacetSection>

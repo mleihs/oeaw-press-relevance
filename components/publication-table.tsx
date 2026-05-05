@@ -163,7 +163,7 @@ function MobilePublicationCard({
           className="shrink-0 -mt-1 -ml-1"
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
         >
-          <PublicationFlag pubId={pub.id} flagNotes={pub.flag_notes ?? []} size="sm" />
+          <PublicationFlag pubId={pub.id} flagNotes={pub.flag_notes ?? []} size="sm" decision={pub.decision} />
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-medium text-sm leading-snug line-clamp-2">
@@ -270,6 +270,7 @@ function PublicationRow({
             pubId={pub.id}
             flagNotes={pub.flag_notes ?? []}
             size="sm"
+            decision={pub.decision}
           />
         </td>
         <td className="p-3 max-w-sm">

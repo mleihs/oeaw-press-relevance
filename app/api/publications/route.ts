@@ -44,6 +44,17 @@ async function fetchPubIdsByHighlight(
   return ids;
 }
 
+// Fetch publication IDs that currently have at least one flag note.
+// Backed by pub_ids_with_flags() PG-Function (migration 20260505000005),
+// because PostgREST cannot natively filter on jsonb_array_length().
+async function fetchPubIdsWithFlags(supabase: SB): Promise<Set<string>> {
+  const ids = new Set<string>();
+  const { data, error } = await supabase.rpc('pub_ids_with_flags');
+  if (error || !data) return ids;
+  for (const r of data as Array<{ publication_id: string }>) ids.add(r.publication_id);
+  return ids;
+}
+
 export async function GET(req: NextRequest) {
   try {
     const supabase = getSupabaseFromRequest(req);
@@ -84,6 +95,7 @@ export async function GET(req: NextRequest) {
     const hasDoi = searchParams.get('has_doi') === 'true';
     const mahighlight = searchParams.get('mahighlight') === 'true';
     const highlight = searchParams.get('highlight') === 'true';
+    const flagged = searchParams.get('flagged') === 'true';
     const defaultEligible = searchParams.get('default_eligible') === 'true';
     const includeArchived = searchParams.get('include_archived') === 'true';
     const sortBy = searchParams.get('sort') || 'published_at';
@@ -109,6 +121,12 @@ export async function GET(req: NextRequest) {
     let highlightPubIdSet: Set<string> | null = null;
     if (mahighlight || highlight) {
       highlightPubIdSet = await fetchPubIdsByHighlight(supabase, mahighlight, highlight);
+    }
+
+    // Flagged-for-meeting: pub-ids with at least one flag_notes entry
+    let flaggedPubIdSet: Set<string> | null = null;
+    if (flagged) {
+      flaggedPubIdSet = await fetchPubIdsWithFlags(supabase);
     }
 
     // top_level_only is now a pure UI-side filter (controls which orgunits are
@@ -180,6 +198,10 @@ export async function GET(req: NextRequest) {
       }
       if (highlightPubIdSet) {
         const arr = [...highlightPubIdSet];
+        query = query.in('id', arr.length ? arr : [SENTINEL_UUID]);
+      }
+      if (flaggedPubIdSet) {
+        const arr = [...flaggedPubIdSet];
         query = query.in('id', arr.length ? arr : [SENTINEL_UUID]);
       }
 

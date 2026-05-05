@@ -25,7 +25,7 @@ import { PublicationStats, PublicationWithRelations } from '@/lib/types';
 import { displayTitle } from '@/lib/html-utils';
 import { displayAuthor, displayInstitute } from '@/lib/publication-display';
 import { SCORE_LABELS } from '@/lib/constants';
-import { Sparkles, BookOpen, BarChart3, TrendingUp, AlertCircle } from 'lucide-react';
+import { Sparkles, BookOpen, BarChart3, TrendingUp, AlertCircle, Pin } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { PublicationFlag } from '@/components/publication-flag';
 
@@ -88,6 +88,13 @@ export default function DashboardPage() {
   const topQuery = useApiQuery<{ publications?: PublicationWithRelations[] }>(
     ['dashboard-top', timePeriod],
     topUrl,
+  );
+
+  // Geflaggt-Count: separater Mini-Query, nutzt das `flagged=true`-Filter
+  // im /api/publications-Listing. pageSize=1 weil wir nur den Count brauchen.
+  const flaggedQuery = useApiQuery<{ total?: number }>(
+    ['dashboard-flagged'],
+    '/api/publications?flagged=true&pageSize=1',
   );
 
   const stats = statsQuery.data ?? null;
@@ -204,6 +211,25 @@ export default function DashboardPage() {
               Publikationen durchsuchen
             </Link>
           </Button>
+          {(() => {
+            const n = flaggedQuery.data?.total ?? 0;
+            if (n === 0) {
+              return (
+                <span className="inline-flex items-center text-sm text-neutral-500 px-3">
+                  <Pin className="mr-2 h-4 w-4 text-neutral-400" />
+                  Keine Pubs für die nächste Sitzung geflaggt
+                </span>
+              );
+            }
+            return (
+              <Button asChild variant="outline" className="border-amber-300 text-amber-900 hover:bg-amber-50">
+                <Link href="/publications?flagged=true">
+                  <Pin className="mr-2 h-4 w-4 fill-amber-400 text-amber-500" />
+                  {n} {n === 1 ? 'Pub' : 'Pubs'} geflaggt für Sitzung
+                </Link>
+              </Button>
+            );
+          })()}
         </CardContent>
       </Card>
 
@@ -279,7 +305,7 @@ export default function DashboardPage() {
                     className="shrink-0"
                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
                   >
-                    <PublicationFlag pubId={pub.id} flagNotes={pub.flag_notes ?? []} size="sm" />
+                    <PublicationFlag pubId={pub.id} flagNotes={pub.flag_notes ?? []} size="sm" decision={pub.decision} />
                   </div>
                   <PressScoreBadge score={pub.press_score} analysisStatus={pub.analysis_status} enrichmentStatus={pub.enrichment_status} />
                 </Link>
