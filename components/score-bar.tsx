@@ -78,7 +78,12 @@ interface PressScoreBadgeProps {
 }
 
 export function PressScoreBadge({ score, variant = 'badge' }: PressScoreBadgeProps) {
-  if (score === null) return <span className="text-neutral-400 text-sm">N/A</span>;
+  if (score === null) return (
+    <span className="inline-flex items-center gap-1">
+      <span className="text-neutral-400 text-sm">N/A</span>
+      <InfoBubble id="score_na" />
+    </span>
+  );
 
   const pct = Math.round(score * 100);
   const bgColor = getScoreBandClass(score, variant);

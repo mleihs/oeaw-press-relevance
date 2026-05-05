@@ -9,6 +9,7 @@ import { displayAuthor } from '@/lib/publication-display';
 import { buildTaskUrl } from '@/lib/meistertask/urls';
 import { PressScoreBadge, ScoreBar } from './score-bar';
 import { InfoBubble } from './info-bubble';
+import { EXPL } from '@/lib/explanations';
 import { EmptyState } from './empty-state';
 import { PublicationFlag } from './publication-flag';
 import { Badge } from '@/components/ui/badge';
@@ -25,6 +26,7 @@ import {
 // (analysis page) still type-check.
 type PublicationRow = Publication & {
   orgunits?: Array<{ id: string; akronym_de: string | null; name_de: string }>;
+  publication_type_lookup?: { name_de: string; name_en: string } | null;
 };
 
 interface PublicationTableProps {
@@ -310,7 +312,7 @@ function PublicationRow({
         <td className="p-3 max-w-[140px] truncate">{pub.lead_author?.trim() || '-'}</td>
         <td className="p-3 whitespace-nowrap">
           <Badge variant="outline" className="text-xs">
-            {pub.publication_type || 'Unbekannt'}
+            {pub.publication_type || pub.publication_type_lookup?.name_de || 'Unbekannt'}
           </Badge>
         </td>
         <td className="p-3 whitespace-nowrap">{pub.published_at?.slice(0, 4) || '-'}</td>
@@ -347,9 +349,14 @@ function PublicationRow({
 }
 
 function StatusBadge({ status }: { status: string }) {
+  const explId = `status_${status}`;
+  const hasExpl = explId in EXPL;
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[status] || STATUS_COLORS.pending}`}>
-      {STATUS_LABELS[status] || status}
+    <span className="inline-flex items-center gap-1">
+      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[status] || STATUS_COLORS.pending}`}>
+        {STATUS_LABELS[status] || status}
+      </span>
+      {hasExpl && <InfoBubble id={explId as keyof typeof EXPL} />}
     </span>
   );
 }

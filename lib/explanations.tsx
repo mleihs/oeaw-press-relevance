@@ -555,6 +555,83 @@ export const EXPL: Record<string, Explanation> = {
     ),
   },
 
+  // ─── Enrichment-Status-Badges ────────────────────────────────────────────
+  status_pending: {
+    title: 'Anreicherung steht aus',
+    body: (
+      <>
+        <Para>
+          Externe Datenquellen (CrossRef, OpenAlex, Unpaywall, SemanticScholar) wurden für
+          diese Publikation noch nicht abgefragt. WebDB liefert oft nur Titel und Autor:innen;
+          Abstract und Keywords kommen erst durch die Anreicherung dazu.
+        </Para>
+        <Para>
+          Solange das nicht geschehen ist, kann die Pub auch nicht inhaltlich bewertet werden —
+          eine Bewertung ohne Substanz wäre Fabrikation.
+        </Para>
+      </>
+    ),
+  },
+  status_enriched: {
+    title: 'Anreicherung erfolgreich',
+    body: (
+      <Para>
+        Mindestens eine externe Quelle hat zusätzliche Metadaten geliefert — typischerweise
+        Abstract, Keywords oder Volltext-Snippet. Die Pub ist damit bereit für die inhaltliche
+        Bewertung durch ein Sprachmodell.
+      </Para>
+    ),
+  },
+  status_partial: {
+    title: 'Anreicherung teilweise erfolgreich',
+    body: (
+      <Para>
+        Manche externen Quellen lieferten Daten, andere nicht. Häufig fehlt der Abstract,
+        was die spätere Bewertung erschwert oder sie nur auf Basis von Keywords + Citation
+        möglich macht. Über <Code>enrich-augment</Code> lassen sich weitere Quellen nachladen.
+      </Para>
+    ),
+  },
+  status_analyzed: {
+    title: 'Inhaltlich bewertet',
+    body: (
+      <Para>
+        Ein Sprachmodell hat den verfügbaren Inhalt gelesen und Press-Score, Dimensionen,
+        Pitch, Angle und Reasoning erzeugt. Die Pub ist damit für die Pressestellen-Triage
+        verfügbar.
+      </Para>
+    ),
+  },
+  status_failed: {
+    title: 'Anreicherung fehlgeschlagen',
+    body: (
+      <Para>
+        Alle externen Quellen wurden abgefragt, keine lieferte verwertbare Daten. Häufige
+        Ursachen: Pub hat keinen DOI, DOI ist in keiner Datenbank registriert, oder der
+        Abstract liegt nur in einem Format vor, das die APIs nicht ausliefern.
+      </Para>
+    ),
+  },
+
+  // ─── Score N/A ───────────────────────────────────────────────────────────
+  score_na: {
+    title: 'Kein Press-Score',
+    body: (
+      <>
+        <Para>
+          Diese Publikation wurde noch nicht inhaltlich bewertet — daher kein StoryScore.
+          Die häufigsten Ursachen:
+        </Para>
+        <Para>
+          1. Anreicherung steht noch aus oder ist fehlgeschlagen — ohne Abstract liegt zu
+          wenig Substanz für eine seriöse Bewertung vor.<br />
+          2. Anreicherung ist durch, aber die Scoring-Session ist noch nicht gelaufen — das
+          Sprachmodell muss explizit getriggert werden.
+        </Para>
+      </>
+    ),
+  },
+
   // ─── Publications table ──────────────────────────────────────────────────
   pub_score_column: {
     title: 'StoryScore-Spalte',
