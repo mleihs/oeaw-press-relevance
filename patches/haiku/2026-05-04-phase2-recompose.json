@@ -1,0 +1,356 @@
+{
+  "phase": "phase2-recompose",
+  "created_at": "2026-05-04T22:50:00Z",
+  "rationale": "Phase 2 LLM-Recompose der 58 Separator-Verlust-Haikus (Class C) aus dem Findings-Sweep. Konkretes Studien-Bild aus title+enriched_abstract, 5-7-5 +-1 Silben, kein Pseudo-Tiefe-Pattern (per HAIKU_RESEARCH_DE.md / _EN.md). Pattern-Fatigue-Reduzierung: Bild/hält/Maß/Welt/trägt nur sparsam. 7 Sample wurden vorgelegt, 51 Bulk komponiert. 6 weitere ehemals-Class-C wurden bereits 2026-05-04 14:11 anderweitig gepatcht (5a9fc79b, 9a1ff0aa, 189d4237, f1e6da1d, 8be21c42, 88cb72fc) und sind hier NICHT enthalten — davon haben 2 Rest-ASCII (pruefe, haelt, Mass) die separat in einer Phase-2.5 abgeräumt werden sollten.",
+  "expected_count": 58,
+  "patches": [
+    {
+      "id": "346ebb9f-70ea-4d69-8c94-ab1d5154e881",
+      "current_haiku": "Achse haelt das Mass im Schatten ruht der Beweis Zahl bleibt unbekannt",
+      "new_haiku": "Maßstab ist nicht fest / Symmetrie würfelt allein / Schlüssel bleibt sicher",
+      "reason": "phase2-recompose-sample (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "e31f5d82-62a6-4475-bde8-d6ad3f386dbf",
+      "current_haiku": "Kleines mischt sich klar Messen schiebt die Grenze auf Welt wird wieder fest",
+      "new_haiku": "scharfe Messung schwirrt / die Welt verliert ihre Form / grobes hält sie fest",
+      "reason": "phase2-recompose-sample (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "c6662314-53a6-4228-bfee-77eb638a9e90",
+      "current_haiku": "Scheibe atmet Kohle doch in der Mitte ein Loch Vielleicht waechst dort schon",
+      "new_haiku": "Scheibe atmet weiß / im Zentrum fehlt der Sauerstoff / Planet sammelt ein",
+      "reason": "phase2-recompose-sample (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "96757e02-cc6e-404b-87d7-56d7613303c9",
+      "current_haiku": "Manuskript wird laut Daghestan erzaehlt sich selbst gegen die Erinnerung",
+      "new_haiku": "arabische Schrift / Daghestan erzählt sich selbst / fern vom Sowjet-Blick",
+      "reason": "phase2-recompose-sample (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "4cff4236-e2cc-4b4a-8187-7262eb727335",
+      "current_haiku": "Korn klein wie ein Punkt Legierung haelt einen Schlag leicht und doch geduldig",
+      "new_haiku": "Das Korn schrumpft im Block / Magnesium hält den Schlag / leicht und nicht spröde",
+      "reason": "phase2-recompose-sample (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "0b56c410-e702-4a7d-9eb2-5137b3abf954",
+      "current_haiku": "Tumor traegt Erinnerung Mass-Stab wird langsam justiert Wachstum zeigt sich neu",
+      "new_haiku": "der Tumor erinnert / die Diffusion zieht zurück / Wachstum bleibt zäh",
+      "reason": "phase2-recompose-sample (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "e3934c8a-9157-4a8f-ad8a-39a2b1d067b9",
+      "current_haiku": "Strahl trifft den Kristall zwei Spuren sind jetzt zu sehen zweite war versteckt",
+      "new_haiku": "Neutron im Kristall / zwei Rückstoß-Linien sichtbar / die zweite war fein",
+      "reason": "phase2-recompose-sample (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "ec0ff2c8-7ffd-4cc4-8994-5448ddc70971",
+      "current_haiku": "Drei zu zwei am Rand zwei Ordnungen weichen sich fuer einen Moment",
+      "new_haiku": "auf dem Dreieck stehn / zwei Ordnungen verschmelzen / Grenze ohne Strich",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "33ddae0b-e268-483e-934f-03dcbd571d93",
+      "current_haiku": "Kaeltestarrer Stein lauscht dem Klopfen am Atom leisestes Signal",
+      "new_haiku": "im Kälte-Kristall / der Sensor merkt das Phonon / ein Klang ist genug",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "736502fb-224d-4428-ab83-e21ed7687aad",
+      "current_haiku": "Schrift im Browser ruht seitenweise wandert sie Server schweigt dazu",
+      "new_haiku": "Handschrift im Browser / ohne Server, nur Datei / KI half beim Bau",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "71e09073-09a6-4bb6-a6bf-37829a11451a",
+      "current_haiku": "Strahl trifft den Kristall zaehlt jedes leise Klingen Wahrheit braucht Geduld",
+      "new_haiku": "Natrium nimmt den Schlag / Szintillation klingt fein / klopft die Materie",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "1e366916-85c2-459c-b04d-7f54b9b56d75",
+      "current_haiku": "Strom faellt durch den Stein Messgeraet zaehlt jeden Schritt Kristall wird messbar",
+      "new_haiku": "schnell rast die Ladung / Elektron und Loch wetteifern / fein wird die Skala",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "e3566405-b57c-4e80-849a-9639c9ac2f78",
+      "current_haiku": "Strom zaehlt einen Schritt der Sensor traeumt vom Atom Leere wird sichtbar",
+      "new_haiku": "wieder und wieder / der Sensor mittelt das Signal / Rauschen schrumpft fein",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "ec363dfe-c1f4-48ad-88f9-b9f26c534010",
+      "current_haiku": "Vakuum ruht still gequetschtes Licht traegt Distanz Unendlich beginnt",
+      "new_haiku": "Vakuum gequetscht / Entropie misst die Ferne / Modus an Modus",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "a0cdff76-21d7-4e5e-bb80-bdfc0123b549",
+      "current_haiku": "Magnet rund geformt Wirbelstrom faellt langsam ab Motor zieht ruhiger",
+      "new_haiku": "umgeformt: Magnet / der Wirbelstrom verliert Macht / Drehmoment bleibt stark",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "d7b5fda0-a1e4-476f-bd0d-733840ad8f4d",
+      "current_haiku": "Luft schimmert ueber Hang Mathematik liest sie sauber Stern bleibt scharf im Bild",
+      "new_haiku": "die Luft ist verwirbelt / der Algorithmus liest sie / Stern wird sichtbar scharf",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "e423da4a-f56e-4819-95c6-6a759ab486d5",
+      "current_haiku": "Quarzglas statt Sand der Chip kommt aus der Fabrik Kaelte haelt ihn ruhig",
+      "new_haiku": "im Quarzglas der Chip / die Ionen ruhen still / wenig Wärme bleibt",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "1efe2b34-c219-473a-9a6a-49153641a85a",
+      "current_haiku": "Daten ohne Ende zwei Welten messen sich neu Unschaerfe lehrt mehr",
+      "new_haiku": "Daten ohne Zahl / das Higgs misst sich an Zweifel / Konfidenz wird scharf",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "6f9b8282-eed3-47c0-9081-a6f4574c4b90",
+      "current_haiku": "Reaktor brennt nahe der Detektor schweigt fein Neutrino spricht laut",
+      "new_haiku": "Reaktor sendet still / im Frost horcht der Sensor mit / Rauschen wird zähmbar",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "ea50cc71-4343-4727-8b31-0ae0d34dccfc",
+      "current_haiku": "Atome im Raster zaehlen sich selbst noch einmal Fehler faellt zur Seite",
+      "new_haiku": "Atome im Raster / die Fermion korrigiert sich / Ordnung trotz Lücke",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "754d4a73-b539-4c13-a8c1-b869bbbf5159",
+      "current_haiku": "Kugel schwebt im Frost Licht zaehlt jede kleine Bahn Materie horcht still",
+      "new_haiku": "die Kugel schwebt frei / Laser misst Bewegung scharf / kalt im Mikrogramm",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "c1038bfe-7f2c-41fe-b7b8-5bc1ec9024e2",
+      "current_haiku": "Falle bebt im Takt das Licht formt einen Zustand Atom wird zum Bild",
+      "new_haiku": "Falle bebt im Takt / formt das Atom zur Schablone / Steuerung gewinnt",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "e59e8e59-588b-45fe-8c1a-f69f0633a869",
+      "current_haiku": "Korrelation steigt Stufe um Stufe das Bild Deren Schatten klingt",
+      "new_haiku": "Korrelationen / über Gauss hinaus messen / Bindung wird sichtbar",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "fc504a9e-ce8d-4e92-8ef6-676f3943ae19",
+      "current_haiku": "Hoehle braucht Vertrag der Forscher bahnt einen Weg Licht trifft tief auf Stein",
+      "new_haiku": "Höhlenforscher tritt / in den Wissenschaftsrat ein / Türe steht nun auf",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "29ff93ca-a5c2-4580-8563-375b5469485d",
+      "current_haiku": "Heilung nicht allein Mythos sitzt mit am Lager Wort wirkt mit dem Kraut",
+      "new_haiku": "Heilung kommt nicht allein / Mythos sitzt am Krankenbett / Kraut und Klang gemischt",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "024826d1-8727-4d7d-8452-11065c17c43c",
+      "current_haiku": "Stein bekommt sein Blatt Akten finden Schluesselort Funde sehen sich",
+      "new_haiku": "Fund verlässt den Ort / die Akten begleiten ihn / Speicher kennt die Bahn",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "ae956a4f-c241-477c-954f-1ee3bc0cdff8",
+      "current_haiku": "Welle haelt zusammen im Atomgitter laeuft sie Feld traegt die Bewegung",
+      "new_haiku": "vom Spin auf das Feld / Simulation streckt sich / Kontinuum greift",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "18e5df2b-c8c0-4190-9fb7-04fd9058aa1d",
+      "current_haiku": "Licht trifft den Atom im Schatten ruht das Qubit Fehler bleibt im Raum",
+      "new_haiku": "im Dunkel das Qubit / das Licht weckt es nicht mehr auf / kein Fehler erscheint",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "e961c2f2-7d9f-4ce6-8e58-a2f0e9606bce",
+      "current_haiku": "Strahlen treffen dicht die Spur verwischt im Geraet Zahlen finden Klang",
+      "new_haiku": "Ionen treffen dicht / viele Pulse stapeln sich / Korrektur sortiert",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "d64a174c-d3aa-4027-a4b7-636e6db485fb",
+      "current_haiku": "Spiegel formt das Licht ein Photon haelt drei zusammen Kette nimmt Gestalt",
+      "new_haiku": "der Spiegel programmiert / drei Atome werden verschränkt / ein Photon genügt",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "ed6f462b-adf7-4674-a80a-86847711035b",
+      "current_haiku": "Gedenkstein im Tal zwei Voelker malen den Krieg Wort schiebt sich davor",
+      "new_haiku": "ein Mahnmal im Tal / zwei Erzählungen kämpfen / die Wunde bleibt frisch",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "f9a2bd12-b6fd-4e86-96f4-69273f26b637",
+      "current_haiku": "Zwei Sorten begegnen schwingen kurz und finden Halt Reibung wird messbar",
+      "new_haiku": "zwei Atomsorten / schwingen sich gemeinsam ein / Reibung wird sichtbar",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "d1bd88b1-af3e-4275-99d6-09eecf69cc75",
+      "current_haiku": "Drei statt zwei stehen Kette spaltet an den Raendern Form zeigt sich vom Rand",
+      "new_haiku": "Spin Eins wird gestapelt / die Kette kennt nur den Rand / Haldane bleibt fest",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "ad036fa8-5af3-4022-bdf8-a97e3605c680",
+      "current_haiku": "Kaelte hat zwei Stimmen die hellen und die dunklen Bad gibt sich nun preis",
+      "new_haiku": "Kälte hat zwei Stimmen / hell und dunkel sprechen aus / das Bad gibt sich preis",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "241ae9f8-2e0d-4ed1-b3b0-013391aaaf59",
+      "current_haiku": "Schwingung wird gross die Falle hilft mit der Form Grundzustand greift zu",
+      "new_haiku": "Mode schwingt zu weit / Kerr-Effekt hilft beim Kühlen / Grundzustand greift zu",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "2f561360-a79c-402e-b7c4-9befa6fdf9a3",
+      "current_haiku": "Junge Scheibe schwingt zwei Spuren messen das Gas Planet wartet noch",
+      "new_haiku": "junge Scheibe wiegt / Stickstoff verrät die Masse / Frost legt sich auf CO",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "5954002c-06ff-45fb-8b97-bd64fb3f734a",
+      "current_haiku": "Schaltkreis lauscht still Magnet kippt das Vorzeichen Qubit bleibt am Leben",
+      "new_haiku": "der Schaltkreis bleibt still / Magnet kippt das Vorzeichen / Qubit lebt weiter",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "b9cbf6b2-6756-419b-bcf2-c2bae8a19f00",
+      "current_haiku": "Stern verbrennt das Gas der Riese verliert sein Kleid Licht traegt Spuren mit",
+      "new_haiku": "der Riese vergeht / heißester Planet verbrennt / Sterneswind nimmt mit",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "b940a24d-1027-46c6-a517-03b9eb439b10",
+      "current_haiku": "Tempel faellt im Schatten der Bischof reist und vereinbart Stadt liest sich neu",
+      "new_haiku": "Tempel weicht im Sturm / Bischof reist, schließt Verträge / die Stadt liest sich neu",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "f6c7945c-2c3c-4b5a-84ba-5a71272c6867",
+      "current_haiku": "Stille Detektoren lernen die Zeit zu lesen Bild wird neu geschnitten",
+      "new_haiku": "der Sensor ist neu / Mikrosekunde gewinnt / die Schichten trennen sich",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "8d216414-ad34-4f60-8537-7615f13d31d6",
+      "current_haiku": "Wer misst noch den Raum wenn der Mass-stab selbst schwebt Frage wird zur Wahl",
+      "new_haiku": "Bezugsrahmen schwebt / die Schwerkraft wackelt mit / wer misst, wählt sich aus",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "2f7e3ef1-e924-46e7-a989-e951b14561bc",
+      "current_haiku": "Atome im Gitter spielen die Form der Materie Licht haelt sie im Mass",
+      "new_haiku": "Atome im Bann / Dipole greifen weit aus / neue Phasen entstehen",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "b7c3e229-5b44-4f93-ab85-9b0e76eda9b8",
+      "current_haiku": "Atom sucht den Pfad in der Mulde fehlt der Mut Umweg loest den Knoten",
+      "new_haiku": "Atom sucht den Pfad / der Graph hat viele Knoten / Umweg führt zum Ziel",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "71e7e6c2-60ae-4e06-87f9-d4a6666d4746",
+      "current_haiku": "Spiegel hellt das Licht zwei Kristalle malen Paar Netz wartet im Glas",
+      "new_haiku": "Resonator reicht / Kristalle malen Paare / Netz wartet im Glas",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "385b99d1-8418-4408-9178-1c3257856cb4",
+      "current_haiku": "Katze friert nicht mehr Im Schlaf hoert sie sich selber zwei Bilder zugleich",
+      "new_haiku": "die Katze friert nicht / aus dem Lärm wird Doppelung / Reinheit fast bei null",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "552711c7-c05d-4ac1-a8ce-7b3560d5144a",
+      "current_haiku": "Ein Blitz im Strahl reicht Abschied schwingt sich ins Spektrum Atome erzaehlen",
+      "new_haiku": "ein Photon schneidet / das Molekül teilt sich / Spektrum nennt den Rest",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "83269f93-e7c5-43ce-b742-fbe9b9eddd3e",
+      "current_haiku": "Photon zaehlt die Zeit Licht bleibt auch im Stadtgewirr Schluessel bleibt geheim",
+      "new_haiku": "Photon misst die Zeit / verschränkt in viele Stufen / Schlüssel bleibt geheim",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "f91bd7a5-59d2-42be-9d15-d4e6496c8c08",
+      "current_haiku": "Im Geraet flackerts tausend Zaehler ordnen Licht Bild entsteht aus Zeit",
+      "new_haiku": "im Chip flackert es / tausend Kanäle ordnen / der Tracer leuchtet",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "de953f86-ec13-44c7-a2da-03a02cf3628a",
+      "current_haiku": "Planet zeigt sein Atemzug Kohlenstoff fehlt im Spektrum Frage bleibt offen",
+      "new_haiku": "Gasriese atmet / das C zu O überwiegt / Frage bleibt offen",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "67378b37-7a0b-4d50-b5c4-991338eb1dcb",
+      "current_haiku": "Aus dem aussen Ring rollt der Eiskoerner Strom innen wartet Erde",
+      "new_haiku": "vom Außenring rollt / der Eis-Strom in die Mitte / innen leuchtet Wasser",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "f018da62-54dc-411b-b235-b88caffaf6a6",
+      "current_haiku": "Atome stehen still die Pose oeffnet ein Tor Materie spielt sich",
+      "new_haiku": "Atome stehen still / Anordnung öffnet ein Tor / Phase tritt hervor",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "daf0f3bb-ef3f-48cc-9073-643b3cafd8a1",
+      "current_haiku": "Quantum probt sich selbst das Modell wird im Gang justiert Fehler zeigt sich rein",
+      "new_haiku": "Quantum probt sich selbst / Modell wird im Test justiert / Fehler schrumpft langsam",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "aee1f919-5e06-465d-af7e-3b87d6f80fcd",
+      "current_haiku": "Halbschale haelt still das Teilchen schwebt im Innersten Licht wird genutzt fein",
+      "new_haiku": "Halbschale fängt Licht / das Teilchen schwebt im Innen / Rauschen wird genutzt",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "c15d927e-05d3-4005-b720-292d4a2794ed",
+      "current_haiku": "Wasser teilt sich auf billig wird zur neuen Tafel Iridium tritt zurueck",
+      "new_haiku": "Wasser wird gespalten / vier Metalle statt Edel / Iridium muss gehn",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "733319e1-8539-4a32-91ac-0ec6b46dacb3",
+      "current_haiku": "Splitter dreht sich hoch zwei Lichtstrahlen messen mit Bahn wird wieder klar",
+      "new_haiku": "Splitter dreht im All / zwei Laser messen die Bahn / Achse wird gefunden",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "ccc7787c-4721-4bd1-a4da-e920aebc63ac",
+      "current_haiku": "Goldstueck aus der Steppe liegt im Hof am Bosporus zaehlt mehr als Gewicht",
+      "new_haiku": "Goldstück aus der Steppe / liegt am Hof am Bosporus / mehr wert als das Gold",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "3f92edb6-2691-4580-8aef-da9e8b2f9e7d",
+      "current_haiku": "Klein und doch laut in der Welt sucht Albanien eigene Verbuendete",
+      "new_haiku": "klein, aber sehr laut / Albanien kämpft allein / Propaganda webt",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    },
+    {
+      "id": "f6c3a105-53d0-4022-a2a9-e3c6f48467ef",
+      "current_haiku": "Feige im Topf bleibt Kornfeld zieht durch alte Stadt Leute essen mit",
+      "new_haiku": "Feigenkern im Topf / Kornfeld und Stadt verflechten / Mahlzeit blieb erhalten",
+      "reason": "phase2-recompose-bulk (LLM-recompose, separator-loss + ASCII)"
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "phase": "phase2_5b-prod-sync",
+  "created_at": "2026-05-05T03:56:00Z",
+  "rationale": "Sync der 6 IDs, die 2026-05-04 14:11 ausschließlich auf local gepatcht wurden (Trenner + teilweise ASCII-Cleanup + 1× Inhalts-Recompose). Prod hat noch den separator-losen Original-Stand. Idempotent: zweiter Lauf no-op.",
+  "expected_count": 6,
+  "patches": [
+    {
+      "id": "189d4237-63fc-4322-acaa-bbb8782b44f4",
+      "current_haiku": "Oel weiht den Altar Gold spricht im Kolophon mit Name traegt das Werk",
+      "new_haiku": "Öl weiht den Altar / Gold spricht im Schluss-Vermerk mit / Name trägt das Werk",
+      "reason": "prod-sync (gestern lokal recomposed: Kolophon->Schluss-Vermerk, ASCII)"
+    },
+    {
+      "id": "5a9fc79b-9bcb-40c2-bc76-9b9d8776e54e",
+      "current_haiku": "Krieg trifft das Archiv die Daten suchen ein Dach Wort waechst weiter",
+      "new_haiku": "Krieg trifft das Archiv / die Daten suchen ein Dach / Wort wächst weiter still",
+      "reason": "prod-sync (gestern lokal: Trenner + ASCII + 'still' als Schlusswort)"
+    },
+    {
+      "id": "88cb72fc-49c3-444b-99b0-acbe2896120b",
+      "current_haiku": "Seide reist zu Berg Farbe traegt das Pilgerlicht Tempel haelt das Bild",
+      "new_haiku": "Seide reist zu Berg / Farbe trägt das Pilgerlicht / Tempel hält das Bild",
+      "reason": "prod-sync (gestern lokal: Trenner + ASCII)"
+    },
+    {
+      "id": "8be21c42-b452-413d-84b4-2e3b61eb159f",
+      "current_haiku": "Aus dem Punkt bricht Licht einmal sollte es nur sein Filter haelt das Mass",
+      "new_haiku": "Aus dem Punkt bricht Licht / einmal sollte es nur sein / Filter hält das Maß",
+      "reason": "prod-sync inkl. heutiger ASCII-Cleanup von 2.5a"
+    },
+    {
+      "id": "9a1ff0aa-3e7d-42c0-8084-18541f617902",
+      "current_haiku": "Huegelweg wird steil ein Helfer schickt das Signal Himmel pruefe nach",
+      "new_haiku": "Berg wird zu steil / ein Helfer schickt das Signal / Himmel prüfe nach",
+      "reason": "prod-sync inkl. heutiger ASCII-Cleanup von 2.5a (Hügelweg->Berg war ein gestriger Recompose)"
+    },
+    {
+      "id": "f1e6da1d-69d4-4dca-8307-f881a78282fa",
+      "current_haiku": "Lexikon im Browser ein paar Zeilen halten es Wort findet sein Bild",
+      "new_haiku": "Browser zeigt das Lemma / die Maschine half beim Bau / klein bleibt der Versuch",
+      "reason": "prod-sync (gestern lokal komplett recomposed)"
+    }
+  ]
+}
