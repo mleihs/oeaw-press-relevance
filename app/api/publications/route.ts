@@ -114,21 +114,32 @@ export async function GET(req: NextRequest) {
         top_keywords?: { word: string; count: number }[];
       };
 
-      return NextResponse.json({
-        total: stats.total || 0,
-        enriched: stats.enriched || 0,
-        partial: stats.partial || 0,
-        with_abstract: stats.with_abstract || 0,
-        analyzed: stats.analyzed || 0,
-        peer_reviewed: stats.peer_reviewed || 0,
-        popular_science: stats.popular_science || 0,
-        bilingual_summary: stats.bilingual_summary || 0,
-        avg_score: stats.avg_score ?? null,
-        high_score_count: stats.high_score_count || 0,
-        score_distribution: stats.score_distribution ?? new Array(10).fill(0),
-        dimension_avgs: stats.dimension_avgs ?? {},
-        top_keywords: stats.top_keywords ?? [],
-      });
+      return NextResponse.json(
+        {
+          total: stats.total || 0,
+          enriched: stats.enriched || 0,
+          partial: stats.partial || 0,
+          with_abstract: stats.with_abstract || 0,
+          analyzed: stats.analyzed || 0,
+          peer_reviewed: stats.peer_reviewed || 0,
+          popular_science: stats.popular_science || 0,
+          bilingual_summary: stats.bilingual_summary || 0,
+          avg_score: stats.avg_score ?? null,
+          high_score_count: stats.high_score_count || 0,
+          score_distribution: stats.score_distribution ?? new Array(10).fill(0),
+          dimension_avgs: stats.dimension_avgs ?? {},
+          top_keywords: stats.top_keywords ?? [],
+        },
+        {
+          headers: {
+            // Edge-Cache: stats sind nicht echtzeit-kritisch. 60s public,
+            // 300s stale-while-revalidate → erste Last triggert PG-Call,
+            // alle nachfolgenden für 6 Min instant aus dem Vercel-Edge.
+            // Tradeoff: Dashboard sieht bis zu 60s alte Counts. Akzeptabel.
+            'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+          },
+        },
+      );
     }
 
     // ---------- pre-fetches ----------
