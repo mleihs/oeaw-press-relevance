@@ -10,6 +10,8 @@ import { buildTaskUrl } from '@/lib/meistertask/urls';
 import { PressScoreBadge, ScoreBar } from './score-bar';
 import { InfoBubble } from './info-bubble';
 import { EXPL } from '@/lib/explanations';
+import { HaikuBlock } from './haiku-block';
+import { MeistertaskButton } from '@/app/publications/[id]/_components/meistertask-button';
 import { EmptyState } from './empty-state';
 import { PublicationFlag } from './publication-flag';
 import { Badge } from '@/components/ui/badge';
@@ -538,11 +540,21 @@ function ExpandedDetail({ pub, showScores }: { pub: Publication; showScores?: bo
               <p className="text-sm text-neutral-600">{pub.reasoning}</p>
             </div>
           )}
-          {pub.llm_model && (
-            <div className="text-xs text-neutral-400">
-              Modell: {pub.llm_model} | Kosten: ${pub.analysis_cost?.toFixed(4) || '0'}
+          {pub.haiku && (
+            <div className="rounded border bg-neutral-50/40 px-4 py-3">
+              <HaikuBlock haiku={pub.haiku} model={pub.llm_model} />
             </div>
           )}
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            {pub.llm_model ? (
+              <span className="text-xs text-neutral-400">
+                Modell: {pub.llm_model} | Kosten: ${pub.analysis_cost?.toFixed(4) || '0'}
+              </span>
+            ) : <span />}
+            <div onClick={(e) => e.stopPropagation()}>
+              <MeistertaskButton pub={pub} />
+            </div>
+          </div>
         </div>
       )}
     </div>
