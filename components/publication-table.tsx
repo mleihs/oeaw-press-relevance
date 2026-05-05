@@ -154,7 +154,7 @@ function MobilePublicationCard({
   return (
     <Link
       href={`/publications/${pub.id}`}
-      className="block rounded-lg border bg-white p-4 hover:border-brand/30 hover:shadow-sm transition-all"
+      className={`block rounded-lg border bg-white p-4 hover:border-brand/30 hover:shadow-sm transition-all ${pub.analysis_status !== 'analyzed' ? 'opacity-60 hover:opacity-100' : ''}`}
     >
       <div className="flex items-start justify-between gap-3">
         <div
@@ -187,7 +187,7 @@ function MobilePublicationCard({
         </div>
         {showScores && (
           <div className="shrink-0">
-            <PressScoreBadge score={pub.press_score} />
+            <PressScoreBadge score={pub.press_score} analysisStatus={pub.analysis_status} enrichmentStatus={pub.enrichment_status} />
           </div>
         )}
       </div>
@@ -255,7 +255,7 @@ function PublicationRow({
   return (
     <>
       <tr
-        className="border-t hover:bg-neutral-50 cursor-pointer"
+        className={`border-t hover:bg-neutral-50 cursor-pointer transition-opacity ${pub.analysis_status !== 'analyzed' ? 'opacity-60 hover:opacity-100' : ''}`}
         onClick={onToggle}
       >
         <td className="p-3">
@@ -329,7 +329,7 @@ function PublicationRow({
         {showScores && (
           <td className="p-3">
             <div className="flex items-center gap-1.5 flex-wrap">
-              <PressScoreBadge score={pub.press_score} />
+              <PressScoreBadge score={pub.press_score} analysisStatus={pub.analysis_status} enrichmentStatus={pub.enrichment_status} />
               {pub.analysis_status === 'analyzed' && pub.llm_model && (
                 <ModelBadge model={pub.llm_model} />
               )}

@@ -281,7 +281,7 @@ export default function DashboardPage() {
                   >
                     <PublicationFlag pubId={pub.id} flagNotes={pub.flag_notes ?? []} size="sm" />
                   </div>
-                  <PressScoreBadge score={pub.press_score} />
+                  <PressScoreBadge score={pub.press_score} analysisStatus={pub.analysis_status} enrichmentStatus={pub.enrichment_status} />
                 </Link>
                 );
               })}

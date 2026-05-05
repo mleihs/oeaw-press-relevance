@@ -3,7 +3,7 @@
 import { SCORE_COLORS, SCORE_LABELS } from '@/lib/constants';
 import { getScoreBandClass, type ScoreBandVariant } from '@/lib/score-utils';
 import { InfoBubble } from '@/components/info-bubble';
-import type { EXPL } from '@/lib/explanations';
+import { EXPL } from '@/lib/explanations';
 
 interface ScoreBarProps {
   dimension: string;
@@ -75,13 +75,28 @@ export function ScoreBar({ dimension, value, compact }: ScoreBarProps) {
 interface PressScoreBadgeProps {
   score: number | null;
   variant?: ScoreBandVariant;
+  /** Optional state context — picks the matching score_na_* explanation. */
+  analysisStatus?: string | null;
+  enrichmentStatus?: string | null;
 }
 
-export function PressScoreBadge({ score, variant = 'badge' }: PressScoreBadgeProps) {
+function pickScoreNaExpl(
+  analysisStatus?: string | null,
+  enrichmentStatus?: string | null,
+): keyof typeof EXPL {
+  if (analysisStatus === 'failed') return 'score_na_analysis_failed';
+  if (enrichmentStatus === 'failed') return 'score_na_pending_failed';
+  if (enrichmentStatus === 'partial') return 'score_na_pending_partial';
+  if (enrichmentStatus === 'pending') return 'score_na_pending_pending';
+  if (enrichmentStatus === 'enriched') return 'score_na_pending_enriched';
+  return 'score_na';
+}
+
+export function PressScoreBadge({ score, variant = 'badge', analysisStatus, enrichmentStatus }: PressScoreBadgeProps) {
   if (score === null) return (
     <span className="inline-flex items-center gap-1">
       <span className="text-neutral-400 text-sm">N/A</span>
-      <InfoBubble id="score_na" />
+      <InfoBubble id={pickScoreNaExpl(analysisStatus, enrichmentStatus)} />
     </span>
   );
 

@@ -613,22 +613,79 @@ export const EXPL: Record<string, Explanation> = {
     ),
   },
 
-  // ─── Score N/A ───────────────────────────────────────────────────────────
+  // ─── Score N/A — Variants nach state ─────────────────────────────────────
   score_na: {
     title: 'Kein Press-Score',
     body: (
+      <Para>
+        Diese Publikation wurde noch nicht inhaltlich bewertet — daher kein StoryScore.
+      </Para>
+    ),
+  },
+  score_na_pending_pending: {
+    title: 'Kein Score — keine Anreicherung versucht',
+    body: (
       <>
         <Para>
-          Diese Publikation wurde noch nicht inhaltlich bewertet — daher kein StoryScore.
-          Die häufigsten Ursachen:
+          Diese Publikation hat noch keine externen Daten: kein DOI-Lookup gegen CrossRef,
+          OpenAlex, Unpaywall oder SemanticScholar wurde gefahren. WebDB liefert oft nur
+          Titel und Autor:innen.
         </Para>
         <Para>
-          1. Anreicherung steht noch aus oder ist fehlgeschlagen — ohne Abstract liegt zu
-          wenig Substanz für eine seriöse Bewertung vor.<br />
-          2. Anreicherung ist durch, aber die Scoring-Session ist noch nicht gelaufen — das
-          Sprachmodell muss explizit getriggert werden.
+          Nächster Schritt: <Code>enrich-api</Code> in der Pipeline laufen lassen, um
+          Abstract und Keywords zu holen. Erst danach ist eine seriöse inhaltliche Bewertung
+          möglich.
         </Para>
       </>
+    ),
+  },
+  score_na_pending_partial: {
+    title: 'Kein Score — Anreicherung teilweise',
+    body: (
+      <>
+        <Para>
+          Externe Quellen lieferten zwar Metadaten (z.B. Keywords, Journal), aber keinen
+          Abstract. Häufiger Fall: Elsevier- oder Springer-DOIs werden bei CrossRef indexiert,
+          aber der Abstract steht nur hinter Paywall und kommt nicht über die freien APIs.
+        </Para>
+        <Para>
+          Eine Bewertung allein auf Basis von Titel und Keywords wäre Fabrikation — daher
+          kein Score. Optionen: <Code>enrich-augment</Code> für zusätzliche Quellen, oder
+          die Pub manuell bewerten lassen.
+        </Para>
+      </>
+    ),
+  },
+  score_na_pending_enriched: {
+    title: 'Kein Score — bewertbar, aber Scoring fehlt',
+    body: (
+      <Para>
+        Die Anreicherung ist durch und ein Abstract liegt vor — die Pub könnte sofort durch
+        ein Sprachmodell bewertet werden. Es fehlt nur der Trigger einer Scoring-Session.
+        Über die Analyse-Seite oder per Pipeline-Befehl auslösbar.
+      </Para>
+    ),
+  },
+  score_na_pending_failed: {
+    title: 'Kein Score — Anreicherung fehlgeschlagen',
+    body: (
+      <Para>
+        Alle externen Quellen wurden abgefragt, keine lieferte verwertbare Daten. Häufige
+        Ursachen: kein DOI vorhanden, DOI nicht in den freien Datenbanken registriert, oder
+        der Abstract liegt in einem Format vor, das die APIs nicht ausliefern. Manuelle
+        Anreicherung wäre der nächste Schritt, sofern sich der Aufwand lohnt.
+      </Para>
+    ),
+  },
+  score_na_analysis_failed: {
+    title: 'Kein Score — Bewertung fehlgeschlagen',
+    body: (
+      <Para>
+        Eine Scoring-Session lief, aber das Sprachmodell konnte keine valide Bewertung
+        liefern. Häufige Ursache: Content zu kurz unter dem Min-Length-Threshold, oder das
+        Modell hat ungültige Werte zurückgegeben. Re-Run mit anderem Modell oder besserem
+        Content.
+      </Para>
     ),
   },
 
