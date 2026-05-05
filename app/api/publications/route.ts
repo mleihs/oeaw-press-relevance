@@ -88,59 +88,6 @@ export async function GET(req: NextRequest) {
     const includeArchived = searchParams.get('include_archived') === 'true';
     const sortBy = searchParams.get('sort') || 'published_at';
     const sortOrder = searchParams.get('order') === 'asc' ? true : false;
-    const statsOnly = searchParams.get('stats') === 'true';
-
-    // ---------- statsOnly branch ----------
-    if (statsOnly) {
-      // Konsolidiert via publication_dashboard_stats() — eine RPC statt
-      // 8 sequenzielle counts + 2 weitere RPCs. Vorher 4-7s wegen Supabase-
-      // HTTP-Round-Trip-Overhead, jetzt <1s. Migration 20260505000002.
-      // includeArchived wird nicht mehr ausgewertet (nur statsOnly nutzt es,
-      // und alle aktuellen Caller setzen es nicht); die Funktion filtert
-      // archivierte Pubs immer raus.
-      const { data: payload, error: rpcError } = await supabase.rpc(
-        'publication_dashboard_stats',
-        { default_eligible: defaultEligible },
-      );
-      if (rpcError) {
-        return NextResponse.json({ error: rpcError.message }, { status: 500 });
-      }
-      const stats = (payload ?? {}) as {
-        total?: number; enriched?: number; partial?: number; with_abstract?: number;
-        analyzed?: number; peer_reviewed?: number; popular_science?: number;
-        bilingual_summary?: number; avg_score?: number | null; high_score_count?: number;
-        score_distribution?: number[];
-        dimension_avgs?: Record<string, number>;
-        top_keywords?: { word: string; count: number }[];
-      };
-
-      return NextResponse.json(
-        {
-          total: stats.total || 0,
-          enriched: stats.enriched || 0,
-          partial: stats.partial || 0,
-          with_abstract: stats.with_abstract || 0,
-          analyzed: stats.analyzed || 0,
-          peer_reviewed: stats.peer_reviewed || 0,
-          popular_science: stats.popular_science || 0,
-          bilingual_summary: stats.bilingual_summary || 0,
-          avg_score: stats.avg_score ?? null,
-          high_score_count: stats.high_score_count || 0,
-          score_distribution: stats.score_distribution ?? new Array(10).fill(0),
-          dimension_avgs: stats.dimension_avgs ?? {},
-          top_keywords: stats.top_keywords ?? [],
-        },
-        {
-          headers: {
-            // Edge-Cache: stats sind nicht echtzeit-kritisch. 60s public,
-            // 300s stale-while-revalidate → erste Last triggert PG-Call,
-            // alle nachfolgenden für 6 Min instant aus dem Vercel-Edge.
-            // Tradeoff: Dashboard sieht bis zu 60s alte Counts. Akzeptabel.
-            'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
-          },
-        },
-      );
-    }
 
     // ---------- pre-fetches ----------
 

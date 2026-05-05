@@ -27,6 +27,7 @@ import { displayAuthor, displayInstitute } from '@/lib/publication-display';
 import { SCORE_LABELS } from '@/lib/constants';
 import { Sparkles, BookOpen, BarChart3, TrendingUp, AlertCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { PublicationFlag } from '@/components/publication-flag';
 
 type TimePeriod = 'week' | 'month' | 'year' | 'all';
 
@@ -64,7 +65,7 @@ export default function DashboardPage() {
   // Mittelwerte und 30 Top-Keywords zu berechnen — ~3 MB Network → 2 KB JSON.
   const statsQuery = useApiQuery<PublicationStats>(
     ['dashboard-stats'],
-    '/api/publications?stats=true&default_eligible=true',
+    '/api/publications/stats?default_eligible=true',
   );
 
   // ITA-subtree exclusion is enforced server-side via exclude_ita=true,
@@ -273,6 +274,12 @@ export default function DashboardPage() {
                         {pub.pitch_suggestion}
                       </p>
                     )}
+                  </div>
+                  <div
+                    className="shrink-0"
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                  >
+                    <PublicationFlag pubId={pub.id} flagNotes={pub.flag_notes ?? []} size="sm" />
                   </div>
                   <PressScoreBadge score={pub.press_score} />
                 </Link>
