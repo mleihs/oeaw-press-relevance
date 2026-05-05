@@ -72,6 +72,11 @@ export default function DashboardPage() {
   // which translates to a single indexed predicate on the cached
   // publications.is_ita_subtree column (set by the ETL after every
   // webdb-import). No client-side filtering needed.
+  //
+  // popular_science=false: Pop-Science-Pubs sind primär bereits Outreach
+  // — das Dashboard-Top-10 ist als „was sollten wir pitchen?" gemeint und
+  // soll daher nur wissenschaftliche Pubs zeigen. Pop-Science-Pubs bleiben
+  // über /publications mit `Popular Science`-Preset weiterhin auffindbar.
   const topUrl = (() => {
     const params = new URLSearchParams({
       sort: 'press_score',
@@ -80,6 +85,7 @@ export default function DashboardPage() {
       analysis_status: 'analyzed',
       default_eligible: 'true',
       exclude_ita: 'true',
+      popular_science: 'false',
     });
     const publishedAfter = getPublishedAfter(timePeriod);
     if (publishedAfter) params.set('published_after', publishedAfter);
@@ -238,7 +244,9 @@ export default function DashboardPage() {
               Top 10 Publikationen (nach StoryScore)
               <InfoBubble id="top10_panel" size="md" />
             </CardTitle>
-            <p className="text-xs text-neutral-500 mt-1">{getTimeRangeLabel(timePeriod)}</p>
+            <p className="text-xs text-neutral-500 mt-1">
+              {getTimeRangeLabel(timePeriod)} · ohne Pop-Science
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <span id="time-tabs-label" className="text-xs text-neutral-500 hidden sm:block">Zeitraum:</span>
