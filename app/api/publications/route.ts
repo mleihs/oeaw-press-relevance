@@ -92,101 +92,42 @@ export async function GET(req: NextRequest) {
 
     // ---------- statsOnly branch ----------
     if (statsOnly) {
-      let badTypeIdsForStats: string[] = [];
-      if (defaultEligible) {
-        const { data: badTypes } = await supabase
-          .from('publication_types')
-          .select('id')
-          .in('webdb_uid', ELIGIBILITY_EXCLUDE_TYPE_UIDS);
-        badTypeIdsForStats = (badTypes ?? []).map((t) => (t as { id: string }).id);
+      // Konsolidiert via publication_dashboard_stats() — eine RPC statt
+      // 8 sequenzielle counts + 2 weitere RPCs. Vorher 4-7s wegen Supabase-
+      // HTTP-Round-Trip-Overhead, jetzt <1s. Migration 20260505000002.
+      // includeArchived wird nicht mehr ausgewertet (nur statsOnly nutzt es,
+      // und alle aktuellen Caller setzen es nicht); die Funktion filtert
+      // archivierte Pubs immer raus.
+      const { data: payload, error: rpcError } = await supabase.rpc(
+        'publication_dashboard_stats',
+        { default_eligible: defaultEligible },
+      );
+      if (rpcError) {
+        return NextResponse.json({ error: rpcError.message }, { status: 500 });
       }
-
-      const baseFilter = <T>(q: T): T => {
-        let r: T = includeArchived
-          ? q
-          : (q as unknown as { eq(col: string, val: unknown): T }).eq('archived', false);
-        if (defaultEligible && badTypeIdsForStats.length) {
-          r = (r as unknown as {
-            not(col: string, op: string, val: unknown): T;
-          }).not('publication_type_id', 'in', `(${badTypeIdsForStats.join(',')})`);
-        }
-        return r;
+      const stats = (payload ?? {}) as {
+        total?: number; enriched?: number; partial?: number; with_abstract?: number;
+        analyzed?: number; peer_reviewed?: number; popular_science?: number;
+        bilingual_summary?: number; avg_score?: number | null; high_score_count?: number;
+        score_distribution?: number[];
+        dimension_avgs?: Record<string, number>;
+        top_keywords?: { word: string; count: number }[];
       };
 
-      const { count: total } = await baseFilter(
-        supabase.from('publications').select('*', { count: 'exact', head: true }),
-      );
-
-      const { count: enriched } = await baseFilter(
-        supabase.from('publications').select('*', { count: 'exact', head: true })
-          .eq('enrichment_status', 'enriched'),
-      );
-
-      const { count: partialCount } = await baseFilter(
-        supabase.from('publications').select('*', { count: 'exact', head: true })
-          .eq('enrichment_status', 'partial'),
-      );
-
-      const { count: withAbstractCount } = await baseFilter(
-        supabase.from('publications').select('*', { count: 'exact', head: true })
-          .not('enriched_abstract', 'is', null),
-      );
-
-      const { count: analyzed } = await baseFilter(
-        supabase.from('publications').select('*', { count: 'exact', head: true })
-          .eq('analysis_status', 'analyzed'),
-      );
-
-      const { count: peerReviewedCount } = await baseFilter(
-        supabase.from('publications').select('*', { count: 'exact', head: true })
-          .eq('peer_reviewed', true),
-      );
-
-      const { count: popularScienceCount } = await baseFilter(
-        supabase.from('publications').select('*', { count: 'exact', head: true })
-          .eq('popular_science', true),
-      );
-
-      const { count: bilingualSummaryCount } = await baseFilter(
-        supabase.from('publications').select('*', { count: 'exact', head: true })
-          .not('summary_de', 'is', null)
-          .not('summary_en', 'is', null),
-      );
-
-      // P1: one PG call replaces the 1000-batch JS loop that pulled every
-      // press_score into Node memory just for histogram + avg + count. <50ms.
-      const { data: stats } = await supabase.rpc('publication_score_stats');
-      const statsRow = (Array.isArray(stats) ? stats[0] : stats) as
-        | { avg_score: number | null; high_score_count: number; score_distribution: number[] }
-        | undefined;
-      const avgScore = statsRow?.avg_score ?? null;
-      const highScoreCount = statsRow?.high_score_count ?? 0;
-      const scoreDistribution = statsRow?.score_distribution ?? new Array(10).fill(0);
-
-      // Dashboard-Aggregates: 5 dim-avgs + top-30 keywords. Vorher zog der
-      // Client 500 Pubs, um das clientseitig zu rechnen — jetzt 2 KB JSON
-      // aus einer PG-Funktion. Siehe Migration 20260505000001.
-      const { data: aggregates } = await supabase.rpc('publication_dashboard_aggregates');
-      const aggRow = (Array.isArray(aggregates) ? aggregates[0] : aggregates) as
-        | { dimension_avgs: Record<string, number>; top_keywords: { word: string; count: number }[] }
-        | undefined;
-      const dimensionAvgs = aggRow?.dimension_avgs ?? {};
-      const topKeywords = aggRow?.top_keywords ?? [];
-
       return NextResponse.json({
-        total: total || 0,
-        enriched: enriched || 0,
-        partial: partialCount || 0,
-        with_abstract: withAbstractCount || 0,
-        analyzed: analyzed || 0,
-        peer_reviewed: peerReviewedCount || 0,
-        popular_science: popularScienceCount || 0,
-        bilingual_summary: bilingualSummaryCount || 0,
-        avg_score: avgScore,
-        high_score_count: highScoreCount,
-        score_distribution: scoreDistribution,
-        dimension_avgs: dimensionAvgs,
-        top_keywords: topKeywords,
+        total: stats.total || 0,
+        enriched: stats.enriched || 0,
+        partial: stats.partial || 0,
+        with_abstract: stats.with_abstract || 0,
+        analyzed: stats.analyzed || 0,
+        peer_reviewed: stats.peer_reviewed || 0,
+        popular_science: stats.popular_science || 0,
+        bilingual_summary: stats.bilingual_summary || 0,
+        avg_score: stats.avg_score ?? null,
+        high_score_count: stats.high_score_count || 0,
+        score_distribution: stats.score_distribution ?? new Array(10).fill(0),
+        dimension_avgs: stats.dimension_avgs ?? {},
+        top_keywords: stats.top_keywords ?? [],
       });
     }
 
