@@ -111,6 +111,13 @@ export default function DashboardPage() {
     '/api/publications?press_released=true&pageSize=1',
   );
 
+  // Orphan press-releases: TYPO3-news mit DOI, aber Paper nicht in unserer
+  // publications-DB (z.B. weil OeAW-Co-Author statt -Lead).
+  const orphansQuery = useApiQuery<{ total?: number }>(
+    ['dashboard-orphans'],
+    '/api/press-releases/orphans',
+  );
+
   const stats = statsQuery.data ?? null;
   const scoreDistribution = stats?.score_distribution ?? [];
   const topPubs = topQuery.data?.publications ?? [];
@@ -249,6 +256,18 @@ export default function DashboardPage() {
                 <Link href="/publications?pressReleased=yes">
                   <Newspaper className="mr-2 h-4 w-4" />
                   {n} mit ÖAW-Pressemitteilung
+                </Link>
+              </Button>
+            );
+          })()}
+          {(() => {
+            const n = orphansQuery.data?.total ?? 0;
+            if (n === 0) return null;
+            return (
+              <Button asChild variant="outline" className="border-orange-300 text-orange-900 hover:bg-orange-50">
+                <Link href="/press-releases">
+                  <Newspaper className="mr-2 h-4 w-4" />
+                  {n} Pressemitteilungen ohne Pub-Match
                 </Link>
               </Button>
             );
