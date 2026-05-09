@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { AppSettings, DEFAULT_SETTINGS } from '@/lib/types';
 import { loadSettings, saveSettings } from '@/lib/settings-store';
 import { useInfoBubblesEnabled } from '@/lib/use-info-bubbles';
-import { Save, CheckCircle2, Eye, EyeOff, Loader2, XCircle, ShieldCheck, Info } from 'lucide-react';
+import { Save, CheckCircle2, Eye, EyeOff, Loader2, XCircle, ShieldCheck, Info, User } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function SettingsPage() {
@@ -62,6 +62,29 @@ export default function SettingsPage() {
           Konfigurieren Sie Ihre API-Schlüssel und Analyse-Parameter. Alle Einstellungen werden im Browser gespeichert.
         </p>
       </div>
+
+      {/* Identity — used for flag notes + decision attribution */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Identität</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <Label htmlFor="reviewer-name" className="flex items-center gap-2">
+            <User className="h-4 w-4 text-neutral-400" />
+            Dein Name
+          </Label>
+          <Input
+            id="reviewer-name"
+            type="text"
+            placeholder="z.B. Marie"
+            value={settings.reviewerName}
+            onChange={(e) => setSettings(s => ({ ...s, reviewerName: e.target.value }))}
+          />
+          <p className="text-xs text-neutral-500">
+            Erscheint bei Flag-Notizen und Triage-Entscheidungen als Urheber. Leer lassen → Eintrag als „team".
+          </p>
+        </CardContent>
+      </Card>
 
       {/* Display preferences */}
       <Card>
