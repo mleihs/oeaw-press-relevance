@@ -45,12 +45,12 @@ export default function PressReleasesPage() {
           Externe Pressemitteilungen
         </h1>
         <p className="text-neutral-500 text-sm mt-1">
-          {orphans.length} ÖAW-Hauptseite-News mit DOI, deren Paper{' '}
-          <span className="font-medium">nicht in unserer Publications-DB ist</span>{' '}
-          (Co-Author-only oder noch nicht aus WebDB importiert).
+          {orphans.length} Pressemitteilungen der ÖAW-Hauptseite mit DOI-Verweis, für die der
+          zugehörige Eintrag in der Publications-Datenbank fehlt.
           {enrichedCount > 0 && (
             <span className="ml-2 text-neutral-400">
-              · {enrichedCount} mit Abstract, {partialCount} partiell angereichert
+              Davon {enrichedCount} mit vollständig angereicherten Metadaten,{' '}
+              {partialCount} partiell angereichert.
             </span>
           )}
         </p>
@@ -60,17 +60,21 @@ export default function PressReleasesPage() {
         <CardContent className="p-4 flex items-start gap-3">
           <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
           <div className="text-sm text-amber-900">
-            <p className="font-medium">Warum landen Pubs hier statt in /publications?</p>
+            <p className="font-medium">Warum erscheinen diese Einträge hier statt in /publications?</p>
             <p className="mt-1 text-amber-800">
-              Die ÖAW hat über diese Studien Pressemeldungen veröffentlicht, das zugehörige Paper ist aber
-              (noch) nicht in unserer Publications-DB — die WebDB deckt nicht 100% aller
-              ÖAW-Veröffentlichungen ab. In den meisten Fällen <em>ist</em> mindestens ein:e
-              ÖAW-Mitarbeiter:in unter den Autor:innen (oft als Lead, häufig auch als Co-Author);
-              das Paper fehlt unabhängig davon in WebDB — etwa weil es nach dem letzten Sync erschien,
-              vom Institut nicht eingepflegt wurde, oder weil die OeAW-Beteiligung in WebDB nicht
-              vermerkt ist. Metadaten kommen via OpenAlex/CrossRef. Sobald ein passendes Paper
-              importiert wird, läuft die automatische Zuordnung (<code>promote_press_release_orphans()</code>
-              am Ende von <code>webdb-import.mjs</code>) — der Eintrag verschwindet dann von hier.
+              Die ÖAW hat über die folgenden Studien Pressemeldungen veröffentlicht. Die zugehörige
+              Publikation ist jedoch nicht in der Publications-Datenbank verzeichnet, da die WebDB
+              nicht alle ÖAW-Veröffentlichungen vollständig abbildet. In der überwiegenden Mehrzahl
+              der Fälle ist mindestens eine ÖAW-zugehörige Person an der Studie beteiligt, häufig
+              als Lead-Author, oft auch als Co-Author. Die fehlende Erfassung in der WebDB lässt
+              sich auf mehrere Faktoren zurückführen: das Paper ist nach dem letzten Datenbank-Sync
+              erschienen, das Institut hat es noch nicht eingepflegt, oder die ÖAW-Beteiligung
+              wurde im Eintrag nicht vermerkt. Die hier dargestellten Metadaten stammen aus den
+              externen Quellen OpenAlex und CrossRef. Sobald ein entsprechender Eintrag in die
+              Publications-Datenbank importiert wird, erfolgt die Zuordnung automatisiert über
+              die Funktion <code>promote_press_release_orphans()</code> am Ende des
+              Import-Prozesses <code>webdb-import.mjs</code>. Der Datensatz wird dann aus dieser
+              Übersicht entfernt.
             </p>
           </div>
         </CardContent>
@@ -180,7 +184,7 @@ export default function PressReleasesPage() {
                               <div>
                                 <h4 className="text-xs font-medium text-brand uppercase mb-1 inline-flex items-center gap-1">
                                   <Users className="h-3 w-3" />
-                                  Mögliche ÖAW-Beteiligung ({o.oeaw_author_matches.length})
+                                  Wahrscheinliche ÖAW-Beteiligung ({o.oeaw_author_matches.length})
                                 </h4>
                                 <div className="flex flex-wrap gap-1.5 mt-1">
                                   {o.oeaw_author_matches.map((m) => (
@@ -194,8 +198,9 @@ export default function PressReleasesPage() {
                                   ))}
                                 </div>
                                 <p className="text-[10px] text-neutral-500 mt-1">
-                                  Match per Lastname + Firstname-Initial gegen{' '}
-                                  <code>persons</code>-Tabelle. Verifikation manuell.
+                                  Die Zuordnung basiert auf einem Abgleich von Nachname und
+                                  Vornamen-Initial gegen die <code>persons</code>-Tabelle und
+                                  erfordert eine manuelle Verifikation.
                                 </p>
                               </div>
                             )}
@@ -270,7 +275,8 @@ export default function PressReleasesPage() {
               {orphans.length === 0 && (
                 <tr>
                   <td colSpan={6} className="p-8 text-center text-neutral-500">
-                    Keine Orphan-Pressemitteilungen — alle DOIs sind in der Publications-DB zugeordnet.
+                    Keine ungebundenen Pressemitteilungen vorhanden. Alle DOIs sind in der
+                    Publications-Datenbank zugeordnet.
                   </td>
                 </tr>
               )}
