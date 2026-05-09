@@ -79,6 +79,41 @@ async function enrichFromOpenAlex(doi) {
   };
 }
 
+async function enrichFromSemanticScholar(doi) {
+  // 3rd fallback (after OpenAlex + CrossRef). S2 hat oft TLDR + Abstract auch
+  // wenn die anderen nichts haben — vor allem bei alten Nature-DOIs ohne
+  // abstract-index in OpenAlex und bei sehr neuen Elsevier-Papers.
+  const fields = 'title,abstract,authors,year,venue,tldr';
+  const url = `https://api.semanticscholar.org/graph/v1/paper/DOI:${encodeURIComponent(doi)}?fields=${fields}`;
+  const res = await fetch(url, {
+    headers: {
+      'User-Agent': 'OeAW-Press-Relevance/1.0 (mailto:admin@oeaw.ac.at)',
+      'Accept': 'application/json',
+    },
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (!res.ok) return { ok: false, status: res.status };
+  const d = await res.json();
+  if (!d || (!d.title && !d.abstract && !d.tldr)) return { ok: false };
+
+  // S2's TLDR is a one-sentence summary — useful when full abstract is blocked.
+  const abstract = d.abstract || (d.tldr?.text ? `[TLDR] ${d.tldr.text}` : null);
+  const authors = Array.isArray(d.authors)
+    ? d.authors.map(a => a.name).filter(Boolean)
+    : [];
+
+  return {
+    ok: true,
+    paper_title: d.title || null,
+    abstract,
+    authors,
+    journal: d.venue || null,
+    paper_year: d.year || null,
+    keywords: [],
+    openalex_id: null,
+  };
+}
+
 async function enrichFromCrossref(doi) {
   // Fallback wenn OpenAlex nichts hat (Zenodo/Repository-DOIs landen oft nur in CrossRef)
   const url = `https://api.crossref.org/works/${encodeURIComponent(doi)}`;
@@ -135,11 +170,31 @@ async function main() {
     process.stdout.write(`[${i + 1}/${rows.length}] ${r.doi}  ... `);
     let result = await enrichFromOpenAlex(r.doi);
     let source = 'openalex';
+    // Fallback chain: OpenAlex → CrossRef → Semantic Scholar.
+    // Each step kicks in only if the previous didn't return both title AND abstract.
     if (!result.ok || (!result.abstract && !result.paper_title)) {
       const cr = await enrichFromCrossref(r.doi);
       if (cr.ok && (cr.paper_title || cr.abstract)) {
         result = cr;
         source = 'crossref';
+      }
+    }
+    // After OA+CR: if we still don't have an abstract, try S2 — it covers
+    // old/blocked Nature DOIs that the others don't.
+    if (!result.ok || !result.abstract) {
+      const s2 = await enrichFromSemanticScholar(r.doi);
+      if (s2.ok && s2.abstract) {
+        // Merge: keep richer-result fields from previous source, fill abstract from S2.
+        result = {
+          ...result,
+          ok: true,
+          abstract: s2.abstract,
+          paper_title: result.paper_title ?? s2.paper_title,
+          authors: (result.authors && result.authors.length) ? result.authors : s2.authors,
+          journal: result.journal ?? s2.journal,
+          paper_year: result.paper_year ?? s2.paper_year,
+        };
+        source = source === 'openalex' && !result.openalex_id ? 's2' : `${source}+s2`;
       }
     }
 
