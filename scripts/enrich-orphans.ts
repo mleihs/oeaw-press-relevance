@@ -136,8 +136,13 @@ async function main() {
   if (args.reset) where = '';
   else if (args.onlyPdf) where = "WHERE enrichment_status = 'partial'";
 
+  // Orphans = press_releases-Rows ohne publication_id-FK. Die `where`-clause
+  // (enrichment_status-Filter) wird unten mit der orphan-Bedingung AND-verknüpft.
+  const orphanFilter = where
+    ? `${where} AND publication_id IS NULL`
+    : 'WHERE publication_id IS NULL';
   const { rows } = await db.query<{ id: string; doi: string }>(
-    `SELECT id, doi FROM press_release_orphans ${where} ORDER BY press_release_at DESC NULLS LAST`,
+    `SELECT id, doi FROM press_releases ${orphanFilter} ORDER BY released_at DESC NULLS LAST`,
   );
   console.log(`[enrich-orphans] ${rows.length} rows to process`);
 
@@ -164,7 +169,7 @@ async function main() {
     );
 
     await db.query(
-      `UPDATE press_release_orphans SET
+      `UPDATE press_releases SET
          paper_title = COALESCE($2, paper_title),
          abstract = COALESCE($3, abstract),
          authors = COALESCE($4, authors),

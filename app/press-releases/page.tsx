@@ -6,10 +6,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { LoadingState } from '@/components/loading-state';
 import { Newspaper, ExternalLink, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
-import type { PressReleaseOrphan } from '@/app/api/press-releases/orphans/route';
+import type { PressRelease } from '@/lib/types';
 
 interface OrphansResponse {
-  orphans: PressReleaseOrphan[];
+  press_releases: PressRelease[];
   total: number;
 }
 
@@ -17,7 +17,7 @@ export default function PressReleasesPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const { data, isLoading, error } = useApiQuery<OrphansResponse>(
     ['press-releases-orphans'],
-    '/api/press-releases/orphans',
+    '/api/press-releases?orphans=true',
   );
 
   if (isLoading) return <LoadingState label="Lade Pressemitteilungen ohne Pub-Match …" />;
@@ -32,7 +32,7 @@ export default function PressReleasesPage() {
     );
   }
 
-  const orphans = data?.orphans ?? [];
+  const orphans = data?.press_releases ?? [];
   const enrichedCount = orphans.filter((o) => o.enrichment_status === 'enriched').length;
   const partialCount = orphans.filter((o) => o.enrichment_status === 'partial').length;
 
@@ -63,7 +63,7 @@ export default function PressReleasesPage() {
             <p className="mt-1 text-amber-800">
               Die ÖAW hat über diese Studien Pressemeldungen veröffentlicht, aber das Paper selbst hat keinen
               ÖAW-Mitarbeiter:in als Lead-Author und ist deshalb nicht in WebDB. Metadaten kommen via OpenAlex/CrossRef.
-              Sobald ein passendes Paper importiert wird, wird automatisch zugeordnet.
+              Sobald ein passendes Paper importiert wird, wird automatisch zugeordnet (siehe webdb-import.mjs).
             </p>
           </div>
         </CardContent>
@@ -100,14 +100,14 @@ export default function PressReleasesPage() {
                         )}
                       </td>
                       <td className="p-3 whitespace-nowrap text-xs">
-                        {o.press_release_at ?? <span className="text-neutral-400">–</span>}
-                        {o.paper_year && o.press_release_at && o.paper_year !== Number(o.press_release_at.slice(0, 4)) && (
+                        {o.released_at ?? <span className="text-neutral-400">–</span>}
+                        {o.paper_year && o.released_at && o.paper_year !== Number(o.released_at.slice(0, 4)) && (
                           <div className="text-[10px] text-neutral-400">Paper: {o.paper_year}</div>
                         )}
                       </td>
                       <td className="p-3">
                         <Badge variant="outline" className="text-[10px] uppercase">
-                          {o.press_release_lang ?? '?'}
+                          {o.lang ?? '?'}
                         </Badge>
                       </td>
                       <td className="p-3 max-w-md">
@@ -144,7 +144,7 @@ export default function PressReleasesPage() {
                           DOI
                         </a>
                         <a
-                          href={o.press_release_url}
+                          href={o.url}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-1 text-emerald-700 hover:text-emerald-800 hover:underline text-xs"
@@ -216,7 +216,7 @@ export default function PressReleasesPage() {
                                 </a>
                               )}
                               <a
-                                href={o.press_release_url}
+                                href={o.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-emerald-700 hover:underline inline-flex items-center gap-1"
@@ -245,7 +245,7 @@ export default function PressReleasesPage() {
 
       <p className="text-xs text-neutral-500">
         Quelle: TYPO3 <code>tx_news_domain_model_news.event_information</code> (Kategorien 64+1748).
-        Anreicherung via OpenAlex/CrossRef per <code>scripts/enrich-orphans.mjs</code>.
+        Anreicherung via OpenAlex/CrossRef/S2/Unpaywall+PDF per <code>npm run enrich-orphans</code>.
       </p>
     </div>
   );

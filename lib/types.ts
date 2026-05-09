@@ -75,12 +75,32 @@ export interface Publication {
   snooze_until: string | null;
   flag_notes: FlagNote[];
   decided_in_session: string | null;
-  // Cross-reference to existing ÖAW-Hauptseite press release (TYPO3).
-  // Set by scripts/seed-press-releases or migrations/data/seed_press_releases_*.
-  press_release_url: string | null;
-  press_release_at: string | null;
-  press_release_lang: 'de' | 'en' | null;
-  press_release_title: string | null;
+  // Optional press-release reference (joined from press_releases table).
+  // NULL when no ÖAW-Hauptseite-press-release exists for this paper.
+  // When DE+EN variants exist, the API picks the DE one as default.
+  press_release?: PressRelease | null;
+}
+
+export interface PressRelease {
+  id: string;
+  publication_id: string | null; // NULL = orphan
+  doi: string;
+  url: string;
+  released_at: string | null;
+  lang: 'de' | 'en' | null;
+  paper_title: string | null;
+  news_title: string | null;
+  source_news_uid: number | null;
+  // Enrichment (für orphans + Co-Author-Pubs ohne WebDB-Substanz)
+  abstract: string | null;
+  authors: string[] | null;
+  journal: string | null;
+  paper_year: number | null;
+  keywords: string[] | null;
+  openalex_id: string | null;
+  enrichment_status: 'pending' | 'enriched' | 'partial' | 'failed' | null;
+  enriched_at: string | null;
+  created_at: string;
 }
 
 export interface FlagNote {

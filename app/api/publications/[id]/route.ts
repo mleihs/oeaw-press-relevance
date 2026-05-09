@@ -40,7 +40,8 @@ export async function GET(
         publication_type_lookup:publication_types(id, webdb_uid, name_de, name_en),
         person_publications(highlight, mahighlight, authorship, person:persons(*)),
         orgunit_publications(highlight, orgunit:orgunits(id, webdb_uid, name_de, name_en, akronym_de, akronym_en, url_de, url_en)),
-        publication_projects(project:projects(*))
+        publication_projects(project:projects(*)),
+        press_releases(*)
       `)
       .eq('id', id)
       .single();
@@ -49,9 +50,14 @@ export async function GET(
       return NextResponse.json({ error: error.message }, { status: 404 });
     }
 
+    // Press-release: prefer DE over EN when both exist for same pub
+    const prs = (data.press_releases || []) as Array<{ lang: 'de' | 'en' | null }>;
+    const press_release = prs.find((p) => p.lang === 'de') ?? prs[0] ?? null;
+
     // Flatten the nested relations into a friendlier shape.
     const out = {
       ...data,
+      press_release,
       authors_resolved: (data.person_publications || [])
         .filter((pp: { person: unknown }) => pp.person)
         .map((pp: { person: Record<string, unknown>; authorship: string | null; highlight: boolean; mahighlight: boolean }) => ({
@@ -73,6 +79,7 @@ export async function GET(
     delete out.person_publications;
     delete out.orgunit_publications;
     delete out.publication_projects;
+    delete out.press_releases;
 
     return NextResponse.json(out);
   } catch (err) {

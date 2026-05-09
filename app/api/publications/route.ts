@@ -104,6 +104,21 @@ export async function GET(req: NextRequest) {
 
     // ---------- pre-fetches ----------
 
+    // Press-released-IDs: pubs with a row in press_releases (publication_id IS NOT NULL).
+    // PostgREST cannot do EXISTS-subqueries, so we resolve to an ID-set and use .in()
+    // exactly like the other pre-fetches below.
+    let pressReleasedIdSet: Set<string> | null = null;
+    if (pressReleased === 'true' || pressReleased === 'false') {
+      const { data } = await supabase
+        .from('press_releases')
+        .select('publication_id')
+        .not('publication_id', 'is', null);
+      pressReleasedIdSet = new Set<string>();
+      for (const r of (data as Array<{ publication_id: string }>) ?? []) {
+        pressReleasedIdSet.add(r.publication_id);
+      }
+    }
+
     // ÖSTAT6 + ÖSTAT3-domain merge → pub-id candidate set
     let oestatPubIdSet: Set<string> | null = null;
     if (oestat6Ids.length || oestat3Domains.length) {
@@ -187,8 +202,14 @@ export async function GET(req: NextRequest) {
       if (hasSummaryEn) query = query.not('summary_en', 'is', null);
       if (hasPdf) query = query.not('download_link', 'is', null);
       if (hasDoi) query = query.not('doi', 'is', null);
-      if (pressReleased === 'true') query = query.not('press_release_url', 'is', null);
-      if (pressReleased === 'false') query = query.is('press_release_url', null);
+      if (pressReleasedIdSet) {
+        const arr = [...pressReleasedIdSet];
+        if (pressReleased === 'true') {
+          query = query.in('id', arr.length ? arr : [SENTINEL_UUID]);
+        } else if (pressReleased === 'false' && arr.length > 0) {
+          query = query.not('id', 'in', `(${arr.join(',')})`);
+        }
+      }
 
       if (orgunitId) query = query.eq('orgunit_publications.orgunit_id', orgunitId);
       if (effectiveOrgunitIds.length) {
@@ -226,9 +247,11 @@ export async function GET(req: NextRequest) {
     const useInnerOrgJoin = Boolean(orgunitId) || effectiveOrgunitIds.length > 0;
     const selectStr = useInnerOrgJoin
       ? `*, publication_type_lookup:publication_types(name_de, name_en),
-         orgunit_publications!inner(orgunit_id, orgunit:orgunits(id, akronym_de, name_de))`
+         orgunit_publications!inner(orgunit_id, orgunit:orgunits(id, akronym_de, name_de)),
+         press_releases(*)`
       : `*, publication_type_lookup:publication_types(name_de, name_en),
-         orgunit_publications(orgunit:orgunits(id, akronym_de, name_de))`;
+         orgunit_publications(orgunit:orgunits(id, akronym_de, name_de)),
+         press_releases(*)`;
 
     const fromIdx = (page - 1) * pageSize;
     const toIdx = fromIdx + pageSize - 1;
@@ -269,17 +292,28 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: mainResult.error.message }, { status: 500 });
     }
 
+    type PressReleaseRow = {
+      id: string;
+      lang: 'de' | 'en' | null;
+      [k: string]: unknown;
+    };
     type Row = {
       id: string;
       orgunit_publications?: Array<{ orgunit?: { id: string; akronym_de: string; name_de: string } }>;
+      press_releases?: PressReleaseRow[];
       [k: string]: unknown;
     };
     const flattened = ((mainResult.data as Row[]) || []).map((r) => {
       const orgunits = (r.orgunit_publications || [])
         .map((op) => op.orgunit)
         .filter(Boolean);
-      const out: Record<string, unknown> = { ...r, orgunits };
+      // Pick DE press-release first; fall back to first available (typically EN).
+      // UI only shows one badge per pub.
+      const prs = r.press_releases ?? [];
+      const press_release = prs.find((p) => p.lang === 'de') ?? prs[0] ?? null;
+      const out: Record<string, unknown> = { ...r, orgunits, press_release };
       delete out.orgunit_publications;
+      delete out.press_releases;
       return out;
     });
 

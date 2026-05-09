@@ -207,14 +207,14 @@ function MobilePublicationCard({
             {pub.publication_type}
           </Badge>
         )}
-        {pub.press_release_url && (
+        {pub.press_release && (
           <Tooltip><TooltipTrigger asChild>
             <button
               type="button"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                window.open(pub.press_release_url!, '_blank', 'noopener');
+                window.open(pub.press_release!.url, '_blank', 'noopener');
               }}
               aria-label="ÖAW-Pressemitteilung öffnen"
               className="inline-flex items-center rounded-full bg-emerald-100 text-emerald-800 px-1.5 py-0.5 text-[10px] font-medium gap-0.5"
@@ -222,8 +222,8 @@ function MobilePublicationCard({
               <Newspaper className="h-2.5 w-2.5" /> Press-Release
             </button>
           </TooltipTrigger><TooltipContent className="max-w-xs">
-            {pub.press_release_title ?? 'ÖAW-Pressemitteilung'}
-            {pub.press_release_at && <span className="block text-neutral-300">vom {pub.press_release_at}</span>}
+            {pub.press_release.paper_title ?? pub.press_release.news_title ?? 'ÖAW-Pressemitteilung'}
+            {pub.press_release.released_at && <span className="block text-neutral-300">vom {pub.press_release.released_at}</span>}
           </TooltipContent></Tooltip>
         )}
         {pub.peer_reviewed && (
@@ -322,22 +322,24 @@ function PublicationRow({
                 <Megaphone className="h-3 w-3 text-purple-600 shrink-0" />
               </TooltipTrigger><TooltipContent>Popular Science</TooltipContent></Tooltip>
             )}
-            {pub.press_release_url && (
+            {pub.press_release && (
               <Tooltip><TooltipTrigger asChild>
                 <a
-                  href={pub.press_release_url}
+                  href={pub.press_release.url}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
                   className="text-emerald-600 hover:text-emerald-700 shrink-0"
-                  aria-label={`ÖAW-Pressemitteilung: ${pub.press_release_title ?? ''}`}
+                  aria-label={`ÖAW-Pressemitteilung: ${pub.press_release.paper_title ?? pub.press_release.news_title ?? ''}`}
                 >
                   <Newspaper className="h-3 w-3" />
                 </a>
               </TooltipTrigger><TooltipContent className="max-w-xs">
                 ÖAW-Pressemitteilung
-                {pub.press_release_title && <><br/><span className="font-medium">{pub.press_release_title}</span></>}
-                {pub.press_release_at && <><br/><span className="text-neutral-300">vom {pub.press_release_at}</span></>}
+                {(pub.press_release.paper_title || pub.press_release.news_title) && (
+                  <><br/><span className="font-medium">{pub.press_release.paper_title ?? pub.press_release.news_title}</span></>
+                )}
+                {pub.press_release.released_at && <><br/><span className="text-neutral-300">vom {pub.press_release.released_at}</span></>}
               </TooltipContent></Tooltip>
             )}
             {pub.meistertask_task_token && (

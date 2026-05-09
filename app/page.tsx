@@ -115,7 +115,7 @@ export default function DashboardPage() {
   // publications-DB (z.B. weil OeAW-Co-Author statt -Lead).
   const orphansQuery = useApiQuery<{ total?: number }>(
     ['dashboard-orphans'],
-    '/api/press-releases/orphans',
+    '/api/press-releases?orphans=true',
   );
 
   const stats = statsQuery.data ?? null;
