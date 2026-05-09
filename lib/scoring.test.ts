@@ -29,13 +29,15 @@ describe('computePressScore', () => {
       storytelling_potential: 0.6,
       media_timeliness: 0.4,
     };
-    // 0.20·1 + 0.25·0.8 + 0.20·0.5 + 0.20·0.6 + 0.15·0.4 = 0.68
+    // V2 weights (2026-05-09 recalibration via LR auf is_pressed):
+    //   novelty 0.40, storytelling 0.30, accessibility 0.15, timeliness 0.10, societal 0.05
+    // 0.40·0.5 + 0.30·0.6 + 0.15·1.0 + 0.10·0.4 + 0.05·0.8 = 0.61
     const expected =
-      0.20 * 1.0 +
-      0.25 * 0.8 +
-      0.20 * 0.5 +
-      0.20 * 0.6 +
-      0.15 * 0.4;
+      0.40 * 0.5 +
+      0.30 * 0.6 +
+      0.15 * 1.0 +
+      0.10 * 0.4 +
+      0.05 * 0.8;
     expect(computePressScore(mixed)).toBeCloseTo(expected, 10);
   });
 });
