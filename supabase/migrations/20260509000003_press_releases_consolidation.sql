@@ -29,7 +29,8 @@ CREATE TABLE IF NOT EXISTS press_releases (
   paper_title          TEXT,
   news_title           TEXT,
   source_news_uid      INT,
-  -- Enrichment (für orphans + Co-Author-Pubs ohne WebDB-Substanz)
+  -- Enrichment (für orphans — Pubs die nicht in WebDB sind, OeAW-Beteiligung
+  -- aber wahrscheinlich vorhanden; Substanz fehlt halt im Datenmodell)
   abstract             TEXT,
   authors              TEXT[],
   journal              TEXT,
@@ -62,7 +63,7 @@ CREATE INDEX IF NOT EXISTS idx_press_releases_orphans
 COMMENT ON TABLE press_releases IS
   'ÖAW-Hauptseite-Pressemitteilungen, optional verknüpft mit publications via publication_id (NULL = orphan, Paper noch nicht in WebDB).';
 COMMENT ON COLUMN press_releases.publication_id IS
-  'NULL = orphan (Co-Author-only paper, noch nicht via WebDB importiert). Wird automatisch in webdb-import.mjs durch promote_press_release_orphans() befüllt sobald Paper importiert.';
+  'NULL = orphan: Paper hat eine ÖAW-Pressemitteilung, ist aber (noch) nicht in unserer publications-Tabelle. Grund ist WebDB-Lücke, nicht zwingend fehlender ÖAW-Bezug — meist ist eine ÖAW-Person als Autor:in beteiligt. Wird via promote_press_release_orphans() automatisch nach jedem webdb-import verlinkt sobald Paper importiert wurde.';
 
 -- ============================================================================
 -- B) Daten copyen

@@ -1,15 +1,20 @@
 -- Press-releases on the ÖAW-Hauptseite that reference a DOI which is NOT
--- in our publications table. These are typically:
---   - external collaborator-led studies where no OeAW author is the lead
---     (so the paper never lands in WebDB and thus not in our import)
---   - very recent papers not yet imported
---   - DOI typos in the press text
+-- in our publications table. WebDB doesn't cover 100% of OeAW publications.
+-- Typical reasons a paper falls into orphans:
+--   - paper published after the last WebDB sync
+--   - institute didn't enter the paper into WebDB (Pflege-Lücke)
+--   - OeAW-author was co-author and the affiliation was not flagged in WebDB
+--   - DOI typo in the press text (rare)
+-- In most cases an OeAW-author IS on the paper (Lead or Co-Author) — they
+-- just couldn't be linked to a publications-row because the row doesn't exist.
 --
 -- Kept separately from `publications` because they are NOT publications in
 -- the StoryScout sense — they are press-release records that floated free.
--- The dashboard surfaces the count + list as a "Press releases ohne
--- WebDB-Match" panel; later pipeline runs can promote orphans into matches
--- once the pub is imported (DELETE FROM orphans WHERE doi=... after match).
+-- Later pipeline runs promote orphans into matches once the pub gets imported
+-- (see promote_press_release_orphans() called from webdb-import.mjs).
+--
+-- NOTE: superseded by 20260509000003 (consolidated into press_releases table).
+-- This file remains for migration history only.
 
 CREATE TABLE press_release_orphans (
   id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),

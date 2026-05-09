@@ -91,7 +91,9 @@ export interface PressRelease {
   paper_title: string | null;
   news_title: string | null;
   source_news_uid: number | null;
-  // Enrichment (für orphans + Co-Author-Pubs ohne WebDB-Substanz)
+  // Enrichment für orphan-rows (publication_id IS NULL):
+  // Paper ist nicht in WebDB, OeAW-Bezug aber meist trotzdem da — diese Felder
+  // kommen via OpenAlex/CrossRef/S2/Unpaywall+PDF (scripts/enrich-orphans.ts).
   abstract: string | null;
   authors: string[] | null;
   journal: string | null;

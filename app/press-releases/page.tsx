@@ -61,9 +61,15 @@ export default function PressReleasesPage() {
           <div className="text-sm text-amber-900">
             <p className="font-medium">Warum landen Pubs hier statt in /publications?</p>
             <p className="mt-1 text-amber-800">
-              Die ÖAW hat über diese Studien Pressemeldungen veröffentlicht, aber das Paper selbst hat keinen
-              ÖAW-Mitarbeiter:in als Lead-Author und ist deshalb nicht in WebDB. Metadaten kommen via OpenAlex/CrossRef.
-              Sobald ein passendes Paper importiert wird, wird automatisch zugeordnet (siehe webdb-import.mjs).
+              Die ÖAW hat über diese Studien Pressemeldungen veröffentlicht, das zugehörige Paper ist aber
+              (noch) nicht in unserer Publications-DB — die WebDB deckt nicht 100% aller
+              ÖAW-Veröffentlichungen ab. In den meisten Fällen <em>ist</em> mindestens ein:e
+              ÖAW-Mitarbeiter:in unter den Autor:innen (oft als Lead, häufig auch als Co-Author);
+              das Paper fehlt unabhängig davon in WebDB — etwa weil es nach dem letzten Sync erschien,
+              vom Institut nicht eingepflegt wurde, oder weil die OeAW-Beteiligung in WebDB nicht
+              vermerkt ist. Metadaten kommen via OpenAlex/CrossRef. Sobald ein passendes Paper
+              importiert wird, läuft die automatische Zuordnung (<code>promote_press_release_orphans()</code>
+              am Ende von <code>webdb-import.mjs</code>) — der Eintrag verschwindet dann von hier.
             </p>
           </div>
         </CardContent>
