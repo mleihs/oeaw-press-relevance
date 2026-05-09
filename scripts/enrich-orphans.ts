@@ -138,6 +138,8 @@ async function main() {
           : 'FAILED',
     );
 
+    // Recompute oeaw_author_matches whenever authors change.
+    // (compute_oeaw_author_matches() lives in migration 20260509000006.)
     await db.query(
       `UPDATE press_releases SET
          paper_title = COALESCE($2, paper_title),
@@ -148,7 +150,8 @@ async function main() {
          keywords = COALESCE($7, keywords),
          openalex_id = COALESCE($8, openalex_id),
          enrichment_status = $9,
-         enriched_at = NOW()
+         enriched_at = NOW(),
+         oeaw_author_matches = compute_oeaw_author_matches(COALESCE($4, authors))
        WHERE id = $1`,
       [
         row.id,

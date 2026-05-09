@@ -5,7 +5,8 @@ import { useApiQuery } from '@/lib/use-api-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { LoadingState } from '@/components/loading-state';
-import { Newspaper, ExternalLink, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { Newspaper, ExternalLink, AlertCircle, ChevronDown, ChevronUp, Users } from 'lucide-react';
+import Link from 'next/link';
 import type { PressRelease } from '@/lib/types';
 
 interface OrphansResponse {
@@ -125,6 +126,12 @@ export default function PressReleasesPage() {
                         )}
                       </td>
                       <td className="p-3 max-w-xs text-xs">
+                        {o.oeaw_author_matches && o.oeaw_author_matches.length > 0 && (
+                          <div className="inline-flex items-center gap-1 rounded-full bg-brand/10 text-brand px-2 py-0.5 text-[10px] font-medium mb-1">
+                            <Users className="h-2.5 w-2.5" />
+                            {o.oeaw_author_matches.length} ÖAW
+                          </div>
+                        )}
                         {o.authors && o.authors.length > 0 && (
                           <div className="text-neutral-700 line-clamp-1">
                             {o.authors.slice(0, 2).join(', ')}
@@ -169,10 +176,33 @@ export default function PressReleasesPage() {
                                 <p className="text-sm font-medium">{o.paper_title}</p>
                               </div>
                             )}
+                            {o.oeaw_author_matches && o.oeaw_author_matches.length > 0 && (
+                              <div>
+                                <h4 className="text-xs font-medium text-brand uppercase mb-1 inline-flex items-center gap-1">
+                                  <Users className="h-3 w-3" />
+                                  Mögliche ÖAW-Beteiligung ({o.oeaw_author_matches.length})
+                                </h4>
+                                <div className="flex flex-wrap gap-1.5 mt-1">
+                                  {o.oeaw_author_matches.map((m) => (
+                                    <Link
+                                      key={m.person_id}
+                                      href={`/persons/${m.person_id}`}
+                                      className="inline-flex items-center gap-1 rounded-md bg-brand/10 text-brand hover:bg-brand/20 px-2 py-1 text-xs font-medium"
+                                    >
+                                      {m.name}
+                                    </Link>
+                                  ))}
+                                </div>
+                                <p className="text-[10px] text-neutral-500 mt-1">
+                                  Match per Lastname + Firstname-Initial gegen{' '}
+                                  <code>persons</code>-Tabelle. Verifikation manuell.
+                                </p>
+                              </div>
+                            )}
                             {o.authors && o.authors.length > 0 && (
                               <div>
                                 <h4 className="text-xs font-medium text-neutral-500 uppercase mb-1">
-                                  Autor:innen ({o.authors.length})
+                                  Alle Autor:innen ({o.authors.length})
                                 </h4>
                                 <p className="text-sm text-neutral-700">{o.authors.join(', ')}</p>
                               </div>

@@ -103,6 +103,13 @@ export interface PressRelease {
   enrichment_status: 'enriched' | 'partial' | 'failed' | null;
   enriched_at: string | null;
   created_at: string;
+  /** OeAW-Person-Matches gegen authors[] (lastname + firstname-initial).
+   *  Nur für orphans gefüllt — matched-Pubs haben person_publications. */
+  oeaw_author_matches: Array<{
+    person_id: string;
+    name: string;
+    matched_author: string;
+  }>;
 }
 
 export interface FlagNote {
