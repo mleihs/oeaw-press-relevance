@@ -1,3 +1,7 @@
+-- DEPRECATED: schema obsolete since 2026-05-09 consolidation
+-- (migration 20260509000003: publications.press_release_* dropped, press_release_orphans dropped,
+--  all moved into press_releases-table). Kept only as historical audit-trail.
+
 -- One-shot seed for press_release_* fields based on TYPO3-Hauptseite-news (May 2026).
 -- 6 unique pubs identified by matching DOI in tx_news_domain_model_news.bodytext
 -- where category IN (64 'ÖAW-Pressemeldungen', 1748 'OeAW press release').

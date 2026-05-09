@@ -16,7 +16,7 @@ interface OrphansResponse {
 export default function PressReleasesPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const { data, isLoading, error } = useApiQuery<OrphansResponse>(
-    ['press-releases-orphans'],
+    ['press-releases', { orphans: true }],
     '/api/press-releases?orphans=true',
   );
 
@@ -41,10 +41,10 @@ export default function PressReleasesPage() {
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <Newspaper className="h-6 w-6 text-emerald-600" />
-          Pressemitteilungen ohne Pub-Match
+          Externe Pressemitteilungen
         </h1>
         <p className="text-neutral-500 text-sm mt-1">
-          {orphans.length} ÖAW-Hauptseite-News mit DOI, deren Paper aber{' '}
+          {orphans.length} ÖAW-Hauptseite-News mit DOI, deren Paper{' '}
           <span className="font-medium">nicht in unserer Publications-DB ist</span>{' '}
           (Co-Author-only oder noch nicht aus WebDB importiert).
           {enrichedCount > 0 && (

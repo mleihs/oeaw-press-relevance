@@ -1,3 +1,7 @@
+-- DEPRECATED: schema obsolete since 2026-05-09 consolidation
+-- (migration 20260509000003: publications.press_release_* dropped, press_release_orphans dropped,
+--  all moved into press_releases-table). Kept only as historical audit-trail.
+
 -- Press-releases without WebDB-pub-match (auto-generated 2026-05-06).
 -- Populated from TYPO3 press-news event_information DOIs that don't
 -- correspond to any publications.doi in StoryScout.

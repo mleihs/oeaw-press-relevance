@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { de } from 'date-fns/locale';
 import { CalendarIcon, SlidersHorizontal } from 'lucide-react';
+import { InfoBubble } from '@/components/info-bubble';
 
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -411,12 +412,16 @@ function CurationFacet({
         />
       </div>
       <div className="mt-3">
-        <Row label="ÖAW-Pressemitteilung">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-xs text-neutral-700 inline-flex items-center gap-1">
+            ÖAW-Pressemitteilung
+            <InfoBubble id="filter_press_released" />
+          </span>
           <TriStateTabs
             value={filters.pressReleased}
             onChange={(pressReleased) => setFilters({ pressReleased, page: 1 })}
           />
-        </Row>
+        </div>
       </div>
     </FacetSection>
   );

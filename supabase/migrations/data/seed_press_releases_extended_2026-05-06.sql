@@ -1,3 +1,7 @@
+-- DEPRECATED: schema obsolete since 2026-05-09 consolidation
+-- (migration 20260509000003: publications.press_release_* dropped, press_release_orphans dropped,
+--  all moved into press_releases-table). Kept only as historical audit-trail.
+
 -- Auto-generated from TYPO3 press-news event_information DOI extraction (2026-05-06)
 -- Source: 161 press-news rows, 137 unique DOIs, DE preferred over EN
 -- URL pattern: /news/<slug> (de) | /en/news/<slug> (en)

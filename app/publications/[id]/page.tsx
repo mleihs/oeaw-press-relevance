@@ -222,26 +222,54 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
       {/* ÖAW-Pressemitteilung (cross-reference zur TYPO3-news) */}
       {pub.press_release && (
         <Card className="border-emerald-300 bg-emerald-50/40">
-          <CardContent className="p-4 flex items-start gap-3">
-            <Newspaper className="h-5 w-5 text-emerald-700 mt-0.5 shrink-0" />
-            <div className="flex-1 min-w-0">
-              <h3 className="text-xs font-medium text-emerald-900 uppercase tracking-wide">
-                Bereits ÖAW-Pressemitteilung
-              </h3>
-              <a
-                href={pub.press_release.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block mt-1 font-medium text-emerald-900 hover:underline"
-              >
-                {pub.press_release.paper_title ?? pub.press_release.news_title ?? pub.press_release.url}
-                <ExternalLink className="inline-block h-3 w-3 ml-1 align-text-top" />
-              </a>
-              <p className="text-xs text-emerald-700 mt-1">
-                {pub.press_release.released_at && <>veröffentlicht am {pub.press_release.released_at} </>}
-                {pub.press_release.lang && <>· {pub.press_release.lang.toUpperCase()}</>}
-              </p>
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-start gap-3">
+              <Newspaper className="h-5 w-5 text-emerald-700 mt-0.5 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <h3 className="text-xs font-medium text-emerald-900 uppercase tracking-wide">
+                  Bereits ÖAW-Pressemitteilung
+                </h3>
+                <a
+                  href={pub.press_release.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block mt-1 font-medium text-emerald-900 hover:underline"
+                >
+                  {pub.press_release.paper_title ?? pub.press_release.news_title ?? pub.press_release.url}
+                  <ExternalLink className="inline-block h-3 w-3 ml-1 align-text-top" />
+                </a>
+                <p className="text-xs text-emerald-700 mt-1">
+                  {pub.press_release.released_at && <>veröffentlicht am {pub.press_release.released_at} </>}
+                  {pub.press_release.lang && <>· {pub.press_release.lang.toUpperCase()}</>}
+                  {pub.press_release.journal && <> · {pub.press_release.journal}</>}
+                  {pub.press_release.paper_year && <> ({pub.press_release.paper_year})</>}
+                </p>
+              </div>
             </div>
+            {pub.press_release.abstract && (
+              <details className="ml-8 group">
+                <summary className="cursor-pointer text-xs font-medium text-emerald-800 hover:text-emerald-900 select-none">
+                  Abstract anzeigen
+                </summary>
+                <p className="mt-2 text-sm leading-relaxed text-neutral-700 whitespace-pre-wrap">
+                  {pub.press_release.abstract}
+                </p>
+              </details>
+            )}
+            {pub.press_release.authors && pub.press_release.authors.length > 0 && (
+              <p className="ml-8 text-xs text-neutral-600">
+                <span className="font-medium text-emerald-900">Autor:innen (Paper):</span>{' '}
+                {pub.press_release.authors.slice(0, 5).join(', ')}
+                {pub.press_release.authors.length > 5 && ` +${pub.press_release.authors.length - 5}`}
+              </p>
+            )}
+            {pub.press_release.keywords && pub.press_release.keywords.length > 0 && (
+              <div className="ml-8 flex flex-wrap gap-1">
+                {pub.press_release.keywords.slice(0, 8).map((k, i) => (
+                  <Badge key={i} variant="secondary" className="text-[10px]">{k}</Badge>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

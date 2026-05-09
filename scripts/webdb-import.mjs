@@ -656,7 +656,7 @@ try {
   // der Press-Release-Link automatisch zur Pub gemoved + Orphan gelöscht.
   // Idempotent (überspringt Pubs mit press_release_url IS NOT NULL).
   // Migration: 20260509000002.
-  const promoted = await pgClient.query('SELECT promote_press_release_orphans() AS n');
+  const promoted = await pgClient.query("SELECT promote_press_release_orphans_logged('webdb-import') AS n");
   log(`Promoted press-release-orphans: ${promoted.rows[0].n} pubs`);
   log('Refreshing publication_oestat6 matview…');
   await pgClient.query('REFRESH MATERIALIZED VIEW CONCURRENTLY publication_oestat6');

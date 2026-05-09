@@ -18,7 +18,7 @@ BEGIN;
 -- A) Neue Tabelle
 -- ============================================================================
 
-CREATE TABLE press_releases (
+CREATE TABLE IF NOT EXISTS press_releases (
   id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   publication_id       UUID REFERENCES publications(id) ON DELETE SET NULL,
   doi                  TEXT NOT NULL,
@@ -36,25 +36,27 @@ CREATE TABLE press_releases (
   paper_year           SMALLINT,
   keywords             TEXT[],
   openalex_id          TEXT,
+  -- enrichment_status: NULL = noch nicht versucht (was zuvor 'pending' meinte).
+  -- 'pending' wurde im Code nie geschrieben — entfernt aus CHECK constraint.
   enrichment_status    TEXT
-    CHECK (enrichment_status IS NULL OR enrichment_status IN ('pending','enriched','partial','failed')),
+    CHECK (enrichment_status IS NULL OR enrichment_status IN ('enriched','partial','failed')),
   enriched_at          TIMESTAMPTZ,
   created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- DOI darf einmal pro Sprache vorkommen (DE + EN-Variante derselben Studie OK).
-CREATE UNIQUE INDEX uq_press_releases_doi_lang
+CREATE UNIQUE INDEX IF NOT EXISTS uq_press_releases_doi_lang
   ON press_releases (LOWER(doi), COALESCE(lang, ''));
 
 -- Pro publication ebenfalls 1 Press-Release pro Sprache (nullable publication_id
 -- ist nicht im UNIQUE constraint — orphans dürfen beliebig viele Rows haben).
-CREATE UNIQUE INDEX uq_press_releases_pub_lang
+CREATE UNIQUE INDEX IF NOT EXISTS uq_press_releases_pub_lang
   ON press_releases (publication_id, COALESCE(lang, ''))
   WHERE publication_id IS NOT NULL;
 
-CREATE INDEX idx_press_releases_pub
+CREATE INDEX IF NOT EXISTS idx_press_releases_pub
   ON press_releases (publication_id) WHERE publication_id IS NOT NULL;
-CREATE INDEX idx_press_releases_orphans
+CREATE INDEX IF NOT EXISTS idx_press_releases_orphans
   ON press_releases (released_at DESC) WHERE publication_id IS NULL;
 
 COMMENT ON TABLE press_releases IS
@@ -67,41 +69,39 @@ COMMENT ON COLUMN press_releases.publication_id IS
 -- ============================================================================
 
 -- B1) Matched: aus publications.press_release_*
-INSERT INTO press_releases (publication_id, doi, url, released_at, lang, paper_title)
-SELECT
-  p.id,
-  LOWER(p.doi),
-  p.press_release_url,
-  p.press_release_at,
-  p.press_release_lang,
-  p.press_release_title
-FROM publications p
-WHERE p.press_release_url IS NOT NULL;
+-- Guard: nur wenn die alten Spalten noch existieren (= Migration läuft erstmals).
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns
+             WHERE table_name='publications' AND column_name='press_release_url') THEN
+    INSERT INTO press_releases (publication_id, doi, url, released_at, lang, paper_title)
+    SELECT p.id, LOWER(p.doi), p.press_release_url, p.press_release_at,
+           p.press_release_lang, p.press_release_title
+    FROM publications p
+    WHERE p.press_release_url IS NOT NULL
+    ON CONFLICT (LOWER(doi), COALESCE(lang, '')) DO NOTHING;
+  END IF;
+END $$;
 
 -- B2) Orphans: aus press_release_orphans (incl. enrichment-data)
-INSERT INTO press_releases (
-  doi, url, released_at, lang, paper_title, news_title, source_news_uid,
-  abstract, authors, journal, paper_year, keywords, openalex_id,
-  enrichment_status, enriched_at, created_at
-)
-SELECT
-  LOWER(o.doi),
-  o.press_release_url,
-  o.press_release_at,
-  o.press_release_lang,
-  o.paper_title,
-  o.news_title,
-  o.source_news_uid,
-  o.abstract,
-  o.authors,
-  o.journal,
-  o.paper_year,
-  o.keywords,
-  o.openalex_id,
-  o.enrichment_status,
-  o.enriched_at,
-  o.created_at
-FROM press_release_orphans o;
+-- Guard: nur wenn die alte Tabelle noch existiert.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables
+             WHERE table_name='press_release_orphans') THEN
+    INSERT INTO press_releases (
+      doi, url, released_at, lang, paper_title, news_title, source_news_uid,
+      abstract, authors, journal, paper_year, keywords, openalex_id,
+      enrichment_status, enriched_at, created_at
+    )
+    SELECT LOWER(o.doi), o.press_release_url, o.press_release_at,
+           o.press_release_lang, o.paper_title, o.news_title, o.source_news_uid,
+           o.abstract, o.authors, o.journal, o.paper_year, o.keywords,
+           o.openalex_id, o.enrichment_status, o.enriched_at, o.created_at
+    FROM press_release_orphans o
+    ON CONFLICT (LOWER(doi), COALESCE(lang, '')) DO NOTHING;
+  END IF;
+END $$;
 
 -- ============================================================================
 -- C) Promote-Function umschreiben — jetzt ist es nur noch UPDATE der FK
@@ -141,11 +141,11 @@ COMMENT ON FUNCTION promote_press_release_orphans IS
 DROP INDEX IF EXISTS idx_publications_press_release;
 
 ALTER TABLE publications
-  DROP COLUMN press_release_url,
-  DROP COLUMN press_release_at,
-  DROP COLUMN press_release_lang,
-  DROP COLUMN press_release_title;
+  DROP COLUMN IF EXISTS press_release_url,
+  DROP COLUMN IF EXISTS press_release_at,
+  DROP COLUMN IF EXISTS press_release_lang,
+  DROP COLUMN IF EXISTS press_release_title;
 
-DROP TABLE press_release_orphans;
+DROP TABLE IF EXISTS press_release_orphans;
 
 COMMIT;

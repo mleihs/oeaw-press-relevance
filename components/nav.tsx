@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { BarChart3, Upload, BookOpen, Settings, Menu, Users, ClipboardCheck } from 'lucide-react';
+import { BarChart3, Upload, BookOpen, Settings, Menu, Users, ClipboardCheck, Newspaper } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -18,6 +18,7 @@ const links = [
   { href: '/', label: 'Dashboard', icon: BarChart3 },
   { href: '/review', label: 'Triage', icon: ClipboardCheck },
   { href: '/publications', label: 'Publikationen', icon: BookOpen },
+  { href: '/press-releases', label: 'Presse', icon: Newspaper },
   { href: '/researchers', label: 'Forscher:innen', icon: Users },
   { href: '/upload', label: 'Import', icon: Upload },
   { href: '/settings', label: 'Einstellungen', icon: Settings },

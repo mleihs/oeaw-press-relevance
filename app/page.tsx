@@ -264,10 +264,10 @@ export default function DashboardPage() {
             const n = orphansQuery.data?.total ?? 0;
             if (n === 0) return null;
             return (
-              <Button asChild variant="outline" className="border-orange-300 text-orange-900 hover:bg-orange-50">
+              <Button asChild variant="outline" className="border-emerald-200 text-emerald-800 hover:bg-emerald-50">
                 <Link href="/press-releases">
-                  <Newspaper className="mr-2 h-4 w-4" />
-                  {n} Pressemitteilungen ohne Pub-Match
+                  <Newspaper className="mr-2 h-4 w-4 opacity-60" />
+                  {n} externe Pressemitteilungen
                 </Link>
               </Button>
             );
@@ -342,6 +342,11 @@ export default function DashboardPage() {
                     {pub.pitch_suggestion && (
                       <p className="text-xs text-neutral-600 mt-1 line-clamp-2">
                         {pub.pitch_suggestion}
+                      </p>
+                    )}
+                    {pub.haiku && (
+                      <p className="text-[11px] text-neutral-500 italic mt-1 line-clamp-1">
+                        {pub.haiku.replace(/\n/g, ' / ')}
                       </p>
                     )}
                   </div>

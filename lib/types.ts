@@ -98,7 +98,7 @@ export interface PressRelease {
   paper_year: number | null;
   keywords: string[] | null;
   openalex_id: string | null;
-  enrichment_status: 'pending' | 'enriched' | 'partial' | 'failed' | null;
+  enrichment_status: 'enriched' | 'partial' | 'failed' | null;
   enriched_at: string | null;
   created_at: string;
 }

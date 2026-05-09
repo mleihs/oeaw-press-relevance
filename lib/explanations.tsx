@@ -613,6 +613,27 @@ export const EXPL: Record<string, Explanation> = {
     ),
   },
 
+  filter_press_released: {
+    title: 'Filter: ÖAW-Pressemitteilung',
+    body: (
+      <>
+        <Para>
+          Cross-Reference zu den news-Beiträgen der ÖAW-Hauptseite (Kategorie
+          „ÖAW-Pressemeldungen"). Quelle: TYPO3-Dump, DOI-Match aus dem
+          <Code>event_information</Code>-Feld.
+        </Para>
+        <Para>
+          <strong>Ja:</strong> nur Publikationen, die schon eine ÖAW-
+          Pressemitteilung haben. Praktisch zum Vermeiden von Doppel-Pitches.
+        </Para>
+        <Para>
+          <strong>Nein:</strong> nur Publikationen ohne bisherige
+          ÖAW-Pressemitteilung — der eigentliche Triage-Pool.
+        </Para>
+      </>
+    ),
+  },
+
   // ─── Score N/A — Variants nach state ─────────────────────────────────────
   score_na: {
     title: 'Kein Press-Score',

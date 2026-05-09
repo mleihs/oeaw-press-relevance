@@ -193,6 +193,11 @@ function MobilePublicationCard({
           <p className="text-xs text-neutral-500 mt-1 truncate">
             {displayAuthor(pub)}
           </p>
+          {pub.haiku && (
+            <p className="text-[11px] text-neutral-500 italic mt-1 line-clamp-1">
+              {pub.haiku.replace(/\n/g, ' / ')}
+            </p>
+          )}
         </div>
         {showScores && (
           <div className="shrink-0">
@@ -394,6 +399,25 @@ function PublicationRow({
         <tr className="border-t bg-neutral-50/50">
           <td colSpan={colCount} className="p-4">
             <div className="space-y-4" onClick={(e) => e.stopPropagation()}>
+              {inSession && pub.press_release && (
+                <div className="flex items-start gap-2 rounded-md border border-emerald-300 bg-emerald-50/60 px-3 py-2 text-xs text-emerald-900">
+                  <Newspaper className="h-4 w-4 mt-0.5 shrink-0" />
+                  <div>
+                    <span className="font-medium">Bereits ÖAW-pressed</span>
+                    {pub.press_release.released_at && <> am {pub.press_release.released_at}</>}
+                    {' '}—{' '}
+                    <a
+                      href={pub.press_release.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline hover:text-emerald-700"
+                    >
+                      Pressemitteilung öffnen
+                    </a>
+                    . Pitch-Decision nur, wenn neue Coverage gewünscht ist.
+                  </div>
+                </div>
+              )}
               <DecisionToolbar
                 pub={pub}
                 inSession={inSession}

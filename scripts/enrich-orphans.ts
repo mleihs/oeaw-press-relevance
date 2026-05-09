@@ -15,42 +15,13 @@
  *   npm run enrich-orphans -- --target=prod --promote  # also call promote_press_release_orphans()
  */
 
-import { Client } from 'pg';
-import { readFileSync } from 'fs';
 import type { EnrichmentResult } from '../lib/types';
 import { enrichFromOpenAlex } from '../lib/enrichment/openalex';
 import { enrichFromCrossRef } from '../lib/enrichment/crossref';
 import { enrichFromSemanticScholar } from '../lib/enrichment/semantic-scholar';
 import { enrichFromUnpaywall } from '../lib/enrichment/unpaywall';
 import { enrichFromPdf } from '../lib/enrichment/pdf-extract';
-
-interface Args {
-  target: 'local' | 'prod';
-  reset: boolean;
-  onlyPdf: boolean;
-  promote: boolean;
-}
-
-function parseArgs(): Args {
-  const a = process.argv.slice(2);
-  return {
-    target: a.includes('--target=prod') ? 'prod' : 'local',
-    reset: a.includes('--reset'),
-    onlyPdf: a.includes('--only-pdf'),
-    promote: a.includes('--promote'),
-  };
-}
-
-function loadDbUrl(target: 'local' | 'prod'): string {
-  if (target === 'prod') {
-    const credPath = `${process.env.HOME}/.config/oeaw-press-release/prod-credentials`;
-    const cred = readFileSync(credPath, 'utf-8');
-    const m = cred.match(/^PROD_DB_URL_POOLER=(.+)$/m);
-    if (!m) throw new Error('PROD_DB_URL_POOLER not found in prod-credentials');
-    return m[1].trim();
-  }
-  return 'postgres://postgres:postgres@127.0.0.1:54422/postgres';
-}
+import { connectDb, parseScriptArgs } from './lib/db.mjs';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -127,9 +98,8 @@ function classifyStatus(r: EnrichmentResult | null): 'enriched' | 'partial' | 'f
 }
 
 async function main() {
-  const args = parseArgs();
-  const db = new Client({ connectionString: loadDbUrl(args.target) });
-  await db.connect();
+  const args = parseScriptArgs() as { target: 'local' | 'prod'; reset: boolean; onlyPdf: boolean; promote: boolean };
+  const db = await connectDb({ target: args.target });
   console.log(`[enrich-orphans] target=${args.target} reset=${args.reset} onlyPdf=${args.onlyPdf} promote=${args.promote}`);
 
   let where = "WHERE enrichment_status IS NULL OR enrichment_status = 'failed'";
@@ -199,7 +169,9 @@ async function main() {
   console.log(`\n[enrich-orphans] done — enriched=${stats.enriched} partial=${stats.partial} failed=${stats.failed}`);
 
   if (args.promote) {
-    const { rows: pr } = await db.query<{ n: number }>('SELECT promote_press_release_orphans() AS n');
+    const { rows: pr } = await db.query<{ n: number }>(
+      "SELECT promote_press_release_orphans_logged('enrich-orphans') AS n",
+    );
     console.log(`[enrich-orphans] promoted ${pr[0].n} orphan(s) → publications`);
   }
 
