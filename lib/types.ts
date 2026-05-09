@@ -45,6 +45,7 @@ export interface Publication {
   // Analysis
   analysis_status: 'pending' | 'analyzed' | 'failed';
   press_score: number | null;
+  press_similarity: number | null; // SPECTER2-cosine to press-cluster centroid (refresh_press_similarity)
   public_accessibility: number | null;
   societal_relevance: number | null;
   novelty_factor: number | null;

@@ -48,6 +48,7 @@ function makePub(overrides: Partial<Publication> = {}): Publication {
     word_count: 0,
     analysis_status: 'analyzed',
     press_score: 0.78,
+    press_similarity: null,
     public_accessibility: null,
     societal_relevance: null,
     novelty_factor: null,
