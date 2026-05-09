@@ -651,6 +651,13 @@ try {
   // immer. Idempotent. Migration: 20260505000004.
   const yr = await pgClient.query('SELECT backfill_published_at_from_text() AS filled');
   log(`Backfilled published_at from bibtex/citation: ${yr.rows[0].filled} pubs`);
+  // Press-release orphans: DOIs aus ÖAW-Hauptseite-news, deren Paper bisher
+  // nicht in publications war. Wenn ein neuer Import das Paper bringt, wird
+  // der Press-Release-Link automatisch zur Pub gemoved + Orphan gelöscht.
+  // Idempotent (überspringt Pubs mit press_release_url IS NOT NULL).
+  // Migration: 20260509000002.
+  const promoted = await pgClient.query('SELECT promote_press_release_orphans() AS n');
+  log(`Promoted press-release-orphans: ${promoted.rows[0].n} pubs`);
   log('Refreshing publication_oestat6 matview…');
   await pgClient.query('REFRESH MATERIALIZED VIEW CONCURRENTLY publication_oestat6');
   log(`DONE in ${((Date.now() - t0) / 1000).toFixed(1)}s`);
