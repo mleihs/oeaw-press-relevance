@@ -173,6 +173,11 @@ AS $$
 DECLARE
   v_updated INTEGER;
 BEGIN
+  -- ivfflat default probes=1 silently drops ~1% of pubs whose nearest
+  -- pressed-pub neighbours fall in non-probed lists. Force exact search:
+  -- with ~114 pressed pubs the sequential scan is fast enough.
+  SET LOCAL ivfflat.probes = 50;
+
   WITH new_sim AS (
     SELECT pe.publication_id,
            AVG(1.0 - (pe.embedding <=> pe2.embedding)) AS sim
@@ -268,7 +273,11 @@ RETURNS TABLE(
   title          TEXT,
   released_at    DATE
 )
-LANGUAGE sql STABLE AS $$
+LANGUAGE plpgsql STABLE AS $$
+BEGIN
+  -- See refresh_press_similarity_knn for the ivfflat.probes rationale.
+  SET LOCAL ivfflat.probes = 50;
+  RETURN QUERY
   WITH q AS (
     SELECT embedding FROM publication_embeddings
     WHERE publication_id = p_pub_id AND model = p_model
@@ -286,6 +295,7 @@ LANGUAGE sql STABLE AS $$
     AND pe.publication_id <> p_pub_id
   ORDER BY pe.embedding <=> q.embedding
   LIMIT p_limit;
+END;
 $$;
 
 COMMENT ON FUNCTION similar_pressed_pubs(UUID, TEXT, INTEGER) IS
