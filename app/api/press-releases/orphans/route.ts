@@ -11,6 +11,16 @@ export interface PressReleaseOrphan {
   news_title: string | null;
   source_news_uid: number | null;
   created_at: string;
+  // Enrichment fields (via OpenAlex/CrossRef, scripts/enrich-orphans.mjs)
+  paper_title: string | null;
+  abstract: string | null;
+  authors: string[] | null;
+  journal: string | null;
+  paper_year: number | null;
+  keywords: string[] | null;
+  openalex_id: string | null;
+  enrichment_status: 'pending' | 'enriched' | 'partial' | 'failed' | null;
+  enriched_at: string | null;
 }
 
 export async function GET(req: NextRequest) {
