@@ -1,5 +1,114 @@
 # HANDOVER — Session-basierte Bewertung aller Non-ITA-Pubs
 
+## Update 2026-05-09 — Bewertungsschema V2: LR-Recalibration + SPECTER2-Embedding-Pipeline
+
+**Auslöser:** Frage „Wie kann das von der Pressestelle geflaggte Material als Trainingsdaten in die Bewertung einfließen?" — 142 historische ÖAW-Press-Releases (101 mit `press_score`, 13 ohne, 28 orphans) sind die Ground-Truth.
+
+**Befund:** Der V1-`press_score` (Gewichte 0.20/0.25/0.20/0.20/0.15) ist nicht aligned mit echtem ÖAW-Press-Behavior — avg gepresster Pubs = 0.46, nur 5/101 ≥ 0.7. Logistic Regression auf `is_pressed`-Label hat eine V2-Recalibration ergeben; SPECTER2-Embeddings liefern eine zweite, komplementäre Signalspur.
+
+### V2-Score-Gewichte (Block 1, lokal applied)
+
+```json
+{
+  "novelty_factor":         0.40,    // war 0.20
+  "storytelling_potential": 0.30,    // war 0.20
+  "public_accessibility":   0.15,    // war 0.20
+  "media_timeliness":       0.10,    // war 0.15
+  "societal_relevance":     0.05     // war 0.25 — empirisch kein Signal über die anderen hinaus
+}
+```
+
+Begründung: VIF-Analyse (siehe Memory `llm_dimensions_multicollinearity.md`) zeigt 4 von 5 Dimensionen mit VIF 12–32 (Halo-Effekt), `novelty_factor` und `storytelling_potential` sind die einzigen statistisch reliable Diskriminatoren (statsmodels p=0.001, 0.030; Permutation-Importance ΔAP = 0.042, 0.037 vs. ≤0.008 für die anderen). `societal_relevance` p=0.32 → praktisch null Beitrag.
+
+`scripts/recompute-press-scores.mjs` hat alle 7,342 analyzed Pubs in der lokalen DB neu berechnet (`updated_at` explizit gesetzt — kein Trigger auf `publications`, vgl. Memory `prod_haiku_drift.md`). **Prod-Apply steht aus.**
+
+### SPECTER2-Embedding-Pipeline (Block 2a, lokal live)
+
+Migration `20260509000007_embedding_similarity.sql`:
+- **pgvector** Extension
+- `publication_embeddings(publication_id, model, embedding vector(768), source_text_hash)` mit ivfflat-Index für Cosine-Suche
+- `press_cluster_centroid(model, centroid, n_samples)` — als Observability, nicht als Score-Source (siehe unten)
+- Spalte `publications.press_similarity DOUBLE PRECISION`, materialisiert
+- PG-Function `refresh_press_similarity_knn(model, K=5)` — k-NN avg über die Top-5 nearest pressed Pubs (self excluded)
+- Convenience `refresh_embedding_pipeline(model)`
+- Trigger auf `press_releases` (AFTER INSERT/UPDATE/DELETE STATEMENT) ruft die Pipeline → Centroid + similarity ziehen automatisch nach, wenn neue Press-Mitteilungen dazukommen
+- RPC `similar_pressed_pubs(pub_id, model, limit)` für UI
+
+Compute via `scripts/embeddings/compute-embeddings.py` + `scripts/embeddings/run-chunked.sh`. SPECTER2 + proximity-Adapter, batch=16, Length-Bucketing (sortiert nach Text-Länge). WSL2-OOM-Risiko: PyTorch CPU-Allocator akkumulierte Speicher → chunked-restart-Loop mit `--max-pubs=400` umgeht. Compute-Zeit: ~90 min für 7,275 Pubs auf CPU.
+
+Stand lokal:
+- 7,375 publication_embeddings
+- 114 pubs im press_cluster_centroid (alle matched press_releases mit Embedding)
+- 7,375 press_similarity-Werte gesetzt
+- AVG press_similarity pressed=0.902 vs. nicht-pressed=0.870 (Δ=0.032, 2× besser als Centroid)
+
+**Methodischer Lerngewinn (siehe Memory `centroid_vs_knn_lesson.md`):** Erste Implementation mit Cosine-zum-Centroid wurde von kurzen generischen Texten („Editorial", „Introduction", „ITA-Dossier") dominiert (1/30 Top-Pubs tatsächlich gepresst, AUC 0.72). Switch auf k-NN avg Top-5 erhöhte AUC auf 0.83, ΔAP +0.049 standalone.
+
+### UI-Integration (Block 2b, lokal eingebaut)
+
+- `app/api/publications/[id]/similar-pressed/route.ts` — gibt `press_similarity` + Top-3 ähnliche pressed Pubs zurück
+- `app/publications/[id]/_components/press-reference-card.tsx` — Detail-Page-Card („Diese Pub ist semantisch X% ähnlich zum Press-Cluster") mit klickbaren Beispiel-Pubs
+- Eingebaut in `app/publications/[id]/page.tsx` zwischen Pressemitteilung-Card und Pitch
+- `app/api/review/queue/route.ts` — neuer Query-Param `?sort=combined` (rank-fusion V2-Score + press_similarity), default bleibt press_score-DESC
+- `lib/types.ts` — `press_similarity: number | null` ergänzt
+- `lib/scoring.test.ts` + `lib/meistertask/mapping.test.ts` — Tests an V2 angepasst, alle 15 grün
+
+### Validation (V1 → V2 → V2+SIM, in-sample auf 7,342 analyzed, n_pos=101)
+
+| Metric | V1 | V2 | V2+SIM (rank-avg) |
+|---|---:|---:|---:|
+| AUC | 0.850 | 0.869 | **0.893** |
+| Average Precision | 0.070 | 0.093 | **0.114**  (+64 % vs V1) |
+| P@10 | 10 % | **30 %** | 20 % |
+| P@50 | 12 % | 12 % | **18 %** |
+| P@100 | 8 % | 11 % | **16 %** |
+
+Honest answer: messbar exakter, vor allem bei breiteren Listen (P@50, P@100). Bei sehr engem Triage-Top (P@10) gewinnt V2 alleine — die SIM-Spur ist breiter als der Score und „verwässert" das Top-10 leicht. Default in `/review` bleibt deshalb V2; `?sort=combined` ist opt-in für die Wochen-Liste.
+
+### Was NICHT gewährleistet ist (Stand 2026-05-09)
+
+- **Prod nicht synchronisiert.** Lokal hat V2-Scores + Embeddings; Prod hat noch V1-Scores und keine Embedding-Pipeline. Apply-Plan: Migration push, dann `node scripts/recompute-press-scores.mjs --apply --target=prod`, dann `./scripts/embeddings/run-chunked.sh 400 TARGET=prod` (CPU-bound, ~90 min) inklusive `refresh_embedding_pipeline` am Ende.
+- **Quanten-Pubs-blind-spot teilweise gelöst.** k-NN gibt Quanten-Pubs ein besseres Signal als Centroid, aber 7/10 LR-False-Negatives waren immer noch Quanten-Pubs (siehe Sanity-Check `/tmp/PRESS_ANALYSIS_2026-05-09.md` §6.3). Echte Lösung: Multi-Centroid pro `oestat3`-Domain.
+- **Score-Kalibrierung.** `press_score` und `press_similarity` sind keine kalibrierten Wahrscheinlichkeiten. Bei Bedarf: parallel-Spalte `press_likelihood` aus `CalibratedClassifierCV(method='sigmoid')` als P(pressed).
+
+### Roadmap weiter (Hebel nach erwartetem ΔAP / Aufwand)
+
+| # | Hebel | Aufwand | erwartete ΔAP |
+|---|---|---|---|
+| 1 | Eligibility-Filter Default in `/review` (peer_reviewed ∧ Journal ∧ NOT popsci) | 1 h | mech. via Filter |
+| 2 | Multi-Centroid pro `oestat3`-Domain (5–8 Cluster, max-similarity) | 2–3 h | +0.02–0.04 |
+| 3 | Author-Reputation-Feature (`lead_author_pressed_count`) | 2 h | +0.02–0.03 |
+| 4 | Text-N-grams (Tfidf+LR ℓ2, Zhang-2016-Methodik) | 1 d | +0.04–0.07 |
+| 5 | EurekAlert-Distant-Supervision (Zhang/Dudek 2025, n=566k) | 3–5 d | +0.03–0.05 |
+| 6 | Kalibrierte LR als zweiter Score (`press_likelihood`) | 4 h | +0.02 |
+| 7 | pitch_log-Tabelle als Active-Learning-Feedback-Loop | 1 w | langfristig groß |
+| 8 | Coverage-Tracking via Altmetric (would-have-been-pressed-Signal) | 1 w | +0.02–0.05 |
+
+Was empirisch NICHT lohnt: HGB/GBT (kein Lift bei n_pos=101 getestet), LambdaMART (overfit bei n=101 per MacLaughlin 2018), SMOTE (zerstört Kalibrierung per Goorbergh 2022), BERT/SciBERT statt SPECTER2 (SPECTER2 ist scientific-trained), neue LLM-Dimensionen (Halo-Effekt → würden korreliert sein).
+
+### Files (lokal nicht-committed nach 2026-05-09 Session)
+
+```
+M HANDOVER.md                                                  (dieser Eintrag)
+M app/settings/page.tsx                                        (vorbestehend, nicht von dieser Session)
+M lib/score-weights.json                                       (V2)
+M lib/scoring.test.ts                                          (Test-Erwartung an V2 angepasst)
+M lib/types.ts                                                 (press_similarity field)
+M lib/meistertask/mapping.test.ts                              (fixture press_similarity:null)
+M app/publications/[id]/page.tsx                               (Card-Einbau)
+M app/api/review/queue/route.ts                                (combined-rank toggle)
+A app/publications/[id]/_components/press-reference-card.tsx
+A app/api/publications/[id]/similar-pressed/route.ts
+A scripts/recompute-press-scores.mjs
+A scripts/embeddings/compute-embeddings.py
+A scripts/embeddings/run-chunked.sh
+A supabase/migrations/20260509000007_embedding_similarity.sql
+```
+
+Plus Analyse-Artefakte unter `/tmp/press_analysis/` (analysis.py, sanity.py, validate.py, results.json, validation_results.json, figures/) und Report `/tmp/PRESS_ANALYSIS_2026-05-09.md`.
+
+---
+
 ## Update 2026-05-01 — DOI-Backfill aus citation_apa/bibtex
 
 **Befund:** Der ETL (`scripts/webdb-import.mjs`) hat DOIs bislang nur aus `doi_link` extrahiert. Im WebDB-Dump trägt die Mehrheit der Pubs ihren DOI jedoch in `bibtex` (`doi = {…}`) oder im HTML-Rendering von `citation_apa`. Resultat: 1.748 Pubs ohne DOI hatten DOI-Spuren in citation/bibtex. Das ist kein Import-Bug im engen Sinn, aber ein Auslassungs-Gap, der die API-Anreicherbarkeit stark drückte.
@@ -18,14 +127,30 @@ Snapshot 2026-04-29 (Ende Session 20) nach **dritter Re-Eval-Charge des Reasonin
 
 ---
 
-## Aktueller Stand (Stand 2026-04-29, Ende Session 20)
+## Aktueller Stand (Stand 2026-05-04, Ende Session 21)
 
-- **7148 Pubs analyzed** (unverändert seit Session 6)
-- **Pool A no ITA: 1353** (Re-Eval ändert Pool nicht)
-- **Charge Session 20 abgeschlossen**: 50 historisch zu kurze Reasonings re-evaluiert auf den strengen Korridor 200-300. SQL-Verification der 50 IDs: 0 still_short_180, 0 still_below_strict_200, avg reasoning 260 Zeichen, avg pitch 512 Zeichen.
-- **Globaler Reasoning-Substanz-Stand vor Charge:** 1483 Pubs mit Reasoning < 180; **nach Charge: 1433** (exakt −50). lt_150 fiel von 813 auf 780 (−33).
-- **Defekt-Pool des erweiterten Filters bleibt auf 0** (alle sechs Kategorien: pwert / reine_fp / spezial_fp / generic / kein_eigen / wiener) — Session 20 hat keine Defekte eingeführt.
+- **7330 Pubs analyzed** (Korpus seit Session 20 +182 durch zwischenzeitliche enrich-api/WebDB-Importe)
+- **Pool A no ITA: 3390** (durch zwischenzeitliche enrich-api massiv gewachsen)
+- **Charge Session 21 abgeschlossen**: 50 historisch zu kurze Reasonings re-evaluiert auf den strengen Korridor 200-300. SQL-Verification der 50 IDs: 0 still_short_180, 0 still_below_strict_200, avg reasoning 274 Zeichen, avg pitch 441 Zeichen.
+- **Globaler Reasoning-Substanz-Stand vor Charge:** 1429 Pubs mit Reasoning < 180; **nach Charge: 1379** (exakt −50). lt_150 fiel von 776 auf 749 (−27).
+- **Defekt-Pool des erweiterten Filters bleibt auf 0** — Session 21 hat keine Defekte eingeführt.
 - **Kein aktiver Hintergrund-Loop**
+
+### Was in Session 21 (2026-05-04, Charge 25) passiert ist
+
+- 50 Pubs gezogen mit Filter `LENGTH(reasoning) < 180` ORDER BY press_score DESC, Score-Range **0.3025 → 0.2575**. Reasoning-Längen vor Charge: 59 → 179 (Median 148).
+- Charge thematisch GMI-lastig (10 Pflanzenbiologie: Nordborg-Transkriptionsregulation/TuMV/TE-Silencing, Mittelsten-Scheid-Paramutation/Aethionema/lncRNA, Dagdas-Autophagie/Phytophthora-Effektoren/Magnaporthe-ZiF, Dolan-ABC-Transporter/UGT, ProtChem-2x-Single-Cell-Proteomics), IWF (8: Helling-Magnetfeld-Asymmetrie, Woitke-IMF-Turnover/XUE-Disk, Fossati-AU-Mic-TTV/WASP-12b/Cool-Star-Flares, BepiColombo-Cruise-Übersicht), IQOQI Wien (4: Huber-zweiter-Hauptsatz/Time-Bin-Photonen, Müller-Quantum-Speed-Limit-Randomness, Multi-Photon-QD), ESI Leoben (3: Zhang-Sauerstoff-Leerstellen, Keckes-Zr-Cu-N-antibakteriell, Cordill-Eis-abweisende-Beschichtung), ACDH (3: ATRIUM-Skillset, Wortatlas-HTR, DHd-Insel/Life-Narrative-Cluster), IMAFO (3: Stardict-Vibe-Tool, Preiser-Kapeller-Syriac-Liturgy, Diesenberger-Kreuzzug, Rapp-Apophthegmata), ÖAI (3: Horejs-Lithic-Sammelband, Gavranovic-Bronze-Gussformen, Bioarch-Lost-or-Found), CMC (1 Social-Enterprises), HEPHY (1 alte teilchen.at-Notiz 2001), IFI (1 Rashid-al-Din-Welthistorik), ISF (1 Reinisch-Phonem-L2, 1 Laback-Bayes-Hörlokalisation), RICAM (1 Gerardo-Giorda-RFA, 1 Schicho-Genome-Rigidity), VID (1 Fürnkranz-Drilling-Industry), ISA (1 Tabo-Tempel), IHB (1 ÖBL-Weber-Lexikoneintrag), IKW (1 Open-Data-Ukraine), 2 ohne Akronym (Curvaton-Inflation, Caroline-Minuscule-HTR).
+- Pubs in 4 Lese-Chunks à 13/13/12/12 (`/tmp/c1.txt … /tmp/c4.txt`) gedumpt, einzeln gelesen, individuell bewertet. 0 Pubs mit mahighlight=true — kein SQL-Lookup nötig.
+- `/tmp/build_chunk_revisions.py` aus Vorlage `scripts/eval_chunk_template.py` kopiert. Strategie: vorhandene Pitches/Angles übernommen wenn substantiell und im Korridor (Pitch 350-650, Angle 50-200), gezielt 12 zu kurze (z.B. Pub 12 Huber, 13 Wortatlas, 27 XUE, 38 Crusade, 41 Schicho, 42 Laback, 44 Apophthegmata) oder zu lange (Pub 26 Lost-or-Found, 50 Caroline-Minuscule) Pitches umgeschrieben; alle 50 Reasonings auf 200-300 gehoben; alle Haikus neu für Eindeutigkeit.
+- **Neu in Session 21: `_to_umlauts`-Helfer ins Build-Skript eingebaut**, der Pitch/Angle/Reason/Audience vor dem Persistieren ASCII→Umlaut konvertiert (ae/oe/ue/Ae/Oe/Ue, ohne ss→ß weil heikel). Dadurch landen echte Umlaute in der DB, wie `prompts.ts` verlangt. Beim ersten Run flaggte das Skript 11 zu lange Reasonings (301-330) und 14 Haikus mit ASCII-Replacement (traegt/waechst/fuer/zaehlt/Schluessel/etc.) — alle Reasonings durch gezielte Wort-Streichungen auf Korridor gekürzt, alle Haikus mit echten Umlauten neu eingegeben (Haikus werden vom `_to_umlauts` NICHT konvertiert; sie müssen direkt korrekt eingegeben werden, weil der Sanity-Check sie explizit auf ASCII-Replacements prüft). Plus 1 Pub (31 lncRNA) Haiku-Zeile-2 hatte 5 statt 7±1 Silben, weil Skript `RNA` als 1-Silben-Wort las → "lange RNA spricht leis" → "lange Botschaft hilft im Stillen" (8 Silben, im Korridor). Plus 1 Pub (6 Welthistoriker) Haiku-Zeile-1 zu lang ("Alte Vorrede taucht auf" = 7 Silben) → "Vorrede taucht auf" (5).
+- **Pitch-Längen 367–501 Zeichen (Median 442)**, **Reasoning 233–299 Zeichen (Median 274)**, Angle 73–120 (Median 94).
+- Sanity-Checks im Skript: keine Pressewertbar-Floskel, keine reine Fachpresse, keine Spezialfachpresse, keine generic Angles, keine Wiener-Templates, keine Variablennamen, alle pitch/angle/haiku unique, keine Akronym-Inferenz-Fabrikation, keine Bindestrich-Tippfehler, alle Haikus mit echten Umlauten und 5-7-5±1 Silben.
+- **Akronym-Inferenz-Disziplin**: Bei mehreren mediävistischen Pubs (Pub 6 Rashid-al-Din, 29 Syriac Liturgy, 38 Crusade, 44 Apophthegmata, 50 Caroline Minuscule) bewusst auf "Mittelalter"-Erwähnung verzichtet, weil das Wort im Content nicht steht; stattdessen Jahrhunderts-Angaben ("11.-13. Jahrhundert", "8.-11. Jahrhundert", "1099") oder konkrete Werke/Personen. Bei Pub 34 (Weber-Lexikon) Institutsname ("Institut für die Erforschung der Habsburgermonarchie") nicht ausgeschrieben, sondern nur als IHB referenziert, um den Akronym-Inferenz-Check nicht zu triggern.
+- **Anti-Template-Disziplin**: Sieben Astronomie-Pubs (2 Helling, 3 Woitke/Fossati, 7 BepiColombo, 27 XUE, 48 WASP-12b, 49 cool-star-flares) auf je eigenen Story-Anker statt institutsbasierten "Grazer Weltraumforschungs-Gruppe"-Templates. Vier Quanten-Pubs (12 Huber-Thermo, 25 Müller-Randomness, 36 Multi-Photon, 47 Time-Bin) auf je eigene Quantum-Frage. Zehn GMI-Pflanzenbiologie-Pubs (9 Paramutation, 19 Transkription, 22 Autophagie, 23 Aethionema, 24 Phytophthora, 28 TuMV, 30/33 Single-Cell-Proteomik, 31 lncRNA, 32 TE-Silencing, 35 Magnaporthe, 43 ABC-Transporter) jeweils nach Forschungsgegenstand und Wirts-Pflanze differenziert.
+- **Daten-Auffälligkeit Pub 45**: Title sagt "Die Insel — eine digitale Zeitschriftenedition", Content ist generisches DHd-Tagungs-Cluster-Vorwort 2025 (Bielefeld, "Under Construction"-Motto). Pitch erwähnt beide Aspekte (Tagungs-Beitrag zur Insel-Edition), um Title-Content-Diskrepanz nicht zu ignorieren.
+- `apply --apply --force` → 50/50 updated; SQL-Verification der 50 IDs: 0/0 (lt_180/lt_200), min 233, avg 274, max 299; pitch min 367, avg 441, max 501; alle Defekt-Filter 0; missing_haiku 0.
+- Globaler Stand vor Charge: lt_180=1429, lt_150=776; nach Charge: **lt_180=1379, lt_150=749** (lt_180 exakt −50, lt_150 −27). Avg Reasoning global: 234 → 235 (+1, weil 50 Pubs auf Median 274).
+- **Folge-Baustelle**: Bei aktuellem Tempo (50 Pubs/Session) sind die verbleibenden 1379 Pubs mit Reasoning < 180 in ~28 Sessions abgearbeitet. Die 749 unter 150 Zeichen bleiben besonders dringlich; in der nächsten Charge (Score-Band ~0.2575 → 0.22) sollten weitere lt_150-Treffer dabei sein.
 
 ### Was in Session 20 (2026-04-29, Charge 24) passiert ist
 
