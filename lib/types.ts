@@ -206,6 +206,13 @@ export interface EnrichmentResult {
   pdf_url?: string;
   /** ISO 8601 date string (YYYY-MM-DD) extracted from source API */
   published_at?: string;
+  /** Paper title from the API. Used by orphan-enrich; ignored by publications-
+   *  enrichment (which keeps WebDB-title as source-of-truth). */
+  title?: string;
+  /** Author display-names. Same caveat as `title`. */
+  authors?: string[];
+  /** OpenAlex Work-ID (W-prefixed). Only populated by enrichFromOpenAlex. */
+  openalex_id?: string;
 }
 
 export interface AnalysisResult {

@@ -6,8 +6,10 @@ import { cleanDoi } from './doi-utils';
  *
  * OpenAlex stores abstracts as `{ "word": [pos1, pos2], ... }` to save space.
  * We expand this back into the original sentence order.
+ *
+ * Exported for unit testing — the rest of enrichFromOpenAlex is API-call-shaped.
  */
-function reconstructAbstract(invertedIndex: Record<string, number[]>): string {
+export function reconstructAbstract(invertedIndex: Record<string, number[]>): string {
   const words: Array<[number, string]> = [];
 
   for (const [word, positions] of Object.entries(invertedIndex)) {
@@ -89,7 +91,22 @@ export async function enrichFromOpenAlex(rawDoi: string): Promise<EnrichmentResu
     publishedAt = `${data.publication_year}-01-01`;
   }
 
-  if (!abstract && !journal && keywords.length === 0) return null;
+  // Title (paper-level)
+  const title: string | undefined = data.title || data.display_name || undefined;
+
+  // Authors (display-names only, not affiliations)
+  const authors: string[] = Array.isArray(data.authorships)
+    ? data.authorships
+        .map((a: { author?: { display_name?: string } }) => a.author?.display_name)
+        .filter((n: unknown): n is string => typeof n === 'string' && n.length > 0)
+    : [];
+
+  // OpenAlex Work-ID (W-prefixed)
+  const openalexId: string | undefined = typeof data.id === 'string'
+    ? data.id.replace('https://openalex.org/', '')
+    : undefined;
+
+  if (!abstract && !journal && keywords.length === 0 && !title) return null;
 
   return {
     abstract,
@@ -100,5 +117,8 @@ export async function enrichFromOpenAlex(rawDoi: string): Promise<EnrichmentResu
     full_text_snippet: fullSnippet || undefined,
     word_count: snippet ? snippet.split(/\s+/).length : 0,
     published_at: publishedAt,
+    title,
+    authors: authors.length > 0 ? authors : undefined,
+    openalex_id: openalexId,
   };
 }

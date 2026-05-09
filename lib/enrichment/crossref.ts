@@ -49,6 +49,18 @@ export async function enrichFromCrossRef(rawDoi: string): Promise<EnrichmentResu
 
   const snippet = abstract || '';
 
+  // Title — CrossRef returns title as array of strings
+  const title: string | undefined = Array.isArray(work.title) ? work.title[0] : undefined;
+
+  // Authors — given + family joined
+  const authors: string[] = Array.isArray(work.author)
+    ? work.author
+        .map((a: { given?: string; family?: string }) =>
+          [a.given, a.family].filter(Boolean).join(' ').trim(),
+        )
+        .filter((n: string) => n.length > 0)
+    : [];
+
   return {
     abstract,
     keywords: keywords?.slice(0, 20),
@@ -57,5 +69,7 @@ export async function enrichFromCrossRef(rawDoi: string): Promise<EnrichmentResu
     full_text_snippet: snippet,
     word_count: snippet ? snippet.split(/\s+/).length : 0,
     published_at: publishedAt,
+    title,
+    authors: authors.length > 0 ? authors : undefined,
   };
 }

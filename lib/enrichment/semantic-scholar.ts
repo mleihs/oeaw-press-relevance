@@ -37,6 +37,14 @@ export async function enrichFromSemanticScholar(rawDoi: string): Promise<Enrichm
     publishedAt = `${data.year}-01-01`;
   }
 
+  // Title + authors (paper-level metadata, used by orphan-enrich script)
+  const title: string | undefined = data.title || undefined;
+  const authors: string[] = Array.isArray(data.authors)
+    ? data.authors
+        .map((a: { name?: string }) => a.name)
+        .filter((n: unknown): n is string => typeof n === 'string' && n.length > 0)
+    : [];
+
   return {
     abstract,
     journal,
@@ -45,5 +53,7 @@ export async function enrichFromSemanticScholar(rawDoi: string): Promise<Enrichm
     full_text_snippet: fullSnippet || undefined,
     word_count: snippet ? snippet.split(/\s+/).length : 0,
     published_at: publishedAt,
+    title,
+    authors: authors.length > 0 ? authors : undefined,
   };
 }
