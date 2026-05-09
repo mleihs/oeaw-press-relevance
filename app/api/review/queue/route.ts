@@ -73,9 +73,53 @@ async function fetchFreshHighScoreIds(supabase: SB, sinceTs: string): Promise<Se
  * Uses `updated_at` as a proxy for `analyzed_at` (no dedicated column yet).
  * Good enough: an analysis run touches updated_at via the press_score write.
  */
+/**
+ * Combined ranking that fuses press_score and press_similarity by rank-average.
+ * Robust to scale differences (press_score in 0..1, press_similarity is cosine
+ * around 0..1 but with much narrower spread). Pubs without similarity fall
+ * back to press_score rank only.
+ */
+function combineRanks<T extends { press_score: number | null; press_similarity: number | null }>(
+  rows: T[],
+): T[] {
+  const n = rows.length;
+  if (n === 0) return rows;
+  const idx = rows.map((_, i) => i);
+
+  const rankBy = (field: 'press_score' | 'press_similarity'): Map<number, number> => {
+    const sortable = idx.map((i) => ({ i, v: rows[i][field] }));
+    sortable.sort((a, b) => {
+      const av = a.v ?? -Infinity;
+      const bv = b.v ?? -Infinity;
+      return bv - av;
+    });
+    const ranks = new Map<number, number>();
+    sortable.forEach((s, r) => {
+      // 1-based rank, NaN/null pubs get rank=n+1 (lowest)
+      ranks.set(s.i, s.v == null ? n + 1 : r + 1);
+    });
+    return ranks;
+  };
+
+  const rPS = rankBy('press_score');
+  const rSIM = rankBy('press_similarity');
+
+  return [...rows]
+    .map((r, i) => {
+      const psR = rPS.get(i)!;
+      const simR = rSIM.get(i)!;
+      const fused = r.press_similarity == null ? psR : (psR + simR) / 2;
+      return { row: r, fused };
+    })
+    .sort((a, b) => a.fused - b.fused)
+    .map((x) => x.row);
+}
+
 export async function GET(req: NextRequest) {
   try {
     const supabase = getSupabaseFromRequest(req);
+    const url = new URL(req.url);
+    const useCombined = url.searchParams.get('sort') === 'combined';
 
     const sinceTs = await fetchSinceTimestamp(supabase);
     const [flaggedIds, mahlIds, freshIds] = await Promise.all([
@@ -89,6 +133,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({
         publications: [],
         since_ts: sinceTs,
+        sort: useCombined ? 'combined' : 'press_score',
         counts: { total: 0, flagged: 0, mahl: 0, fresh: 0 },
       });
     }
@@ -111,10 +156,14 @@ export async function GET(req: NextRequest) {
 
     type Row = {
       id: string;
+      press_score: number | null;
+      press_similarity: number | null;
       orgunit_publications?: Array<{ orgunit?: { id: string; akronym_de: string; name_de: string } }>;
       [k: string]: unknown;
     };
-    const flattened = (data as Row[] | null ?? []).map((r) => {
+    const rawRows = (data as Row[] | null ?? []);
+    const ranked = useCombined ? combineRanks(rawRows) : rawRows;
+    const flattened = ranked.map((r) => {
       const orgunits = (r.orgunit_publications ?? [])
         .map((op) => op.orgunit)
         .filter(Boolean);
@@ -126,6 +175,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       publications: flattened,
       since_ts: sinceTs,
+      sort: useCombined ? 'combined' : 'press_score',
       counts: {
         total: flattened.length,
         flagged: flaggedIds.size,

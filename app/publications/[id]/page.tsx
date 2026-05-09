@@ -22,6 +22,7 @@ import {
 import { getScoreBandClass, getScoreBandStoryLabel } from '@/lib/score-utils';
 import { CapybaraLogo } from '@/components/capybara-logo';
 import { MeistertaskButton } from './_components/meistertask-button';
+import { PressReferenceCard } from './_components/press-reference-card';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
@@ -273,6 +274,9 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
           </CardContent>
         </Card>
       )}
+
+      {/* Press-Referenz: semantische Nähe zum historischen Press-Cluster */}
+      <PressReferenceCard pubId={pub.id} isPressed={!!pub.press_release} />
 
       {/* Pitch */}
       {hasAnalysis && pub.pitch_suggestion && (
