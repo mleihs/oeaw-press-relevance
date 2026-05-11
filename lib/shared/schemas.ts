@@ -26,3 +26,11 @@ export const meistertaskPushPayloadSchema = z.object({
 });
 
 export type MeistertaskPushPayload = z.infer<typeof meistertaskPushPayloadSchema>;
+
+export const sessionFinishPayloadSchema = z.object({
+  attendees: z.array(z.string()).nullish(),
+  facilitator: z.string().nullish(),
+  notes: z.string().nullish(),
+});
+
+export type SessionFinishPayload = z.infer<typeof sessionFinishPayloadSchema>;
