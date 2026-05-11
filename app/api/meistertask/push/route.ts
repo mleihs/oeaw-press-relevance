@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { apiError, getSupabaseAdmin } from '@/lib/api-helpers';
+import { apiError, getSupabaseAdmin } from '@/lib/server/api-helpers';
 import { meistertaskPushPayloadSchema } from '@/lib/shared/schemas';
 import { pushPublicationToMeistertask } from '@/lib/server/meistertask/push';
 import type { MeistertaskPushResult } from '@/lib/shared/meistertask-types';

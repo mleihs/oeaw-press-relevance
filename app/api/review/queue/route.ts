@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { apiError, getSupabaseFromRequest } from '@/lib/api-helpers';
+import { apiError, getSupabaseFromRequest } from '@/lib/server/api-helpers';
 import { buildReviewQueue } from '@/lib/server/review/queue';
 
 export async function GET(req: NextRequest) {

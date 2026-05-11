@@ -1,7 +1,7 @@
 // ELIGIBILITY_EXCLUDE_TYPE_UIDS lives in lib/eligibility.ts so the server route
 // (app/api/publications/route.ts) and any client-side filter UI share one source.
 // Re-exported here for convenience if the publications page wants to read it.
-export { ELIGIBILITY_EXCLUDE_TYPE_UIDS } from '@/lib/eligibility';
+export { ELIGIBILITY_EXCLUDE_TYPE_UIDS } from '@/lib/shared/eligibility';
 
 // publication_type webdb_uids forming the "Wissenschaftlich" preset.
 export const WISS_TYPE_UIDS = [

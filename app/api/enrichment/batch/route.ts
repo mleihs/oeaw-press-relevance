@@ -1,12 +1,12 @@
 import { NextRequest } from 'next/server';
-import { getSupabaseAdmin, createSSEStream, apiError } from '@/lib/api-helpers';
+import { getSupabaseAdmin, createSSEStream, apiError } from '@/lib/server/api-helpers';
 import { NextResponse } from 'next/server';
-import { enrichFromCrossRef } from '@/lib/enrichment/crossref';
-import { enrichFromOpenAlex } from '@/lib/enrichment/openalex';
-import { enrichFromUnpaywall } from '@/lib/enrichment/unpaywall';
-import { enrichFromSemanticScholar } from '@/lib/enrichment/semantic-scholar';
-import { enrichFromPdf } from '@/lib/enrichment/pdf-extract';
-import { enrichFromWebDb, WEBDB_SOURCE_TAG } from '@/lib/enrichment/webdb-native';
+import { enrichFromCrossRef } from '@/lib/server/enrichment/crossref';
+import { enrichFromOpenAlex } from '@/lib/server/enrichment/openalex';
+import { enrichFromUnpaywall } from '@/lib/server/enrichment/unpaywall';
+import { enrichFromSemanticScholar } from '@/lib/server/enrichment/semantic-scholar';
+import { enrichFromPdf } from '@/lib/server/enrichment/pdf-extract';
+import { enrichFromWebDb, WEBDB_SOURCE_TAG } from '@/lib/server/enrichment/webdb-native';
 import { Publication, EnrichmentResult } from '@/lib/shared/types';
 
 export const maxDuration = 300;

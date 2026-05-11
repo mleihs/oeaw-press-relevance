@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseFromRequest } from '@/lib/api-helpers';
+import { getSupabaseFromRequest } from '@/lib/server/api-helpers';
 import { listPublications } from '@/lib/server/publications/list';
 
 export async function GET(req: NextRequest) {

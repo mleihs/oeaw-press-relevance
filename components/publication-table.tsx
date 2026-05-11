@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Publication } from '@/lib/shared/types';
-import { doiToUrl } from '@/lib/enrichment/doi-utils';
+import { doiToUrl } from '@/lib/shared/doi-utils';
 import { displayTitle } from '@/lib/shared/html-utils';
 import { displayAuthor } from '@/lib/shared/publication-display';
 import { buildTaskUrl } from '@/lib/shared/meistertask-urls';

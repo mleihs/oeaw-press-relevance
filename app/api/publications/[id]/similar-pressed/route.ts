@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseFromRequest } from '@/lib/api-helpers';
+import { getSupabaseFromRequest } from '@/lib/server/api-helpers';
 
 /**
  * GET /api/publications/:id/similar-pressed

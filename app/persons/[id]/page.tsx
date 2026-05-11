@@ -4,7 +4,7 @@ import { use } from 'react';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
 import { useApiQuery } from '@/lib/client/hooks/use-api-query';
-import { sincePresetToDate, type ResearcherDetail } from '@/lib/researchers';
+import { sincePresetToDate, type ResearcherDetail } from '@/lib/shared/researchers';
 import { EmptyState } from '@/components/empty-state';
 import { LoadingState } from '@/components/loading-state';
 import { ApiErrorCard } from '@/components/api-error-card';

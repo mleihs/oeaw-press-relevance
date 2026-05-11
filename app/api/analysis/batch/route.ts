@@ -1,8 +1,8 @@
 import { NextRequest } from 'next/server';
-import { getSupabaseAdmin, getOpenRouterKey, getLLMModel, createSSEStream, apiError } from '@/lib/api-helpers';
+import { getSupabaseAdmin, getOpenRouterKey, getLLMModel, createSSEStream, apiError } from '@/lib/server/api-helpers';
 import { NextResponse } from 'next/server';
-import { analyzePublications, calculatePressScore, checkKeyBalance } from '@/lib/analysis/openrouter';
-import type { PublicationForPrompt } from '@/lib/analysis/prompts';
+import { analyzePublications, calculatePressScore, checkKeyBalance } from '@/lib/server/analysis/openrouter';
+import type { PublicationForPrompt } from '@/lib/server/analysis/prompts';
 
 export const maxDuration = 300;
 

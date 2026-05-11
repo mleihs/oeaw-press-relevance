@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseFromRequest } from '@/lib/api-helpers';
+import { getSupabaseFromRequest } from '@/lib/server/api-helpers';
 import type {
   AuthorshipScope,
   DistributionPoint,
   LeaderboardMetric,
-} from '@/lib/researchers';
+} from '@/lib/shared/researchers';
 
 const ALLOWED_METRICS: LeaderboardMetric[] = ['count_high', 'sum_score', 'avg_score', 'weighted_avg', 'pubs_total'];
 const ALLOWED_SCOPES: AuthorshipScope[] = ['all', 'lead'];

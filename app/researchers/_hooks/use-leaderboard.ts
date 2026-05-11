@@ -2,7 +2,7 @@
 
 import { useQueryStates } from 'nuqs';
 import { filterParsers } from '../_filters';
-import { sincePresetToDate, defaultMinValueFor, type TopResearcherRow, type DistributionPoint } from '@/lib/researchers';
+import { sincePresetToDate, defaultMinValueFor, type TopResearcherRow, type DistributionPoint } from '@/lib/shared/researchers';
 import { useApiQuery } from '@/lib/client/hooks/use-api-query';
 
 function buildResearcherParams(

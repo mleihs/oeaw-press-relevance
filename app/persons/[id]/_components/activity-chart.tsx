@@ -6,7 +6,7 @@ import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recha
 import { InfoBubble } from '@/components/info-bubble';
 import { EmptyState } from '@/components/empty-state';
 import { BRAND_HEX } from '@/lib/shared/constants';
-import type { ActivityMonth } from '@/lib/researchers';
+import type { ActivityMonth } from '@/lib/shared/researchers';
 
 interface ActivityChartProps {
   data: ActivityMonth[];

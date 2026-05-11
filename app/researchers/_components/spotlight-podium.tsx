@@ -8,7 +8,7 @@ import {
   METRIC_SHORT_LABELS,
   type LeaderboardMetric,
   type TopResearcherRow,
-} from '@/lib/researchers';
+} from '@/lib/shared/researchers';
 import { PersonAvatar } from './person-avatar';
 import { Sparkline } from './sparkline';
 import { InfoBubble } from '@/components/info-bubble';

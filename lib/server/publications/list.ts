@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { ELIGIBILITY_EXCLUDE_TYPE_UIDS } from '@/lib/eligibility';
+import { ELIGIBILITY_EXCLUDE_TYPE_UIDS } from '@/lib/shared/eligibility';
 import type { Lang } from '@/lib/shared/types';
 
 type SB = SupabaseClient;

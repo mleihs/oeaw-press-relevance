@@ -1,7 +1,7 @@
 'use client';
 
 import { useId, useMemo } from 'react';
-import type { SparklinePoint } from '@/lib/researchers';
+import type { SparklinePoint } from '@/lib/shared/researchers';
 
 interface SparklineProps {
   data: SparklinePoint[];

@@ -1,5 +1,5 @@
 import { EnrichmentResult } from '@/lib/shared/types';
-import { cleanDoi } from './doi-utils';
+import { cleanDoi } from '@/lib/shared/doi-utils';
 
 export async function enrichFromUnpaywall(rawDoi: string): Promise<EnrichmentResult | null> {
   const doi = cleanDoi(rawDoi);

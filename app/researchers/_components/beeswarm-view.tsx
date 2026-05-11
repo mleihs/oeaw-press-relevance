@@ -14,7 +14,7 @@ import {
   METRIC_SHORT_LABELS,
   type DistributionPoint,
   type LeaderboardMetric,
-} from '@/lib/researchers';
+} from '@/lib/shared/researchers';
 
 interface BeeswarmViewProps {
   points: DistributionPoint[];

@@ -16,11 +16,11 @@
  */
 
 import type { EnrichmentResult } from '../lib/shared/types';
-import { enrichFromOpenAlex } from '../lib/enrichment/openalex';
-import { enrichFromCrossRef } from '../lib/enrichment/crossref';
-import { enrichFromSemanticScholar } from '../lib/enrichment/semantic-scholar';
-import { enrichFromUnpaywall } from '../lib/enrichment/unpaywall';
-import { enrichFromPdf } from '../lib/enrichment/pdf-extract';
+import { enrichFromOpenAlex } from '../lib/server/enrichment/openalex';
+import { enrichFromCrossRef } from '../lib/server/enrichment/crossref';
+import { enrichFromSemanticScholar } from '../lib/server/enrichment/semantic-scholar';
+import { enrichFromUnpaywall } from '../lib/server/enrichment/unpaywall';
+import { enrichFromPdf } from '../lib/server/enrichment/pdf-extract';
 import { connectDb, parseScriptArgs } from './lib/db.mjs';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));

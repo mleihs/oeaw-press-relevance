@@ -1,5 +1,5 @@
 import { EnrichmentResult } from '@/lib/shared/types';
-import { cleanDoi } from './doi-utils';
+import { cleanDoi } from '@/lib/shared/doi-utils';
 
 /**
  * Extracts an ISO date (YYYY-MM-DD) from CrossRef's date-parts format.

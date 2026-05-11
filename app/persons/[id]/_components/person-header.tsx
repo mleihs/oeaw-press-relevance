@@ -8,7 +8,7 @@ import { TrendDelta } from '@/app/researchers/_components/trend-delta';
 import { InfoBubble } from '@/components/info-bubble';
 import { BRAND_HEX } from '@/lib/shared/constants';
 import type { EXPL } from '@/lib/client/explanations';
-import type { ResearcherDetailPerson, ResearcherDetailStats } from '@/lib/researchers';
+import type { ResearcherDetailPerson, ResearcherDetailStats } from '@/lib/shared/researchers';
 
 interface PersonHeaderProps {
   person: ResearcherDetailPerson;

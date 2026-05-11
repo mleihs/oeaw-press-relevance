@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { ChevronDown, Sparkles } from 'lucide-react';
-import { changelogBackground, changelogClosing, changelogEntries } from '@/lib/changelog';
+import { changelogBackground, changelogClosing, changelogEntries } from '@/lib/shared/changelog';
 
 interface Props {
   className?: string;

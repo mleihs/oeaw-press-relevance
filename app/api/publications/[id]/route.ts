@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseFromRequest } from '@/lib/api-helpers';
+import { getSupabaseFromRequest } from '@/lib/server/api-helpers';
 import type { Lang } from '@/lib/shared/types';
 
 export async function DELETE(

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { PublicationWithRelations } from '@/lib/shared/types';
 import { useApiQuery } from '@/lib/client/hooks/use-api-query';
 import { displayTitle } from '@/lib/shared/html-utils';
-import { doiToUrl } from '@/lib/enrichment/doi-utils';
+import { doiToUrl } from '@/lib/shared/doi-utils';
 import { ScoreBar } from '@/components/score-bar';
 import { HaikuBlock } from '@/components/haiku-block';
 import { PublicationFlag } from '@/components/publication-flag';

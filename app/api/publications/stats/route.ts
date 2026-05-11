@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseFromRequest } from '@/lib/api-helpers';
+import { getSupabaseFromRequest } from '@/lib/server/api-helpers';
 
 // Stats-Endpoint für das Dashboard. Aus /api/publications ausgegliedert,
 // damit `revalidate = 60` greift und Vercel die Antwort 60s am Edge cached.

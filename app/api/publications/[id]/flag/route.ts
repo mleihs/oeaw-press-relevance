@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { apiError, getSupabaseAdmin } from '@/lib/api-helpers';
+import { apiError, getSupabaseAdmin } from '@/lib/server/api-helpers';
 import {
   flagSetPayloadSchema,
   flagDeletePayloadSchema,

@@ -12,7 +12,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { InfoBubble } from '@/components/info-bubble';
-import { METRIC_LABELS, SINCE_PRESETS, type LeaderboardMetric } from '@/lib/researchers';
+import { METRIC_LABELS, SINCE_PRESETS, type LeaderboardMetric } from '@/lib/shared/researchers';
 import type { EXPL } from '@/lib/client/explanations';
 
 const SCOPE_LABELS = {

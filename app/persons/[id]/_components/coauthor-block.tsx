@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { PersonAvatar } from '@/app/researchers/_components/person-avatar';
 import { InfoBubble } from '@/components/info-bubble';
-import type { CoauthorRow } from '@/lib/researchers';
+import type { CoauthorRow } from '@/lib/shared/researchers';
 
 interface CoauthorBlockProps {
   coauthors: CoauthorRow[];

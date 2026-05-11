@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { apiError, getSupabaseAdmin } from '@/lib/api-helpers';
+import { apiError, getSupabaseAdmin } from '@/lib/server/api-helpers';
 import { createSession } from '@/lib/server/sessions/lifecycle';
 
 export async function POST(_req: NextRequest) {

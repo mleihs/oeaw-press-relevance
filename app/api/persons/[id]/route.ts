@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseFromRequest } from '@/lib/api-helpers';
-import type { ResearcherDetail } from '@/lib/researchers';
+import { getSupabaseFromRequest } from '@/lib/server/api-helpers';
+import type { ResearcherDetail } from '@/lib/shared/researchers';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

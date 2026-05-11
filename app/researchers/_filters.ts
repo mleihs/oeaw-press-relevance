@@ -4,7 +4,7 @@ import {
   parseAsBoolean,
   parseAsStringLiteral,
 } from 'nuqs';
-import { SINCE_PRESETS, type SincePreset } from '@/lib/researchers';
+import { SINCE_PRESETS, type SincePreset } from '@/lib/shared/researchers';
 
 export const METRIC_KEYS = ['count_high', 'sum_score', 'avg_score', 'weighted_avg', 'pubs_total'] as const;
 export const SCOPE_KEYS = ['all', 'lead'] as const;

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { apiError, getSupabaseFromRequest } from '@/lib/api-helpers';
+import { apiError, getSupabaseFromRequest } from '@/lib/server/api-helpers';
 import { getRecentFinishedSession } from '@/lib/server/sessions/lifecycle';
 
 export async function GET(req: NextRequest) {

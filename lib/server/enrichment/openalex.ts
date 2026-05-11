@@ -1,5 +1,5 @@
 import { EnrichmentResult } from '@/lib/shared/types';
-import { cleanDoi } from './doi-utils';
+import { cleanDoi } from '@/lib/shared/doi-utils';
 
 /**
  * Reconstructs a plain-text abstract from OpenAlex's inverted index format.
