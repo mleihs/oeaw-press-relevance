@@ -60,8 +60,13 @@ async function fetchPubIdsByOestat6(
   oestat6Ids: string[],
 ): Promise<Set<string>> {
   if (oestat6Ids.length === 0) return new Set();
+  // `sql.param(arr)` binds the whole array as a single PG parameter. Plain
+  // `${arr}` would let Drizzle's sql tag expand the array into a comma-
+  // separated parenthesised list (the IN-clause shape) which an `::uuid[]`
+  // cast can't consume — see the Drizzle source in node_modules/drizzle-orm/
+  // sql/sql.cjs around the `Array.isArray(chunk)` branch.
   const rows = await db.execute<{ publication_id: string }>(
-    sql`SELECT publication_id FROM pub_ids_by_oestat6(${oestat6Ids}::uuid[])`,
+    sql`SELECT publication_id FROM pub_ids_by_oestat6(${sql.param(oestat6Ids)}::uuid[])`,
   );
   const ids = new Set<string>();
   for (const r of rows) ids.add(r.publication_id);
