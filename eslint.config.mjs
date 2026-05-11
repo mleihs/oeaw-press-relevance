@@ -1,6 +1,7 @@
 import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
+import boundaries from "eslint-plugin-boundaries";
 
 const eslintConfig = defineConfig([
   ...nextVitals,
@@ -42,6 +43,41 @@ const eslintConfig = defineConfig([
           argsIgnorePattern: "^_",
           varsIgnorePattern: "^_",
           caughtErrorsIgnorePattern: "^_",
+        },
+      ],
+    },
+  },
+  // Phase-2 architecture-boundaries (Plan §6.3). Warn-level during the
+  // gradual migration; promote to "error" in the hardening PR once all
+  // routes are moved (Plan §6.6 step 5).
+  // First-match-wins on element patterns — `app/api/**` listed BEFORE
+  // `app/**` so route handlers resolve to api-routes, not app-pages.
+  {
+    plugins: { boundaries },
+    settings: {
+      "boundaries/elements": [
+        { type: "server", pattern: "lib/server/**" },
+        { type: "shared", pattern: "lib/shared/**" },
+        { type: "client", pattern: "lib/client/**" },
+        { type: "api-routes", pattern: "app/api/**" },
+        { type: "app-pages", pattern: "app/**" },
+        { type: "components", pattern: "components/**" },
+        { type: "scripts", pattern: "scripts/**" },
+      ],
+    },
+    rules: {
+      "boundaries/element-types": [
+        "warn",
+        {
+          default: "allow",
+          rules: [
+            { from: "shared", allow: ["shared"] },
+            { from: "server", allow: ["shared", "server"] },
+            { from: "client", allow: ["shared", "client"] },
+            { from: "components", allow: ["shared", "client", "components"] },
+            { from: "app-pages", disallow: ["server"] },
+            { from: "api-routes", allow: ["server", "shared", "api-routes"] },
+          ],
         },
       ],
     },
