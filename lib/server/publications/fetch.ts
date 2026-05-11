@@ -32,7 +32,7 @@ export async function getPublicationById(
   const row = await db.query.publications.findFirst({
     where: eq(publications.id, pubId),
     with: {
-      publicationType: true,
+      publicationTypeRef: true,
       pressReleases: true,
       personPublications: {
         with: { person: true },
@@ -90,8 +90,8 @@ export async function getPublicationById(
   return {
     ...publicationToApi(row),
     press_release,
-    publication_type_lookup: row.publicationType
-      ? publicationTypeToApi(row.publicationType)
+    publication_type_lookup: row.publicationTypeRef
+      ? publicationTypeToApi(row.publicationTypeRef)
       : null,
     authors_resolved,
     orgunits,

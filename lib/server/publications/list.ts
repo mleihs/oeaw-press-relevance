@@ -398,7 +398,7 @@ export async function listPublications(
       limit: pageSize,
       offset: fromIdx,
       with: {
-        publicationType: {
+        publicationTypeRef: {
           columns: { nameDe: true, nameEn: true },
         },
         orgunitPublications: {
@@ -436,10 +436,10 @@ export async function listPublications(
 
     return {
       ...publicationToApi(row),
-      publication_type_lookup: row.publicationType
+      publication_type_lookup: row.publicationTypeRef
         ? {
-            name_de: row.publicationType.nameDe,
-            name_en: row.publicationType.nameEn,
+            name_de: row.publicationTypeRef.nameDe,
+            name_en: row.publicationTypeRef.nameEn,
           }
         : null,
       orgunits: orgunitsMini,

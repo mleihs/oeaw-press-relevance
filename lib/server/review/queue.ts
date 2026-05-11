@@ -165,10 +165,10 @@ function flattenRow(row: QueueRowWithRelations): ReviewQueueItem {
     }));
   return {
     ...publicationToApi(row),
-    publication_type_lookup: row.publicationType
+    publication_type_lookup: row.publicationTypeRef
       ? {
-          name_de: row.publicationType.nameDe,
-          name_en: row.publicationType.nameEn,
+          name_de: row.publicationTypeRef.nameDe,
+          name_en: row.publicationTypeRef.nameEn,
         }
       : null,
     orgunits,
@@ -176,7 +176,7 @@ function flattenRow(row: QueueRowWithRelations): ReviewQueueItem {
 }
 
 const QUEUE_WITH = {
-  publicationType: {
+  publicationTypeRef: {
     columns: { nameDe: true, nameEn: true },
   },
   orgunitPublications: {

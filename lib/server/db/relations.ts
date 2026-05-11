@@ -88,7 +88,16 @@ export const pressReleasesRelations = relations(pressReleases, ({one, many}) => 
 export const publicationsRelations = relations(publications, ({one, many}) => ({
 	pressReleases: many(pressReleases),
 	publicationEmbeddings: many(publicationEmbeddings),
-	publicationType: one(publicationTypes, {
+	// Named `publicationTypeRef` instead of `publicationType` because the
+	// publications table already has a text column called `publication_type`
+	// (denormalised name copy from the FK target). A same-named relation
+	// shadows the column in `db.query.publications.findX` results —
+	// row.publicationType would become the joined row object instead of the
+	// text scalar, so `publication_type` in the wire shape would render as
+	// `{nameDe, nameEn}` (React rejects it as a child). With the suffix,
+	// row.publicationType keeps the text scalar; row.publicationTypeRef
+	// carries the joined publication_types row.
+	publicationTypeRef: one(publicationTypes, {
 		fields: [publications.publicationTypeId],
 		references: [publicationTypes.id]
 	}),
