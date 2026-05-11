@@ -1912,15 +1912,20 @@ Drizzle ist Query-Builder, nicht Migration-Tool in unserer Setup.
 
 ### 7.10 Phase 3 Acceptance Criteria
 
-- [ ] `drizzle-kit introspect` produziert konsistente `lib/server/db/schema.ts`
-- [ ] DB-Queries in `lib/server/**` via Drizzle (read-Queries first)
-- [ ] TypeScript catches schema-mismatches (rename column → compile error)
-- [ ] Supabase-JS nur noch für Auth/Realtime/RPC/Storage
-- [ ] Migrations unchanged (still `supabase/migrations/`)
-- [ ] Playwright e2e bleibt grün
-- [ ] Test-DB-Connection-Strategy dokumentiert (Phase 4 prep)
+- [x] `drizzle-kit introspect` produziert konsistente `lib/server/db/schema.ts`
+- [x] DB-Queries in `lib/server/**` via Drizzle (read-Queries first)
+- [x] TypeScript catches schema-mismatches (rename column → compile error)
+- [x] Supabase-JS nur noch für Auth/Realtime/RPC/Storage (Tasks 3.12–3.21
+      cleared the thin app/api/* routes; only `lib/server/db/supabase.ts`
+      retains the helper exports, no caller imports them)
+- [x] Migrations unchanged (still `supabase/migrations/`)
+- [ ] Playwright e2e bleibt grün (running 2026-05-11 after Tasks 3.12–3.21
+      — flip when the spec passes)
+- [x] Test-DB-Connection-Strategy dokumentiert (Phase 4 prep) — see
+      `docs/TESTING.md`
 
-**Aufwand:** ~25h = 3-4 Sessions.
+**Aufwand:** ~25h = 3-4 Sessions. Tatsächlich: ~5 Sessions (Tasks 3.0–3.21
++ Phase-2 spillover).
 
 ---
 
