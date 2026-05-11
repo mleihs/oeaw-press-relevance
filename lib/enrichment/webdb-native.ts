@@ -9,7 +9,7 @@
 // touch the DB itself; both the API route and scripts/session-pipeline.mjs
 // call it and persist the result through their existing UPDATE paths.
 
-import type { EnrichmentResult, Publication } from '../types';
+import type { EnrichmentResult, Publication } from '@/lib/shared/types';
 
 export const WEBDB_SOURCE_TAG = 'webdb_summary';
 

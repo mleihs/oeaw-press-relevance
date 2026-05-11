@@ -1,5 +1,5 @@
-import { cn } from '@/lib/utils';
-import { BRAND_HEX } from '@/lib/constants';
+import { cn } from '@/lib/shared/utils';
+import { BRAND_HEX } from '@/lib/shared/constants';
 
 interface CapybaraLogoProps {
   size?: 'sm' | 'md' | 'lg';

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { apiError, getSupabaseAdmin } from '@/lib/api-helpers';
 import { pushPublicationToMeistertask, type MeistertaskPushResult } from '@/lib/meistertask/push';
-import type { Publication } from '@/lib/types';
+import type { Publication } from '@/lib/shared/types';
 
 const VALID_DECISIONS = ['undecided', 'pitch', 'hold', 'skip'] as const;
 type Decision = (typeof VALID_DECISIONS)[number];

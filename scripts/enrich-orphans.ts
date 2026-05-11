@@ -15,7 +15,7 @@
  *   npm run enrich-orphans -- --target=prod --promote  # also call promote_press_release_orphans()
  */
 
-import type { EnrichmentResult } from '../lib/types';
+import type { EnrichmentResult } from '../lib/shared/types';
 import { enrichFromOpenAlex } from '../lib/enrichment/openalex';
 import { enrichFromCrossRef } from '../lib/enrichment/crossref';
 import { enrichFromSemanticScholar } from '../lib/enrichment/semantic-scholar';

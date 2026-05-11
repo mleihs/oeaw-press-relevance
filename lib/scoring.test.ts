@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { bayesSmooth, computePressScore } from './scoring';
-import { SCORE_WEIGHTS, SCORE_DIMENSIONS, type ScoreDimension } from './constants';
+import { SCORE_WEIGHTS, SCORE_DIMENSIONS, type ScoreDimension } from '@/lib/shared/constants';
 
 describe('SCORE_WEIGHTS', () => {
   it('weights sum to 1.0', () => {

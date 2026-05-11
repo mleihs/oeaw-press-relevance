@@ -9,7 +9,7 @@ import { PersonAvatar } from './person-avatar';
 import { InfoBubble } from '@/components/info-bubble';
 import { LoadingState } from '@/components/loading-state';
 import { EmptyState } from '@/components/empty-state';
-import { BRAND_HEX } from '@/lib/constants';
+import { BRAND_HEX } from '@/lib/shared/constants';
 import {
   METRIC_SHORT_LABELS,
   type DistributionPoint,

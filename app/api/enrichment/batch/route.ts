@@ -7,7 +7,7 @@ import { enrichFromUnpaywall } from '@/lib/enrichment/unpaywall';
 import { enrichFromSemanticScholar } from '@/lib/enrichment/semantic-scholar';
 import { enrichFromPdf } from '@/lib/enrichment/pdf-extract';
 import { enrichFromWebDb, WEBDB_SOURCE_TAG } from '@/lib/enrichment/webdb-native';
-import { Publication, EnrichmentResult } from '@/lib/types';
+import { Publication, EnrichmentResult } from '@/lib/shared/types';
 
 export const maxDuration = 300;
 

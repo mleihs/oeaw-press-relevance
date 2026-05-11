@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { apiError, getSupabaseAdmin } from '@/lib/api-helpers';
-import type { ReviewSession } from '@/lib/types';
+import type { ReviewSession } from '@/lib/shared/types';
 
 /**
  * Finalize a draft review_session. Body:

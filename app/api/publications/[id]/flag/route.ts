@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { apiError, getSupabaseAdmin } from '@/lib/api-helpers';
-import type { FlagNote } from '@/lib/types';
+import type { FlagNote } from '@/lib/shared/types';
 
 // Same-name dedup uses normalized comparison so "Marie" and "marie " match.
 function norm(name: string): string {

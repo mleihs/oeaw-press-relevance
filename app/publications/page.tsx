@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Publication } from '@/lib/types';
+import { Publication } from '@/lib/shared/types';
 import { useApiQuery } from '@/lib/use-api-query';
 import { useKeyboardShortcuts } from '@/lib/use-keyboard-shortcuts';
 import { PublicationTable } from '@/components/publication-table';
@@ -19,7 +19,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { getApiHeaders } from '@/lib/settings-store';
-import { SCORE_LABELS, SCORE_COLORS } from '@/lib/constants';
+import { SCORE_LABELS, SCORE_COLORS } from '@/lib/shared/constants';
 import { Search, ChevronLeft, ChevronRight, Sparkles, Brain, Download, ChevronDown } from 'lucide-react';
 
 import { useFilters } from './use-filters';

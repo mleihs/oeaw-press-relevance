@@ -11,7 +11,7 @@ import {
   type Decision,
   type Publication,
   type ReviewSession,
-} from '@/lib/types';
+} from '@/lib/shared/types';
 import { useApiQuery } from '@/lib/use-api-query';
 import { getApiHeaders } from '@/lib/settings-store';
 import { loadCurrentSessionId, clearCurrentSessionId } from '@/lib/session-store';

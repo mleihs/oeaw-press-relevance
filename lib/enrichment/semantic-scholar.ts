@@ -1,4 +1,4 @@
-import { EnrichmentResult } from '../types';
+import { EnrichmentResult } from '@/lib/shared/types';
 import { cleanDoi } from './doi-utils';
 
 export async function enrichFromSemanticScholar(rawDoi: string): Promise<EnrichmentResult | null> {

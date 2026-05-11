@@ -1,8 +1,8 @@
 'use client';
 
 import { Check, Pause, X as XIcon } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import type { Decision } from '@/lib/types';
+import { cn } from '@/lib/shared/utils';
+import type { Decision } from '@/lib/shared/types';
 
 /**
  * Single source of truth for decision-state visuals.

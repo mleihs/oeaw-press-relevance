@@ -6,7 +6,7 @@ import { AnimateNumber } from 'motion-number';
 import { PersonAvatar } from '@/app/researchers/_components/person-avatar';
 import { TrendDelta } from '@/app/researchers/_components/trend-delta';
 import { InfoBubble } from '@/components/info-bubble';
-import { BRAND_HEX } from '@/lib/constants';
+import { BRAND_HEX } from '@/lib/shared/constants';
 import type { EXPL } from '@/lib/explanations';
 import type { ResearcherDetailPerson, ResearcherDetailStats } from '@/lib/researchers';
 

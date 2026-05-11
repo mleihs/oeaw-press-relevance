@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/shared/utils';
 
 const TINT_CLASSES = {
   green:   'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-300',

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { apiError, getSupabaseFromRequest } from '@/lib/api-helpers';
-import type { PressRelease } from '@/lib/types';
+import type { PressRelease } from '@/lib/shared/types';
 
 /**
  * Press-releases endpoint.

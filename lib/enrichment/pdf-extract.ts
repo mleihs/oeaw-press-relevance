@@ -1,4 +1,4 @@
-import { EnrichmentResult } from '../types';
+import { EnrichmentResult } from '@/lib/shared/types';
 
 /**
  * Downloads a PDF from `pdfUrl`, extracts text from the first few pages,

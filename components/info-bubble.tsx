@@ -5,7 +5,7 @@ import { Info } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { EXPL, type Explanation } from '@/lib/explanations';
 import { useInfoBubblesEnabled } from '@/lib/use-info-bubbles';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/shared/utils';
 
 interface InfoBubbleProps {
   /** Key into the central EXPL map. */

@@ -17,8 +17,8 @@ import { Label } from '@/components/ui/label';
 import { TintBadge } from '@/components/tint-badge';
 import { CapybaraModalAvatar } from '@/components/capybara-modal-avatar';
 import { getApiHeaders, loadSettings } from '@/lib/settings-store';
-import { LLM_MODELS } from '@/lib/constants';
-import type { ModalStatus } from '@/lib/types';
+import { LLM_MODELS } from '@/lib/shared/constants';
+import type { ModalStatus } from '@/lib/shared/types';
 import { Play, Square, RotateCcw, AlertCircle, Check } from 'lucide-react';
 import { InfoBubble } from '@/components/info-bubble';
 

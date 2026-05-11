@@ -1,4 +1,4 @@
-import { SCORE_WEIGHTS, SCORE_DIMENSIONS, type ScoreDimension } from './constants';
+import { SCORE_WEIGHTS, SCORE_DIMENSIONS, type ScoreDimension } from '@/lib/shared/constants';
 
 /**
  * Bayesian smoothing matching the PG function `weighted_avg` in

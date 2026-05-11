@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { apiError, getSupabaseFromRequest } from '@/lib/api-helpers';
-import type { ReviewSession } from '@/lib/types';
+import type { ReviewSession } from '@/lib/shared/types';
 
 interface RecentSessionWithCounts {
   session: ReviewSession;

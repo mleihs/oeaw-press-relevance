@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { getSupabaseFromRequest, apiError } from '@/lib/api-helpers';
-import { Publication } from '@/lib/types';
+import { Publication } from '@/lib/shared/types';
 
 export async function GET(req: NextRequest) {
   try {

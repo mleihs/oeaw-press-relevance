@@ -4,10 +4,10 @@ import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2, CalendarIcon, MessageSquarePlus } from 'lucide-react';
 import { toast } from 'sonner';
-import type { Publication, Decision } from '@/lib/types';
+import type { Publication, Decision } from '@/lib/shared/types';
 import type { MeistertaskPushResult } from '@/lib/meistertask/push';
 import { loadSettings, getApiHeaders } from '@/lib/settings-store';
-import { DEFAULT_REVIEWER_NAME } from '@/lib/constants';
+import { DEFAULT_REVIEWER_NAME } from '@/lib/shared/constants';
 import {
   loadCurrentSessionId,
   saveCurrentSessionId,

@@ -1,7 +1,7 @@
 'use client';
 
 import { RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer, Tooltip } from 'recharts';
-import { SCORE_LABELS, BRAND_HEX } from '@/lib/constants';
+import { SCORE_LABELS, BRAND_HEX } from '@/lib/shared/constants';
 
 // Extracted from app/page.tsx so the heavy recharts bundle (~100kB gz) loads
 // only when the dashboard's averages section is actually present.

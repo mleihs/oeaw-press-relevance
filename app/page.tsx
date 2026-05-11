@@ -21,9 +21,9 @@ import { CapybaraEmpty } from '@/components/capybara-logo';
 import { ChangelogPanel } from '@/components/changelog-panel';
 import { PublicationFlag } from '@/components/publication-flag';
 import { useApiQuery } from '@/lib/use-api-query';
-import { PublicationStats, PublicationWithRelations } from '@/lib/types';
-import { displayTitle } from '@/lib/html-utils';
-import { displayAuthor, displayInstitute } from '@/lib/publication-display';
+import { PublicationStats, PublicationWithRelations } from '@/lib/shared/types';
+import { displayTitle } from '@/lib/shared/html-utils';
+import { displayAuthor, displayInstitute } from '@/lib/shared/publication-display';
 
 // Recharts is ~100kB gz; lazy-load via next/dynamic so it only ships when
 // the dashboard actually has data to show in this card.

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Recompute publications.press_score for all analyzed pubs using the current
- * SCORE_WEIGHTS in lib/score-weights.json. Use after weight recalibration so
+ * SCORE_WEIGHTS in lib/shared/score-weights.json. Use after weight recalibration so
  * the JS-computed scores in the DB stay in lockstep with the declared weights.
  *
  * Sets updated_at = now() explicitly because there is no PG trigger on
@@ -15,7 +15,7 @@
 import { connectDb, parseScriptArgs } from './lib/db.mjs';
 import { readFileSync } from 'fs';
 
-const weights = JSON.parse(readFileSync(new URL('../lib/score-weights.json', import.meta.url), 'utf-8'));
+const weights = JSON.parse(readFileSync(new URL('../lib/shared/score-weights.json', import.meta.url), 'utf-8'));
 const SUM = Object.values(weights).reduce((s, v) => s + v, 0);
 if (Math.abs(SUM - 1.0) > 1e-9) {
   console.error(`[fatal] score-weights.json sums to ${SUM}, expected 1.0`);

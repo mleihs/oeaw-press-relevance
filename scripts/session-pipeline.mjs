@@ -22,9 +22,9 @@ import { extractDoiFromRow, DOI_CANDIDATE_WHERE_CLAUSE } from './lib/doi-extract
 const PG_URL = process.env.PG_DATABASE_URL
   || 'postgresql://postgres:postgres@127.0.0.1:54422/postgres';
 
-// Single source of truth: lib/score-weights.json. Both this script and
+// Single source of truth: lib/shared/score-weights.json. Both this script and
 // lib/constants.ts import it, so drift is impossible by construction.
-import SCORE_WEIGHTS from '../lib/score-weights.json' with { type: 'json' };
+import SCORE_WEIGHTS from '../lib/shared/score-weights.json' with { type: 'json' };
 
 const SESSION_MODEL_TAG = 'anthropic/claude-opus-4.7-session';
 const WEBDB_SOURCE_TAG = 'webdb_summary';

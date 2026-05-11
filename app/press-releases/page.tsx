@@ -13,14 +13,14 @@ import { PressScoreBadge } from '@/components/score-bar';
 import { SimilarityIndicator } from '@/components/similarity-indicator';
 import { DecisionBadge } from '@/components/decision-badge';
 import { StatCard } from '@/components/stat-card';
-import { displayTitle } from '@/lib/html-utils';
-import { cn } from '@/lib/utils';
+import { displayTitle } from '@/lib/shared/html-utils';
+import { cn } from '@/lib/shared/utils';
 import {
   Newspaper, ExternalLink, AlertCircle, ChevronDown, ChevronUp, Users, Link2,
   Layers, CalendarDays, ArrowRight, FileQuestion,
   type LucideIcon,
 } from 'lucide-react';
-import type { PressRelease, Decision } from '@/lib/types';
+import type { PressRelease, Decision } from '@/lib/shared/types';
 
 interface PubLite {
   id: string;

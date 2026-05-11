@@ -25,7 +25,7 @@ import {
   VirtualizedMultiSelect,
   type MultiSelectItem,
 } from '@/components/ui/virtualized-multi-select';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/shared/utils';
 
 import type { FilterValues, TriState } from '../_filters';
 import { SUPER_DOMAIN_LABELS } from '../_constants';

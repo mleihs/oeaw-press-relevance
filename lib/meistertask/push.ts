@@ -12,7 +12,7 @@ import {
 } from './client';
 import { mapPublicationToTask } from './mapping';
 import { buildTaskUrl } from './urls';
-import type { Publication } from '@/lib/types';
+import type { Publication } from '@/lib/shared/types';
 
 export type MeistertaskPushResult =
   | { status: 'created'; task_id: number; task_url: string }

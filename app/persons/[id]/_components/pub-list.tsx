@@ -5,7 +5,7 @@ import { motion } from 'motion/react';
 import { Star } from 'lucide-react';
 import { InfoBubble } from '@/components/info-bubble';
 import { EmptyState } from '@/components/empty-state';
-import { displayTitle } from '@/lib/html-utils';
+import { displayTitle } from '@/lib/shared/html-utils';
 import type { PersonPublicationRow } from '@/lib/researchers';
 
 interface PubListProps {

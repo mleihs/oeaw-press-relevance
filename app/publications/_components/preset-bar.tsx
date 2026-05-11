@@ -1,7 +1,7 @@
 'use client';
 
 import { Sparkles, Crown, BookOpen, Megaphone, ShieldCheck } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/shared/utils';
 import type { PresetKey } from '../_filters';
 
 const PRESET_CONFIG: Array<{ key: PresetKey; label: string; Icon: typeof Sparkles }> = [

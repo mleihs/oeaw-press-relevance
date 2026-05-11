@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseFromRequest } from '@/lib/api-helpers';
 import { ELIGIBILITY_EXCLUDE_TYPE_UIDS } from '@/lib/eligibility';
-import type { Lang } from '@/lib/types';
+import type { Lang } from '@/lib/shared/types';
 
 type SB = ReturnType<typeof getSupabaseFromRequest>;
 

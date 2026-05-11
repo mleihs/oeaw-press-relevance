@@ -3,8 +3,8 @@
 // engines). Keep this file engine-agnostic so the scoring is one canonical
 // computation regardless of which model produced the dimension values.
 
-import { SCORE_WEIGHTS } from '../constants';
-import type { AnalysisResult } from '../types';
+import { SCORE_WEIGHTS } from '@/lib/shared/constants';
+import type { AnalysisResult } from '@/lib/shared/types';
 
 export type DimensionScores = Pick<
   AnalysisResult,

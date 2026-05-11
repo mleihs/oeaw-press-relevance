@@ -12,7 +12,7 @@ import {
 import { PersonAvatar } from './person-avatar';
 import { Sparkline } from './sparkline';
 import { InfoBubble } from '@/components/info-bubble';
-import { displayTitle } from '@/lib/html-utils';
+import { displayTitle } from '@/lib/shared/html-utils';
 
 interface SpotlightPodiumProps {
   rows: TopResearcherRow[];

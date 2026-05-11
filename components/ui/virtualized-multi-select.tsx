@@ -8,7 +8,7 @@ import { Command, CommandInput } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/shared/utils';
 
 export type MultiSelectItem = {
   value: string;

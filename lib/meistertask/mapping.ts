@@ -1,5 +1,5 @@
-import type { Publication } from '../types';
-import { displayTitle } from '../html-utils';
+import type { Publication } from '@/lib/shared/types';
+import { displayTitle } from '@/lib/shared/html-utils';
 import { SCORE_HIGH_THRESHOLD } from './constants';
 
 export interface MapOptions {

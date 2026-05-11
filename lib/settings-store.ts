@@ -1,6 +1,6 @@
 'use client';
 
-import { AppSettings, DEFAULT_SETTINGS } from './types';
+import { AppSettings, DEFAULT_SETTINGS } from '@/lib/shared/types';
 
 const STORAGE_KEY = 'oeaw-press-relevance-settings';
 

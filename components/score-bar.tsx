@@ -1,7 +1,7 @@
 'use client';
 
-import { SCORE_COLORS, SCORE_LABELS } from '@/lib/constants';
-import { getScoreBandClass, type ScoreBandVariant } from '@/lib/score-utils';
+import { SCORE_COLORS, SCORE_LABELS } from '@/lib/shared/constants';
+import { getScoreBandClass, type ScoreBandVariant } from '@/lib/shared/score-utils';
 import { InfoBubble } from '@/components/info-bubble';
 import { EXPL } from '@/lib/explanations';
 

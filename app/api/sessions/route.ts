@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { apiError, getSupabaseAdmin } from '@/lib/api-helpers';
-import type { ReviewSession } from '@/lib/types';
+import type { ReviewSession } from '@/lib/shared/types';
 
 /**
  * Lazy-create a draft review_session. Called from /review on the first

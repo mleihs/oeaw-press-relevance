@@ -22,7 +22,7 @@ import type {
   EnrichmentSourceName,
   EnrichmentSourceStatus,
   ModalStatus,
-} from '@/lib/types';
+} from '@/lib/shared/types';
 
 // ---------------------------------------------------------------------------
 // Types

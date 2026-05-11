@@ -1,5 +1,5 @@
-import { AnalysisResult, LLMResponse } from '../types';
-import { COST_PER_MILLION_TOKENS } from '../constants';
+import { AnalysisResult, LLMResponse } from '@/lib/shared/types';
+import { COST_PER_MILLION_TOKENS } from '@/lib/shared/constants';
 import { SYSTEM_PROMPT, buildEvaluationPrompt, PublicationForPrompt } from './prompts';
 import { calculatePressScore } from './score';
 

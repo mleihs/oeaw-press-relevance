@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { Publication } from '../types';
+import type { Publication } from '@/lib/shared/types';
 import { mapPublicationToTask } from './mapping';
 
 const BASE_URL = 'http://localhost:3000';

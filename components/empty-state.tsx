@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/shared/utils';
 
 /**
  * Single, reusable empty-state. Replaces 6 ad-hoc "rounded-lg border bg-white

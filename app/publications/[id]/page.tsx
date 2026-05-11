@@ -2,9 +2,9 @@
 
 import { use, useState } from 'react';
 import Link from 'next/link';
-import { PublicationWithRelations } from '@/lib/types';
+import { PublicationWithRelations } from '@/lib/shared/types';
 import { useApiQuery } from '@/lib/use-api-query';
-import { displayTitle } from '@/lib/html-utils';
+import { displayTitle } from '@/lib/shared/html-utils';
 import { doiToUrl } from '@/lib/enrichment/doi-utils';
 import { ScoreBar } from '@/components/score-bar';
 import { HaikuBlock } from '@/components/haiku-block';
@@ -18,8 +18,8 @@ import {
   STATUS_LABELS,
   STATUS_COLORS,
   OA_LABELS,
-} from '@/lib/constants';
-import { getScoreBandClass, getScoreBandStoryLabel } from '@/lib/score-utils';
+} from '@/lib/shared/constants';
+import { getScoreBandClass, getScoreBandStoryLabel } from '@/lib/shared/score-utils';
 import { CapybaraLogo } from '@/components/capybara-logo';
 import { MeistertaskButton } from './_components/meistertask-button';
 import { PressReferenceCard } from './_components/press-reference-card';

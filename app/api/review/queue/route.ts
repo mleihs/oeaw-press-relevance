@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { apiError, getSupabaseFromRequest } from '@/lib/api-helpers';
-import { DECISIONS, isDecision, type Decision } from '@/lib/types';
+import { DECISIONS, isDecision, type Decision } from '@/lib/shared/types';
 
 const FRESHNESS_FALLBACK_DAYS = 7;
 const FRESH_SCORE_THRESHOLD = 0.7;

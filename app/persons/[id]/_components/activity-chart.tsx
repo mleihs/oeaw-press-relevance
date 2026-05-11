@@ -5,7 +5,7 @@ import { useTheme } from 'next-themes';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { InfoBubble } from '@/components/info-bubble';
 import { EmptyState } from '@/components/empty-state';
-import { BRAND_HEX } from '@/lib/constants';
+import { BRAND_HEX } from '@/lib/shared/constants';
 import type { ActivityMonth } from '@/lib/researchers';
 
 interface ActivityChartProps {

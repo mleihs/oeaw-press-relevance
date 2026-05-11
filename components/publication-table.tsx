@@ -2,12 +2,12 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Publication } from '@/lib/types';
+import { Publication } from '@/lib/shared/types';
 import { doiToUrl } from '@/lib/enrichment/doi-utils';
-import { displayTitle } from '@/lib/html-utils';
-import { displayAuthor } from '@/lib/publication-display';
+import { displayTitle } from '@/lib/shared/html-utils';
+import { displayAuthor } from '@/lib/shared/publication-display';
 import { buildTaskUrl } from '@/lib/meistertask/urls';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/shared/utils';
 import { PressScoreBadge, ScoreBar } from './score-bar';
 import { InfoBubble } from './info-bubble';
 import { EXPL } from '@/lib/explanations';
@@ -38,7 +38,7 @@ import {
   SOURCE_LABELS,
   SOURCE_BADGE_CLASSES as SOURCE_COLOR,
   SOURCE_DESCRIPTIONS,
-} from '@/lib/constants';
+} from '@/lib/shared/constants';
 import {
   ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ChevronUp, ExternalLink, Info,
   ShieldCheck, Megaphone, Newspaper,
