@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseAdmin } from '@/lib/server/db';
 import { apiError } from '@/lib/server/http';
 import {
   flagSetPayloadSchema,
   flagDeletePayloadSchema,
 } from '@/lib/shared/schemas';
 import { setFlag, clearFlag } from '@/lib/server/publications/flag';
+import { PublicationNotFoundError } from '@/lib/server/publications/errors';
 
 export async function POST(
   req: NextRequest,
@@ -23,9 +23,12 @@ export async function POST(
     return apiError(parsed.error.issues[0]?.message ?? 'Invalid payload', 400);
   }
   try {
-    const flag_notes = await setFlag(id, parsed.data, getSupabaseAdmin());
+    const flag_notes = await setFlag(id, parsed.data);
     return NextResponse.json({ flag_notes });
   } catch (err) {
+    if (err instanceof PublicationNotFoundError) {
+      return apiError(err.message, 404);
+    }
     return apiError(err instanceof Error ? err.message : 'Unknown error', 500);
   }
 }
@@ -46,9 +49,12 @@ export async function DELETE(
     return apiError(parsed.error.issues[0]?.message ?? 'Invalid payload', 400);
   }
   try {
-    const flag_notes = await clearFlag(id, parsed.data, getSupabaseAdmin());
+    const flag_notes = await clearFlag(id, parsed.data);
     return NextResponse.json({ flag_notes });
   } catch (err) {
+    if (err instanceof PublicationNotFoundError) {
+      return apiError(err.message, 404);
+    }
     return apiError(err instanceof Error ? err.message : 'Unknown error', 500);
   }
 }

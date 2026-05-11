@@ -1,6 +1,8 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import { eq } from 'drizzle-orm';
+import { db, publications } from '@/lib/server/db';
 import type { FlagNote } from '@/lib/shared/types';
 import type { FlagSetPayload, FlagDeletePayload } from '@/lib/shared/schemas';
+import { PublicationNotFoundError } from './errors';
 
 // Same-name dedup uses normalized comparison so "Marie" and "marie " match.
 function norm(name: string): string {
@@ -12,26 +14,21 @@ function defaultBy(by: string | null | undefined): string {
   return by?.trim() || 'team';
 }
 
-async function readNotes(db: SupabaseClient, pubId: string): Promise<FlagNote[]> {
-  const { data, error } = await db
-    .from('publications')
-    .select('flag_notes')
-    .eq('id', pubId)
-    .single();
-  if (error) throw new Error(error.message);
-  return (data?.flag_notes as FlagNote[] | null) ?? [];
+async function readNotes(pubId: string): Promise<FlagNote[]> {
+  const [row] = await db
+    .select({ flagNotes: publications.flagNotes })
+    .from(publications)
+    .where(eq(publications.id, pubId))
+    .limit(1);
+  if (!row) throw new PublicationNotFoundError();
+  return (row.flagNotes as FlagNote[] | null) ?? [];
 }
 
-async function writeNotes(
-  db: SupabaseClient,
-  pubId: string,
-  notes: FlagNote[],
-): Promise<void> {
-  const { error } = await db
-    .from('publications')
-    .update({ flag_notes: notes })
-    .eq('id', pubId);
-  if (error) throw new Error(error.message);
+async function writeNotes(pubId: string, notes: FlagNote[]): Promise<void> {
+  await db
+    .update(publications)
+    .set({ flagNotes: notes })
+    .where(eq(publications.id, pubId));
 }
 
 /**
@@ -42,17 +39,16 @@ async function writeNotes(
 export async function setFlag(
   pubId: string,
   payload: FlagSetPayload,
-  db: SupabaseClient,
 ): Promise<FlagNote[]> {
   const by = defaultBy(payload.by);
   const note = payload.note?.trim() ?? '';
-  const current = await readNotes(db, pubId);
+  const current = await readNotes(pubId);
   const filtered = current.filter((n) => norm(n.by) !== norm(by));
   const next: FlagNote[] = [
     ...filtered,
     { by, note, at: new Date().toISOString() },
   ];
-  await writeNotes(db, pubId, next);
+  await writeNotes(pubId, next);
   return next;
 }
 
@@ -60,11 +56,10 @@ export async function setFlag(
 export async function clearFlag(
   pubId: string,
   payload: FlagDeletePayload,
-  db: SupabaseClient,
 ): Promise<FlagNote[]> {
   const by = defaultBy(payload.by);
-  const current = await readNotes(db, pubId);
+  const current = await readNotes(pubId);
   const next = current.filter((n) => norm(n.by) !== norm(by));
-  await writeNotes(db, pubId, next);
+  await writeNotes(pubId, next);
   return next;
 }
