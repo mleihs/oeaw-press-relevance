@@ -1,0 +1,24 @@
+# Blank issues are disabled — please pick a template so we have the
+# context to act on the report.
+blank_issues_enabled: false
+
+contact_links:
+  - name: Security vulnerability (private disclosure)
+    url: https://github.com/mleihs/oeaw-press-relevance/security/advisories/new
+    about: |
+      Please use private vulnerability reporting for security issues
+      — do NOT open a public issue for security bugs. See SECURITY.md
+      for details.
+
+  - name: Documentation
+    url: https://github.com/mleihs/oeaw-press-relevance/blob/main/README.md
+    about: |
+      Setup, contributing guidelines, and architecture documentation
+      are in the repository root. Check README.md, CONTRIBUTING.md,
+      and ARCHITECTURE.md before opening a how-to issue.
+
+  - name: Code of Conduct
+    url: https://github.com/mleihs/oeaw-press-relevance/blob/main/CODE_OF_CONDUCT.md
+    about: |
+      Conduct concerns should be reported through the channels in
+      CODE_OF_CONDUCT.md, not as a public issue.
