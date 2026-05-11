@@ -1,22 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseFromRequest } from '@/lib/server/db';
+import { asc } from 'drizzle-orm';
+import { db, publicationTypes } from '@/lib/server/db';
+import { apiError } from '@/lib/server/http';
+import type { PublicationType } from '@/lib/shared/types';
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
-    const supabase = getSupabaseFromRequest(req);
+    const rows = await db
+      .select({
+        id: publicationTypes.id,
+        webdb_uid: publicationTypes.webdbUid,
+        name_de: publicationTypes.nameDe,
+        name_en: publicationTypes.nameEn,
+      })
+      .from(publicationTypes)
+      .orderBy(asc(publicationTypes.webdbUid));
 
-    const { data, error } = await supabase
-      .from('publication_types')
-      .select('id, webdb_uid, name_de, name_en')
-      .order('webdb_uid', { ascending: true });
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    return NextResponse.json({ publication_types: data ?? [], total: data?.length ?? 0 });
+    const list: PublicationType[] = rows;
+    return NextResponse.json({ publication_types: list, total: list.length });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return apiError(err instanceof Error ? err.message : 'Unknown error', 500);
   }
 }

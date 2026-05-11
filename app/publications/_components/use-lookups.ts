@@ -2,18 +2,11 @@
 
 import * as React from 'react';
 import { getApiHeaders } from '@/lib/client/stores/settings-store';
-import type { Orgunit } from '@/lib/shared/types';
+import type { Orgunit, PublicationType } from '@/lib/shared/types';
 
 // Re-export from shared so existing consumers (filter-sheet, preset-bar)
 // keep their `import { Orgunit } from '.../use-lookups'` paths working.
-export type { Orgunit };
-
-export type PublicationType = {
-  id: string;
-  webdb_uid: number;
-  name_de: string;
-  name_en: string;
-};
+export type { Orgunit, PublicationType };
 
 export type Oestat6 = {
   id: string;
