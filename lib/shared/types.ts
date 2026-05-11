@@ -186,6 +186,13 @@ export interface Orgunit {
   url_de: string | null;
   url_en: string | null;
   parent_id: string | null;
+  /** Depth from the closest root (parent_id NULL). Computed by the
+   *  /api/orgunits handler; absent on detail-page joins. */
+  tier?: number;
+  /** Tier-4 leaf with a non-structural name and a German acronym —
+   *  i.e. an actual research-producing institute. Computed alongside
+   *  `tier`. */
+  is_research_unit?: boolean;
 }
 
 export interface Project {

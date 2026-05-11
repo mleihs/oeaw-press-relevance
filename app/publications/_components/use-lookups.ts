@@ -2,24 +2,17 @@
 
 import * as React from 'react';
 import { getApiHeaders } from '@/lib/client/stores/settings-store';
+import type { Orgunit } from '@/lib/shared/types';
+
+// Re-export from shared so existing consumers (filter-sheet, preset-bar)
+// keep their `import { Orgunit } from '.../use-lookups'` paths working.
+export type { Orgunit };
 
 export type PublicationType = {
   id: string;
   webdb_uid: number;
   name_de: string;
   name_en: string;
-};
-
-export type Orgunit = {
-  id: string;
-  webdb_uid: number;
-  name_de: string;
-  name_en: string | null;
-  akronym_de: string | null;
-  akronym_en: string | null;
-  parent_id: string | null;
-  tier?: number;
-  is_research_unit?: boolean;
 };
 
 export type Oestat6 = {

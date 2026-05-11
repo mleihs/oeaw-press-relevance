@@ -1,19 +1,9 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
-
-export interface OrgUnit {
-  id: string;
-  webdb_uid?: string | null;
-  name_de?: string | null;
-  name_en?: string | null;
-  akronym_de?: string | null;
-  akronym_en?: string | null;
-  parent_id?: string | null;
-  tier?: number;
-  is_research_unit?: boolean;
-}
+import { asc } from 'drizzle-orm';
+import { db, orgunits as orgunitsTable } from '@/lib/server/db';
+import type { Orgunit } from '@/lib/shared/types';
 
 export interface OrgunitsListResult {
-  orgunits: OrgUnit[];
+  orgunits: Orgunit[];
   total: number;
   research_units_total: number;
 }
@@ -23,7 +13,6 @@ export interface OrgunitsListResult {
 // ("Bereich") als auch Verwaltungseinheiten (VWST, Personal, Controlling, …)
 // heraus.
 const STRUCTURAL_NODE_PATTERNS = [
-  // Hierarchie-Sammelknoten
   /^Bereich\b/i,
   /^Mitgliederverwaltung\b/i,
   /^ehemalige\b/i,
@@ -37,7 +26,6 @@ const STRUCTURAL_NODE_PATTERNS = [
   /^Arbeitsgruppe Geschichte/i,
   /^Arbeitskreis für Gleichbehandlung/i,
   /^Fusion@ÖAW/i,
-  // Administrative Klammern und Verwaltungseinheiten
   /^Aktuariat/i,
   /^Controlling$/i,
   /^Drittmittelmanagement$/i,
@@ -72,6 +60,28 @@ function isStructuralNode(name: string | null | undefined): boolean {
   return STRUCTURAL_NODE_PATTERNS.some((re) => re.test(name));
 }
 
+// Explicit Drizzle row -> shared Orgunit DTO. A column rename in the schema
+// fails to compile here, surfacing schema drift at build time (Plan §7.1).
+function toApi(
+  row: typeof orgunitsTable.$inferSelect,
+  tier: number,
+  isResearchUnit: boolean,
+): Orgunit {
+  return {
+    id: row.id,
+    webdb_uid: row.webdbUid,
+    name_de: row.nameDe,
+    name_en: row.nameEn,
+    akronym_de: row.akronymDe,
+    akronym_en: row.akronymEn,
+    url_de: row.urlDe,
+    url_en: row.urlEn,
+    parent_id: row.parentId,
+    tier,
+    is_research_unit: isResearchUnit,
+  };
+}
+
 /**
  * Returns all orgunits with computed `tier` (depth from the root) and
  * `is_research_unit` (tier 4 + non-structural + has akronym).
@@ -81,46 +91,40 @@ function isStructuralNode(name: string | null | undefined): boolean {
  * Sub-AGs, Abteilungen, Subkommissionen liegen tiefer und gehören nicht in
  * den Top-Filter. Strukturelle Knoten ohne Akronym auch nicht.
  */
-export async function listOrgunits(
-  db: SupabaseClient,
-): Promise<OrgunitsListResult> {
-  // Page through — Supabase caps responses at 1000 rows.
-  const all: OrgUnit[] = [];
-  const batchSize = 1000;
-  for (let offset = 0; ; offset += batchSize) {
-    const { data, error } = await db
-      .from('orgunits')
-      .select('id, webdb_uid, name_de, name_en, akronym_de, akronym_en, parent_id')
-      .order('name_de', { ascending: true })
-      .range(offset, offset + batchSize - 1);
-    if (error) throw new Error(error.message);
-    if (!data || data.length === 0) break;
-    all.push(...data);
-    if (data.length < batchSize) break;
-  }
+export async function listOrgunits(): Promise<OrgunitsListResult> {
+  // Drizzle pages internally; one .select() returns all rows here. The
+  // Supabase-JS version paginated because PostgREST caps at 1000 — Drizzle's
+  // direct postgres-js connection has no such limit.
+  const rows = await db
+    .select()
+    .from(orgunitsTable)
+    .orderBy(asc(orgunitsTable.nameDe));
 
-  // Compute tier (distance to closest root with parent_id IS NULL).
-  const byId = new Map(all.map((o) => [o.id, o]));
+  // Compute tier via memoized DFS with cycle guard.
+  const byId = new Map(rows.map((o) => [o.id, o]));
   const tierCache = new Map<string, number>();
   function getTier(id: string, seen = new Set<string>()): number {
-    if (tierCache.has(id)) return tierCache.get(id) as number;
-    if (seen.has(id)) return 0; // cycle guard
+    const cached = tierCache.get(id);
+    if (cached !== undefined) return cached;
+    if (seen.has(id)) return 0;
     seen.add(id);
     const node = byId.get(id);
     if (!node) return 0;
-    const t = !node.parent_id ? 0 : getTier(node.parent_id, seen) + 1;
+    const t = !node.parentId ? 0 : getTier(node.parentId, seen) + 1;
     tierCache.set(id, t);
     return t;
   }
-  for (const o of all) {
-    o.tier = getTier(o.id);
-    o.is_research_unit =
-      o.tier === 4 && !isStructuralNode(o.name_de) && !!o.akronym_de;
-  }
+
+  const mapped: Orgunit[] = rows.map((row) => {
+    const tier = getTier(row.id);
+    const isResearchUnit =
+      tier === 4 && !isStructuralNode(row.nameDe) && !!row.akronymDe;
+    return toApi(row, tier, isResearchUnit);
+  });
 
   return {
-    orgunits: all,
-    total: all.length,
-    research_units_total: all.filter((o) => o.is_research_unit).length,
+    orgunits: mapped,
+    total: mapped.length,
+    research_units_total: mapped.filter((o) => o.is_research_unit).length,
   };
 }
