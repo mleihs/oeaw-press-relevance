@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseFromRequest } from '@/lib/server/db';
 import { listPublications } from '@/lib/server/publications/list';
 
 export async function GET(req: NextRequest) {
   try {
     const result = await listPublications(
       new URL(req.url).searchParams,
-      getSupabaseFromRequest(req),
     );
     return NextResponse.json(result);
   } catch (err) {

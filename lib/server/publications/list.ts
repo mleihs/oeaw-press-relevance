@@ -1,12 +1,51 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import {
+  and,
+  eq,
+  gte,
+  ilike,
+  inArray,
+  isNotNull,
+  lte,
+  notInArray,
+  or,
+  sql,
+  count,
+  type AnyColumn,
+  type SQL,
+} from 'drizzle-orm';
+import {
+  db,
+  publications,
+  pressReleases as pressReleasesTable,
+  publicationTypes as publicationTypesTable,
+  oestat6Categories as oestat6CategoriesTable,
+  orgunitPublications as orgunitPublicationsTable,
+} from '@/lib/server/db';
 import { ELIGIBILITY_EXCLUDE_TYPE_UIDS } from '@/lib/shared/eligibility';
-import type { Lang } from '@/lib/shared/types';
+import type { Lang, Publication, PressRelease } from '@/lib/shared/types';
+import { publicationToApi, pressReleaseToApi } from './to-api';
 
-type SB = SupabaseClient;
+// Sortable column whitelist. The previous Supabase-JS code accepted any
+// string from `?sort=`, relying on PostgREST identifier escaping. Drizzle
+// has no comparable runtime guard once a string lands inside `sql\`\``,
+// so we explicitly map wire-shape keys to typed columns.
+const SORTABLE_COLUMNS: Record<string, AnyColumn> = {
+  published_at: publications.publishedAt,
+  title: publications.title,
+  lead_author: publications.leadAuthor,
+  press_score: publications.pressScore,
+  press_similarity: publications.pressSimilarity,
+  updated_at: publications.updatedAt,
+  decided_at: publications.decidedAt,
+  created_at: publications.createdAt,
+  webdb_uid: publications.webdbUid,
+  enrichment_status: publications.enrichmentStatus,
+  analysis_status: publications.analysisStatus,
+};
 
 // Sentinel UUID guaranteed not to match any row — used when a pre-fetch
-// returns 0 IDs so `.in('id', [sentinel])` yields no results (vs. matching
-// everything on an empty list).
+// returns 0 IDs so `inArray(id, [SENTINEL])` yields no results (vs.
+// matching everything on an empty list).
 const SENTINEL_UUID = '00000000-0000-0000-0000-000000000000';
 
 function csv(s: string | null): string[] {
@@ -18,51 +57,99 @@ function csv(s: string | null): string[] {
 }
 
 async function fetchPubIdsByOestat6(
-  supabase: SB,
   oestat6Ids: string[],
 ): Promise<Set<string>> {
+  if (oestat6Ids.length === 0) return new Set();
+  const rows = await db.execute<{ publication_id: string }>(
+    sql`SELECT publication_id FROM pub_ids_by_oestat6(${oestat6Ids}::uuid[])`,
+  );
   const ids = new Set<string>();
-  if (oestat6Ids.length === 0) return ids;
-  const { data, error } = await supabase.rpc('pub_ids_by_oestat6', {
-    p_oestat6_ids: oestat6Ids,
-  });
-  if (error || !data) return ids;
-  for (const r of data as Array<{ publication_id: string }>) {
-    ids.add(r.publication_id);
-  }
+  for (const r of rows) ids.add(r.publication_id);
   return ids;
 }
 
 async function fetchPubIdsByHighlight(
-  supabase: SB,
   ma: boolean,
   hl: boolean,
 ): Promise<Set<string>> {
+  if (!ma && !hl) return new Set();
+  const rows = await db.execute<{ publication_id: string }>(
+    sql`SELECT publication_id FROM pub_ids_by_highlight(${ma}, ${hl})`,
+  );
   const ids = new Set<string>();
-  if (!ma && !hl) return ids;
-  const { data, error } = await supabase.rpc('pub_ids_by_highlight', {
-    p_mahighlight: ma,
-    p_highlight: hl,
-  });
-  if (error || !data) return ids;
-  for (const r of data as Array<{ publication_id: string }>) {
-    ids.add(r.publication_id);
+  for (const r of rows) ids.add(r.publication_id);
+  return ids;
+}
+
+async function fetchPubIdsWithFlags(): Promise<Set<string>> {
+  const rows = await db.execute<{ publication_id: string }>(
+    sql`SELECT publication_id FROM pub_ids_with_flags()`,
+  );
+  const ids = new Set<string>();
+  for (const r of rows) ids.add(r.publication_id);
+  return ids;
+}
+
+async function fetchPubIdsByOrgunit(
+  orgunitFilterIds: string[],
+): Promise<Set<string>> {
+  if (orgunitFilterIds.length === 0) return new Set();
+  const rows = await db
+    .select({ publicationId: orgunitPublicationsTable.publicationId })
+    .from(orgunitPublicationsTable)
+    .where(inArray(orgunitPublicationsTable.orgunitId, orgunitFilterIds));
+  const ids = new Set<string>();
+  for (const r of rows) ids.add(r.publicationId);
+  return ids;
+}
+
+async function fetchPressReleasedPubIds(): Promise<Set<string>> {
+  const rows = await db
+    .select({ publicationId: pressReleasesTable.publicationId })
+    .from(pressReleasesTable)
+    .where(isNotNull(pressReleasesTable.publicationId));
+  const ids = new Set<string>();
+  for (const r of rows) {
+    if (r.publicationId) ids.add(r.publicationId);
   }
   return ids;
 }
 
-async function fetchPubIdsWithFlags(supabase: SB): Promise<Set<string>> {
-  const ids = new Set<string>();
-  const { data, error } = await supabase.rpc('pub_ids_with_flags');
-  if (error || !data) return ids;
-  for (const r of data as Array<{ publication_id: string }>) {
-    ids.add(r.publication_id);
-  }
-  return ids;
+async function fetchBadTypeIds(): Promise<string[]> {
+  const rows = await db
+    .select({ id: publicationTypesTable.id })
+    .from(publicationTypesTable)
+    .where(
+      inArray(publicationTypesTable.webdbUid, [
+        ...ELIGIBILITY_EXCLUDE_TYPE_UIDS,
+      ]),
+    );
+  return rows.map((r) => r.id);
 }
+
+async function fetchOestat6IdsByDomain(
+  oestat3Domains: number[],
+): Promise<string[]> {
+  if (oestat3Domains.length === 0) return [];
+  const rows = await db
+    .select({ id: oestat6CategoriesTable.id })
+    .from(oestat6CategoriesTable)
+    .where(inArray(oestat6CategoriesTable.oestat3, oestat3Domains));
+  return rows.map((r) => r.id);
+}
+
+// Per-feature list-result item. The wire shape mirrors the prior Supabase-JS
+// flattened shape: full Publication + mini publication-type lookup + mini
+// orgunit chips + a single (DE-preferred) press_release. The orgunit/type
+// projections are deliberately narrower than the full DTOs (payload size).
+export type PublicationListItem = Publication & {
+  publication_type_lookup: { name_de: string; name_en: string } | null;
+  orgunits: Array<{ id: string; akronym_de: string | null; name_de: string }>;
+  press_release: PressRelease | null;
+};
 
 export interface PublicationsListResult {
-  publications: Record<string, unknown>[];
+  publications: PublicationListItem[];
   total: number;
   total_hidden: number;
   page: number;
@@ -73,26 +160,28 @@ export interface PublicationsListResult {
  * Paginated publications query with the full Phase-2 filter set. Owns the
  * URLSearchParams parsing so the route handler stays a thin adapter.
  *
- * - The `defaultEligible` filter requires resolving "ineligible" publication
- *   type UIDs (per `ELIGIBILITY_EXCLUDE_TYPE_UIDS`) at runtime — newly added
- *   types in WebDB are picked up automatically.
+ * - `defaultEligible` filter resolves the "ineligible" publication-type IDs
+ *   (per `ELIGIBILITY_EXCLUDE_TYPE_UIDS`) at runtime — new ineligible types
+ *   added in WebDB are picked up automatically.
  * - `total_hidden` counts pubs that would match all filters EXCEPT the
- *   eligibility filter (UI shows "X hidden by eligibility" hint).
- * - press-released, oestat6, highlights and flagged use ID-set pre-fetches
- *   because PostgREST can't express EXISTS / jsonb_array_length filters.
+ *   eligibility filter (UI shows "X hidden by eligibility").
+ * - press-released, oestat6, highlight, flagged, orgunit filters all pass
+ *   through a pre-fetch → ID-set → `inArray` pipeline. This unifies the
+ *   "filter parent by related rows" pattern (instead of mixing PostgREST's
+ *   `!inner` joins with EXISTS-style filters) and keeps the main query
+ *   single-table — easier to reason about and easier to count.
  */
 export async function listPublications(
   searchParams: URLSearchParams,
-  supabase: SB,
 ): Promise<PublicationsListResult> {
   // ---------- parse params ----------
   const page = parseInt(searchParams.get('page') || '1');
   const pageSize = parseInt(searchParams.get('pageSize') || '20');
-  // R2: cap search to 200 chars (DoS guard) + B3: escape PostgREST .or()
-  // metacharacters (`,` `(` `)` `*` `\`) so a crafted query can't break out
-  // of the filter context.
+  // Cap search to 200 chars (DoS guard). ILIKE-escape the pattern wildcards
+  // (`%` and `_`) plus the SQL string-escape backslash, so a crafted query
+  // can't broaden its own match.
   const rawSearch = (searchParams.get('search') || '').slice(0, 200);
-  const search = rawSearch.replace(/[\\,()*]/g, (m) => '\\' + m);
+  const search = rawSearch.replace(/[\\%_]/g, (m) => '\\' + m);
   const enrichmentStatus = searchParams.get('enrichment_status') || '';
   const analysisStatus = searchParams.get('analysis_status') || '';
   const publicationType = searchParams.get('publication_type') || '';
@@ -104,8 +193,7 @@ export async function listPublications(
   const oestat3Domains = csv(searchParams.get('oestat3_domains'))
     .map(Number)
     .filter((n) => Number.isFinite(n));
-  // top_level_only is accepted for backwards-compat but no longer affects
-  // the backend query — the UI handles dropdown filtering on its own.
+  // top_level_only is UI-only since 2026-05; backend doesn't use it.
   void searchParams.get('top_level_only');
   const publishedAfter = searchParams.get('published_after') || '';
   const fromDate = searchParams.get('from') || '';
@@ -125,224 +213,242 @@ export async function listPublications(
   const pressReleased = searchParams.get('press_released');
   const defaultEligible = searchParams.get('default_eligible') === 'true';
   const includeArchived = searchParams.get('include_archived') === 'true';
-  const sortBy = searchParams.get('sort') || 'published_at';
-  const sortOrder = searchParams.get('order') === 'asc' ? true : false;
+  const sortByRaw = searchParams.get('sort') || 'published_at';
+  const sortBy = sortByRaw in SORTABLE_COLUMNS ? sortByRaw : 'published_at';
+  const sortCol = SORTABLE_COLUMNS[sortBy]!;
+  const sortAsc = searchParams.get('order') === 'asc';
 
-  // ---------- pre-fetches ----------
-  let pressReleasedIdSet: Set<string> | null = null;
-  if (pressReleased === 'true' || pressReleased === 'false') {
-    const { data } = await supabase
-      .from('press_releases')
-      .select('publication_id')
-      .not('publication_id', 'is', null);
-    pressReleasedIdSet = new Set<string>();
-    for (const r of (data as Array<{ publication_id: string }>) ?? []) {
-      pressReleasedIdSet.add(r.publication_id);
-    }
-  }
+  // ---------- pre-fetches (parallel) ----------
+  const orgunitFilterIds = orgunitId
+    ? [orgunitId, ...orgunitIds]
+    : orgunitIds;
 
-  let oestatPubIdSet: Set<string> | null = null;
-  if (oestat6Ids.length || oestat3Domains.length) {
-    const allOestat6Ids = new Set<string>(oestat6Ids);
-    if (oestat3Domains.length) {
-      const { data: cats } = await supabase
-        .from('oestat6_categories')
-        .select('id')
-        .in('oestat3', oestat3Domains);
-      for (const c of cats ?? []) {
-        allOestat6Ids.add((c as { id: string }).id);
-      }
-    }
-    oestatPubIdSet = await fetchPubIdsByOestat6(supabase, [...allOestat6Ids]);
-  }
+  const [
+    pressReleasedIdSet,
+    extraOestat6Ids,
+    highlightPubIdSet,
+    flaggedPubIdSet,
+    orgunitPubIdSet,
+    badTypeIds,
+  ] = await Promise.all([
+    pressReleased === 'true' || pressReleased === 'false'
+      ? fetchPressReleasedPubIds()
+      : Promise.resolve(null),
+    oestat3Domains.length ? fetchOestat6IdsByDomain(oestat3Domains) : Promise.resolve([]),
+    mahighlight || highlight
+      ? fetchPubIdsByHighlight(mahighlight, highlight)
+      : Promise.resolve(null),
+    flagged ? fetchPubIdsWithFlags() : Promise.resolve(null),
+    orgunitFilterIds.length
+      ? fetchPubIdsByOrgunit(orgunitFilterIds)
+      : Promise.resolve(null),
+    defaultEligible ? fetchBadTypeIds() : Promise.resolve([] as string[]),
+  ]);
 
-  let highlightPubIdSet: Set<string> | null = null;
-  if (mahighlight || highlight) {
-    highlightPubIdSet = await fetchPubIdsByHighlight(
-      supabase,
-      mahighlight,
-      highlight,
-    );
-  }
+  // oestat6 needs the union of explicit IDs and domain-resolved IDs.
+  const allOestat6Ids = [
+    ...new Set<string>([...oestat6Ids, ...extraOestat6Ids]),
+  ];
+  const oestatPubIdSet =
+    allOestat6Ids.length > 0
+      ? await fetchPubIdsByOestat6(allOestat6Ids)
+      : null;
 
-  let flaggedPubIdSet: Set<string> | null = null;
-  if (flagged) {
-    flaggedPubIdSet = await fetchPubIdsWithFlags(supabase);
-  }
+  // ---------- build WHERE clauses ----------
+  function buildWhere(applyEligibility: boolean): SQL | undefined {
+    const clauses: SQL[] = [];
 
-  // top_level_only is a pure UI-side filter now (controls which orgunits are
-  // visible in the dropdown). The backend never restricts publications by
-  // hierarchy tier — that would zero out results because publications are
-  // attached to leaf-level orgunits (e.g. IMAFO_AG_Preiser-Kapeller), not to
-  // root nodes. Filter on whatever IDs the UI sent directly.
-  const effectiveOrgunitIds = orgunitIds;
+    if (!includeArchived) clauses.push(eq(publications.archived, false));
 
-  let badTypeIds: string[] = [];
-  if (defaultEligible) {
-    const { data: badTypes } = await supabase
-      .from('publication_types')
-      .select('id')
-      .in('webdb_uid', ELIGIBILITY_EXCLUDE_TYPE_UIDS);
-    badTypeIds = (badTypes ?? []).map((t) => (t as { id: string }).id);
-  }
-
-  // ---------- shared filter application ----------
-  type AnyQuery = {
-    eq: (col: string, val: unknown) => AnyQuery;
-    not: (col: string, op: string, val: unknown) => AnyQuery;
-    gte: (col: string, val: unknown) => AnyQuery;
-    lte: (col: string, val: unknown) => AnyQuery;
-    in: (col: string, vals: unknown[]) => AnyQuery;
-    is: (col: string, val: unknown) => AnyQuery;
-    or: (filters: string) => AnyQuery;
-    order: (col: string, opts: { ascending: boolean; nullsFirst?: boolean }) => AnyQuery;
-    range: (a: number, b: number) => AnyQuery;
-  };
-
-  const applyFilters = (q: AnyQuery, applyEligibility: boolean): AnyQuery => {
-    let query = q;
-    if (!includeArchived) query = query.eq('archived', false);
     if (search) {
-      query = query.or(
-        `title.ilike.%${search}%,original_title.ilike.%${search}%,summary_de.ilike.%${search}%,summary_en.ilike.%${search}%,lead_author.ilike.%${search}%`,
+      const pattern = `%${search}%`;
+      const searchClause = or(
+        ilike(publications.title, pattern),
+        ilike(publications.originalTitle, pattern),
+        ilike(publications.summaryDe, pattern),
+        ilike(publications.summaryEn, pattern),
+        ilike(publications.leadAuthor, pattern),
       );
+      if (searchClause) clauses.push(searchClause);
     }
-    if (enrichmentStatus) query = query.eq('enrichment_status', enrichmentStatus);
-    if (analysisStatus) query = query.eq('analysis_status', analysisStatus);
-    if (publicationType) query = query.eq('publication_type', publicationType);
-    if (publicationTypeId) query = query.eq('publication_type_id', publicationTypeId);
-    if (pubTypeIds.length) query = query.in('publication_type_id', pubTypeIds);
-    if (publishedAfter) query = query.gte('published_at', publishedAfter);
-    if (fromDate) query = query.gte('published_at', fromDate);
-    if (toDate) query = query.lte('published_at', toDate);
-    if (minScore) query = query.gte('press_score', parseFloat(minScore));
-    if (peerReviewed === 'true') query = query.eq('peer_reviewed', true);
-    if (peerReviewed === 'false') query = query.eq('peer_reviewed', false);
-    if (popularScience === 'true') query = query.eq('popular_science', true);
-    if (popularScience === 'false') query = query.eq('popular_science', false);
-    if (openAccess === 'true') query = query.eq('open_access', true);
-    if (openAccess === 'false') query = query.eq('open_access', false);
-    if (hasSummaryDe) query = query.not('summary_de', 'is', null);
-    if (hasSummaryEn) query = query.not('summary_en', 'is', null);
-    if (hasPdf) query = query.not('download_link', 'is', null);
-    if (hasDoi) query = query.not('doi', 'is', null);
+
+    if (enrichmentStatus) {
+      clauses.push(eq(publications.enrichmentStatus, enrichmentStatus));
+    }
+    if (analysisStatus) {
+      clauses.push(eq(publications.analysisStatus, analysisStatus));
+    }
+    if (publicationType) {
+      clauses.push(eq(publications.publicationType, publicationType));
+    }
+    if (publicationTypeId) {
+      clauses.push(eq(publications.publicationTypeId, publicationTypeId));
+    }
+    if (pubTypeIds.length) {
+      clauses.push(inArray(publications.publicationTypeId, pubTypeIds));
+    }
+    if (publishedAfter) {
+      clauses.push(gte(publications.publishedAt, publishedAfter));
+    }
+    if (fromDate) clauses.push(gte(publications.publishedAt, fromDate));
+    if (toDate) clauses.push(lte(publications.publishedAt, toDate));
+    if (minScore) {
+      const v = parseFloat(minScore);
+      if (Number.isFinite(v)) clauses.push(gte(publications.pressScore, v));
+    }
+    if (peerReviewed === 'true') {
+      clauses.push(eq(publications.peerReviewed, true));
+    } else if (peerReviewed === 'false') {
+      clauses.push(eq(publications.peerReviewed, false));
+    }
+    if (popularScience === 'true') {
+      clauses.push(eq(publications.popularScience, true));
+    } else if (popularScience === 'false') {
+      clauses.push(eq(publications.popularScience, false));
+    }
+    if (openAccess === 'true') {
+      clauses.push(eq(publications.openAccess, true));
+    } else if (openAccess === 'false') {
+      clauses.push(eq(publications.openAccess, false));
+    }
+    if (hasSummaryDe) clauses.push(isNotNull(publications.summaryDe));
+    if (hasSummaryEn) clauses.push(isNotNull(publications.summaryEn));
+    if (hasPdf) clauses.push(isNotNull(publications.downloadLink));
+    if (hasDoi) clauses.push(isNotNull(publications.doi));
+
     if (pressReleasedIdSet) {
       const arr = [...pressReleasedIdSet];
       if (pressReleased === 'true') {
-        query = query.in('id', arr.length ? arr : [SENTINEL_UUID]);
+        clauses.push(
+          inArray(publications.id, arr.length ? arr : [SENTINEL_UUID]),
+        );
       } else if (pressReleased === 'false' && arr.length > 0) {
-        query = query.not('id', 'in', `(${arr.join(',')})`);
+        clauses.push(notInArray(publications.id, arr));
       }
     }
-    if (orgunitId) query = query.eq('orgunit_publications.orgunit_id', orgunitId);
-    if (effectiveOrgunitIds.length) {
-      query = query.in('orgunit_publications.orgunit_id', effectiveOrgunitIds);
+
+    if (orgunitPubIdSet) {
+      const arr = [...orgunitPubIdSet];
+      clauses.push(
+        inArray(publications.id, arr.length ? arr : [SENTINEL_UUID]),
+      );
     }
     if (oestatPubIdSet) {
       const arr = [...oestatPubIdSet];
-      query = query.in('id', arr.length ? arr : [SENTINEL_UUID]);
+      clauses.push(
+        inArray(publications.id, arr.length ? arr : [SENTINEL_UUID]),
+      );
     }
     if (highlightPubIdSet) {
       const arr = [...highlightPubIdSet];
-      query = query.in('id', arr.length ? arr : [SENTINEL_UUID]);
+      clauses.push(
+        inArray(publications.id, arr.length ? arr : [SENTINEL_UUID]),
+      );
     }
     if (flaggedPubIdSet) {
       const arr = [...flaggedPubIdSet];
-      query = query.in('id', arr.length ? arr : [SENTINEL_UUID]);
+      clauses.push(
+        inArray(publications.id, arr.length ? arr : [SENTINEL_UUID]),
+      );
     }
+
     // ITA-subtree filter via cached boolean column (set by ETL after every
     // webdb-import). One indexed clause, no URL bloat from a 365-element
     // NOT-IN list, no client-side filter race.
-    if (excludeIta) {
-      query = query.eq('is_ita_subtree', false);
-    }
+    if (excludeIta) clauses.push(eq(publications.isItaSubtree, false));
+
     if (applyEligibility && defaultEligible && badTypeIds.length) {
-      query = query.not('publication_type_id', 'in', `(${badTypeIds.join(',')})`);
+      clauses.push(notInArray(publications.publicationTypeId, badTypeIds));
     }
-    return query;
-  };
 
-  // ---------- main query ----------
-  const useInnerOrgJoin = Boolean(orgunitId) || effectiveOrgunitIds.length > 0;
-  const selectStr = useInnerOrgJoin
-    ? `*, publication_type_lookup:publication_types(name_de, name_en),
-       orgunit_publications!inner(orgunit_id, orgunit:orgunits(id, akronym_de, name_de)),
-       press_releases(*)`
-    : `*, publication_type_lookup:publication_types(name_de, name_en),
-       orgunit_publications(orgunit:orgunits(id, akronym_de, name_de)),
-       press_releases(*)`;
-
-  const fromIdx = (page - 1) * pageSize;
-  const toIdx = fromIdx + pageSize - 1;
-
-  const mainBuilder = applyFilters(
-    supabase.from('publications').select(selectStr, { count: 'exact' }) as unknown as AnyQuery,
-    true,
-  );
-  // NULLS LAST: pubs ohne Wert (z.B. published_at NULL bei 595 Pubs aus
-  // unvollstaendigen WebDB-Eintraegen) verschwinden ans Ende statt oben in
-  // der DESC-sortierten Liste zu erscheinen — sonst dominiert das die #1-
-  // Ansicht des Press-Teams. Gilt fuer alle Sort-Spalten (sicheres Default).
-  const mainQuery = mainBuilder
-    .order(sortBy, { ascending: sortOrder, nullsFirst: false })
-    .range(fromIdx, toIdx);
-
-  // ---------- count-without-eligibility for total_hidden ----------
-  const noEligPromise = defaultEligible
-    ? (applyFilters(
-        supabase.from('publications').select(
-          useInnerOrgJoin ? 'id, orgunit_publications!inner(orgunit_id)' : 'id',
-          { count: 'exact', head: true },
-        ) as unknown as AnyQuery,
-        false,
-      ) as unknown as Promise<{ count: number | null }>)
-    : Promise.resolve({ count: null as number | null });
-
-  const [mainResult, noEligResult] = await Promise.all([
-    mainQuery as unknown as Promise<{
-      data: unknown;
-      count: number | null;
-      error: { message: string } | null;
-    }>,
-    noEligPromise,
-  ]);
-
-  if (mainResult.error) {
-    throw new Error(mainResult.error.message);
+    return clauses.length > 0 ? and(...clauses) : undefined;
   }
 
-  type PressReleaseRow = {
-    id: string;
-    lang: Lang | null;
-    [k: string]: unknown;
-  };
-  type Row = {
-    id: string;
-    orgunit_publications?: Array<{ orgunit?: { id: string; akronym_de: string; name_de: string } }>;
-    press_releases?: PressReleaseRow[];
-    [k: string]: unknown;
-  };
-  const flattened = ((mainResult.data as Row[]) || []).map((r) => {
-    const orgunits = (r.orgunit_publications || [])
+  const whereMain = buildWhere(true);
+  const whereNoElig = defaultEligible ? buildWhere(false) : undefined;
+
+  // ---------- main + count queries (parallel) ----------
+  // NULLS LAST: pubs ohne Wert (z.B. published_at NULL bei ~600 Pubs aus
+  // unvollständigen WebDB-Einträgen) verschwinden ans Ende statt oben in
+  // der DESC-sortierten Liste zu landen — sonst dominiert das die #1-
+  // Ansicht des Press-Teams.
+  const orderClause = sortAsc
+    ? sql`${sortCol} ASC NULLS LAST`
+    : sql`${sortCol} DESC NULLS LAST`;
+
+  const fromIdx = (page - 1) * pageSize;
+
+  // Embedded orgunit list mirrors the prior !inner-join behaviour: when an
+  // orgunit filter is active, only the matching orgunit rows show up in the
+  // chips. Without a filter, all of a pub's orgunits show.
+  const embedOrgunitWhere =
+    orgunitFilterIds.length > 0
+      ? inArray(orgunitPublicationsTable.orgunitId, orgunitFilterIds)
+      : undefined;
+
+  const [mainRows, totalRows, noEligRows] = await Promise.all([
+    db.query.publications.findMany({
+      where: whereMain,
+      orderBy: orderClause,
+      limit: pageSize,
+      offset: fromIdx,
+      with: {
+        publicationType: {
+          columns: { nameDe: true, nameEn: true },
+        },
+        orgunitPublications: {
+          columns: { orgunitId: true },
+          where: embedOrgunitWhere,
+          with: {
+            orgunit: {
+              columns: { id: true, akronymDe: true, nameDe: true },
+            },
+          },
+        },
+        pressReleases: true,
+      },
+    }),
+    db.select({ c: count() }).from(publications).where(whereMain),
+    defaultEligible
+      ? db.select({ c: count() }).from(publications).where(whereNoElig)
+      : Promise.resolve([{ c: 0 }]),
+  ]);
+
+  // ---------- flatten ----------
+  const flattened: PublicationListItem[] = mainRows.map((row) => {
+    const orgunitsMini = (row.orgunitPublications ?? [])
       .map((op) => op.orgunit)
-      .filter(Boolean);
-    // Pick DE press-release first; fall back to first available (typically
-    // EN). UI only shows one badge per pub.
-    const prs = r.press_releases ?? [];
-    const press_release = prs.find((p) => p.lang === 'de') ?? prs[0] ?? null;
-    const out: Record<string, unknown> = { ...r, orgunits, press_release };
-    delete out.orgunit_publications;
-    delete out.press_releases;
-    return out;
+      .filter((o): o is NonNullable<typeof o> => o !== null)
+      .map((o) => ({
+        id: o.id,
+        akronym_de: o.akronymDe,
+        name_de: o.nameDe,
+      }));
+
+    const prs = (row.pressReleases ?? []).map(pressReleaseToApi);
+    const press_release: PressRelease | null =
+      prs.find((p) => p.lang === ('de' as Lang)) ?? prs[0] ?? null;
+
+    return {
+      ...publicationToApi(row),
+      publication_type_lookup: row.publicationType
+        ? {
+            name_de: row.publicationType.nameDe,
+            name_en: row.publicationType.nameEn,
+          }
+        : null,
+      orgunits: orgunitsMini,
+      press_release,
+    };
   });
 
-  const totalHidden = defaultEligible
-    ? Math.max(0, (noEligResult.count ?? 0) - (mainResult.count ?? 0))
-    : 0;
+  const total = totalRows[0]?.c ?? 0;
+  const totalNoElig = defaultEligible ? (noEligRows[0]?.c ?? 0) : 0;
+  const totalHidden = defaultEligible ? Math.max(0, totalNoElig - total) : 0;
 
   return {
     publications: flattened,
-    total: mainResult.count || 0,
+    total,
     total_hidden: totalHidden,
     page,
     pageSize,
