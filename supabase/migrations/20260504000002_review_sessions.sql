@@ -1,5 +1,5 @@
 -- Review sessions — explicit DB entity for the Friday triage meeting.
--- Per Sanity-style workflow modeling (TRIAGE_LOOP_PLAN.md §5.6 + §8 + §13.2):
+-- Per Sanity-style workflow modeling (docs/TRIAGE_LOOP_PLAN.md §5.6 + §8 + §13.2):
 -- one row per meeting, decisions link back via publications.decided_in_session.
 -- This is the audit anchor for "show all pitches from session 2026-04-15"
 -- and the throughput-trend-chart in Phase D.

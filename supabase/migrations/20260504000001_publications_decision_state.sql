@@ -1,4 +1,4 @@
--- Decision-state + flagging fields for the triage loop (see TRIAGE_LOOP_PLAN.md).
+-- Decision-state + flagging fields for the triage loop (see docs/TRIAGE_LOOP_PLAN.md).
 --
 -- decision: per-pub triage outcome; default 'undecided' for all 38k+ pubs.
 -- The /review queue filters down via flags + scores + snooze_until — the

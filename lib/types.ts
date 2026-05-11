@@ -89,7 +89,7 @@ export interface Publication {
   meistertask_task_id: string | null;
   // Short URL token for /app/task/<token> deep-links. Set by the same push.
   meistertask_task_token: string | null;
-  // Triage-loop decision state (migrations 20260504000001 + 000003). See TRIAGE_LOOP_PLAN.md.
+  // Triage-loop decision state (migrations 20260504000001 + 000003). See docs/TRIAGE_LOOP_PLAN.md.
   // flag count is derived: `flag_notes.length` (no DB column — single source of truth).
   // decided_at is auto-managed by `trg_publications_decided_at_sync`.
   decision: Decision;
