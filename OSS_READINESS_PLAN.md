@@ -1919,8 +1919,13 @@ Drizzle ist Query-Builder, nicht Migration-Tool in unserer Setup.
       cleared the thin app/api/* routes; only `lib/server/db/supabase.ts`
       retains the helper exports, no caller imports them)
 - [x] Migrations unchanged (still `supabase/migrations/`)
-- [ ] Playwright e2e bleibt grün (running 2026-05-11 after Tasks 3.12–3.21
-      — flip when the spec passes)
+- [x] Playwright e2e bleibt grün — review-smoke 3 passed / 0 failed /
+      1 skipped (the skip is a `test.skip(pubs.length === 0)` data guard,
+      not a failure; the test exercises a detail page that needs a
+      publication id from a separate /api/review/queue call). Run done
+      2026-05-11 after Tasks 3.12–3.21 + commit 5ac68bd (relation
+      rename) + the timeout bump on /review's header assertion (cold
+      Turbopack compile on WSL2 can exceed 25s)
 - [x] Test-DB-Connection-Strategy dokumentiert (Phase 4 prep) — see
       `docs/TESTING.md`
 

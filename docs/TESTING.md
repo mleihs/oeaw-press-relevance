@@ -160,6 +160,30 @@ db.execute(sql\`...\`)) as unknown as TopResearcherRow[]`. The shared DTOs
 should NOT grow index signatures just to satisfy this — they'd accept any
 extra field by mistake.
 
+### 5.4 Relation names must not shadow same-table columns
+
+A `relations(table, ({one}) => ({ <name>: one(otherTable, ...) }))` whose
+`<name>` matches a column on `table` SILENTLY shadows the column in
+`db.query.<table>.findX({ with: { <name>: ... } })` results. The first
+hit was `publications.publication_type` (text scalar) vs. a relation
+named `publicationType` pointing at the `publication_types` table —
+`row.publicationType` came back as `{nameDe, nameEn, ...}` instead of
+the text, leaking through `publicationToApi()` into the wire shape and
+crashing React on the `<span>{pub.publication_type}</span>` render.
+
+**Rule:** any relation that joins through an FK whose source table has
+a denormalised text copy of the FK target's name needs a suffix —
+`publicationTypeRef` not `publicationType`. The hotfix is in commit
+5ac68bd (`fix(server/db): rename publicationType relation to
+publicationTypeRef`).
+
+**Test assertion:** for every route that uses
+`db.query.<table>.findX({ with: { ... } })`, smoke + Phase-4 Vitest
+should check `typeof row.<denorm-text-column> in ['string', 'object']`
+where 'object' is only acceptable for `null`. The bug would've been
+caught by a single `expect(typeof res.publication_type).not.toBe('object')`
+that distinguishes null from non-null objects.
+
 ---
 
 ## 6. Open items for Phase 4
