@@ -34,3 +34,16 @@ export const sessionFinishPayloadSchema = z.object({
 });
 
 export type SessionFinishPayload = z.infer<typeof sessionFinishPayloadSchema>;
+
+export const flagSetPayloadSchema = z.object({
+  by: z.string().nullish(),
+  note: z.string().nullish(),
+});
+
+export type FlagSetPayload = z.infer<typeof flagSetPayloadSchema>;
+
+export const flagDeletePayloadSchema = z.object({
+  by: z.string().nullish(),
+});
+
+export type FlagDeletePayload = z.infer<typeof flagDeletePayloadSchema>;
