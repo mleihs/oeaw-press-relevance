@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseFromRequest } from '@/lib/server/db';
+import { asc } from 'drizzle-orm';
+import { db, oestat6Categories } from '@/lib/server/db';
+import { apiError } from '@/lib/server/http';
+import type { Oestat6 } from '@/lib/shared/types';
 
+// Top-level Frascati branch labels keyed by the 1-digit super-domain prefix
+// of webdb_uid. Source-of-truth — the labels live with the only consumer of
+// `super_domain_label`. If a future client needs the labels independently
+// the constant should move to `lib/shared/` instead.
 const SUPER_DOMAIN_LABELS: Record<number, string> = {
   1: 'Naturwissenschaften',
   2: 'Technische Wissenschaften',
@@ -10,33 +17,22 @@ const SUPER_DOMAIN_LABELS: Record<number, string> = {
   6: 'Geisteswissenschaften',
 };
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
-    const supabase = getSupabaseFromRequest(req);
+    // Drizzle's direct postgres-js connection has no PostgREST 1000-cap, so
+    // the previous batched loop collapses into a single SELECT.
+    const rows = await db
+      .select({
+        id: oestat6Categories.id,
+        webdb_uid: oestat6Categories.webdbUid,
+        oestat3: oestat6Categories.oestat3,
+        name_de: oestat6Categories.nameDe,
+        name_en: oestat6Categories.nameEn,
+      })
+      .from(oestat6Categories)
+      .orderBy(asc(oestat6Categories.webdbUid));
 
-    const all: Array<{
-      id: string;
-      webdb_uid: number;
-      oestat3: number | null;
-      name_de: string;
-      name_en: string;
-    }> = [];
-    const batchSize = 1000;
-    for (let offset = 0; ; offset += batchSize) {
-      const { data, error } = await supabase
-        .from('oestat6_categories')
-        .select('id, webdb_uid, oestat3, name_de, name_en')
-        .order('webdb_uid', { ascending: true })
-        .range(offset, offset + batchSize - 1);
-      if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
-      }
-      if (!data || data.length === 0) break;
-      all.push(...data);
-      if (data.length < batchSize) break;
-    }
-
-    const enriched = all.map((row) => {
+    const enriched: Oestat6[] = rows.map((row) => {
       const superDomain = Math.floor(row.webdb_uid / 100000);
       return {
         ...row,
@@ -47,7 +43,6 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ oestat6: enriched, total: enriched.length });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return apiError(err instanceof Error ? err.message : 'Unknown error', 500);
   }
 }
