@@ -1,19 +1,23 @@
-import { NextRequest } from 'next/server';
-import { getSupabaseAdmin, getOpenRouterKey, getLLMModel, createSSEStream, apiError } from '@/lib/server/api-helpers';
-import { NextResponse } from 'next/server';
-import { analyzePublications, calculatePressScore, checkKeyBalance } from '@/lib/server/analysis/openrouter';
-import type { PublicationForPrompt } from '@/lib/server/analysis/prompts';
+import { NextRequest, NextResponse } from 'next/server';
+import {
+  apiError,
+  createSSEStream,
+  getLLMModel,
+  getOpenRouterKey,
+  getSupabaseAdmin,
+} from '@/lib/server/api-helpers';
+import {
+  fetchPublicationsForAnalysis,
+  parseAnalysisBatchBody,
+  runAnalysisBatch,
+} from '@/lib/server/analysis/batch';
 
 export const maxDuration = 300;
 
 export async function POST(req: NextRequest) {
-  let supabase;
-  let apiKey: string;
-  let model: string;
-  let body: Record<string, unknown>;
-
+  let supabase, apiKey, model, body: Record<string, unknown>;
   try {
-    supabase = getSupabaseAdmin(); // mutating route — needs service role to bypass RLS
+    supabase = getSupabaseAdmin();
     apiKey = getOpenRouterKey(req);
     model = getLLMModel(req);
     body = await req.json();
@@ -21,197 +25,36 @@ export async function POST(req: NextRequest) {
     return apiError(err instanceof Error ? err.message : 'Configuration error', 400);
   }
 
-  const limit = Math.min((body.limit as number) || 20, 1000);
-  const batchSize = Math.min((body.batchSize as number) || 3, 5);
-  const minWordCount = (body.minWordCount as number) || 0;
-  const forceReanalyze = body.forceReanalyze || false;
-  const enrichedOnly = body.enrichedOnly !== false; // default true
-  const includePartial = body.includePartial || false;
-
-  // Fetch publications for analysis
-  let query = supabase
-    .from('publications')
-    .select('*, orgunit_publications(orgunit:orgunits(akronym_de, name_de))')
-    .order('published_at', { ascending: false, nullsFirst: false })
-    .limit(limit);
-
-  if (!forceReanalyze) {
-    query = query.eq('analysis_status', 'pending');
+  const filters = parseAnalysisBatchBody(body);
+  let pubs;
+  try {
+    pubs = await fetchPublicationsForAnalysis(filters, supabase);
+  } catch (err) {
+    return apiError(err instanceof Error ? err.message : 'Unknown error', 500);
   }
-
-  // Filter by enrichment status — only analyze publications with content
-  if (enrichedOnly) {
-    if (includePartial) {
-      query = query.in('enrichment_status', ['enriched', 'partial']);
-    } else {
-      query = query.eq('enrichment_status', 'enriched');
-    }
-  }
-
-  if (minWordCount > 0) {
-    query = query.gte('word_count', minWordCount);
-  }
-
-  const { data: publications, error } = await query;
-
-  if (error) return apiError(error.message, 500);
-
-  type Row = Record<string, unknown> & {
-    orgunit_publications?: Array<{ orgunit?: { akronym_de: string | null; name_de: string } }>;
-  };
-  const pubs: PublicationForPrompt[] = ((publications || []) as Row[]).map((r) => {
-    const orgunits = (r.orgunit_publications || [])
-      .map((op) => op.orgunit)
-      .filter((o): o is { akronym_de: string | null; name_de: string } => Boolean(o));
-    const out = { ...r, orgunits };
-    delete out.orgunit_publications;
-    return out as unknown as PublicationForPrompt;
-  });
   if (pubs.length === 0) {
     return NextResponse.json({ message: 'No publications to analyze' });
   }
 
   const { stream, send, close } = createSSEStream();
 
-  // Masked key for client display (last 8 chars)
-  const maskedKey = apiKey.length > 8 ? '...' + apiKey.slice(-8) : '***';
-
-  (async () => {
-    let processed = 0;
-    let successful = 0;
-    let totalTokens = 0;
-    let totalCost = 0;
-
-    // Pre-flight: check key balance before starting
-    const keyInfo = await checkKeyBalance(apiKey);
-
-    // Send initial info with masked key and balance
-    send('init', {
-      total: pubs.length,
-      model,
-      api_key_hint: maskedKey,
-      key_balance: keyInfo,
-    });
-
-    // Abort early if balance is insufficient (check effective budget = min of key limit and account balance)
-    if (keyInfo.effectiveBudget !== null && keyInfo.effectiveBudget < 0.01) {
-      const parts: string[] = [];
-      if (keyInfo.limitRemaining !== null) parts.push(`Key-Limit: $${keyInfo.limitRemaining.toFixed(4)} verbleibend`);
-      if (keyInfo.accountBalance !== null) parts.push(`Account-Guthaben: $${keyInfo.accountBalance.toFixed(4)}`);
-      const detail = parts.length > 0 ? ` (${parts.join(', ')})` : '';
-      send('error', {
-        message: `OpenRouter-Budget aufgebraucht: $${keyInfo.effectiveBudget.toFixed(4)} verfügbar${detail}. Bitte Credits aufladen auf openrouter.ai/settings/credits.`,
-        fatal: true,
-      });
-      send('complete', { processed: 0, total: pubs.length, successful: 0, failed: pubs.length, tokens_used: 0, cost: 0 });
-      close();
-      return;
-    }
-
-    // Process in batches — short-circuit on client disconnect (saves OpenRouter credits).
-    for (let i = 0; i < pubs.length; i += batchSize) {
-      if (req.signal.aborted) {
-        send('cancelled', { processed, successful, total: pubs.length });
-        close();
-        return;
-      }
-      const batch = pubs.slice(i, i + batchSize);
-      const batchIndex = Math.floor(i / batchSize) + 1;
-      const totalBatches = Math.ceil(pubs.length / batchSize);
-
-      send('progress', {
-        processed,
-        total: pubs.length,
-        current_title: batch[0].title,
-        batch_index: batchIndex,
-        total_batches: totalBatches,
-        tokens_used: totalTokens,
-        cost: totalCost,
-      });
-
-      try {
-        const { results, tokensUsed, cost } = await analyzePublications(batch, apiKey, model);
-        totalTokens += tokensUsed;
-        totalCost += cost;
-
-        for (let j = 0; j < results.length && j < batch.length; j++) {
-          const result = results[j];
-          const pub = batch[j];
-          const pressScore = calculatePressScore(result);
-
-          await supabase
-            .from('publications')
-            .update({
-              analysis_status: 'analyzed',
-              press_score: pressScore,
-              public_accessibility: result.public_accessibility,
-              societal_relevance: result.societal_relevance,
-              novelty_factor: result.novelty_factor,
-              storytelling_potential: result.storytelling_potential,
-              media_timeliness: result.media_timeliness,
-              pitch_suggestion: result.pitch_suggestion,
-              target_audience: result.target_audience,
-              suggested_angle: result.suggested_angle,
-              reasoning: result.reasoning,
-              haiku: result.haiku ?? null,
-              llm_model: model,
-              analysis_cost: cost / results.length,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', pub.id);
-
-          successful++;
-        }
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        const isFatal = /\b402\b/.test(message) && /credits|afford|max_tokens|Budget/i.test(message)
-          || /\b401\b/.test(message) && /unauthorized|invalid/i.test(message);
-
-        console.error(`[Analysis] Batch error at index ${i}:`, message);
-        send('error', { message, batch_start: i, fatal: isFatal });
-
-        // Mark batch as failed
-        for (const pub of batch) {
-          await supabase
-            .from('publications')
-            .update({
-              analysis_status: 'failed',
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', pub.id);
-        }
-
-        // Stop immediately on billing/auth errors
-        if (isFatal) {
-          processed += batch.length;
-          break;
-        }
-      }
-
-      processed += batch.length;
-
-      // Rate limiting between batches
-      if (i + batchSize < pubs.length) {
-        await new Promise(r => setTimeout(r, 1000));
-      }
-    }
-
-    send('complete', {
-      processed,
-      total: pubs.length,
-      successful,
-      failed: processed - successful,
-      tokens_used: totalTokens,
-      cost: totalCost,
-    });
-    close();
-  })();
+  // Fire-and-forget the pipeline; emit() pushes SSE frames into the stream,
+  // close() ends it whether the loop finished, errored, or aborted.
+  runAnalysisBatch({
+    pubs,
+    apiKey,
+    model,
+    batchSize: filters.batchSize,
+    db: supabase,
+    abortSignal: req.signal,
+    emit: send,
+  }).finally(() => close());
 
   return new Response(stream, {
     headers: {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
+      Connection: 'keep-alive',
     },
   });
 }
