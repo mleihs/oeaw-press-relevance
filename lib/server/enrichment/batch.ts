@@ -1,4 +1,14 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import {
+  and,
+  eq,
+  inArray,
+  isNotNull,
+  isNull,
+  like,
+  or,
+  sql,
+} from 'drizzle-orm';
+import { db, publications } from '@/lib/server/db';
 import type { EnrichmentResult, Publication } from '@/lib/shared/types';
 import { enrichFromCrossRef } from './crossref';
 import { enrichFromOpenAlex } from './openalex';
@@ -6,6 +16,7 @@ import { enrichFromUnpaywall } from './unpaywall';
 import { enrichFromSemanticScholar } from './semantic-scholar';
 import { enrichFromPdf } from './pdf-extract';
 import { enrichFromWebDb, WEBDB_SOURCE_TAG } from './webdb-native';
+import { publicationToApi } from '../publications/to-api';
 
 // Sources that require a DOI (order: CrossRef, OpenAlex, Unpaywall, then
 // Semantic Scholar last because it's the slowest).
@@ -72,54 +83,62 @@ export function parseEnrichmentBatchBody(
 
 export async function fetchPublicationsForEnrichment(
   filters: EnrichmentBatchFilters,
-  db: SupabaseClient,
 ): Promise<Publication[]> {
+  // ID-based dispatch: caller pinpoints exactly which publications to enrich
+  // (used by the Augment workflow to avoid status-filter side effects).
   if (filters.explicitIds && filters.explicitIds.length > 0) {
-    // ID-based dispatch: caller pinpoints exactly which publications to
-    // enrich (used by the Augment workflow to avoid status-filter side
-    // effects).
-    const { data, error } = await db
-      .from('publications')
-      .select('*')
-      .in('id', filters.explicitIds.slice(0, filters.limit));
-    if (error) throw new Error(error.message);
-    return (data || []) as Publication[];
+    const rows = await db
+      .select()
+      .from(publications)
+      .where(
+        inArray(publications.id, filters.explicitIds.slice(0, filters.limit)),
+      );
+    return rows.map(publicationToApi);
   }
 
-  const statusFilter = filters.includePartial ? ['pending', 'partial'] : ['pending'];
+  const statusFilter = filters.includePartial
+    ? ['pending', 'partial']
+    : ['pending'];
 
-  const { data: doiPubs, error: doiError } = await db
-    .from('publications')
-    .select('*')
-    .not('doi', 'is', null)
-    .in('enrichment_status', statusFilter)
-    .order('published_at', { ascending: false, nullsFirst: false })
+  const doiRows = await db
+    .select()
+    .from(publications)
+    .where(
+      and(
+        isNotNull(publications.doi),
+        inArray(publications.enrichmentStatus, statusFilter),
+      ),
+    )
+    .orderBy(sql`${publications.publishedAt} DESC NULLS LAST`)
     .limit(filters.limit);
-  if (doiError) throw new Error(doiError.message);
 
-  let noDoiPubs: Publication[] = [];
+  let noDoiRows: typeof doiRows = [];
   if (filters.includeNoDoi) {
-    const remaining = filters.limit - (doiPubs?.length || 0);
+    const remaining = filters.limit - doiRows.length;
     if (remaining > 0) {
-      const { data, error } = await db
-        .from('publications')
-        .select('*')
-        .is('doi', null)
-        .or('url.like.%.pdf,abstract.not.is.null')
-        .in('enrichment_status', statusFilter)
-        .order('published_at', { ascending: false, nullsFirst: false })
+      noDoiRows = await db
+        .select()
+        .from(publications)
+        .where(
+          and(
+            isNull(publications.doi),
+            or(
+              like(publications.url, '%.pdf'),
+              isNotNull(publications.abstract),
+            ),
+            inArray(publications.enrichmentStatus, statusFilter),
+          ),
+        )
+        .orderBy(sql`${publications.publishedAt} DESC NULLS LAST`)
         .limit(remaining);
-      if (error) throw new Error(error.message);
-      noDoiPubs = (data || []) as Publication[];
     }
   }
 
-  return [...((doiPubs || []) as Publication[]), ...noDoiPubs];
+  return [...doiRows, ...noDoiRows].map(publicationToApi);
 }
 
 export interface EnrichmentBatchRunOptions {
   pubs: Publication[];
-  db: SupabaseClient;
   abortSignal: AbortSignal;
   emit: (type: string, data: unknown) => void;
 }
@@ -139,7 +158,7 @@ export interface EnrichmentBatchRunOptions {
 export async function runEnrichmentBatch(
   opts: EnrichmentBatchRunOptions,
 ): Promise<void> {
-  const { pubs, db, abortSignal, emit } = opts;
+  const { pubs, abortSignal, emit } = opts;
 
   let successful = 0;
   let partial = 0;
@@ -245,16 +264,16 @@ export async function runEnrichmentBatch(
       }
 
       await db
-        .from('publications')
-        .update({
-          enrichment_status: finalStatus,
-          enriched_abstract: noDoi_abstract || null,
-          enriched_source: noDoi_sources.join('+') || null,
-          full_text_snippet: noDoi_snippet || null,
-          word_count: noDoi_wordCount,
-          updated_at: new Date().toISOString(),
+        .update(publications)
+        .set({
+          enrichmentStatus: finalStatus,
+          enrichedAbstract: noDoi_abstract || null,
+          enrichedSource: noDoi_sources.join('+') || null,
+          fullTextSnippet: noDoi_snippet || null,
+          wordCount: noDoi_wordCount,
+          updatedAt: new Date().toISOString(),
         })
-        .eq('id', pub.id);
+        .where(eq(publications.id, pub.id));
 
       emit('pub_done', {
         index: i,
@@ -504,22 +523,24 @@ export async function runEnrichmentBatch(
       failed++;
     }
 
-    const updatePayload: Record<string, unknown> = {
-      enrichment_status: finalStatus,
-      enriched_abstract: mergedAbstract || null,
-      enriched_keywords: mergedKeywords.length > 0 ? mergedKeywords.slice(0, 20) : null,
-      enriched_journal: mergedJournal || null,
-      enriched_source: sourcesUsed.join('+') || null,
-      full_text_snippet: mergedSnippet || null,
-      word_count: mergedWordCount,
-      updated_at: new Date().toISOString(),
+    // Build the update payload — published_at is conditionally added only
+    // when the row is currently empty and a fresh date was discovered.
+    const setObj: Partial<typeof publications.$inferInsert> = {
+      enrichmentStatus: finalStatus,
+      enrichedAbstract: mergedAbstract || null,
+      enrichedKeywords:
+        mergedKeywords.length > 0 ? mergedKeywords.slice(0, 20) : null,
+      enrichedJournal: mergedJournal || null,
+      enrichedSource: sourcesUsed.join('+') || null,
+      fullTextSnippet: mergedSnippet || null,
+      wordCount: mergedWordCount,
+      updatedAt: new Date().toISOString(),
     };
-    // Fill published_at only if currently empty and we found a date.
     if (!pub.published_at && mergedPublishedAt) {
-      updatePayload.published_at = mergedPublishedAt;
+      setObj.publishedAt = mergedPublishedAt;
     }
 
-    await db.from('publications').update(updatePayload).eq('id', pub.id);
+    await db.update(publications).set(setObj).where(eq(publications.id, pub.id));
 
     emit('pub_done', {
       index: i,

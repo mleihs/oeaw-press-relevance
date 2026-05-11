@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseAdmin } from '@/lib/server/db';
 import { apiError, createSSEStream } from '@/lib/server/http';
 import {
   fetchPublicationsForEnrichment,
@@ -11,9 +10,8 @@ import {
 export const maxDuration = 300;
 
 export async function POST(req: NextRequest) {
-  let supabase, body: Record<string, unknown>;
+  let body: Record<string, unknown>;
   try {
-    supabase = getSupabaseAdmin();
     body = await req.json();
   } catch (err) {
     return apiError(err instanceof Error ? err.message : 'Invalid request', 400);
@@ -31,7 +29,7 @@ export async function POST(req: NextRequest) {
 
   let pubs;
   try {
-    pubs = await fetchPublicationsForEnrichment(filters, supabase);
+    pubs = await fetchPublicationsForEnrichment(filters);
   } catch (err) {
     return apiError(err instanceof Error ? err.message : 'Unknown error', 500);
   }
@@ -43,7 +41,6 @@ export async function POST(req: NextRequest) {
 
   runEnrichmentBatch({
     pubs,
-    db: supabase,
     abortSignal: req.signal,
     emit: send,
   }).finally(() => close());
