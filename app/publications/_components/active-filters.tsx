@@ -17,15 +17,15 @@ type Props = {
 
 function Chip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
-    <Badge variant="outline" className="gap-1 pr-1 py-0.5 text-xs font-normal bg-white">
+    <Badge variant="outline" className="gap-1 pr-1 py-0.5 text-xs font-normal bg-card">
       <span className="truncate max-w-[200px]">{label}</span>
       <button
         type="button"
         onClick={onRemove}
-        className="rounded-sm hover:bg-neutral-100 transition-colors"
+        className="rounded-sm hover:bg-muted transition-colors"
         aria-label={`Filter "${label}" entfernen`}
       >
-        <X className="h-3 w-3 text-neutral-500" />
+        <X className="h-3 w-3 text-muted-foreground" />
       </button>
     </Badge>
   );
@@ -241,7 +241,7 @@ export function ActiveFilters({ filters, setFilters, lookups }: Props) {
         variant="ghost"
         size="sm"
         onClick={reset}
-        className="h-6 px-2 text-xs text-neutral-500 hover:text-neutral-900"
+        className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
       >
         Alle Filter zurücksetzen
       </Button>

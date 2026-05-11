@@ -23,13 +23,13 @@ export default function GlobalError({
       <AlertTriangle className="h-10 w-10 text-amber-500" aria-hidden />
       <div>
         <h1 className="text-xl font-semibold">Etwas ist schiefgelaufen.</h1>
-        <p className="mt-1 max-w-md text-sm text-neutral-500">
+        <p className="mt-1 max-w-md text-sm text-muted-foreground">
           Ein unerwarteter Fehler ist aufgetreten. Versuche es erneut, oder
           lade die Seite neu. Wenn der Fehler bleibt: melde dich bei der
           Pressestelle.
         </p>
         {error.digest && (
-          <p className="mt-2 font-mono text-xs text-neutral-400">
+          <p className="mt-2 font-mono text-xs text-muted-foreground/70">
             Referenz: {error.digest}
           </p>
         )}

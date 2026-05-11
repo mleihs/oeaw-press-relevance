@@ -40,7 +40,7 @@ export function ChangelogPanel({ className }: Props) {
         onClick={() => setOpen((s) => !s)}
         aria-expanded={open}
         aria-controls="changelog-content"
-        className="group inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-gradient-to-br from-white to-neutral-50 px-4 py-2 text-sm font-medium text-neutral-700 shadow-[0_2px_18px_-10px_rgba(0,71,187,0.25)] transition hover:border-brand/30 hover:shadow-[0_4px_24px_-8px_rgba(0,71,187,0.35)]"
+        className="group inline-flex items-center gap-2 rounded-full border border-border bg-gradient-to-br from-card to-muted/50 px-4 py-2 text-sm font-medium text-foreground shadow-[0_2px_18px_-10px_rgba(0,71,187,0.25)] transition hover:border-brand/30 hover:shadow-[0_4px_24px_-8px_rgba(0,71,187,0.35)]"
       >
         <motion.span
           aria-hidden
@@ -60,7 +60,7 @@ export function ChangelogPanel({ className }: Props) {
           transition={{ type: 'spring', stiffness: 380, damping: 26 }}
           className="inline-flex"
         >
-          <ChevronDown className="h-4 w-4 text-neutral-400" />
+          <ChevronDown className="h-4 w-4 text-muted-foreground/70" />
         </motion.span>
       </button>
 
@@ -74,13 +74,13 @@ export function ChangelogPanel({ className }: Props) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.96 }}
             transition={{ type: 'spring', stiffness: 380, damping: 28, mass: 0.6 }}
-            className="absolute right-0 top-full z-30 mt-3 w-[min(28rem,calc(100vw-2rem))] origin-top-right rounded-xl border border-neutral-200/80 bg-gradient-to-br from-white to-neutral-50 p-6 shadow-[0_16px_48px_-16px_rgba(0,71,187,0.3),0_2px_8px_-2px_rgba(0,0,0,0.06)]"
+            className="absolute right-0 top-full z-30 mt-3 w-[min(28rem,calc(100vw-2rem))] origin-top-right rounded-xl border border-border/80 bg-gradient-to-br from-card to-muted/50 p-6 shadow-[0_16px_48px_-16px_rgba(0,71,187,0.3),0_2px_8px_-2px_rgba(0,0,0,0.06)]"
           >
             <div className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-brand" aria-hidden />
               <h2
                 id="changelog-heading"
-                className="text-sm font-semibold tracking-tight text-neutral-800"
+                className="text-sm font-semibold tracking-tight text-foreground"
               >
                 Was ist neu
               </h2>
@@ -97,13 +97,13 @@ export function ChangelogPanel({ className }: Props) {
                     <span className="h-1.5 w-1.5 rounded-full bg-brand" aria-hidden />
                     <span>{entry.title}</span>
                   </dt>
-                  <dd className="ml-3.5 mt-1 leading-snug text-neutral-700">{entry.body}</dd>
+                  <dd className="ml-3.5 mt-1 leading-snug text-foreground/90">{entry.body}</dd>
                 </motion.div>
               ))}
             </dl>
-            <hr className="mt-5 border-neutral-200/60" />
-            <p className="mt-3 text-xs leading-relaxed text-neutral-600">{changelogBackground}</p>
-            <p className="mt-2 text-xs italic text-neutral-500">{changelogClosing}</p>
+            <hr className="mt-5 border-border/60" />
+            <p className="mt-3 text-xs leading-relaxed text-foreground/80">{changelogBackground}</p>
+            <p className="mt-2 text-xs italic text-muted-foreground">{changelogClosing}</p>
           </motion.div>
         )}
       </AnimatePresence>

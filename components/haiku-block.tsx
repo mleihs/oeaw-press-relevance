@@ -27,12 +27,12 @@ export function HaikuBlock({ haiku, model }: HaikuBlockProps) {
       className="my-2 grid grid-cols-1 gap-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-end"
     >
       <div>
-        <p className="mb-4 inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-[0.18em] text-neutral-500">
+        <p className="mb-4 inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
           Haiku
           <InfoBubble id="haiku_block" />
         </p>
         <div
-          className="font-serif text-[1.6rem] font-light leading-[1.55] text-neutral-900 motion-reduce:[&_span]:opacity-100 motion-reduce:[&_span]:animate-none md:text-[2rem] md:leading-[1.5]"
+          className="font-serif text-[1.6rem] font-light leading-[1.55] text-foreground motion-reduce:[&_span]:opacity-100 motion-reduce:[&_span]:animate-none md:text-[2rem] md:leading-[1.5]"
           style={{ fontFamily: 'var(--font-newsreader), Georgia, serif' }}
         >
           {lines.map((line, lineIdx) => (
@@ -54,9 +54,9 @@ export function HaikuBlock({ haiku, model }: HaikuBlockProps) {
           ))}
         </div>
       </div>
-      <div className="hidden border-l border-neutral-200 pl-4 text-right text-[10px] uppercase tracking-[0.14em] text-neutral-400 md:block">
+      <div className="hidden border-l border-border pl-4 text-right text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70 md:block">
         <p>5 — 7 — 5</p>
-        {model && <p className="mt-1 normal-case tracking-normal text-neutral-400">{model.split('/').pop()}</p>}
+        {model && <p className="mt-1 normal-case tracking-normal text-muted-foreground/70">{model.split('/').pop()}</p>}
       </div>
     </section>
   );

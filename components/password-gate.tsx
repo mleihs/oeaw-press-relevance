@@ -77,7 +77,7 @@ export function PasswordGate({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Gate overlay */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#f5f3ef]/80 backdrop-blur-sm">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#f5f3ef]/80 dark:bg-background/80 backdrop-blur-sm">
         <div className="flex flex-col items-center w-full max-w-lg px-6">
           {/* Capybara illustration */}
           <div className="relative w-full max-w-md aspect-[16/10] mb-6">
@@ -99,10 +99,10 @@ export function PasswordGate({ children }: { children: React.ReactNode }) {
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); setError(false); }}
                 placeholder="Passwort eingeben..."
-                className={`w-full rounded-none border-0 border-b-2 bg-transparent px-1 py-2.5 text-center text-lg tracking-wide placeholder:text-neutral-400 focus:outline-none transition-colors ${
+                className={`w-full rounded-none border-0 border-b-2 bg-transparent px-1 py-2.5 text-center text-lg tracking-wide placeholder:text-muted-foreground/70 focus:outline-none transition-colors ${
                   error
-                    ? 'border-red-400 text-red-600'
-                    : 'border-neutral-300 text-neutral-800 focus:border-neutral-600'
+                    ? 'border-red-400 text-red-600 dark:text-red-400'
+                    : 'border-border text-foreground focus:border-foreground'
                 }`}
                 style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}
                 autoComplete="off"
@@ -120,7 +120,7 @@ export function PasswordGate({ children }: { children: React.ReactNode }) {
 
             <button
               type="submit"
-              className="w-full rounded-md border-2 border-neutral-800 bg-transparent px-4 py-2.5 text-sm font-medium text-neutral-800 transition-colors hover:bg-neutral-800 hover:text-white"
+              className="w-full rounded-md border-2 border-foreground bg-transparent px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-foreground hover:text-background"
               style={{ fontFamily: 'Georgia, "Times New Roman", serif', letterSpacing: '0.05em' }}
             >
               Eintreten
@@ -129,7 +129,7 @@ export function PasswordGate({ children }: { children: React.ReactNode }) {
 
           {/* Subtle branding */}
           <p
-            className="mt-8 text-xs text-neutral-400 tracking-widest uppercase"
+            className="mt-8 text-xs text-muted-foreground/70 tracking-widest uppercase"
             style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}
           >
             StoryScout &middot; ÖAW

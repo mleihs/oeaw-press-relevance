@@ -30,7 +30,7 @@ export function TrendDelta({ delta, isNewcomer, className, size = 'sm' }: TrendD
   if (delta > 0) {
     return (
       <span
-        className={cn('inline-flex items-center gap-0.5 font-medium text-emerald-600', text, className)}
+        className={cn('inline-flex items-center gap-0.5 font-medium text-emerald-600 dark:text-emerald-400', text, className)}
         aria-label={`um ${delta} gestiegen`}
       >
         <ArrowUpRight className={icon} />
@@ -41,7 +41,7 @@ export function TrendDelta({ delta, isNewcomer, className, size = 'sm' }: TrendD
   if (delta < 0) {
     return (
       <span
-        className={cn('inline-flex items-center gap-0.5 font-medium text-rose-600', text, className)}
+        className={cn('inline-flex items-center gap-0.5 font-medium text-rose-600 dark:text-rose-400', text, className)}
         aria-label={`um ${Math.abs(delta)} gefallen`}
       >
         <ArrowDownRight className={icon} />
@@ -51,7 +51,7 @@ export function TrendDelta({ delta, isNewcomer, className, size = 'sm' }: TrendD
   }
   return (
     <span
-      className={cn('inline-flex items-center text-neutral-400', text, className)}
+      className={cn('inline-flex items-center text-muted-foreground/70', text, className)}
       aria-label="unverändert"
     >
       <Minus className={icon} />

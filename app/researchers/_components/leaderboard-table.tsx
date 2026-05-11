@@ -84,12 +84,12 @@ export function LeaderboardTable({ rows, loading }: LeaderboardTableProps) {
     <div
       role="table"
       aria-label="Forscher:innen-Rangliste"
-      className="overflow-hidden rounded-lg border bg-white"
+      className="overflow-hidden rounded-lg border bg-card"
     >
       <div role="rowgroup">
         <div
           role="row"
-          className="grid grid-cols-[44px_1fr_180px_200px_72px_80px_28px] items-center gap-x-3 border-b bg-neutral-50/60 px-4 py-2 text-[10px] font-medium uppercase tracking-wider text-neutral-500"
+          className="grid grid-cols-[44px_1fr_180px_200px_72px_80px_28px] items-center gap-x-3 border-b bg-muted/50 px-4 py-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground"
         >
           <div role="columnheader" className="inline-flex items-center gap-1">Rang <InfoBubble id="rank" /></div>
           <div role="columnheader">Forscher:in</div>
@@ -101,7 +101,7 @@ export function LeaderboardTable({ rows, loading }: LeaderboardTableProps) {
         </div>
       </div>
 
-      <ul role="rowgroup" className="divide-y divide-neutral-100">
+      <ul role="rowgroup" className="divide-y divide-border/60">
         <AnimatePresence initial={false}>
           {rows.map((row) => (
             <motion.li
@@ -112,14 +112,14 @@ export function LeaderboardTable({ rows, loading }: LeaderboardTableProps) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
               transition={{ type: 'spring', stiffness: 380, damping: 32, mass: 0.6 }}
-              className={`group border-l-2 ${rankAccent(row.rank_now)} hover:bg-neutral-50/80`}
+              className={`group border-l-2 ${rankAccent(row.rank_now)} hover:bg-muted/60`}
             >
               <Link
                 href={`/persons/${row.person_id}`}
                 aria-label={`Rang ${row.rank_now}: ${row.firstname} ${row.lastname}, ${METRIC_SHORT_LABELS[metric]}: ${metricValue(row, metric)}`}
                 className="grid grid-cols-[44px_1fr_180px_200px_72px_80px_28px] items-center gap-x-3 px-4 py-3"
               >
-                <div role="cell" className="flex items-center gap-1 text-sm font-medium tabular-nums text-neutral-700">
+                <div role="cell" className="flex items-center gap-1 text-sm font-medium tabular-nums text-foreground">
                   <span className="w-5 text-right">{row.rank_now}</span>
                   {rankIcon(row.rank_now)}
                 </div>
@@ -132,7 +132,7 @@ export function LeaderboardTable({ rows, loading }: LeaderboardTableProps) {
                   />
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <span className="truncate text-sm font-medium text-neutral-900">
+                      <span className="truncate text-sm font-medium text-foreground">
                         {row.firstname} {row.lastname}
                       </span>
                       {row.member_type_de && (
@@ -145,7 +145,7 @@ export function LeaderboardTable({ rows, loading }: LeaderboardTableProps) {
                         </span>
                       )}
                       {row.external && (
-                        <span className="inline-flex items-center gap-0.5 text-[10px] text-neutral-400">
+                        <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground/70">
                           extern
                           <InfoBubble id="external_person" />
                         </span>
@@ -153,7 +153,7 @@ export function LeaderboardTable({ rows, loading }: LeaderboardTableProps) {
                     </div>
                     {row.top_pub && (
                       <div
-                        className="truncate text-xs text-neutral-500"
+                        className="truncate text-xs text-muted-foreground"
                         title={displayTitle(row.top_pub.title, row.top_pub.citation)}
                       >
                         <BookOpen className="mr-1 inline h-2.5 w-2.5 -translate-y-px" />
@@ -163,12 +163,12 @@ export function LeaderboardTable({ rows, loading }: LeaderboardTableProps) {
                   </div>
                 </div>
 
-                <div role="cell" className="truncate text-xs text-neutral-500">
-                  {row.oestat3_name_de || <span className="text-neutral-300">—</span>}
+                <div role="cell" className="truncate text-xs text-muted-foreground">
+                  {row.oestat3_name_de || <span className="text-muted-foreground/50">—</span>}
                 </div>
 
                 <div role="cell" className="flex items-center gap-2">
-                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-neutral-100">
+                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
                     <motion.div
                       className="h-full bg-brand"
                       initial={{ width: 0 }}
@@ -176,7 +176,7 @@ export function LeaderboardTable({ rows, loading }: LeaderboardTableProps) {
                       transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                     />
                   </div>
-                  <span className="w-12 text-right text-sm font-medium tabular-nums text-neutral-800">
+                  <span className="w-12 text-right text-sm font-medium tabular-nums text-foreground">
                     {metricValue(row, metric)}
                   </span>
                   <span className="inline-flex items-center gap-0.5">
@@ -185,7 +185,7 @@ export function LeaderboardTable({ rows, loading }: LeaderboardTableProps) {
                   </span>
                 </div>
 
-                <div role="cell" className="text-right text-xs tabular-nums text-neutral-500">
+                <div role="cell" className="text-right text-xs tabular-nums text-muted-foreground">
                   {row.pubs_total}
                 </div>
 
@@ -193,7 +193,7 @@ export function LeaderboardTable({ rows, loading }: LeaderboardTableProps) {
                   <Sparkline data={row.sparkline ?? []} width={70} height={20} stroke="currentColor" />
                 </div>
 
-                <div role="cell" aria-hidden="true" className="text-neutral-300 transition-colors group-hover:text-neutral-600">›</div>
+                <div role="cell" aria-hidden="true" className="text-muted-foreground/50 transition-colors group-hover:text-foreground">›</div>
               </Link>
             </motion.li>
           ))}

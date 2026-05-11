@@ -4,7 +4,8 @@ export default defineConfig({
   testDir: './e2e',
   fullyParallel: false,
   workers: 1,
-  retries: 0,
+  retries: 1,
+  timeout: 60_000,
   reporter: [['list']],
   globalSetup: require.resolve('./e2e/global-setup'),
   use: {

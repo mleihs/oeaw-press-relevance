@@ -286,10 +286,10 @@ export default function PublicationsPage() {
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">Publikationen</h1>
-          <p className="text-neutral-500" role="status" aria-live="polite">
+          <p className="text-muted-foreground" role="status" aria-live="polite">
             {total.toLocaleString('de-AT')} Publikationen
             {!filters.showAll && hidden > 0 && (
-              <span className="ml-2 text-neutral-500">
+              <span className="ml-2 text-muted-foreground">
                 ({hidden.toLocaleString('de-AT')} ausgeblendet)
               </span>
             )}
@@ -318,7 +318,7 @@ export default function PublicationsPage() {
         <CardContent className="p-3 space-y-3">
           <div className="flex flex-col lg:flex-row lg:items-center gap-3">
             <div className="relative w-full lg:max-w-xs">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/70" />
               <Input
                 ref={searchRef}
                 value={searchInput}
@@ -334,7 +334,7 @@ export default function PublicationsPage() {
                   type="button"
                   onClick={resetPresetTerritory}
                   title="Voreinstellung des Presets wiederherstellen"
-                  className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-medium text-amber-800 hover:bg-amber-100 transition-colors"
+                  className="inline-flex items-center gap-1 rounded-full border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/[0.08] px-2.5 py-1 text-[11px] font-medium text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-500/15 transition-colors"
                 >
                   <RotateCcw className="h-3 w-3" />
                   Preset modifiziert · zurücksetzen
@@ -362,7 +362,7 @@ export default function PublicationsPage() {
               <div className="flex items-center gap-2 text-base font-medium">
                 <Sparkles className="h-4 w-4 text-brand" /> Enrichment
               </div>
-              <p className="text-xs text-neutral-500 mt-0.5">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 Metadaten aus CrossRef + OpenAlex anreichern.
               </p>
             </div>
@@ -377,7 +377,7 @@ export default function PublicationsPage() {
               <div className="flex items-center gap-2 text-base font-medium">
                 <Brain className="h-4 w-4 text-brand" /> Analyse
               </div>
-              <p className="text-xs text-neutral-500 mt-0.5">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 LLM-Bewertung über OpenRouter.
               </p>
             </div>
@@ -403,10 +403,10 @@ export default function PublicationsPage() {
               {Object.entries(dimAvgs).map(([dim, avg]) => (
                 <div key={dim} className="space-y-1">
                   <div className="flex justify-between text-xs">
-                    <span className="text-neutral-500">{SCORE_LABELS[dim]}</span>
+                    <span className="text-muted-foreground">{SCORE_LABELS[dim]}</span>
                     <span className="font-medium">{Math.round(avg * 100)}%</span>
                   </div>
-                  <div className="h-2 rounded-full bg-neutral-200 overflow-hidden">
+                  <div className="h-2 rounded-full bg-muted overflow-hidden">
                     <div
                       className="h-full rounded-full transition-all duration-300 motion-reduce:transition-none"
                       style={{ width: `${Math.round(avg * 100)}%`, backgroundColor: SCORE_COLORS[dim] }}
@@ -433,7 +433,7 @@ export default function PublicationsPage() {
                   <> Aktiver Preset: <strong>{filters.preset}</strong>.</>
                 )}
               </p>
-              <p className="mt-2 text-neutral-400">
+              <p className="mt-2 text-muted-foreground/70">
                 Tipp: einzelne Filter über die Chips oben entfernen, oder alles zurücksetzen.
               </p>
             </>
@@ -465,7 +465,7 @@ export default function PublicationsPage() {
 
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
-          <p className="text-sm text-neutral-500">
+          <p className="text-sm text-muted-foreground">
             Zeige {rangeStart}–{rangeEnd} von {total.toLocaleString('de-AT')}
           </p>
           <div className="flex gap-2">

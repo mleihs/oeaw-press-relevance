@@ -6,6 +6,7 @@ import { Nav } from "@/components/nav";
 import { Toaster } from "@/components/ui/sonner";
 import { PasswordGate } from "@/components/password-gate";
 import { QueryProvider } from "@/components/query-provider";
+import { ThemeProvider } from "next-themes";
 import Link from "next/link";
 
 const geistSans = Geist({
@@ -36,32 +37,34 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="de">
+    <html lang="de" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable} antialiased bg-neutral-50 flex flex-col min-h-screen`}
+        className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable} antialiased bg-background text-foreground flex flex-col min-h-screen`}
       >
-        <NuqsAdapter>
-          <QueryProvider>
-            <PasswordGate>
-              <Nav />
-              <main className="mx-auto max-w-7xl w-full px-4 py-6 flex-1">
-                {children}
-              </main>
-              <footer className="border-t bg-white/50 mt-auto">
-                <div className="mx-auto max-w-7xl px-4 py-4 flex items-center justify-between text-xs text-neutral-400">
-                  <span>StoryScout v0.1.0</span>
-                  <div className="flex items-center gap-4">
-                    <Link href="/settings" className="hover:text-neutral-600 transition-colors">
-                      Einstellungen
-                    </Link>
-                    <span>ÖAW</span>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          <NuqsAdapter>
+            <QueryProvider>
+              <PasswordGate>
+                <Nav />
+                <main className="mx-auto max-w-7xl w-full px-4 py-6 flex-1">
+                  {children}
+                </main>
+                <footer className="border-t bg-background/50 mt-auto">
+                  <div className="mx-auto max-w-7xl px-4 py-4 flex items-center justify-between text-xs text-muted-foreground">
+                    <span>StoryScout v0.1.0</span>
+                    <div className="flex items-center gap-4">
+                      <Link href="/settings" className="hover:text-foreground transition-colors">
+                        Einstellungen
+                      </Link>
+                      <span>ÖAW</span>
+                    </div>
                   </div>
-                </div>
-              </footer>
-              <Toaster />
-            </PasswordGate>
-          </QueryProvider>
-        </NuqsAdapter>
+                </footer>
+                <Toaster />
+              </PasswordGate>
+            </QueryProvider>
+          </NuqsAdapter>
+        </ThemeProvider>
       </body>
     </html>
   );

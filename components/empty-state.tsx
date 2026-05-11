@@ -32,19 +32,19 @@ export function EmptyState({
 }: EmptyStateProps) {
   const wrapper =
     variant === 'card'
-      ? 'rounded-lg border bg-white p-10 text-center'
+      ? 'rounded-lg border bg-card p-10 text-center'
       : 'py-8 text-center';
 
   return (
     <div className={cn(wrapper, className)}>
       {icon && (
-        <div className="mx-auto mb-3 flex h-8 w-8 items-center justify-center text-neutral-400">
+        <div className="mx-auto mb-3 flex h-8 w-8 items-center justify-center text-muted-foreground/70">
           {icon}
         </div>
       )}
-      <p className="text-sm font-medium text-neutral-700">{title}</p>
+      <p className="text-sm font-medium text-foreground">{title}</p>
       {body && (
-        <div className="mt-1 text-xs text-neutral-500 max-w-md mx-auto">
+        <div className="mt-1 text-xs text-muted-foreground max-w-md mx-auto">
           {body}
         </div>
       )}

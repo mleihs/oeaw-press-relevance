@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseFromRequest } from '@/lib/api-helpers';
 import { ELIGIBILITY_EXCLUDE_TYPE_UIDS } from '@/lib/eligibility';
+import type { Lang } from '@/lib/types';
 
 type SB = ReturnType<typeof getSupabaseFromRequest>;
 
@@ -294,7 +295,7 @@ export async function GET(req: NextRequest) {
 
     type PressReleaseRow = {
       id: string;
-      lang: 'de' | 'en' | null;
+      lang: Lang | null;
       [k: string]: unknown;
     };
     type Row = {

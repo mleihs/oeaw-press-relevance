@@ -15,7 +15,6 @@ import { toast } from 'sonner';
 export default function SettingsPage() {
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [showApiKey, setShowApiKey] = useState(false);
-  const [showSupabaseKey, setShowSupabaseKey] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [bubblesOn, setBubblesOn] = useInfoBubblesEnabled();
@@ -58,7 +57,7 @@ export default function SettingsPage() {
     <div className="space-y-6 max-w-2xl">
       <div>
         <h1 className="text-2xl font-bold">Einstellungen</h1>
-        <p className="text-neutral-500">
+        <p className="text-muted-foreground">
           Konfigurieren Sie Ihre API-Schlüssel und Analyse-Parameter. Alle Einstellungen werden im Browser gespeichert.
         </p>
       </div>
@@ -70,7 +69,7 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent className="space-y-2">
           <Label htmlFor="reviewer-name" className="flex items-center gap-2">
-            <User className="h-4 w-4 text-neutral-400" />
+            <User className="h-4 w-4 text-muted-foreground/70" />
             Dein Name
           </Label>
           <Input
@@ -80,7 +79,7 @@ export default function SettingsPage() {
             value={settings.reviewerName}
             onChange={(e) => setSettings(s => ({ ...s, reviewerName: e.target.value }))}
           />
-          <p className="text-xs text-neutral-500">
+          <p className="text-xs text-muted-foreground">
             Erscheint bei Flag-Notizen und Triage-Entscheidungen als Urheber. Leer lassen → Eintrag als „team".
           </p>
         </CardContent>
@@ -95,10 +94,10 @@ export default function SettingsPage() {
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-1">
               <Label htmlFor="bubbles-toggle" className="flex items-center gap-2">
-                <Info className="h-4 w-4 text-neutral-400" />
+                <Info className="h-4 w-4 text-muted-foreground/70" />
                 Erklärungs-Bubbles
               </Label>
-              <p className="text-xs text-neutral-500">
+              <p className="text-xs text-muted-foreground">
                 Kleine Info-Symbole neben Fachbegriffen wie „Press-Score" oder „Eigen-Highlight". Bei AUS verschwinden sie aus der gesamten App.
               </p>
             </div>
@@ -118,8 +117,8 @@ export default function SettingsPage() {
           <CardTitle className="text-base">Supabase-Verbindung</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 p-3 text-xs text-amber-900">
-            <ShieldCheck className="h-4 w-4 shrink-0 text-amber-800 mt-0.5" />
+          <div className="flex items-start gap-2 rounded-lg bg-amber-50 dark:bg-amber-500/[0.08] border border-amber-200 dark:border-amber-500/30 p-3 text-xs text-amber-900 dark:text-amber-200">
+            <ShieldCheck className="h-4 w-4 shrink-0 text-amber-800 dark:text-amber-300 mt-0.5" />
             <div>
               <p className="font-medium mb-0.5">Server-konfiguriert</p>
               <p>
@@ -137,13 +136,13 @@ export default function SettingsPage() {
             Server-Verbindung testen
           </Button>
           {connectionStatus === 'success' && (
-            <span className="ml-3 inline-flex items-center gap-1.5 text-sm text-green-600">
+            <span className="ml-3 inline-flex items-center gap-1.5 text-sm text-green-600 dark:text-green-400">
               <CheckCircle2 className="h-4 w-4" />
               Verbindung erfolgreich
             </span>
           )}
           {connectionStatus === 'error' && (
-            <span className="ml-3 inline-flex items-center gap-1.5 text-sm text-red-600">
+            <span className="ml-3 inline-flex items-center gap-1.5 text-sm text-red-600 dark:text-red-400">
               <XCircle className="h-4 w-4" />
               {connectionError || 'Verbindung fehlgeschlagen'}
             </span>
@@ -171,13 +170,13 @@ export default function SettingsPage() {
               <button
                 type="button"
                 onClick={() => setShowApiKey(!showApiKey)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/70 hover:text-foreground"
               >
                 {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
           </div>
-          <p className="text-xs text-neutral-500">
+          <p className="text-xs text-muted-foreground">
             Modell-Wahl erfolgt pro Batch direkt im Analyse-Dialog (Publikationen → Analyse starten).
             Kein globales LLM-Default in den Einstellungen, weil unterschiedliche Batches
             unterschiedliche Preis-Qualitäts-Profile sinnvoll machen.
@@ -201,7 +200,7 @@ export default function SettingsPage() {
               value={settings.minWordCount}
               onChange={(e) => setSettings(s => ({ ...s, minWordCount: parseInt(e.target.value) || 0 }))}
             />
-            <p className="text-xs text-neutral-500">
+            <p className="text-xs text-muted-foreground">
               Nur Publikationen mit mindestens so vielen Wörtern angereichertem Inhalt analysieren. 0 = alle analysieren.
             </p>
           </div>
@@ -215,7 +214,7 @@ export default function SettingsPage() {
               value={settings.batchSize}
               onChange={(e) => setSettings(s => ({ ...s, batchSize: Math.min(5, Math.max(1, parseInt(e.target.value) || 3)) }))}
             />
-            <p className="text-xs text-neutral-500">
+            <p className="text-xs text-muted-foreground">
               Anzahl der Publikationen pro LLM-API-Aufruf (1-5). Niedrigere Werte liefern bessere Ergebnisse, kosten aber mehr.
             </p>
           </div>

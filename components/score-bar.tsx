@@ -29,7 +29,7 @@ export function ScoreBar({ dimension, value, compact }: ScoreBarProps) {
     return (
       <div className="flex items-center gap-1.5">
         <div
-          className="h-2 w-16 rounded-full bg-neutral-200 overflow-hidden"
+          className="h-2 w-16 rounded-full bg-muted overflow-hidden"
           role="progressbar"
           aria-valuenow={pct}
           aria-valuemin={0}
@@ -41,7 +41,7 @@ export function ScoreBar({ dimension, value, compact }: ScoreBarProps) {
             style={{ width: `${pct}%`, backgroundColor: color }}
           />
         </div>
-        <span className="text-xs text-neutral-500">{pct}%</span>
+        <span className="text-xs text-muted-foreground">{pct}%</span>
       </div>
     );
   }
@@ -49,14 +49,14 @@ export function ScoreBar({ dimension, value, compact }: ScoreBarProps) {
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between text-sm">
-        <span className="inline-flex items-center gap-1 text-neutral-600">
+        <span className="inline-flex items-center gap-1 text-foreground/80">
           {label}
           {explId && <InfoBubble id={explId} />}
         </span>
         <span className="font-medium">{pct}%</span>
       </div>
       <div
-        className="h-2.5 w-full rounded-full bg-neutral-200 overflow-hidden"
+        className="h-2.5 w-full rounded-full bg-muted overflow-hidden"
         role="progressbar"
         aria-valuenow={pct}
         aria-valuemin={0}
@@ -95,7 +95,7 @@ function pickScoreNaExpl(
 export function PressScoreBadge({ score, variant = 'badge', analysisStatus, enrichmentStatus }: PressScoreBadgeProps) {
   if (score === null) return (
     <span className="inline-flex items-center gap-1">
-      <span className="text-neutral-400 text-sm">N/A</span>
+      <span className="text-muted-foreground/70 text-sm">N/A</span>
       <InfoBubble id={pickScoreNaExpl(analysisStatus, enrichmentStatus)} />
     </span>
   );

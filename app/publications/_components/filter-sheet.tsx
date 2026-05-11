@@ -58,7 +58,7 @@ export function FilterSheet({ filters, setFilters, lookups }: Props) {
         </Button>
       </SheetTrigger>
       <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto p-0">
-        <SheetHeader className="sticky top-0 z-10 bg-white border-b px-5 py-4">
+        <SheetHeader className="sticky top-0 z-10 bg-background border-b px-5 py-4">
           <SheetTitle>Filter</SheetTitle>
         </SheetHeader>
         <div className="px-5 py-5 space-y-6">
@@ -116,7 +116,7 @@ function FacetSection({
     <section className="space-y-2.5">
       <header>
         <h3 className="text-sm font-semibold">{title}</h3>
-        {hint && <p className="text-xs text-neutral-500 mt-0.5">{hint}</p>}
+        {hint && <p className="text-xs text-muted-foreground mt-0.5">{hint}</p>}
       </header>
       {children}
     </section>
@@ -136,7 +136,7 @@ function TriStateTabs({
     { key: 'no', label: 'Nein' },
   ];
   return (
-    <div className="inline-flex rounded-md border bg-neutral-50 p-0.5">
+    <div className="inline-flex rounded-md border bg-muted/50 p-0.5">
       {opts.map((o) => (
         <button
           key={o.key}
@@ -145,8 +145,8 @@ function TriStateTabs({
           className={cn(
             'px-3 py-1 text-xs rounded-sm font-medium transition-colors',
             value === o.key
-              ? 'bg-white shadow-sm text-neutral-900'
-              : 'text-neutral-500 hover:text-neutral-700',
+              ? 'bg-card shadow-sm text-foreground'
+              : 'text-muted-foreground hover:text-foreground',
           )}
         >
           {o.label}
@@ -173,7 +173,7 @@ function ToggleChip({
         'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
         active
           ? 'bg-brand text-white border-brand'
-          : 'bg-white text-neutral-700 border-neutral-200 hover:border-neutral-400',
+          : 'bg-card text-foreground border-border hover:border-muted-foreground/50',
       )}
     >
       {label}
@@ -219,7 +219,7 @@ function InstituteFacet({ filters, setFilters, lookups }: Props) {
 
   return (
     <FacetSection title="Institut" hint={`${items.length.toLocaleString('de-AT')} verfügbar`}>
-      <label className="flex items-center justify-between text-xs text-neutral-700 cursor-pointer">
+      <label className="flex items-center justify-between text-xs text-foreground cursor-pointer">
         <span>nur Forschungseinrichtungen</span>
         <Switch
           checked={filters.topUnitOnly}
@@ -272,8 +272,8 @@ function Oestat6Facet({ filters, setFilters, lookups }: Props) {
           className={cn(
             'rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors',
             activeSuper === 'all'
-              ? 'bg-neutral-900 text-white border-neutral-900'
-              : 'bg-white text-neutral-700 border-neutral-200 hover:border-neutral-400',
+              ? 'bg-foreground text-background border-foreground'
+              : 'bg-card text-foreground border-border hover:border-muted-foreground/50',
           )}
         >
           Alle
@@ -286,8 +286,8 @@ function Oestat6Facet({ filters, setFilters, lookups }: Props) {
             className={cn(
               'rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors',
               activeSuper === d
-                ? 'bg-neutral-900 text-white border-neutral-900'
-                : 'bg-white text-neutral-700 border-neutral-200 hover:border-neutral-400',
+                ? 'bg-foreground text-background border-foreground'
+                : 'bg-card text-foreground border-border hover:border-muted-foreground/50',
             )}
             title={SUPER_DOMAIN_LABELS[d]}
           >
@@ -344,7 +344,7 @@ function BooleansFacet({
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <span className="text-xs text-neutral-700">{label}</span>
+      <span className="text-xs text-foreground">{label}</span>
       {children}
     </div>
   );
@@ -413,7 +413,7 @@ function CurationFacet({
       </div>
       <div className="mt-3">
         <div className="flex items-center justify-between gap-3">
-          <span className="text-xs text-neutral-700 inline-flex items-center gap-1">
+          <span className="text-xs text-foreground inline-flex items-center gap-1">
             ÖAW-Pressemitteilung
             <InfoBubble id="filter_press_released" />
           </span>
@@ -459,7 +459,7 @@ function DateRangeFacet({
         <PopoverTrigger asChild>
           <Button variant="outline" className="w-full justify-start font-normal h-9">
             <CalendarIcon className="h-4 w-4 mr-2 opacity-60" />
-            <span className={cn(!filters.from && !filters.to && 'text-neutral-500')}>
+            <span className={cn(!filters.from && !filters.to && 'text-muted-foreground')}>
               {label}
             </span>
           </Button>
@@ -488,7 +488,7 @@ function DateRangeFacet({
         <button
           type="button"
           onClick={() => setFilters({ from: '', to: '', page: 1 })}
-          className="text-xs text-neutral-500 hover:text-neutral-900 transition-colors"
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
           Zeitraum entfernen
         </button>

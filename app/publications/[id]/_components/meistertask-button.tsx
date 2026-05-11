@@ -80,9 +80,19 @@ export function MeistertaskButton({ pub }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ publication_id: pub.id }),
       });
-      const data = await res.json();
+      // Graceful when the server returns an empty / non-JSON body (e.g. Vercel
+      // function crash or 504). Without this, `res.json()` throws the cryptic
+      // "Failed to execute 'json' on 'Response': Unexpected end of JSON input"
+      // which used to surface as the toast message in production.
+      const data: {
+        error?: string;
+        status?: string;
+        task_id?: string | number;
+        task_url?: string;
+      } = await res.json().catch(() => ({}));
       if (!res.ok) {
-        toast.error(`Push fehlgeschlagen: ${data.error ?? `HTTP ${res.status}`}`);
+        const reason = data.error ?? `HTTP ${res.status}${res.statusText ? ` ${res.statusText}` : ''}`;
+        toast.error(`Push fehlgeschlagen: ${reason}`);
         safeSetState({ kind: 'idle' });
         return;
       }

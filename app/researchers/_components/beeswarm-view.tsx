@@ -35,7 +35,8 @@ const SECTION_COLORS = [
   '#84cc16', '#ec4899', '#f97316', '#14b8a6', '#a855f7', '#64748b',
 ];
 function colorFor(sektion: string | null): string {
-  if (!sektion) return '#cbd5e1';
+  // mid-grey fallback for unknown sektion — visible on both light and dark bg
+  if (!sektion) return '#94a3b8';
   let h = 0;
   for (let i = 0; i < sektion.length; i++) h = (h * 31 + sektion.charCodeAt(i)) | 0;
   return SECTION_COLORS[Math.abs(h) % SECTION_COLORS.length];
@@ -119,18 +120,18 @@ export function BeeswarmView({ points, loading, metric }: BeeswarmViewProps) {
   const tickValues = [0, max / 4, max / 2, (3 * max) / 4, max];
 
   return (
-    <div className="rounded-lg border bg-white p-5">
+    <div className="rounded-lg border bg-card p-5">
       <div className="mb-3 flex items-baseline justify-between">
         <div>
-          <p className="flex items-center gap-1 text-xs font-medium text-neutral-700">
+          <p className="flex items-center gap-1 text-xs font-medium text-foreground">
             Verteilung der Forschenden nach {METRIC_SHORT_LABELS[metric]}
             <InfoBubble id="beeswarm" />
           </p>
-          <p className="mt-0.5 text-xs text-neutral-400">
+          <p className="mt-0.5 text-xs text-muted-foreground/70">
             Punktgröße entspricht der Anzahl bewerteter Publikationen. Hover für Details.
           </p>
         </div>
-        <p className="text-xs tabular-nums text-neutral-400">{points.length} Personen</p>
+        <p className="text-xs tabular-nums text-muted-foreground/70">{points.length} Personen</p>
       </div>
 
       <div ref={containerRef} className="relative">
@@ -150,14 +151,14 @@ export function BeeswarmView({ points, loading, metric }: BeeswarmViewProps) {
           <line
             x1={PAD_X} x2={width - PAD_X}
             y1={HEIGHT - 12} y2={HEIGHT - 12}
-            stroke="#e5e5e5"
+            className="stroke-muted-foreground/30"
           />
           {tickValues.map((t) => {
             const x = PAD_X + (t / max) * (width - 2 * PAD_X);
             return (
               <g key={t}>
-                <line x1={x} x2={x} y1={HEIGHT - 16} y2={HEIGHT - 8} stroke="#d4d4d4" />
-                <text x={x} y={HEIGHT - 0} textAnchor="middle" className="fill-neutral-400 text-[10px]">
+                <line x1={x} x2={x} y1={HEIGHT - 16} y2={HEIGHT - 8} className="stroke-muted-foreground/40" />
+                <text x={x} y={HEIGHT - 0} textAnchor="middle" className="fill-muted-foreground text-[10px]">
                   {metric === 'avg_score' ? `${Math.round(t * 100)}%` : t.toFixed(metric === 'sum_score' ? 1 : 0)}
                 </text>
               </g>
@@ -216,13 +217,13 @@ export function BeeswarmView({ points, loading, metric }: BeeswarmViewProps) {
                       {n.firstname} {n.lastname}
                     </Link>
                     {n.oestat3_name_de && (
-                      <p className="mt-0.5 truncate text-xs text-neutral-500">{n.oestat3_name_de}</p>
+                      <p className="mt-0.5 truncate text-xs text-muted-foreground">{n.oestat3_name_de}</p>
                     )}
                     <div className="mt-2 flex items-baseline gap-3 text-xs">
                       <span><span className="font-medium tabular-nums">
                         {metric === 'avg_score' ? `${Math.round(n.metric_value * 100)} %` : n.metric_value.toFixed(metric === 'sum_score' ? 2 : 0)}
                       </span> {METRIC_SHORT_LABELS[metric]}</span>
-                      <span className="text-neutral-400">·</span>
+                      <span className="text-muted-foreground/70">·</span>
                       <span>{n.pubs_total} Pubs</span>
                     </div>
                     {n.is_member && (
@@ -239,14 +240,14 @@ export function BeeswarmView({ points, loading, metric }: BeeswarmViewProps) {
 
         {/* Legend */}
         {sektionLegend.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-neutral-500">
+          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-muted-foreground">
             {sektionLegend.map(([s, n]) => (
               <span key={s} className="inline-flex items-center gap-1.5">
                 <span
                   className="inline-block h-2 w-2 rounded-full"
                   style={{ backgroundColor: colorFor(s) }}
                 />
-                {s} <span className="text-neutral-300">({n})</span>
+                {s} <span className="text-muted-foreground/50">({n})</span>
               </span>
             ))}
             <span className="ml-auto inline-flex items-center gap-1.5">

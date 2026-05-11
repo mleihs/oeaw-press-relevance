@@ -14,8 +14,8 @@ interface PubListProps {
 
 const BAND_BG = {
   high: 'bg-brand text-white',
-  mid:  'bg-amber-100 text-amber-800',
-  low:  'bg-neutral-100 text-neutral-500',
+  mid:  'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300',
+  low:  'bg-muted text-muted-foreground',
 };
 
 export function PubList({ publications }: PubListProps) {
@@ -24,13 +24,13 @@ export function PubList({ publications }: PubListProps) {
   }
 
   return (
-    <div className="rounded-lg border bg-white">
-      <div className="flex items-center gap-1 border-b bg-neutral-50/60 px-4 py-2 text-xs font-medium text-neutral-700">
+    <div className="rounded-lg border bg-card">
+      <div className="flex items-center gap-1 border-b bg-muted/50 px-4 py-2 text-xs font-medium text-foreground">
         Publikationen ({publications.length})
         <InfoBubble id="press_score" />
         <InfoBubble id="score_band" />
       </div>
-      <ul className="divide-y divide-neutral-100">
+      <ul className="divide-y divide-border/60">
         {publications.map((p, i) => (
           <motion.li
             key={p.id}
@@ -40,7 +40,7 @@ export function PubList({ publications }: PubListProps) {
           >
             <Link
               href={`/publications/${p.id}`}
-              className="grid grid-cols-[64px_1fr_auto] items-center gap-3 px-4 py-3 hover:bg-neutral-50/80"
+              className="grid grid-cols-[64px_1fr_auto] items-center gap-3 px-4 py-3 hover:bg-muted/60"
             >
               <span className={`inline-flex h-9 w-12 items-center justify-center rounded-md text-sm font-medium tabular-nums ${BAND_BG[p.band]}`}>
                 {Math.round(p.press_score * 100)}
@@ -49,10 +49,10 @@ export function PubList({ publications }: PubListProps) {
                 <p className="truncate text-sm font-medium" title={displayTitle(p.title, p.citation)}>
                   {displayTitle(p.title, p.citation)}
                 </p>
-                <p className="mt-0.5 flex items-center gap-2 text-xs text-neutral-500">
+                <p className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
                   <span>{p.published_at}</span>
                   {p.authorship && (
-                    <span className="text-neutral-400">{p.authorship}</span>
+                    <span className="text-muted-foreground/70">{p.authorship}</span>
                   )}
                   {p.mahighlight && (
                     <span className="inline-flex items-center gap-0.5 text-brand">
@@ -63,7 +63,7 @@ export function PubList({ publications }: PubListProps) {
                   )}
                 </p>
               </div>
-              <span className="text-neutral-300">›</span>
+              <span className="text-muted-foreground/50">›</span>
             </Link>
           </motion.li>
         ))}

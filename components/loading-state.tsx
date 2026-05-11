@@ -11,7 +11,7 @@
  */
 type Variant = 'spinner' | 'text' | 'panel';
 
-const SPINNER = 'animate-spin motion-reduce:animate-none rounded-full border-neutral-200 border-t-brand';
+const SPINNER = 'animate-spin motion-reduce:animate-none rounded-full border-muted border-t-brand';
 
 export function LoadingState({
   variant = 'panel',
@@ -32,7 +32,7 @@ export function LoadingState({
   if (variant === 'text') {
     return (
       <div
-        className="rounded-lg border bg-white p-12 text-center text-sm text-neutral-500"
+        className="rounded-lg border bg-card p-12 text-center text-sm text-muted-foreground"
         role="status"
         aria-live="polite"
       >

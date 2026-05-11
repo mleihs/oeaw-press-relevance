@@ -14,15 +14,13 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { TintBadge } from '@/components/tint-badge';
+import { CapybaraModalAvatar } from '@/components/capybara-modal-avatar';
 import { getApiHeaders, loadSettings } from '@/lib/settings-store';
 import { LLM_MODELS } from '@/lib/constants';
-import { Play, Square, RotateCcw, AlertCircle, Info, Check } from 'lucide-react';
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-type ModalStatus = 'idle' | 'running' | 'complete' | 'cancelled' | 'error';
+import type { ModalStatus } from '@/lib/types';
+import { Play, Square, RotateCcw, AlertCircle, Check } from 'lucide-react';
+import { InfoBubble } from '@/components/info-bubble';
 
 interface AnalysisConfig {
   limit: number;
@@ -57,110 +55,12 @@ interface CompleteData {
 // ---------------------------------------------------------------------------
 
 const TIER_STYLES: Record<string, { bg: string; text: string; label: string }> = {
-  recommended: { bg: 'bg-green-100', text: 'text-green-700', label: 'Empfohlen' },
-  budget: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Budget' },
-  balanced: { bg: 'bg-amber-100', text: 'text-amber-900', label: 'Ausgewogen' },
-  premium: { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Premium' },
-  free: { bg: 'bg-neutral-100', text: 'text-neutral-600', label: 'Gratis' },
+  recommended: { bg: 'bg-green-100 dark:bg-green-500/15', text: 'text-green-700 dark:text-green-300', label: 'Empfohlen' },
+  budget: { bg: 'bg-blue-100 dark:bg-blue-500/15', text: 'text-blue-700 dark:text-blue-300', label: 'Budget' },
+  balanced: { bg: 'bg-amber-100 dark:bg-amber-500/15', text: 'text-amber-900 dark:text-amber-300', label: 'Ausgewogen' },
+  premium: { bg: 'bg-purple-100 dark:bg-purple-500/15', text: 'text-purple-700 dark:text-purple-300', label: 'Premium' },
+  free: { bg: 'bg-muted', text: 'text-muted-foreground', label: 'Gratis' },
 };
-
-// ---------------------------------------------------------------------------
-// Capybara SVG (analyst version — with glasses)
-// ---------------------------------------------------------------------------
-
-function CapybaraAnalyst({ state }: { state: ModalStatus }) {
-  const animClass =
-    state === 'running'
-      ? 'animate-capybara-work'
-      : state === 'complete'
-        ? 'animate-capybara-happy'
-        : state === 'error'
-          ? 'animate-capybara-scratch'
-          : state === 'cancelled'
-            ? 'animate-capybara-shrug'
-            : '';
-
-  return (
-    <div className={`relative w-16 h-16 ${animClass}`}>
-      <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-        {/* Body */}
-        <ellipse cx="32" cy="40" rx="18" ry="14" fill="#8B6914" />
-        {/* Head */}
-        <ellipse cx="32" cy="24" rx="12" ry="10" fill="#A07B1E" />
-        {/* Snout */}
-        <ellipse cx="32" cy="28" rx="7" ry="5" fill="#C4A24E" />
-        {/* Nose */}
-        <ellipse cx="32" cy="26" rx="2.5" ry="1.5" fill="#4A3508" />
-        {/* Eyes */}
-        <circle cx="26" cy="22" r="2" fill="#1a1a1a" />
-        <circle cx="38" cy="22" r="2" fill="#1a1a1a" />
-        <circle cx="26.7" cy="21.3" r="0.7" fill="white" />
-        <circle cx="38.7" cy="21.3" r="0.7" fill="white" />
-        {/* Glasses */}
-        <circle cx="26" cy="22" r="4" stroke="#4A3508" strokeWidth="0.8" fill="none" />
-        <circle cx="38" cy="22" r="4" stroke="#4A3508" strokeWidth="0.8" fill="none" />
-        <line x1="30" y1="22" x2="34" y2="22" stroke="#4A3508" strokeWidth="0.8" />
-        {/* Ears */}
-        <ellipse cx="22" cy="16" rx="3" ry="4" fill="#8B6914" />
-        <ellipse cx="42" cy="16" rx="3" ry="4" fill="#8B6914" />
-        <ellipse cx="22" cy="16" rx="2" ry="3" fill="#C4A24E" />
-        <ellipse cx="42" cy="16" rx="2" ry="3" fill="#C4A24E" />
-        {/* Legs */}
-        <rect x="18" y="48" width="6" height="8" rx="3" fill="#8B6914" />
-        <rect x="40" y="48" width="6" height="8" rx="3" fill="#8B6914" />
-        {/* Mouth */}
-        <path d="M29 30 Q32 32 35 30" stroke="#4A3508" strokeWidth="0.8" fill="none" strokeLinecap="round" />
-        {/* Clipboard (working) */}
-        {state === 'running' && (
-          <g>
-            <rect x="22" y="35" width="20" height="16" rx="1.5" fill="white" stroke="#ccc" strokeWidth="0.5" />
-            <rect x="28" y="33" width="8" height="4" rx="1" fill="#4A3508" />
-            <line x1="25" y1="40" x2="39" y2="40" stroke="#10b981" strokeWidth="1" />
-            <line x1="25" y1="43" x2="36" y2="43" stroke="#10b981" strokeWidth="1" opacity="0.5" />
-            <line x1="25" y1="46" x2="33" y2="46" stroke="#10b981" strokeWidth="1" opacity="0.3" />
-          </g>
-        )}
-        {/* Confetti for complete */}
-        {state === 'complete' && (
-          <>
-            <circle cx="10" cy="10" r="1.5" fill="#ef4444" className="animate-ping" />
-            <circle cx="54" cy="8" r="1.5" fill="#3b82f6" className="animate-ping" style={{ animationDelay: '0.2s' }} />
-            <circle cx="8" cy="30" r="1.5" fill="#22c55e" className="animate-ping" style={{ animationDelay: '0.4s' }} />
-            <circle cx="56" cy="28" r="1.5" fill="#eab308" className="animate-ping" style={{ animationDelay: '0.3s' }} />
-          </>
-        )}
-      </svg>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Info tooltip
-// ---------------------------------------------------------------------------
-
-function InfoBubble({ text }: { text: string }) {
-  const [show, setShow] = useState(false);
-
-  return (
-    <span className="relative inline-flex">
-      <button
-        type="button"
-        className="text-neutral-400 hover:text-neutral-600 transition-colors"
-        onMouseEnter={() => setShow(true)}
-        onMouseLeave={() => setShow(false)}
-        onClick={() => setShow(s => !s)}
-      >
-        <Info className="h-3.5 w-3.5" />
-      </button>
-      {show && (
-        <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-56 rounded-md border bg-white px-2.5 py-1.5 text-xs text-neutral-600 shadow-lg z-50">
-          {text}
-          <span className="absolute top-full left-1/2 -translate-x-1/2 -mt-px border-4 border-transparent border-t-white" />
-        </span>
-      )}
-    </span>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // Main Modal
@@ -380,7 +280,7 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
       <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-3">
-            <CapybaraAnalyst state={status} />
+            <CapybaraModalAvatar variant="analyst" state={status} />
             <div className="flex-1 min-w-0">
               <DialogTitle>StoryScout Analyse</DialogTitle>
               <DialogDescription>
@@ -393,11 +293,11 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
             </div>
             {status === 'running' && (
               <div className="text-right shrink-0">
-                <span className="text-xs text-neutral-400 tabular-nums block">
+                <span className="text-xs text-muted-foreground/70 tabular-nums block">
                   {Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2, '0')}
                 </span>
                 {analysisEta && (
-                  <span className="text-[10px] text-neutral-400 block">
+                  <span className="text-[10px] text-muted-foreground/70 block">
                     Restzeit: {analysisEta}
                   </span>
                 )}
@@ -413,7 +313,7 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
             <div className="space-y-2">
               <div className="flex items-center gap-1.5">
                 <Label className="text-sm">Modell</Label>
-                <InfoBubble text="Das LLM-Modell bewertet jede Publikation auf 5 Dimensionen und erstellt einen deutschen Pitch-Vorschlag. Teurere Modelle liefern differenziertere Bewertungen." />
+                <InfoBubble content={{ title: 'Modell', body: <p>Das LLM-Modell bewertet jede Publikation auf 5 Dimensionen und erstellt einen deutschen Pitch-Vorschlag. Teurere Modelle liefern differenziertere Bewertungen.</p> }} />
               </div>
               <div className="space-y-1.5 max-h-[220px] overflow-y-auto rounded-lg border p-1.5">
                 {LLM_MODELS.map(m => {
@@ -428,24 +328,24 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
                       onClick={() => setConfig(c => ({ ...c, model: m.value }))}
                       className={`w-full text-left rounded-md px-3 py-2 transition-colors ${
                         isSelected
-                          ? 'bg-neutral-900 text-white'
-                          : 'hover:bg-neutral-50'
+                          ? 'bg-foreground text-background'
+                          : 'hover:bg-muted'
                       }`}
                     >
                       <div className="flex items-center gap-2">
                         <span className={`shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                          isSelected ? 'border-white' : 'border-neutral-300'
+                          isSelected ? 'border-background' : 'border-input'
                         }`}>
                           {isSelected && <Check className="h-2.5 w-2.5" />}
                         </span>
                         <span className="font-medium text-sm flex-1">{m.label}</span>
                         <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
-                          isSelected ? 'bg-white/20 text-white' : `${tier.bg} ${tier.text}`
+                          isSelected ? 'bg-background/20 text-background' : `${tier.bg} ${tier.text}`
                         }`}>
                           {tier.label}
                         </span>
                         <span className={`text-xs font-mono tabular-nums ${
-                          isSelected ? 'text-white/70' : 'text-neutral-400'
+                          isSelected ? 'text-background/70' : 'text-muted-foreground/70'
                         }`}>
                           {m.costPerMillionTokens === 0
                             ? 'gratis'
@@ -453,13 +353,13 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
                         </span>
                       </div>
                       <p className={`text-xs mt-0.5 pl-6 ${
-                        isSelected ? 'text-white/60' : 'text-neutral-400'
+                        isSelected ? 'text-background/60' : 'text-muted-foreground/70'
                       }`}>
                         {m.description}
                       </p>
                       {costFor100 > 0 && (
                         <p className={`text-[10px] mt-0.5 pl-6 ${
-                          isSelected ? 'text-white/40' : 'text-neutral-300'
+                          isSelected ? 'text-background/40' : 'text-muted-foreground/50'
                         }`}>
                           ~${costFor100.toFixed(4)} pro 100 Publikationen
                         </p>
@@ -471,9 +371,9 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
             </div>
 
             {/* Cost estimate + key balance */}
-            <div className="rounded-lg border bg-neutral-50/50 p-3 space-y-1.5">
+            <div className="rounded-lg border bg-muted/50 p-3 space-y-1.5">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-neutral-500">Geschätzte Kosten</span>
+                <span className="text-muted-foreground">Geschätzte Kosten</span>
                 <span className="font-mono text-xs">
                   {estimatedCost === 0
                     ? 'Gratis'
@@ -482,14 +382,14 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
               </div>
               {keyBalance && keyBalance.effectiveBudget !== null && (
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-neutral-400">Budget verbleibend</span>
-                  <span className={`font-mono ${keyBalance.effectiveBudget < 0.50 ? 'text-red-500 font-medium' : 'text-neutral-500'}`}>
+                  <span className="text-muted-foreground/70">Budget verbleibend</span>
+                  <span className={`font-mono ${keyBalance.effectiveBudget < 0.50 ? 'text-red-500 dark:text-red-400 font-medium' : 'text-muted-foreground'}`}>
                     ${keyBalance.effectiveBudget.toFixed(4)}
                   </span>
                 </div>
               )}
               {keyBalance && keyBalance.effectiveBudget !== null && keyBalance.effectiveBudget < 0.50 && keyBalance.effectiveBudget >= 0.01 && (
-                <div className="flex items-center gap-1.5 text-xs text-amber-800 bg-amber-50 rounded px-2 py-1">
+                <div className="flex items-center gap-1.5 text-xs text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-500/15 rounded px-2 py-1">
                   <AlertCircle className="h-3 w-3 shrink-0" />
                   <span>Niedriges Guthaben — bald Credits aufladen auf openrouter.ai/settings/credits</span>
                 </div>
@@ -502,7 +402,7 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
                 <Label htmlFor="analysis-limit" className="text-sm">
                   Publikationen analysieren
                 </Label>
-                <InfoBubble text="Anzahl der Publikationen, die in diesem Durchgang analysiert werden sollen. Sortiert nach Erstellungsdatum (neueste zuerst)." />
+                <InfoBubble content={{ title: 'Publikationen analysieren', body: <p>Anzahl der Publikationen, die in diesem Durchgang analysiert werden sollen. Sortiert nach Erstellungsdatum (neueste zuerst).</p> }} />
               </div>
               <div className="flex items-center gap-3">
                 <Input
@@ -523,7 +423,7 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
                   className="flex-1"
                 />
               </div>
-              <p className="text-xs text-neutral-400">
+              <p className="text-xs text-muted-foreground/70">
                 Die {config.limit} neuesten Publikationen (nach Veröffentlichungsdatum) werden analysiert, die noch nicht bewertet wurden.
                 {config.forceReanalyze && ' (Force: bereits bewertete werden erneut analysiert.)'}
               </p>
@@ -535,7 +435,7 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
                 <Label htmlFor="analysis-minwords" className="text-sm">
                   Min. Wortanzahl
                 </Label>
-                <InfoBubble text="Nur Publikationen mit mindestens so vielen Wörtern im enrichten Text analysieren. Filtert leere oder zu kurze Abstracts heraus." />
+                <InfoBubble content={{ title: 'Min. Wortanzahl', body: <p>Nur Publikationen mit mindestens so vielen Wörtern im enrichten Text analysieren. Filtert leere oder zu kurze Abstracts heraus.</p> }} />
               </div>
               <Input
                 id="analysis-minwords"
@@ -555,31 +455,31 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
                   type="checkbox"
                   checked={config.enrichedOnly}
                   onChange={(e) => setConfig(c => ({ ...c, enrichedOnly: e.target.checked }))}
-                  className="rounded border-neutral-300"
+                  className="rounded border-input"
                 />
                 <span>Nur enriched</span>
-                <InfoBubble text="Nur Publikationen analysieren, die bereits Metadaten (Abstract, Keywords) aus dem Enrichment haben. Ohne Enrichment fehlt dem LLM der nötige Kontext." />
+                <InfoBubble content={{ title: 'Nur enriched', body: <p>Nur Publikationen analysieren, die bereits Metadaten (Abstract, Keywords) aus dem Enrichment haben. Ohne Enrichment fehlt dem LLM der nötige Kontext.</p> }} />
               </label>
               <label className="flex items-center gap-2 text-sm cursor-pointer">
                 <input
                   type="checkbox"
                   checked={config.includePartial}
                   onChange={(e) => setConfig(c => ({ ...c, includePartial: e.target.checked }))}
-                  className="rounded border-neutral-300"
+                  className="rounded border-input"
                   disabled={!config.enrichedOnly}
                 />
-                <span className={!config.enrichedOnly ? 'text-neutral-400' : ''}>Partial einschließen</span>
-                <InfoBubble text="Auch teilweise enrichte Publikationen einbeziehen (z.B. nur Keywords aber kein Abstract). Ergebnisse können weniger genau sein." />
+                <span className={!config.enrichedOnly ? 'text-muted-foreground/70' : ''}>Partial einschließen</span>
+                <InfoBubble content={{ title: 'Partial einschließen', body: <p>Auch teilweise enrichte Publikationen einbeziehen (z.B. nur Keywords aber kein Abstract). Ergebnisse können weniger genau sein.</p> }} />
               </label>
               <label className="flex items-center gap-2 text-sm cursor-pointer">
                 <input
                   type="checkbox"
                   checked={config.forceReanalyze}
                   onChange={(e) => setConfig(c => ({ ...c, forceReanalyze: e.target.checked }))}
-                  className="rounded border-neutral-300"
+                  className="rounded border-input"
                 />
                 <span>Erneut analysieren</span>
-                <InfoBubble text="Bereits analysierte Publikationen erneut bewerten. Nützlich nach Modellwechsel oder wenn sich die Bewertungskriterien geändert haben." />
+                <InfoBubble content={{ title: 'Erneut analysieren', body: <p>Bereits analysierte Publikationen erneut bewerten. Nützlich nach Modellwechsel oder wenn sich die Bewertungskriterien geändert haben.</p> }} />
               </label>
             </div>
           </div>
@@ -589,7 +489,7 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
         {status === 'running' && (
           <div className="space-y-1">
             <Progress value={pct} />
-            <div className="flex justify-between text-xs text-neutral-500">
+            <div className="flex justify-between text-xs text-muted-foreground">
               <span>{progress.processed} / {progress.total}</span>
               <span>{pct}%</span>
             </div>
@@ -598,9 +498,9 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
 
         {/* Current batch detail */}
         {status === 'running' && progress.currentTitle && (
-          <div className="rounded-lg border p-3 space-y-2 bg-neutral-50/50">
+          <div className="rounded-lg border p-3 space-y-2 bg-muted/50">
             <p className="text-sm font-medium truncate">{progress.currentTitle}</p>
-            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-neutral-500">
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
               {selectedModel && (
                 <span>{selectedModel.label}</span>
               )}
@@ -614,7 +514,7 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
                 <span>Kosten: ${progress.cost.toFixed(4)}</span>
               )}
               {apiKeyHint && (
-                <span className="text-neutral-400">Key: <span className="font-mono">{apiKeyHint}</span></span>
+                <span className="text-muted-foreground/70">Key: <span className="font-mono">{apiKeyHint}</span></span>
               )}
             </div>
           </div>
@@ -622,14 +522,14 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
 
         {/* Batch errors — show during running AND after complete/error */}
         {errors.length > 0 && (status === 'running' || status === 'complete' || status === 'cancelled' || status === 'error') && (
-          <div className="rounded-lg border border-amber-200 bg-amber-50 p-2 space-y-1">
-            <p className="text-xs font-medium text-amber-900 flex items-center gap-1">
+          <div className="rounded-lg border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/[0.08] p-2 space-y-1">
+            <p className="text-xs font-medium text-amber-900 dark:text-amber-200 flex items-center gap-1">
               <AlertCircle className="h-3 w-3" />
               {errors.length} Batch-Fehler
             </p>
             <div className="max-h-[120px] overflow-y-auto">
               {errors.map((err, i) => (
-                <p key={i} className="text-xs text-amber-800">{err}</p>
+                <p key={i} className="text-xs text-amber-800 dark:text-amber-300">{err}</p>
               ))}
             </div>
           </div>
@@ -637,20 +537,20 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
 
         {/* Complete summary */}
         {status === 'complete' && completeData && completeData.total > 0 && (
-          <div className="rounded-lg border border-green-200 bg-green-50 p-3 space-y-2">
-            <p className="text-sm font-medium text-green-800">Analyse abgeschlossen</p>
+          <div className="rounded-lg border border-green-200 dark:border-green-500/30 bg-green-50 dark:bg-green-500/[0.08] p-3 space-y-2">
+            <p className="text-sm font-medium text-green-800 dark:text-green-200">Analyse abgeschlossen</p>
             <div className="flex flex-wrap gap-2">
-              <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
+              <TintBadge color="green">
                 {completeData.successful} analysiert
-              </Badge>
+              </TintBadge>
               {completeData.failed > 0 && (
-                <Badge className="bg-red-100 text-red-700 hover:bg-red-100">
+                <TintBadge color="red">
                   {completeData.failed} fehlgeschlagen
-                </Badge>
+                </TintBadge>
               )}
             </div>
             {completeData.tokensUsed > 0 && (
-              <div className="flex flex-wrap gap-x-4 text-xs text-neutral-500 pt-1">
+              <div className="flex flex-wrap gap-x-4 text-xs text-muted-foreground pt-1">
                 <span>Modell: {selectedModel?.label}</span>
                 <span>Tokens gesamt: {completeData.tokensUsed.toLocaleString()}</span>
                 <span>Kosten gesamt: ${completeData.cost.toFixed(4)}</span>
@@ -661,19 +561,19 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
 
         {/* Cancelled summary */}
         {status === 'cancelled' && (
-          <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-3 space-y-2">
-            <p className="text-sm font-medium text-neutral-700">Analyse abgebrochen</p>
+          <div className="rounded-lg border bg-muted/50 p-3 space-y-2">
+            <p className="text-sm font-medium text-foreground">Analyse abgebrochen</p>
             <div className="flex flex-wrap gap-2">
-              <Badge className="bg-neutral-200 text-neutral-600 hover:bg-neutral-200">
+              <Badge className="bg-muted text-muted-foreground hover:bg-muted">
                 {progress.processed} / {progress.total} verarbeitet
               </Badge>
               {progress.tokensUsed > 0 && (
-                <Badge variant="outline" className="text-neutral-500">
+                <Badge variant="outline" className="text-muted-foreground">
                   {progress.tokensUsed.toLocaleString()} Tokens
                 </Badge>
               )}
               {progress.cost > 0 && (
-                <Badge variant="outline" className="text-neutral-500">
+                <Badge variant="outline" className="text-muted-foreground">
                   ${progress.cost.toFixed(4)}
                 </Badge>
               )}
@@ -683,24 +583,24 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
 
         {/* Complete but nothing to analyze */}
         {status === 'complete' && completeData && completeData.total === 0 && errorMessage && (
-          <div className="rounded-lg border bg-neutral-50 p-3">
-            <p className="text-sm text-neutral-600">{errorMessage}</p>
+          <div className="rounded-lg border bg-muted/50 p-3">
+            <p className="text-sm text-foreground/80">{errorMessage}</p>
           </div>
         )}
 
         {/* Error display */}
         {status === 'error' && errorMessage && (
-          <div className="rounded-lg border border-red-200 bg-red-50 p-3 space-y-1">
-            <p className="text-sm font-medium text-red-700 flex items-center gap-1">
+          <div className="rounded-lg border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/[0.08] p-3 space-y-1">
+            <p className="text-sm font-medium text-red-700 dark:text-red-300 flex items-center gap-1">
               <AlertCircle className="h-4 w-4" />
               Fehler
             </p>
-            <p className="text-sm text-red-600">{errorMessage}</p>
+            <p className="text-sm text-red-600 dark:text-red-400">{errorMessage}</p>
             {apiKeyHint && (
-              <p className="text-xs text-red-400 pt-1">Verwendeter Key: <span className="font-mono">{apiKeyHint}</span></p>
+              <p className="text-xs text-red-400 dark:text-red-300/70 pt-1">Verwendeter Key: <span className="font-mono">{apiKeyHint}</span></p>
             )}
             {keyBalance && keyBalance.effectiveBudget !== null && (
-              <p className="text-xs text-red-400">
+              <p className="text-xs text-red-400 dark:text-red-300/70">
                 Budget: ${keyBalance.effectiveBudget.toFixed(4)} verfügbar
                 {keyBalance.accountBalance !== null && ` (Account: $${keyBalance.accountBalance.toFixed(2)}`}
                 {keyBalance.accountBalance !== null && keyBalance.limitRemaining !== null && `, Key-Limit: $${keyBalance.limitRemaining.toFixed(2)}`}
@@ -731,40 +631,6 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
           )}
         </DialogFooter>
       </DialogContent>
-
-      {/* Reuse same capybara animation styles */}
-      <style jsx global>{`
-        @keyframes capybara-work {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-3px); }
-        }
-        @keyframes capybara-scratch {
-          0%, 100% { transform: translateX(0); }
-          25% { transform: translateX(-2px); }
-          75% { transform: translateX(2px); }
-        }
-        @keyframes capybara-happy {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.05); }
-        }
-        .animate-capybara-work {
-          animation: capybara-work 1s ease-in-out infinite;
-        }
-        .animate-capybara-scratch {
-          animation: capybara-scratch 0.5s ease-in-out infinite;
-        }
-        .animate-capybara-happy {
-          animation: capybara-happy 1.5s ease-in-out infinite;
-        }
-        @keyframes capybara-shrug {
-          0%, 100% { transform: rotate(0deg); }
-          30% { transform: rotate(-4deg); }
-          70% { transform: rotate(4deg); }
-        }
-        .animate-capybara-shrug {
-          animation: capybara-shrug 2s ease-in-out infinite;
-        }
-      `}</style>
     </Dialog>
   );
 }

@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { TintBadge } from '@/components/tint-badge';
 import { Database, FileArchive, Terminal, Info, RefreshCcw } from 'lucide-react';
 import { useApiQuery } from '@/lib/use-api-query';
 
@@ -30,7 +31,7 @@ export default function ImportPage() {
     <div className="space-y-6 max-w-4xl">
       <div>
         <h1 className="text-2xl font-bold">WebDB-Import</h1>
-        <p className="text-neutral-500">
+        <p className="text-muted-foreground">
           Die Datenquelle für die Plattform ist der vollständige WebDB-Export
           (Typo3 / MySQL). Publikationen, Personen, Organisationseinheiten,
           Projekte, Vorträge und Verknüpfungen werden in Postgres gespiegelt.
@@ -45,18 +46,18 @@ export default function ImportPage() {
             Quellformat
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3 text-sm text-neutral-600">
+        <CardContent className="space-y-3 text-sm text-foreground/80">
           <p>
             Adminer-/mysqldump-Export der WebDB-Datenbank, gepackt als
-            <code className="mx-1 rounded bg-neutral-100 px-1 py-0.5 font-mono text-xs">
+            <code className="mx-1 rounded bg-muted px-1 py-0.5 font-mono text-xs">
               .sql.gz
             </code>
             (typisch ~100 MB komprimiert, ~660 MB entpackt). Erwartete Tabellen
             beginnen mit
-            <code className="mx-1 rounded bg-neutral-100 px-1 py-0.5 font-mono text-xs">
+            <code className="mx-1 rounded bg-muted px-1 py-0.5 font-mono text-xs">
               tx_hebowebdb_domain_model_*
             </code>
-            sowie die <code className="mx-1 rounded bg-neutral-100 px-1 py-0.5 font-mono text-xs">_mm</code>{' '}
+            sowie die <code className="mx-1 rounded bg-muted px-1 py-0.5 font-mono text-xs">_mm</code>{' '}
             Junction-Tabellen.
           </p>
           <p>
@@ -79,10 +80,10 @@ export default function ImportPage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
-          <ol className="list-decimal list-inside space-y-2 text-neutral-700">
+          <ol className="list-decimal list-inside space-y-2 text-foreground">
             <li>
               Dump entpacken (z. B. nach{' '}
-              <code className="rounded bg-neutral-100 px-1 py-0.5 font-mono text-xs">/tmp/webdb/webdb_dump.sql</code>).
+              <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">/tmp/webdb/webdb_dump.sql</code>).
             </li>
             <li>
               Temporären MySQL-Container starten und Dump einlesen
@@ -91,11 +92,11 @@ export default function ImportPage() {
             </li>
             <li>
               ETL-Script ausführen:
-              <pre className="mt-1 rounded bg-neutral-900 p-3 font-mono text-xs text-neutral-100">node scripts/webdb-import.mjs</pre>
+              <pre className="mt-1 rounded bg-foreground p-3 font-mono text-xs text-background">node scripts/webdb-import.mjs</pre>
             </li>
             <li>Dauer: ca. 1 Minute für ~37k Publikationen + Junctions.</li>
           </ol>
-          <div className="flex items-start gap-2 rounded border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+          <div className="flex items-start gap-2 rounded border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/[0.08] p-3 text-xs text-amber-800 dark:text-amber-300">
             <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" />
             <span>
               Der Import wischt aktuell die <code>publications</code>-Tabelle und
@@ -116,7 +117,7 @@ export default function ImportPage() {
           </CardTitle>
           <button
             onClick={() => refetch()}
-            className="inline-flex items-center gap-1 rounded border px-2 py-1 text-xs hover:bg-neutral-50"
+            className="inline-flex items-center gap-1 rounded border px-2 py-1 text-xs hover:bg-muted"
           >
             <RefreshCcw className={`h-3 w-3 ${isFetching ? 'animate-spin' : ''}`} />
             aktualisieren
@@ -124,7 +125,7 @@ export default function ImportPage() {
         </CardHeader>
         <CardContent>
           {errorMessage ? (
-            <p className="text-sm text-red-600">{errorMessage}</p>
+            <p className="text-sm text-red-600 dark:text-red-400">{errorMessage}</p>
           ) : counts ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <Stat label="Publikationen" value={counts.publications} />
@@ -138,14 +139,14 @@ export default function ImportPage() {
               <Stat label="Pub↔Projekt Links" value={counts.publication_projects} />
               <Stat label="ÖSTAT6-Codes" value={counts.oestat6} />
               {counts.last_synced && (
-                <div className="col-span-2 sm:col-span-3 mt-2 pt-2 border-t text-xs text-neutral-400">
+                <div className="col-span-2 sm:col-span-3 mt-2 pt-2 border-t text-xs text-muted-foreground/70">
                   Letzte Synchronisation:{' '}
                   {new Date(counts.last_synced).toLocaleString('de-AT')}
                 </div>
               )}
             </div>
           ) : (
-            <p className="text-sm text-neutral-400">Lade...</p>
+            <p className="text-sm text-muted-foreground/70">Lade...</p>
           )}
         </CardContent>
       </Card>
@@ -156,17 +157,17 @@ export default function ImportPage() {
           <CardTitle className="text-base">Was das neue Format bringt</CardTitle>
         </CardHeader>
         <CardContent>
-          <ul className="space-y-2 text-sm text-neutral-600">
+          <ul className="space-y-2 text-sm text-foreground/80">
             <li className="flex gap-2">
-              <Badge className="bg-blue-100 text-blue-800 shrink-0">PR</Badge>
+              <TintBadge color="blue" className="shrink-0">PR</TintBadge>
               <span><strong>Peer-reviewed-Flag</strong> aus der Quelle (54% aller Publikationen)</span>
             </li>
             <li className="flex gap-2">
-              <Badge className="bg-purple-100 text-purple-800 shrink-0">PS</Badge>
+              <TintBadge color="purple" className="shrink-0">PS</TintBadge>
               <span><strong>Popular-Science-Flag</strong> für 3.185 Publikationen — direktes Press-Relevanz-Signal</span>
             </li>
             <li className="flex gap-2">
-              <Badge className="bg-amber-100 text-amber-800 shrink-0">★</Badge>
+              <TintBadge color="amber" className="shrink-0">★</TintBadge>
               <span><strong>Eigen-Highlights</strong> (mahighlight): rund 220 von den Autor:innen selbst markierte Pubs — meist Nicht-Mitglieder</span>
             </li>
             <li className="flex gap-2">
@@ -202,8 +203,8 @@ export default function ImportPage() {
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded border bg-neutral-50 p-3">
-      <p className="text-xs text-neutral-500">{label}</p>
+    <div className="rounded border bg-muted/50 p-3">
+      <p className="text-xs text-muted-foreground">{label}</p>
       <p className="text-lg font-semibold tabular-nums">{value.toLocaleString('de-AT')}</p>
     </div>
   );

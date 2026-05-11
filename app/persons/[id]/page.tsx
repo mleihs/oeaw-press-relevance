@@ -7,6 +7,7 @@ import { useApiQuery } from '@/lib/use-api-query';
 import { sincePresetToDate, type ResearcherDetail } from '@/lib/researchers';
 import { EmptyState } from '@/components/empty-state';
 import { LoadingState } from '@/components/loading-state';
+import { ApiErrorCard } from '@/components/api-error-card';
 import { PersonHeader } from './_components/person-header';
 import dynamic from 'next/dynamic';
 import { CoauthorBlock } from './_components/coauthor-block';
@@ -16,7 +17,7 @@ import { PubList } from './_components/pub-list';
 // the detail header isn't blocked by the chart bundle.
 const ActivityChart = dynamic(
   () => import('./_components/activity-chart').then((m) => m.ActivityChart),
-  { ssr: false, loading: () => <div className="h-[260px] rounded-lg border bg-white" aria-hidden /> },
+  { ssr: false, loading: () => <div className="h-[260px] rounded-lg border bg-card" aria-hidden /> },
 );
 
 const WINDOW = '12M' as const;
@@ -35,9 +36,7 @@ export default function PersonDetailPage({ params }: { params: Promise<{ id: str
     return (
       <div className="space-y-4">
         <BackLink />
-        <div className="rounded-lg border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
-          Fehler beim Laden: {error.message}
-        </div>
+        <ApiErrorCard title="Fehler beim Laden" message={error.message} />
       </div>
     );
   }
@@ -80,7 +79,7 @@ function BackLink() {
   return (
     <Link
       href="/researchers"
-      className="inline-flex items-center gap-1 text-xs text-neutral-500 hover:text-brand"
+      className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-brand"
     >
       <ChevronLeft className="h-3 w-3" />
       Zurück zur Forscher:innen-Übersicht

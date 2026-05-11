@@ -23,6 +23,16 @@
   --color-chart-3: var(--chart-3);
   --color-chart-2: var(--chart-2);
   --color-chart-1: var(--chart-1);
+  --color-chart-bucket-1: var(--chart-bucket-1);
+  --color-chart-bucket-2: var(--chart-bucket-2);
+  --color-chart-bucket-3: var(--chart-bucket-3);
+  --color-chart-bucket-4: var(--chart-bucket-4);
+  --color-chart-bucket-5: var(--chart-bucket-5);
+  --color-chart-bucket-6: var(--chart-bucket-6);
+  --color-chart-bucket-7: var(--chart-bucket-7);
+  --color-chart-bucket-8: var(--chart-bucket-8);
+  --color-chart-bucket-9: var(--chart-bucket-9);
+  --color-chart-bucket-10: var(--chart-bucket-10);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -73,6 +83,18 @@
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
+  /* Score-Distribution-Buckets: low-relevance grey → warm orange → amber → brand.
+     Buckets 1-2 share a value (both 0–19% scores look equally low-relevance). */
+  --chart-bucket-1: oklch(0.871 0 0);
+  --chart-bucket-2: oklch(0.871 0 0);
+  --chart-bucket-3: oklch(0.708 0 0);
+  --chart-bucket-4: oklch(0.837 0.128 66.29);
+  --chart-bucket-5: oklch(0.75 0.183 55.934);
+  --chart-bucket-6: oklch(0.828 0.189 84.429);
+  --chart-bucket-7: oklch(0.769 0.188 70.08);
+  --chart-bucket-8: oklch(0.4034 0.2104 264.05 / 0.6);
+  --chart-bucket-9: oklch(0.4034 0.2104 264.05 / 0.8);
+  --chart-bucket-10: oklch(0.4034 0.2104 264.05);
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
@@ -107,6 +129,18 @@
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
+  /* Dark-mode buckets: greys lifted into mid-luminance, brand opened up
+     so the high-score bars pop against the dark background. */
+  --chart-bucket-1: oklch(0.45 0 0);
+  --chart-bucket-2: oklch(0.45 0 0);
+  --chart-bucket-3: oklch(0.55 0 0);
+  --chart-bucket-4: oklch(0.65 0.13 66.29);
+  --chart-bucket-5: oklch(0.7 0.18 55.93);
+  --chart-bucket-6: oklch(0.78 0.19 84.43);
+  --chart-bucket-7: oklch(0.75 0.19 70.08);
+  --chart-bucket-8: oklch(0.6 0.22 264 / 0.6);
+  --chart-bucket-9: oklch(0.6 0.22 264 / 0.8);
+  --chart-bucket-10: oklch(0.6 0.22 264);
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.488 0.243 264.376);
@@ -120,10 +154,8 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
     @apply bg-background text-foreground;
   }
 }
@@ -132,3 +164,33 @@
   from { opacity: 0; transform: translateY(2px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+/* Capybara modal animations — referenced from analysis-modal + enrichment-modal */
+@keyframes capybara-work {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+@keyframes capybara-celebrate {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-5deg); }
+  75% { transform: rotate(5deg); }
+}
+@keyframes capybara-scratch {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+@keyframes capybara-happy {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+@keyframes capybara-shrug {
+  0%, 100% { transform: rotate(0deg); }
+  30% { transform: rotate(-4deg); }
+  70% { transform: rotate(4deg); }
+}
+.animate-capybara-work      { animation: capybara-work 1s ease-in-out infinite; }
+.animate-capybara-celebrate { animation: capybara-celebrate 0.4s ease-in-out; }
+.animate-capybara-scratch   { animation: capybara-scratch 0.5s ease-in-out infinite; }
+.animate-capybara-happy     { animation: capybara-happy 1.5s ease-in-out infinite; }
+.animate-capybara-shrug     { animation: capybara-shrug 2s ease-in-out infinite; }

@@ -12,6 +12,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { TintBadge } from '@/components/tint-badge';
+import { CapybaraModalAvatar, type CapybaraAvatarState } from '@/components/capybara-modal-avatar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { getApiHeaders } from '@/lib/settings-store';
@@ -19,6 +21,7 @@ import { Play, Square, RotateCcw } from 'lucide-react';
 import type {
   EnrichmentSourceName,
   EnrichmentSourceStatus,
+  ModalStatus,
 } from '@/lib/types';
 
 // ---------------------------------------------------------------------------
@@ -55,9 +58,6 @@ interface EnrichmentConfig {
   includeNoDoi: boolean;
 }
 
-type ModalStatus = 'idle' | 'running' | 'complete' | 'cancelled' | 'error';
-type CapybaraState = 'idle' | 'working' | 'found' | 'error' | 'complete' | 'cancelled';
-
 const ALL_SOURCES: EnrichmentSourceName[] = ['crossref', 'openalex', 'unpaywall', 'semantic_scholar', 'pdf'];
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -81,82 +81,13 @@ function emptySourceStates(): Record<EnrichmentSourceName, SourceState> {
 }
 
 // ---------------------------------------------------------------------------
-// Capybara SVG
-// ---------------------------------------------------------------------------
-
-function CapybaraSvg({ state }: { state: CapybaraState }) {
-  const animClass =
-    state === 'working'
-      ? 'animate-capybara-work'
-      : state === 'found'
-        ? 'animate-capybara-celebrate'
-        : state === 'error'
-          ? 'animate-capybara-scratch'
-          : state === 'complete'
-            ? 'animate-capybara-happy'
-            : state === 'cancelled'
-              ? 'animate-capybara-shrug'
-              : '';
-
-  return (
-    <div className={`relative w-16 h-16 ${animClass}`}>
-      <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-        {/* Body */}
-        <ellipse cx="32" cy="40" rx="18" ry="14" fill="#8B6914" />
-        {/* Head */}
-        <ellipse cx="32" cy="24" rx="12" ry="10" fill="#A07B1E" />
-        {/* Snout */}
-        <ellipse cx="32" cy="28" rx="7" ry="5" fill="#C4A24E" />
-        {/* Nose */}
-        <ellipse cx="32" cy="26" rx="2.5" ry="1.5" fill="#4A3508" />
-        {/* Eyes */}
-        <circle cx="26" cy="22" r="2" fill="#1a1a1a" />
-        <circle cx="38" cy="22" r="2" fill="#1a1a1a" />
-        <circle cx="26.7" cy="21.3" r="0.7" fill="white" />
-        <circle cx="38.7" cy="21.3" r="0.7" fill="white" />
-        {/* Ears */}
-        <ellipse cx="22" cy="16" rx="3" ry="4" fill="#8B6914" />
-        <ellipse cx="42" cy="16" rx="3" ry="4" fill="#8B6914" />
-        <ellipse cx="22" cy="16" rx="2" ry="3" fill="#C4A24E" />
-        <ellipse cx="42" cy="16" rx="2" ry="3" fill="#C4A24E" />
-        {/* Legs */}
-        <rect x="18" y="48" width="6" height="8" rx="3" fill="#8B6914" />
-        <rect x="40" y="48" width="6" height="8" rx="3" fill="#8B6914" />
-        {/* Mouth - subtle smile */}
-        <path d="M29 30 Q32 32 35 30" stroke="#4A3508" strokeWidth="0.8" fill="none" strokeLinecap="round" />
-        {/* Paper/document in front (working state) */}
-        {(state === 'working' || state === 'found') && (
-          <g className="origin-center">
-            <rect x="24" y="36" width="16" height="12" rx="1" fill="white" stroke="#ddd" strokeWidth="0.5" />
-            <line x1="27" y1="39" x2="37" y2="39" stroke="#ccc" strokeWidth="0.8" />
-            <line x1="27" y1="42" x2="35" y2="42" stroke="#ccc" strokeWidth="0.8" />
-            <line x1="27" y1="45" x2="33" y2="45" stroke="#ccc" strokeWidth="0.8" />
-          </g>
-        )}
-        {/* Confetti for complete */}
-        {state === 'complete' && (
-          <>
-            <circle cx="10" cy="10" r="1.5" fill="#ef4444" className="animate-ping" />
-            <circle cx="54" cy="8" r="1.5" fill="#3b82f6" className="animate-ping" style={{ animationDelay: '0.2s' }} />
-            <circle cx="8" cy="30" r="1.5" fill="#22c55e" className="animate-ping" style={{ animationDelay: '0.4s' }} />
-            <circle cx="56" cy="28" r="1.5" fill="#eab308" className="animate-ping" style={{ animationDelay: '0.3s' }} />
-            <circle cx="20" cy="6" r="1" fill="#a855f7" className="animate-ping" style={{ animationDelay: '0.5s' }} />
-            <circle cx="48" cy="4" r="1" fill="#f97316" className="animate-ping" style={{ animationDelay: '0.1s' }} />
-          </>
-        )}
-      </svg>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
 // Source status icon
 // ---------------------------------------------------------------------------
 
 function SourceStatusIcon({ status }: { status: EnrichmentSourceStatus }) {
   switch (status) {
     case 'waiting':
-      return <span className="text-neutral-300 text-sm">--</span>;
+      return <span className="text-muted-foreground/50 text-sm">--</span>;
     case 'loading':
       return <span className="inline-block w-4 h-4 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin" />;
     case 'success':
@@ -166,7 +97,7 @@ function SourceStatusIcon({ status }: { status: EnrichmentSourceStatus }) {
     case 'error':
       return <span className="text-red-500 text-sm">Fehler</span>;
     case 'skipped':
-      return <span className="text-neutral-400 text-sm italic">übersprungen</span>;
+      return <span className="text-muted-foreground/70 text-sm italic">übersprungen</span>;
   }
 }
 
@@ -184,18 +115,18 @@ function CompletedRow({ pub }: { pub: CompletedPub }) {
 
   const statusColor =
     pub.finalStatus === 'enriched'
-      ? 'text-green-700'
+      ? 'text-green-700 dark:text-green-300'
       : pub.finalStatus === 'partial'
-        ? 'text-amber-800'
-        : 'text-red-600';
+        ? 'text-amber-800 dark:text-amber-300'
+        : 'text-red-600 dark:text-red-400';
 
   return (
-    <div className="flex items-start gap-2 py-1.5 text-xs border-b border-neutral-100 last:border-0">
+    <div className="flex items-start gap-2 py-1.5 text-xs border-b border-border/60 last:border-0">
       <span>{icon}</span>
       <span className="truncate flex-1 min-w-0">{pub.title}</span>
       <span className={`shrink-0 font-medium ${statusColor}`}>{pub.finalStatus}</span>
       {pub.sourcesUsed.length > 0 && (
-        <span className="shrink-0 text-neutral-400">({pub.sourcesUsed.join(' + ')})</span>
+        <span className="shrink-0 text-muted-foreground/70">({pub.sourcesUsed.join(' + ')})</span>
       )}
     </div>
   );
@@ -227,7 +158,7 @@ export function EnrichmentModal({
   const [pubIndex, setPubIndex] = useState(0);
   const [pubTotal, setPubTotal] = useState(0);
   const [elapsedMs, setElapsedMs] = useState(0);
-  const [capybaraState, setCapybaraState] = useState<CapybaraState>('idle');
+  const [capybaraState, setCapybaraAvatarState] = useState<CapybaraAvatarState>('idle');
   const [sourceCounts, setSourceCounts] = useState<Record<string, number>>({});
   const [finalStats, setFinalStats] = useState<{
     successful: number;
@@ -269,7 +200,7 @@ export function EnrichmentModal({
     setPubIndex(0);
     setPubTotal(0);
     setElapsedMs(0);
-    setCapybaraState('idle');
+    setCapybaraAvatarState('idle');
     setSourceCounts({});
     setFinalStats(null);
     setErrorMessage(null);
@@ -286,7 +217,7 @@ export function EnrichmentModal({
     setPubIndex(0);
     setPubTotal(0);
     setElapsedMs(0);
-    setCapybaraState('working');
+    setCapybaraAvatarState('working');
     setSourceCounts({});
     setFinalStats(null);
     setErrorMessage(null);
@@ -309,7 +240,7 @@ export function EnrichmentModal({
       if (!response.ok) {
         const err = await response.json();
         setStatus('error');
-        setCapybaraState('error');
+        setCapybaraAvatarState('error');
         setErrorMessage(err.error || err.message || 'Request failed');
         return;
       }
@@ -318,7 +249,7 @@ export function EnrichmentModal({
       if (contentType.includes('application/json')) {
         const data = await response.json();
         setStatus('complete');
-        setCapybaraState('complete');
+        setCapybaraAvatarState('complete');
         setErrorMessage(data.message);
         onComplete?.();
         return;
@@ -356,12 +287,12 @@ export function EnrichmentModal({
     } catch (err) {
       if ((err as Error).name === 'AbortError') {
         setStatus('cancelled');
-        setCapybaraState('cancelled');
+        setCapybaraAvatarState('cancelled');
         setCurrentPub(null);
         return;
       }
       setStatus('error');
-      setCapybaraState('error');
+      setCapybaraAvatarState('error');
       setErrorMessage(err instanceof Error ? err.message : 'Connection failed');
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -378,7 +309,7 @@ export function EnrichmentModal({
           hasCsvAbstract: data.has_csv_abstract === true,
           sources: emptySourceStates(),
         });
-        setCapybaraState('working');
+        setCapybaraAvatarState('working');
         break;
       }
       case 'source_try': {
@@ -410,9 +341,9 @@ export function EnrichmentModal({
           };
         });
         if (srcStatus === 'success') {
-          setCapybaraState('found');
+          setCapybaraAvatarState('found');
           // Reset back to working after a brief moment
-          setTimeout(() => setCapybaraState(prev => prev === 'found' ? 'working' : prev), 600);
+          setTimeout(() => setCapybaraAvatarState(prev => prev === 'found' ? 'working' : prev), 600);
         }
         break;
       }
@@ -438,7 +369,7 @@ export function EnrichmentModal({
       }
       case 'complete': {
         setStatus('complete');
-        setCapybaraState('complete');
+        setCapybaraAvatarState('complete');
         setCurrentPub(null);
         setFinalStats({
           successful: data.successful as number,
@@ -470,7 +401,7 @@ export function EnrichmentModal({
       <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col">
         <DialogHeader>
           <div className="flex items-center gap-3">
-            <CapybaraSvg state={capybaraState} />
+            <CapybaraModalAvatar variant="enricher" state={capybaraState} />
             <div className="flex-1 min-w-0">
               <DialogTitle>Publikationen anreichern</DialogTitle>
               <DialogDescription>
@@ -483,11 +414,11 @@ export function EnrichmentModal({
             </div>
             {status === 'running' && (
               <div className="text-right shrink-0">
-                <span className="text-xs text-neutral-400 tabular-nums block">
+                <span className="text-xs text-muted-foreground/70 tabular-nums block">
                   {Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2, '0')}
                 </span>
                 {etaText && (
-                  <span className="text-[10px] text-neutral-400 block">
+                  <span className="text-[10px] text-muted-foreground/70 block">
                     Restzeit: {etaText}
                   </span>
                 )}
@@ -500,8 +431,8 @@ export function EnrichmentModal({
         {status === 'idle' && (
           <div className="space-y-4">
             {/* Sources info */}
-            <div className="rounded-lg border bg-neutral-50/50 p-3">
-              <p className="text-sm text-neutral-600">
+            <div className="rounded-lg border bg-muted/50 p-3">
+              <p className="text-sm text-foreground/80">
                 Quellen: CrossRef, OpenAlex, Unpaywall, Semantic Scholar, PDF Extract
               </p>
             </div>
@@ -530,7 +461,7 @@ export function EnrichmentModal({
                   className="flex-1"
                 />
               </div>
-              <p className="text-xs text-neutral-400">
+              <p className="text-xs text-muted-foreground/70">
                 Die {config.limit} neuesten Publikationen (nach Veröffentlichungsdatum) werden enriched, die noch keine Metadaten haben.
               </p>
             </div>
@@ -542,20 +473,20 @@ export function EnrichmentModal({
                   type="checkbox"
                   checked={config.includePartial}
                   onChange={(e) => setConfig(c => ({ ...c, includePartial: e.target.checked }))}
-                  className="rounded border-neutral-300"
+                  className="rounded border-input"
                 />
                 <span>Teilweise erneut verarbeiten</span>
-                <span className="text-neutral-400 text-xs">(partial-Status nochmals enrichen)</span>
+                <span className="text-muted-foreground/70 text-xs">(partial-Status nochmals enrichen)</span>
               </label>
               <label className="flex items-center gap-2 text-sm cursor-pointer">
                 <input
                   type="checkbox"
                   checked={config.includeNoDoi}
                   onChange={(e) => setConfig(c => ({ ...c, includeNoDoi: e.target.checked }))}
-                  className="rounded border-neutral-300"
+                  className="rounded border-input"
                 />
                 <span>Ohne DOI einschließen</span>
-                <span className="text-neutral-400 text-xs">(Publikationen ohne DOI via PDF enrichen)</span>
+                <span className="text-muted-foreground/70 text-xs">(Publikationen ohne DOI via PDF enrichen)</span>
               </label>
             </div>
           </div>
@@ -565,7 +496,7 @@ export function EnrichmentModal({
         {status === 'running' && (
           <div className="space-y-1">
             <Progress value={pct} />
-            <div className="flex justify-between text-xs text-neutral-500">
+            <div className="flex justify-between text-xs text-muted-foreground">
               <span>{pubIndex + 1} / {pubTotal}</span>
               <span>{pct}%</span>
             </div>
@@ -574,17 +505,17 @@ export function EnrichmentModal({
 
         {/* Current publication detail card */}
         {status === 'running' && currentPub && (
-          <div className="rounded-lg border p-3 space-y-2 bg-neutral-50/50">
+          <div className="rounded-lg border p-3 space-y-2 bg-muted/50">
             <div className="space-y-0.5">
               <p className="text-sm font-medium truncate">{currentPub.title}</p>
               <div className="flex items-center gap-2">
                 {currentPub.doi ? (
-                  <p className="text-xs text-neutral-400 font-mono truncate">DOI: {currentPub.doi}</p>
+                  <p className="text-xs text-muted-foreground/70 font-mono truncate">DOI: {currentPub.doi}</p>
                 ) : (
                   <p className="text-xs text-amber-500 italic">Kein DOI</p>
                 )}
                 {currentPub.hasCsvAbstract && (
-                  <span className="inline-flex items-center rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-medium text-blue-700">
+                  <span className="inline-flex items-center rounded bg-blue-100 dark:bg-blue-500/15 px-1.5 py-0.5 text-[10px] font-medium text-blue-700 dark:text-blue-300">
                     CSV abstract
                   </span>
                 )}
@@ -596,25 +527,25 @@ export function EnrichmentModal({
                 const isSkipped = s.status === 'skipped';
                 return (
                   <div key={src} className={`flex items-center gap-2 text-xs ${isSkipped ? 'opacity-40' : ''}`}>
-                    <span className="w-28 text-neutral-600 font-medium">{SOURCE_LABELS[src]}</span>
+                    <span className="w-28 text-foreground/80 font-medium">{SOURCE_LABELS[src]}</span>
                     <SourceStatusIcon status={s.status} />
                     {s.status === 'success' && s.found && (
-                      <span className="text-neutral-500 truncate flex-1 min-w-0">
+                      <span className="text-muted-foreground truncate flex-1 min-w-0">
                         {s.found.abstract && (
-                          <span className="text-green-700">abstract</span>
+                          <span className="text-green-700 dark:text-green-300">abstract</span>
                         )}
                         {s.found.journal && (
                           <span className="ml-1">{s.found.journal}</span>
                         )}
                         {s.found.keywords && s.found.keywords.length > 0 && (
-                          <span className="ml-1 text-neutral-400">
+                          <span className="ml-1 text-muted-foreground/70">
                             [{s.found.keywords.slice(0, 3).join(', ')}]
                           </span>
                         )}
                       </span>
                     )}
                     {s.status === 'error' && s.error && (
-                      <span className="text-red-400 truncate">{s.error}</span>
+                      <span className="text-red-400 dark:text-red-300/70 truncate">{s.error}</span>
                     )}
                   </div>
                 );
@@ -626,10 +557,10 @@ export function EnrichmentModal({
         {/* Completed publications log */}
         {completed.length > 0 && (
           <div className="flex-1 min-h-0">
-            <p className="text-xs font-medium text-neutral-500 mb-1">
+            <p className="text-xs font-medium text-muted-foreground mb-1">
               Abgeschlossen ({completed.length})
             </p>
-            <div ref={logRef} className="max-h-[200px] overflow-y-auto rounded border p-2 bg-white">
+            <div ref={logRef} className="max-h-[200px] overflow-y-auto rounded border p-2 bg-card">
               {completed.map((pub, i) => (
                 <CompletedRow key={i} pub={pub} />
               ))}
@@ -639,7 +570,7 @@ export function EnrichmentModal({
 
         {/* Footer stats */}
         {(status === 'running' || status === 'complete' || status === 'cancelled') && completed.length > 0 && (
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-neutral-500 border-t pt-2">
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground border-t pt-2">
             {Object.entries(sourceCounts).map(([src, count]) => (
               <span key={src}>
                 {SOURCE_LABELS[src as EnrichmentSourceName] || src}: <strong>{count}</strong>
@@ -653,51 +584,51 @@ export function EnrichmentModal({
 
         {/* Final summary on complete */}
         {status === 'complete' && finalStats && (
-          <div className="rounded-lg border border-green-200 bg-green-50 p-3 space-y-2">
-            <p className="text-sm font-medium text-green-800">Enrichment abgeschlossen</p>
+          <div className="rounded-lg border border-green-200 dark:border-green-500/30 bg-green-50 dark:bg-green-500/[0.08] p-3 space-y-2">
+            <p className="text-sm font-medium text-green-800 dark:text-green-200">Enrichment abgeschlossen</p>
             <div className="flex flex-wrap gap-2">
-              <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
+              <TintBadge color="green">
                 {finalStats.successful} angereichert
-              </Badge>
+              </TintBadge>
               {finalStats.partial > 0 && (
-                <Badge className="bg-amber-100 text-amber-900 hover:bg-amber-100">
+                <TintBadge color="amber">
                   {finalStats.partial} teilweise
-                </Badge>
+                </TintBadge>
               )}
               {finalStats.failed > 0 && (
-                <Badge className="bg-red-100 text-red-700 hover:bg-red-100">
+                <TintBadge color="red">
                   {finalStats.failed} fehlgeschlagen
-                </Badge>
+                </TintBadge>
               )}
-              <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">
+              <TintBadge color="blue">
                 {finalStats.withAbstract} mit Abstract
-              </Badge>
+              </TintBadge>
             </div>
           </div>
         )}
 
         {/* Cancelled summary */}
         {status === 'cancelled' && (
-          <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-3 space-y-2">
-            <p className="text-sm font-medium text-neutral-700">Enrichment abgebrochen</p>
+          <div className="rounded-lg border bg-muted/50 p-3 space-y-2">
+            <p className="text-sm font-medium text-foreground">Enrichment abgebrochen</p>
             <div className="flex flex-wrap gap-2">
-              <Badge className="bg-neutral-200 text-neutral-600 hover:bg-neutral-200">
+              <Badge className="bg-muted text-muted-foreground hover:bg-muted">
                 {completed.length} / {pubTotal} verarbeitet
               </Badge>
               {completed.filter(p => p.finalStatus === 'enriched').length > 0 && (
-                <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
+                <TintBadge color="green">
                   {completed.filter(p => p.finalStatus === 'enriched').length} angereichert
-                </Badge>
+                </TintBadge>
               )}
               {completed.filter(p => p.finalStatus === 'partial').length > 0 && (
-                <Badge className="bg-amber-100 text-amber-900 hover:bg-amber-100">
+                <TintBadge color="amber">
                   {completed.filter(p => p.finalStatus === 'partial').length} teilweise
-                </Badge>
+                </TintBadge>
               )}
               {completed.filter(p => p.finalStatus === 'failed').length > 0 && (
-                <Badge className="bg-red-100 text-red-700 hover:bg-red-100">
+                <TintBadge color="red">
                   {completed.filter(p => p.finalStatus === 'failed').length} fehlgeschlagen
-                </Badge>
+                </TintBadge>
               )}
             </div>
           </div>
@@ -705,15 +636,15 @@ export function EnrichmentModal({
 
         {/* Error display */}
         {status === 'error' && errorMessage && (
-          <div className="rounded-lg border border-red-200 bg-red-50 p-3">
-            <p className="text-sm text-red-700">{errorMessage}</p>
+          <div className="rounded-lg border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/[0.08] p-3">
+            <p className="text-sm text-red-700 dark:text-red-300">{errorMessage}</p>
           </div>
         )}
 
         {/* Idle state - nothing to enrich message */}
         {status === 'complete' && !finalStats && errorMessage && (
-          <div className="rounded-lg border bg-neutral-50 p-3">
-            <p className="text-sm text-neutral-600">{errorMessage}</p>
+          <div className="rounded-lg border bg-muted/50 p-3">
+            <p className="text-sm text-foreground/80">{errorMessage}</p>
           </div>
         )}
 
@@ -738,48 +669,6 @@ export function EnrichmentModal({
           )}
         </DialogFooter>
       </DialogContent>
-
-      {/* Capybara animation styles */}
-      <style jsx global>{`
-        @keyframes capybara-work {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-3px); }
-        }
-        @keyframes capybara-celebrate {
-          0%, 100% { transform: rotate(0deg); }
-          25% { transform: rotate(-5deg); }
-          75% { transform: rotate(5deg); }
-        }
-        @keyframes capybara-scratch {
-          0%, 100% { transform: translateX(0); }
-          25% { transform: translateX(-2px); }
-          75% { transform: translateX(2px); }
-        }
-        @keyframes capybara-happy {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.05); }
-        }
-        .animate-capybara-work {
-          animation: capybara-work 1s ease-in-out infinite;
-        }
-        .animate-capybara-celebrate {
-          animation: capybara-celebrate 0.4s ease-in-out;
-        }
-        .animate-capybara-scratch {
-          animation: capybara-scratch 0.5s ease-in-out infinite;
-        }
-        .animate-capybara-happy {
-          animation: capybara-happy 1.5s ease-in-out infinite;
-        }
-        @keyframes capybara-shrug {
-          0%, 100% { transform: rotate(0deg); }
-          30% { transform: rotate(-4deg); }
-          70% { transform: rotate(4deg); }
-        }
-        .animate-capybara-shrug {
-          animation: capybara-shrug 2s ease-in-out infinite;
-        }
-      `}</style>
     </Dialog>
   );
 }

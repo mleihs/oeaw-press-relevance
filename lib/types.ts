@@ -1,3 +1,26 @@
+/** Triage-loop decision states — single source of truth for both server (API
+ *  queue handlers) and client (badges, toolbar, tab navigation).
+ *
+ *  The const tuples are exported so callers can iterate, validate URL params
+ *  and build records without re-typing the literal list. `Decision` is derived
+ *  from the tuple so adding a state means one edit, not five. */
+export const DECIDED_DECISIONS = ['pitch', 'hold', 'skip'] as const;
+export const DECISIONS = ['undecided', ...DECIDED_DECISIONS] as const;
+export type Decision = (typeof DECISIONS)[number];
+
+/** Type guard for narrowing arbitrary strings (URL params, body fields)
+ *  to `Decision` at runtime. */
+export function isDecision(v: string): v is Decision {
+  return (DECISIONS as readonly string[]).includes(v);
+}
+
+/** Language tag used by press_releases.lang and DOI/title language detection. */
+export type Lang = 'de' | 'en';
+
+/** Status state-machine shared by the analysis-batch and enrichment-batch
+ *  progress modals. Identical in both, so kept central. */
+export type ModalStatus = 'idle' | 'running' | 'complete' | 'cancelled' | 'error';
+
 export interface Publication {
   id: string;
   // Identity
@@ -69,7 +92,7 @@ export interface Publication {
   // Triage-loop decision state (migrations 20260504000001 + 000003). See TRIAGE_LOOP_PLAN.md.
   // flag count is derived: `flag_notes.length` (no DB column — single source of truth).
   // decided_at is auto-managed by `trg_publications_decided_at_sync`.
-  decision: 'undecided' | 'pitch' | 'hold' | 'skip';
+  decision: Decision;
   decided_at: string | null;
   decided_by: string | null;
   decision_rationale: string | null;
@@ -88,7 +111,7 @@ export interface PressRelease {
   doi: string;
   url: string;
   released_at: string | null;
-  lang: 'de' | 'en' | null;
+  lang: Lang | null;
   paper_title: string | null;
   news_title: string | null;
   source_news_uid: number | null;

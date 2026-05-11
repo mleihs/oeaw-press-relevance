@@ -23,7 +23,7 @@ export default function ResearchersPage() {
               <Users className="h-5 w-5 text-brand" />
               Forscher:innen
             </h1>
-            <p className="mt-1 text-sm text-neutral-500">
+            <p className="mt-1 text-sm text-muted-foreground">
               Wer hat im gewählten Zeitraum presserelevante Publikationen produziert?
             </p>
           </div>

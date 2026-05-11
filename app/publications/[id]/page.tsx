@@ -25,6 +25,9 @@ import { MeistertaskButton } from './_components/meistertask-button';
 import { PressReferenceCard } from './_components/press-reference-card';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { TintBadge } from '@/components/tint-badge';
+import { ApiErrorCard } from '@/components/api-error-card';
+import { SectionLabel } from '@/components/section-label';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import {
   ExternalLink, FileText, Brain, ChevronRight, Info,
@@ -43,7 +46,7 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-4">
         <CapybaraLogo size="md" />
-        <p className="text-sm text-neutral-500">Lade Publikation...</p>
+        <p className="text-sm text-muted-foreground">Lade Publikation...</p>
       </div>
     );
   }
@@ -53,11 +56,7 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
     return (
       <div className="max-w-4xl mx-auto space-y-4">
         <Breadcrumb />
-        <Card className="border-red-200">
-          <CardContent className="p-6 text-center">
-            <p className="text-red-600 font-medium">{message}</p>
-          </CardContent>
-        </Card>
+        <ApiErrorCard message={message} />
       </div>
     );
   }
@@ -110,22 +109,22 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
         </div>
 
         {/* Lead author + date */}
-        <div className="flex flex-wrap items-center gap-2 text-sm text-neutral-600">
+        <div className="flex flex-wrap items-center gap-2 text-sm text-foreground/80">
           {pub.lead_author && (
             leadAuthorPerson ? (
               <Link
                 href={`/persons/${leadAuthorPerson.id}`}
-                className="font-medium text-neutral-700 hover:text-brand transition-colors"
+                className="font-medium text-foreground hover:text-brand transition-colors"
               >
                 {pub.lead_author}
               </Link>
             ) : (
-              <span className="font-medium text-neutral-700">{pub.lead_author}</span>
+              <span className="font-medium text-foreground">{pub.lead_author}</span>
             )
           )}
           {pub.published_at && (
             <>
-              {pub.lead_author && <span className="text-neutral-300">|</span>}
+              {pub.lead_author && <span className="text-muted-foreground/50">|</span>}
               <span>
                 {new Date(pub.published_at).toLocaleDateString('de-AT', {
                   day: 'numeric', month: 'long', year: 'numeric',
@@ -135,8 +134,8 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
           )}
           {pub.publication_type_lookup && (
             <>
-              <span className="text-neutral-300">|</span>
-              <span className="text-neutral-500">{pub.publication_type_lookup.name_de}</span>
+              <span className="text-muted-foreground/50">|</span>
+              <span className="text-muted-foreground">{pub.publication_type_lookup.name_de}</span>
             </>
           )}
         </div>
@@ -144,19 +143,19 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
         {/* Badges row */}
         <div className="flex flex-wrap items-center gap-2">
           {pub.peer_reviewed && (
-            <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200 gap-1">
+            <TintBadge color="blue" className="gap-1">
               <ShieldCheck className="h-3 w-3" /> Peer-reviewed
-            </Badge>
+            </TintBadge>
           )}
           {pub.popular_science && (
-            <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-200 gap-1">
+            <TintBadge color="purple" className="gap-1">
               <Megaphone className="h-3 w-3" /> Popular Science
-            </Badge>
+            </TintBadge>
           )}
           {pub.open_access_status && (
-            <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200">
+            <TintBadge color="emerald">
               {OA_LABELS[pub.open_access_status] || pub.open_access_status}
-            </Badge>
+            </TintBadge>
           )}
           <Badge className={STATUS_COLORS[pub.enrichment_status] || STATUS_COLORS.pending}>
             {STATUS_LABELS[pub.enrichment_status] || pub.enrichment_status}
@@ -169,7 +168,7 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
         {/* Institutes inline */}
         {pub.orgunits && pub.orgunits.length > 0 && (
           <div className="flex flex-wrap items-center gap-1.5 text-sm">
-            <Building2 className="h-3.5 w-3.5 text-neutral-400" />
+            <Building2 className="h-3.5 w-3.5 text-muted-foreground/70" />
             {pub.orgunits.map((o) => (
               <Tooltip key={o.id}>
                 <TooltipTrigger asChild>
@@ -178,12 +177,12 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
                       href={o.url_de}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="rounded-md bg-neutral-100 hover:bg-neutral-200 px-2 py-0.5 text-xs font-medium text-neutral-700 transition-colors"
+                      className="rounded-md bg-muted hover:bg-muted/80 px-2 py-0.5 text-xs font-medium text-foreground transition-colors"
                     >
                       {o.akronym_de || o.name_de}
                     </a>
                   ) : (
-                    <span className="rounded-md bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-700">
+                    <span className="rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-foreground">
                       {o.akronym_de || o.name_de}
                     </span>
                   )}
@@ -222,24 +221,24 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
 
       {/* ÖAW-Pressemitteilung (cross-reference zur TYPO3-news) */}
       {pub.press_release && (
-        <Card className="border-emerald-300 bg-emerald-50/40">
+        <Card className="border-emerald-300 dark:border-emerald-500/30 bg-emerald-50/40 dark:bg-emerald-500/[0.06]">
           <CardContent className="p-4 space-y-3">
             <div className="flex items-start gap-3">
-              <Newspaper className="h-5 w-5 text-emerald-700 mt-0.5 shrink-0" />
+              <Newspaper className="h-5 w-5 text-emerald-700 dark:text-emerald-300 mt-0.5 shrink-0" />
               <div className="flex-1 min-w-0">
-                <h3 className="text-xs font-medium text-emerald-900 uppercase tracking-wide">
+                <h3 className="text-xs font-medium text-emerald-900 dark:text-emerald-200 uppercase tracking-wide">
                   Bereits ÖAW-Pressemitteilung
                 </h3>
                 <a
                   href={pub.press_release.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block mt-1 font-medium text-emerald-900 hover:underline"
+                  className="block mt-1 font-medium text-emerald-900 dark:text-emerald-200 hover:underline"
                 >
                   {pub.press_release.paper_title ?? pub.press_release.news_title ?? pub.press_release.url}
                   <ExternalLink className="inline-block h-3 w-3 ml-1 align-text-top" />
                 </a>
-                <p className="text-xs text-emerald-700 mt-1">
+                <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-1">
                   {pub.press_release.released_at && <>veröffentlicht am {pub.press_release.released_at} </>}
                   {pub.press_release.lang && <>· {pub.press_release.lang.toUpperCase()}</>}
                   {pub.press_release.journal && <> · {pub.press_release.journal}</>}
@@ -249,17 +248,17 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
             </div>
             {pub.press_release.abstract && (
               <details className="ml-8 group">
-                <summary className="cursor-pointer text-xs font-medium text-emerald-800 hover:text-emerald-900 select-none">
+                <summary className="cursor-pointer text-xs font-medium text-emerald-800 dark:text-emerald-300 hover:text-emerald-900 dark:hover:text-emerald-200 select-none">
                   Abstract anzeigen
                 </summary>
-                <p className="mt-2 text-sm leading-relaxed text-neutral-700 whitespace-pre-wrap">
+                <p className="mt-2 text-sm leading-relaxed text-foreground whitespace-pre-wrap">
                   {pub.press_release.abstract}
                 </p>
               </details>
             )}
             {pub.press_release.authors && pub.press_release.authors.length > 0 && (
-              <p className="ml-8 text-xs text-neutral-600">
-                <span className="font-medium text-emerald-900">Autor:innen (Paper):</span>{' '}
+              <p className="ml-8 text-xs text-foreground/80">
+                <span className="font-medium text-emerald-900 dark:text-emerald-200">Autor:innen (Paper):</span>{' '}
                 {pub.press_release.authors.slice(0, 5).join(', ')}
                 {pub.press_release.authors.length > 5 && ` +${pub.press_release.authors.length - 5}`}
               </p>
@@ -275,8 +274,22 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
         </Card>
       )}
 
-      {/* Press-Referenz: semantische Nähe zum historischen Press-Cluster */}
-      <PressReferenceCard pubId={pub.id} isPressed={!!pub.press_release} />
+      {/* Press-Referenz: semantische Nähe zum historischen Press-Cluster.
+          DE-Erkennung via Stopword-Heuristik auf dem gleichen Text, der ins
+          Embedding ging — gibt nur einen Hinweis aus, wenn DE-Marker da sind
+          und EN-Marker fehlen (vermeidet False-Positives bei zweisprachigen
+          Abstracts). */}
+      <PressReferenceCard
+        pubId={pub.id}
+        isPressed={!!pub.press_release}
+        abstractLooksGerman={(() => {
+          const t = (pub.enriched_abstract || pub.abstract || pub.summary_de || pub.summary_en || '').toLowerCase();
+          if (!t) return false;
+          const deHit = /\b(und|der|die|das|ist|werden|nicht|sich)\b/.test(t);
+          const enHit = /\b(the|and|of|are|with|this|that)\b/.test(t);
+          return deHit && !enHit;
+        })()}
+      />
 
       {/* Pitch */}
       {hasAnalysis && pub.pitch_suggestion && (
@@ -285,13 +298,13 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
             <h3 className="text-xs font-medium text-brand uppercase mb-2">Pitch-Vorschlag</h3>
             <p className="text-sm leading-relaxed">{pub.pitch_suggestion}</p>
             {pub.suggested_angle && (
-              <p className="text-sm text-neutral-600 mt-3">
-                <span className="font-medium text-neutral-500">Blickwinkel:</span> {pub.suggested_angle}
+              <p className="text-sm text-foreground/80 mt-3">
+                <span className="font-medium text-muted-foreground">Blickwinkel:</span> {pub.suggested_angle}
               </p>
             )}
             {pub.target_audience && (
-              <p className="text-sm text-neutral-600 mt-1">
-                <span className="font-medium text-neutral-500">Zielgruppe:</span> {pub.target_audience}
+              <p className="text-sm text-foreground/80 mt-1">
+                <span className="font-medium text-muted-foreground">Zielgruppe:</span> {pub.target_audience}
               </p>
             )}
             <div className="mt-4 pt-4 border-t border-brand/10 flex justify-end">
@@ -313,13 +326,13 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
           <CardContent className="space-y-4">
             {pub.summary_de && (
               <div>
-                <h4 className="text-xs font-medium text-neutral-500 uppercase mb-1">Deutsch</h4>
+                <SectionLabel>Deutsch</SectionLabel>
                 <p className="text-sm leading-relaxed whitespace-pre-wrap">{pub.summary_de}</p>
               </div>
             )}
             {pub.summary_en && pub.summary_en !== pub.summary_de && (
               <div>
-                <h4 className="text-xs font-medium text-neutral-500 uppercase mb-1">English</h4>
+                <SectionLabel>English</SectionLabel>
                 <p className="text-sm leading-relaxed whitespace-pre-wrap">{pub.summary_en}</p>
               </div>
             )}
@@ -346,7 +359,7 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ul className="divide-y divide-neutral-100">
+            <ul className="divide-y divide-border/60">
               {pub.authors_resolved.map((a) => (
                 <li key={a.id} className="py-2.5 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2 min-w-0">
@@ -371,13 +384,13 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
                         href={`/persons/${a.id}`}
                         className="text-sm font-medium truncate hover:text-brand block"
                       >
-                        {a.degree_before && <span className="text-neutral-500 font-normal mr-1">{a.degree_before}</span>}
+                        {a.degree_before && <span className="text-muted-foreground font-normal mr-1">{a.degree_before}</span>}
                         {a.firstname} {a.lastname}
-                        {a.degree_after && <span className="text-neutral-500 font-normal ml-1">{a.degree_after}</span>}
-                        {a.deceased && <span className="text-neutral-400 ml-2 text-xs">†</span>}
+                        {a.degree_after && <span className="text-muted-foreground font-normal ml-1">{a.degree_after}</span>}
+                        {a.deceased && <span className="text-muted-foreground/70 ml-2 text-xs">†</span>}
                       </Link>
                       {a.oestat3_name_de && (
-                        <p className="text-xs text-neutral-500 truncate">{a.oestat3_name_de}</p>
+                        <p className="text-xs text-muted-foreground truncate">{a.oestat3_name_de}</p>
                       )}
                     </div>
                   </div>
@@ -385,7 +398,7 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
                     {a.email && (
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <a href={`mailto:${a.email}`} className="text-neutral-400 hover:text-brand">
+                          <a href={`mailto:${a.email}`} className="text-muted-foreground/70 hover:text-brand">
                             <Mail className="h-3.5 w-3.5" />
                           </a>
                         </TooltipTrigger>
@@ -397,7 +410,7 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
                         href={`https://orcid.org/${a.orcid}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-xs font-mono text-neutral-400 hover:text-[#a6ce39]"
+                        className="text-xs font-mono text-muted-foreground/70 hover:text-[#a6ce39]"
                       >
                         ORCID
                       </a>
@@ -427,20 +440,20 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
               const isActive =
                 p.ends_on && new Date(p.ends_on) > new Date() && !p.cancelled;
               return (
-                <div key={p.id} className="text-sm border-l-2 border-neutral-200 pl-3">
+                <div key={p.id} className="text-sm border-l-2 border-border pl-3">
                   <div className="flex items-start gap-2">
                     <p className="font-medium flex-1">{p.title_de || p.title_en}</p>
                     {isActive && (
-                      <Badge className="bg-green-100 text-green-700 text-[10px]">aktiv</Badge>
+                      <TintBadge color="green" className="text-[10px]">aktiv</TintBadge>
                     )}
                     {p.cancelled && (
-                      <Badge className="bg-red-100 text-red-700 text-[10px]">abgebrochen</Badge>
+                      <TintBadge color="red" className="text-[10px]">abgebrochen</TintBadge>
                     )}
                   </div>
                   {p.summary_de && (
-                    <p className="text-xs text-neutral-500 mt-1 line-clamp-3">{p.summary_de}</p>
+                    <p className="text-xs text-muted-foreground mt-1 line-clamp-3">{p.summary_de}</p>
                   )}
-                  <p className="text-xs text-neutral-400 mt-1">
+                  <p className="text-xs text-muted-foreground/70 mt-1">
                     {p.starts_on ? new Date(p.starts_on).getFullYear() : '?'}
                     {' – '}
                     {p.ends_on ? new Date(p.ends_on).getFullYear() : 'offen'}
@@ -474,7 +487,7 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
                   StoryScore
                   <InfoBubble id="press_score" size="md" />
                 </p>
-                <p className="text-sm text-neutral-500 inline-flex items-center gap-1">
+                <p className="text-sm text-muted-foreground inline-flex items-center gap-1">
                   {getScoreBandStoryLabel(pub.press_score)}
                   <InfoBubble id="score_band" />
                 </p>
@@ -489,12 +502,12 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
             </div>
             {pub.reasoning && (
               <div>
-                <h4 className="text-xs font-medium text-neutral-500 uppercase mb-1">Begründung</h4>
-                <p className="text-sm text-neutral-600">{pub.reasoning}</p>
+                <SectionLabel>Begründung</SectionLabel>
+                <p className="text-sm text-foreground/80">{pub.reasoning}</p>
               </div>
             )}
             {pub.llm_model && (
-              <div className="text-xs text-neutral-400 border-t pt-3 inline-flex items-center gap-1">
+              <div className="text-xs text-muted-foreground/70 border-t pt-3 inline-flex items-center gap-1">
                 Modell: {pub.llm_model} | Kosten: ${pub.analysis_cost?.toFixed(4) || '0'}
                 <InfoBubble id="ai_provenance" />
               </div>
@@ -514,12 +527,12 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
         <CardContent className="space-y-4">
           {pub.enriched_source && (
             <div>
-              <h4 className="text-xs font-medium text-neutral-500 uppercase mb-2">Quellen</h4>
+              <SectionLabel className="mb-2">Quellen</SectionLabel>
               <div className="flex flex-wrap gap-1.5">
                 {pub.enriched_source.split('+').map((src) => (
                   <span
                     key={src}
-                    className={`inline-flex items-center rounded-md px-2.5 py-1 text-xs font-medium ${SOURCE_COLORS[src] || 'bg-neutral-100 text-neutral-600'}`}
+                    className={`inline-flex items-center rounded-md px-2.5 py-1 text-xs font-medium ${SOURCE_COLORS[src] || 'bg-muted text-muted-foreground'}`}
                   >
                     {SOURCE_LABELS[src] || src}
                     <SourceInfoBubble source={src} />
@@ -530,7 +543,7 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
           )}
           {(pub.enriched_abstract || pub.abstract) && (
             <div>
-              <h4 className="text-xs font-medium text-neutral-500 uppercase mb-1">Abstract</h4>
+              <SectionLabel>Abstract</SectionLabel>
               <p className="text-sm leading-relaxed">
                 {pub.enriched_abstract || pub.abstract}
               </p>
@@ -538,13 +551,13 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
           )}
           {pub.enriched_journal && (
             <div>
-              <h4 className="text-xs font-medium text-neutral-500 uppercase mb-1">Journal</h4>
+              <SectionLabel>Journal</SectionLabel>
               <p className="text-sm">{pub.enriched_journal}</p>
             </div>
           )}
           {pub.enriched_keywords && pub.enriched_keywords.length > 0 && (
             <div>
-              <h4 className="text-xs font-medium text-neutral-500 uppercase mb-2">Schlagwörter</h4>
+              <SectionLabel className="mb-2">Schlagwörter</SectionLabel>
               <div className="flex flex-wrap gap-1.5">
                 {pub.enriched_keywords.map((kw, i) => (
                   <Badge key={i} variant="secondary" className="text-xs">{kw}</Badge>
@@ -554,7 +567,7 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
           )}
           {pub.full_text_snippet && <CollapsibleSnippet text={pub.full_text_snippet} />}
           {pub.word_count > 0 && (
-            <div className="text-xs text-neutral-400 border-t pt-3">
+            <div className="text-xs text-muted-foreground/70 border-t pt-3">
               {pub.word_count.toLocaleString()} Wörter angereicherter Inhalt
             </div>
           )}
@@ -566,14 +579,14 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
 
 function Breadcrumb({ title }: { title?: string }) {
   return (
-    <nav className="flex items-center gap-1.5 text-sm text-neutral-500">
+    <nav className="flex items-center gap-1.5 text-sm text-muted-foreground">
       <Link href="/publications" className="hover:text-brand transition-colors">
         Publikationen
       </Link>
       {title && (
         <>
-          <ChevronRight className="h-3.5 w-3.5 text-neutral-400" />
-          <span className="text-neutral-700 truncate max-w-[300px]">{title}</span>
+          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/70" />
+          <span className="text-foreground truncate max-w-[300px]">{title}</span>
         </>
       )}
     </nav>
@@ -601,8 +614,8 @@ function CollapsibleSnippet({ text }: { text: string }) {
   const display = isLong && !expanded ? text.slice(0, 500) + '...' : text;
   return (
     <div>
-      <h4 className="text-xs font-medium text-neutral-500 uppercase mb-1">Textauszug</h4>
-      <p className="text-sm text-neutral-600 whitespace-pre-wrap leading-relaxed">{display}</p>
+      <SectionLabel>Textauszug</SectionLabel>
+      <p className="text-sm text-foreground/80 whitespace-pre-wrap leading-relaxed">{display}</p>
       {isLong && (
         <button onClick={() => setExpanded(!expanded)}
           className="text-xs text-brand hover:underline mt-1">

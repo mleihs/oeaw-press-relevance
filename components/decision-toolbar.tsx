@@ -2,22 +2,23 @@
 
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Check, Pause, X as XIcon, Loader2, CalendarIcon, MessageSquarePlus } from 'lucide-react';
+import { Loader2, CalendarIcon, MessageSquarePlus } from 'lucide-react';
 import { toast } from 'sonner';
-import type { Publication } from '@/lib/types';
+import type { Publication, Decision } from '@/lib/types';
 import type { MeistertaskPushResult } from '@/lib/meistertask/push';
 import { loadSettings, getApiHeaders } from '@/lib/settings-store';
+import { DEFAULT_REVIEWER_NAME } from '@/lib/constants';
 import {
   loadCurrentSessionId,
   saveCurrentSessionId,
 } from '@/lib/session-store';
+import { QK } from '@/lib/query-keys';
+import { DECISION_VARIANTS, getDecisionLabel } from '@/components/decision-badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-
-type Decision = 'undecided' | 'pitch' | 'hold' | 'skip';
 
 interface DecisionToolbarProps {
   pub: Pick<Publication, 'id' | 'decision' | 'snooze_until' | 'decision_rationale'>;
@@ -117,7 +118,7 @@ export function DecisionToolbar({ pub, inSession = false, onDecided }: DecisionT
   const mutation = useMutation({
     mutationFn: async (payload: { decision: Decision; snooze_until: string | null }): Promise<DecisionResponse> => {
       const decided_in_session = payload.decision === 'undecided' ? null : await ensureSessionId(inSession);
-      const reviewer = loadSettings().reviewerName.trim() || 'team';
+      const reviewer = loadSettings().reviewerName.trim() || DEFAULT_REVIEWER_NAME;
       const body: DecisionPayload = {
         decision: payload.decision,
         decided_by: reviewer,
@@ -135,13 +136,13 @@ export function DecisionToolbar({ pub, inSession = false, onDecided }: DecisionT
       return data as DecisionResponse;
     },
     onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['publications'] });
-      queryClient.invalidateQueries({ queryKey: ['publications-list'] });
-      queryClient.invalidateQueries({ queryKey: ['publication', pub.id] });
-      queryClient.invalidateQueries({ queryKey: ['review-queue'] });
+      queryClient.invalidateQueries({ queryKey: QK.publications });
+      queryClient.invalidateQueries({ queryKey: QK.publicationsList });
+      queryClient.invalidateQueries({ queryKey: QK.publication(pub.id) });
+      queryClient.invalidateQueries({ queryKey: QK.reviewQueue });
       notifyMeistertask(data.meistertask);
       if (variables.decision !== 'undecided') {
-        toast.success(`Entscheidung gespeichert: ${decisionLabel(variables.decision)}`);
+        toast.success(`Entscheidung gespeichert: ${getDecisionLabel(variables.decision)}`);
         onDecided?.();
       } else {
         toast.success('Entscheidung zurückgesetzt');
@@ -163,7 +164,7 @@ export function DecisionToolbar({ pub, inSession = false, onDecided }: DecisionT
   const current = pub.decision;
 
   return (
-    <div className="rounded-lg border border-neutral-200 bg-white p-3 space-y-3">
+    <div className="rounded-lg border border-border bg-card p-3 space-y-3">
       <div className="flex flex-wrap items-center gap-2">
         <DecisionButton
           decision="pitch"
@@ -193,14 +194,14 @@ export function DecisionToolbar({ pub, inSession = false, onDecided }: DecisionT
             size="sm"
             disabled={isPending}
             onClick={() => triggerDecision('undecided', null)}
-            className="text-neutral-500"
+            className="text-muted-foreground"
           >
             Zurücksetzen
           </Button>
         )}
 
         <div className="ml-auto flex items-center gap-1.5">
-          <span className="text-[11px] text-neutral-500 font-medium">Snooze:</span>
+          <span className="text-[11px] text-muted-foreground font-medium">Snooze:</span>
           <SnoozeButton label="1W" isoDate={addDays(7)} disabled={isPending} onPick={(d) => triggerDecision('hold', d)} />
           <SnoozeButton label="4W" isoDate={addDays(28)} disabled={isPending} onPick={(d) => triggerDecision('hold', d)} />
           <SnoozeButton label="Quartal" isoDate={addDays(91)} disabled={isPending} onPick={(d) => triggerDecision('hold', d)} />
@@ -233,7 +234,7 @@ export function DecisionToolbar({ pub, inSession = false, onDecided }: DecisionT
       </div>
 
       {pub.snooze_until && (
-        <div className="text-[11px] text-neutral-500">
+        <div className="text-[11px] text-muted-foreground">
           Snoozed bis <span className="font-medium">{pub.snooze_until}</span>
         </div>
       )}
@@ -243,13 +244,13 @@ export function DecisionToolbar({ pub, inSession = false, onDecided }: DecisionT
           variant="ghost"
           size="sm"
           onClick={() => setRationaleOpen((v) => !v)}
-          className="h-7 px-2 text-[11px] text-neutral-500 hover:text-neutral-700"
+          className="h-7 px-2 text-[11px] text-muted-foreground hover:text-foreground"
         >
           <MessageSquarePlus className="h-3.5 w-3.5 mr-1" />
           {rationaleOpen ? 'Notiz ausblenden' : rationale ? 'Notiz bearbeiten' : 'Notiz hinzufügen'}
         </Button>
         {!rationaleOpen && rationale && (
-          <p className="text-[11px] text-neutral-600 mt-1.5 line-clamp-1 flex-1 min-w-0 truncate">
+          <p className="text-[11px] text-foreground/80 mt-1.5 line-clamp-1 flex-1 min-w-0 truncate">
             {rationale}
           </p>
         )}
@@ -268,10 +269,6 @@ export function DecisionToolbar({ pub, inSession = false, onDecided }: DecisionT
   );
 }
 
-function decisionLabel(d: Decision): string {
-  return d === 'pitch' ? 'Pitch' : d === 'hold' ? 'Hold' : d === 'skip' ? 'Skip' : 'Offen';
-}
-
 function DecisionButton({
   decision,
   current,
@@ -287,29 +284,8 @@ function DecisionButton({
 }) {
   const isActive = current === decision;
   const isLoading = isPending && pending === decision;
-
-  const config = {
-    pitch: {
-      Icon: Check,
-      label: 'Pitch',
-      activeClass: 'bg-green-600 text-white hover:bg-green-700',
-      idleClass: 'border-green-300 text-green-700 hover:bg-green-50',
-    },
-    hold: {
-      Icon: Pause,
-      label: 'Hold',
-      activeClass: 'bg-blue-600 text-white hover:bg-blue-700',
-      idleClass: 'border-blue-300 text-blue-700 hover:bg-blue-50',
-    },
-    skip: {
-      Icon: XIcon,
-      label: 'Skip',
-      activeClass: 'bg-neutral-700 text-white hover:bg-neutral-800',
-      idleClass: 'border-neutral-300 text-neutral-600 hover:bg-neutral-100',
-    },
-  }[decision];
-
-  const Icon = config.Icon;
+  const v = DECISION_VARIANTS[decision];
+  const Icon = v.Icon;
   return (
     <Button
       type="button"
@@ -317,10 +293,10 @@ function DecisionButton({
       onClick={onClick}
       disabled={isPending}
       variant={isActive ? 'default' : 'outline'}
-      className={`h-9 px-4 font-medium ${isActive ? config.activeClass : config.idleClass}`}
+      className={`h-9 px-4 font-medium ${isActive ? v.largeButton.active : v.largeButton.idle}`}
     >
       {isLoading ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Icon className="h-4 w-4 mr-1.5" />}
-      {config.label}
+      {v.label}
     </Button>
   );
 }
@@ -345,7 +321,7 @@ function SnoozeButton({
           size="sm"
           disabled={disabled}
           onClick={() => onPick(isoDate)}
-          className="h-7 px-2 text-[11px] text-neutral-600"
+          className="h-7 px-2 text-[11px] text-foreground/80"
         >
           {label}
         </Button>

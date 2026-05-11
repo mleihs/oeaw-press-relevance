@@ -3,11 +3,27 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
+import Image from 'next/image';
+import { motion } from 'motion/react';
+import { AnimateNumber } from 'motion-number';
+import { Sparkles, BookOpen, BarChart3, TrendingUp, Pin, ClipboardCheck, Newspaper } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import Image from 'next/image';
+import { Badge } from '@/components/ui/badge';
 import { PressScoreBadge } from '@/components/score-bar';
+import { StatCard } from '@/components/stat-card';
+import { AtmosphericOrb } from '@/components/atmospheric-orb';
+import { InfoBubble } from '@/components/info-bubble';
+import { LoadingState } from '@/components/loading-state';
+import { EmptyState } from '@/components/empty-state';
+import { ApiErrorCard } from '@/components/api-error-card';
+import { CapybaraEmpty } from '@/components/capybara-logo';
+import { ChangelogPanel } from '@/components/changelog-panel';
+import { PublicationFlag } from '@/components/publication-flag';
 import { useApiQuery } from '@/lib/use-api-query';
+import { PublicationStats, PublicationWithRelations } from '@/lib/types';
+import { displayTitle } from '@/lib/html-utils';
+import { displayAuthor, displayInstitute } from '@/lib/publication-display';
 
 // Recharts is ~100kB gz; lazy-load via next/dynamic so it only ships when
 // the dashboard actually has data to show in this card.
@@ -15,19 +31,6 @@ const DimensionsRadar = dynamic(() => import('./_components/dimensions-radar'), 
   ssr: false,
   loading: () => <div className="h-[280px]" aria-hidden />,
 });
-import { InfoBubble } from '@/components/info-bubble';
-import { LoadingState } from '@/components/loading-state';
-import { EmptyState } from '@/components/empty-state';
-import type { EXPL } from '@/lib/explanations';
-import { CapybaraEmpty } from '@/components/capybara-logo';
-import { ChangelogPanel } from '@/components/changelog-panel';
-import { PublicationStats, PublicationWithRelations } from '@/lib/types';
-import { displayTitle } from '@/lib/html-utils';
-import { displayAuthor, displayInstitute } from '@/lib/publication-display';
-import { SCORE_LABELS } from '@/lib/constants';
-import { Sparkles, BookOpen, BarChart3, TrendingUp, AlertCircle, Pin, ClipboardCheck, Newspaper } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { PublicationFlag } from '@/components/publication-flag';
 
 type TimePeriod = 'week' | 'month' | 'year' | 'all';
 
@@ -134,70 +137,100 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-4">
-        <Image src="/capybara-logo.png" alt="StoryScout" width={80} height={80} className="opacity-50 mix-blend-multiply" />
-        <p className="text-sm text-neutral-500">Lade Dashboard...</p>
+        <Image src="/capybara-logo.png" alt="StoryScout" width={80} height={80} className="opacity-50 mix-blend-multiply dark:mix-blend-normal" />
+        <p className="text-sm text-muted-foreground">Lade Dashboard...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <Card className="border-red-200">
-        <CardContent className="flex items-center gap-3 p-6">
-          <AlertCircle className="h-5 w-5 text-red-500" />
-          <div>
-            <p className="font-medium text-red-800">Verbindungsfehler</p>
-            <p className="text-sm text-red-600">{error}</p>
-            <p className="text-sm text-neutral-500 mt-1">
-              Prüfen Sie die Supabase-Konfiguration in den <Link href="/settings" className="underline text-brand">Einstellungen</Link>.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      <ApiErrorCard
+        title="Verbindungsfehler"
+        message={error}
+        hint={
+          <>
+            Prüfen Sie die Supabase-Konfiguration in den{' '}
+            <Link href="/settings" className="underline text-brand">Einstellungen</Link>.
+          </>
+        }
+      />
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Hero */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="flex items-center gap-5">
-          <Image
-            src="/capybara-logo.png"
-            alt="StoryScout Capybara"
-            width={160}
-            height={160}
-            className="shrink-0 mix-blend-multiply"
-            priority
-          />
-          <div>
-            <h1 className="text-2xl font-bold text-neutral-900">StoryScout</h1>
-            <p className="text-neutral-500 mt-1">
-              Finde die besten Stories in ÖAW-Publikationen
-            </p>
+      {/* Hero — atmospheric gradient panel with animated live stats */}
+      <motion.section
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-brand/[0.06] via-purple-500/[0.04] to-amber-500/[0.05] dark:from-brand/[0.12] dark:via-purple-500/[0.08] dark:to-amber-500/[0.06] p-6 md:p-8"
+      >
+        <AtmosphericOrb position="top-right" size="lg" color="brand" />
+        <AtmosphericOrb position="bottom-left" size="md" color="purple" />
+
+        <div className="relative flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-5">
+            <Image
+              src="/capybara-logo.png"
+              alt="StoryScout Capybara"
+              width={140}
+              height={140}
+              className="shrink-0 mix-blend-multiply dark:mix-blend-normal dark:opacity-90"
+              priority
+            />
+
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-br from-foreground via-foreground to-foreground/70 bg-clip-text text-transparent">
+                StoryScout
+              </h1>
+              <p className="text-muted-foreground mt-1.5 max-w-md">
+                Press-Triage und Pitch-Pipeline für ÖAW-Publikationen.
+              </p>
+              {stats && (
+                <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
+                  <div className="inline-flex items-center gap-1.5">
+                    <BookOpen className="h-3.5 w-3.5" />
+                    <AnimateNumber className="font-semibold text-foreground tabular-nums">{stats.total ?? 0}</AnimateNumber>
+                    <span>Pubs</span>
+                  </div>
+                  <div className="inline-flex items-center gap-1.5">
+                    <BarChart3 className="h-3.5 w-3.5" />
+                    <AnimateNumber className="font-semibold text-foreground tabular-nums">{stats.analyzed ?? 0}</AnimateNumber>
+                    <span>analysiert</span>
+                  </div>
+                  <div className="inline-flex items-center gap-1.5">
+                    <TrendingUp className="h-3.5 w-3.5 text-brand" />
+                    <AnimateNumber className="font-semibold text-brand tabular-nums">{stats.high_score_count ?? 0}</AnimateNumber>
+                    <span>mit hohem Story-Potenzial</span>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
+          <ChangelogPanel />
         </div>
-        <ChangelogPanel />
-      </div>
+      </motion.section>
 
       {/* Stats cards */}
       <div className="grid gap-4 md:grid-cols-4">
         <StatCard
-          title="Publikationen gesamt"
+          label="Publikationen gesamt"
           explId="stat_total_pubs"
-          value={stats?.total || 0}
-          icon={BookOpen}
+          value={stats?.total ?? 0}
+          icon={<BookOpen className="h-5 w-5" />}
           subtitle={
             stats?.peer_reviewed && stats?.total
-              ? `${stats.peer_reviewed.toLocaleString()} peer-reviewed (${Math.round(stats.peer_reviewed / stats.total * 100)}%)`
+              ? `${stats.peer_reviewed.toLocaleString('de-AT')} peer-reviewed (${Math.round(stats.peer_reviewed / stats.total * 100)}%)`
               : undefined
           }
         />
         <StatCard
-          title="Popular Science"
+          label="Popular Science"
           explId="stat_popular_science"
-          value={stats?.popular_science || 0}
-          icon={Sparkles}
+          value={stats?.popular_science ?? 0}
+          icon={<Sparkles className="h-5 w-5" />}
           subtitle={
             stats?.popular_science && stats?.total
               ? `${Math.round(stats.popular_science / stats.total * 100)}% aller Publikationen — Quellsignal`
@@ -205,17 +238,17 @@ export default function DashboardPage() {
           }
         />
         <StatCard
-          title="Analysiert"
+          label="Analysiert"
           explId="stat_analyzed"
-          value={stats?.analyzed || 0}
-          icon={BarChart3}
+          value={stats?.analyzed ?? 0}
+          icon={<BarChart3 className="h-5 w-5" />}
           subtitle={stats?.total ? `${Math.round((stats.analyzed / stats.total) * 100)}% aller Publikationen` : undefined}
         />
         <StatCard
-          title="Hohes Story-Potenzial"
+          label="Hohes Story-Potenzial"
           explId="stat_high_score"
-          value={stats?.high_score_count || 0}
-          icon={TrendingUp}
+          value={stats?.high_score_count ?? 0}
+          icon={<TrendingUp className="h-5 w-5" />}
           subtitle={stats?.avg_score !== null && stats?.avg_score !== undefined ? `Durchschnitt: ${Math.round(stats.avg_score * 100)}%` : undefined}
         />
       </div>
@@ -232,7 +265,7 @@ export default function DashboardPage() {
               Publikationen durchsuchen
             </Link>
           </Button>
-          <Button asChild variant="outline" className="border-amber-300 text-amber-900 hover:bg-amber-50">
+          <Button asChild variant="outline" className="border-amber-300 text-amber-900 hover:bg-amber-50 dark:border-amber-500/30 dark:text-amber-300 dark:hover:bg-amber-500/15">
             <Link href="/review">
               <ClipboardCheck className="mr-2 h-4 w-4" />
               Zur Triage-Sitzung
@@ -240,7 +273,7 @@ export default function DashboardPage() {
                 const n = flaggedQuery.data?.total ?? 0;
                 if (n === 0) return null;
                 return (
-                  <span className="ml-2 inline-flex items-center gap-1 text-xs text-amber-700">
+                  <span className="ml-2 inline-flex items-center gap-1 text-xs text-amber-700 dark:text-amber-300/90">
                     <Pin className="h-3 w-3 fill-amber-400 text-amber-500" />
                     {n} geflaggt
                   </span>
@@ -252,7 +285,7 @@ export default function DashboardPage() {
             const n = pressReleasedQuery.data?.total ?? 0;
             if (n === 0) return null;
             return (
-              <Button asChild variant="outline" className="border-emerald-300 text-emerald-900 hover:bg-emerald-50">
+              <Button asChild variant="outline" className="border-emerald-300 text-emerald-900 hover:bg-emerald-50 dark:border-emerald-500/30 dark:text-emerald-300 dark:hover:bg-emerald-500/15">
                 <Link href="/publications?pressReleased=yes">
                   <Newspaper className="mr-2 h-4 w-4" />
                   {n} mit ÖAW-Pressemitteilung
@@ -264,7 +297,7 @@ export default function DashboardPage() {
             const n = orphansQuery.data?.total ?? 0;
             if (n === 0) return null;
             return (
-              <Button asChild variant="outline" className="border-emerald-200 text-emerald-800 hover:bg-emerald-50">
+              <Button asChild variant="outline" className="border-emerald-200 text-emerald-800 hover:bg-emerald-50 dark:border-emerald-500/30 dark:text-emerald-300 dark:hover:bg-emerald-500/15">
                 <Link href="/press-releases">
                   <Newspaper className="mr-2 h-4 w-4 opacity-60" />
                   {n} externe Pressemitteilungen
@@ -283,13 +316,13 @@ export default function DashboardPage() {
               Top 10 Publikationen (nach StoryScore)
               <InfoBubble id="top10_panel" size="md" />
             </CardTitle>
-            <p className="text-xs text-neutral-500 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               {getTimeRangeLabel(timePeriod)} · ohne Pop-Science
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <span id="time-tabs-label" className="text-xs text-neutral-500 hidden sm:block">Zeitraum:</span>
-            <div role="tablist" aria-labelledby="time-tabs-label" className="flex rounded-lg border bg-neutral-50 p-0.5">
+            <span id="time-tabs-label" className="text-xs text-muted-foreground hidden sm:block">Zeitraum:</span>
+            <div role="tablist" aria-labelledby="time-tabs-label" className="flex rounded-lg border bg-muted p-0.5">
             {TIME_TABS.map((tab) => (
               <button
                 key={tab.value}
@@ -299,7 +332,7 @@ export default function DashboardPage() {
                 className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
                   timePeriod === tab.value
                     ? 'bg-brand text-white shadow-sm'
-                    : 'text-neutral-600 hover:text-neutral-900'
+                    : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
                 {tab.label}
@@ -319,7 +352,7 @@ export default function DashboardPage() {
                 <Link
                   key={pub.id}
                   href={`/publications/${pub.id}`}
-                  className="flex items-start gap-3 rounded-lg p-3 hover:bg-neutral-50 transition-colors group"
+                  className="flex items-start gap-3 rounded-lg p-3 hover:bg-muted/50 transition-colors group"
                 >
                   <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand text-white text-xs font-bold">
                     {i + 1}
@@ -329,23 +362,23 @@ export default function DashboardPage() {
                       {displayTitle(pub.title, pub.citation)}
                     </p>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <p className="text-xs text-neutral-500 truncate">
+                      <p className="text-xs text-muted-foreground truncate">
                         {displayAuthor(pub)}{institute ? ` | ${institute}` : ''}
                       </p>
                       {pub.publication_type && (
                         <Badge variant="outline" className="text-[10px] px-1.5 py-0">{pub.publication_type}</Badge>
                       )}
                       {pub.published_at && (
-                        <span className="text-[10px] text-neutral-400">{pub.published_at.slice(0, 4)}</span>
+                        <span className="text-[10px] text-muted-foreground/70">{pub.published_at.slice(0, 4)}</span>
                       )}
                     </div>
                     {pub.pitch_suggestion && (
-                      <p className="text-xs text-neutral-600 mt-1 line-clamp-2">
+                      <p className="text-xs text-foreground/80 mt-1 line-clamp-2">
                         {pub.pitch_suggestion}
                       </p>
                     )}
                     {pub.haiku && (
-                      <p className="text-[11px] text-neutral-500 italic mt-1 line-clamp-1">
+                      <p className="text-[11px] text-muted-foreground italic mt-1 line-clamp-1">
                         {pub.haiku.replace(/\n/g, ' / ')}
                       </p>
                     )}
@@ -390,7 +423,7 @@ export default function DashboardPage() {
               Dimensions-Profil (Durchschnitt)
               <InfoBubble id="dimensions_profile" size="md" />
             </CardTitle>
-            <p className="text-xs text-neutral-500">Durchschnittswerte aller analysierten Publikationen</p>
+            <p className="text-xs text-muted-foreground">Durchschnittswerte aller analysierten Publikationen</p>
           </CardHeader>
           <CardContent>
             <DimensionsRadar averages={dimensionAvgs} />
@@ -406,7 +439,7 @@ export default function DashboardPage() {
               Top Keywords
               <InfoBubble id="top_keywords" size="md" />
             </CardTitle>
-            <p className="text-xs text-neutral-500">Häufigste Schlagwörter aus angereicherten Publikationen</p>
+            <p className="text-xs text-muted-foreground">Häufigste Schlagwörter aus angereicherten Publikationen</p>
           </CardHeader>
           <CardContent>
             <KeywordCloud keywords={topKeywords} />
@@ -430,38 +463,6 @@ export default function DashboardPage() {
         </Card>
       )}
     </div>
-  );
-}
-
-function StatCard({
-  title,
-  explId,
-  value,
-  icon: Icon,
-  subtitle,
-}: {
-  title: string;
-  explId?: keyof typeof EXPL;
-  value: number;
-  icon: React.ComponentType<{ className?: string }>;
-  subtitle?: string;
-}) {
-  return (
-    <Card>
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-neutral-500 inline-flex items-center gap-1">
-              {title}
-              {explId && <InfoBubble id={explId} />}
-            </p>
-            <p className="text-2xl font-bold">{value.toLocaleString()}</p>
-            {subtitle && <p className="text-xs text-neutral-400">{subtitle}</p>}
-          </div>
-          <Icon className="h-8 w-8 text-brand/20" />
-        </div>
-      </CardContent>
-    </Card>
   );
 }
 
@@ -489,7 +490,7 @@ function KeywordCloud({ keywords }: { keywords: { word: string; count: number }[
         {keywords.map(({ word, count }, i) => (
           <span
             key={word}
-            className={`inline-block px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-700
+            className={`inline-block px-2 py-0.5 rounded-full bg-muted text-foreground/80
               hover:bg-brand hover:text-white cursor-default
               transition-all duration-500 ease-out
               motion-reduce:transition-none`}
@@ -517,10 +518,16 @@ function KeywordCloud({ keywords }: { keywords: { word: string; count: number }[
 
 const BUCKET_LABELS = ['0-9%', '10-19%', '20-29%', '30-39%', '40-49%', '50-59%', '60-69%', '70-79%', '80-89%', '90-100%'];
 const BUCKET_COLORS = [
-  'bg-neutral-300', 'bg-neutral-300', 'bg-neutral-400',
-  'bg-orange-300', 'bg-orange-400',
-  'bg-amber-400', 'bg-amber-500',
-  'bg-brand/60', 'bg-brand/80', 'bg-brand',
+  'bg-chart-bucket-1',
+  'bg-chart-bucket-2',
+  'bg-chart-bucket-3',
+  'bg-chart-bucket-4',
+  'bg-chart-bucket-5',
+  'bg-chart-bucket-6',
+  'bg-chart-bucket-7',
+  'bg-chart-bucket-8',
+  'bg-chart-bucket-9',
+  'bg-chart-bucket-10',
 ];
 
 function ScoreDistributionChart({ buckets }: { buckets: number[] }) {
@@ -541,7 +548,7 @@ function ScoreDistributionChart({ buckets }: { buckets: number[] }) {
             <div key={i} className="flex-1 flex flex-col items-center justify-end h-full">
               {count > 0 && (
                 <span
-                  className={`text-[10px] text-neutral-500 mb-0.5 transition-opacity duration-300 motion-reduce:transition-none ${animated ? 'opacity-100' : 'opacity-0'}`}
+                  className={`text-[10px] text-muted-foreground mb-0.5 transition-opacity duration-300 motion-reduce:transition-none ${animated ? 'opacity-100' : 'opacity-0'}`}
                   style={{ transitionDelay: `${i * 50}ms` }}
                 >
                   {count}
@@ -560,7 +567,7 @@ function ScoreDistributionChart({ buckets }: { buckets: number[] }) {
       </div>
       <div className="flex gap-1" aria-hidden="true">
         {BUCKET_LABELS.map((label, i) => (
-          <div key={i} className="flex-1 text-center text-[9px] text-neutral-600">
+          <div key={i} className="flex-1 text-center text-[9px] text-muted-foreground">
             {label}
           </div>
         ))}

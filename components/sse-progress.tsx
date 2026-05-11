@@ -144,7 +144,7 @@ export function SSEProgress({ title, description, endpoint, requestBody, onCompl
       <CardContent className="space-y-3">
         {state.status === 'idle' && (
           <div className="space-y-3">
-            <p className="text-sm text-neutral-500">{description}</p>
+            <p className="text-sm text-muted-foreground">{description}</p>
             <Button onClick={startProcess} size="sm">
               <Play className="mr-2 h-4 w-4" />
               Start
@@ -155,17 +155,17 @@ export function SSEProgress({ title, description, endpoint, requestBody, onCompl
         {state.status === 'running' && (
           <div className="space-y-2">
             <Progress value={pct} />
-            <div className="flex justify-between text-xs text-neutral-500">
+            <div className="flex justify-between text-xs text-muted-foreground">
               <span>{state.processed} / {state.total}</span>
               <span>{pct}%</span>
             </div>
             {state.currentTitle && (
-              <p className="text-xs text-neutral-500 truncate">
+              <p className="text-xs text-muted-foreground truncate">
                 Processing: {state.currentTitle}
               </p>
             )}
             {state.cost !== undefined && state.cost > 0 && (
-              <p className="text-xs text-neutral-500">
+              <p className="text-xs text-muted-foreground">
                 Cost: ${state.cost.toFixed(4)} | Tokens: {state.tokensUsed?.toLocaleString()}
               </p>
             )}
@@ -176,19 +176,19 @@ export function SSEProgress({ title, description, endpoint, requestBody, onCompl
           <div className="space-y-2">
             <div className="flex gap-4 text-sm">
               {state.successful !== undefined && (
-                <span className="text-green-600">{state.successful} successful</span>
+                <span className="text-green-600 dark:text-green-400">{state.successful} successful</span>
               )}
               {state.failed !== undefined && state.failed > 0 && (
-                <span className="text-red-600">{state.failed} failed</span>
+                <span className="text-red-600 dark:text-red-400">{state.failed} failed</span>
               )}
             </div>
             {state.cost !== undefined && state.cost > 0 && (
-              <p className="text-xs text-neutral-500">
+              <p className="text-xs text-muted-foreground">
                 Total cost: ${state.cost.toFixed(4)} | Tokens: {state.tokensUsed?.toLocaleString()}
               </p>
             )}
             {state.errorMessage && (
-              <p className="text-sm text-neutral-500">{state.errorMessage}</p>
+              <p className="text-sm text-muted-foreground">{state.errorMessage}</p>
             )}
             <Button onClick={startProcess} size="sm" variant="outline">
               Run Again
@@ -198,7 +198,7 @@ export function SSEProgress({ title, description, endpoint, requestBody, onCompl
 
         {state.status === 'error' && (
           <div className="space-y-2">
-            <p className="text-sm text-red-600">{state.errorMessage || 'An error occurred'}</p>
+            <p className="text-sm text-red-600 dark:text-red-400">{state.errorMessage || 'An error occurred'}</p>
             <Button onClick={startProcess} size="sm" variant="outline">
               Retry
             </Button>

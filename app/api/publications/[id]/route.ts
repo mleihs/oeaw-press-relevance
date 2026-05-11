@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseFromRequest } from '@/lib/api-helpers';
+import type { Lang } from '@/lib/types';
 
 export async function DELETE(
   req: NextRequest,
@@ -51,7 +52,7 @@ export async function GET(
     }
 
     // Press-release: prefer DE over EN when both exist for same pub
-    const prs = (data.press_releases || []) as Array<{ lang: 'de' | 'en' | null }>;
+    const prs = (data.press_releases || []) as Array<{ lang: Lang | null }>;
     const press_release = prs.find((p) => p.lang === 'de') ?? prs[0] ?? null;
 
     // Flatten the nested relations into a friendlier shape.

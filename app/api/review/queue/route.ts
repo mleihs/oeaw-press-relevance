@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { apiError, getSupabaseFromRequest } from '@/lib/api-helpers';
+import { DECISIONS, isDecision, type Decision } from '@/lib/types';
 
 const FRESHNESS_FALLBACK_DAYS = 7;
 const FRESH_SCORE_THRESHOLD = 0.7;
@@ -115,11 +116,81 @@ function combineRanks<T extends { press_score: number | null; press_similarity: 
     .map((x) => x.row);
 }
 
+const PUB_SELECT = `*, publication_type_lookup:publication_types(name_de, name_en),
+   orgunit_publications(orgunit:orgunits(id, akronym_de, name_de))`;
+
+type RawRow = {
+  id: string;
+  press_score: number | null;
+  press_similarity: number | null;
+  orgunit_publications?: Array<{ orgunit?: { id: string; akronym_de: string; name_de: string } }>;
+  [k: string]: unknown;
+};
+
+function flattenOrgunits(rows: RawRow[]) {
+  return rows.map((r) => {
+    const orgunits = (r.orgunit_publications ?? []).map((op) => op.orgunit).filter(Boolean);
+    const out: Record<string, unknown> = { ...r, orgunits };
+    delete out.orgunit_publications;
+    return out;
+  });
+}
+
+/**
+ * Decision-bucket counts across all non-archived publications. Drives the
+ * tab badges so the user sees how many pubs sit in each state at a glance.
+ */
+async function fetchDecisionCounts(supabase: SB): Promise<Record<Decision, number>> {
+  const results = await Promise.all(
+    DECISIONS.map((d) =>
+      supabase
+        .from('publications')
+        .select('*', { count: 'exact', head: true })
+        .eq('archived', false)
+        .eq('decision', d),
+    ),
+  );
+  return Object.fromEntries(
+    DECISIONS.map((d, i) => [d, results[i].count ?? 0]),
+  ) as Record<Decision, number>;
+}
+
+/** Decided-bucket fetch: simple list of pubs in a given non-undecided state. */
+async function fetchDecidedBucket(supabase: SB, decision: Exclude<Decision, 'undecided'>) {
+  const { data, error } = await supabase
+    .from('publications')
+    .select(PUB_SELECT)
+    .eq('archived', false)
+    .eq('decision', decision)
+    .order('decided_at', { ascending: false, nullsFirst: false });
+  if (error) return { rows: null, error };
+  return { rows: (data as RawRow[] | null) ?? [], error: null };
+}
+
 export async function GET(req: NextRequest) {
   try {
     const supabase = getSupabaseFromRequest(req);
     const url = new URL(req.url);
     const useCombined = url.searchParams.get('sort') === 'combined';
+    const rawDecision = url.searchParams.get('decision') ?? 'undecided';
+    const decisionParam: Decision = isDecision(rawDecision) ? rawDecision : 'undecided';
+
+    const decisionCountsP = fetchDecisionCounts(supabase);
+
+    // Decided bucket — short path, no since_ts / flagged / mahl / fresh logic.
+    if (decisionParam !== 'undecided') {
+      const { rows, error } = await fetchDecidedBucket(supabase, decisionParam);
+      if (error) return apiError(error.message, 500);
+      const flattened = flattenOrgunits(rows ?? []);
+      const decision_counts = await decisionCountsP;
+      return NextResponse.json({
+        publications: flattened,
+        since_ts: null,
+        sort: 'decided_at',
+        counts: { total: flattened.length, flagged: 0, mahl: 0, fresh: 0 },
+        decision_counts,
+      });
+    }
 
     const sinceTs = await fetchSinceTimestamp(supabase);
     const [flaggedIds, mahlIds, freshIds] = await Promise.all([
@@ -130,21 +201,20 @@ export async function GET(req: NextRequest) {
 
     const unionIds = new Set<string>([...flaggedIds, ...mahlIds, ...freshIds]);
     if (unionIds.size === 0) {
+      const decision_counts = await decisionCountsP;
       return NextResponse.json({
         publications: [],
         since_ts: sinceTs,
         sort: useCombined ? 'combined' : 'press_score',
         counts: { total: 0, flagged: 0, mahl: 0, fresh: 0 },
+        decision_counts,
       });
     }
 
     const today = new Date().toISOString().slice(0, 10);
     const { data, error } = await supabase
       .from('publications')
-      .select(
-        `*, publication_type_lookup:publication_types(name_de, name_en),
-         orgunit_publications(orgunit:orgunits(id, akronym_de, name_de))`,
-      )
+      .select(PUB_SELECT)
       .in('id', [...unionIds])
       .eq('archived', false)
       .eq('decision', 'undecided')
@@ -154,23 +224,10 @@ export async function GET(req: NextRequest) {
 
     if (error) return apiError(error.message, 500);
 
-    type Row = {
-      id: string;
-      press_score: number | null;
-      press_similarity: number | null;
-      orgunit_publications?: Array<{ orgunit?: { id: string; akronym_de: string; name_de: string } }>;
-      [k: string]: unknown;
-    };
-    const rawRows = (data as Row[] | null ?? []);
+    const rawRows = (data as RawRow[] | null) ?? [];
     const ranked = useCombined ? combineRanks(rawRows) : rawRows;
-    const flattened = ranked.map((r) => {
-      const orgunits = (r.orgunit_publications ?? [])
-        .map((op) => op.orgunit)
-        .filter(Boolean);
-      const out: Record<string, unknown> = { ...r, orgunits };
-      delete out.orgunit_publications;
-      return out;
-    });
+    const flattened = flattenOrgunits(ranked);
+    const decision_counts = await decisionCountsP;
 
     return NextResponse.json({
       publications: flattened,
@@ -182,6 +239,7 @@ export async function GET(req: NextRequest) {
         mahl: mahlIds.size,
         fresh: freshIds.size,
       },
+      decision_counts,
     });
   } catch (err) {
     return apiError(err instanceof Error ? err.message : 'Unknown error', 500);

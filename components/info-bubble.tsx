@@ -160,24 +160,24 @@ export function InfoBubble({
         className="w-80 max-w-[90vw] p-4 text-xs"
       >
         <div className="space-y-2">
-          <p className="text-sm font-medium text-neutral-900">{expl.title}</p>
+          <p className="text-sm font-medium text-foreground">{expl.title}</p>
 
           {expl.formula && (
-            <div className="rounded bg-neutral-50 px-2 py-1.5 font-mono text-[10.5px] leading-snug text-neutral-700">
+            <div className="rounded bg-muted px-2 py-1.5 font-mono text-[10.5px] leading-snug text-foreground/90">
               {expl.formula}
             </div>
           )}
 
-          <div className="space-y-1.5 text-neutral-600">{expl.body}</div>
+          <div className="space-y-1.5 text-foreground/80">{expl.body}</div>
 
           {expl.example && (
-            <div className="rounded border border-dashed border-neutral-200 bg-neutral-50/40 px-2.5 py-1.5 text-[11px] text-neutral-600">
+            <div className="rounded border border-dashed border-border bg-muted/40 px-2.5 py-1.5 text-[11px] text-foreground/80">
               {expl.example}
             </div>
           )}
 
           {expl.note && (
-            <div className="rounded bg-amber-50/60 px-2.5 py-1.5 text-[11px] text-amber-900">
+            <div className="rounded bg-amber-50/60 dark:bg-amber-500/[0.08] px-2.5 py-1.5 text-[11px] text-amber-900 dark:text-amber-200">
               {expl.note}
             </div>
           )}

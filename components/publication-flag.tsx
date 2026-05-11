@@ -2,10 +2,13 @@
 
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Pin, Loader2, Trash2, Check, Pause, X as XIcon } from 'lucide-react';
+import { Pin, Loader2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-import type { FlagNote } from '@/lib/types';
+import type { FlagNote, Decision } from '@/lib/types';
 import { loadSettings, getApiHeaders } from '@/lib/settings-store';
+import { DEFAULT_REVIEWER_NAME } from '@/lib/constants';
+import { QK } from '@/lib/query-keys';
+import { DECISION_VARIANTS } from '@/components/decision-badge';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -19,42 +22,28 @@ interface PublicationFlagProps {
   /** Compact mode for tight rows; default = normal. */
   size?: 'sm' | 'md';
   /** Triage decision-state — switches the icon to reflect lifecycle. */
-  decision?: 'undecided' | 'pitch' | 'hold' | 'skip' | null;
+  decision?: Decision | null;
 }
 
 /** Icon + visual styling per decision state. The Pin only shows for undecided;
- *  pitch/hold/skip get state-specific icons so the row's lifecycle is glanceable. */
+ *  pitch/hold/skip get state-specific icons (from DECISION_VARIANTS) so the
+ *  row's lifecycle is glanceable. */
 function decisionVisuals(decision: PublicationFlagProps['decision'], iAmFlagging: boolean) {
-  switch (decision) {
-    case 'pitch':
-      return {
-        Icon: Check,
-        iconClass: 'fill-none',
-        buttonClass: 'text-green-600 hover:bg-green-50',
-        tooltip: 'Entschieden: Pitch',
-      };
-    case 'hold':
-      return {
-        Icon: Pause,
-        iconClass: 'fill-none',
-        buttonClass: 'text-blue-600 hover:bg-blue-50',
-        tooltip: 'Entschieden: Hold',
-      };
-    case 'skip':
-      return {
-        Icon: XIcon,
-        iconClass: 'fill-none',
-        buttonClass: 'text-neutral-500 hover:bg-neutral-100',
-        tooltip: 'Entschieden: Skip',
-      };
-    default:
-      return {
-        Icon: Pin,
-        iconClass: iAmFlagging ? 'fill-amber-400' : '',
-        buttonClass: `text-neutral-400 hover:text-amber-500 hover:bg-amber-50 ${iAmFlagging ? 'text-amber-500' : ''}`,
-        tooltip: null,
-      };
+  if (decision && decision !== 'undecided') {
+    const v = DECISION_VARIANTS[decision];
+    return {
+      Icon: v.Icon,
+      iconClass: 'fill-none',
+      buttonClass: v.iconButton,
+      tooltip: `Entschieden: ${v.label}`,
+    };
   }
+  return {
+    Icon: Pin,
+    iconClass: iAmFlagging ? 'fill-amber-400' : '',
+    buttonClass: `text-muted-foreground/70 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-500/15 ${iAmFlagging ? 'text-amber-500' : ''}`,
+    tooltip: null,
+  };
 }
 
 function norm(name: string): string {
@@ -84,7 +73,7 @@ export function PublicationFlag({ pubId, flagNotes, onChange, size = 'md', decis
   const [draft, setDraft] = useState('');
   const queryClient = useQueryClient();
 
-  const myKey = norm(reviewerName.trim() || 'team');
+  const myKey = norm(reviewerName.trim() || DEFAULT_REVIEWER_NAME);
   const myExisting = flagNotes.find((n) => norm(n.by) === myKey);
   const others = flagNotes.filter((n) => norm(n.by) !== myKey);
   const totalCount = flagNotes.length;
@@ -97,7 +86,7 @@ export function PublicationFlag({ pubId, flagNotes, onChange, size = 'md', decis
     if (next) {
       const fresh = loadSettings().reviewerName;
       setReviewerName(fresh);
-      const myFreshKey = norm(fresh.trim() || 'team');
+      const myFreshKey = norm(fresh.trim() || DEFAULT_REVIEWER_NAME);
       const my = flagNotes.find((n) => norm(n.by) === myFreshKey);
       setDraft(my?.note ?? '');
     }
@@ -118,8 +107,8 @@ export function PublicationFlag({ pubId, flagNotes, onChange, size = 'md', decis
     onSuccess: (notes) => {
       onChange?.(notes);
       // Bust list-page caches so the row reflects the new flag count.
-      queryClient.invalidateQueries({ queryKey: ['publications'] });
-      queryClient.invalidateQueries({ queryKey: ['publication', pubId] });
+      queryClient.invalidateQueries({ queryKey: QK.publications });
+      queryClient.invalidateQueries({ queryKey: QK.publication(pubId) });
       setOpen(false);
     },
     onError: (err) => {
@@ -140,8 +129,8 @@ export function PublicationFlag({ pubId, flagNotes, onChange, size = 'md', decis
     },
     onSuccess: (notes) => {
       onChange?.(notes);
-      queryClient.invalidateQueries({ queryKey: ['publications'] });
-      queryClient.invalidateQueries({ queryKey: ['publication', pubId] });
+      queryClient.invalidateQueries({ queryKey: QK.publications });
+      queryClient.invalidateQueries({ queryKey: QK.publication(pubId) });
       setOpen(false);
     },
     onError: (err) => {
@@ -197,7 +186,7 @@ export function PublicationFlag({ pubId, flagNotes, onChange, size = 'md', decis
             <Pin className="h-4 w-4 text-amber-500" />
             <h4 className="text-sm font-semibold">Flag</h4>
             {totalCount > 0 && (
-              <span className="ml-auto text-[10px] text-neutral-500">
+              <span className="ml-auto text-[10px] text-muted-foreground">
                 {totalCount} Flag{totalCount > 1 ? 's' : ''}
               </span>
             )}
@@ -205,16 +194,16 @@ export function PublicationFlag({ pubId, flagNotes, onChange, size = 'md', decis
 
           {others.length > 0 && (
             <div className="space-y-1.5 border-b pb-3">
-              <p className="text-[10px] font-medium uppercase tracking-wide text-neutral-500">
+              <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                 Andere
               </p>
               {others.map((n, i) => (
                 <div key={`${n.by}-${i}`} className="text-xs">
                   <div className="flex items-baseline gap-2">
-                    <span className="font-medium text-neutral-700">{n.by}</span>
-                    <span className="text-[10px] text-neutral-400">{formatRelative(n.at)}</span>
+                    <span className="font-medium text-foreground/90">{n.by}</span>
+                    <span className="text-[10px] text-muted-foreground/70">{formatRelative(n.at)}</span>
                   </div>
-                  {n.note && <p className="text-neutral-600 mt-0.5 whitespace-pre-wrap">{n.note}</p>}
+                  {n.note && <p className="text-foreground/80 mt-0.5 whitespace-pre-wrap">{n.note}</p>}
                 </div>
               ))}
             </div>
@@ -222,11 +211,11 @@ export function PublicationFlag({ pubId, flagNotes, onChange, size = 'md', decis
 
           <div className="space-y-2">
             <div className="flex items-baseline justify-between">
-              <label htmlFor={`flag-note-${pubId}`} className="text-[10px] font-medium uppercase tracking-wide text-neutral-500">
+              <label htmlFor={`flag-note-${pubId}`} className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                 Deine Notiz
               </label>
-              <span className="text-[10px] text-neutral-400">
-                als <span className="font-medium">{reviewerName.trim() || 'team'}</span>
+              <span className="text-[10px] text-muted-foreground/70">
+                als <span className="font-medium">{reviewerName.trim() || DEFAULT_REVIEWER_NAME}</span>
               </span>
             </div>
             <Textarea
@@ -238,8 +227,8 @@ export function PublicationFlag({ pubId, flagNotes, onChange, size = 'md', decis
               disabled={busy}
             />
             {!reviewerName.trim() && (
-              <p className="text-[10px] text-amber-600">
-                Kein Name in den Einstellungen — Eintrag wird als „team" gespeichert.
+              <p className="text-[10px] text-amber-600 dark:text-amber-400">
+                Kein Name in den Einstellungen — Eintrag wird als „{DEFAULT_REVIEWER_NAME}" gespeichert.
               </p>
             )}
           </div>
@@ -251,7 +240,7 @@ export function PublicationFlag({ pubId, flagNotes, onChange, size = 'md', decis
                 size="sm"
                 onClick={() => removeMutation.mutate()}
                 disabled={busy}
-                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-500/15"
               >
                 {removeMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Trash2 className="h-3 w-3 mr-1" />}
                 Mein Flag entfernen

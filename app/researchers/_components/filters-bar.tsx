@@ -24,9 +24,9 @@ export function FiltersBar() {
   const [filters, setFilters] = useQueryStates(filterParsers, { shallow: false });
 
   return (
-    <div className="flex flex-wrap items-end gap-x-4 gap-y-3 rounded-lg border bg-white p-4">
+    <div className="flex flex-wrap items-end gap-x-4 gap-y-3 rounded-lg border bg-card p-4">
       <div className="flex flex-col gap-1.5">
-        <Label className="flex items-center gap-1.5 text-xs text-neutral-500">
+        <Label className="flex items-center gap-1.5 text-xs text-muted-foreground">
           Zeitraum
           <InfoBubble id="since_window" />
         </Label>
@@ -43,7 +43,7 @@ export function FiltersBar() {
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <Label className="flex items-center gap-1.5 text-xs text-neutral-500">
+        <Label className="flex items-center gap-1.5 text-xs text-muted-foreground">
           Metrik
           <InfoBubble id={metricExplKey(filters.metric)} />
         </Label>
@@ -60,7 +60,7 @@ export function FiltersBar() {
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <Label className="flex items-center gap-1.5 text-xs text-neutral-500">
+        <Label className="flex items-center gap-1.5 text-xs text-muted-foreground">
           Autorschaft
           <InfoBubble id="filter_authorship" />
         </Label>

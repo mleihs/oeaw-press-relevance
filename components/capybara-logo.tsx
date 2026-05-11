@@ -110,9 +110,9 @@ export function CapybaraEmpty({ message, submessage }: { message: string; submes
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center">
       <CapybaraLogo size="lg" />
-      <h3 className="mt-4 font-medium text-lg text-neutral-700">{message}</h3>
+      <h3 className="mt-4 font-medium text-lg text-foreground">{message}</h3>
       {submessage && (
-        <p className="mt-1 text-sm text-neutral-500 max-w-md">{submessage}</p>
+        <p className="mt-1 text-sm text-muted-foreground max-w-md">{submessage}</p>
       )}
     </div>
   );

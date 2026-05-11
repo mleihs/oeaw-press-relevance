@@ -506,6 +506,60 @@ export const EXPL: Record<string, Explanation> = {
       </Para>
     ),
   },
+
+  // ─── Triage-Sitzung Stat-Cards ────────────────────────────────────────────
+  triage_flagged: {
+    title: 'Geflaggt',
+    body: (
+      <>
+        <Para>
+          Publikationen, die ein Team-Mitglied per Pin-Icon zur Diskussion in der
+          Triage-Sitzung markiert hat. Flag-Notes sind frei formulierbare Kommentare —
+          sichtbar im Tooltip des Pin-Icons.
+        </Para>
+        <Para>
+          Anders als „Highlights" (vom Institut) und „Frisch" (Score-Threshold) ist
+          das ein <em>manuelles</em> Signal aus dem Press-Team selber.
+        </Para>
+      </>
+    ),
+  },
+  triage_fresh: {
+    title: 'Frisch · Score ≥ 70 %',
+    formula: 'analyzed_at ≥ letzte_sitzung AND press_score ≥ 0.7',
+    body: (
+      <Para>
+        Publikationen, die seit der letzten abgeschlossenen Sitzung neu analysiert
+        wurden und einen StoryScore von mindestens 70 % erreicht haben. Stellt sicher,
+        dass hochbewertete Frisch-Eingänge nicht in der Allgemein-Liste untergehen,
+        sondern direkt in der nächsten Triage landen.
+      </Para>
+    ),
+    note: (
+      <Para>
+        Wenn keine Sitzung seit 7 Tagen abgeschlossen wurde, fällt das Fenster auf
+        die letzten 7 Tage zurück (Fallback in <Code>fetchSinceTimestamp</Code>).
+      </Para>
+    ),
+  },
+  triage_mahl: {
+    title: 'ÖAW-Highlights',
+    body: (
+      <>
+        <Para>
+          Publikationen, bei denen die Institute-Selbstdarstellung in der WebDB ein
+          <Code>mahighlight=true</Code>-Flag gesetzt hat — das Institut sieht das
+          Paper als bemerkenswert für die ÖAW-Außenwirkung.
+        </Para>
+        <Para>
+          <strong>Achtung</strong>: <Code>mahighlight</Code> heißt <em>Eigen-Highlight</em>,
+          nicht „Akademie-Mitglied". 90 % der Highlights kommen tatsächlich von Pubs
+          ohne Akademie-Mitglied im Author-Pool — die Institute markieren also auch
+          ohne Mitgliedsbezug.
+        </Para>
+      </>
+    ),
+  },
   top10_panel: {
     title: 'Top-10-Panel',
     body: (

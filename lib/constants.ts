@@ -96,6 +96,24 @@ export const SCORE_BAND_MID = 0.5;
 export const SCORE_BAND_LOW = 0.3;
 
 /**
+ * Press-Similarity bands (cosine of SPECTER2 embeddings to press-cluster k-NN).
+ * Used by `SimilarityIndicator` for visual band-coloring. Values are
+ * deliberately tighter than `SCORE_BAND_*` because cosine similarity ranges
+ * compress around 0.6–0.95 in practice (SPECTER2 always returns positive
+ * similarity for academic text).
+ */
+export const PRESS_SIMILARITY_BAND_HIGH = 0.85;
+export const PRESS_SIMILARITY_BAND_MID = 0.7;
+
+/**
+ * Fallback reviewer name when `settings.reviewerName` is empty. Surfaces in
+ * flag-notes (`by`) and decision-attribution (`decided_by`). Kept in one place
+ * so the client- and server-side fallbacks stay in sync — drift here would
+ * silently fragment the audit trail.
+ */
+export const DEFAULT_REVIEWER_NAME = 'team';
+
+/**
  * Single source of truth for enrichment-source labels and color tokens.
  * Per-component overrides (e.g. enrichment-modal uses "PDF Extract") still
  * live next to the component if intentionally different.

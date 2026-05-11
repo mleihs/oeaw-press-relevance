@@ -22,7 +22,7 @@ export function PersonHeader({ person, stats, windowLabel }: PersonHeaderProps) 
   const deltaTotal = stats.pubs_total - stats.prev_pubs_total;
 
   return (
-    <header className="rounded-xl border bg-gradient-to-br from-white to-brand/[0.03] p-6">
+    <header className="rounded-xl border bg-gradient-to-br from-card to-brand/[0.03] p-6">
       <div className="flex flex-col gap-6 md:flex-row md:items-start">
         <PersonAvatar
           firstname={person.firstname}
@@ -36,7 +36,7 @@ export function PersonHeader({ person, stats, windowLabel }: PersonHeaderProps) 
             <div>
               <h1 className="text-3xl font-light tracking-tight">{fullname}</h1>
               {person.oestat3_name_de && (
-                <p className="mt-1 inline-flex items-center gap-1 text-sm text-neutral-500">
+                <p className="mt-1 inline-flex items-center gap-1 text-sm text-muted-foreground">
                   {person.oestat3_name_de}
                   <InfoBubble id="oestat3" />
                 </p>
@@ -53,13 +53,13 @@ export function PersonHeader({ person, stats, windowLabel }: PersonHeaderProps) 
                 </span>
               )}
               {person.external && (
-                <span className="inline-flex items-center gap-1 rounded-md bg-neutral-100 px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-neutral-500">
+                <span className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
                   Extern
                   <InfoBubble id="external_person" />
                 </span>
               )}
               {person.deceased && (
-                <span className="rounded-md bg-neutral-100 px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-neutral-500">
+                <span className="rounded-md bg-muted px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
                   Verstorben
                 </span>
               )}
@@ -67,7 +67,7 @@ export function PersonHeader({ person, stats, windowLabel }: PersonHeaderProps) 
           </div>
 
           {person.research_fields && (
-            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-neutral-600">
+            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-foreground/80">
               {person.research_fields}
             </p>
           )}
@@ -77,7 +77,7 @@ export function PersonHeader({ person, stats, windowLabel }: PersonHeaderProps) 
               href={`https://orcid.org/${person.orcid}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-3 inline-flex items-center gap-1 text-xs text-neutral-500 hover:text-brand"
+              className="mt-3 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-brand"
             >
               ORCID: {person.orcid}
               <ExternalLink className="h-3 w-3" />
@@ -129,7 +129,7 @@ function StatCard({
   subline,
   value,
   delta,
-  color = '#171717',
+  color,
   suffix = '',
   fractionDigits = 0,
   explId,
@@ -150,19 +150,19 @@ function StatCard({
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="rounded-lg border bg-white p-4"
+      className="rounded-lg border bg-card p-4"
     >
-      <p className="flex items-center gap-1 text-[10px] font-medium uppercase tracking-wider text-neutral-500">
+      <p className="flex items-center gap-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
         {label}
         {explId && <InfoBubble id={explId} />}
       </p>
-      {subline && <p className="text-[10px] text-neutral-400">{subline}</p>}
+      {subline && <p className="text-[10px] text-muted-foreground/70">{subline}</p>}
       <div className="mt-2 flex items-baseline gap-2">
-        <span className="text-2xl font-light tabular-nums" style={{ color }}>
+        <span className="text-2xl font-light tabular-nums text-foreground" style={color ? { color } : undefined}>
           <AnimateNumber format={{ maximumFractionDigits: fractionDigits }} locales="de-AT">
             {value}
           </AnimateNumber>
-          {suffix && <span className="text-base text-neutral-400"> {suffix}</span>}
+          {suffix && <span className="text-base text-muted-foreground/70"> {suffix}</span>}
         </span>
         {delta != null && delta !== 0 && (
           <span className="inline-flex items-center gap-0.5">

@@ -46,7 +46,7 @@ export function SpotlightPodium({ rows, metric }: SpotlightPodiumProps) {
   return (
     <section
       aria-label="Spotlight: Top 3"
-      className="relative overflow-hidden rounded-xl border bg-gradient-to-br from-white via-white to-brand/[0.03] p-6"
+      className="relative overflow-hidden rounded-xl border bg-gradient-to-br from-card via-card to-brand/[0.03] p-6"
     >
       <div className="mb-5 flex items-baseline justify-between">
         <div>
@@ -59,7 +59,7 @@ export function SpotlightPodium({ rows, metric }: SpotlightPodiumProps) {
             <InfoBubble id={metric} size="md" />
           </h2>
         </div>
-        <p className="flex items-center gap-1 text-xs text-neutral-400">
+        <p className="flex items-center gap-1 text-xs text-muted-foreground/70">
           algorithmische Auswahl
           <InfoBubble id="rank" />
         </p>
@@ -78,10 +78,10 @@ export function SpotlightPodium({ rows, metric }: SpotlightPodiumProps) {
             >
               <Link
                 href={`/persons/${row.person_id}`}
-                className="block rounded-lg border bg-white p-5 transition-all hover:-translate-y-0.5 hover:shadow-md"
+                className="block rounded-lg border bg-card p-5 transition-all hover:-translate-y-0.5 hover:shadow-md"
                 style={{ borderTopColor: meta.color, borderTopWidth: 2 }}
               >
-                <div className="mb-3 flex items-center justify-between text-[10px] font-medium uppercase tracking-wider text-neutral-500">
+                <div className="mb-3 flex items-center justify-between text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
                   <span className="inline-flex items-center gap-1.5">
                     <Icon className="h-3 w-3" style={{ color: meta.color }} />
                     {meta.label}
@@ -101,7 +101,7 @@ export function SpotlightPodium({ rows, metric }: SpotlightPodiumProps) {
                       {row.firstname} {row.lastname}
                     </p>
                     {row.oestat3_name_de && (
-                      <p className="mt-0.5 truncate text-xs text-neutral-500">
+                      <p className="mt-0.5 truncate text-xs text-muted-foreground">
                         {row.oestat3_name_de}
                       </p>
                     )}
@@ -110,23 +110,23 @@ export function SpotlightPodium({ rows, metric }: SpotlightPodiumProps) {
 
                 <div className="mt-4 flex items-end justify-between">
                   <div>
-                    <p className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-neutral-400">
+                    <p className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground/70">
                       {METRIC_SHORT_LABELS[metric]}
                       <InfoBubble id={metric} />
                     </p>
-                    <div className="mt-0.5 flex items-baseline gap-0.5 text-3xl font-light tabular-nums text-neutral-900">
+                    <div className="mt-0.5 flex items-baseline gap-0.5 text-3xl font-light tabular-nums text-foreground">
                       <AnimateNumber
                         format={{ maximumFractionDigits: metric === 'sum_score' ? 2 : 0 }}
                         locales="de-AT"
                       >
                         {metricNumber(row, metric)}
                       </AnimateNumber>
-                      <span className="text-base text-neutral-400">{metricSuffix(metric)}</span>
+                      <span className="text-base text-muted-foreground/70">{metricSuffix(metric)}</span>
                     </div>
                   </div>
                   <div className="flex flex-col items-end text-brand opacity-70">
                     <Sparkline data={row.sparkline ?? []} width={80} height={26} stroke="currentColor" />
-                    <span className="mt-0.5 inline-flex items-center gap-0.5 text-[9px] uppercase tracking-wider text-neutral-400 opacity-60">
+                    <span className="mt-0.5 inline-flex items-center gap-0.5 text-[9px] uppercase tracking-wider text-muted-foreground/70 opacity-60">
                       12 M
                       <InfoBubble id="sparkline" />
                     </span>
@@ -135,7 +135,7 @@ export function SpotlightPodium({ rows, metric }: SpotlightPodiumProps) {
 
                 {row.top_pub && (
                   <div className="mt-4 border-t pt-3">
-                    <p className="mb-1 flex items-center gap-1 text-[10px] uppercase tracking-wider text-neutral-400">
+                    <p className="mb-1 flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground/70">
                       Stärkste Publikation im Zeitraum
                       <InfoBubble
                         content={{
@@ -156,7 +156,7 @@ export function SpotlightPodium({ rows, metric }: SpotlightPodiumProps) {
                     >
                       {displayTitle(row.top_pub.title, row.top_pub.citation)}
                     </p>
-                    <p className="mt-1 flex items-center gap-1 text-xs text-neutral-500">
+                    <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
                       Score: {(row.top_pub.press_score * 100).toFixed(0)} %
                       <InfoBubble id="press_score" />
                     </p>

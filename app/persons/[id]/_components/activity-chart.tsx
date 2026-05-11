@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import { useTheme } from 'next-themes';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { InfoBubble } from '@/components/info-bubble';
 import { EmptyState } from '@/components/empty-state';
@@ -17,23 +19,31 @@ const BAND_COLORS = {
 };
 
 export function ActivityChart({ data }: ActivityChartProps) {
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const isDark = mounted && resolvedTheme === 'dark';
+  const tickColor = isDark ? '#737373' : '#a1a1a1';
+  const axisLineColor = isDark ? '#404040' : '#e5e5e5';
+  const cursorFill = isDark ? 'rgba(120,150,220,0.08)' : 'rgba(0,71,187,0.04)';
+
   const total = data.reduce((s, d) => s + d.high + d.mid + d.low, 0);
   if (total === 0) {
     return <EmptyState title="Keine Aktivität im gewählten Zeitraum." />;
   }
   return (
-    <div className="rounded-lg border bg-white p-5">
+    <div className="rounded-lg border bg-card p-5">
       <div className="mb-4 flex items-baseline justify-between">
         <div>
           <p className="flex items-center gap-1 text-sm font-medium">
             Aktivität pro Monat
             <InfoBubble id="activity_chart" />
           </p>
-          <p className="mt-0.5 text-xs text-neutral-400">
+          <p className="mt-0.5 text-xs text-muted-foreground/70">
             Bewertete Publikationen, gestapelt nach Press-Score-Band.
           </p>
         </div>
-        <div className="flex items-center gap-3 text-[10px] uppercase tracking-wider text-neutral-500">
+        <div className="flex items-center gap-3 text-[10px] uppercase tracking-wider text-muted-foreground">
           <span className="inline-flex items-center gap-1.5">
             <span className="inline-block h-2 w-2 rounded-sm" style={{ backgroundColor: BAND_COLORS.high }} />
             ≥ 70 %
@@ -55,23 +65,25 @@ export function ActivityChart({ data }: ActivityChartProps) {
           <BarChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: -16 }}>
             <XAxis
               dataKey="m"
-              tick={{ fontSize: 10, fill: '#a1a1a1' }}
+              tick={{ fontSize: 10, fill: tickColor }}
               tickFormatter={(m: string) => m.slice(5)}
-              axisLine={{ stroke: '#e5e5e5' }}
+              axisLine={{ stroke: axisLineColor }}
               tickLine={false}
             />
             <YAxis
-              tick={{ fontSize: 10, fill: '#a1a1a1' }}
+              tick={{ fontSize: 10, fill: tickColor }}
               axisLine={false}
               tickLine={false}
               allowDecimals={false}
             />
             <Tooltip
-              cursor={{ fill: 'rgba(0,71,187,0.04)' }}
+              cursor={{ fill: cursorFill }}
               contentStyle={{
                 fontSize: 11,
                 borderRadius: 8,
-                border: '1px solid #e5e5e5',
+                border: `1px solid ${axisLineColor}`,
+                background: isDark ? '#1a1a1a' : '#fff',
+                color: isDark ? '#e5e5e5' : '#171717',
                 padding: '6px 10px',
               }}
               labelFormatter={(m) => String(m ?? '')}

@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Python-Venv vom SPECTER2-Embedding-Setup — enthält torch/sklearn JS-Dateien
+    // die ESLint mitscannt; sind aber third-party und nicht unsere Verantwortung.
+    "scripts/embeddings/.venv/**",
   ]),
   {
     rules: {
@@ -28,6 +31,19 @@ const eslintConfig = defineConfig([
       // refactor (see use-leaderboard.ts, beeswarm-view.tsx, settings/page.tsx).
       // Surfaced as warning so the signal stays visible without blocking CI.
       "react-hooks/set-state-in-effect": "warn",
+
+      // Allow `_`-prefixed args/vars as intentional-unused convention.
+      // Used for Next.js route handlers and helpers that take but don't read
+      // a parameter (e.g. `getSupabaseFromRequest(_req)`). Universal JS/TS
+      // pattern that lint should respect.
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
+      ],
     },
   },
 ]);
