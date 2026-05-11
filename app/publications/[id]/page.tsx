@@ -21,7 +21,7 @@ import {
 } from '@/lib/shared/constants';
 import { getScoreBandClass, getScoreBandStoryLabel } from '@/lib/shared/score-utils';
 import { CapybaraLogo } from '@/components/capybara-logo';
-import { MeistertaskButton } from './_components/meistertask-button';
+import { MeistertaskButton } from '@/components/meistertask-button';
 import { PressReferenceCard } from './_components/press-reference-card';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';

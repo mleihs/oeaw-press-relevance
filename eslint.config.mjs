@@ -47,11 +47,23 @@ const eslintConfig = defineConfig([
       ],
     },
   },
-  // Phase-2 architecture-boundaries (Plan §6.3). Warn-level during the
-  // gradual migration; promote to "error" in the hardening PR once all
-  // routes are moved (Plan §6.6 step 5).
-  // First-match-wins on element patterns — `app/api/**` listed BEFORE
-  // `app/**` so route handlers resolve to api-routes, not app-pages.
+  // Phase-2 architecture-boundaries hardening (Plan §6.3 + §6.6 step 5).
+  // - Uses boundaries/dependencies (v6 rule name; element-types is the
+  //   deprecated v5 name).
+  // - default: "disallow" means every cross-element import must be on an
+  //   explicit allow list; everything outside (third-party packages,
+  //   unclassified files) is silently allowed by the plugin's
+  //   checkAllOrigins/checkUnknownLocals defaults.
+  // - level: "error" — CI fails on new violations.
+  //
+  // Selector form: still string-based even though v6's TS types document an
+  // object form (`{ type: "shared" }`). The runtime ESLint JSON-schema in
+  // eslint-plugin-boundaries@6.0.2 only validates string selectors, so the
+  // "Consider migrating to object-based selectors" notice printed at lint
+  // start is unactionable until upstream ships the schema update.
+  //
+  // Pattern order matters (first-match-wins): app/api/** must come BEFORE
+  // app/** so route handlers resolve to api-routes, not app-pages.
   {
     plugins: { boundaries },
     settings: {
@@ -66,17 +78,29 @@ const eslintConfig = defineConfig([
       ],
     },
     rules: {
-      "boundaries/element-types": [
-        "warn",
+      "boundaries/dependencies": [
+        "error",
         {
-          default: "allow",
+          default: "disallow",
           rules: [
+            // shared is the kernel — no project-internal deps
             { from: "shared", allow: ["shared"] },
+            // server can call into shared + other server modules
             { from: "server", allow: ["shared", "server"] },
+            // client must NOT reach into server (would leak into the bundle)
             { from: "client", allow: ["shared", "client"] },
+            // components are pure UI; no server, no app-pages, no api-routes
             { from: "components", allow: ["shared", "client", "components"] },
-            { from: "app-pages", disallow: ["server"] },
+            // app-pages compose client/components; server is forbidden
+            // (use API routes instead)
+            {
+              from: "app-pages",
+              allow: ["shared", "client", "components", "app-pages"],
+            },
+            // api-routes are the only surface that bridges to server
             { from: "api-routes", allow: ["server", "shared", "api-routes"] },
+            // scripts run offline / in cron; need server enrichment clients
+            { from: "scripts", allow: ["shared", "server", "scripts"] },
           ],
         },
       ],

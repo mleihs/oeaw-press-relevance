@@ -12,7 +12,7 @@ import { PressScoreBadge, ScoreBar } from './score-bar';
 import { InfoBubble } from './info-bubble';
 import { EXPL } from '@/lib/client/explanations';
 import { HaikuBlock } from './haiku-block';
-import { MeistertaskButton } from '@/app/publications/[id]/_components/meistertask-button';
+import { MeistertaskButton } from '@/components/meistertask-button';
 import { EmptyState } from './empty-state';
 import { PublicationFlag } from './publication-flag';
 import { DecisionToolbar } from './decision-toolbar';
