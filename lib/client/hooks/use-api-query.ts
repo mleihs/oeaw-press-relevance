@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery, type UseQueryOptions, type QueryKey, keepPreviousData } from '@tanstack/react-query';
-import { getApiHeaders } from './settings-store';
+import { getApiHeaders } from '@/lib/client/stores/settings-store';
 
 /**
  * Wrapper around `useQuery` for the StoryScout JSON API. Resolves three

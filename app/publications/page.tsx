@@ -3,8 +3,8 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Publication } from '@/lib/shared/types';
-import { useApiQuery } from '@/lib/use-api-query';
-import { useKeyboardShortcuts } from '@/lib/use-keyboard-shortcuts';
+import { useApiQuery } from '@/lib/client/hooks/use-api-query';
+import { useKeyboardShortcuts } from '@/lib/client/hooks/use-keyboard-shortcuts';
 import { PublicationTable } from '@/components/publication-table';
 import { EnrichmentModal } from '@/components/enrichment-modal';
 import { AnalysisModal } from '@/components/analysis-modal';
@@ -18,7 +18,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { getApiHeaders } from '@/lib/settings-store';
+import { getApiHeaders } from '@/lib/client/stores/settings-store';
 import { SCORE_LABELS, SCORE_COLORS } from '@/lib/shared/constants';
 import { Search, ChevronLeft, ChevronRight, Sparkles, Brain, Download, ChevronDown } from 'lucide-react';
 

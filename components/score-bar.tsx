@@ -3,7 +3,7 @@
 import { SCORE_COLORS, SCORE_LABELS } from '@/lib/shared/constants';
 import { getScoreBandClass, type ScoreBandVariant } from '@/lib/shared/score-utils';
 import { InfoBubble } from '@/components/info-bubble';
-import { EXPL } from '@/lib/explanations';
+import { EXPL } from '@/lib/client/explanations';
 
 interface ScoreBarProps {
   dimension: string;

@@ -7,8 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { AppSettings, DEFAULT_SETTINGS } from '@/lib/shared/types';
-import { loadSettings, saveSettings } from '@/lib/settings-store';
-import { useInfoBubblesEnabled } from '@/lib/use-info-bubbles';
+import { loadSettings, saveSettings } from '@/lib/client/stores/settings-store';
+import { useInfoBubblesEnabled } from '@/lib/client/hooks/use-info-bubbles';
 import { Save, CheckCircle2, Eye, EyeOff, Loader2, XCircle, ShieldCheck, Info, User } from 'lucide-react';
 import { toast } from 'sonner';
 

@@ -16,7 +16,7 @@ import { TintBadge } from '@/components/tint-badge';
 import { CapybaraModalAvatar, type CapybaraAvatarState } from '@/components/capybara-modal-avatar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { getApiHeaders } from '@/lib/settings-store';
+import { getApiHeaders } from '@/lib/client/stores/settings-store';
 import { Play, Square, RotateCcw } from 'lucide-react';
 import type {
   EnrichmentSourceName,

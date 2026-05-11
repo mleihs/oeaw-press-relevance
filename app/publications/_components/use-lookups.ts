@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { getApiHeaders } from '@/lib/settings-store';
+import { getApiHeaders } from '@/lib/client/stores/settings-store';
 
 export type PublicationType = {
   id: string;

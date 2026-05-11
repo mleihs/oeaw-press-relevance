@@ -3,7 +3,7 @@
 import { use } from 'react';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
-import { useApiQuery } from '@/lib/use-api-query';
+import { useApiQuery } from '@/lib/client/hooks/use-api-query';
 import { sincePresetToDate, type ResearcherDetail } from '@/lib/researchers';
 import { EmptyState } from '@/components/empty-state';
 import { LoadingState } from '@/components/loading-state';

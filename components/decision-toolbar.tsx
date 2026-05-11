@@ -6,13 +6,13 @@ import { Loader2, CalendarIcon, MessageSquarePlus } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Publication, Decision } from '@/lib/shared/types';
 import type { MeistertaskPushResult } from '@/lib/meistertask/push';
-import { loadSettings, getApiHeaders } from '@/lib/settings-store';
+import { loadSettings, getApiHeaders } from '@/lib/client/stores/settings-store';
 import { DEFAULT_REVIEWER_NAME } from '@/lib/shared/constants';
 import {
   loadCurrentSessionId,
   saveCurrentSessionId,
-} from '@/lib/session-store';
-import { QK } from '@/lib/query-keys';
+} from '@/lib/client/stores/session-store';
+import { QK } from '@/lib/client/query-keys';
 import { DECISION_VARIANTS, getDecisionLabel } from '@/components/decision-badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { TintBadge } from '@/components/tint-badge';
 import { Database, FileArchive, Terminal, Info, RefreshCcw } from 'lucide-react';
-import { useApiQuery } from '@/lib/use-api-query';
+import { useApiQuery } from '@/lib/client/hooks/use-api-query';
 
 interface SyncCounts {
   publications: number;

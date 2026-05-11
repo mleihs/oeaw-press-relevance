@@ -12,14 +12,14 @@ import {
   type Publication,
   type ReviewSession,
 } from '@/lib/shared/types';
-import { useApiQuery } from '@/lib/use-api-query';
-import { getApiHeaders } from '@/lib/settings-store';
-import { loadCurrentSessionId, clearCurrentSessionId } from '@/lib/session-store';
+import { useApiQuery } from '@/lib/client/hooks/use-api-query';
+import { getApiHeaders } from '@/lib/client/stores/settings-store';
+import { loadCurrentSessionId, clearCurrentSessionId } from '@/lib/client/stores/session-store';
 import { PublicationTable } from '@/components/publication-table';
 import { ApiErrorCard } from '@/components/api-error-card';
 import { ReviewQueueSkeleton } from '@/components/skeletons';
 import { DECISION_VARIANTS } from '@/components/decision-badge';
-import { QK } from '@/lib/query-keys';
+import { QK } from '@/lib/client/query-keys';
 import { InfoBubble } from '@/components/info-bubble';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -34,7 +34,7 @@ import {
   ClipboardCheck, Pin, Crown, Sparkles, CheckCircle2, Loader2, Info,
   Calendar as CalendarIcon, Clock, ListChecks,
 } from 'lucide-react';
-import type { EXPL } from '@/lib/explanations';
+import type { EXPL } from '@/lib/client/explanations';
 
 type SortMode = 'press_score' | 'combined';
 

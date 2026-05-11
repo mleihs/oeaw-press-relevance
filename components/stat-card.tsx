@@ -5,7 +5,7 @@ import { motion } from 'motion/react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { InfoBubble } from '@/components/info-bubble';
-import type { EXPL } from '@/lib/explanations';
+import type { EXPL } from '@/lib/client/explanations';
 import { cn } from '@/lib/shared/utils';
 
 type Accent = 'default' | 'brand' | 'emerald' | 'amber' | 'purple';

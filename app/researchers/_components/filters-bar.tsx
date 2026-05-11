@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { InfoBubble } from '@/components/info-bubble';
 import { METRIC_LABELS, SINCE_PRESETS, type LeaderboardMetric } from '@/lib/researchers';
-import type { EXPL } from '@/lib/explanations';
+import type { EXPL } from '@/lib/client/explanations';
 
 const SCOPE_LABELS = {
   all: 'Alle Beteiligten',

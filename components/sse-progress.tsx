@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Loader2, CheckCircle2, XCircle, Play } from 'lucide-react';
-import { getApiHeaders } from '@/lib/settings-store';
+import { getApiHeaders } from '@/lib/client/stores/settings-store';
 
 interface SSEProgressProps {
   title: string;

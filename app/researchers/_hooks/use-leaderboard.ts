@@ -3,7 +3,7 @@
 import { useQueryStates } from 'nuqs';
 import { filterParsers } from '../_filters';
 import { sincePresetToDate, defaultMinValueFor, type TopResearcherRow, type DistributionPoint } from '@/lib/researchers';
-import { useApiQuery } from '@/lib/use-api-query';
+import { useApiQuery } from '@/lib/client/hooks/use-api-query';
 
 function buildResearcherParams(
   filters: ReturnType<typeof useQueryStates<typeof filterParsers>>[0],

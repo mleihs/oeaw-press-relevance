@@ -2,7 +2,7 @@
 
 import { useState, Fragment, type ReactNode } from 'react';
 import Link from 'next/link';
-import { useApiQuery } from '@/lib/use-api-query';
+import { useApiQuery } from '@/lib/client/hooks/use-api-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';

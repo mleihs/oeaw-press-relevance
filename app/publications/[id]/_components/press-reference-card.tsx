@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { motion } from 'motion/react';
 import { Sparkles, ChevronRight, Info, ExternalLink } from 'lucide-react';
-import { useApiQuery } from '@/lib/use-api-query';
+import { useApiQuery } from '@/lib/client/hooks/use-api-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { AtmosphericOrb } from '@/components/atmospheric-orb';

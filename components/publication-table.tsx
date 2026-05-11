@@ -10,7 +10,7 @@ import { buildTaskUrl } from '@/lib/meistertask/urls';
 import { cn } from '@/lib/shared/utils';
 import { PressScoreBadge, ScoreBar } from './score-bar';
 import { InfoBubble } from './info-bubble';
-import { EXPL } from '@/lib/explanations';
+import { EXPL } from '@/lib/client/explanations';
 import { HaikuBlock } from './haiku-block';
 import { MeistertaskButton } from '@/app/publications/[id]/_components/meistertask-button';
 import { EmptyState } from './empty-state';
