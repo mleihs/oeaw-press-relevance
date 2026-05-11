@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseFromRequest } from '@/lib/server/db';
+import { sql } from 'drizzle-orm';
+import { db } from '@/lib/server/db';
+import { apiError } from '@/lib/server/http';
 import type {
   AuthorshipScope,
   LeaderboardMetric,
   TopResearcherRow,
 } from '@/lib/shared/researchers';
 
-const ALLOWED_METRICS: LeaderboardMetric[] = ['count_high', 'sum_score', 'avg_score', 'weighted_avg', 'pubs_total'];
+const ALLOWED_METRICS: LeaderboardMetric[] = [
+  'count_high', 'sum_score', 'avg_score', 'weighted_avg', 'pubs_total',
+];
 const ALLOWED_SCOPES: AuthorshipScope[] = ['all', 'lead'];
 
 function csv(s: string | null): string[] | null {
@@ -20,42 +24,51 @@ export async function GET(req: NextRequest) {
 
   const since = u.get('since');
   if (!since || !/^\d{4}-\d{2}-\d{2}$/.test(since)) {
-    return NextResponse.json({ error: 'since must be YYYY-MM-DD' }, { status: 400 });
+    return apiError('since must be YYYY-MM-DD', 400);
   }
 
   const metric = (u.get('metric') as LeaderboardMetric) || 'count_high';
   if (!ALLOWED_METRICS.includes(metric)) {
-    return NextResponse.json({ error: `metric must be one of ${ALLOWED_METRICS.join(', ')}` }, { status: 400 });
+    return apiError(`metric must be one of ${ALLOWED_METRICS.join(', ')}`, 400);
   }
 
   const scope = (u.get('authorship_scope') as AuthorshipScope) || 'all';
   if (!ALLOWED_SCOPES.includes(scope)) {
-    return NextResponse.json({ error: `authorship_scope must be one of ${ALLOWED_SCOPES.join(', ')}` }, { status: 400 });
+    return apiError(`authorship_scope must be one of ${ALLOWED_SCOPES.join(', ')}`, 400);
   }
 
-  const params = {
-    p_since: since,
-    p_metric: metric,
-    p_authorship_scope: scope,
-    p_oestat3_ids: csv(u.get('oestat3_ids')),
-    p_include_external: u.get('include_external') === 'true',
-    p_include_deceased: u.get('include_deceased') === 'true',
-    p_member_only: u.get('member_only') === 'true',
-    p_min_value: Number(u.get('min_value') ?? '1'),
-    p_limit: Math.min(Number(u.get('limit') ?? '50'), 200),
-    p_exclude_ita: u.get('exclude_ita') !== 'false',
-    p_exclude_outreach: u.get('exclude_outreach') !== 'false',
-  };
+  const oestat3Ids = csv(u.get('oestat3_ids'));
+  const includeExternal = u.get('include_external') === 'true';
+  const includeDeceased = u.get('include_deceased') === 'true';
+  const memberOnly = u.get('member_only') === 'true';
+  const minValue = Number(u.get('min_value') ?? '1');
+  const limit = Math.min(Number(u.get('limit') ?? '50'), 200);
+  const excludeIta = u.get('exclude_ita') !== 'false';
+  const excludeOutreach = u.get('exclude_outreach') !== 'false';
 
   try {
-    const supabase = getSupabaseFromRequest(req);
-    const { data, error } = await supabase.rpc('top_researchers', params);
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-    return NextResponse.json({ rows: (data ?? []) as TopResearcherRow[] });
+    // `sql.param(oestat3Ids)` binds the JS array (or null) as one PG param;
+    // plain `${oestat3Ids}` would expand to a comma-separated parenthesised
+    // list which the `::text[]` cast can't consume. The `as` cast escapes
+    // Drizzle's `execute<TRow extends Record<string, unknown>>` constraint —
+    // interfaces don't structurally satisfy that without an index signature.
+    const rows = (await db.execute(
+      sql`SELECT * FROM top_researchers(
+        ${since}::date,
+        ${metric},
+        ${scope},
+        ${sql.param(oestat3Ids)}::text[],
+        ${includeExternal},
+        ${includeDeceased},
+        ${memberOnly},
+        ${minValue}::numeric,
+        ${limit}::int,
+        ${excludeIta},
+        ${excludeOutreach}
+      )`,
+    )) as unknown as TopResearcherRow[];
+    return NextResponse.json({ rows });
   } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json({ error: msg }, { status: 500 });
+    return apiError(err instanceof Error ? err.message : 'Unknown error', 500);
   }
 }
