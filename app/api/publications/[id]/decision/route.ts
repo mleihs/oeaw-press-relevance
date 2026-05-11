@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseAdmin } from '@/lib/server/db';
 import { apiError } from '@/lib/server/http';
 import { decisionPayloadSchema } from '@/lib/shared/schemas';
 import { applyDecision } from '@/lib/server/publications/decisions';
@@ -24,7 +23,7 @@ export async function PATCH(
   }
 
   try {
-    const result = await applyDecision(parsed.data, id, getSupabaseAdmin(), {
+    const result = await applyDecision(parsed.data, id, {
       appBaseUrl: req.nextUrl.origin,
     });
     return NextResponse.json(result);

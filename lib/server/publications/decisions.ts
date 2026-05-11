@@ -1,9 +1,11 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import { eq } from 'drizzle-orm';
+import { db, publications } from '@/lib/server/db';
 import type { Publication } from '@/lib/shared/types';
 import type { DecisionPayload } from '@/lib/shared/schemas';
 import { pushPublicationToMeistertask } from '@/lib/server/meistertask/push';
 import type { MeistertaskPushResult } from '@/lib/shared/meistertask-types';
 import { PublicationNotFoundError } from './errors';
+import { publicationToApi } from './to-api';
 
 export interface DecisionResult {
   publication: Publication;
@@ -19,7 +21,8 @@ export interface DecisionResult {
  *   route behaviour — a user may want to keep the snooze while
  *   un-deciding).
  * - `decided_at` is auto-managed by trg_publications_decided_at_sync;
- *   never set from app code.
+ *   never set from app code. Drizzle's `.returning()` sees post-trigger
+ *   state (same transaction).
  * - `pitch` triggers a one-way MeisterTask push. The push is idempotent
  *   and fail-soft: MT errors don't roll back the decision write, the
  *   caller surfaces `meistertask.status` to the UI.
@@ -27,7 +30,6 @@ export interface DecisionResult {
 export async function applyDecision(
   payload: DecisionPayload,
   pubId: string,
-  db: SupabaseClient,
   opts: { appBaseUrl: string },
 ): Promise<DecisionResult> {
   const isReset = payload.decision === 'undecided';
@@ -40,21 +42,20 @@ export async function applyDecision(
     : payload.decided_in_session || null;
   const snooze_until = payload.snooze_until ?? null;
 
-  const { data: updated, error } = await db
-    .from('publications')
-    .update({
+  const [updated] = await db
+    .update(publications)
+    .set({
       decision: payload.decision,
-      decided_by,
-      decision_rationale,
-      snooze_until,
-      decided_in_session,
+      decidedBy: decided_by,
+      decisionRationale: decision_rationale,
+      snoozeUntil: snooze_until,
+      decidedInSession: decided_in_session,
     })
-    .eq('id', pubId)
-    .select('*')
-    .single<Publication>();
+    .where(eq(publications.id, pubId))
+    .returning();
 
-  if (error || !updated) {
-    throw new PublicationNotFoundError(error?.message);
+  if (!updated) {
+    throw new PublicationNotFoundError();
   }
 
   const meistertask =
@@ -62,5 +63,5 @@ export async function applyDecision(
       ? await pushPublicationToMeistertask(pubId, opts.appBaseUrl)
       : null;
 
-  return { publication: updated, meistertask };
+  return { publication: publicationToApi(updated), meistertask };
 }
