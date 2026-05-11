@@ -1,5 +1,6 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
-import type { PressRelease } from '@/lib/shared/types';
+import { count, desc, gte, isNotNull, isNull, type SQL } from 'drizzle-orm';
+import { db, pressReleases as pressReleasesTable } from '@/lib/server/db';
+import type { Lang, PressRelease } from '@/lib/shared/types';
 
 export interface PressReleasesStats {
   total: number;
@@ -19,92 +20,142 @@ export interface PressReleasesListFilters {
   withPub: boolean;
 }
 
+// Explicit Drizzle row -> shared PressRelease DTO. Column renames in the
+// schema surface here at compile time (Plan §7.1).
+function toApi(row: typeof pressReleasesTable.$inferSelect): PressRelease {
+  return {
+    id: row.id,
+    publication_id: row.publicationId,
+    doi: row.doi,
+    url: row.url,
+    released_at: row.releasedAt,
+    lang: row.lang as Lang | null,
+    paper_title: row.paperTitle,
+    news_title: row.newsTitle,
+    source_news_uid: row.sourceNewsUid,
+    abstract: row.abstract,
+    authors: row.authors,
+    journal: row.journal,
+    paper_year: row.paperYear,
+    keywords: row.keywords,
+    openalex_id: row.openalexId,
+    enrichment_status: row.enrichmentStatus as PressRelease['enrichment_status'],
+    enriched_at: row.enrichedAt ? new Date(row.enrichedAt).toISOString() : null,
+    created_at: new Date(row.createdAt).toISOString(),
+    oeaw_author_matches:
+      (row.oeawAuthorMatches as PressRelease['oeaw_author_matches']) ?? [],
+  };
+}
+
 /**
  * Five count-only queries in parallel: total, matched (publication_id NOT
  * NULL), orphans (publication_id NULL), this_month (released_at >= start of
  * current month) and this_year (released_at >= January 1 of current year).
  */
-export async function getPressReleasesStats(
-  db: SupabaseClient,
-): Promise<PressReleasesStats> {
-  const startOfMonth = (() => {
-    const d = new Date();
-    d.setDate(1);
-    d.setHours(0, 0, 0, 0);
-    return d.toISOString();
-  })();
-  const startOfYear = (() => {
-    const d = new Date();
-    d.setMonth(0, 1);
-    d.setHours(0, 0, 0, 0);
-    return d.toISOString();
-  })();
+export async function getPressReleasesStats(): Promise<PressReleasesStats> {
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+    .toISOString()
+    .slice(0, 10);
+  const startOfYear = new Date(now.getFullYear(), 0, 1)
+    .toISOString()
+    .slice(0, 10);
 
   const [totalQ, matchedQ, orphansQ, monthQ, yearQ] = await Promise.all([
-    db.from('press_releases').select('*', { count: 'exact', head: true }),
+    db.select({ c: count() }).from(pressReleasesTable),
     db
-      .from('press_releases')
-      .select('*', { count: 'exact', head: true })
-      .not('publication_id', 'is', null),
+      .select({ c: count() })
+      .from(pressReleasesTable)
+      .where(isNotNull(pressReleasesTable.publicationId)),
     db
-      .from('press_releases')
-      .select('*', { count: 'exact', head: true })
-      .is('publication_id', null),
+      .select({ c: count() })
+      .from(pressReleasesTable)
+      .where(isNull(pressReleasesTable.publicationId)),
     db
-      .from('press_releases')
-      .select('*', { count: 'exact', head: true })
-      .gte('released_at', startOfMonth),
+      .select({ c: count() })
+      .from(pressReleasesTable)
+      .where(gte(pressReleasesTable.releasedAt, startOfMonth)),
     db
-      .from('press_releases')
-      .select('*', { count: 'exact', head: true })
-      .gte('released_at', startOfYear),
+      .select({ c: count() })
+      .from(pressReleasesTable)
+      .where(gte(pressReleasesTable.releasedAt, startOfYear)),
   ]);
 
-  const firstError =
-    totalQ.error || matchedQ.error || orphansQ.error || monthQ.error || yearQ.error;
-  if (firstError) throw new Error(firstError.message);
-
   return {
-    total: totalQ.count ?? 0,
-    matched: matchedQ.count ?? 0,
-    orphans: orphansQ.count ?? 0,
-    this_month: monthQ.count ?? 0,
-    this_year: yearQ.count ?? 0,
+    total: totalQ[0]?.c ?? 0,
+    matched: matchedQ[0]?.c ?? 0,
+    orphans: orphansQ[0]?.c ?? 0,
+    this_month: monthQ[0]?.c ?? 0,
+    this_year: yearQ[0]?.c ?? 0,
   };
 }
 
 /**
  * List press-releases ordered by released_at desc.
- *   - `orphans: 'true'`  -> only publication_id IS NULL
- *   - `orphans: 'false'` -> only publication_id IS NOT NULL
- *   - `orphans: null`    -> all
- *   - `withPub: true`    -> joins lightweight publication fields used by the
- *                          UI listing page
+ *   - orphans: 'true'  -> only publication_id IS NULL
+ *   - orphans: 'false' -> only matched
+ *   - orphans: null    -> all
+ *   - withPub: true    -> the UI listing page wants lightweight publication
+ *     fields joined; handled in a separate code path below (Drizzle relations
+ *     API) so the simple list case stays in a single .select().
  */
 export async function listPressReleases(
   filters: PressReleasesListFilters,
-  db: SupabaseClient,
 ): Promise<PressReleasesListResult> {
-  const select = filters.withPub
-    ? `*, publication:publications(id, title, original_title, lead_author, citation, press_score, press_similarity, decision, published_at)`
-    : '*';
+  const filter: SQL | undefined =
+    filters.orphans === 'true'
+      ? isNull(pressReleasesTable.publicationId)
+      : filters.orphans === 'false'
+        ? isNotNull(pressReleasesTable.publicationId)
+        : undefined;
 
-  let q = db
-    .from('press_releases')
-    .select(select, { count: 'exact' })
-    .order('released_at', { ascending: false, nullsFirst: false });
+  if (filters.withPub) {
+    // Drizzle relational query: pulls a lightweight publication subset on
+    // each matched row. Orphan rows return publication=null.
+    const rows = await db.query.pressReleases.findMany({
+      where: filter,
+      orderBy: desc(pressReleasesTable.releasedAt),
+      with: {
+        publication: {
+          columns: {
+            id: true,
+            title: true,
+            originalTitle: true,
+            leadAuthor: true,
+            citation: true,
+            pressScore: true,
+            pressSimilarity: true,
+            decision: true,
+            publishedAt: true,
+          },
+        },
+      },
+    });
+    // Cast at the boundary: the embedded `publication` subobject keeps its
+    // Drizzle camelCase keys, mirroring the original behaviour where the UI
+    // page does its own consumption-side cast to PressReleaseWithPub.
+    return {
+      press_releases: rows.map((r) => ({
+        ...toApi(r),
+        publication: r.publication,
+      })) as unknown as PressRelease[],
+      total: rows.length,
+    };
+  }
 
-  if (filters.orphans === 'true') q = q.is('publication_id', null);
-  else if (filters.orphans === 'false') q = q.not('publication_id', 'is', null);
+  const rows = filter
+    ? await db
+        .select()
+        .from(pressReleasesTable)
+        .where(filter)
+        .orderBy(desc(pressReleasesTable.releasedAt))
+    : await db
+        .select()
+        .from(pressReleasesTable)
+        .orderBy(desc(pressReleasesTable.releasedAt));
 
-  const { data, error, count } = await q;
-  if (error) throw new Error(error.message);
-
-  // PostgREST type-parser can't narrow embedded relation joins; double-cast
-  // through unknown is the standard workaround until @supabase/supabase-js
-  // ships proper type-gen for embedded joins. Runtime shape is correct.
   return {
-    press_releases: (data ?? []) as unknown as PressRelease[],
-    total: count ?? 0,
+    press_releases: rows.map(toApi),
+    total: rows.length,
   };
 }

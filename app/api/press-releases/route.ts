@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseFromRequest } from '@/lib/server/db';
 import { apiError } from '@/lib/server/http';
 import {
   getPressReleasesStats,
@@ -16,23 +15,19 @@ import {
  */
 export async function GET(req: NextRequest) {
   try {
-    const db = getSupabaseFromRequest(req);
     const sp = req.nextUrl.searchParams;
 
     if (sp.get('stats') === 'true') {
-      const stats = await getPressReleasesStats(db);
+      const stats = await getPressReleasesStats();
       return NextResponse.json(stats);
     }
 
     const orphansParam = sp.get('orphans');
-    const result = await listPressReleases(
-      {
-        orphans:
-          orphansParam === 'true' || orphansParam === 'false' ? orphansParam : null,
-        withPub: sp.get('with_pub') === 'true',
-      },
-      db,
-    );
+    const result = await listPressReleases({
+      orphans:
+        orphansParam === 'true' || orphansParam === 'false' ? orphansParam : null,
+      withPub: sp.get('with_pub') === 'true',
+    });
     return NextResponse.json(result);
   } catch (err) {
     return apiError(err instanceof Error ? err.message : 'Unknown error', 500);
