@@ -14,8 +14,13 @@ via SPECTER2 embeddings.
 > because every university press team has the same problem and nobody
 > wants vendor lock-in.
 
-![StoryScout — /review triage page](public/screenshots/review.png)
-<!-- Screenshot placeholder; populated in Block 4 of the OSS-readiness plan. -->
+<p align="center">
+  <img src="public/capybara-gate.png" alt="StoryScout — password-gate hero" width="600" />
+</p>
+
+> **Screenshots:** demo-data UI screenshots are coming before the
+> public-visibility flip. Until then, run `npm run dev` and explore
+> locally — the capybara above is the password-gate splash.
 
 ## What it does
 
