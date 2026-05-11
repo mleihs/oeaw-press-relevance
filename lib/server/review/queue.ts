@@ -1,87 +1,110 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
-import { DECISIONS, isDecision, type Decision } from '@/lib/shared/types';
-
-type SB = SupabaseClient;
+import {
+  and,
+  count,
+  desc,
+  eq,
+  gte,
+  inArray,
+  isNull,
+  lte,
+  or,
+  sql,
+} from 'drizzle-orm';
+import { db, publications, reviewSessions } from '@/lib/server/db';
+import {
+  DECISIONS,
+  isDecision,
+  type Decision,
+  type Publication,
+} from '@/lib/shared/types';
+import { publicationToApi } from '../publications/to-api';
 
 const FRESHNESS_FALLBACK_DAYS = 7;
 const FRESH_SCORE_THRESHOLD = 0.7;
 
-const PUB_SELECT = `*, publication_type_lookup:publication_types(name_de, name_en),
-   orgunit_publications(orgunit:orgunits(id, akronym_de, name_de))`;
-
-type RawRow = {
-  id: string;
-  press_score: number | null;
-  press_similarity: number | null;
-  orgunit_publications?: Array<{
-    orgunit?: { id: string; akronym_de: string; name_de: string };
-  }>;
-  [k: string]: unknown;
+// Same mini relation projections as publications/list.ts (chip-sized
+// payloads). Co-located here because the queue carries no press_release —
+// reusing PublicationListItem would force `press_release: null` into the
+// wire shape, which is a needless added field.
+export type ReviewQueueItem = Publication & {
+  publication_type_lookup: { name_de: string; name_en: string } | null;
+  orgunits: Array<{ id: string; akronym_de: string | null; name_de: string }>;
 };
 
 export interface ReviewQueueResult {
-  publications: Record<string, unknown>[];
+  publications: ReviewQueueItem[];
   since_ts: string | null;
   sort: 'press_score' | 'combined' | 'decided_at';
   counts: { total: number; flagged: number; mahl: number; fresh: number };
   decision_counts: Record<Decision, number>;
 }
 
-async function fetchSinceTimestamp(db: SB): Promise<string> {
-  const { data } = await db
-    .from('review_sessions')
-    .select('occurred_at')
-    .order('occurred_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (data?.occurred_at) return data.occurred_at;
+async function fetchSinceTimestamp(): Promise<string> {
+  const [row] = await db
+    .select({ occurredAt: reviewSessions.occurredAt })
+    .from(reviewSessions)
+    .orderBy(desc(reviewSessions.occurredAt))
+    .limit(1);
+  if (row?.occurredAt) return new Date(row.occurredAt).toISOString();
   const fallback = new Date();
   fallback.setDate(fallback.getDate() - FRESHNESS_FALLBACK_DAYS);
   return fallback.toISOString();
 }
 
-async function fetchFlaggedIds(db: SB): Promise<Set<string>> {
+async function fetchFlaggedIds(): Promise<Set<string>> {
+  const rows = await db.execute<{ publication_id: string }>(
+    sql`SELECT publication_id FROM pub_ids_with_flags()`,
+  );
   const out = new Set<string>();
-  const { data } = await db.rpc('pub_ids_with_flags');
-  for (const r of (data as Array<{ publication_id: string }>) ?? []) {
-    out.add(r.publication_id);
-  }
+  for (const r of rows) out.add(r.publication_id);
   return out;
 }
 
-async function fetchMahighlightIds(db: SB): Promise<Set<string>> {
+async function fetchMahighlightIds(): Promise<Set<string>> {
+  const rows = await db.execute<{ publication_id: string }>(
+    sql`SELECT publication_id FROM pub_ids_by_highlight(${true}, ${false})`,
+  );
   const out = new Set<string>();
-  const { data } = await db.rpc('pub_ids_by_highlight', {
-    p_mahighlight: true,
-    p_highlight: false,
-  });
-  for (const r of (data as Array<{ publication_id: string }>) ?? []) {
-    out.add(r.publication_id);
-  }
+  for (const r of rows) out.add(r.publication_id);
   return out;
 }
 
-async function fetchFreshHighScoreIds(db: SB, sinceTs: string): Promise<Set<string>> {
-  const out = new Set<string>();
-  // Page through — Supabase caps at 1000 rows per request and a busy queue
-  // could occasionally exceed that. We only need IDs so the cost is small.
-  const PAGE = 1000;
-  let from = 0;
-  while (true) {
-    const { data, error } = await db
-      .from('publications')
-      .select('id')
-      .eq('analysis_status', 'analyzed')
-      .gte('press_score', FRESH_SCORE_THRESHOLD)
-      .gte('updated_at', sinceTs)
-      .eq('archived', false)
-      .range(from, from + PAGE - 1);
-    if (error || !data || data.length === 0) break;
-    for (const r of data as Array<{ id: string }>) out.add(r.id);
-    if (data.length < PAGE) break;
-    from += PAGE;
+async function fetchFreshHighScoreIds(sinceTs: string): Promise<Set<string>> {
+  // Drizzle/postgres-js has no PostgREST 1000-row cap, so the previous
+  // pagination loop collapses to one query.
+  const rows = await db
+    .select({ id: publications.id })
+    .from(publications)
+    .where(
+      and(
+        eq(publications.analysisStatus, 'analyzed'),
+        gte(publications.pressScore, FRESH_SCORE_THRESHOLD),
+        gte(publications.updatedAt, sinceTs),
+        eq(publications.archived, false),
+      ),
+    );
+  return new Set(rows.map((r) => r.id));
+}
+
+async function fetchDecisionCounts(): Promise<Record<Decision, number>> {
+  // Single GROUP BY query replaces four separate count-by-decision round-
+  // trips. Postgres can serve all four buckets in one pass; the prior
+  // Supabase-JS variant ran them concurrently because PostgREST has no
+  // GROUP BY syntax — Drizzle does.
+  const rows = await db
+    .select({ decision: publications.decision, c: count() })
+    .from(publications)
+    .where(eq(publications.archived, false))
+    .groupBy(publications.decision);
+
+  const result = Object.fromEntries(DECISIONS.map((d) => [d, 0])) as Record<
+    Decision,
+    number
+  >;
+  for (const r of rows) {
+    if (isDecision(r.decision)) result[r.decision] = r.c;
   }
-  return out;
+  return result;
 }
 
 /**
@@ -126,50 +149,82 @@ function combineRanks<
     .map((x) => x.row);
 }
 
-function flattenOrgunits(rows: RawRow[]): Record<string, unknown>[] {
-  return rows.map((r) => {
-    const orgunits = (r.orgunit_publications ?? [])
-      .map((op) => op.orgunit)
-      .filter(Boolean);
-    const out: Record<string, unknown> = { ...r, orgunits };
-    delete out.orgunit_publications;
-    return out;
+// Drizzle relational findMany row → wire-shape ReviewQueueItem.
+type QueueRowWithRelations = Awaited<
+  ReturnType<typeof fetchUndecidedBucket>
+>[number];
+
+function flattenRow(row: QueueRowWithRelations): ReviewQueueItem {
+  const orgunits = (row.orgunitPublications ?? [])
+    .map((op) => op.orgunit)
+    .filter((o): o is NonNullable<typeof o> => o !== null)
+    .map((o) => ({
+      id: o.id,
+      akronym_de: o.akronymDe,
+      name_de: o.nameDe,
+    }));
+  return {
+    ...publicationToApi(row),
+    publication_type_lookup: row.publicationType
+      ? {
+          name_de: row.publicationType.nameDe,
+          name_en: row.publicationType.nameEn,
+        }
+      : null,
+    orgunits,
+  };
+}
+
+const QUEUE_WITH = {
+  publicationType: {
+    columns: { nameDe: true, nameEn: true },
+  },
+  orgunitPublications: {
+    columns: { orgunitId: true },
+    with: {
+      orgunit: {
+        columns: { id: true, akronymDe: true, nameDe: true },
+      },
+    },
+  },
+} as const;
+
+async function fetchUndecidedBucket(unionIds: string[], today: string) {
+  return db.query.publications.findMany({
+    where: and(
+      inArray(publications.id, unionIds),
+      eq(publications.archived, false),
+      eq(publications.decision, 'undecided'),
+      or(
+        isNull(publications.snoozeUntil),
+        lte(publications.snoozeUntil, today),
+      ),
+    ),
+    orderBy: [
+      sql`${publications.pressScore} DESC NULLS LAST`,
+      desc(publications.updatedAt),
+    ],
+    with: QUEUE_WITH,
   });
 }
 
-async function fetchDecisionCounts(db: SB): Promise<Record<Decision, number>> {
-  const results = await Promise.all(
-    DECISIONS.map((d) =>
-      db
-        .from('publications')
-        .select('*', { count: 'exact', head: true })
-        .eq('archived', false)
-        .eq('decision', d),
-    ),
-  );
-  return Object.fromEntries(
-    DECISIONS.map((d, i) => [d, results[i].count ?? 0]),
-  ) as Record<Decision, number>;
-}
-
 async function fetchDecidedBucket(
-  db: SB,
   decision: Exclude<Decision, 'undecided'>,
-): Promise<{ rows: RawRow[] | null; error: { message: string } | null }> {
-  const { data, error } = await db
-    .from('publications')
-    .select(PUB_SELECT)
-    .eq('archived', false)
-    .eq('decision', decision)
-    .order('decided_at', { ascending: false, nullsFirst: false });
-  if (error) return { rows: null, error };
-  return { rows: (data as RawRow[] | null) ?? [], error: null };
+) {
+  return db.query.publications.findMany({
+    where: and(
+      eq(publications.archived, false),
+      eq(publications.decision, decision),
+    ),
+    orderBy: sql`${publications.decidedAt} DESC NULLS LAST`,
+    with: QUEUE_WITH,
+  });
 }
 
 /**
  * Sitzungs-Queue. For the undecided bucket: returns the union of
- *   - publications with at least one flag note
- *   - publications with mahighlight=true on any author
+ *   - publications with at least one flag note (RPC pub_ids_with_flags)
+ *   - publications with mahighlight=true on any author (RPC pub_ids_by_highlight)
  *   - publications analyzed since the last review session (or last 7 days as
  *     fallback) with press_score >= 0.7
  * filtered by archived=false, decision='undecided', snooze_until IS NULL or
@@ -183,18 +238,18 @@ async function fetchDecidedBucket(
  */
 export async function buildReviewQueue(
   searchParams: URLSearchParams,
-  db: SB,
 ): Promise<ReviewQueueResult> {
   const useCombined = searchParams.get('sort') === 'combined';
   const rawDecision = searchParams.get('decision') ?? 'undecided';
-  const decisionParam: Decision = isDecision(rawDecision) ? rawDecision : 'undecided';
+  const decisionParam: Decision = isDecision(rawDecision)
+    ? rawDecision
+    : 'undecided';
 
-  const decisionCountsP = fetchDecisionCounts(db);
+  const decisionCountsP = fetchDecisionCounts();
 
   if (decisionParam !== 'undecided') {
-    const { rows, error } = await fetchDecidedBucket(db, decisionParam);
-    if (error) throw new Error(error.message);
-    const flattened = flattenOrgunits(rows ?? []);
+    const rows = await fetchDecidedBucket(decisionParam);
+    const flattened = rows.map(flattenRow);
     const decision_counts = await decisionCountsP;
     return {
       publications: flattened,
@@ -205,11 +260,11 @@ export async function buildReviewQueue(
     };
   }
 
-  const sinceTs = await fetchSinceTimestamp(db);
+  const sinceTs = await fetchSinceTimestamp();
   const [flaggedIds, mahlIds, freshIds] = await Promise.all([
-    fetchFlaggedIds(db),
-    fetchMahighlightIds(db),
-    fetchFreshHighScoreIds(db, sinceTs),
+    fetchFlaggedIds(),
+    fetchMahighlightIds(),
+    fetchFreshHighScoreIds(sinceTs),
   ]);
 
   const unionIds = new Set<string>([...flaggedIds, ...mahlIds, ...freshIds]);
@@ -225,29 +280,17 @@ export async function buildReviewQueue(
   }
 
   const today = new Date().toISOString().slice(0, 10);
-  const { data, error } = await db
-    .from('publications')
-    .select(PUB_SELECT)
-    .in('id', [...unionIds])
-    .eq('archived', false)
-    .eq('decision', 'undecided')
-    .or(`snooze_until.is.null,snooze_until.lte.${today}`)
-    .order('press_score', { ascending: false, nullsFirst: false })
-    .order('updated_at', { ascending: false });
-
-  if (error) throw new Error(error.message);
-
-  const rawRows = (data as RawRow[] | null) ?? [];
-  const ranked = useCombined ? combineRanks(rawRows) : rawRows;
-  const flattened = flattenOrgunits(ranked);
+  const rows = await fetchUndecidedBucket([...unionIds], today);
+  const flattenedAll = rows.map(flattenRow);
+  const ranked = useCombined ? combineRanks(flattenedAll) : flattenedAll;
   const decision_counts = await decisionCountsP;
 
   return {
-    publications: flattened,
+    publications: ranked,
     since_ts: sinceTs,
     sort: useCombined ? 'combined' : 'press_score',
     counts: {
-      total: flattened.length,
+      total: ranked.length,
       flagged: flaggedIds.size,
       mahl: mahlIds.size,
       fresh: freshIds.size,

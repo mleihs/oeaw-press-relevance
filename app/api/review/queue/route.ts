@@ -1,14 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseFromRequest } from '@/lib/server/db';
 import { apiError } from '@/lib/server/http';
 import { buildReviewQueue } from '@/lib/server/review/queue';
 
 export async function GET(req: NextRequest) {
   try {
-    const result = await buildReviewQueue(
-      new URL(req.url).searchParams,
-      getSupabaseFromRequest(req),
-    );
+    const result = await buildReviewQueue(new URL(req.url).searchParams);
     return NextResponse.json(result);
   } catch (err) {
     return apiError(err instanceof Error ? err.message : 'Unknown error', 500);
