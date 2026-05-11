@@ -3,9 +3,6 @@
 Empirical analysis of the LLM-driven `press_score` against the gold
 standard — which publications actually became press releases.
 
-> **Status:** stub. Full content lands in Phase 1 / Block 2 of
-> [OSS_READINESS_PLAN.md](../OSS_READINESS_PLAN.md).
-
 ## Setup
 
 - Gold standard: ~120 pubs that turned into a press release

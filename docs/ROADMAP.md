@@ -4,9 +4,6 @@ Open work, roughly priority-sorted. Items are markers for "this would
 be useful", not commitments. PRs welcome — open an issue tagged
 `roadmap` before starting non-trivial work.
 
-> **Status:** stub. Full content lands in Phase 1 / Block 2 of
-> [OSS_READINESS_PLAN.md](../OSS_READINESS_PLAN.md).
-
 ## Near-Term
 
 - **Multilingual embedding pipeline** — `multilingual-e5-large` or

@@ -3,9 +3,6 @@
 A curated subset of design decisions made during StoryScout development
 — the "why we did X instead of Y" record for future contributors.
 
-> **Status:** stub. Full content lands in Phase 1 / Block 2 of
-> [OSS_READINESS_PLAN.md](../OSS_READINESS_PLAN.md).
-
 ## Tech-Stack
 
 **Why Next.js + Supabase, not Phoenix LiveView / FastAPI+React / Django**
@@ -65,6 +62,42 @@ A curated subset of design decisions made during StoryScout development
 **Why k-NN top-5, not centroid cosine**
 - ΔAP +0.049 in favor of k-NN under small-`n_pos` + topic-imbalance
 - Centroid washes out signal in a multi-modal cluster
+
+## UI & Theming
+
+**Why semantic Tailwind tokens, never hardcoded neutrals**
+- A 2026-05-10 full-repo sweep replaced 50+ hardcoded `text-neutral-*`
+  / `bg-white` / `border-neutral-*` with the semantic equivalents
+  (`text-muted-foreground`, `bg-card`, `border-border`, …)
+- New components that reintroduce hardcoded neutrals immediately
+  break dark mode. The mapping table lives in
+  [CONTRIBUTING.md](../CONTRIBUTING.md#styling).
+
+**Why a Component Library (`TintBadge`, `SectionLabel`, `StatusBanner`,
+`ApiErrorCard`, `CapybaraModalAvatar`) on top of shadcn/ui**
+- shadcn/ui primitives need style overrides at every call site
+  (color tints, sizes, variants) — extraction kept Tailwind classes
+  in one place per visual concept
+- The 2026-05-10 extraction also de-duplicated ~120 LOC between the
+  analysis and enrichment modals (`CapybaraModalAvatar`)
+
+**Why `DECISION_VARIANTS` single-source-of-truth**
+- DecisionBadge + DecisionToolbar + PublicationFlag previously
+  defined their own Tailwind tints, leading to drift between badge
+  and button for the same decision state
+- One object now carries icon, label, accent border, plus three
+  styling slots (badge pill, large button, icon button)
+
+## Integration
+
+**Why MeisterTask one-way push, not bi-directional sync**
+- The Pressestelle's workflow lives in MeisterTask
+  (project 9147401, dev). StoryScout's job is to feed it candidates
+  on `decision = pitch`, not to mirror MeisterTask state
+- Bi-directional sync would create a stale-state problem (who's
+  authoritative when both sides change?) without solving a real user
+  need
+- Implementation: `lib/meistertask/push.ts`, MVP shipped 2026-04-29
 
 ## Note
 
