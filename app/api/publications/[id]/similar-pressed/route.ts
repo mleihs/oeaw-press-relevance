@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseFromRequest } from '@/lib/server/db';
+import { eq, sql } from 'drizzle-orm';
+import { db, publications } from '@/lib/server/db';
+import { apiError } from '@/lib/server/http';
 
 /**
  * GET /api/publications/:id/similar-pressed
@@ -12,6 +14,21 @@ import { getSupabaseFromRequest } from '@/lib/server/db';
  *   limit  : 1..20 (default 3)
  *   model  : embedding model identifier (default allenai/specter2_base)
  */
+
+// Row shape returned by the similar_pressed_pubs(...) function (see
+// supabase/migrations/20260511000001). The function exposes a `kind`
+// discriminator so the UI routes matched pubs to /publications/[id] and
+// orphans to press_release.url.
+type SimilarPressedRow = {
+  kind: 'publication' | 'orphan';
+  publication_id: string | null;
+  press_release_id: string;
+  similarity: number;
+  title: string;
+  released_at: string | null;
+  press_url: string;
+};
+
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -19,36 +36,31 @@ export async function GET(
   try {
     const { id } = await params;
     const url = new URL(req.url);
-    const limit = Math.min(20, Math.max(1, parseInt(url.searchParams.get('limit') ?? '3', 10) || 3));
+    const limit = Math.min(
+      20,
+      Math.max(1, parseInt(url.searchParams.get('limit') ?? '3', 10) || 3),
+    );
     const model = url.searchParams.get('model') ?? 'allenai/specter2_base';
 
-    const supabase = getSupabaseFromRequest(req);
-
-    const [self, similar] = await Promise.all([
-      supabase
-        .from('publications')
-        .select('id, press_similarity')
-        .eq('id', id)
-        .maybeSingle(),
-      supabase.rpc('similar_pressed_pubs', {
-        p_pub_id: id,
-        p_model: model,
-        p_limit: limit,
-      }),
+    const [selfRows, similarRows] = await Promise.all([
+      db
+        .select({ pressSimilarity: publications.pressSimilarity })
+        .from(publications)
+        .where(eq(publications.id, id))
+        .limit(1),
+      db.execute<SimilarPressedRow>(
+        sql`SELECT kind, publication_id, press_release_id, similarity, title, released_at, press_url
+            FROM similar_pressed_pubs(${id}::uuid, ${model}, ${limit})`,
+      ),
     ]);
-
-    if (self.error) {
-      return NextResponse.json({ error: self.error.message }, { status: 500 });
-    }
 
     return NextResponse.json({
       publication_id: id,
-      press_similarity: self.data?.press_similarity ?? null,
+      press_similarity: selfRows[0]?.pressSimilarity ?? null,
       model,
-      similar: similar.error ? [] : (similar.data ?? []),
+      similar: similarRows,
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return apiError(err instanceof Error ? err.message : 'Unknown error', 500);
   }
 }
