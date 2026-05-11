@@ -1,35 +1,33 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseFromRequest } from '@/lib/server/db';
+import { NextRequest } from 'next/server';
+import { eq, sql } from 'drizzle-orm';
+import { db, publications as publicationsTable } from '@/lib/server/db';
+import { publicationToApi } from '@/lib/server/publications/to-api';
+import { apiError } from '@/lib/server/http';
 
 export async function GET(req: NextRequest) {
   try {
-    const supabase = getSupabaseFromRequest(req);
     const { searchParams } = new URL(req.url);
     const onlyAnalyzed = searchParams.get('analyzed') !== 'false';
 
-    let query = supabase
-      .from('publications')
-      .select('*')
-      .order('press_score', { ascending: false, nullsFirst: false });
+    const rows = await db
+      .select()
+      .from(publicationsTable)
+      .where(onlyAnalyzed ? eq(publicationsTable.analysisStatus, 'analyzed') : undefined)
+      .orderBy(sql`${publicationsTable.pressScore} DESC NULLS LAST`);
 
-    if (onlyAnalyzed) {
-      query = query.eq('analysis_status', 'analyzed');
-    }
+    // Run rows through the shared publicationToApi() mapper so the wire shape
+    // matches every other publications endpoint (snake_case, ISO-8601, no
+    // is_ita_subtree leakage). The old Supabase-JS route returned raw rows,
+    // which leaked internal columns.
+    const body = JSON.stringify(rows.map(publicationToApi));
 
-    const { data, error } = await query;
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    return new Response(JSON.stringify(data || [], null, 2), {
+    return new Response(body, {
       headers: {
         'Content-Type': 'application/json',
         'Content-Disposition': `attachment; filename="storyscout-${new Date().toISOString().slice(0, 10)}.json"`,
       },
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return apiError(err instanceof Error ? err.message : 'Unknown error', 500);
   }
 }
