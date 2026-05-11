@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseFromRequest } from '@/lib/server/db';
 import {
   getPublicationById,
   deletePublication,
@@ -7,12 +6,12 @@ import {
 import { PublicationNotFoundError } from '@/lib/server/publications/errors';
 
 export async function GET(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
-    const pub = await getPublicationById(id, getSupabaseFromRequest(req));
+    const pub = await getPublicationById(id);
     return NextResponse.json(pub);
   } catch (err) {
     if (err instanceof PublicationNotFoundError) {
@@ -24,12 +23,12 @@ export async function GET(
 }
 
 export async function DELETE(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
-    await deletePublication(id, getSupabaseFromRequest(req));
+    await deletePublication(id);
     return NextResponse.json({ success: true });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
