@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseFromRequest } from '@/lib/server/api-helpers';
+import { getSupabaseFromRequest } from '@/lib/server/db';
 import {
   getPublicationById,
   deletePublication,
 } from '@/lib/server/publications/fetch';
-import { PublicationNotFoundError } from '@/lib/server/publications/decisions';
+import { PublicationNotFoundError } from '@/lib/server/publications/errors';
 
 export async function GET(
   req: NextRequest,

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { apiError, getSupabaseFromRequest } from '@/lib/server/api-helpers';
+import { getSupabaseFromRequest } from '@/lib/server/db';
+import { apiError } from '@/lib/server/http';
 import {
   getPressReleasesStats,
   listPressReleases,

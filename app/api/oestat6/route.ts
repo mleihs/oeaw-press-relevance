@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseFromRequest } from '@/lib/server/api-helpers';
+import { getSupabaseFromRequest } from '@/lib/server/db';
 
 const SUPER_DOMAIN_LABELS: Record<number, string> = {
   1: 'Naturwissenschaften',

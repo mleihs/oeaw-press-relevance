@@ -3,17 +3,11 @@ import type { Publication } from '@/lib/shared/types';
 import type { DecisionPayload } from '@/lib/shared/schemas';
 import { pushPublicationToMeistertask } from '@/lib/server/meistertask/push';
 import type { MeistertaskPushResult } from '@/lib/shared/meistertask-types';
+import { PublicationNotFoundError } from './errors';
 
 export interface DecisionResult {
   publication: Publication;
   meistertask: MeistertaskPushResult | null;
-}
-
-export class PublicationNotFoundError extends Error {
-  constructor(reason?: string) {
-    super(reason ?? 'Publication not found');
-    this.name = 'PublicationNotFoundError';
-  }
 }
 
 /**

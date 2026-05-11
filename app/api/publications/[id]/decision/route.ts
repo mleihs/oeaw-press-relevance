@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { apiError, getSupabaseAdmin } from '@/lib/server/api-helpers';
+import { getSupabaseAdmin } from '@/lib/server/db';
+import { apiError } from '@/lib/server/http';
 import { decisionPayloadSchema } from '@/lib/shared/schemas';
-import {
-  applyDecision,
-  PublicationNotFoundError,
-} from '@/lib/server/publications/decisions';
+import { applyDecision } from '@/lib/server/publications/decisions';
+import { PublicationNotFoundError } from '@/lib/server/publications/errors';
 
 export async function PATCH(
   req: NextRequest,

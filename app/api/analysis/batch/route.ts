@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import {
-  apiError,
-  createSSEStream,
-  getLLMModel,
-  getOpenRouterKey,
-  getSupabaseAdmin,
-} from '@/lib/server/api-helpers';
+import { getSupabaseAdmin } from '@/lib/server/db';
+import { apiError, createSSEStream } from '@/lib/server/http';
+import { getLLMModel, getOpenRouterKey } from '@/lib/server/llm';
 import {
   fetchPublicationsForAnalysis,
   parseAnalysisBatchBody,

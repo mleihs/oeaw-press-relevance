@@ -1,26 +1,13 @@
-import { drizzle } from 'drizzle-orm/postgres-js';
-import postgres from 'postgres';
-import * as schema from './schema';
-import * as relations from './relations';
-
 /**
- * Drizzle DB client. Use this for SELECT / INSERT / UPDATE / DELETE queries
- * in route business-logic (lib/server/<feature>/*.ts). The Supabase-JS
- * client still handles Auth, Realtime, Storage and RPC calls; both share
- * the same Postgres pooler.
+ * Single import surface for everything DB-related on the server:
  *
- * RLS: the postgres-js pool connects as service-role (or with
- * DATABASE_URL's account), so no automatic RLS. Server code is responsible
- * for any explicit access checks. See OSS_READINESS_PLAN.md §7.7.
+ *   import { db, publications, eq } from '@/lib/server/db';     // Drizzle
+ *   import { getSupabaseAdmin } from '@/lib/server/db';          // Supabase
+ *
+ * Drizzle handles SELECT / INSERT / UPDATE / DELETE; Supabase-JS keeps
+ * Auth / Realtime / Storage / RPC. Both share the same Postgres pooler.
  */
-const client = postgres(process.env.DATABASE_URL ?? '', {
-  max: 10,
-  idle_timeout: 30,
-});
-
-export const db = drizzle(client, { schema: { ...schema, ...relations } });
-
-// Re-export tables + relations so consumers can write
-// `import { publications, eq } from '@/lib/server/db'`.
+export { db } from './drizzle';
 export * from './schema';
 export * from './relations';
+export { getSupabaseFromRequest, getSupabaseAdmin } from './supabase';

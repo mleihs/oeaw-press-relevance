@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Lang } from '@/lib/shared/types';
-import { PublicationNotFoundError } from './decisions';
+import { PublicationNotFoundError } from './errors';
 
 const PUB_DETAIL_SELECT = `
   *,

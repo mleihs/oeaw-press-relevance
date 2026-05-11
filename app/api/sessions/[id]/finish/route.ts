@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { apiError, getSupabaseAdmin } from '@/lib/server/api-helpers';
+import { getSupabaseAdmin } from '@/lib/server/db';
+import { apiError } from '@/lib/server/http';
 import { sessionFinishPayloadSchema } from '@/lib/shared/schemas';
 import {
   finishSession,
