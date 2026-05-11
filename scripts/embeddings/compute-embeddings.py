@@ -108,6 +108,20 @@ def encode_batch(model, tokenizer, texts: list[str], device: str) -> np.ndarray:
     with torch.no_grad():
         out = model(**enc)
     cls = out.last_hidden_state[:, 0, :].detach().cpu().numpy().astype(np.float32)
+
+    # Defensive: pgvector rejects NaN/Inf at INSERT time with a cryptic
+    # "invalid input syntax" error mid-batch. Catching here surfaces the
+    # actual cause ("which input texts produced non-finite embeddings?")
+    # with a diagnostic preview, so the operator can blacklist or fix
+    # the source row instead of guessing.
+    if not np.isfinite(cls).all():
+        bad_idx = np.where(~np.isfinite(cls).all(axis=1))[0].tolist()
+        previews = [f"  [{i}] {texts[i][:80]!r}" for i in bad_idx]
+        raise ValueError(
+            f"Non-finite values in SPECTER2 embedding for {len(bad_idx)} of "
+            f"{len(texts)} texts — pgvector would reject these. Inputs:\n"
+            + "\n".join(previews)
+        )
     return cls
 
 
