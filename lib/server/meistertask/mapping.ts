@@ -16,6 +16,27 @@ export interface MappedTask {
   label_ids?: number[];
 }
 
+// Honest about dependencies: this is exactly what `mapPublicationToTask`
+// reads from a publication row. Pick<Publication> couples to the shared DTO,
+// so a rename on Publication propagates here as a compile error — and the
+// Drizzle-side push.ts only has to project these fields, not the full ~60-
+// field Publication, when building input from a `publications.$inferSelect`.
+export type TaskPublicationInput = Pick<
+  Publication,
+  | 'id'
+  | 'title'
+  | 'original_title'
+  | 'citation'
+  | 'press_score'
+  | 'pitch_suggestion'
+  | 'suggested_angle'
+  | 'target_audience'
+  | 'reasoning'
+  | 'haiku'
+  | 'lead_author'
+  | 'doi'
+>;
+
 /**
  * Maps a Publication to a MeisterTask task body. Pure — no I/O, no env.
  *
@@ -25,7 +46,7 @@ export interface MappedTask {
  * scheitert (Reconciliation-Script kann darüber den orphan Task wieder mit der
  * Pub verknüpfen).
  */
-export function mapPublicationToTask(pub: Publication, opts: MapOptions): MappedTask {
+export function mapPublicationToTask(pub: TaskPublicationInput, opts: MapOptions): MappedTask {
   const name = displayTitle(pub.original_title || pub.title, pub.citation);
   const score = pub.press_score ?? 0;
   const scorePercent = Math.round(score * 100);

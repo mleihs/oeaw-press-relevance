@@ -59,7 +59,7 @@ export async function applyDecision(
 
   const meistertask =
     payload.decision === 'pitch'
-      ? await pushPublicationToMeistertask(db, pubId, opts.appBaseUrl)
+      ? await pushPublicationToMeistertask(pubId, opts.appBaseUrl)
       : null;
 
   return { publication: updated, meistertask };

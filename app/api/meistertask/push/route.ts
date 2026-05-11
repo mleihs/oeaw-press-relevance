@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseAdmin } from '@/lib/server/db';
 import { apiError } from '@/lib/server/http';
 import { meistertaskPushPayloadSchema } from '@/lib/shared/schemas';
 import { pushPublicationToMeistertask } from '@/lib/server/meistertask/push';
@@ -19,7 +18,6 @@ export async function POST(req: NextRequest) {
 
   try {
     const result = await pushPublicationToMeistertask(
-      getSupabaseAdmin(),
       parsed.data.publication_id,
       req.nextUrl.origin,
     );
