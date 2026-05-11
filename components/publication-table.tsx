@@ -6,7 +6,7 @@ import { Publication } from '@/lib/shared/types';
 import { doiToUrl } from '@/lib/enrichment/doi-utils';
 import { displayTitle } from '@/lib/shared/html-utils';
 import { displayAuthor } from '@/lib/shared/publication-display';
-import { buildTaskUrl } from '@/lib/meistertask/urls';
+import { buildTaskUrl } from '@/lib/shared/meistertask-urls';
 import { cn } from '@/lib/shared/utils';
 import { PressScoreBadge, ScoreBar } from './score-bar';
 import { InfoBubble } from './info-bubble';

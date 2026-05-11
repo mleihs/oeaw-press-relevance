@@ -1,10 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Publication } from '@/lib/shared/types';
 import type { DecisionPayload } from '@/lib/shared/schemas';
-import {
-  pushPublicationToMeistertask,
-  type MeistertaskPushResult,
-} from '@/lib/meistertask/push';
+import { pushPublicationToMeistertask } from '@/lib/server/meistertask/push';
+import type { MeistertaskPushResult } from '@/lib/shared/meistertask-types';
 
 export interface DecisionResult {
   publication: Publication;

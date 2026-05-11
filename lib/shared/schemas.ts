@@ -20,3 +20,9 @@ export const decisionPayloadSchema = z.object({
 });
 
 export type DecisionPayload = z.infer<typeof decisionPayloadSchema>;
+
+export const meistertaskPushPayloadSchema = z.object({
+  publication_id: z.string().min(1, 'publication_id required'),
+});
+
+export type MeistertaskPushPayload = z.infer<typeof meistertaskPushPayloadSchema>;

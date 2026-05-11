@@ -11,18 +11,9 @@ import {
   MeistertaskApiError,
 } from './client';
 import { mapPublicationToTask } from './mapping';
-import { buildTaskUrl } from './urls';
+import { buildTaskUrl } from '@/lib/shared/meistertask-urls';
 import type { Publication } from '@/lib/shared/types';
-
-export type MeistertaskPushResult =
-  | { status: 'created'; task_id: number; task_url: string }
-  | { status: 'already_pushed'; task_id: string; task_url: string | null }
-  | { status: 'skipped'; reason: 'not_configured' | 'pub_not_found' }
-  | {
-      status: 'error';
-      reason: 'auth' | 'rate_limited' | 'upstream';
-      retry_after_seconds?: number;
-    };
+import type { MeistertaskPushResult } from '@/lib/shared/meistertask-types';
 
 function parseLabelEnv(v: string | undefined): number | undefined {
   if (!v) return undefined;
