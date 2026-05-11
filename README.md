@@ -15,12 +15,8 @@ via SPECTER2 embeddings.
 > wants vendor lock-in.
 
 <p align="center">
-  <img src="public/capybara-gate.png" alt="StoryScout — password-gate hero" width="600" />
+  <img src="public/screenshots/dashboard.png" alt="StoryScout Dashboard — top publications, score distribution, dimensions radar, top keywords" width="900" />
 </p>
-
-> **Screenshots:** demo-data UI screenshots are coming before the
-> public-visibility flip. Until then, run `npm run dev` and explore
-> locally — the capybara above is the password-gate splash.
 
 ## What it does
 
@@ -45,6 +41,27 @@ pre-sorts the candidates — the human decides, the machine filters.
 Open source because every research-institution press team faces the
 same problem, and nobody wants to be locked into a commercial vendor
 for what is fundamentally a content-prioritization tool.
+
+## Screenshots
+
+<table>
+  <tr>
+    <td width="50%"><img src="public/screenshots/review.png" alt="Triage queue with Pitch / Hold / Skip workflow" /></td>
+    <td width="50%"><img src="public/screenshots/publication-detail.png" alt="Publication detail — pitch, haiku, score bars, similar pressed pubs" /></td>
+  </tr>
+  <tr>
+    <td><strong>Triage Queue</strong> — Pitch / Hold / Skip + Snooze + Rationale; ranked by press_score or rank-fused with press_similarity.</td>
+    <td><strong>Publication Detail</strong> — LLM-generated pitch suggestion, 5-7-5 haiku, score bars per dimension, similar pressed pubs.</td>
+  </tr>
+  <tr>
+    <td><img src="public/screenshots/publications.png" alt="Browse + filter publications" /></td>
+    <td><img src="public/screenshots/press-releases.png" alt="Press-release tracking — matched + orphan tabs" /></td>
+  </tr>
+  <tr>
+    <td><strong>Browse + Filter</strong> — preset views (Pitch-ready, Eigen-Highlights, Popular Science, …) with multi-toggle composition; bulk enrichment + analysis.</td>
+    <td><strong>Press Releases</strong> — historical press releases matched to publications + orphan tracking (no pub match yet).</td>
+  </tr>
+</table>
 
 ## Quick Start
 
