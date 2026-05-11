@@ -27,9 +27,11 @@ test.describe('Triage-Loop smoke', () => {
     await page.goto('/review');
     await page.waitForLoadState('networkidle');
 
-    // Header — TanStack Query may still be hydrating after networkidle, so
-    // give the heading a generous window before asserting.
-    await expect(page.getByText('Triage-Sitzung').first()).toBeVisible({ timeout: 15_000 });
+    // Header — TanStack Query may still be hydrating after networkidle, and
+    // on memory-pressed runners /review's initial render can take ~22s
+    // (38k pubs + queue API + chart re-renders). 25s gives headroom over
+    // the worst observed real-load case.
+    await expect(page.getByText('Triage-Sitzung').first()).toBeVisible({ timeout: 25_000 });
 
     // Three counter cards (label-text-based — exact counts aren't asserted
     // because they depend on the live DB state).
