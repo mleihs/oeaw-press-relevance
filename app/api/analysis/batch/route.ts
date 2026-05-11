@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseAdmin } from '@/lib/server/db';
 import { apiError, createSSEStream } from '@/lib/server/http';
 import { getLLMModel, getOpenRouterKey } from '@/lib/server/llm';
 import {
@@ -11,9 +10,8 @@ import {
 export const maxDuration = 300;
 
 export async function POST(req: NextRequest) {
-  let supabase, apiKey, model, body: Record<string, unknown>;
+  let apiKey, model, body: Record<string, unknown>;
   try {
-    supabase = getSupabaseAdmin();
     apiKey = getOpenRouterKey(req);
     model = getLLMModel(req);
     body = await req.json();
@@ -24,7 +22,7 @@ export async function POST(req: NextRequest) {
   const filters = parseAnalysisBatchBody(body);
   let pubs;
   try {
-    pubs = await fetchPublicationsForAnalysis(filters, supabase);
+    pubs = await fetchPublicationsForAnalysis(filters);
   } catch (err) {
     return apiError(err instanceof Error ? err.message : 'Unknown error', 500);
   }
@@ -41,7 +39,6 @@ export async function POST(req: NextRequest) {
     apiKey,
     model,
     batchSize: filters.batchSize,
-    db: supabase,
     abortSignal: req.signal,
     emit: send,
   }).finally(() => close());

@@ -1,10 +1,12 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import { and, eq, gte, inArray, sql } from 'drizzle-orm';
+import { db, publications } from '@/lib/server/db';
 import {
   analyzePublications,
   calculatePressScore,
   checkKeyBalance,
 } from './openrouter';
 import type { PublicationForPrompt } from './prompts';
+import { publicationToApi } from '../publications/to-api';
 
 export interface AnalysisBatchFilters {
   limit: number;
@@ -35,45 +37,46 @@ export function parseAnalysisBatchBody(
 
 export async function fetchPublicationsForAnalysis(
   filters: AnalysisBatchFilters,
-  db: SupabaseClient,
 ): Promise<PublicationForPrompt[]> {
-  let query = db
-    .from('publications')
-    .select('*, orgunit_publications(orgunit:orgunits(akronym_de, name_de))')
-    .order('published_at', { ascending: false, nullsFirst: false })
-    .limit(filters.limit);
-
+  const clauses = [];
   if (!filters.forceReanalyze) {
-    query = query.eq('analysis_status', 'pending');
+    clauses.push(eq(publications.analysisStatus, 'pending'));
   }
   if (filters.enrichedOnly) {
     if (filters.includePartial) {
-      query = query.in('enrichment_status', ['enriched', 'partial']);
+      clauses.push(
+        inArray(publications.enrichmentStatus, ['enriched', 'partial']),
+      );
     } else {
-      query = query.eq('enrichment_status', 'enriched');
+      clauses.push(eq(publications.enrichmentStatus, 'enriched'));
     }
   }
   if (filters.minWordCount > 0) {
-    query = query.gte('word_count', filters.minWordCount);
+    clauses.push(gte(publications.wordCount, filters.minWordCount));
   }
 
-  const { data, error } = await query;
-  if (error) throw new Error(error.message);
+  const rows = await db.query.publications.findMany({
+    where: clauses.length > 0 ? and(...clauses) : undefined,
+    orderBy: sql`${publications.publishedAt} DESC NULLS LAST`,
+    limit: filters.limit,
+    with: {
+      orgunitPublications: {
+        columns: { orgunitId: true },
+        with: {
+          orgunit: {
+            columns: { akronymDe: true, nameDe: true },
+          },
+        },
+      },
+    },
+  });
 
-  type Row = Record<string, unknown> & {
-    orgunit_publications?: Array<{
-      orgunit?: { akronym_de: string | null; name_de: string };
-    }>;
-  };
-  return ((data || []) as Row[]).map((r) => {
-    const orgunits = (r.orgunit_publications || [])
+  return rows.map((row): PublicationForPrompt => {
+    const orgunits = (row.orgunitPublications ?? [])
       .map((op) => op.orgunit)
-      .filter(
-        (o): o is { akronym_de: string | null; name_de: string } => Boolean(o),
-      );
-    const out = { ...r, orgunits };
-    delete out.orgunit_publications;
-    return out as unknown as PublicationForPrompt;
+      .filter((o): o is NonNullable<typeof o> => o !== null)
+      .map((o) => ({ akronym_de: o.akronymDe, name_de: o.nameDe }));
+    return { ...publicationToApi(row), orgunits };
   });
 }
 
@@ -82,7 +85,6 @@ export interface AnalysisBatchRunOptions {
   apiKey: string;
   model: string;
   batchSize: number;
-  db: SupabaseClient;
   abortSignal: AbortSignal;
   emit: (type: string, data: unknown) => void;
 }
@@ -103,7 +105,7 @@ export interface AnalysisBatchRunOptions {
 export async function runAnalysisBatch(
   opts: AnalysisBatchRunOptions,
 ): Promise<void> {
-  const { pubs, apiKey, model, batchSize, db, abortSignal, emit } = opts;
+  const { pubs, apiKey, model, batchSize, abortSignal, emit } = opts;
 
   let processed = 0;
   let successful = 0;
@@ -181,25 +183,25 @@ export async function runAnalysisBatch(
         const pressScore = calculatePressScore(result);
 
         await db
-          .from('publications')
-          .update({
-            analysis_status: 'analyzed',
-            press_score: pressScore,
-            public_accessibility: result.public_accessibility,
-            societal_relevance: result.societal_relevance,
-            novelty_factor: result.novelty_factor,
-            storytelling_potential: result.storytelling_potential,
-            media_timeliness: result.media_timeliness,
-            pitch_suggestion: result.pitch_suggestion,
-            target_audience: result.target_audience,
-            suggested_angle: result.suggested_angle,
+          .update(publications)
+          .set({
+            analysisStatus: 'analyzed',
+            pressScore,
+            publicAccessibility: result.public_accessibility,
+            societalRelevance: result.societal_relevance,
+            noveltyFactor: result.novelty_factor,
+            storytellingPotential: result.storytelling_potential,
+            mediaTimeliness: result.media_timeliness,
+            pitchSuggestion: result.pitch_suggestion,
+            targetAudience: result.target_audience,
+            suggestedAngle: result.suggested_angle,
             reasoning: result.reasoning,
             haiku: result.haiku ?? null,
-            llm_model: model,
-            analysis_cost: cost / results.length,
-            updated_at: new Date().toISOString(),
+            llmModel: model,
+            analysisCost: cost / results.length,
+            updatedAt: new Date().toISOString(),
           })
-          .eq('id', pub.id);
+          .where(eq(publications.id, pub.id));
 
         successful++;
       }
@@ -214,12 +216,12 @@ export async function runAnalysisBatch(
 
       for (const pub of batch) {
         await db
-          .from('publications')
-          .update({
-            analysis_status: 'failed',
-            updated_at: new Date().toISOString(),
+          .update(publications)
+          .set({
+            analysisStatus: 'failed',
+            updatedAt: new Date().toISOString(),
           })
-          .eq('id', pub.id);
+          .where(eq(publications.id, pub.id));
       }
 
       if (isFatal) {
