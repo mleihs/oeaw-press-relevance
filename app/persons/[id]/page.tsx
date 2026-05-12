@@ -1,8 +1,7 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ChevronLeft } from 'lucide-react';
 import { getResearcherDetail } from '@/lib/server/researchers/detail';
 import { sincePresetToDate } from '@/lib/shared/researchers';
+import { BackLink } from './_components/back-link';
 import { PersonDetailClient } from './_components/detail-client';
 
 // Per ADR 0009: read-heavy, auth-gated, `since`-parametrised pages opt out
@@ -28,13 +27,7 @@ export default async function PersonDetailPage({
 
   return (
     <div className="space-y-6">
-      <Link
-        href="/researchers"
-        className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-brand"
-      >
-        <ChevronLeft className="h-3 w-3" />
-        Zurück zur Forscher:innen-Übersicht
-      </Link>
+      <BackLink />
       <PersonDetailClient detail={detail} windowLabel={WINDOW_LABEL} />
     </div>
   );

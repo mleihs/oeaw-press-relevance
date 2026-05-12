@@ -122,6 +122,18 @@ export interface ResearcherDetail {
   publications: PersonPublicationRow[] | null;
 }
 
+/**
+ * `ResearcherDetail` after the loading boundary has confirmed both
+ * `person` and `stats` are present. The server-side wrapper
+ * (`lib/server/researchers/detail.ts`) narrows to this shape so that
+ * consumers don't repeat the null-checks. The empty-result case is
+ * carried by the wrapper's `| null` return type, not by these fields.
+ */
+export interface LoadedResearcherDetail extends Omit<ResearcherDetail, 'person' | 'stats'> {
+  person: ResearcherDetailPerson;
+  stats: ResearcherDetailStats;
+}
+
 // Filter shape — also used by the API route Zod schema and the nuqs parsers.
 export interface LeaderboardFilters {
   since: string; // ISO date 'YYYY-MM-DD'

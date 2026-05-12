@@ -1,8 +1,7 @@
 'use client';
 
-import Link from 'next/link';
-import { ChevronLeft } from 'lucide-react';
 import { ApiErrorCard } from '@/components/api-error-card';
+import { BackLink } from './_components/back-link';
 
 // error.tsx must be a Client Component (it receives an error prop + a reset
 // callback). Provides the same UX the old client-side fetch error path had
@@ -10,13 +9,7 @@ import { ApiErrorCard } from '@/components/api-error-card';
 export default function PersonDetailError({ error }: { error: Error & { digest?: string } }) {
   return (
     <div className="space-y-4">
-      <Link
-        href="/researchers"
-        className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-brand"
-      >
-        <ChevronLeft className="h-3 w-3" />
-        Zurück zur Forscher:innen-Übersicht
-      </Link>
+      <BackLink />
       <ApiErrorCard title="Fehler beim Laden" message={error.message} />
     </div>
   );

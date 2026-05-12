@@ -59,3 +59,5 @@ from server.
 - `eslint.config.mjs` (lines 50–108)
 - `OSS_READINESS_PLAN.md` §6.3
 - Phase-2 closeout: 2026-05-11 (16 commits on `refactor/drizzle-press-releases`)
+- [ADR 0009](0009-rsc-server-components-pilot.md) amends the
+  `app-pages → server` rule for the RSC pilot.

@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic';
 import { PersonHeader } from './person-header';
 import { CoauthorBlock } from './coauthor-block';
 import { PubList } from './pub-list';
-import type { ResearcherDetail } from '@/lib/shared/researchers';
+import type { LoadedResearcherDetail } from '@/lib/shared/researchers';
 
 // Activity chart pulls in recharts (~100kB); lazy-load so first paint of
 // the detail header isn't blocked by the chart bundle. The dynamic() call
@@ -16,15 +16,11 @@ const ActivityChart = dynamic(
 );
 
 interface PersonDetailClientProps {
-  detail: ResearcherDetail;
+  detail: LoadedResearcherDetail;
   windowLabel: string;
 }
 
 export function PersonDetailClient({ detail, windowLabel }: PersonDetailClientProps) {
-  // RSC handed us a row whose `person` and `stats` are non-null (page-side
-  // notFound() guards both). Narrow once so children stay non-nullable.
-  if (!detail.person || !detail.stats) return null;
-
   return (
     <div className="space-y-6">
       <PersonHeader person={detail.person} stats={detail.stats} windowLabel={windowLabel} />
