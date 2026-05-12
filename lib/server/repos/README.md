@@ -45,7 +45,7 @@ A method belongs in a repo if **all** of these hold:
 
 | Repo | Entity | Methods | Consumers |
 |---|---|---|---|
-| `publications.ts` | `publications` table + filter pre-fetches | 14 | `publications/{list,fetch,decisions,flag}.ts`, `review/queue.ts` |
+| `publications.ts` | `publications` table + filter pre-fetches | 15 | `publications/{list,fetch,decisions,flag}.ts`, `review/queue.ts` |
 
 ### Why no `embeddings.ts` yet
 
