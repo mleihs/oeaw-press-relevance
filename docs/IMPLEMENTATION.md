@@ -11,6 +11,12 @@
 > `f134fb5` (WebDB ETL). For the deepest dive into individual subsystems,
 > follow the cross-references — this doc is an entry point, not a complete
 > duplicate of code-as-truth. When in doubt, the code wins.
+>
+> **Architecture decisions** (load-bearing rules with rationale) live in
+> [`docs/adr/`](./adr/README.md) — start there for the *why* behind the
+> Drizzle migration, the wire-shape contract, the `lib/{server,shared,client}`
+> boundaries, and the local-canonical data model. This file describes
+> *what* the system looks like today; ADRs explain *why* it's shaped that way.
 
 > **Audit history (2026-04-29)**: see commits `5f15503` (Wave A: Foundation +
 > Security + Correctness), `e2d1bcb` (Wave B: A11y bulk-fix WCAG 2.2 AA),
@@ -51,7 +57,9 @@ Single Next.js 16 App-Router project. Three layers:
 - **Postgres is the real backend.** Aggregation, ranking, sparkline generation,
   Bayessche Glättung, score-band classification all live as
   `LANGUAGE sql STABLE` functions in `supabase/migrations/*.sql`. API routes
-  are thin Zod-validated wrappers around `supabase.rpc(...)`.
+  are thin Drizzle-backed wrappers around `db.execute(sql\`SELECT * FROM fn(...)\`)`.
+  (See [ADR 0005](./adr/0005-sql-functions-stay-in-postgres.md) for when
+  to keep aggregation in SQL vs lift it into TypeScript.)
 - **Next.js API routes** handle all mutations and the LLM-call coordination
   (enrichment pipeline, analysis batch). SSE streaming for the long jobs.
 - **Client UI** is `nuqs`-bound: filter state lives in the URL, not in a
@@ -215,6 +223,14 @@ by `getApiHeaders()`); model selection is per-batch, not a global pref.
 ---
 
 ## 5. Library layer
+
+> **Post-Phase-2 note (2026-05-11):** the flat `lib/*.ts` layout described
+> below has been reorganised into `lib/{server,shared,client}/**` with
+> ESLint-enforced import boundaries. See
+> [ADR 0006](./adr/0006-lib-server-shared-client-boundaries.md) for the
+> boundary rules; the file paths in this section are stale and will be
+> refreshed in a follow-up doc pass. The *categories* of helpers
+> (scoring, explanations, csv-parser, …) are unchanged.
 
 **`lib/types.ts`** — all TypeScript interfaces. Key types: `Publication`,
 `PublicationWithRelations` (with `authors_resolved`, `orgunits`, `projects`),

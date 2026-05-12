@@ -32,7 +32,8 @@ vorigen. Pro Phase: Plan-OK, dann Implementation am Stück (per memory
 
 ## Phase A7 — ADRs
 
-**Status:** [ ] pending. **Aufwand:** ~3h.
+**Status:** [x] done 2026-05-12 (commit pending — see end of phase).
+**Aufwand:** ~3h.
 
 ### Goal
 Lightweight Architectural Decision Records (MADR-Format) im neuen Ordner
@@ -74,12 +75,19 @@ Verweise auf den Original-Commit oder die Memory-Datei wo die Decision
 fiel.
 
 ### Acceptance Criteria
-- [ ] `docs/adr/README.md` listet alle ADRs mit One-Liner-Hook
-- [ ] Template-File mit kommentierten Slot-Beschreibungen
-- [ ] 7 Backfill-ADRs geschrieben, jede unter 50 Zeilen
-- [ ] `OSS_READINESS_PLAN.md` und `docs/IMPLEMENTATION.md` verlinken die
-      relevanten ADRs statt die Begründung zu duplizieren
-- [ ] Lint/Test bleiben grün (no source change)
+- [x] `docs/adr/README.md` listet alle ADRs mit One-Liner-Hook (Index-Tabelle
+      + Konventionen + "When to write an ADR")
+- [x] Template-File mit kommentierten Slot-Beschreibungen
+      (`docs/adr/0000-template.md`)
+- [x] 7 Backfill-ADRs geschrieben, jede unter 50 Zeilen
+      (0001 Drizzle / 0002 Supabase-JS-scope / 0003 per-feature-toApi /
+      0004 wire-shape / 0005 SQL-functions / 0006 lib-boundaries /
+      0007 local-canonical)
+- [x] `OSS_READINESS_PLAN.md` (§6 + §7) und `docs/IMPLEMENTATION.md`
+      (top-of-doc + §1 + §5) verlinken die relevanten ADRs als
+      kanonische Quelle, ohne die Begründung zu duplizieren
+- [x] Lint/Test bleiben grün (no source change) — 0 errors / 14 warnings
+      / 40 tests, Baseline unverändert
 
 ---
 

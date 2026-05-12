@@ -1436,6 +1436,11 @@ zu schreiben.
 
 ## 6. Phase 2 — Folder-Reorg + Business-Logic-Extraction
 
+> **ADR-Anker:** Die durchgesetzten Boundaries sind in
+> [ADR 0006](docs/adr/0006-lib-server-shared-client-boundaries.md)
+> kanonisch dokumentiert. Phasen-Plan unten bleibt als Migrations-
+> Reihenfolge stehen; das Warum lebt im ADR.
+
 ### 6.1 Ziel
 
 Die "Schlampig"-Wahrnehmung von Next.js entsteht großenteils dadurch,
@@ -1767,6 +1772,19 @@ Per-Route-Migration in dieser Reihenfolge, jeweils PR-isoliert:
 ---
 
 ## 7. Phase 3 — Drizzle ORM Migration
+
+> **ADR-Anker:** Die load-bearing Entscheidungen aus Phase 3 sind in
+> ADRs kanonisch dokumentiert — nutze die als Single-Source-of-Truth
+> für künftige Refactors:
+>
+> - [ADR 0001 — Drizzle ORM über Prisma/raw](docs/adr/0001-drizzle-over-prisma-and-raw-sql.md)
+> - [ADR 0002 — Supabase-JS nur für Auth/Realtime/RPC/Storage](docs/adr/0002-supabase-js-only-for-auth-realtime.md)
+> - [ADR 0003 — Per-feature `toApi()` Mapper](docs/adr/0003-per-feature-toapi-not-generic-serializer.md)
+> - [ADR 0004 — Wire shape snake_case + ISO-8601](docs/adr/0004-snake-case-iso-8601-wire-shape.md)
+> - [ADR 0005 — Aggregations bleiben SQL-Funktionen](docs/adr/0005-sql-functions-stay-in-postgres.md)
+>
+> Sections 7.1–7.10 unten enthalten den ursprünglichen Plan + Tasks; die
+> "Warum"-Argumente sind in die ADRs verschoben statt dupliziert.
 
 ### 7.1 Ziel
 
