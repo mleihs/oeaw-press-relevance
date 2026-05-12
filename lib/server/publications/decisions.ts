@@ -1,5 +1,4 @@
-import { eq } from 'drizzle-orm';
-import { db, publications } from '@/lib/server/db';
+import { publicationsRepo } from '@/lib/server/repos/publications';
 import type { Publication } from '@/lib/shared/types';
 import type { DecisionPayload } from '@/lib/shared/schemas';
 import { pushPublicationToMeistertask } from '@/lib/server/meistertask/push';
@@ -42,17 +41,13 @@ export async function applyDecision(
     : payload.decided_in_session || null;
   const snooze_until = payload.snooze_until ?? null;
 
-  const [updated] = await db
-    .update(publications)
-    .set({
-      decision: payload.decision,
-      decidedBy: decided_by,
-      decisionRationale: decision_rationale,
-      snoozeUntil: snooze_until,
-      decidedInSession: decided_in_session,
-    })
-    .where(eq(publications.id, pubId))
-    .returning();
+  const updated = await publicationsRepo.updateDecision(pubId, {
+    decision: payload.decision,
+    decidedBy: decided_by,
+    decisionRationale: decision_rationale,
+    snoozeUntil: snooze_until,
+    decidedInSession: decided_in_session,
+  });
 
   if (!updated) {
     throw new PublicationNotFoundError();

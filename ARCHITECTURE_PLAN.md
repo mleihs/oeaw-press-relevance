@@ -93,7 +93,8 @@ fiel.
 
 ## Phase A2 — Repository-Layer
 
-**Status:** [ ] pending. **Aufwand:** ~5h.
+**Status:** [x] done 2026-05-12 (commit pending — see end of phase).
+**Aufwand:** ~5h.
 
 ### Goal
 Dünne `lib/server/repos/<entity>.ts` Schicht zwischen Drizzle-Queries und
@@ -181,16 +182,33 @@ delegieren ihre DB-Calls an den Repo. Wire-shape-Mapping
 zurück, nicht DTOs.
 
 ### Acceptance Criteria
-- [ ] 6 Repo-Files mit klaren primitive-Operationen (≤10 Methoden each)
-- [ ] `list.ts`, `queue.ts`, `fetch.ts`, `decisions.ts`, `flag.ts` rufen
-      nur noch Repos auf (keine direkten `db.query.*` / `db.select` Aufrufe)
-- [ ] `db` Singleton-Import bleibt erlaubt für SQL-Functions
-      (`db.execute(sql...)`) — Repos sind nur für Drizzle-Builder
-- [ ] Smoke-Test pro Repo, persistent unter `scripts/smoke/repos/<entity>.ts`
-      committed (siehe Cross-cutting: Smokes committen)
-- [ ] Lint 0/14, tsc clean, npm test 40+ green
-- [ ] Documentation: `lib/server/repos/README.md` mit "Was gehört
-      hier rein, was nicht"
+- [x] 1 Repo-File mit klaren primitive-Operationen
+      (`lib/server/repos/publications.ts`, 14 Methoden — Lookups +
+      Counts + 5 Filter-ID-Sets + 4 Mutations). Pflicht-Bewertung der
+      übrigen Entities ergab: **embeddings → skip** (0 TS-Konsumenten
+      heute, A6-Future), **orgunits/press-releases/sessions/lookups →
+      skip** (1 call-site bzw. trivial-Drizzle). Symmetrie ist
+      Cargo-Cult; siehe `lib/server/repos/README.md`.
+- [x] `list.ts`, `queue.ts`, `fetch.ts`, `decisions.ts`, `flag.ts` rufen
+      Pubs-Queries nur noch über `publicationsRepo` auf. Keine direkten
+      `db.query.publications.*` mehr. Cross-feature Sessions-Read in
+      queue.ts wurde nach `sessions/lifecycle.ts::getLatestSessionTimestamp`
+      verschoben (Bonus-Code-Smell-Fix).
+- [x] `db` Singleton-Import bleibt erlaubt für SQL-Functions
+      (`db.execute(sql...)`) und feature-eigene Trivial-Reads
+      (`queue.ts::fetchFreshHighScoreIds`, `list.ts::fetchBadTypeIds`).
+      Repo ist nur für duplizierte Drizzle-Builder.
+- [x] Smoke-Test persistent committed: `scripts/smoke/repos/publications.ts`
+      (read-only, exercises every method's branches incl. sql.param
+      array-binding gotcha + relation-shadow guard).
+- [x] Lint 0/14, tsc clean, npm test 40+ green — Baseline gehalten.
+- [x] Documentation: `lib/server/repos/README.md` mit "Was gehört hier
+      rein, was nicht" + Entity-Tabelle + Drizzle-Gotcha-Liste.
+- [x] **Bonus:** `descNullsLast` / `ascNullsLast` Helper in
+      `lib/server/db/sort.ts`. Kapselt den Drizzle-`desc()`-NULLS-LAST-
+      Gap (Memory `phase3_handover.md` call #6). Refactored 8 Call-Sites
+      in list/queue/enrichment/analysis/exports/smoke — `sql\`${col}
+      DESC NULLS LAST\`` taucht in App-Code nicht mehr auf.
 
 ---
 

@@ -1,5 +1,4 @@
-import { eq } from 'drizzle-orm';
-import { db, publications } from '@/lib/server/db';
+import { publicationsRepo } from '@/lib/server/repos/publications';
 import type { FlagNote } from '@/lib/shared/types';
 import type { FlagSetPayload, FlagDeletePayload } from '@/lib/shared/schemas';
 import { PublicationNotFoundError } from './errors';
@@ -15,20 +14,9 @@ function defaultBy(by: string | null | undefined): string {
 }
 
 async function readNotes(pubId: string): Promise<FlagNote[]> {
-  const [row] = await db
-    .select({ flagNotes: publications.flagNotes })
-    .from(publications)
-    .where(eq(publications.id, pubId))
-    .limit(1);
-  if (!row) throw new PublicationNotFoundError();
-  return (row.flagNotes as FlagNote[] | null) ?? [];
-}
-
-async function writeNotes(pubId: string, notes: FlagNote[]): Promise<void> {
-  await db
-    .update(publications)
-    .set({ flagNotes: notes })
-    .where(eq(publications.id, pubId));
+  const notes = await publicationsRepo.readFlagNotes(pubId);
+  if (notes === undefined) throw new PublicationNotFoundError();
+  return notes;
 }
 
 /**
@@ -48,7 +36,7 @@ export async function setFlag(
     ...filtered,
     { by, note, at: new Date().toISOString() },
   ];
-  await writeNotes(pubId, next);
+  await publicationsRepo.updateFlagNotes(pubId, next);
   return next;
 }
 
@@ -60,6 +48,6 @@ export async function clearFlag(
   const by = defaultBy(payload.by);
   const current = await readNotes(pubId);
   const next = current.filter((n) => norm(n.by) !== norm(by));
-  await writeNotes(pubId, next);
+  await publicationsRepo.updateFlagNotes(pubId, next);
   return next;
 }

@@ -1,6 +1,10 @@
 import { NextRequest } from 'next/server';
-import { eq, sql } from 'drizzle-orm';
-import { db, publications as publicationsTable } from '@/lib/server/db';
+import { eq } from 'drizzle-orm';
+import {
+  db,
+  publications as publicationsTable,
+  descNullsLast,
+} from '@/lib/server/db';
 import { publicationToApi } from '@/lib/server/publications/to-api';
 import { apiError } from '@/lib/server/http';
 
@@ -13,7 +17,7 @@ export async function GET(req: NextRequest) {
       .select()
       .from(publicationsTable)
       .where(onlyAnalyzed ? eq(publicationsTable.analysisStatus, 'analyzed') : undefined)
-      .orderBy(sql`${publicationsTable.pressScore} DESC NULLS LAST`);
+      .orderBy(descNullsLast(publicationsTable.pressScore));
 
     // Run rows through the shared publicationToApi() mapper so the wire shape
     // matches every other publications endpoint (snake_case, ISO-8601, no

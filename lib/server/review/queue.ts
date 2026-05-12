@@ -1,16 +1,7 @@
-import {
-  and,
-  count,
-  desc,
-  eq,
-  gte,
-  inArray,
-  isNull,
-  lte,
-  or,
-  sql,
-} from 'drizzle-orm';
-import { db, publications, reviewSessions } from '@/lib/server/db';
+import { and, desc, eq, gte, inArray, isNull, lte, or } from 'drizzle-orm';
+import { db, publications, descNullsLast } from '@/lib/server/db';
+import { publicationsRepo } from '@/lib/server/repos/publications';
+import { getLatestSessionTimestamp } from '@/lib/server/sessions/lifecycle';
 import {
   DECISIONS,
   isDecision,
@@ -19,7 +10,6 @@ import {
 } from '@/lib/shared/types';
 import { publicationToApi } from '../publications/to-api';
 
-const FRESHNESS_FALLBACK_DAYS = 7;
 const FRESH_SCORE_THRESHOLD = 0.7;
 
 // Same mini relation projections as publications/list.ts (chip-sized
@@ -39,39 +29,10 @@ export interface ReviewQueueResult {
   decision_counts: Record<Decision, number>;
 }
 
-async function fetchSinceTimestamp(): Promise<string> {
-  const [row] = await db
-    .select({ occurredAt: reviewSessions.occurredAt })
-    .from(reviewSessions)
-    .orderBy(desc(reviewSessions.occurredAt))
-    .limit(1);
-  if (row?.occurredAt) return new Date(row.occurredAt).toISOString();
-  const fallback = new Date();
-  fallback.setDate(fallback.getDate() - FRESHNESS_FALLBACK_DAYS);
-  return fallback.toISOString();
-}
-
-async function fetchFlaggedIds(): Promise<Set<string>> {
-  const rows = await db.execute<{ publication_id: string }>(
-    sql`SELECT publication_id FROM pub_ids_with_flags()`,
-  );
-  const out = new Set<string>();
-  for (const r of rows) out.add(r.publication_id);
-  return out;
-}
-
-async function fetchMahighlightIds(): Promise<Set<string>> {
-  const rows = await db.execute<{ publication_id: string }>(
-    sql`SELECT publication_id FROM pub_ids_by_highlight(${true}, ${false})`,
-  );
-  const out = new Set<string>();
-  for (const r of rows) out.add(r.publication_id);
-  return out;
-}
-
+// Fresh+high-score window is queue-specific business logic (analyzed +
+// score threshold + window). Stays inline rather than in the repo because
+// only one caller and FRESH_SCORE_THRESHOLD is a queue-domain constant.
 async function fetchFreshHighScoreIds(sinceTs: string): Promise<Set<string>> {
-  // Drizzle/postgres-js has no PostgREST 1000-row cap, so the previous
-  // pagination loop collapses to one query.
   const rows = await db
     .select({ id: publications.id })
     .from(publications)
@@ -87,22 +48,15 @@ async function fetchFreshHighScoreIds(sinceTs: string): Promise<Set<string>> {
 }
 
 async function fetchDecisionCounts(): Promise<Record<Decision, number>> {
-  // Single GROUP BY query replaces four separate count-by-decision round-
-  // trips. Postgres can serve all four buckets in one pass; the prior
-  // Supabase-JS variant ran them concurrently because PostgREST has no
-  // GROUP BY syntax — Drizzle does.
-  const rows = await db
-    .select({ decision: publications.decision, c: count() })
-    .from(publications)
-    .where(eq(publications.archived, false))
-    .groupBy(publications.decision);
-
+  const rows = await publicationsRepo.countByDecision();
   const result = Object.fromEntries(DECISIONS.map((d) => [d, 0])) as Record<
     Decision,
     number
   >;
   for (const r of rows) {
-    if (isDecision(r.decision)) result[r.decision] = r.c;
+    if (isDecision(r.decision ?? '')) {
+      result[r.decision as Decision] = r.c;
+    }
   }
   return result;
 }
@@ -120,7 +74,9 @@ function combineRanks<
   if (n === 0) return rows;
   const idx = rows.map((_, i) => i);
 
-  const rankBy = (field: 'press_score' | 'press_similarity'): Map<number, number> => {
+  const rankBy = (
+    field: 'press_score' | 'press_similarity',
+  ): Map<number, number> => {
     const sortable = idx.map((i) => ({ i, v: rows[i][field] }));
     sortable.sort((a, b) => {
       const av = a.v ?? -Infinity;
@@ -150,11 +106,11 @@ function combineRanks<
 }
 
 // Drizzle relational findMany row → wire-shape ReviewQueueItem.
-type QueueRowWithRelations = Awaited<
-  ReturnType<typeof fetchUndecidedBucket>
+type QueueRow = Awaited<
+  ReturnType<typeof publicationsRepo.findManyForQueue>
 >[number];
 
-function flattenRow(row: QueueRowWithRelations): ReviewQueueItem {
+function flattenRow(row: QueueRow): ReviewQueueItem {
   const orgunits = (row.orgunitPublications ?? [])
     .map((op) => op.orgunit)
     .filter((o): o is NonNullable<typeof o> => o !== null)
@@ -175,56 +131,10 @@ function flattenRow(row: QueueRowWithRelations): ReviewQueueItem {
   };
 }
 
-const QUEUE_WITH = {
-  publicationTypeRef: {
-    columns: { nameDe: true, nameEn: true },
-  },
-  orgunitPublications: {
-    columns: { orgunitId: true },
-    with: {
-      orgunit: {
-        columns: { id: true, akronymDe: true, nameDe: true },
-      },
-    },
-  },
-} as const;
-
-async function fetchUndecidedBucket(unionIds: string[], today: string) {
-  return db.query.publications.findMany({
-    where: and(
-      inArray(publications.id, unionIds),
-      eq(publications.archived, false),
-      eq(publications.decision, 'undecided'),
-      or(
-        isNull(publications.snoozeUntil),
-        lte(publications.snoozeUntil, today),
-      ),
-    ),
-    orderBy: [
-      sql`${publications.pressScore} DESC NULLS LAST`,
-      desc(publications.updatedAt),
-    ],
-    with: QUEUE_WITH,
-  });
-}
-
-async function fetchDecidedBucket(
-  decision: Exclude<Decision, 'undecided'>,
-) {
-  return db.query.publications.findMany({
-    where: and(
-      eq(publications.archived, false),
-      eq(publications.decision, decision),
-    ),
-    orderBy: sql`${publications.decidedAt} DESC NULLS LAST`,
-    with: QUEUE_WITH,
-  });
-}
-
 /**
  * Sitzungs-Queue. For the undecided bucket: returns the union of
- *   - publications with at least one flag note (RPC pub_ids_with_flags)
- *   - publications with mahighlight=true on any author (RPC pub_ids_by_highlight)
+ *   - publications with at least one flag note (pub_ids_with_flags)
+ *   - publications with mahighlight=true on any author (pub_ids_by_highlight)
  *   - publications analyzed since the last review session (or last 7 days as
  *     fallback) with press_score >= 0.7
  * filtered by archived=false, decision='undecided', snooze_until IS NULL or
@@ -248,7 +158,13 @@ export async function buildReviewQueue(
   const decisionCountsP = fetchDecisionCounts();
 
   if (decisionParam !== 'undecided') {
-    const rows = await fetchDecidedBucket(decisionParam);
+    const rows = await publicationsRepo.findManyForQueue({
+      where: and(
+        eq(publications.archived, false),
+        eq(publications.decision, decisionParam),
+      ),
+      orderBy: descNullsLast(publications.decidedAt),
+    });
     const flattened = rows.map(flattenRow);
     const decision_counts = await decisionCountsP;
     return {
@@ -260,10 +176,10 @@ export async function buildReviewQueue(
     };
   }
 
-  const sinceTs = await fetchSinceTimestamp();
+  const sinceTs = await getLatestSessionTimestamp();
   const [flaggedIds, mahlIds, freshIds] = await Promise.all([
-    fetchFlaggedIds(),
-    fetchMahighlightIds(),
+    publicationsRepo.findIdsWithFlags(),
+    publicationsRepo.findIdsByHighlight(true, false),
     fetchFreshHighScoreIds(sinceTs),
   ]);
 
@@ -280,7 +196,21 @@ export async function buildReviewQueue(
   }
 
   const today = new Date().toISOString().slice(0, 10);
-  const rows = await fetchUndecidedBucket([...unionIds], today);
+  const rows = await publicationsRepo.findManyForQueue({
+    where: and(
+      inArray(publications.id, [...unionIds]),
+      eq(publications.archived, false),
+      eq(publications.decision, 'undecided'),
+      or(
+        isNull(publications.snoozeUntil),
+        lte(publications.snoozeUntil, today),
+      ),
+    ),
+    orderBy: [
+      descNullsLast(publications.pressScore),
+      desc(publications.updatedAt),
+    ],
+  });
   const flattenedAll = rows.map(flattenRow);
   const ranked = useCombined ? combineRanks(flattenedAll) : flattenedAll;
   const decision_counts = await decisionCountsP;

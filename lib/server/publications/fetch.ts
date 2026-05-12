@@ -1,5 +1,4 @@
-import { eq } from 'drizzle-orm';
-import { db, publications } from '@/lib/server/db';
+import { publicationsRepo } from '@/lib/server/repos/publications';
 import type {
   Person,
   PressRelease,
@@ -23,28 +22,13 @@ import {
  * `orgunits`, `projects`, `press_release`) so the UI doesn't have to repeat
  * the join traversal.
  *
- * When the pub doesn't exist Drizzle's `findFirst` returns `undefined`; this
- * is mapped to PublicationNotFoundError so the route layer can produce 404.
+ * Repo returns the raw Drizzle row with embedded relations; this function
+ * owns the per-feature flattening + DTO mapping. Missing row → 404.
  */
 export async function getPublicationById(
   pubId: string,
 ): Promise<PublicationWithRelations> {
-  const row = await db.query.publications.findFirst({
-    where: eq(publications.id, pubId),
-    with: {
-      publicationTypeRef: true,
-      pressReleases: true,
-      personPublications: {
-        with: { person: true },
-      },
-      orgunitPublications: {
-        with: { orgunit: true },
-      },
-      publicationProjects: {
-        with: { project: true },
-      },
-    },
-  });
+  const row = await publicationsRepo.findByIdDetail(pubId);
 
   if (!row) throw new PublicationNotFoundError();
 
@@ -100,5 +84,5 @@ export async function getPublicationById(
 }
 
 export async function deletePublication(pubId: string): Promise<void> {
-  await db.delete(publications).where(eq(publications.id, pubId));
+  await publicationsRepo.deleteById(pubId);
 }

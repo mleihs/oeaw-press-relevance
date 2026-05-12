@@ -6,9 +6,8 @@ import {
   isNull,
   like,
   or,
-  sql,
 } from 'drizzle-orm';
-import { db, publications } from '@/lib/server/db';
+import { db, publications, descNullsLast } from '@/lib/server/db';
 import type { EnrichmentResult, Publication } from '@/lib/shared/types';
 import { enrichFromCrossRef } from './crossref';
 import { enrichFromOpenAlex } from './openalex';
@@ -109,7 +108,7 @@ export async function fetchPublicationsForEnrichment(
         inArray(publications.enrichmentStatus, statusFilter),
       ),
     )
-    .orderBy(sql`${publications.publishedAt} DESC NULLS LAST`)
+    .orderBy(descNullsLast(publications.publishedAt))
     .limit(filters.limit);
 
   let noDoiRows: typeof doiRows = [];
@@ -129,7 +128,7 @@ export async function fetchPublicationsForEnrichment(
             inArray(publications.enrichmentStatus, statusFilter),
           ),
         )
-        .orderBy(sql`${publications.publishedAt} DESC NULLS LAST`)
+        .orderBy(descNullsLast(publications.publishedAt))
         .limit(remaining);
     }
   }

@@ -1,6 +1,10 @@
 import { NextRequest } from 'next/server';
-import { eq, sql } from 'drizzle-orm';
-import { db, publications as publicationsTable } from '@/lib/server/db';
+import { eq } from 'drizzle-orm';
+import {
+  db,
+  publications as publicationsTable,
+  descNullsLast,
+} from '@/lib/server/db';
 import { apiError } from '@/lib/server/http';
 
 // CSV column whitelist — mirrors the Publication wire-shape names. Listed
@@ -55,7 +59,7 @@ export async function GET(req: NextRequest) {
       })
       .from(publicationsTable)
       .where(onlyAnalyzed ? eq(publicationsTable.analysisStatus, 'analyzed') : undefined)
-      .orderBy(sql`${publicationsTable.pressScore} DESC NULLS LAST`);
+      .orderBy(descNullsLast(publicationsTable.pressScore));
 
     const lines: string[] = [COLUMNS.join(',')];
     for (const row of rows) {

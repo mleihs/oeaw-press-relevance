@@ -1,5 +1,5 @@
-import { and, eq, gte, inArray, sql } from 'drizzle-orm';
-import { db, publications } from '@/lib/server/db';
+import { and, eq, gte, inArray } from 'drizzle-orm';
+import { db, publications, descNullsLast } from '@/lib/server/db';
 import {
   analyzePublications,
   calculatePressScore,
@@ -57,7 +57,7 @@ export async function fetchPublicationsForAnalysis(
 
   const rows = await db.query.publications.findMany({
     where: clauses.length > 0 ? and(...clauses) : undefined,
-    orderBy: sql`${publications.publishedAt} DESC NULLS LAST`,
+    orderBy: descNullsLast(publications.publishedAt),
     limit: filters.limit,
     with: {
       orgunitPublications: {

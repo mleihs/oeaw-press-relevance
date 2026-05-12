@@ -3,6 +3,8 @@ import { db, publications, reviewSessions } from '@/lib/server/db';
 import type { ReviewSession } from '@/lib/shared/types';
 import type { SessionFinishPayload } from '@/lib/shared/schemas';
 
+const FRESHNESS_FALLBACK_DAYS = 7;
+
 export class SessionNotFoundError extends Error {
   constructor(reason?: string) {
     super(reason ?? 'Session not found');
@@ -31,6 +33,24 @@ function toApi(row: typeof reviewSessions.$inferSelect): ReviewSession {
     notes: row.notes,
     created_at: new Date(row.createdAt).toISOString(),
   };
+}
+
+/**
+ * Latest review-session occurred_at, normalised to ISO-8601. Falls back to
+ * "7 days ago" when no session exists — the freshness window the queue uses
+ * for "new since last meeting" pubs. Lives here (not in review/queue.ts)
+ * because it's a sessions-domain read; queue is one of two consumers.
+ */
+export async function getLatestSessionTimestamp(): Promise<string> {
+  const [row] = await db
+    .select({ occurredAt: reviewSessions.occurredAt })
+    .from(reviewSessions)
+    .orderBy(desc(reviewSessions.occurredAt))
+    .limit(1);
+  if (row?.occurredAt) return new Date(row.occurredAt).toISOString();
+  const fallback = new Date();
+  fallback.setDate(fallback.getDate() - FRESHNESS_FALLBACK_DAYS);
+  return fallback.toISOString();
 }
 
 /**

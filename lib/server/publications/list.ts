@@ -8,19 +8,19 @@ import {
   lte,
   notInArray,
   or,
-  sql,
-  count,
   type AnyColumn,
   type SQL,
 } from 'drizzle-orm';
 import {
   db,
   publications,
-  pressReleases as pressReleasesTable,
   publicationTypes as publicationTypesTable,
   oestat6Categories as oestat6CategoriesTable,
   orgunitPublications as orgunitPublicationsTable,
+  descNullsLast,
+  ascNullsLast,
 } from '@/lib/server/db';
+import { publicationsRepo } from '@/lib/server/repos/publications';
 import { ELIGIBILITY_EXCLUDE_TYPE_UIDS } from '@/lib/shared/eligibility';
 import type { Lang, Publication, PressRelease } from '@/lib/shared/types';
 import { publicationToApi, pressReleaseToApi } from './to-api';
@@ -56,70 +56,10 @@ function csv(s: string | null): string[] {
     .filter(Boolean);
 }
 
-async function fetchPubIdsByOestat6(
-  oestat6Ids: string[],
-): Promise<Set<string>> {
-  if (oestat6Ids.length === 0) return new Set();
-  // `sql.param(arr)` binds the whole array as a single PG parameter. Plain
-  // `${arr}` would let Drizzle's sql tag expand the array into a comma-
-  // separated parenthesised list (the IN-clause shape) which an `::uuid[]`
-  // cast can't consume — see the Drizzle source in node_modules/drizzle-orm/
-  // sql/sql.cjs around the `Array.isArray(chunk)` branch.
-  const rows = await db.execute<{ publication_id: string }>(
-    sql`SELECT publication_id FROM pub_ids_by_oestat6(${sql.param(oestat6Ids)}::uuid[])`,
-  );
-  const ids = new Set<string>();
-  for (const r of rows) ids.add(r.publication_id);
-  return ids;
-}
-
-async function fetchPubIdsByHighlight(
-  ma: boolean,
-  hl: boolean,
-): Promise<Set<string>> {
-  if (!ma && !hl) return new Set();
-  const rows = await db.execute<{ publication_id: string }>(
-    sql`SELECT publication_id FROM pub_ids_by_highlight(${ma}, ${hl})`,
-  );
-  const ids = new Set<string>();
-  for (const r of rows) ids.add(r.publication_id);
-  return ids;
-}
-
-async function fetchPubIdsWithFlags(): Promise<Set<string>> {
-  const rows = await db.execute<{ publication_id: string }>(
-    sql`SELECT publication_id FROM pub_ids_with_flags()`,
-  );
-  const ids = new Set<string>();
-  for (const r of rows) ids.add(r.publication_id);
-  return ids;
-}
-
-async function fetchPubIdsByOrgunit(
-  orgunitFilterIds: string[],
-): Promise<Set<string>> {
-  if (orgunitFilterIds.length === 0) return new Set();
-  const rows = await db
-    .select({ publicationId: orgunitPublicationsTable.publicationId })
-    .from(orgunitPublicationsTable)
-    .where(inArray(orgunitPublicationsTable.orgunitId, orgunitFilterIds));
-  const ids = new Set<string>();
-  for (const r of rows) ids.add(r.publicationId);
-  return ids;
-}
-
-async function fetchPressReleasedPubIds(): Promise<Set<string>> {
-  const rows = await db
-    .select({ publicationId: pressReleasesTable.publicationId })
-    .from(pressReleasesTable)
-    .where(isNotNull(pressReleasesTable.publicationId));
-  const ids = new Set<string>();
-  for (const r of rows) {
-    if (r.publicationId) ids.add(r.publicationId);
-  }
-  return ids;
-}
-
+// Eligibility helper: resolves the "ineligible" publication-type IDs at
+// runtime by joining `webdb_uid` → `publication_types.id`. Stays here
+// because it's not a publications-table query (reads the lookup table)
+// and serves only this feature's `default_eligible` filter.
 async function fetchBadTypeIds(): Promise<string[]> {
   const rows = await db
     .select({ id: publicationTypesTable.id })
@@ -132,6 +72,9 @@ async function fetchBadTypeIds(): Promise<string[]> {
   return rows.map((r) => r.id);
 }
 
+// Oestat3 → oestat6 expansion: a user-selected `domain` (3-digit oestat) is
+// resolved to the matching 6-digit categories so the filter pre-fetch can
+// look up pubs by those concrete oestat6 IDs.
 async function fetchOestat6IdsByDomain(
   oestat3Domains: number[],
 ): Promise<string[]> {
@@ -237,15 +180,17 @@ export async function listPublications(
     badTypeIds,
   ] = await Promise.all([
     pressReleased === 'true' || pressReleased === 'false'
-      ? fetchPressReleasedPubIds()
+      ? publicationsRepo.findPressReleasedIds()
       : Promise.resolve(null),
-    oestat3Domains.length ? fetchOestat6IdsByDomain(oestat3Domains) : Promise.resolve([]),
+    oestat3Domains.length
+      ? fetchOestat6IdsByDomain(oestat3Domains)
+      : Promise.resolve([]),
     mahighlight || highlight
-      ? fetchPubIdsByHighlight(mahighlight, highlight)
+      ? publicationsRepo.findIdsByHighlight(mahighlight, highlight)
       : Promise.resolve(null),
-    flagged ? fetchPubIdsWithFlags() : Promise.resolve(null),
+    flagged ? publicationsRepo.findIdsWithFlags() : Promise.resolve(null),
     orgunitFilterIds.length
-      ? fetchPubIdsByOrgunit(orgunitFilterIds)
+      ? publicationsRepo.findIdsByOrgunit(orgunitFilterIds)
       : Promise.resolve(null),
     defaultEligible ? fetchBadTypeIds() : Promise.resolve([] as string[]),
   ]);
@@ -256,7 +201,7 @@ export async function listPublications(
   ];
   const oestatPubIdSet =
     allOestat6Ids.length > 0
-      ? await fetchPubIdsByOestat6(allOestat6Ids)
+      ? await publicationsRepo.findIdsByOestat6(allOestat6Ids)
       : null;
 
   // ---------- build WHERE clauses ----------
@@ -376,10 +321,9 @@ export async function listPublications(
   // NULLS LAST: pubs ohne Wert (z.B. published_at NULL bei ~600 Pubs aus
   // unvollständigen WebDB-Einträgen) verschwinden ans Ende statt oben in
   // der DESC-sortierten Liste zu landen — sonst dominiert das die #1-
-  // Ansicht des Press-Teams.
-  const orderClause = sortAsc
-    ? sql`${sortCol} ASC NULLS LAST`
-    : sql`${sortCol} DESC NULLS LAST`;
+  // Ansicht des Press-Teams. Helper kapselt den Drizzle-`desc()`-NULLS-Gap
+  // (siehe `lib/server/db/sort.ts`).
+  const orderClause = sortAsc ? ascNullsLast(sortCol) : descNullsLast(sortCol);
 
   const fromIdx = (page - 1) * pageSize;
 
@@ -391,32 +335,18 @@ export async function listPublications(
       ? inArray(orgunitPublicationsTable.orgunitId, orgunitFilterIds)
       : undefined;
 
-  const [mainRows, totalRows, noEligRows] = await Promise.all([
-    db.query.publications.findMany({
+  const [mainRows, total, totalNoElig] = await Promise.all([
+    publicationsRepo.findManyForList({
       where: whereMain,
       orderBy: orderClause,
       limit: pageSize,
       offset: fromIdx,
-      with: {
-        publicationTypeRef: {
-          columns: { nameDe: true, nameEn: true },
-        },
-        orgunitPublications: {
-          columns: { orgunitId: true },
-          where: embedOrgunitWhere,
-          with: {
-            orgunit: {
-              columns: { id: true, akronymDe: true, nameDe: true },
-            },
-          },
-        },
-        pressReleases: true,
-      },
+      embedOrgunitWhere,
     }),
-    db.select({ c: count() }).from(publications).where(whereMain),
+    publicationsRepo.countWhere(whereMain),
     defaultEligible
-      ? db.select({ c: count() }).from(publications).where(whereNoElig)
-      : Promise.resolve([{ c: 0 }]),
+      ? publicationsRepo.countWhere(whereNoElig)
+      : Promise.resolve(0),
   ]);
 
   // ---------- flatten ----------
@@ -447,8 +377,6 @@ export async function listPublications(
     };
   });
 
-  const total = totalRows[0]?.c ?? 0;
-  const totalNoElig = defaultEligible ? (noEligRows[0]?.c ?? 0) : 0;
   const totalHidden = defaultEligible ? Math.max(0, totalNoElig - total) : 0;
 
   return {
