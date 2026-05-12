@@ -1,6 +1,9 @@
 import { and, desc, eq, inArray, isNull, lte, or } from 'drizzle-orm';
 import { publications, descNullsLast } from '@/lib/server/db';
-import { publicationsRepo } from '@/lib/server/repos/publications';
+import {
+  publicationsRepo,
+  type PublicationQueueRow,
+} from '@/lib/server/repos/publications';
 import { getLatestSessionTimestamp } from '@/lib/server/sessions/lifecycle';
 import {
   DECISIONS,
@@ -88,11 +91,7 @@ function combineRanks<
 }
 
 // Drizzle relational findMany row → wire-shape ReviewQueueItem.
-type QueueRow = Awaited<
-  ReturnType<typeof publicationsRepo.findManyForQueue>
->[number];
-
-function flattenRow(row: QueueRow): ReviewQueueItem {
+function flattenRow(row: PublicationQueueRow): ReviewQueueItem {
   const orgunits = (row.orgunitPublications ?? [])
     .map((op) => op.orgunit)
     .filter((o): o is NonNullable<typeof o> => o !== null)
