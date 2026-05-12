@@ -281,7 +281,6 @@ export default function PublicationDetailPage({ params }: { params: Promise<{ id
           Abstracts). */}
       <PressReferenceCard
         pubId={pub.id}
-        isPressed={!!pub.press_release}
         abstractLooksGerman={(() => {
           const t = (pub.enriched_abstract || pub.abstract || pub.summary_de || pub.summary_en || '').toLowerCase();
           if (!t) return false;

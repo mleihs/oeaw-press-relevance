@@ -45,17 +45,18 @@ type Response = {
  * press_releases in press_release_embeddings), plus the top-3 nearest
  * individual pressed items as concrete references.
  *
- * Only rendered when the pub has an embedding and is NOT itself already
- * pressed (otherwise the card would just say "this pub is most similar
- * to itself", which is noise).
+ * Rendered whenever the pub has an embedding. For already-pressed pubs
+ * the score is still meaningful — `press_similarity` is the mean cosine
+ * over the top-5 OTHER pressed pubs (self excluded via the
+ * `exclude_pub_id` k-NN filter in `refresh_press_similarity_knn`), so
+ * the value tells the editor "this paper sits X% deep in the cluster
+ * alongside its peers" rather than the tautological "similar to itself".
  */
 export function PressReferenceCard({
   pubId,
-  isPressed,
   abstractLooksGerman,
 }: {
   pubId: string;
-  isPressed: boolean;
   /** When true, surfaces a hint about reduced embedding quality (SPECTER2 is
    *  English-trained; deutschsprachige Pubs sind im Korpus selten und unter
    *  den historisch gepressten praktisch nicht vertreten). The parent computes
@@ -68,7 +69,6 @@ export function PressReferenceCard({
   );
 
   if (isLoading) return null;
-  if (isPressed) return null;
   if (!data || data.press_similarity === null) return null;
   if ((data.similar?.length ?? 0) === 0) return null;
 
