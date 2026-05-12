@@ -186,7 +186,7 @@ export async function listPublications(
       ? fetchOestat6IdsByDomain(oestat3Domains)
       : Promise.resolve([]),
     mahighlight || highlight
-      ? publicationsRepo.findIdsByHighlight(mahighlight, highlight)
+      ? publicationsRepo.findIdsByHighlight({ mahighlight, highlight })
       : Promise.resolve(null),
     flagged ? publicationsRepo.findIdsWithFlags() : Promise.resolve(null),
     orgunitFilterIds.length

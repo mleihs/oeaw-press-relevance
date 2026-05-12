@@ -1,5 +1,5 @@
-import { and, desc, eq, gte, inArray, isNull, lte, or } from 'drizzle-orm';
-import { db, publications, descNullsLast } from '@/lib/server/db';
+import { and, desc, eq, inArray, isNull, lte, or } from 'drizzle-orm';
+import { publications, descNullsLast } from '@/lib/server/db';
 import { publicationsRepo } from '@/lib/server/repos/publications';
 import { getLatestSessionTimestamp } from '@/lib/server/sessions/lifecycle';
 import {
@@ -27,24 +27,6 @@ export interface ReviewQueueResult {
   sort: 'press_score' | 'combined' | 'decided_at';
   counts: { total: number; flagged: number; mahl: number; fresh: number };
   decision_counts: Record<Decision, number>;
-}
-
-// Fresh+high-score window is queue-specific business logic (analyzed +
-// score threshold + window). Stays inline rather than in the repo because
-// only one caller and FRESH_SCORE_THRESHOLD is a queue-domain constant.
-async function fetchFreshHighScoreIds(sinceTs: string): Promise<Set<string>> {
-  const rows = await db
-    .select({ id: publications.id })
-    .from(publications)
-    .where(
-      and(
-        eq(publications.analysisStatus, 'analyzed'),
-        gte(publications.pressScore, FRESH_SCORE_THRESHOLD),
-        gte(publications.updatedAt, sinceTs),
-        eq(publications.archived, false),
-      ),
-    );
-  return new Set(rows.map((r) => r.id));
 }
 
 async function fetchDecisionCounts(): Promise<Record<Decision, number>> {
@@ -179,8 +161,11 @@ export async function buildReviewQueue(
   const sinceTs = await getLatestSessionTimestamp();
   const [flaggedIds, mahlIds, freshIds] = await Promise.all([
     publicationsRepo.findIdsWithFlags(),
-    publicationsRepo.findIdsByHighlight(true, false),
-    fetchFreshHighScoreIds(sinceTs),
+    publicationsRepo.findIdsByHighlight({ mahighlight: true, highlight: false }),
+    publicationsRepo.findIdsByFreshness({
+      sinceTs,
+      minPressScore: FRESH_SCORE_THRESHOLD,
+    }),
   ]);
 
   const unionIds = new Set<string>([...flaggedIds, ...mahlIds, ...freshIds]);

@@ -23,6 +23,7 @@
  *   - findIdsWithFlags            no args
  *   - findIdsByOrgunit            empty + multi
  *   - findPressReleasedIds        no args
+ *   - findIdsByFreshness          recent window
  *   - readFlagNotes               null vs []
  *
  * If a new repo method lands, ADD a case here before merging.
@@ -135,12 +136,21 @@ async function main() {
   assert(e2.size === e1.size, 'findIdsByOestat6 dedupes via SQL');
 
   // findIdsByHighlight: all four branches
-  const h00 = await publicationsRepo.findIdsByHighlight(false, false);
-  assert(h00.size === 0, 'findIdsByHighlight(false,false) early-returns empty');
-  const h10 = await publicationsRepo.findIdsByHighlight(true, false);
-  console.log('findIdsByHighlight(true,false):', h10.size);
-  const h11 = await publicationsRepo.findIdsByHighlight(true, true);
-  console.log('findIdsByHighlight(true,true):', h11.size);
+  const h00 = await publicationsRepo.findIdsByHighlight({
+    mahighlight: false,
+    highlight: false,
+  });
+  assert(h00.size === 0, 'findIdsByHighlight {false,false} early-returns empty');
+  const h10 = await publicationsRepo.findIdsByHighlight({
+    mahighlight: true,
+    highlight: false,
+  });
+  console.log('findIdsByHighlight mahighlight:', h10.size);
+  const h11 = await publicationsRepo.findIdsByHighlight({
+    mahighlight: true,
+    highlight: true,
+  });
+  console.log('findIdsByHighlight ma+hl:', h11.size);
 
   // findIdsWithFlags
   const flagged = await publicationsRepo.findIdsWithFlags();
@@ -155,6 +165,24 @@ async function main() {
   // findPressReleasedIds
   const pressed = await publicationsRepo.findPressReleasedIds();
   console.log('findPressReleasedIds:', pressed.size);
+
+  // findIdsByFreshness: a wide-enough window so the smoke isn't sensitive
+  // to local clock skew or empty test fixtures. Lower-bound the score to
+  // exercise the gte clause without depending on any particular floor.
+  const fresh = await publicationsRepo.findIdsByFreshness({
+    sinceTs: '2020-01-01T00:00:00Z',
+    minPressScore: 0.0,
+  });
+  console.log('findIdsByFreshness wide window:', fresh.size);
+  const freshHigh = await publicationsRepo.findIdsByFreshness({
+    sinceTs: '2020-01-01T00:00:00Z',
+    minPressScore: 0.7,
+  });
+  console.log('findIdsByFreshness high-score:', freshHigh.size);
+  assert(
+    freshHigh.size <= fresh.size,
+    'high-score subset must not exceed wide-window set',
+  );
 
   // readFlagNotes: missing pub → undefined; existing pub → array
   const flagsMissing = await publicationsRepo.readFlagNotes(

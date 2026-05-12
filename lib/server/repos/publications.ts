@@ -1,6 +1,8 @@
 import {
+  and,
   count,
   eq,
+  gte,
   inArray,
   isNotNull,
   sql,
@@ -63,144 +65,6 @@ const QUEUE_WITH = {
   },
 } as const;
 
-export type PublicationDetailRow = NonNullable<
-  Awaited<ReturnType<typeof findByIdDetail>>
->;
-export type PublicationListRow = Awaited<
-  ReturnType<typeof findManyForList>
->[number];
-export type PublicationQueueRow = Awaited<
-  ReturnType<typeof findManyForQueue>
->[number];
-
-async function findByIdDetail(pubId: string) {
-  return db.query.publications.findFirst({
-    where: eq(publications.id, pubId),
-    with: DETAIL_WITH,
-  });
-}
-
-async function findManyForList(opts: {
-  where: SQL | undefined;
-  orderBy: SQL;
-  limit: number;
-  offset: number;
-  embedOrgunitWhere?: SQL;
-}) {
-  return db.query.publications.findMany({
-    where: opts.where,
-    orderBy: opts.orderBy,
-    limit: opts.limit,
-    offset: opts.offset,
-    with: listWith(opts.embedOrgunitWhere),
-  });
-}
-
-async function findManyForQueue(opts: {
-  where: SQL | undefined;
-  orderBy: SQL | SQL[];
-}) {
-  return db.query.publications.findMany({
-    where: opts.where,
-    orderBy: opts.orderBy,
-    with: QUEUE_WITH,
-  });
-}
-
-async function countWhere(where: SQL | undefined): Promise<number> {
-  const rows = await db
-    .select({ c: count() })
-    .from(publications)
-    .where(where);
-  return rows[0]?.c ?? 0;
-}
-
-// Returns raw GROUP BY rows; the caller maps to its own bucket shape.
-// Always restricts to `archived=false` because the queue's UI counts
-// exclude archived rows by contract.
-async function countByDecision(): Promise<
-  Array<{ decision: string | null; c: number }>
-> {
-  return db
-    .select({ decision: publications.decision, c: count() })
-    .from(publications)
-    .where(eq(publications.archived, false))
-    .groupBy(publications.decision);
-}
-
-// Filter-ID-set pre-fetches. Three of these wrap SQL functions whose join
-// logic lives in plpgsql (`pub_ids_by_oestat6`, `pub_ids_by_highlight`,
-// `pub_ids_with_flags`) — see ADR 0005 for the "stays in Postgres"
-// rationale. The remaining two are pure Drizzle builder reads on the
-// junction tables.
-
-// `sql.param(arr)` binds the whole array as one PG parameter. Without it,
-// Drizzle's sql tag expands JS arrays into `($1, $2, ...)` (IN-clause
-// shape) which an `::uuid[]` cast cannot consume — Phase-3 latent bug,
-// fixed in commit 4b0215f. See docs/TESTING.md §5.1.
-async function findIdsByOestat6(
-  oestat6Ids: string[],
-): Promise<Set<string>> {
-  if (oestat6Ids.length === 0) return new Set();
-  const rows = await db.execute<{ publication_id: string }>(
-    sql`SELECT publication_id FROM pub_ids_by_oestat6(${sql.param(oestat6Ids)}::uuid[])`,
-  );
-  const ids = new Set<string>();
-  for (const r of rows) ids.add(r.publication_id);
-  return ids;
-}
-
-async function findIdsByHighlight(
-  ma: boolean,
-  hl: boolean,
-): Promise<Set<string>> {
-  if (!ma && !hl) return new Set();
-  const rows = await db.execute<{ publication_id: string }>(
-    sql`SELECT publication_id FROM pub_ids_by_highlight(${ma}, ${hl})`,
-  );
-  const ids = new Set<string>();
-  for (const r of rows) ids.add(r.publication_id);
-  return ids;
-}
-
-async function findIdsWithFlags(): Promise<Set<string>> {
-  const rows = await db.execute<{ publication_id: string }>(
-    sql`SELECT publication_id FROM pub_ids_with_flags()`,
-  );
-  const ids = new Set<string>();
-  for (const r of rows) ids.add(r.publication_id);
-  return ids;
-}
-
-async function findIdsByOrgunit(
-  orgunitFilterIds: string[],
-): Promise<Set<string>> {
-  if (orgunitFilterIds.length === 0) return new Set();
-  const rows = await db
-    .select({ publicationId: orgunitPublicationsTable.publicationId })
-    .from(orgunitPublicationsTable)
-    .where(inArray(orgunitPublicationsTable.orgunitId, orgunitFilterIds));
-  const ids = new Set<string>();
-  for (const r of rows) ids.add(r.publicationId);
-  return ids;
-}
-
-async function findPressReleasedIds(): Promise<Set<string>> {
-  const rows = await db
-    .select({ publicationId: pressReleasesTable.publicationId })
-    .from(pressReleasesTable)
-    .where(isNotNull(pressReleasesTable.publicationId));
-  const ids = new Set<string>();
-  for (const r of rows) {
-    if (r.publicationId) ids.add(r.publicationId);
-  }
-  return ids;
-}
-
-// Mutations. Repo returns the post-trigger Drizzle row; consumer maps via
-// `publicationToApi`. Triggers (e.g. `trg_publications_decided_at_sync`)
-// fire inside Postgres, so .returning() sees the synchronised row.
-
 export interface UpdateDecisionSet {
   decision: Decision;
   decidedBy: string | null;
@@ -209,55 +73,212 @@ export interface UpdateDecisionSet {
   decidedInSession: string | null;
 }
 
-async function updateDecision(
-  pubId: string,
-  set: UpdateDecisionSet,
-): Promise<PublicationRow | undefined> {
-  const [row] = await db
-    .update(publications)
-    .set(set)
-    .where(eq(publications.id, pubId))
-    .returning();
-  return row;
-}
-
-async function readFlagNotes(pubId: string): Promise<FlagNote[] | undefined> {
-  const [row] = await db
-    .select({ flagNotes: publications.flagNotes })
-    .from(publications)
-    .where(eq(publications.id, pubId))
-    .limit(1);
-  if (!row) return undefined;
-  return (row.flagNotes as FlagNote[] | null) ?? [];
-}
-
-async function updateFlagNotes(
-  pubId: string,
-  notes: FlagNote[],
-): Promise<void> {
-  await db
-    .update(publications)
-    .set({ flagNotes: notes })
-    .where(eq(publications.id, pubId));
-}
-
-async function deleteById(pubId: string): Promise<void> {
-  await db.delete(publications).where(eq(publications.id, pubId));
-}
-
+/**
+ * Thin Drizzle-builder surface for the `publications` table plus the
+ * filter-ID pre-fetches consumed by list/queue. Returns raw Drizzle rows
+ * (camelCase); wire-shape mapping (`publicationToApi`) stays in feature
+ * code (ADR 0003). See `lib/server/repos/README.md` for the threshold
+ * rules and the per-method consumer map.
+ */
 export const publicationsRepo = {
-  findByIdDetail,
-  findManyForList,
-  findManyForQueue,
-  countWhere,
-  countByDecision,
-  findIdsByOestat6,
-  findIdsByHighlight,
-  findIdsWithFlags,
-  findIdsByOrgunit,
-  findPressReleasedIds,
-  updateDecision,
-  readFlagNotes,
-  updateFlagNotes,
-  deleteById,
+  // ---- Lookups ----
+
+  async findByIdDetail(pubId: string) {
+    return db.query.publications.findFirst({
+      where: eq(publications.id, pubId),
+      with: DETAIL_WITH,
+    });
+  },
+
+  async findManyForList(opts: {
+    where: SQL | undefined;
+    orderBy: SQL;
+    limit: number;
+    offset: number;
+    embedOrgunitWhere?: SQL;
+  }) {
+    return db.query.publications.findMany({
+      where: opts.where,
+      orderBy: opts.orderBy,
+      limit: opts.limit,
+      offset: opts.offset,
+      with: listWith(opts.embedOrgunitWhere),
+    });
+  },
+
+  async findManyForQueue(opts: {
+    where: SQL | undefined;
+    orderBy: SQL | SQL[];
+  }) {
+    return db.query.publications.findMany({
+      where: opts.where,
+      orderBy: opts.orderBy,
+      with: QUEUE_WITH,
+    });
+  },
+
+  // ---- Counts ----
+
+  async countWhere(where: SQL | undefined): Promise<number> {
+    const rows = await db
+      .select({ c: count() })
+      .from(publications)
+      .where(where);
+    return rows[0]?.c ?? 0;
+  },
+
+  // Returns raw GROUP BY rows; the caller maps to its own bucket shape.
+  // Always restricts to `archived=false` because the queue's UI counts
+  // exclude archived rows by contract.
+  async countByDecision(): Promise<
+    Array<{ decision: string | null; c: number }>
+  > {
+    return db
+      .select({ decision: publications.decision, c: count() })
+      .from(publications)
+      .where(eq(publications.archived, false))
+      .groupBy(publications.decision);
+  },
+
+  // ---- Filter-ID-set pre-fetches ----
+  //
+  // Three wrap SQL functions whose join logic lives in plpgsql
+  // (`pub_ids_by_oestat6`, `pub_ids_by_highlight`, `pub_ids_with_flags`) —
+  // see ADR 0005 for the "stays in Postgres" rationale. The remaining
+  // three are Drizzle-builder reads on the publications table or its
+  // junction tables.
+
+  // `sql.param(arr)` binds the whole array as one PG parameter. Without
+  // it, Drizzle's sql tag expands JS arrays into `($1, $2, ...)` (IN-
+  // clause shape) which an `::uuid[]` cast cannot consume — Phase-3
+  // latent bug, fixed in commit 4b0215f. See docs/TESTING.md §5.1.
+  async findIdsByOestat6(oestat6Ids: string[]): Promise<Set<string>> {
+    if (oestat6Ids.length === 0) return new Set();
+    const rows = await db.execute<{ publication_id: string }>(
+      sql`SELECT publication_id FROM pub_ids_by_oestat6(${sql.param(oestat6Ids)}::uuid[])`,
+    );
+    const ids = new Set<string>();
+    for (const r of rows) ids.add(r.publication_id);
+    return ids;
+  },
+
+  // Named-args because the two boolean flags carry distinct meaning;
+  // positional `(true, false)` at the call site forces the reader back
+  // to the SQL function's signature to disambiguate.
+  async findIdsByHighlight(opts: {
+    mahighlight: boolean;
+    highlight: boolean;
+  }): Promise<Set<string>> {
+    if (!opts.mahighlight && !opts.highlight) return new Set();
+    const rows = await db.execute<{ publication_id: string }>(
+      sql`SELECT publication_id FROM pub_ids_by_highlight(${opts.mahighlight}, ${opts.highlight})`,
+    );
+    const ids = new Set<string>();
+    for (const r of rows) ids.add(r.publication_id);
+    return ids;
+  },
+
+  async findIdsWithFlags(): Promise<Set<string>> {
+    const rows = await db.execute<{ publication_id: string }>(
+      sql`SELECT publication_id FROM pub_ids_with_flags()`,
+    );
+    const ids = new Set<string>();
+    for (const r of rows) ids.add(r.publication_id);
+    return ids;
+  },
+
+  async findIdsByOrgunit(orgunitFilterIds: string[]): Promise<Set<string>> {
+    if (orgunitFilterIds.length === 0) return new Set();
+    const rows = await db
+      .select({ publicationId: orgunitPublicationsTable.publicationId })
+      .from(orgunitPublicationsTable)
+      .where(inArray(orgunitPublicationsTable.orgunitId, orgunitFilterIds));
+    const ids = new Set<string>();
+    for (const r of rows) ids.add(r.publicationId);
+    return ids;
+  },
+
+  async findPressReleasedIds(): Promise<Set<string>> {
+    const rows = await db
+      .select({ publicationId: pressReleasesTable.publicationId })
+      .from(pressReleasesTable)
+      .where(isNotNull(pressReleasesTable.publicationId));
+    const ids = new Set<string>();
+    for (const r of rows) {
+      if (r.publicationId) ids.add(r.publicationId);
+    }
+    return ids;
+  },
+
+  // `analyzed AND press_score >= minPressScore AND updated_at >= sinceTs
+  // AND archived = false` — the "fresh + relevant" window the review
+  // queue uses to surface newly analyzed high-score pubs. Both thresholds
+  // are caller-supplied (queue-domain constants), so this stays a pure
+  // pub-table read fit for the repo.
+  async findIdsByFreshness(opts: {
+    sinceTs: string;
+    minPressScore: number;
+  }): Promise<Set<string>> {
+    const rows = await db
+      .select({ id: publications.id })
+      .from(publications)
+      .where(
+        and(
+          eq(publications.analysisStatus, 'analyzed'),
+          gte(publications.pressScore, opts.minPressScore),
+          gte(publications.updatedAt, opts.sinceTs),
+          eq(publications.archived, false),
+        ),
+      );
+    return new Set(rows.map((r) => r.id));
+  },
+
+  // ---- Mutations ----
+  //
+  // Repo returns the post-trigger Drizzle row; consumer maps via
+  // `publicationToApi`. Triggers (e.g. `trg_publications_decided_at_sync`)
+  // fire inside Postgres, so .returning() sees the synchronised row.
+
+  async updateDecision(
+    pubId: string,
+    set: UpdateDecisionSet,
+  ): Promise<PublicationRow | undefined> {
+    const [row] = await db
+      .update(publications)
+      .set(set)
+      .where(eq(publications.id, pubId))
+      .returning();
+    return row;
+  },
+
+  async readFlagNotes(pubId: string): Promise<FlagNote[] | undefined> {
+    const [row] = await db
+      .select({ flagNotes: publications.flagNotes })
+      .from(publications)
+      .where(eq(publications.id, pubId))
+      .limit(1);
+    if (!row) return undefined;
+    return (row.flagNotes as FlagNote[] | null) ?? [];
+  },
+
+  async updateFlagNotes(pubId: string, notes: FlagNote[]): Promise<void> {
+    await db
+      .update(publications)
+      .set({ flagNotes: notes })
+      .where(eq(publications.id, pubId));
+  },
+
+  async deleteById(pubId: string): Promise<void> {
+    await db.delete(publications).where(eq(publications.id, pubId));
+  },
 } as const;
+
+export type PublicationDetailRow = NonNullable<
+  Awaited<ReturnType<typeof publicationsRepo.findByIdDetail>>
+>;
+export type PublicationListRow = Awaited<
+  ReturnType<typeof publicationsRepo.findManyForList>
+>[number];
+export type PublicationQueueRow = Awaited<
+  ReturnType<typeof publicationsRepo.findManyForQueue>
+>[number];
