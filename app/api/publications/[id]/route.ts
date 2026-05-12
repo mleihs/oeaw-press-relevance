@@ -3,7 +3,6 @@ import {
   getPublicationById,
   deletePublication,
 } from '@/lib/server/publications/fetch';
-import { PublicationNotFoundError } from '@/lib/server/publications/errors';
 
 export async function GET(
   _req: NextRequest,
@@ -12,11 +11,9 @@ export async function GET(
   try {
     const { id } = await params;
     const pub = await getPublicationById(id);
+    if (!pub) return NextResponse.json({ error: 'Publication not found' }, { status: 404 });
     return NextResponse.json(pub);
   } catch (err) {
-    if (err instanceof PublicationNotFoundError) {
-      return NextResponse.json({ error: err.message }, { status: 404 });
-    }
     const message = err instanceof Error ? err.message : 'Unknown error';
     return NextResponse.json({ error: message }, { status: 500 });
   }

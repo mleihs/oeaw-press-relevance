@@ -37,6 +37,7 @@ the *why* without spelunking through commit messages and memory files.
 | 0007 | [Local Supabase is canonical for analysis data](0007-local-canonical-for-analysis-data.md) | accepted |
 | 0008 | [Domain-modules (`triage/`, `pipeline/`, `coverage/`) deferred](0008-domain-modules-deferred.md) | accepted |
 | 0009 | [Server-Components fetch through `lib/server/*`; force-dynamic default](0009-rsc-server-components-pilot.md) | accepted |
+| 0010 | [RSC mutation flow: invalidate + `router.refresh()`](0010-rsc-mutation-router-refresh.md) | accepted |
 
 ## When to write an ADR
 

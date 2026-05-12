@@ -339,8 +339,20 @@ Stack" markieren.
       `from: "app-pages", allow: [..., "server"]` enabled — see ADR 0009.
 
 **Phase 1 (nach Pilot-Validation, klare Wins):**
-- [ ] `/publications/[id]` (Detail) → RSC für Pub-Daten, similar-pressed
-      bleibt Client-Card (lazy)
+- [x] `/publications/[id]` (Detail) → RSC für Pub-Daten, similar-pressed
+      bleibt Client-Card (lazy). **Landed 2026-05-12.** Page is now an
+      `async` server-component calling
+      `lib/server/publications/fetch.ts::getPublicationById` directly
+      (refactored to return `PublicationWithRelations | null` so the RSC
+      can `notFound()` and the route handler can map to 404). Client
+      subtree lives in `_components/detail-client.tsx`; `Breadcrumb`
+      extracted to `_components/breadcrumb.tsx` and shared by the page,
+      `error.tsx`, and `not-found.tsx` (same A1/pilot pattern as
+      `back-link.tsx`). Mutation flow is the new piece: `DecisionToolbar`
+      and `PublicationFlag` now call **both** `invalidateQueries(...)`
+      AND `router.refresh()` on success — Option A, codified as
+      [ADR 0010](docs/adr/0010-rsc-mutation-router-refresh.md). Smoke at
+      `scripts/smoke/rsc/publications-detail.ts`.
 - [ ] `/press-releases` (List) → RSC
 
 **Phase 2 (komplexer, evaluieren):**

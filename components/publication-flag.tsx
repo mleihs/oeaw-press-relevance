@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Pin, Loader2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -72,6 +73,7 @@ export function PublicationFlag({ pubId, flagNotes, onChange, size = 'md', decis
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState('');
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   const myKey = norm(reviewerName.trim() || DEFAULT_REVIEWER_NAME);
   const myExisting = flagNotes.find((n) => norm(n.by) === myKey);
@@ -106,9 +108,13 @@ export function PublicationFlag({ pubId, flagNotes, onChange, size = 'md', decis
     },
     onSuccess: (notes) => {
       onChange?.(notes);
-      // Bust list-page caches so the row reflects the new flag count.
+      // Cache invalidation for client-cached surfaces + router.refresh() for
+      // RSC consumers (e.g. `/publications/[id]` post-ADR 0009). Both run;
+      // the refresh is a no-op when no Server-Component segment reads the
+      // pub. See ADR 0010 for the canonical pattern.
       queryClient.invalidateQueries({ queryKey: QK.publications });
       queryClient.invalidateQueries({ queryKey: QK.publication(pubId) });
+      router.refresh();
       setOpen(false);
     },
     onError: (err) => {
@@ -131,6 +137,7 @@ export function PublicationFlag({ pubId, flagNotes, onChange, size = 'md', decis
       onChange?.(notes);
       queryClient.invalidateQueries({ queryKey: QK.publications });
       queryClient.invalidateQueries({ queryKey: QK.publication(pubId) });
+      router.refresh();
       setOpen(false);
     },
     onError: (err) => {

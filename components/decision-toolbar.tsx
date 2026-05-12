@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2, CalendarIcon, MessageSquarePlus } from 'lucide-react';
 import { toast } from 'sonner';
@@ -114,6 +115,7 @@ export function DecisionToolbar({ pub, inSession = false, onDecided }: DecisionT
   const [pendingDecision, setPendingDecision] = useState<Decision | null>(null);
   const [snoozeOpen, setSnoozeOpen] = useState(false);
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   const mutation = useMutation({
     mutationFn: async (payload: { decision: Decision; snooze_until: string | null }): Promise<DecisionResponse> => {
@@ -136,10 +138,17 @@ export function DecisionToolbar({ pub, inSession = false, onDecided }: DecisionT
       return data as DecisionResponse;
     },
     onSuccess: (data, variables) => {
+      // Cache-side invalidation for any client surface (review queue,
+      // publications list, legacy detail cache) that still reads the data
+      // through useApiQuery. Server-side router.refresh() re-runs the RSC
+      // page (e.g. `/publications/[id]` after ADR 0009) so prop-fed views
+      // see the new decision without a cache layer. Idempotent — refresh
+      // is a no-op for fully-client routes that have no RSC data segment.
       queryClient.invalidateQueries({ queryKey: QK.publications });
       queryClient.invalidateQueries({ queryKey: QK.publicationsList });
       queryClient.invalidateQueries({ queryKey: QK.publication(pub.id) });
       queryClient.invalidateQueries({ queryKey: QK.reviewQueue });
+      router.refresh();
       notifyMeistertask(data.meistertask);
       if (variables.decision !== 'undecided') {
         toast.success(`Entscheidung gespeichert: ${getDecisionLabel(variables.decision)}`);

@@ -5,7 +5,6 @@ import type {
   PressRelease,
   PublicationWithRelations,
 } from '@/lib/shared/types';
-import { PublicationNotFoundError } from './errors';
 import {
   orgunitToApi,
   personToApi,
@@ -23,14 +22,18 @@ import {
  * the join traversal.
  *
  * Repo returns the raw Drizzle row with embedded relations; this function
- * owns the per-feature flattening + DTO mapping. Missing row → 404.
+ * owns the per-feature flattening + DTO mapping. Missing row → `null` so
+ * RSC callers can `notFound()` directly (per ADR 0009 pilot pattern) and
+ * route handlers can map to 404. `PublicationNotFoundError` is still raised
+ * by the mutation paths (`decisions.ts`, `flag.ts`) where acting on an
+ * absent row is a real error.
  */
 export async function getPublicationById(
   pubId: string,
-): Promise<PublicationWithRelations> {
+): Promise<PublicationWithRelations | null> {
   const row = await publicationsRepo.findByIdDetail(pubId);
 
-  if (!row) throw new PublicationNotFoundError();
+  if (!row) return null;
 
   // Press-release: prefer DE over EN when both exist for the same pub.
   // Defensive sort by lang because the relational query order isn't

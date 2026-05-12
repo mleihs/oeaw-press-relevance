@@ -54,3 +54,6 @@ when the client mutates the prefetched cache, which the pilot does not.
 - `eslint.config.mjs` (`app-pages → server` rule)
 - `lib/server/researchers/detail.ts`, `app/persons/[id]/page.tsx`
 - ADR 0005, ADR 0006 (the one this amends)
+- [ADR 0010](0010-rsc-mutation-router-refresh.md) extends decision #4
+  with the mutation pattern (`invalidateQueries` + `router.refresh()`)
+  introduced on `/publications/[id]` in Phase-A4 phase 1.
