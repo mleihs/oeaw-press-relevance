@@ -289,14 +289,19 @@ Dev-verified `/api/press-releases?stats=true`, `?orphans=true`,
 
 ## Phase A4 — Server-Components
 
-**Status:** [x] **Pilot done 2026-05-12** on `/persons/[id]`. Validated:
-TTFB-Win + zero hydration-mismatch + decision-toolbar unaffected (not
-on this page; other pages untouched). See pilot closeout below and
-[ADR 0009](docs/adr/0009-rsc-server-components-pilot.md). **Phase 1 + 2
-pages still pending** — pilot proved the pattern is viable, follow-ups
-are tracked in the Acceptance section. **Aufwand pilot:** ~3h.
-**Voraussetzung:** A2 done (Repos sind das, was RSCs sauber aufrufen
-können — `useApiQuery` wird durch direkte Repo-Calls ersetzt).
+**Status:** [x] **Pilot done 2026-05-12** on `/persons/[id]` +
+**Phase 1 page `/publications/[id]` done 2026-05-12**. Pilot validated:
+TTFB-Win + zero hydration-mismatch. Phase-1 page validated: first
+mutation-bearing RSC page in the codebase + ADR 0010 (props +
+`router.refresh()`) closes the ADR-0009 open question on mutation flow.
+See [ADR 0009](docs/adr/0009-rsc-server-components-pilot.md),
+[ADR 0010](docs/adr/0010-rsc-mutation-router-refresh.md), pilot closeout
+below, and the phase-1 Acceptance checkbox. **Remaining Phase 1
+(`/press-releases`) + Phase 2 (`/`, `/publications` list) pages still
+pending.** **Aufwand pilot:** ~3h; **phase-1
+`/publications/[id]`:** ~3h. **Voraussetzung:** A2 done (Repos sind das,
+was RSCs sauber aufrufen können — `useApiQuery` wird durch direkte
+Repo-Calls ersetzt).
 
 ### Goal
 Pages mit hauptsächlich read-only Initial-State zu Server Components

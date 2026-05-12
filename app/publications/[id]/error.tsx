@@ -10,7 +10,7 @@ export default function PublicationDetailError({ error }: { error: Error & { dig
   return (
     <div className="max-w-4xl mx-auto space-y-4">
       <PublicationBreadcrumb />
-      <ApiErrorCard message={error.message} />
+      <ApiErrorCard title="Fehler beim Laden" message={error.message} />
     </div>
   );
 }
