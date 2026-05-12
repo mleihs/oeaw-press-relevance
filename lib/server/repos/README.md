@@ -58,6 +58,19 @@ semantic clustering). Today there are **zero TypeScript consumers** of
 Writing the repo now would mean a file with no callers. Premature
 abstraction trumps planning symmetry; the repo lands when A6 starts.
 
+### Why no `triage/`, `pipeline/`, `coverage/` domain-modules
+
+The Phase-A1 plan proposed bundling cross-feature operations into
+domain folders. The audit (commit pending alongside this update) found
+that Phase-3 + Phase-A2 had already eliminated the fan-out the plan
+anticipated — `applyDecision` is single-orchestrator, pipeline state
+is a typed union, `promote_press_release_orphans` is a SQL function
+whose two callers can't import `lib/server/`. See
+[ADR 0008](../../../docs/adr/0008-domain-modules-deferred.md) for the
+per-domain rationale. Same disciplinary pattern as the
+entity-by-entity skip table above: structure follows the smell, not
+the diagram.
+
 ## Drizzle gotchas to know
 
 See `docs/TESTING.md` §5 for the catalogue. The ones the publications
