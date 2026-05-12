@@ -138,12 +138,10 @@ export function DecisionToolbar({ pub, inSession = false, onDecided }: DecisionT
       return data as DecisionResponse;
     },
     onSuccess: (data, variables) => {
-      // Cache-side invalidation for any client surface (review queue,
-      // publications list, legacy detail cache) that still reads the data
-      // through useApiQuery. Server-side router.refresh() re-runs the RSC
-      // page (e.g. `/publications/[id]` after ADR 0009) so prop-fed views
-      // see the new decision without a cache layer. Idempotent — refresh
-      // is a no-op for fully-client routes that have no RSC data segment.
+      // Invalidate cache keys for client surfaces (review queue,
+      // publications list) AND call router.refresh() for RSC consumers
+      // (e.g. `/publications/[id]`). Both run; the refresh is cheap on
+      // fully-client routes. Canonical pattern: ADR 0010.
       queryClient.invalidateQueries({ queryKey: QK.publications });
       queryClient.invalidateQueries({ queryKey: QK.publicationsList });
       queryClient.invalidateQueries({ queryKey: QK.publication(pub.id) });

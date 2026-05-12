@@ -8,7 +8,7 @@ import { ChevronRight } from 'lucide-react';
 // error/not-found surfaces can render a parent-only crumb.
 export function PublicationBreadcrumb({ title }: { title?: string }) {
   return (
-    <nav className="flex items-center gap-1.5 text-sm text-muted-foreground">
+    <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-sm text-muted-foreground">
       <Link href="/publications" className="hover:text-brand transition-colors">
         Publikationen
       </Link>

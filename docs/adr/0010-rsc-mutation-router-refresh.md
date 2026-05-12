@@ -31,7 +31,7 @@ Mutation components used inside RSC pages call **both**
 `queryClient.invalidateQueries(...)` AND `router.refresh()` on success.
 The refresh is the load-bearing step for RSC consumers; cache
 invalidation stays so that legacy client-rendered surfaces
-(`/review`, `/publications` list, `/dashboard`) still update through
+(`/review`, `/publications` list, `/` dashboard) still update through
 their `useApiQuery` cache keys. Both are idempotent — `router.refresh()`
 is essentially a no-op on routes whose tree contains no Server-Component
 data segment.
@@ -39,9 +39,10 @@ data segment.
 Concretely, today's `DecisionToolbar.onSuccess` and the two mutations in
 `PublicationFlag` (`save`, `remove`) both invalidate the publications-
 list / queue / detail keys **and** call `router.refresh()`. The
-`MeistertaskButton` remains untouched: its mutation only flips local
-component state (`pushed → idle/pushed`) and the page-level pub row's
-`meistertask_task_id` is not read elsewhere on the same page.
+`MeistertaskButton` remains untouched: its mutation drives the local
+`idle → pushing → pushed | idle` state machine of its own button, and
+the page-level pub row's `meistertask_task_id` is not read elsewhere
+on the same page.
 
 ## Consequences
 
@@ -55,10 +56,11 @@ component state (`pushed → idle/pushed`) and the page-level pub row's
 - ⚠️ A future mutation surface added on a different feature must
   remember the same pattern. Mitigated by inline comments at both
   call sites pointing back to this ADR.
-- ⚠️ `router.refresh()` triggers a fresh server fetch even on
-  fully-client routes (still cheap — Next short-circuits when no RSC
-  payload is needed). Not measurable in dev; revisit if observability
-  on production shows redundant `force-dynamic` re-renders.
+- ⚠️ `router.refresh()` triggers a Server-Component re-render even on
+  fully-client routes (still cheap — the route layout is static here
+  and no page-level RSC data fetch happens). Not measurable in dev;
+  revisit if production observability shows redundant server work on
+  mutation-heavy client pages.
 
 ## Alternatives considered
 

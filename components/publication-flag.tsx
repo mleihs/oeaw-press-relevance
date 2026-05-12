@@ -108,10 +108,7 @@ export function PublicationFlag({ pubId, flagNotes, onChange, size = 'md', decis
     },
     onSuccess: (notes) => {
       onChange?.(notes);
-      // Cache invalidation for client-cached surfaces + router.refresh() for
-      // RSC consumers (e.g. `/publications/[id]` post-ADR 0009). Both run;
-      // the refresh is a no-op when no Server-Component segment reads the
-      // pub. See ADR 0010 for the canonical pattern.
+      // Invalidate cache + router.refresh() — canonical pattern per ADR 0010.
       queryClient.invalidateQueries({ queryKey: QK.publications });
       queryClient.invalidateQueries({ queryKey: QK.publication(pubId) });
       router.refresh();
@@ -135,6 +132,7 @@ export function PublicationFlag({ pubId, flagNotes, onChange, size = 'md', decis
     },
     onSuccess: (notes) => {
       onChange?.(notes);
+      // Same dual-pattern as save — see ADR 0010.
       queryClient.invalidateQueries({ queryKey: QK.publications });
       queryClient.invalidateQueries({ queryKey: QK.publication(pubId) });
       router.refresh();
