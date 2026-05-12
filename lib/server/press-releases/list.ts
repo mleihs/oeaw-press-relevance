@@ -1,6 +1,7 @@
 import { count, desc, gte, isNotNull, isNull, type SQL } from 'drizzle-orm';
 import { db, pressReleases as pressReleasesTable } from '@/lib/server/db';
-import type { Lang, PressRelease } from '@/lib/shared/types';
+import { pressReleaseToApi } from '@/lib/server/publications/to-api';
+import type { PressRelease } from '@/lib/shared/types';
 
 export interface PressReleasesStats {
   total: number;
@@ -18,33 +19,6 @@ export interface PressReleasesListResult {
 export interface PressReleasesListFilters {
   orphans: 'true' | 'false' | null;
   withPub: boolean;
-}
-
-// Explicit Drizzle row -> shared PressRelease DTO. Column renames in the
-// schema surface here at compile time (Plan §7.1).
-function toApi(row: typeof pressReleasesTable.$inferSelect): PressRelease {
-  return {
-    id: row.id,
-    publication_id: row.publicationId,
-    doi: row.doi,
-    url: row.url,
-    released_at: row.releasedAt,
-    lang: row.lang as Lang | null,
-    paper_title: row.paperTitle,
-    news_title: row.newsTitle,
-    source_news_uid: row.sourceNewsUid,
-    abstract: row.abstract,
-    authors: row.authors,
-    journal: row.journal,
-    paper_year: row.paperYear,
-    keywords: row.keywords,
-    openalex_id: row.openalexId,
-    enrichment_status: row.enrichmentStatus as PressRelease['enrichment_status'],
-    enriched_at: row.enrichedAt ? new Date(row.enrichedAt).toISOString() : null,
-    created_at: new Date(row.createdAt).toISOString(),
-    oeaw_author_matches:
-      (row.oeawAuthorMatches as PressRelease['oeaw_author_matches']) ?? [],
-  };
 }
 
 /**
@@ -136,7 +110,7 @@ export async function listPressReleases(
     // page does its own consumption-side cast to PressReleaseWithPub.
     return {
       press_releases: rows.map((r) => ({
-        ...toApi(r),
+        ...pressReleaseToApi(r),
         publication: r.publication,
       })) as unknown as PressRelease[],
       total: rows.length,
@@ -155,7 +129,7 @@ export async function listPressReleases(
         .orderBy(desc(pressReleasesTable.releasedAt));
 
   return {
-    press_releases: rows.map(toApi),
+    press_releases: rows.map(pressReleaseToApi),
     total: rows.length,
   };
 }

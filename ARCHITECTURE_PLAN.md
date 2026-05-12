@@ -214,80 +214,67 @@ zurück, nicht DTOs.
 
 ## Phase A1 — Domain-Module
 
-**Status:** [ ] pending. **Aufwand:** ~6h. **Voraussetzung:** A2 done.
+**Status:** [x] done 2026-05-12 — three domain splits **skipped** after
+audit (no concrete smell), one real `toApi`-duplication fix landed.
+See [ADR 0008](docs/adr/0008-domain-modules-deferred.md) and the
+section below for full rationale. **Aufwand:** ~1.5h. **Voraussetzung:**
+A2 done = met.
 
-### Goal
-Cross-feature Operationen, die aktuell durch 3+ Files springen, in
-Domain-Bundles zusammenfassen. Kein DDD-Reinheits-Gebot, sondern:
-"Was logisch eine Operation ist, soll auch eine Datei sein".
+### Audit verdict (2026-05-12)
 
-### Why
-Heutige Pain-Points:
+Per the plan-warning ("NIEMALS Form-folgt-Funktion ohne dass sich ein
+konkretes Code-Smell auflöst") and the Phase-A2 maxim ("threshold is
+real smell, not symmetry"), each proposed domain was assessed:
 
-- **Decision-Flow** lebt in `publications/decisions.ts` (DB-Mutation) +
-  `meistertask/push.ts` (side-effect) + `sessions/lifecycle.ts`
-  (lazy-create). Phase-3 brauchte eine "TaskPublicationInput"-Type-
-  Schraube weil die drei Files unterschiedliche Sichten auf dieselbe
-  Pub-Row erwarten.
-- **Enrichment-Pipeline** ist `enrichment/batch.ts` + `enrichment/orchestrator.ts`
-  + `enrichment/sources/*.ts` — relativ sauber, aber state-machine
-  ("pending → enriched → analyzed") lebt nirgends explizit.
-- **Press-Release-Promote** orchestriert orphans → publications +
-  Re-Refresh von Embeddings/Centroid — verteilt auf migrations + ETL-Script
-  + promote-status route, keine Server-Function die das atomically
-  callbar macht.
+- **`triage/` skipped.** `publications/decisions.ts::applyDecision`
+  already orchestrates `repo.updateDecision` + `pushPublicationToMeisterTask`
+  in 35 LOC. The decision route is 36 LOC (plan target <30). Session
+  lazy-create lives **client-side** (per-tab localStorage in
+  `lib/client/stores/session-store`); moving it server-side would
+  require cookie-based session IDs — an architectural shift, not a
+  refactor. `meistertask/push.ts` is also called by the manual
+  `/api/meistertask/push` route, so it stays in `meistertask/`.
 
-Ziel: Diese drei zu Domain-Modulen verdichten.
+- **`pipeline/` skipped.** `Publication['enrichment_status']` and
+  `Publication['analysis_status']` are already typed unions
+  (`lib/shared/types.ts:20`). No invalid-transition bug exists. A
+  proposed `transitionPub(id, target)` would have to either splice
+  each pipeline write into two queries (status + result fields) or
+  duplicate the `db.update().set({...})` shape — both worse than the
+  current inline writes. `enrichment/batch.ts` and `analysis/batch.ts`
+  are already the per-feature orchestrators.
 
-### Scope
-**In:**
-- `lib/server/triage/` — bündelt decision.ts + meistertask-push.ts +
-  session-attach.ts. Eine Funktion `applyDecision(payload)` orchestriert
-  alles, gibt eine `TriageResult` zurück (decision applied, session
-  joined, meistertask pushed yes/no/error).
-- `lib/server/pipeline/` — enrichment + analysis als state-machine.
-  `transitionPub(id, target)` validiert Transition, ruft den passenden
-  Orchestrator, schreibt zurück. Bestehende batch-routes rufen das.
-- `lib/server/coverage/` — press_release promote + cluster refresh in
-  einer transaktion. Kann von webdb-import.mjs UND einer admin-route
-  gerufen werden.
+- **`coverage/` skipped.** `promote_press_release_orphans_logged()`
+  is a SQL function (ADR 0005). Today's two callers
+  (`scripts/webdb-import.mjs`, `scripts/enrich-orphans.ts`) use raw
+  `pg.Client`, can't import `lib/server/` cleanly (would mix two
+  Postgres clients in one process). No admin route exists; a TS
+  wrapper would have zero TS consumers today.
 
-**Out:**
-- Keine generische "Aggregate Root"-Magie. Domain-Module sind reine
-  Function-Bundles über Repos.
-- Researcher-Detail bleibt SQL-Function, das ist kein TS-Domain.
+### Real smell fixed
 
-### Sketch
-```
-lib/server/
-├── triage/
-│   ├── apply-decision.ts          # orchestrator: decision + session + mt push
-│   ├── flag.ts                    # bleibt, ist atomic
-│   ├── meistertask-push.ts        # bisher in /meistertask/
-│   └── session-attach.ts          # bisher in /sessions/lifecycle.ts (Teil)
-├── pipeline/
-│   ├── state-machine.ts           # explicit pending|enriched|analyzed|failed
-│   ├── enrich.ts                  # bisher /enrichment/{batch,orchestrator}
-│   ├── analyze.ts                 # bisher /analysis/batch.ts
-│   └── sources/                   # crossref, openalex, ... — unverändert
-├── coverage/
-│   ├── promote-orphans.ts         # SQL-Function-Wrapper + Refresh-Chain
-│   └── refresh-cluster.ts
-└── repos/                          # aus Phase A2
-```
-
-`lib/server/publications/` schrumpft auf die "pure read"-Surface
-(list.ts, fetch.ts, flag.ts). Routes ändern ihre Imports.
+`lib/server/press-releases/list.ts::toApi` was an **exact 25-LOC
+duplicate** of `lib/server/publications/to-api.ts::pressReleaseToApi`.
+Removed the local copy, imported the canonical one. No wire-shape
+change; dev-verified `/api/press-releases?stats=true`, `?orphans=true`,
+`?with_pub=true` — all three paths return identical JSON.
 
 ### Acceptance Criteria
-- [ ] `apply-decision.ts` ist die einzige Stelle die `updateDecision` +
-      MeisterTask-Push + Session-Lazy-Create kennt. Route ist <30 LOC.
-- [ ] state-machine.ts hat enum-typed Transitionen + Tests
-- [ ] webdb-import.mjs Promote-Schritt nutzt `coverage/promote-orphans.ts`
-      (ein gemeinsamer Code-Pfad mit der admin-route)
-- [ ] eslint-plugin-boundaries Allow-List aktualisiert
-- [ ] `docs/IMPLEMENTATION.md` Layout-Diagramm aktualisiert
-- [ ] Lint/Test/Smokes green; Playwright review-smoke bleibt grün
+
+- [x] Audit performed against the three proposed domains; per-domain
+      skip rationale documented in **ADR 0008** and the section above.
+      No Form-folgt-Funktion extractions.
+- [x] Real `toApi`-duplication in `press-releases/list.ts` removed —
+      single canonical `pressReleaseToApi` lives in
+      `publications/to-api.ts` (per ADR 0003).
+- [x] Lint baseline preserved: **0 errors / 14 warnings**. Typecheck
+      clean. `npm test` → 40/40 green.
+- [x] Dev-verify on all three `/api/press-releases` paths (gate cookie):
+      `stats=true` → counts, `orphans=true` → null-pub rows,
+      `with_pub=true` → joined-publication rows.
+- [x] `lib/server/repos/README.md` carries a new "Why no triage/,
+      pipeline/, coverage/" section pointing to ADR 0008 — same
+      disciplinary pattern as the entity-by-entity skip table.
 
 ---
 
