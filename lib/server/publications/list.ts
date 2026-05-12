@@ -21,9 +21,10 @@ import {
   ascNullsLast,
 } from '@/lib/server/db';
 import { publicationsRepo } from '@/lib/server/repos/publications';
+import { pressReleaseToApi } from '@/lib/server/press-releases/to-api';
 import { ELIGIBILITY_EXCLUDE_TYPE_UIDS } from '@/lib/shared/eligibility';
 import type { Lang, Publication, PressRelease } from '@/lib/shared/types';
-import { publicationToApi, pressReleaseToApi } from './to-api';
+import { publicationToApi } from './to-api';
 
 // Sortable column whitelist. The previous Supabase-JS code accepted any
 // string from `?sort=`, relying on PostgREST identifier escaping. Drizzle

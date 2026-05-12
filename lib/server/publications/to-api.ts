@@ -1,18 +1,15 @@
 import type {
   Orgunit,
   Person,
-  PressRelease,
   Project,
   Publication,
   PublicationType,
   Decision,
-  Lang,
   FlagNote,
 } from '@/lib/shared/types';
 import {
   orgunits as orgunitsTable,
   persons as personsTable,
-  pressReleases as pressReleasesTable,
   projects as projectsTable,
   publications as publicationsTable,
   publicationTypes as publicationTypesTable,
@@ -24,12 +21,13 @@ import {
 // the failure mode Plan §7.1 was designed for.
 //
 // Helper mappers for embedded relations (person, orgunit, project,
-// press_release, publication_type) live alongside `publicationToApi` because
-// they are read together for the `/api/publications/[id]` detail wire shape.
-// When the persons / projects / orgunits / press-releases features grow
-// their own toApi helpers in later migrations, decide then whether to
-// extract or duplicate — duplication is currently cheaper than the wrong
-// abstraction.
+// publication_type) currently live alongside `publicationToApi` because the
+// `/api/publications/[id]` detail wire shape reads them together and there
+// are no `lib/server/{persons,projects,publication-types}/` feature folders
+// yet. **`pressReleaseToApi` was already moved to
+// `lib/server/press-releases/to-api.ts`** (its entity has a feature folder);
+// the others follow the same path once their features grow. ADR 0003 is the
+// per-feature toApi rule that governs this.
 
 export function publicationToApi(
   row: typeof publicationsTable.$inferSelect,
@@ -183,29 +181,3 @@ export function projectToApi(
   };
 }
 
-export function pressReleaseToApi(
-  row: typeof pressReleasesTable.$inferSelect,
-): PressRelease {
-  return {
-    id: row.id,
-    publication_id: row.publicationId,
-    doi: row.doi,
-    url: row.url,
-    released_at: row.releasedAt,
-    lang: row.lang as Lang | null,
-    paper_title: row.paperTitle,
-    news_title: row.newsTitle,
-    source_news_uid: row.sourceNewsUid,
-    abstract: row.abstract,
-    authors: row.authors,
-    journal: row.journal,
-    paper_year: row.paperYear,
-    keywords: row.keywords,
-    openalex_id: row.openalexId,
-    enrichment_status: row.enrichmentStatus as PressRelease['enrichment_status'],
-    enriched_at: row.enrichedAt ? new Date(row.enrichedAt).toISOString() : null,
-    created_at: new Date(row.createdAt).toISOString(),
-    oeaw_author_matches:
-      (row.oeawAuthorMatches as PressRelease['oeaw_author_matches']) ?? [],
-  };
-}

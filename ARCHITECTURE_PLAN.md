@@ -228,12 +228,14 @@ real smell, not symmetry"), each proposed domain was assessed:
 
 - **`triage/` skipped.** `publications/decisions.ts::applyDecision`
   already orchestrates `repo.updateDecision` + `pushPublicationToMeisterTask`
-  in 35 LOC. The decision route is 36 LOC (plan target <30). Session
+  in a 34-line function. The decision-route PATCH handler is a 30-line
+  thin adapter — already at the plan's `<30 LOC` target. Session
   lazy-create lives **client-side** (per-tab localStorage in
   `lib/client/stores/session-store`); moving it server-side would
-  require cookie-based session IDs — an architectural shift, not a
-  refactor. `meistertask/push.ts` is also called by the manual
-  `/api/meistertask/push` route, so it stays in `meistertask/`.
+  require sharing session state across requests (cookie or header) —
+  an architectural shift, not a refactor. `meistertask/push.ts` is
+  also called by the manual `/api/meistertask/push` route, so it
+  stays in `meistertask/`.
 
 - **`pipeline/` skipped.** `Publication['enrichment_status']` and
   `Publication['analysis_status']` are already typed unions
@@ -253,10 +255,15 @@ real smell, not symmetry"), each proposed domain was assessed:
 
 ### Real smell fixed
 
-`lib/server/press-releases/list.ts::toApi` was an **exact 25-LOC
-duplicate** of `lib/server/publications/to-api.ts::pressReleaseToApi`.
-Removed the local copy, imported the canonical one. No wire-shape
-change; dev-verified `/api/press-releases?stats=true`, `?orphans=true`,
+`lib/server/press-releases/list.ts::toApi` was a **24-LOC exact
+duplicate** of `pressReleaseToApi` (then in `publications/to-api.ts`).
+Per ADR 0003 ("per-feature toApi") and the explicit comment in the
+old `publications/to-api.ts` ("when press-releases grows its own
+helper, decide whether to extract or duplicate"), the canonical
+mapper now lives **entity-owned** in
+`lib/server/press-releases/to-api.ts`. Both `publications/fetch.ts`
+and `publications/list.ts` import it from the new location.
+Dev-verified `/api/press-releases?stats=true`, `?orphans=true`,
 `?with_pub=true` — all three paths return identical JSON.
 
 ### Acceptance Criteria
@@ -264,9 +271,11 @@ change; dev-verified `/api/press-releases?stats=true`, `?orphans=true`,
 - [x] Audit performed against the three proposed domains; per-domain
       skip rationale documented in **ADR 0008** and the section above.
       No Form-folgt-Funktion extractions.
-- [x] Real `toApi`-duplication in `press-releases/list.ts` removed —
-      single canonical `pressReleaseToApi` lives in
-      `publications/to-api.ts` (per ADR 0003).
+- [x] Real `toApi`-duplication in `press-releases/list.ts` removed;
+      canonical `pressReleaseToApi` extracted to entity-owned
+      `lib/server/press-releases/to-api.ts` per ADR 0003. Consumers
+      (`publications/{fetch,list}.ts`, `press-releases/list.ts`)
+      import from the new location.
 - [x] Lint baseline preserved: **0 errors / 14 warnings**. Typecheck
       clean. `npm test` → 40/40 green.
 - [x] Dev-verify on all three `/api/press-releases` paths (gate cookie):

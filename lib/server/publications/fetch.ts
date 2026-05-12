@@ -1,4 +1,5 @@
 import { publicationsRepo } from '@/lib/server/repos/publications';
+import { pressReleaseToApi } from '@/lib/server/press-releases/to-api';
 import type {
   Person,
   PressRelease,
@@ -8,7 +9,6 @@ import { PublicationNotFoundError } from './errors';
 import {
   orgunitToApi,
   personToApi,
-  pressReleaseToApi,
   projectToApi,
   publicationToApi,
   publicationTypeToApi,

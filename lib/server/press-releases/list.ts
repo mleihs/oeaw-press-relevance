@@ -1,7 +1,7 @@
 import { count, desc, gte, isNotNull, isNull, type SQL } from 'drizzle-orm';
 import { db, pressReleases as pressReleasesTable } from '@/lib/server/db';
-import { pressReleaseToApi } from '@/lib/server/publications/to-api';
 import type { PressRelease } from '@/lib/shared/types';
+import { pressReleaseToApi } from './to-api';
 
 export interface PressReleasesStats {
   total: number;
