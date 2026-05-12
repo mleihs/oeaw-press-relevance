@@ -91,11 +91,16 @@ const eslintConfig = defineConfig([
             { from: "client", allow: ["shared", "client"] },
             // components are pure UI; no server, no app-pages, no api-routes
             { from: "components", allow: ["shared", "client", "components"] },
-            // app-pages compose client/components; server is forbidden
-            // (use API routes instead)
+            // app-pages compose client/components AND — since the Phase-A4
+            // RSC pilot (ADR 0009) — directly call thin server entry points
+            // for first-paint data. Bundle leaks into client code are still
+            // caught at build time by Next.js's `'use client'` boundary +
+            // Webpack server-only resolution for `postgres`, `crypto`, etc.;
+            // a 'use client' page MUST NOT import @/lib/server/* (reviewer
+            // discipline + build break are the guards).
             {
               from: "app-pages",
-              allow: ["shared", "client", "components", "app-pages"],
+              allow: ["shared", "client", "components", "app-pages", "server"],
             },
             // api-routes are the only surface that bridges to server
             { from: "api-routes", allow: ["server", "shared", "api-routes"] },

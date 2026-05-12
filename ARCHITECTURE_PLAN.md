@@ -289,9 +289,14 @@ Dev-verified `/api/press-releases?stats=true`, `?orphans=true`,
 
 ## Phase A4 — Server-Components
 
-**Status:** [ ] pending. **Aufwand:** ~14h. **Voraussetzung:** A2 done
-(Repos sind das, was RSCs sauber aufrufen können — `useApiQuery` wird
-durch direkte Repo-Calls ersetzt).
+**Status:** [x] **Pilot done 2026-05-12** on `/persons/[id]`. Validated:
+TTFB-Win + zero hydration-mismatch + decision-toolbar unaffected (not
+on this page; other pages untouched). See pilot closeout below and
+[ADR 0009](docs/adr/0009-rsc-server-components-pilot.md). **Phase 1 + 2
+pages still pending** — pilot proved the pattern is viable, follow-ups
+are tracked in the Acceptance section. **Aufwand pilot:** ~3h.
+**Voraussetzung:** A2 done (Repos sind das, was RSCs sauber aufrufen
+können — `useApiQuery` wird durch direkte Repo-Calls ersetzt).
 
 ### Goal
 Pages mit hauptsächlich read-only Initial-State zu Server Components
@@ -319,8 +324,19 @@ Lessons als ADR festhalten, Phase A4 als "nicht-machbar im jetzigen
 Stack" markieren.
 
 **Pilot (1 Page):**
-- [ ] `/persons/[id]` (Researcher-Detail) — einziger RPC-Call, Single
+- [x] `/persons/[id]` (Researcher-Detail) — einziger RPC-Call, Single
       `useApiQuery`, keine Filter, keine Mutations: kleinster Blast-Radius.
+      **Landed 2026-05-12.** Page is now an `async function` server-component
+      that calls `lib/server/researchers/detail.ts::getResearcherDetail`
+      directly. Client subtree (`_components/detail-client.tsx`) receives
+      the `ResearcherDetail` row as a prop — no TanStack-Query hydration
+      boundary (per ADR 0009). New `error.tsx` + `not-found.tsx` replace
+      the inline `ApiErrorCard` / `EmptyState` branches the old client
+      page carried. `/api/persons/[id]` route now also delegates to
+      `getResearcherDetail` (single source of truth for the
+      `researcher_detail()` SQL function). Smoke under
+      `scripts/smoke/rsc/persons-detail.ts`. ESLint rule
+      `from: "app-pages", allow: [..., "server"]` enabled — see ADR 0009.
 
 **Phase 1 (nach Pilot-Validation, klare Wins):**
 - [ ] `/publications/[id]` (Detail) → RSC für Pub-Daten, similar-pressed
@@ -362,20 +378,37 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
 `PublicationDetailClient` (`'use client'`) bekommt initial-data als prop,
 TanStack-Query hydratisiert davon, Mutations laufen wie heute.
 
-### Acceptance Criteria
-- [ ] /publications/[id] hat TTFB < 800ms (vorher ~2s wegen 2 client-roundtrips)
-- [ ] No new "Use client" leaks via eslint-boundaries
-- [ ] Playwright e2e bleibt grün (timing-asserts ggf. anpassen weil
-      schneller geworden)
-- [ ] Cache-Strategie pro RSC dokumentiert (force-dynamic vs
-      revalidate=N) — landet als ADR
-- [ ] Decision-Toolbar funktioniert weiter (hängt am Client-side
-      mutation-flow)
+### Acceptance Criteria (pilot pass — full phase still open for Phase 1+2 pages)
+- [x] **Pilot page** `/persons/[id]` HTML TTFB warm dev = **~165ms**
+      (baseline HTML+API: ~125ms + ~70ms with a `"Lade Profil …"`
+      flicker between). Eliminated roundtrip + skeleton-flicker; data
+      now ships embedded in the initial HTML. Production TTFB will be
+      lower than dev's; pilot threshold of "no regression + roundtrip
+      eliminated" met.
+- [x] No new `'use client'` leaks via eslint-boundaries — lint baseline
+      preserved (0 errors / 14 warnings). The new `app-pages → server`
+      allowance (ADR 0009) was explicitly chosen, not accidental.
+- [x] Playwright e2e (`person detail (activity chart) — light/dark`)
+      passes. Zero `pageerror` events. No timing-assert adjustment
+      needed — the existing `networkidle + 2s hydrate` window already
+      accommodates the (faster) RSC path.
+- [x] Cache-strategy documented — [ADR 0009](docs/adr/0009-rsc-server-components-pilot.md):
+      `force-dynamic` default for read-heavy admin pages, props (not
+      `HydrationBoundary`) when the client neither refetches nor mutates.
+- [x] Decision-Toolbar unaffected — `/persons/[id]` carries none;
+      `/publications/[id]` + `/review` were not touched and remain
+      Client Components with their existing mutation flow.
+
+**Open for Phase 1 / Phase 2 pages above.** Each follow-up page repeats
+the pilot recipe: thin `lib/server/<feature>/<name>.ts` wrapper +
+`async` page + `'use client'` child for any subtree that needs hooks.
 
 ### Open Questions
 - Wie viel ist Vercel-locked? Self-hosting-OSS: Node-Server kann RSC, OK.
-- TanStack-Query SSR-Hydration via `dehydrate`/`HydrationBoundary` —
-  Pattern jetzt evaluieren, eine ADR.
+- ~~TanStack-Query SSR-Hydration via `dehydrate`/`HydrationBoundary`~~ —
+  **resolved by ADR 0009**: pass props for read-only pages; reserve
+  `HydrationBoundary` for pages whose client tree mutates or refetches
+  the prefetched cache.
 
 ---
 

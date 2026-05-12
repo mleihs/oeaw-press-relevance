@@ -1,88 +1,41 @@
-'use client';
-
-import { use } from 'react';
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import { ChevronLeft } from 'lucide-react';
-import { useApiQuery } from '@/lib/client/hooks/use-api-query';
-import { sincePresetToDate, type ResearcherDetail } from '@/lib/shared/researchers';
-import { EmptyState } from '@/components/empty-state';
-import { LoadingState } from '@/components/loading-state';
-import { ApiErrorCard } from '@/components/api-error-card';
-import { PersonHeader } from './_components/person-header';
-import dynamic from 'next/dynamic';
-import { CoauthorBlock } from './_components/coauthor-block';
-import { PubList } from './_components/pub-list';
+import { getResearcherDetail } from '@/lib/server/researchers/detail';
+import { sincePresetToDate } from '@/lib/shared/researchers';
+import { PersonDetailClient } from './_components/detail-client';
 
-// Activity chart pulls in recharts (~100kB); lazy-load so first paint of
-// the detail header isn't blocked by the chart bundle.
-const ActivityChart = dynamic(
-  () => import('./_components/activity-chart').then((m) => m.ActivityChart),
-  { ssr: false, loading: () => <div className="h-[260px] rounded-lg border bg-card" aria-hidden /> },
-);
+// Per ADR 0009: read-heavy, auth-gated, `since`-parametrised pages opt out
+// of ISR for the pilot. Revisit when one of these RSCs sees enough traffic
+// to make a cache-window worthwhile.
+export const dynamic = 'force-dynamic';
 
 const WINDOW = '12M' as const;
 const WINDOW_LABEL = 'letzte 12 Monate';
 
-export default function PersonDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
-  const since = sincePresetToDate(WINDOW);
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-  const { data: detail, error, isLoading } = useApiQuery<ResearcherDetail>(
-    ['person-detail', id, since],
-    `/api/persons/${id}?since=${since}`,
-  );
+export default async function PersonDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  if (!UUID_RE.test(id)) notFound();
 
-  if (error) {
-    return (
-      <div className="space-y-4">
-        <BackLink />
-        <ApiErrorCard title="Fehler beim Laden" message={error.message} />
-      </div>
-    );
-  }
-
-  if (isLoading || !detail) {
-    return (
-      <div className="space-y-4">
-        <BackLink />
-        <LoadingState label="Lade Profil …" />
-      </div>
-    );
-  }
-
-  if (!detail.person || !detail.stats) {
-    return (
-      <div className="space-y-4">
-        <BackLink />
-        <EmptyState title="Person nicht gefunden." />
-      </div>
-    );
-  }
+  const detail = await getResearcherDetail({ id, since: sincePresetToDate(WINDOW) });
+  if (!detail) notFound();
 
   return (
     <div className="space-y-6">
-      <BackLink />
-      <PersonHeader person={detail.person} stats={detail.stats} windowLabel={WINDOW_LABEL} />
-
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-[1fr_320px]">
-        <div className="space-y-6">
-          <ActivityChart data={detail.activity ?? []} />
-          <PubList publications={detail.publications ?? []} />
-        </div>
-        <CoauthorBlock coauthors={detail.coauthors ?? []} />
-      </div>
+      <Link
+        href="/researchers"
+        className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-brand"
+      >
+        <ChevronLeft className="h-3 w-3" />
+        Zurück zur Forscher:innen-Übersicht
+      </Link>
+      <PersonDetailClient detail={detail} windowLabel={WINDOW_LABEL} />
     </div>
-  );
-}
-
-function BackLink() {
-  return (
-    <Link
-      href="/researchers"
-      className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-brand"
-    >
-      <ChevronLeft className="h-3 w-3" />
-      Zurück zur Forscher:innen-Übersicht
-    </Link>
   );
 }
