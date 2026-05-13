@@ -2,6 +2,11 @@ import { count, desc, gte, isNotNull, isNull, type SQL } from 'drizzle-orm';
 import { db, pressReleases as pressReleasesTable } from '@/lib/server/db';
 import type { PressRelease } from '@/lib/shared/types';
 import { pressReleaseToApi } from './to-api';
+import {
+  PUB_LITE_COLUMNS,
+  publicationToApiLite,
+  type PubLite,
+} from '@/lib/server/publications/to-api';
 
 export interface PressReleasesStats {
   total: number;
@@ -11,14 +16,41 @@ export interface PressReleasesStats {
   this_year: number;
 }
 
+export type PressReleaseWithPub = PressRelease & {
+  /** Present only when the query was run with `withPub=true`; `null` for
+   *  orphans, missing entirely for `withPub=false` calls. */
+  publication?: PubLite | null;
+};
+
 export interface PressReleasesListResult {
-  press_releases: PressRelease[];
+  press_releases: PressReleaseWithPub[];
   total: number;
 }
 
 export interface PressReleasesListFilters {
   orphans: 'true' | 'false' | null;
   withPub: boolean;
+}
+
+// --- Tabs config (shared between page + nav component) ----------------------
+//
+// `TAB_VALUES` is the single source of truth for the press-releases tab set.
+// `isTab` validates `?tab=` searchParams at the page boundary; `filtersForTab`
+// maps a validated Tab to the wrapper-filter shape. Both the page and the
+// `_components/tabs-nav.tsx` display config bind to this list — adding a tab
+// here forces both consumers to update at compile time.
+
+export const TAB_VALUES = ['all', 'matched', 'orphans'] as const;
+export type Tab = (typeof TAB_VALUES)[number];
+
+export function isTab(v: unknown): v is Tab {
+  return typeof v === 'string' && (TAB_VALUES as readonly string[]).includes(v);
+}
+
+export function filtersForTab(tab: Tab): PressReleasesListFilters {
+  if (tab === 'matched') return { orphans: 'false', withPub: true };
+  if (tab === 'orphans') return { orphans: 'true', withPub: false };
+  return { orphans: null, withPub: true };
 }
 
 /**
@@ -69,9 +101,9 @@ export async function getPressReleasesStats(): Promise<PressReleasesStats> {
  *   - orphans: 'true'  -> only publication_id IS NULL
  *   - orphans: 'false' -> only matched
  *   - orphans: null    -> all
- *   - withPub: true    -> the UI listing page wants lightweight publication
- *     fields joined; handled in a separate code path below (Drizzle relations
- *     API) so the simple list case stays in a single .select().
+ *   - withPub: true    -> embed `PubLite` on each matched row (via Drizzle
+ *     relations API + `publicationToApiLite`). Orphan rows return
+ *     `publication: null`.
  */
 export async function listPressReleases(
   filters: PressReleasesListFilters,
@@ -84,35 +116,20 @@ export async function listPressReleases(
         : undefined;
 
   if (filters.withPub) {
-    // Drizzle relational query: pulls a lightweight publication subset on
-    // each matched row. Orphan rows return publication=null.
     const rows = await db.query.pressReleases.findMany({
       where: filter,
       orderBy: desc(pressReleasesTable.releasedAt),
       with: {
         publication: {
-          columns: {
-            id: true,
-            title: true,
-            originalTitle: true,
-            leadAuthor: true,
-            citation: true,
-            pressScore: true,
-            pressSimilarity: true,
-            decision: true,
-            publishedAt: true,
-          },
+          columns: PUB_LITE_COLUMNS,
         },
       },
     });
-    // Cast at the boundary: the embedded `publication` subobject keeps its
-    // Drizzle camelCase keys, mirroring the original behaviour where the UI
-    // page does its own consumption-side cast to PressReleaseWithPub.
     return {
       press_releases: rows.map((r) => ({
         ...pressReleaseToApi(r),
-        publication: r.publication,
-      })) as unknown as PressRelease[],
+        publication: r.publication ? publicationToApiLite(r.publication) : null,
+      })),
       total: rows.length,
     };
   }

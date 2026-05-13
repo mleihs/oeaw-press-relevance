@@ -1,11 +1,12 @@
-import type {
-  Orgunit,
-  Person,
-  Project,
-  Publication,
-  PublicationType,
-  Decision,
-  FlagNote,
+import {
+  type Orgunit,
+  type Person,
+  type Project,
+  type Publication,
+  type PublicationType,
+  type Decision,
+  type FlagNote,
+  DECISIONS,
 } from '@/lib/shared/types';
 import {
   orgunits as orgunitsTable,
@@ -178,6 +179,77 @@ export function projectToApi(
     cancelled: row.cancelled,
     url_de: row.urlDe,
     url_en: row.urlEn,
+  };
+}
+
+// --- Lightweight publication embed -----------------------------------------
+//
+// Subset of `Publication` that gets embedded on a press-release row when the
+// list wrapper is called with `withPub: true`. Lives here (publications
+// feature) rather than in `press-releases/list.ts` because its shape and the
+// camelCase→snake_case mapping are publications-domain concerns.
+
+/**
+ * Wire shape of the lightweight publication subset embedded by
+ * `listPressReleases({ withPub: true })`. Snake-case keys to match the rest
+ * of the wire-shape convention (Plan §7.1, ADR 0003).
+ */
+export interface PubLite {
+  id: string;
+  title: string;
+  original_title: string | null;
+  lead_author: string | null;
+  citation: string | null;
+  press_score: number | null;
+  press_similarity: number | null;
+  decision: Decision;
+  published_at: string | null;
+}
+
+/**
+ * Column selector for `db.query.X.findMany({ with: { publication: { columns: PUB_LITE_COLUMNS } } })`.
+ * Single source of truth for the columns that make up `PubLite` — `publicationToApiLite`
+ * derives its input shape from this object, so adding/removing a column here
+ * surfaces in the mapper at compile time.
+ */
+export const PUB_LITE_COLUMNS = {
+  id: true,
+  title: true,
+  originalTitle: true,
+  leadAuthor: true,
+  citation: true,
+  pressScore: true,
+  pressSimilarity: true,
+  decision: true,
+  publishedAt: true,
+} as const;
+
+type PubLiteRow = Pick<
+  typeof publicationsTable.$inferSelect,
+  keyof typeof PUB_LITE_COLUMNS
+>;
+
+function isDecision(v: unknown): v is Decision {
+  return typeof v === 'string' && (DECISIONS as readonly string[]).includes(v);
+}
+
+/**
+ * Maps a Drizzle row from the `PUB_LITE_COLUMNS` selection (camelCase keys)
+ * to the snake-case `PubLite` wire shape. `decision` is narrowed defensively
+ * via `isDecision` — DB constraints already guarantee valid values, but
+ * legacy junk on older migrations falls back to `'undecided'`.
+ */
+export function publicationToApiLite(row: PubLiteRow): PubLite {
+  return {
+    id: row.id,
+    title: row.title,
+    original_title: row.originalTitle,
+    lead_author: row.leadAuthor,
+    citation: row.citation,
+    press_score: row.pressScore,
+    press_similarity: row.pressSimilarity,
+    decision: isDecision(row.decision) ? row.decision : 'undecided',
+    published_at: row.publishedAt,
   };
 }
 

@@ -290,18 +290,26 @@ Dev-verified `/api/press-releases?stats=true`, `?orphans=true`,
 ## Phase A4 — Server-Components
 
 **Status:** [x] **Pilot done 2026-05-12** on `/persons/[id]` +
-**Phase 1 page `/publications/[id]` done 2026-05-12**. Pilot validated:
-TTFB-Win + zero hydration-mismatch. Phase-1 page validated: first
-mutation-bearing RSC page in the codebase + ADR 0010 (props +
-`router.refresh()`) closes the ADR-0009 open question on mutation flow.
+**Phase 1 page `/publications/[id]` done 2026-05-12** +
+**Phase 1 page `/press-releases` done 2026-05-13** as **Zero-JS RSC**
+(Phase 1 closed). Pilot validated: TTFB-Win + zero hydration-mismatch.
+Phase-1 `/publications/[id]` validated: first mutation-bearing RSC
+page in the codebase + ADR 0010 (props + `router.refresh()`) closes
+the ADR-0009 open question on mutation flow. Phase-1 `/press-releases`
+validated: first list page taken to **max-RSC** — `<Link>`-based tab
+navigation replaces shadcn `Tabs`, native `<details name=>` replaces
+the `useState` row-expand toggle, zero `'use client'` in the page tree
+itself. The migration also surfaced the **pilot-vs-max-RSC
+discriminator** (see phaseA4 Lesson #21) and fixed a latent
+camelCase/snake_case bug the previous `as unknown as` cast masked.
 See [ADR 0009](docs/adr/0009-rsc-server-components-pilot.md),
 [ADR 0010](docs/adr/0010-rsc-mutation-router-refresh.md), pilot closeout
-below, and the phase-1 Acceptance checkbox. **Remaining Phase 1
-(`/press-releases`) + Phase 2 (`/`, `/publications` list) pages still
-pending.** **Aufwand pilot:** ~3h; **phase-1
-`/publications/[id]`:** ~3h. **Voraussetzung:** A2 done (Repos sind das,
-was RSCs sauber aufrufen können — `useApiQuery` wird durch direkte
-Repo-Calls ersetzt).
+below, and the phase-1 Acceptance checkboxes. **Only Phase 2
+(`/`, `/publications` list) pages remain.** **Aufwand pilot:** ~3h;
+**phase-1 `/publications/[id]`:** ~3h; **phase-1 `/press-releases`:**
+~5h (incl. Zero-JS refactor following fresh-eyes self-review).
+**Voraussetzung:** A2 done (Repos sind das, was RSCs sauber aufrufen
+können — `useApiQuery` wird durch direkte Repo-Calls ersetzt).
 
 ### Goal
 Pages mit hauptsächlich read-only Initial-State zu Server Components
@@ -358,7 +366,26 @@ Stack" markieren.
       AND `router.refresh()` on success — Option A, codified as
       [ADR 0010](docs/adr/0010-rsc-mutation-router-refresh.md). Smoke at
       `scripts/smoke/rsc/publications-detail.ts`.
-- [ ] `/press-releases` (List) → RSC
+- [x] `/press-releases` (List) → **Zero-JS RSC**. **Landed 2026-05-13.**
+      Page is an `async` server-component reading `?tab=` from
+      `searchParams` (validated via the `isTab` type predicate exported
+      from `_components/tabs-nav.tsx`), fetching stats + active tab's
+      list in parallel from `lib/server/press-releases/list.ts`. **Render
+      tree is fully RSC**: stats / tabs-nav / main-table / orphans-list
+      each in their own server component under `_components/`. Tab
+      navigation uses `<Link replace scroll={false}>` in a `<nav>`
+      (no `useRouter`, no shadcn `Tabs` primitive); orphan-row
+      expansion uses native `<details name="orphan-detail">` (no
+      `useState`, browser-managed mutex). The page ships **zero
+      page-specific client JavaScript**; only the shared design-system
+      components (`StatCard` with `animate={false}`, `PressScoreBadge`,
+      `SimilarityIndicator`, `DecisionBadge`) hydrate as small islands.
+      No mutations → ADR 0010 untouched. `error.tsx` kept for
+      consistency with detail-page error UX. Smoke at
+      `scripts/smoke/rsc/press-releases.ts` — also catches a latent
+      camelCase/snake_case bug the pre-cleanup `as unknown as` cast in
+      `list.ts` had masked (fixed in the same pass; see phaseA4
+      Lessons #21 + #22).
 
 **Phase 2 (komplexer, evaluieren):**
 - [ ] `/` (Dashboard) — hat aktuell Realtime-Pulse Animationen,
