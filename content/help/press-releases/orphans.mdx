@@ -1,0 +1,66 @@
+---
+title: Externe Pressemitteilungen
+description: Pressemitteilungen ohne Pub-Match, warum es sie gibt, wie sie zugeordnet werden, und welche Heuristik dabei hilft.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Externe Pressemitteilungen
+
+Eine ÖAW-Pressemitteilung wird als „extern" (Orphan) geführt, wenn ihre
+DOI sich keinem Publikations-Datensatz in der lokalen Datenbank zuordnen
+lässt. Das heißt nicht, dass die Pressemitteilung obsolet wäre, meist
+fehlt nur das zugehörige Paper noch in der WebDB.
+
+## Warum es Orphans gibt {#warum-orphans}
+
+Häufige Gründe:
+
+- **ÖAW-Co-Authorship statt Lead-Authorship.** Die WebDB erfasst primär
+  Lead-Authorships. Wenn ein:e ÖAW-Forscher:in nur als Co-Autor:in an
+  einem Paper beteiligt ist und das Lead-Institut extern liegt, kommt
+  das Paper nicht in den WebDB-Import.
+- **Paper noch nicht in der WebDB.** Manche Pubs erscheinen mit einigem
+  zeitlichen Abstand zum Press-Release. Bis zum nächsten WebDB-Import
+  sind sie also „extern".
+- **DOI-Fehler.** Selten, aber möglich: die DOI im
+  `event_information`-Feld der Pressemitteilung ist falsch hinterlegt
+  oder existiert nicht.
+
+## Wie Metadaten nachgereicht werden {#metadaten}
+
+Für jeden Orphan zieht die App Metadaten aus **OpenAlex** und
+**CrossRef**: Titel, Abstract, Autor:innen-Liste, Journal,
+Veröffentlichungsdatum. So lassen sich Orphans inhaltlich einschätzen,
+auch wenn das Paper selbst nicht in der lokalen WebDB liegt.
+
+## Die Beteiligungs-Heuristik {#heuristik}
+
+Pro Orphan läuft eine **Nachnamens-Heuristik**: alle Autor:innen-Namen
+werden gegen die `persons`-Tabelle gematcht (Nachname plus
+Vornamen-Initial). Bei einem Treffer wird die Pressemitteilung als
+„mutmaßliche ÖAW-Beteiligung" markiert und der vermutete Match wird im
+aufgeklappten Panel angezeigt.
+
+<Callout type="warn">
+**Manuelle Verifikation empfohlen.** Nachnamens-Match schließt Homonyme
+nicht aus, zwei Personen mit demselben Nachnamen und Vornamen-Initial
+können fälschlich zugeordnet werden. Vor einer Pitch-Aktion gegen einen
+ÖAW-Co-Autor lieber kurz prüfen, ob der Match wirklich passt.
+</Callout>
+
+## Wie aus Orphans Matches werden {#match-werden}
+
+Sobald das Paper später ins WebDB importiert wird, übernimmt der
+Match-Job die Zuordnung **automatisch**. Die Pressemitteilung wandert vom
+Tab „Ohne Pub-Match" in den Tab „Mit Pub-Match", und die zugehörige Pub
+bekommt das Badge „Bereits ÖAW-Pressemitteilung".
+
+Das ist die elegante Seite des Match-Designs: Orphans sind kein
+Verwaltungsaufwand, sie lösen sich von selbst auf, sobald die WebDB
+nachgezogen hat.
+
+## Verwandte Themen
+
+- [Press-Releases-Seite](/help/press-releases/seiten-tour): wo Orphans im UI sichtbar werden
+- [Bereits ÖAW-Pressemitteilung](/help/badges/press-release-badge): was nach dem Match passiert

@@ -1,0 +1,52 @@
+---
+title: ÖAW-Mitgliedschaft
+description: Was die ÖAW-Mitglieds-Markierung bedeutet, und worin sie sich vom Eigen-Highlight (mahighlight) unterscheidet.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# ÖAW-Mitgliedschaft
+
+Eine Person ist als ÖAW-Mitglied markiert, wenn sie in der WebDB einen
+Eintrag in `persons.member_type_id` hat, der auf einen
+`member_types`-Eintrag verweist. Das heißt: Aufnahme in eine
+Akademie-Klasse, Wirklich, Korrespondierend (Inland oder Ausland), Junge
+Akademie, Ehrenmitglied und ähnliche Typen.
+
+## Wo das Flag herkommt {#herkunft}
+
+Stammdaten kommen aus der WebDB. Beim Import wird die Mitgliedschaft pro
+Person übernommen und im Forscher:innen-Ranking als blauer Rand am
+Personen-Punkt sichtbar gemacht.
+
+## Was es nicht bedeutet {#abgrenzung}
+
+<Callout type="warn">
+ÖAW-Mitgliedschaft ist **nicht dasselbe** wie das `mahighlight`-Flag auf
+einer Publikation. Trotz des `ma`-Präfixes (Typo3-Legacy: „MA" stand mal
+für „Mitglied der Akademie") ist `mahighlight` eine Selbst-Markierung der
+Pub durch die Autor:in, nicht eine Mitgliedschafts-Markierung. Empirisch
+stammen rund 90 % der gesetzten mahighlight-Marker von
+**Nicht-Mitgliedern**.
+</Callout>
+
+## Wofür die Markierung nützlich ist {#nutzen}
+
+Für die Pressestelle ist die Mitgliedschaft ein weiches Signal mit zwei
+Aspekten:
+
+- **Reputationsbasis:** Akademie-Mitglieder sind in ihrer Disziplin
+  etablierte Sprecher:innen. Ein Pitch mit Mitgliedsbeteiligung lässt sich
+  gegenüber Redaktionen leichter platzieren.
+- **Sichtbarkeits-Indikator:** Die Akademie selbst kommuniziert
+  Mitglieds-Pubs prominenter, die Webseite, Jahresberichte und
+  Sonderpublikationen referenzieren häufig die Mitglieder.
+
+Es ist aber **kein Pitch-Filter im engeren Sinn**. Eine starke Pub mit
+Nicht-Mitgliedern als Lead-Autor:innen kann pressetauglicher sein als eine
+Routine-Mitgliedspub.
+
+## Verwandte Themen
+
+- [Eigen-Highlight (mahighlight)](/help/badges/mahighlight): das oft verwechselte Pub-Flag
+- [Externe Personen](/help/badges/externe-personen): Co-Autor:innen ohne ÖAW-Anstellung

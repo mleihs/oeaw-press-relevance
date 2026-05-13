@@ -1,4 +1,15 @@
 {
   "title": "Badges",
-  "pages": ["mahighlight"]
+  "pages": [
+    "mahighlight",
+    "peer-reviewed",
+    "popular-science",
+    "open-access",
+    "press-release-badge",
+    "member-oeaw",
+    "highlight-unit",
+    "externe-personen",
+    "publication-flag",
+    "oestat3"
+  ]
 }

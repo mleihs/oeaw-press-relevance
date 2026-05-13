@@ -1,0 +1,110 @@
+---
+title: Die fünf Dimensionen
+description: Was Verständlichkeit, Gesellschaftliche Relevanz, Neuheit, Erzählpotenzial und Aktualität jeweils messen, und wie die Press-Drift-Korrektur sie ins Lot bringt.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Die fünf Dimensionen
+
+Der StoryScore ist eine gewichtete Summe aus fünf Achsen. Jede Achse misst eine
+andere Eigenschaft einer Publikation, das Sprachmodell schätzt sie auf einer Skala
+von 0 bis 1. Diese Seite erklärt, wofür jede Dimension steht, woran das Modell sie
+festmacht, und wo aus dem 872-Pub-Audit eine Drift-Korrektur nötig wurde.
+
+## Verständlichkeit · Gewicht 20 % {#verstaendlichkeit}
+
+Wie zugänglich ist die Forschung für Nicht-Fachleute? Die Dimension fragt nach
+Fachjargon-Dichte, Konzept-Komplexität und der Daumenprobe „in einem Satz erklärbar".
+
+Hohe Werte (≥ 0,70) bekommen Pubs, in denen Forschungsergebnis und Methode auch
+ohne Vorwissen verständlich sind. Typische Beispiele: archäologische Funde mit
+Alltagsbezug, populärwissenschaftlich aufbereitete Klimaforschung,
+Gesundheitsstudien mit konkretem Lebensweltbezug.
+
+Niedrige Werte (≤ 0,30) stehen für fachlich-dichte Spezialpapers: rein
+mathematische Beiträge, formale Logik, hochabstrakte Theorie ohne illustrative
+Beispiele.
+
+<Callout type="info">
+**Drift-Korrektur:** Im Audit lag das lokale Bauchgefühl im Schnitt etwa 0,032
+**zu niedrig**, weil das Modell „lebensweltlich relatable" zu hart abgestraft hat.
+Bei klar zugänglichen Themen lieber 0,30+ vergeben statt knausrigen 0,15.
+</Callout>
+
+## Gesellschaftliche Relevanz · Gewicht 25 % {#gesellschaftliche-relevanz}
+
+Die schwerste Achse im StoryScore. Wie direkt betrifft die Forschung Gesundheit,
+Umwelt, Wirtschaft, Kultur oder Alltag? Eine Krebs-Studie mit klinischer
+Implikation wiegt hier mehr als eine taxonomische Neubeschreibung einer
+Mikrobenart, auch wenn beide methodisch top sind.
+
+Wichtig: „relevant" heißt hier **Außenwirkung**, nicht akademische Bedeutung.
+Ein Paradigmen-Paper innerhalb der theoretischen Physik kann fachlich enorm
+wichtig sein und trotzdem 0,2 in dieser Dimension bekommen, wenn es keinen
+Außenanker hat.
+
+<Callout type="info">
+**Drift-Korrektur:** Lokal +0,061 zu hoch. Auslöser waren oft Buchrezensionen
+und Editorials, denen das Modell zu viel gesellschaftliches Gewicht zugeschrieben
+hat. Bei solchen Formaten 0,05 vom ersten Eindruck abziehen.
+</Callout>
+
+## Neuheit · Gewicht 20 % {#neuheit}
+
+Durchbruch, Paradigmenwechsel, unerwartetes Resultat? Diese Dimension misst, wie
+weit die Pub bekannte Annahmen bewegt oder neu rahmt.
+
+Hohe Werte für: erste Beobachtungen, methodische Novitäten mit überraschendem
+Befund, Replikationen, die etablierte Resultate kippen. Niedrige Werte für:
+Routine-Beiträge, kleine inkrementelle Erweiterungen, oder Folge-Studien, die
+einen bekannten Effekt nur leicht spezifizieren.
+
+<Callout type="warn">
+**Größte Drift-Quelle:** Lokal +0,121 zu hoch. Das Modell ist großzügig mit
+„neu", auch wenn die Pub nur eine Variante eines bekannten Themas zeigt. Beim
+ersten Bauchgefühl 0,10 abziehen und nochmal kritisch prüfen.
+</Callout>
+
+## Erzählpotenzial · Gewicht 20 % {#erzaehlpotenzial}
+
+Lässt sich aus der Pub eine fesselnde Story bauen? Gibt es Menschen, Bilder,
+konkrete Szenarien, einen Spannungsbogen? Diese Dimension belohnt
+Human-Interest, visuelle Hooks und lebensnahe Aufhänger.
+
+Klassisch hohe Werte: Feldforschung mit Vor-Ort-Erlebnis, archäologische
+Entdeckungen, Citizen-Science-Projekte. Niedrige Werte: rein statistische
+Auswertungen ohne narrative Anker, theoretische Modellbildung.
+
+<Callout type="info">
+**Drift:** Nur +0,019, also praktisch neutral. Diese Dimension ist empirisch
+stabil. Das Modell „spürt" Story-Material gut.
+</Callout>
+
+## Aktualität · Gewicht 15 % {#aktualitaet}
+
+Anschlussfähigkeit an aktuellen Diskurs, jüngste Ereignisse, saisonale Themen.
+Klimakonferenz steht bevor → Klimapaper bekommt einen Aktualitäts-Bonus.
+Wahljahr läuft → Politik-Studien profitieren.
+
+Niedrigstes Gewicht (15 %), weil Aktualität schnell altert: was diese Woche
+heiß ist, kann nächste Woche kalt sein. Trotzdem wichtig für die Frage, ob eine
+Pub *jetzt* gepitcht werden sollte oder eher in einer kommenden Sitzung.
+
+<Callout type="info">
+**Drift:** +0,088 zu hoch lokal. Das Modell überschätzt Aktualität, wenn die
+Pub thematisch passt, ohne dass es einen konkreten Tagesanlass gibt. Bei
+„passt thematisch, aber kein konkreter Hänger" 0,05 abziehen.
+</Callout>
+
+## Konsistenz prüfen {#konsistenz}
+
+Wenn der Pitch-Vorschlag einen **Aktualitätsbezug** nennt („Vor dem Klimagipfel..."),
+muss `Aktualität` das mitmachen (≥ 0,85). Sonst widersprechen sich Pitch und
+Score. Die Pressestelle merkt das schneller als jeder Audit.
+
+## Verwandte Themen
+
+- [StoryScore](/help/scores/storyscore): die Gewichtungs-Formel und das große Ganze
+- [Score-Bänder](/help/scores/score-baender): wann gilt eine Pub als „hoch"
+- [Pitch-Felder](/help/scores/pitch-felder): was außer dem Score noch beim Analyse-Lauf entsteht

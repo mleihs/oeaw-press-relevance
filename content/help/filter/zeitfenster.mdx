@@ -1,0 +1,55 @@
+---
+title: Zeitfenster
+description: Der Zeitfilter quer durch die App, Standardwerte, Vorperiode-Vergleiche und das Dashboard-Tab-System.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Zeitfenster
+
+Der Zeitfilter beschränkt die Auswertung auf Publikationen mit
+`published_at ≥ heute − N Monate`. Default ist **12 Monate**. „Alle" greift
+zurück auf alle bewerteten Pubs (effektiv unbegrenzt, mit einem
+600-Monats-Cap im Code).
+
+## Wo das Zeitfenster greift {#wo-greift}
+
+- **Forscher:innen-Ranking:** Nur Pubs im Fenster zählen in die
+  Aggregate (`count_high`, `sum_score`, `weighted_avg`).
+- **Pub-Liste:** Filter auf das Publikationsdatum.
+- **Dashboard:** Im Dashboard heißt der Filter „Zeitraum-Tabs" und
+  schaltet zwischen Woche, Monat, Jahr und Gesamt.
+
+## Tabs vs. Slider {#tabs-vs-slider}
+
+Auf den meisten Seiten ist das Zeitfenster ein Slider mit
+Monats-Granularität (1, 3, 6, 12, 24 Monate oder „Alle"). Auf dem
+Dashboard sind es vier Tabs: Woche, Monat, Jahr, Gesamt. Der gewählte Tab
+wird in der URL gespeichert, sodass Bookmarks und geteilte Links die
+Ansicht behalten.
+
+<Callout type="info">
+Die **Stats-Karten im Dashboard** (Pubs gesamt, Popular Science,
+Analysiert, Hohes Story-Potenzial) sind **nicht** von den Tabs betroffen.
+Sie zeigen immer den Gesamtzustand.
+</Callout>
+
+## Vorperiode und Trend-Δ {#vorperiode}
+
+Sobald der Zeitfilter gesetzt ist, wird automatisch eine **direkt davor
+liegende Periode gleicher Länge** als Vergleichszeitraum gerechnet. Bei
+„12 Monate" wird die Periode 24 – 12 Monate vor heute gegen die letzten
+12 Monate verglichen.
+
+Das treibt das Trend-Δ in der Forscher:innen-Liste (das „+5"-Plus, das
+„−2" in Rot): Differenz der `count_high`-Werte zwischen aktueller Periode
+und Vorperiode.
+
+Sonderfall **NEU**: Wenn eine Person in der Vorperiode keine bewerteten
+Pubs hatte, also frisch im Ranking auftaucht, steht statt einer Zahl ein
+„NEU"-Marker.
+
+## Verwandte Themen
+
+- [Forscher:innen-Metriken](/help/forscher-metriken/metriken): wie das Fenster in Aggregaten greift
+- [Dashboard-Tour](/help/dashboard/dashboard-tour): die Tab-Logik im Dashboard

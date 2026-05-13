@@ -1,0 +1,83 @@
+---
+title: Press-Releases-Seite
+description: Übersicht über die Press-Releases-Seite, Stats, Tabs und Match-Logik.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Press-Releases-Seite
+
+Die Press-Releases-Seite zeigt alle ÖAW-Pressemitteilungen, die aus dem
+TYPO3-News-Dump der ÖAW-Hauptseite importiert wurden (Kategorie
+„ÖAW-Pressemeldungen"). Quelle, Datenstand, Match-Logik und Tab-Struktur
+sind hier zusammengefasst.
+
+## Die Stat-Karten {#stats}
+
+Vier Karten oben zeigen die zentralen Mengen:
+
+### Pressemitteilungen gesamt {#total}
+
+Anzahl Datensätze in der lokalen `press_releases`-Tabelle. Umfasst
+Pressemitteilungen mit Publikations-Match und externe Verweise.
+
+### Mit Publikations-Match {#matched}
+
+Pressemitteilungen, deren DOI sich einer Publikation in der WebDB
+zuordnen ließ. Die zugehörige Pub bekommt im Detail das Badge „Bereits
+ÖAW-Pressemitteilung".
+
+<Callout type="info">
+Der Match passiert automatisch beim WebDB-Import via
+`promote_press_release_orphans()`. Sobald eine bisher externe Pub als
+Datensatz hinzukommt, wird die Zuordnung nachgezogen, niemand muss
+manuell verknüpfen.
+</Callout>
+
+### Externe Referenzen {#orphans}
+
+Pressemitteilungen mit DOI-Verweis, deren Paper nicht in der WebDB
+existiert. Häufig sind ÖAW-Personen als Co-Autor:innen beteiligt; die
+WebDB erfasst aber primär Lead-Authorships. Metadaten werden via
+OpenAlex und CrossRef nachgereichert.
+
+### Aktuelles Jahr {#year}
+
+Pressemitteilungen, deren Veröffentlichungsdatum im laufenden
+Kalenderjahr liegt. Die Subline zeigt zusätzlich die Anzahl des aktuellen
+Monats als schneller Aktivitäts-Indikator.
+
+## Die Tabs {#tabs}
+
+Zwei Tabs gliedern die Liste:
+
+### Tab: Mit Pub-Match {#tab-matched}
+
+Schaltet die Liste auf Pressemitteilungen, die einer Publikation in der
+WebDB zugeordnet sind. Klick auf eine Zeile öffnet die zugehörige
+Pub-Detail-Ansicht.
+
+URL-getrieben: der aktive Tab landet im Query-Parameter `?tab=matched`,
+sodass Bookmarks und Shares die Ansicht erhalten.
+
+### Tab: Ohne Pub-Match {#tab-orphans}
+
+Zeigt nur externe Referenzen, also Pressemitteilungen mit DOI, deren
+Paper noch nicht in der WebDB liegt. Jede Zeile ist aufklappbar und
+offenbart Abstract, Autor:innen, Journal und mutmaßliche
+ÖAW-Beteiligung.
+
+## Die StoryScore-Spalte in Pub-Listen {#score-spalte}
+
+In allen Pub-Tabellen quer durch die App zeigt die StoryScore-Spalte den
+Ø Pub-Press-Score als prozentuale Anzeige. Klick auf die Zeile öffnet die
+Detail-Ansicht mit voller Dimensions-Aufschlüsselung und Pitch.
+
+Sortierbar via Spaltenkopf. Bei `N/A` wurde die Pub noch nicht bewertet
+(`analysis_status = pending`).
+
+## Verwandte Themen
+
+- [Externe Pressemitteilungen](/help/press-releases/orphans): was Orphans genau sind
+- [Press-Similarity](/help/press-releases/press-similarity): semantische Nähe zum Press-Cluster
+- [Bereits ÖAW-Pressemitteilung](/help/badges/press-release-badge): das Pub-Side-Badge

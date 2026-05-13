@@ -1,0 +1,57 @@
+---
+title: MeisterTask-Übergabe
+description: Wie eine Publikation als Pitch in die MeisterTask-Pipeline wandert.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# MeisterTask-Übergabe
+
+MeisterTask ist das externe Projektmanagement-Tool, in dem die
+ÖAW-Pressestelle ihre Pitch-Vorgänge weiterführt. Aus StoryScout heraus
+lässt sich eine Pub direkt als Aufgabe nach MeisterTask übergeben, ohne
+manuellen Copy-Paste.
+
+## Was übergeben wird {#was-uebergeben-wird}
+
+Eine Karte in MeisterTask wird automatisch befüllt mit:
+
+- **Titel:** Pub-Titel als Aufgaben-Titel
+- **Beschreibung:** Pitch-Vorschlag, Blickwinkel, Zielgruppe, Begründung
+- **Deep-Link:** Zurück zur Pub-Detail-Ansicht in StoryScout
+- **DOI-Link:** Falls vorhanden, direkt zur Originalpublikation
+
+So hat das Press-Team in MeisterTask alle Pitch-Materialien sofort
+verfügbar, ohne erneut in StoryScout schauen zu müssen.
+
+## Wann der Push passiert {#wann-push}
+
+Drei Wege führen zur MeisterTask-Karte:
+
+1. **Automatisch beim Setzen auf Pitch.** Sobald die Entscheidung „Pitch"
+   getroffen wird und MeisterTask konfiguriert ist, fließt die Pub
+   automatisch nach MeisterTask.
+2. **Manueller Push-Button.** Auf der Pub-Detail-Seite gibt es einen
+   Button „An MeisterTask senden", auch ohne Pitch-Entscheidung
+   verwendbar, etwa wenn jemand eine Pub für eine ganz andere
+   Pitch-Diskussion in MeisterTask vorbereiten will.
+3. **Nachträglich bei Pitch-Decision.** Wenn MeisterTask erst nach einer
+   Pitch-Decision konfiguriert wird, lässt sich der Push nachholen.
+
+<Callout type="info">
+**Doppelte Karten werden serverseitig verhindert.** Wenn die Pub bereits
+gepusht wurde, zeigt der Button stattdessen einen Direktlink zur
+bestehenden Karte.
+</Callout>
+
+## Konfiguration {#konfiguration}
+
+MeisterTask braucht einen API-Token und eine Project-/Section-ID. Beides
+wird serverseitig konfiguriert (nicht über die App-UI). Wenn die
+Konfiguration fehlt, ist der MeisterTask-Push deaktiviert und die
+Pitch-Decision wirkt nur intern in StoryScout.
+
+## Verwandte Themen
+
+- [Triage-Entscheidungen](/help/triage/entscheidungen): Pitch ist der Decision-Trigger
+- [Pitch-Felder](/help/scores/pitch-felder): was in die Karten-Beschreibung wandert

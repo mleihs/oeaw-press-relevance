@@ -1,0 +1,52 @@
+---
+title: Beeswarm-Verteilung
+description: Die grafische Sicht auf die Forscher:innen-Verteilung, D3-Force-Simulation mit semantisch klarer X-Achse.
+---
+
+# Beeswarm-Verteilung
+
+Der Beeswarm-Chart zeigt alle Forscher:innen als Punkte in einer
+horizontal verteilten Wolke. Eine alternative Sicht zum Ranking-Listenstil
+gleiches Datenset, andere Perspektive.
+
+## Was die Achsen bedeuten {#achsen}
+
+- **X-Position:** die gewählte Metrik (Sortier-Modus). Wer weiter rechts
+  liegt, hat einen höheren Wert.
+- **Y-Position:** **rein Kollisions-Versatz**, ohne semantische
+  Bedeutung. Die Y-Achse ist nur dafür da, dass sich Punkte nicht
+  überlagern.
+
+## Größe und Farbe {#groesse-farbe}
+
+- **Größe:** ∝ `√(pubs_total)`. Personen mit mehr Pubs sind größere
+  Kreise, ohne dass die Linearität die kleinen verschluckt.
+- **Farbe:** ÖSTAT-3-Sektion, deterministisch gehasht.
+  Naturwissenschaften in einer Farbe, Geisteswissenschaften in einer
+  anderen, und so weiter.
+- **Rand:** Punkte mit blauem Rand sind ÖAW-Mitglieder.
+
+## Wie das Layout berechnet wird {#layout}
+
+Layout via **D3 Force-Simulation**:
+
+- `forceX` zieht jeden Punkt zur Position auf der X-Achse, die seiner
+  Metrik entspricht
+- `forceCollide` schiebt sich überlappende Punkte sanft auseinander
+- **140 Iterationen** laufen vorab im Browser, dann wird das Ergebnis
+  als statisches SVG gerendert
+
+Das Ergebnis: eine schwebende Wolke, in der die X-Position belastbar
+gelesen werden kann, ohne dass Punkte direkt aufeinander liegen.
+
+## Hover-Verhalten {#hover}
+
+Hover dimmt alle anderen Punkte und hebt den fokussierten hervor. Im
+Tooltip erscheinen Name, Metrik-Wert, Pubs-gesamt und ÖSTAT-3-Sektion.
+Klick öffnet das Forscher:innen-Profil.
+
+## Verwandte Themen
+
+- [Forscher:innen-Metriken](/help/forscher-metriken/metriken): wie die X-Achse bestimmt wird
+- [ÖSTAT-3-Sektion](/help/badges/oestat3): was die Farben kodieren
+- [Ranking](/help/forscher-metriken/ranking): die Listen-Sicht zum selben Datenset

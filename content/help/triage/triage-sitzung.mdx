@@ -1,0 +1,65 @@
+---
+title: Triage-Sitzung
+description: Die drei Sitzungs-Karten, Geflaggt, Frisch, Eigen-Highlights, und ihre Zusammensetzung.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Triage-Sitzung
+
+Die Triage-Sitzungs-Seite versammelt Pubs, die in der nächsten Sitzung
+besprochen werden sollten. Drei Stat-Karten oben zeigen die drei
+Hauptquellen, jede Karte ist klickbar und öffnet die entsprechende
+Liste.
+
+## Geflaggt {#flagged}
+
+Publikationen, die ein Team-Mitglied per Pin-Icon zur Diskussion in der
+Triage-Sitzung markiert hat. Flag-Notes sind frei formulierbare
+Kommentare, sichtbar im Tooltip des Pin-Icons.
+
+Anders als „Highlights" (vom Institut) und „Frisch" (Score-Threshold) ist
+das ein **manuelles Signal aus dem Press-Team selbst**. Mehrere Personen
+können dieselbe Pub flaggen.
+
+## Frisch · Score ≥ 70 % {#fresh}
+
+Publikationen, die seit der letzten abgeschlossenen Sitzung neu analysiert
+wurden und einen StoryScore von mindestens 70 % erreicht haben. Stellt
+sicher, dass hochbewertete Frisch-Eingänge nicht in der Allgemein-Liste
+untergehen, sondern direkt in der nächsten Triage landen.
+
+<Callout type="info">
+Wenn keine Sitzung seit 7 Tagen abgeschlossen wurde, fällt das Fenster auf
+die letzten 7 Tage zurück (Fallback in `fetchSinceTimestamp`). So wird die
+Frische-Karte nie über Wochen leer.
+</Callout>
+
+## ÖAW-Highlights {#mahl}
+
+Publikationen, bei denen die Institute-Selbstdarstellung in der WebDB ein
+`mahighlight=true`-Flag gesetzt hat, das Institut sieht das Paper als
+bemerkenswert für die ÖAW-Außenwirkung.
+
+<Callout type="warn">
+**Achtung:** `mahighlight` heißt **Eigen-Highlight**, nicht
+„Akademie-Mitglied". 90 % der Highlights kommen tatsächlich von Pubs ohne
+Akademie-Mitglied im Author-Pool, die Institute markieren also auch ohne
+Mitgliedsbezug. Siehe [mahighlight](/help/badges/mahighlight).
+</Callout>
+
+## Wie der Workflow läuft {#workflow}
+
+1. **Vorbereitung:** Die drei Karten füllen sich automatisch zwischen den
+   Sitzungen. Frische Pubs nach Analyse, Highlights nach WebDB-Import,
+   Flags durch Team-Mitglieder.
+2. **In der Sitzung:** Liste pro Karte öffnen, pro Pub eine Entscheidung
+   treffen (Pitch / Hold / Skip / Snooze). Notizen optional.
+3. **Abschluss:** Die Sitzung wird abgeschlossen (Timestamp wird gesetzt).
+   Ab jetzt zählt der nächste Frisch-Eingang ab diesem Zeitpunkt.
+
+## Verwandte Themen
+
+- [Triage-Entscheidungen](/help/triage/entscheidungen): Pitch, Hold, Skip, Snooze
+- [Publikations-Flag](/help/badges/publication-flag): wie Flags gesetzt werden
+- [Score-Bänder](/help/scores/score-baender): wo die 70-%-Linie für „Frisch" herkommt

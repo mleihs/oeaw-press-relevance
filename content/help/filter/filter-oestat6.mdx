@@ -1,0 +1,55 @@
+---
+title: ÖSTAT-6-Filter
+description: Filter nach österreichischer Wissenschaftsklassifikation auf 6-stelliger Ebene, 1.411 Codes, sechs Super-Domänen.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# ÖSTAT-6-Filter
+
+Der ÖSTAT-6-Filter zeigt Publikationen nach österreichischer
+Wissenschafts-Klassifikation auf der **6-stelligen Ebene**, insgesamt
+1.411 Codes. Die Klassifikation wird **pro Publikation** gepflegt (nicht
+pro Person wie bei ÖSTAT-3), und ist damit das feinste verfügbare Werkzeug
+für Themen-Suche.
+
+## Die sechs Super-Domänen {#super-domaenen}
+
+Codes sind nach erstem Ziffer-Block gruppiert:
+
+| Block | Domäne |
+|---|---|
+| **1xx** | Naturwissenschaften |
+| **2xx** | Technische Wissenschaften |
+| **3xx** | Medizinische und Gesundheitswissenschaften |
+| **4xx** | Agrarwissenschaften und Veterinärmedizin |
+| **5xx** | Sozialwissenschaften |
+| **6xx** | Geisteswissenschaften und Kulturwissenschaften |
+
+Innerhalb jeder Domäne folgen feinere Unterteilungen. Beispiele:
+
+- 101025, Mathematische Logik
+- 103025, Astrophysik
+- 305902, Onkologie
+- 605008, Geschlechterforschung
+
+## Wie die Suche funktioniert {#suche}
+
+Die Suche akzeptiert sowohl Codes („103025") als auch Stichwörter im
+Klartext-Label („Astrophysik"). Die Mehrfachauswahl ist möglich, sodass
+mehrere verwandte Codes in einer Filter-Aktion kombiniert werden können.
+
+## Cross-Domain-Vergleiche {#cross-domain}
+
+<Callout type="warn">
+Die Klassifikation wird pro Publikation gepflegt. Cross-Domain-Vergleiche
+sind technisch möglich, aber Citation- und Press-Patterns unterscheiden
+sich von Domäne zu Domäne **deutlich**. Eine Pub mit hoher Citation-Zahl
+in 605008 (Geschlechterforschung) ist methodisch nicht direkt vergleichbar
+mit einer Pub mit hoher Zahl in 103025 (Astrophysik).
+</Callout>
+
+## Verwandte Themen
+
+- [ÖSTAT-3-Sektion](/help/badges/oestat3): die personengeführte Domäne
+- [Institut-Filter](/help/filter/filter-institut): wenn der Fokus auf Orgunit statt Disziplin liegt

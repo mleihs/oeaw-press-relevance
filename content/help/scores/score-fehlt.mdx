@@ -1,0 +1,94 @@
+---
+title: Score nicht verfügbar
+description: Wann eine Publikation keinen StoryScore bekommt, und welcher Schritt jeweils fehlt, um die Bewertung nachzuholen.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Wenn der Score fehlt
+
+Eine Pub bekommt nur dann einen StoryScore, wenn sie zwei Pipeline-Schritte
+erfolgreich durchlaufen hat: **Anreicherung** (externe Quellen liefern Abstract
+und Keywords) und **Analyse** (ein Sprachmodell bewertet den Inhalt). Wenn an
+einer Stelle etwas hängt, zeigt die Pub „kein Score", aber mit unterschiedlichen
+Sub-Zuständen, die genau verraten, woran es liegt.
+
+## Die sechs Sub-Zustände {#sub-zustaende}
+
+| Zustand | Wo es hängt | Nächster Schritt |
+|---|---|---|
+| Allgemein „kein Score" | Pub noch nicht bewertet | Analyse-Pipeline starten |
+| Pending · Pending | Keine Anreicherung versucht | `enrich-api` laufen lassen |
+| Pending · Partial | Anreicherung lückenhaft (z. B. kein Abstract) | `enrich-augment` für weitere Quellen |
+| Pending · Enriched | Anreicherung durch, Scoring fehlt | Analyse-Lauf triggern |
+| Pending · Failed | Anreicherung gescheitert | Manuell prüfen oder akzeptieren |
+| Analysis · Failed | Scoring versucht, ungültiges Resultat | Re-Run mit anderem Modell |
+
+Die Punkt-Trennung liest sich als „Analyse-Status · Anreicherungs-Status". Mit
+etwas Übung wird auf einen Blick sichtbar, wo Eingriffsbedarf besteht.
+
+## Keine Anreicherung versucht {#pending-pending}
+
+Der häufigste Frischeingangs-Zustand. WebDB liefert oft nur Titel und
+Autor:innen. Ohne externe Quellen-Lookup gibt es keinen Abstract, keinen
+Keyword-Vektor, keine inhaltliche Basis für die Bewertung.
+
+**Auflösung:** `enrich-free --apply` oder `enrich-api` über die Pipeline-Seite
+triggern. Beide gehen die freien Quellen (CrossRef, OpenAlex, Unpaywall,
+Semantic Scholar) automatisch durch und schreiben das Ergebnis zurück in die
+Pub.
+
+## Anreicherung teilweise {#pending-partial}
+
+Manche Quellen haben geliefert (etwa CrossRef mit Journal-Metadaten), andere
+nicht. Häufig fehlt der Abstract: Elsevier- oder Springer-DOIs sind bei
+CrossRef indexiert, aber der Abstract steht hinter Paywall und kommt nicht
+über die freien APIs durch.
+
+Eine Bewertung allein auf Titel und Keywords wäre Fabrikation. Lieber
+`enrich-augment` für zusätzliche Quellen (Semantic Scholar, PDF-Volltext), oder
+die Pub manuell triagieren.
+
+## Anreicherung durch, Scoring fehlt {#pending-enriched}
+
+Der angenehmste Fehlerzustand: alles ist da, es fehlt nur der Trigger. Über
+die Analyse-Seite oder per `analyze --apply` startet der nächste Lauf, danach
+erscheint der Score.
+
+## Anreicherung fehlgeschlagen {#pending-failed}
+
+Alle externen Quellen abgefragt, keine lieferte verwertbare Daten. Häufige
+Ursachen: kein DOI vorhanden, DOI nicht in den freien Datenbanken registriert,
+oder der Abstract steht nur in einem Format, das die APIs nicht ausliefern.
+
+Manuelle Anreicherung wäre der nächste Schritt, lohnt sich aber nicht für
+jeden Fall. Bei sehr alten Pubs ohne DOI ist „akzeptieren und überspringen"
+oft die ehrliche Antwort.
+
+## Bewertung fehlgeschlagen {#analysis-failed}
+
+Eine Scoring-Session lief, aber das Sprachmodell hat keine valide Bewertung
+geliefert. Häufige Ursache: Content zu kurz unter dem Min-Words-Threshold
+(siehe Einstellungen), oder das Modell hat ungültige Werte zurückgegeben.
+
+Re-Run mit anderem Modell (etwa Wechsel von Haiku auf Sonnet) oder mit
+angepasstem Min-Words-Wert in den Settings hilft meistens.
+
+## Warum die Granularität wichtig ist {#granularitaet}
+
+Ein einzelnes „kein Score" wäre unbrauchbar. Das Team könnte nicht zwischen
+„kommt gleich" und „hoffnungslos" unterscheiden. Die sechs Sub-Zustände
+erlauben gezielte Aktion pro Pub, ohne dass jedes Mal manuell in die
+Pipeline-Logs geschaut werden müsste.
+
+<Callout type="info">
+Im Pub-Detail steht der Sub-Zustand direkt im Score-Slot. Im Listen-View
+reicht oft ein Blick auf das Status-Badge, um die häufigsten Ursachen
+einzugrenzen.
+</Callout>
+
+## Verwandte Themen
+
+- [Anreicherung](/help/pipeline/enrichment): die externen Quellen im Detail
+- [Analyse](/help/pipeline/analyse): was im Sprachmodell-Lauf passiert
+- [Einstellungen](/help/einstellungen/einstellungen): Min-Words und Batch-Größe für die Analyse

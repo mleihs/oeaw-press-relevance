@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import Link from 'next/link';
 import { Info } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { EXPL, type Explanation } from '@/lib/client/explanations';
+import { EXPL, EXPL_KB_MAP, type Explanation, type KbAnchor } from '@/lib/client/explanations';
 import { useInfoBubblesEnabled } from '@/lib/client/hooks/use-info-bubbles';
 import { cn } from '@/lib/shared/utils';
 
@@ -17,6 +18,8 @@ interface InfoBubbleProps {
   /** Side of the popover. */
   side?: 'top' | 'right' | 'bottom' | 'left';
   className?: string;
+  /** Optional KB deep-link; overrides the auto-lookup via EXPL_KB_MAP. */
+  kbAnchor?: KbAnchor;
 }
 
 const SIZES = {
@@ -69,6 +72,7 @@ export function InfoBubble({
   size = 'sm',
   side = 'top',
   className,
+  kbAnchor,
 }: InfoBubbleProps) {
   const [globalEnabled] = useInfoBubblesEnabled();
   const canHover = useCanHover();
@@ -83,7 +87,8 @@ export function InfoBubble({
     if (closeTimer.current) clearTimeout(closeTimer.current);
   }, []);
 
-  const expl = content ?? (id ? EXPL[id] : undefined);
+  const expl: Explanation | undefined = content ?? (id ? EXPL[id] : undefined);
+  const link = kbAnchor ?? (id ? EXPL_KB_MAP[id] : undefined);
   if (!expl || !globalEnabled) return null;
 
   const cancelTimers = () => {
@@ -180,6 +185,16 @@ export function InfoBubble({
             <div className="rounded bg-amber-50/60 dark:bg-amber-500/[0.08] px-2.5 py-1.5 text-[11px] text-amber-900 dark:text-amber-200">
               {expl.note}
             </div>
+          )}
+
+          {link && (
+            <Link
+              href={link.hash ? `${link.path}#${link.hash}` : link.path}
+              onClick={(e) => e.stopPropagation()}
+              className="inline-block pt-0.5 text-[11px] font-medium text-brand/80 hover:text-brand hover:underline transition-colors"
+            >
+              Mehr im Hilfe-Center →
+            </Link>
           )}
         </div>
       </PopoverContent>

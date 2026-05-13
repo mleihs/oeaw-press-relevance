@@ -1,0 +1,93 @@
+---
+title: Anreicherungs-Pipeline
+description: Wie externe Quellen Abstract, Keywords und Open-Access-Status liefern, und welche Status-Zustände eine Pub dabei durchläuft.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Anreicherungs-Pipeline
+
+Die Anreicherungs-Pipeline holt zusätzliche Metadaten aus externen Quellen
+und schreibt sie in die lokale Datenbank zurück. Ziel: jede Pub bekommt
+genug inhaltliche Substanz (Abstract, Keywords, OA-Status), damit das
+Sprachmodell sie seriös bewerten kann.
+
+## Welche Quellen abgefragt werden {#quellen}
+
+Vier APIs plus PDF-Volltext-Extraktion stehen zur Verfügung:
+
+- **CrossRef:** DOI-Registratur, Verlags-Metadaten, manchmal Abstract
+- **OpenAlex:** Themen-Tags, Zitationen, OA-Status, oft Abstract
+- **Unpaywall:** Spezialist:in für frei zugängliche PDF-Links
+- **Semantic Scholar:** Abstract + Influence-Score von Allen AI
+- **PDF-Volltext:** Download und Extraktion, wenn der Abstract nirgends
+  über die APIs verfügbar ist
+
+Im Modal lassen sich einzelne Quellen aktivieren oder ausschließen, etwa um
+gezielt nur Pubs ohne Abstract nachzuladen.
+
+<Callout type="info">
+Welche Daten von welcher Quelle kommen, ist in
+[Datenquellen im Detail](/help/datenquellen/quellen-uebersicht) beschrieben.
+</Callout>
+
+## Die Status-Zustände {#status}
+
+Während die Pipeline läuft, durchläuft jede Pub einen von vier
+Anreicherungs-Status:
+
+### Pending {#status-pending}
+
+Externe Datenquellen wurden für diese Publikation noch nicht abgefragt.
+WebDB liefert oft nur Titel und Autor:innen; Abstract und Keywords kommen
+erst durch die Anreicherung dazu. Solange das nicht geschehen ist, kann
+die Pub auch nicht inhaltlich bewertet werden: eine Bewertung ohne
+Substanz wäre Fabrikation.
+
+### Enriched {#status-enriched}
+
+Mindestens eine externe Quelle hat zusätzliche Metadaten geliefert:
+typischerweise Abstract, Keywords oder Volltext-Snippet. Die Pub ist damit
+bereit für die inhaltliche Bewertung durch ein Sprachmodell.
+
+### Partial {#status-partial}
+
+Manche externen Quellen lieferten Daten, andere nicht. Häufig fehlt der
+Abstract, was die spätere Bewertung erschwert oder sie nur auf Basis von
+Keywords + Citation möglich macht. Über `enrich-augment` lassen sich
+weitere Quellen nachladen.
+
+### Failed {#status-failed}
+
+Alle externen Quellen wurden abgefragt, keine lieferte verwertbare Daten.
+Häufige Ursachen: Pub hat keinen DOI, DOI ist in keiner Datenbank
+registriert, oder der Abstract liegt nur in einem Format vor, das die APIs
+nicht ausliefern.
+
+## Wie sie gestartet wird {#starten}
+
+Auf der Pub-Listen-Seite gibt es einen Pipeline-Modal. Dort:
+
+1. **Quellen-Auswahl:** Welche der vier APIs sollen abgefragt werden? PDF
+   ist als Fallback separat schaltbar.
+2. **Filter-Auswahl:** Welche Pubs werden angereichert? Standard: nur die
+   mit Status `pending`. Optional: alle, oder gezielt eine Subgruppe.
+3. **Batch-Größe:** Wie viele Pubs auf einmal? Default ist konservativ, um
+   API-Limits nicht zu sprengen.
+4. **Start:** Die Pipeline läuft serverseitig, mit Live-Progress-Update.
+
+## Rate-Limits und APIs {#rate-limits}
+
+Die meisten Quellen sind kostenfrei und haben großzügige Rate-Limits
+(CrossRef, OpenAlex, Unpaywall, Semantic Scholar). Die App respektiert sie
+automatisch mit einem kleinen Sleep zwischen Requests.
+
+Trotzdem: Bei sehr großen Batches (mehrere tausend Pubs) ist es ehrlicher,
+die Pipeline über Nacht laufen zu lassen und nicht im Live-Betrieb zu
+beobachten.
+
+## Verwandte Themen
+
+- [Datenquellen im Detail](/help/datenquellen/quellen-uebersicht): die fünf Quellen einzeln
+- [Analyse-Pipeline](/help/pipeline/analyse): was nach der Anreicherung kommt
+- [Score nicht verfügbar](/help/scores/score-fehlt): wann der Status fehlt

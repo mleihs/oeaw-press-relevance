@@ -1,0 +1,84 @@
+---
+title: Dashboard-Tour
+description: Was die vier Stat-Karten, das Top-10-Panel und die drei Visualisierungen auf der Startseite zeigen.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Dashboard-Tour
+
+Das Dashboard ist die Landing-Seite von StoryScout. Es zeigt den
+aktuellen Datenstand, die Top-10-Pubs und drei Visualisierungen über die
+Score-Landschaft.
+
+## Die vier Stat-Karten {#stats}
+
+Oben vier Karten mit den Gesamt-Zahlen:
+
+### Publikationen gesamt {#stat-total}
+
+Anzahl Datensätze in der lokalen `publications`-Tabelle, synchronisiert
+aus der Typo3-WebDB. Beinhaltet alle Publikationsformate (Fachartikel,
+Buchkapitel, Multimedia, Sonstige) ohne Filter.
+
+### Popular Science (WebDB-Flag) {#stat-popsci}
+
+Anzahl Pubs mit `popular_science = true` aus der WebDB. Markierung
+erfolgt durch das publizierende Institut, ist aber nicht streng
+kuratiert, deshalb fließt das Flag **nicht** in den StoryScore ein.
+Reines Datenherkunfts-Signal, kein Qualitätsmerkmal.
+
+### Analysierte Publikationen {#stat-analyzed}
+
+Pubs mit `analysis_status = 'analyzed'`, d. h. ein Sprachmodell hat
+StoryScore + 5 Dimensionen + Pitch + Begründung + Haiku berechnet. Die
+übrigen sind `pending` und können über die Analyse-Seite nachbewertet
+werden.
+
+### Hohes Story-Potenzial {#stat-high}
+
+Pubs mit StoryScore ≥ 70 % über alle Zeiträume. Die Subline
+„Durchschnitt" zeigt den Mittelwert über **alle** analysierten Pubs
+(nicht nur die hohen).
+
+<Callout type="info">
+Die vier Karten sind **nicht** von den Zeitraum-Tabs betroffen. Sie
+zeigen immer den Gesamtzustand der Datenbank.
+</Callout>
+
+## Top-10-Panel {#top10}
+
+Die zehn Pubs mit höchstem StoryScore im gewählten Zeitraum (basierend
+auf `published_at`). Sortierung absteigend nach `press_score`.
+
+**ITA-Bias-Korrektur:** Pubs aus dem ITA-Subtree werden im
+Dashboard-Panel ausgeblendet, damit eine einzelne Abteilung nicht die
+Top-10 dominiert. Auf der Forscher:innen-Seite gibt es einen separaten
+Filter dafür.
+
+## StoryScore-Verteilung {#score-distribution}
+
+Histogramm der Press-Scores aller analysierten Pubs in Buckets von 10 %.
+Zeigt die Form der Score-Verteilung, bei einem gesunden Datensatz
+erwartet man einen Peak im 20 – 40 %-Bereich (typisches Fachpaper) und
+einen langen Tail nach rechts (echte Pitch-Kandidaten).
+
+## Dimensions-Profil {#dim-profil}
+
+Radar-Chart über die fünf StoryScore-Dimensionen mit den Mittelwerten
+aller analysierten Pubs. Zeigt, welche Achsen die ÖAW-Forschung im
+Schnitt stark/schwach besetzt, z. B. „durchschnittlich hohe
+gesellschaftliche Relevanz, schwache Verständlichkeit".
+
+## Top Keywords {#top-keywords}
+
+Häufigste Schlagwörter aus `enriched_keywords` (angereichert via
+OpenAlex, Semantic Scholar etc.). Größe ∝ Häufigkeit. Nur aus
+OpenAccess- und angereicherten Pubs, Closed-Access ohne API-Daten fehlt
+hier.
+
+## Verwandte Themen
+
+- [Zeitfenster](/help/filter/zeitfenster): die Tab-Logik des Dashboards
+- [Die fünf Dimensionen](/help/scores/dimensionen): was das Radar-Chart visualisiert
+- [Score-Bänder](/help/scores/score-baender): wo die 70-%-Linie für „Hohes Story-Potenzial" herkommt

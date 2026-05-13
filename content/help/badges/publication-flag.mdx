@@ -1,0 +1,57 @@
+---
+title: Publikations-Flag
+description: Manuelles Signal aus dem Press-Team, wie der Flag funktioniert und wofür Flag-Notes da sind.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Publikations-Flag
+
+Das Flag markiert eine Pub mit einer Pin-Nadel, damit sie in der nächsten
+Triage-Sitzung **garantiert auf den Tisch kommt**. Anders als
+Eigen-Highlights (vom Institut) und „Frisch" (Score-Threshold) ist Flag
+ein **manuelles Signal aus dem Press-Team selbst**.
+
+## Wie es gesetzt wird {#setzen}
+
+Das Pin-Icon erscheint auf der Pub-Detail-Seite, in der Pub-Liste und in
+Forscher:innen-Profilen. Ein Klick öffnet einen kleinen Dialog für eine
+optionale Notiz. Die Notiz wandert in das `publication_flags`-Audit-Log
+und ist sichtbar im Tooltip des Pin-Icons sowie im aufgeklappten
+Flag-Panel.
+
+Mehrere Teammitglieder können dieselbe Pub flaggen, jede Notiz behält
+ihren Urheber (anhand des Reviewer-Names aus den Einstellungen).
+
+## Was eine gute Notiz ausmacht {#gute-notiz}
+
+Die Notiz ist optional, aber sehr hilfreich. Eine gute Notiz beantwortet
+eine oder beide dieser Fragen:
+
+- **Warum diese Pub?** Welcher Aspekt macht sie pitch-tauglich?
+- **Was soll besprochen werden?** Welche offene Frage soll das Team
+  gemeinsam klären?
+
+Konkrete Beispiele:
+
+- „Brennt thematisch, aber sehr abstrakter Abstract, Erklär-Hilfe nötig?"
+- „Lokalbezug Wien-Floridsdorf, könnte gut zur Bezirksblatt-Anfrage passen"
+- „Folge-Paper für Q3 erwartet, wir sollten zusammen pitchen"
+
+## Wo der Flag in der Triage-Sitzung auftaucht {#in-der-triage}
+
+Auf der Sitzungs-Seite zählt die Karte „Geflaggt" alle gesetzten Flags.
+Klick öffnet die Liste, sortiert nach Setzzeit. Während der Sitzung kann
+direkt aus der Liste eine Entscheidung getroffen werden, Pitch, Hold,
+Skip oder Snooze.
+
+<Callout type="info">
+Flags werden beim Treffen einer Decision **nicht automatisch entfernt**.
+So bleibt nachvollziehbar, dass eine Pub diskutiert wurde. Wer Flags aktiv
+schließen will, kann das im Flag-Panel über „Entfernen" tun.
+</Callout>
+
+## Verwandte Themen
+
+- [Triage-Entscheidungen](/help/triage/entscheidungen): Pitch, Hold, Skip, Snooze
+- [Triage-Sitzung](/help/triage/triage-sitzung): die drei Sitzungs-Karten

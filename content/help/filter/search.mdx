@@ -1,0 +1,42 @@
+---
+title: Titel-Suche
+description: Volltext-Suche im Pub-Titel, Tastenkürzel, Verhalten und was die Suche nicht macht.
+---
+
+# Titel-Suche
+
+Die Titel-Suche durchsucht das Titel-Feld jeder Publikation im aktuellen
+Filter-Set. Sie ist case-insensitive und teilstring-basiert: „struktur"
+findet „Strukturanalyse" und „Sub-Struktur".
+
+## Tastenkürzel {#tastenkuerzel}
+
+- **`/`:** springt direkt ins Suchfeld
+- **`⌘K`** (macOS) oder **`Ctrl+K`** (Windows/Linux), alternative
+  Springmarke, derselbe Effekt
+
+Beide Tastenkürzel funktionieren überall in der App. Wer hauptsächlich mit
+Filter und Tabellen arbeitet, gewöhnt sich daran wie an die
+Browser-Adressleiste.
+
+## Was die Suche kann {#kann}
+
+- **Umlaute korrekt:** „lösung" findet „Lösung", „Lösungs-Verfahren" und
+  „Lösungsweg".
+- **Sonderzeichen:** Bindestrich, Slash, Punkt werden indexiert.
+- **Bleibt aktiv beim Preset-Wechsel:** Wer einen Suchterm gesetzt hat und
+  zwischen Presets springt, behält die Suche bei. Sie zählt als
+  Modifikator, nicht als Preset-Territorium.
+
+## Was die Suche nicht macht {#kann-nicht}
+
+- **Keine Abstract-Volltextsuche:** Nur das Titel-Feld wird indexiert. Wer
+  thematisch im Abstract suchen will, nutzt den ÖSTAT-6-Filter oder
+  filtert nach Keywords-Tags.
+- **Keine Fuzzy-Suche:** „strukt" findet nicht „Strukur" (Tippfehler).
+  Suchwörter müssen als Teilstring genau drin stehen.
+
+## Verwandte Themen
+
+- [ÖSTAT-6-Filter](/help/filter/filter-oestat6): wenn die Suche thematischer werden soll
+- [Filter-Presets](/help/filter/presets): wie die Suche mit Presets zusammenspielt

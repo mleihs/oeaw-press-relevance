@@ -1,0 +1,50 @@
+---
+title: Autorschaft-Scope
+description: Alle Beteiligten vs. nur Hauptautor:innen, und die Datenqualitäts-Warnung dazu.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Autorschaft-Scope
+
+Der Filter „Autorschaft-Scope" bestimmt, welche Personen in der Liste oder
+im Ranking als beteiligt zählen, alle Co-Autor:innen oder nur die
+Hauptautor:innen.
+
+## Die zwei Modi {#modi}
+
+**Alle Beteiligten:** Jede Person, die in `person_publications` mit einer
+Pub verbunden ist, zählt. Das ist der Default und die belastbare Wahl für
+die allermeisten Auswertungen.
+
+**Nur Hauptautor:innen:** Nur Personen mit der Rolle `HauptautorIn` oder
+`AlleinautorIn` zählen.
+
+## Datenqualitäts-Warnung {#datenwarnung}
+
+<Callout type="warn">
+Das WebDB füllt die Authorship-Spalte nur für **rund 1,4 %** der
+Junction-Rows. „Nur Hauptautor:innen" filtert daher in der Praxis fast
+alles weg, sinnvoll nur in den seltenen Fällen, in denen es speziell auf
+die Autorschafts-Rolle ankommt und die betroffenen Pubs nachweislich
+korrekt gepflegt sind.
+</Callout>
+
+„Alle Beteiligten" ist also die belastbare Default-Wahl, nicht aus
+Bequemlichkeit, sondern weil die alternative Datenbasis löchrig ist.
+
+## Warum die Daten so lückig sind {#warum-luecken}
+
+Die WebDB-Eingabemaske macht das Authorship-Feld optional. Über die Jahre
+wurde es uneinheitlich gepflegt: manche Institute setzen es konsequent,
+viele andere gar nicht. Die App nimmt das, was da ist, ohne nachträglich zu
+raten.
+
+Eine spätere Pure-Migration könnte das Bild verbessern, weil Pure die
+Autorschafts-Rolle als Pflichtfeld kennt. Bis dahin bleibt „Alle
+Beteiligten" der pragmatische Zugang.
+
+## Verwandte Themen
+
+- [Externe Personen](/help/badges/externe-personen): wer als externe:r Co-Autor:in zählt
+- [Forscher:innen-Metriken](/help/forscher-metriken/metriken): wie Autorschaft in Aggregates fließt

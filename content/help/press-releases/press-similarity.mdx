@@ -1,0 +1,74 @@
+---
+title: Press-Similarity
+description: Semantische Nähe einer Publikation zum historischen ÖAW-Press-Cluster, auf Basis von SPECTER2-Embeddings.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Press-Similarity
+
+Die Press-Similarity einer Publikation misst, **wie nah sie semantisch an
+dem liegt, was die ÖAW-Pressestelle bisher pitchwürdig fand**. Hohe Werte
+deuten auf thematische Anschlussfähigkeit an den historischen
+Press-Korpus.
+
+## Wie sie berechnet wird {#berechnung}
+
+Der Press-Similarity-Wert ist die **mittlere Cosinus-Ähnlichkeit zu den
+fünf nächsten Nachbarn im Press-Cluster**. Self-Match wird ausgeschlossen.
+
+```text
+Press-Similarity = mean cosine(SPECTER2(Pub), top-5 Press-Cluster)
+                                       (Self-Match ausgenommen)
+```
+
+Drei Bestandteile:
+
+- **Embedding-Modell:** SPECTER2 (Allen AI), trainiert auf
+  wissenschaftlichen Texten. Vektor pro Pub aus Titel + Abstract.
+- **Press-Cluster:** Alle ÖAW-Pubs, die bereits eine Pressemitteilung
+  haben, plus externe Co-Author-Pubs aus dem Orphan-Pool.
+- **Cosinus-Ähnlichkeit:** Klassische Vektor-Geometrie. 1,0 = identische
+  Richtung, 0 = orthogonal.
+
+## Warum nicht Centroid-Cosine? {#nicht-centroid}
+
+Ein einzelner Centroid-Vektor (Mittelpunkt aller Press-Pubs) wäre
+einfacher zu berechnen, lieferte aber schlechtere Ergebnisse: bei
+unbalanciertem Korpus mit dominanten Themen würde der Centroid in
+Richtung dieser Themen verschoben, und seltenere Press-würdige Themen
+würden unterbewertet.
+
+Die **k-NN-Variante (Top-5)** ist robuster, weil sie pro Pub die
+spezifisch nächstgelegenen Press-Anker findet, nicht den globalen
+Schwerpunkt. Empirisch ein Unterschied von ΔAP +0,049 in der
+Press-Cluster-Vorhersage.
+
+## Wo sie greift {#greift}
+
+Im Pub-Detail erscheint Press-Similarity als zusätzliches Signal neben
+dem StoryScore. Hohe Werte (≥ 0,75) deuten darauf hin, dass die Pub
+thematisch in dieselbe Ecke wie bisherige Pitch-Erfolge fällt.
+
+<Callout type="info">
+Press-Similarity fließt **nicht** in den StoryScore ein. Sie ist ein
+**unabhängiges Signal**, zwei Pubs mit demselben StoryScore können sehr
+unterschiedliche Press-Similarities haben.
+</Callout>
+
+## Limits bei deutschsprachigen Pubs {#limits-deutsch}
+
+SPECTER2 ist auf englischen Texten trainiert. Für deutschsprachige Pubs
+ist die Similarity nur **orientierend**, weil:
+
+- Deutsche Abstracts werden nicht so präzise eingebettet wie englische
+- Deutsche Press-Pubs im Korpus sind selten, sodass die k-NN-Treffer oft
+  englische Pubs sind
+
+Wer eine deutschsprachige Pub mit hoher Press-Similarity hat: das ist
+ein gutes Signal. Wer eine mit niedriger hat: nicht überinterpretieren.
+
+## Verwandte Themen
+
+- [StoryScore](/help/scores/storyscore): das parallel laufende inhaltliche Signal
+- [Press-Releases-Seite](/help/press-releases/seiten-tour): wo der Press-Cluster herkommt

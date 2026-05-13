@@ -1,0 +1,75 @@
+---
+title: Triage-Entscheidungen
+description: 'Die fünf Entscheidungen, die in der Triage getroffen werden: Pitch, Hold, Skip, Snooze und eine Begründungs-Notiz.'
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Triage-Entscheidungen
+
+In der Triage-Sitzung wird für jede besprochene Publikation eine
+Entscheidung festgehalten. Fünf Optionen stehen zur Verfügung: vier
+Status-Entscheidungen plus eine optionale Begründungs-Notiz.
+
+## Pitch {#pitch}
+
+Erste Wahl in der Triage. Die Publikation geht in den aktiven Pitch-Pool
+und wird, sofern MeisterTask konfiguriert ist, dort automatisch als Karte
+angelegt. Snooze-Zeiten werden beim Setzen auf Pitch zurückgenommen, weil
+die Pub jetzt ein laufender Vorgang ist, nicht ein parkender.
+
+Die Entscheidung lässt sich jederzeit über „Zurücksetzen" rückgängig
+machen. Eine bereits gepushte MeisterTask-Karte bleibt davon unberührt.
+
+## Hold {#hold}
+
+Die Pub wirkt aussichtsreich, aber etwas fehlt noch: ein passender Anlass,
+ein zweiter Blick, eine Rückfrage an die Forscher:in. Hold parkt sie
+sichtbar im System, ohne dass sie aus der Liste verschwindet.
+
+In Kombination mit den Snooze-Schaltern (1 Woche, 4 Wochen, Quartal) lässt
+sich ein konkretes Wiedervorlage-Datum setzen. Ohne Snooze bleibt Hold
+zeitlich offen.
+
+## Skip {#skip}
+
+Klares Nein für die laufende Triage. Die Pub verschwindet aus den
+Default-Listen, bleibt aber in der Datenbank für Audits, Reports und
+spätere Re-Evaluierungen. Skip sagt: hier ist gerade nichts zu holen,
+weiter zum nächsten Kandidaten.
+
+<Callout type="info">
+Skip löscht keine Daten. Wer die Pub später doch noch anschauen will,
+öffnet sie über „Zurücksetzen" wieder oder ruft sie direkt über die
+Detail-URL auf.
+</Callout>
+
+## Snooze {#snooze}
+
+Verschiebt die Pub auf ein späteres Datum und setzt sie dabei automatisch
+auf Hold. Vier Wege:
+
+- **Eine Woche:** für „muss erst noch was geklärt werden"
+- **Vier Wochen:** für „passt vielleicht zur nächsten Sitzung"
+- **Ein Quartal:** für „später im Jahr nochmal anschauen"
+- **Konkretes Datum** aus dem Kalender: für Embargo-Enden, Konferenzen,
+  geplante Folgepublikationen
+
+Praktisch, wenn eine Pub erst zu einem bestimmten Termin pressetauglich
+wird.
+
+## Notiz zur Entscheidung {#rationale}
+
+Optionaler Freitext, der die Begründung der Entscheidung festhält. Mit dem
+nächsten Decision-Klick wird die Notiz gespeichert und erscheint in
+Audit-Logs, Triage-Sitzungs-Übersichten und im Pub-Detail.
+
+Klare kurze Begründungen sind viel wert, wenn jemand drei Monate später
+dieselbe Pub nochmal anschaut. „Folge-Paper für Q3 erwartet" oder „warten
+bis MPI-PR erscheint" reicht völlig.
+
+## Verwandte Themen
+
+- [Triage-Sitzung](/help/triage/triage-sitzung): die drei Sitzungs-Karten
+- [MeisterTask-Übergabe](/help/triage/meistertask): was bei Pitch passiert
+- [Publikations-Flag](/help/badges/publication-flag): Pubs für die Sitzung markieren

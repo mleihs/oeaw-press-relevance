@@ -1,0 +1,110 @@
+---
+title: Forscher:innen-Metriken
+description: Die fünf Aggregate für das Ranking, von der robusten count_high bis zur Bayesschen Glättung im weighted_avg.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Forscher:innen-Metriken
+
+Das Forscher:innen-Ranking aggregiert StoryScores einzelner Pubs zu
+Personen-Metriken. Fünf davon stehen als Sortier-Modi zur Verfügung. Jede
+beantwortet eine etwas andere Frage. Die Auswahl bestimmt, wer oben
+steht.
+
+## Hochbewertete Pubs (`count_high`) {#count-high}
+
+**Formel:** `count(WHERE press_score ≥ 0.7)` im Zeitfenster.
+
+Wieviele Publikationen einer Person erreichen einen StoryScore von
+mindestens 70 %? Das ist die **Default-Sortierung** der Rangliste und die
+robusteste Reliability-Metrik für „echte Pitch-Kandidat:innen".
+
+Hochbewertete Pubs sind selten. Wer mehrere davon im Fenster hat, hat
+nachweislich pressetaugliches Material publiziert.
+
+## Σ Press-Score (`sum_score`) {#sum-score}
+
+**Formel:** `sum(press_score)` im Zeitfenster.
+
+Summe aller StoryScores einer Person. Belohnt Volumen, auch viele
+mittelmäßige Pubs ergeben eine hohe Summe.
+
+<Callout type="warn">
+Spitzenreiter dieser Metrik sind oft Konsortialteilnehmer:innen mit 50+
+Pubs bei avg ≈ 0,25. Für „wer ist press-tauglich" eher unbrauchbar; für
+„wer schreibt viel im Themenfeld" sinnvoll.
+</Callout>
+
+## Ø Press-Score, roh (`avg_score`) {#avg-score}
+
+**Formel:** `avg(press_score)` im Zeitfenster.
+
+Roher arithmetischer Mittelwert über alle Pubs einer Person. Mathematisch
+korrekt, aber **ohne Berücksichtigung der Datenmenge**.
+
+Das macht 1-Pub-Wonder dominant: Eine Person mit einer einzelnen 0,72-Pub
+rangiert über jemandem mit 5 Pubs Schnitt 0,55. Wenn Reliability gefragt
+ist, lieber „Ø Score (verlässlich)" wählen (siehe unten).
+
+## Ø Press-Score, verlässlich (`weighted_avg`) {#weighted-avg}
+
+**Formel:** `weighted = (n · avg + 3 · prior) / (n + 3)`.
+
+Die wahrscheinlich interessanteste Metrik im Ranking. Es ist eine
+**Bayessche Glättung** nach IMDb-Top-250-Formel: der rohe Schnitt einer
+Person wird in Richtung Mitte gezogen, je weniger Pubs sie hat.
+
+### Was die Formel macht {#weighted-avg-was}
+
+- **`n`** ist die Anzahl Pubs der Person im Zeitfenster.
+- **`prior`** ist der Mittelwert über alle aktuell sichtbaren Pubs (also
+  unter den aktiven Filtern).
+- **`k = 3`** ist eine feste Konstante. Sie sagt: eine Person braucht
+  etwa drei Pubs, damit ihr eigener Schnitt gleichberechtigt mit dem
+  Prior gewichtet wird.
+
+Mit anderen Worten: bei einer einzelnen Pub ist der weighted-Wert stark
+zum Prior gezogen. Bei zehn Pubs dominiert der eigene Schnitt fast
+komplett.
+
+### Beispiel mit Prior ≈ 0,25 {#weighted-avg-beispiel}
+
+| Anzahl Pubs | Schnitt | weighted |
+|---|---|---|
+| 1 | 0,72 | ≈ 0,37 |
+| 3 | 0,65 | ≈ 0,45 |
+| 10 | 0,55 | ≈ 0,48 |
+
+Die 1-Pub-Person mit 0,72 fällt im Ranking unter die 3-Pub-Person mit
+0,65, weil ihre eine Pub nicht zuverlässig genug ist, um den hohen
+Wert zu tragen.
+
+<Callout type="info">
+**Self-kalibrierend:** Wenn Filter (z. B. ITA/Outreach inkludieren) den
+globalen Prior verschieben, passt sich die Glättung an. Das macht
+weighted_avg robust gegen Datenmengen-Änderungen.
+</Callout>
+
+## Pubs gesamt (`pubs_total`) {#pubs-total}
+
+**Formel:** `count(*)` im Zeitfenster.
+
+Alle bewerteten Publikationen einer Person im Zeitraum, unabhängig vom
+StoryScore. Reine Volumen-Metrik. Nützlich, wenn die Frage nicht
+„pitch-tauglich" sondern „aktiv im Themenfeld" ist.
+
+## Wann welche Metrik? {#wann-welche}
+
+| Frage | Metrik |
+|---|---|
+| Wer hat verlässlich pitch-taugliches Material? | `count_high` (Default) |
+| Wer ist ein:e konstante:r Performer:in? | `weighted_avg` |
+| Wer publiziert viel im Themenfeld? | `pubs_total` oder `sum_score` |
+| Wer hatte den höchsten einzelnen Hit? | Pub-Liste, sortiert nach Score |
+
+## Verwandte Themen
+
+- [Score-Bänder](/help/scores/score-baender): wo die 0,70-Linie herkommt
+- [Ranking](/help/forscher-metriken/ranking): Rang-Logik und Tiebreaker
+- [Zeitfenster](/help/filter/zeitfenster): wie das Fenster die Metriken beeinflusst

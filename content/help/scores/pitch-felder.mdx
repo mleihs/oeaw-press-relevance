@@ -1,0 +1,111 @@
+---
+title: Pitch-Felder
+description: Was beim Analyse-Lauf zusätzlich zum Score entsteht, Pitch-Vorschlag, Blickwinkel, Zielgruppe, Begründung, Haiku und AI-Provenance.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Pitch-Felder
+
+Eine Analyse liefert mehr als nur den StoryScore. Pro Pub generiert das
+Sprachmodell sechs zusätzliche Felder, die zusammen einen Pitch-Vorschlag
+formen. Diese Seite beschreibt, was jedes Feld bedeutet, wofür es gedacht ist,
+und wo die Felder im UI auftauchen.
+
+## Pitch-Vorschlag {#pitch-suggestion}
+
+Der Aufhänger: zwei bis vier Sätze, die den Story-Kern festhalten, was ist
+neu, warum ist es relevant, wer hat es gemacht. Geschrieben als möglicher
+Einstieg für eine Pressemitteilung, nicht als fertiger Text.
+
+Der Vorschlag ist ein **Startpunkt**, kein Endprodukt. Die Pressestelle nimmt
+ihn als Beschleuniger für die Pitch-Diskussion: lieber an einem konkreten Satz
+feilen, als bei null anfangen.
+
+## Blickwinkel {#suggested-angle}
+
+Aus welcher Perspektive wird die Pub für ein nicht-fachliches Publikum
+greifbar? Typische Angles:
+
+- **Menschliche Auswirkung:** Wer profitiert, wer ist betroffen?
+- **Paradigmenwechsel:** Was wussten wir bisher, was kippt jetzt?
+- **Technische Innovation mit Alltagsbezug:** Was kann die Methode oder das
+  Gerät leisten?
+- **Historischer Bogen:** Eine alte Frage, neu beantwortet.
+
+Der Blickwinkel ergänzt den Pitch-Vorschlag um die strategische Frage „aus
+welcher Richtung gehen wir die Story an".
+
+## Zielgruppe {#target-audience}
+
+Welche Medienlandschaft passt zum Thema? Vorschläge reichen von Tagespresse
+über Fachpresse, populärwissenschaftliche Magazine, Lokalpresse bis zu
+Special-Interest-Outlets.
+
+Die Zuordnung ist eine **inhaltsgetriebene Hypothese**, sie schaut auf
+Abstract und Pitch-Material, nicht auf Outreach-Strategie oder Beziehungen.
+Lokale Anschlussfähigkeit (Wien, Niederösterreich, ÖAW-Standorte) bleibt eine
+redaktionelle Entscheidung.
+
+## Begründung {#reasoning}
+
+Erklärung des Sprachmodells, warum der StoryScore so ausgefallen ist. Hebt die
+treibenden Stärken hervor und benennt offene Schwächen, als Fließtext, nicht
+als Variablen-Aufzählung.
+
+<Callout type="info">
+Die Begründung soll **plausibilisieren, nicht ersetzen**. Bei abweichender
+redaktioneller Einschätzung gilt das menschliche Urteil. Der Score bleibt
+Entscheidungshilfe, nicht Vorgabe.
+</Callout>
+
+## Haiku {#haiku}
+
+Drei Zeilen, 5 – 7 – 5 Silben, verdichten den Kerngedanken zu einem Bild.
+Dient als merkbarer Lesezeichen-Text, wer 200 Pubs am Tag durchscrollt,
+erinnert sich oft schneller an „Drei Sterne fallen / der Algorithmus erkennt /
+was schon vergangen" als an „Time-Series-Modell für transiente Lichtkurven".
+
+Regeln, die im Haiku-Prompt durchgehalten werden:
+
+- Keine Eigennamen, keine Personennamen.
+- Keine Fachbegriffe, Verallgemeinerung statt Jargon.
+- Echte deutsche Umlaute (ä, ö, ü), kein ASCII-Replacement.
+- Zeilentrennung per Newline, nicht per Schrägstrich.
+
+## AI-Provenance {#ai-provenance}
+
+Welches Sprachmodell hat die Bewertung erzeugt, und was hat sie ungefähr
+gekostet? Wird pro Pub mitgespeichert und im Detail-View angezeigt.
+
+Typische Werte:
+
+- `anthropic/claude-opus-4.7-session`, interaktiv in einer Claude-Code-Session
+  erzeugt, keine API-Kosten.
+- `anthropic/claude-sonnet-4.6` über OpenRouter, echte Token-Kosten in USD,
+  pro Pub gespeichert.
+- `openai/gpt-4o`, analog über OpenRouter.
+
+<Callout type="info">
+Sessions ohne API-Kosten (mit `-session`-Suffix) sind volle Bewertungen, laufen
+aber außerhalb der Pipeline. Sie tauchen im Cost-Reporting als „kostenlos" auf,
+sind inhaltlich aber gleichwertig.
+</Callout>
+
+## Wo die Felder im UI auftauchen {#im-ui}
+
+- **Pub-Detail-Seite:** Alle sechs Felder als eigene Karten unter dem
+  Score-Header.
+- **Pub-Liste (Expanded-Detail):** Pitch + Blickwinkel + Zielgruppe + Begründung
+  in einer kompakten Karten-Zeile.
+- **MeisterTask-Karte:** Wenn die Pub als Pitch markiert wird, wandern Titel,
+  Pitch, Blickwinkel, Zielgruppe und Begründung als Karten-Beschreibung in
+  MeisterTask.
+- **Haiku + AI-Provenance:** Pub-Detail (Haiku im Score-Bereich, Provenance
+  als kleine Subline am Karten-Fuß).
+
+## Verwandte Themen
+
+- [StoryScore](/help/scores/storyscore): die zugrundeliegende Bewertung
+- [Die fünf Dimensionen](/help/scores/dimensionen): was die Begründung referenziert
+- [MeisterTask-Übergabe](/help/triage/meistertask): wohin die Pitch-Felder fließen

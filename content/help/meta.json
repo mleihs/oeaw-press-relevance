@@ -4,8 +4,20 @@
     "index",
     "---Grundlagen---",
     "grundlagen",
-    "---Konzepte---",
+    "---Bewertung---",
     "scores",
-    "badges"
+    "badges",
+    "---Workflow---",
+    "filter",
+    "triage",
+    "---Technik---",
+    "pipeline",
+    "datenquellen",
+    "---Auswertung---",
+    "dashboard",
+    "forscher-metriken",
+    "press-releases",
+    "---Setup---",
+    "einstellungen"
   ]
 }

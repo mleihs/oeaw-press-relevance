@@ -1,0 +1,63 @@
+---
+title: Ranking-Logik
+description: Wie der Rang berechnet wird, Tiebreaker, Top-3-Akzente und der Sparkline-Verlauf.
+---
+
+# Ranking-Logik
+
+Das Forscher:innen-Ranking ordnet Personen nach der gewählten Metrik in
+absteigender Reihenfolge. Tiebreaker, Akzente und Visualisierungen
+unterstützen das Lesen.
+
+## Wie der Rang berechnet wird {#berechnung}
+
+Postgres-`RANK()` über die gewählte Metrik:
+
+```sql
+RANK() OVER (ORDER BY metric DESC, sum_score DESC, person_id)
+```
+
+Bei Gleichstand wird auf `sum_score` als Tiebreaker zurückgefallen, dann
+auf die UUID (deterministisch). Das stellt sicher, dass bei identischen
+Werten die Reihenfolge stabil bleibt, beim erneuten Laden steht
+dieselbe Person an derselben Stelle.
+
+Bei Ties zeigen mehrere Personen denselben Rang (z. B. zwei Personen
+auf #2, dann nächste Person auf #4). Top 50 werden hart gecappt, keine
+vollständige Rangliste.
+
+## Top-3-Akzente {#medals}
+
+Krone (Gold), Award (Silber), Medaille (Bronze) schmücken die Plätze 1
+bis 3, rein dekorativ. Subtile linke Akzent-Border in derselben Farbe
+verstärkt die Erkennbarkeit, ohne den Visual-Style zu sprengen.
+
+Keine Punkte, kein Spiel, kein Leaderboard-Pathos. Nur ein optischer
+Hinweis darauf, dass diese Plätze besonders sind.
+
+## Verlauf-Sparkline (12 Monate) {#sparkline}
+
+Pro Person zeigt eine Sparkline die monatliche Bewegung der
+hochbewerteten Pubs:
+
+- **Polylinie** über zwölf Monats-Buckets
+- **Y-Wert pro Bucket** = Anzahl Pubs ≥ 70 % in diesem Monat
+- **Skala** ist personen-relativ (auf eigenes Maximum normiert)
+
+Die Skala ist bewusst **nicht global vergleichbar**, die Sparkline
+zeigt Trend pro Person, nicht Absolutwert. Wer schauen will, wer absolut
+die meisten Hits hat, schaut auf die `count_high`-Zahl daneben, nicht
+auf die Sparkline.
+
+## Trend-Δ neben dem Rang {#trend}
+
+Direkt rechts neben dem Rang erscheint die Trend-Differenz zur
+Vorperiode (siehe [Zeitfenster](/help/filter/zeitfenster) für die
+Vorperiode-Logik). Positives Δ in Grün, negatives in Rot. „NEU" für
+Personen, die in der Vorperiode keine bewerteten Pubs hatten.
+
+## Verwandte Themen
+
+- [Forscher:innen-Metriken](/help/forscher-metriken/metriken): die fünf möglichen Sortier-Modi
+- [Beeswarm-Verteilung](/help/forscher-metriken/beeswarm): die alternative grafische Sicht
+- [Zeitfenster](/help/filter/zeitfenster): wo das Vergleichsfenster herkommt

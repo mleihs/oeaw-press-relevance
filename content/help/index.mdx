@@ -4,18 +4,20 @@ description: Konzepte, Workflows und Antworten für das ÖAW-Press-Team.
 ---
 
 import { Cards, Card } from 'fumadocs-ui/components/card';
-import { BarChart3, Tag, Sparkles } from 'lucide-react';
+import { BarChart3, Tag, Sparkles, Filter, ClipboardCheck, Workflow, LineChart, Settings } from 'lucide-react';
 
 # Hilfe-Center
 
-Willkommen. Diese Sammlung erklärt, wie **StoryScout** arbeitet: was die Scores
-bedeuten, wie Filter Publikationen ein- oder ausschließen, was hinter den Badges
-steckt, und wie der Triage-Workflow vom Flag bis zum MeisterTask-Pitch verläuft.
+Willkommen. Diese Sammlung erklärt, wie **StoryScout** arbeitet: was die
+Scores bedeuten, wie Filter Publikationen ein- oder ausschließen, was hinter
+den Badges steckt, und wie der Triage-Workflow vom Flag bis zum
+MeisterTask-Pitch verläuft.
 
-Das Material ist als **Referenz** geschrieben — nicht als Lehrgang. Springe direkt
-zu dem Konzept, das dich gerade beschäftigt, oder nutze `⌘K`, um zu suchen.
+Das Material ist als **Referenz** geschrieben, nicht als Lehrgang. Springe
+direkt zu dem Konzept, das dich gerade beschäftigt, oder nutze `⌘K`, um zu
+suchen.
 
-## Start hier
+## Einstieg
 
 <Cards>
   <Card
@@ -25,21 +27,61 @@ zu dem Konzept, das dich gerade beschäftigt, oder nutze `⌘K`, um zu suchen.
     description="Worum es geht: Press-Triage + Pitch-Pipeline für ÖAW-Publikationen."
   />
   <Card
+    icon={<Workflow />}
+    title="Workflow"
+    href="/help/grundlagen/workflow"
+    description="Der vollständige Lebenszyklus einer Pub, von WebDB bis MeisterTask."
+  />
+  <Card
     icon={<BarChart3 />}
     title="StoryScore verstehen"
     href="/help/scores/storyscore"
     description="Die zentrale Bewertung: 5 Dimensionen, Gewichtung, Drift-Korrektur."
   />
+</Cards>
+
+## Konzepte
+
+<Cards>
   <Card
     icon={<Tag />}
-    title="Badges entschlüsseln"
+    title="Badges"
     href="/help/badges/mahighlight"
-    description="Eigen-Highlight, Peer-reviewed, Popular Science — was sagt was?"
+    description="Eigen-Highlight, Peer-reviewed, Popular Science, was sagt was?"
+  />
+  <Card
+    icon={<Filter />}
+    title="Filter & Presets"
+    href="/help/filter/presets"
+    description="Die fünf Presets und alle einzelnen Filter im Detail."
+  />
+  <Card
+    icon={<ClipboardCheck />}
+    title="Triage-Workflow"
+    href="/help/triage/entscheidungen"
+    description="Pitch / Hold / Skip / Snooze und die MeisterTask-Übergabe."
   />
 </Cards>
 
-## Weitere Bereiche (im Aufbau)
+## Technik & Auswertung
 
-Filter & Presets · Workflow (Flag → Triage → Pitch) · KI-Bewertung-Outputs ·
-Press-Releases & Orphans · Datenquellen & ETL · Einstellungen & API-Keys ·
-FAQ & Glossar.
+<Cards>
+  <Card
+    icon={<Workflow />}
+    title="Pipeline"
+    href="/help/pipeline/enrichment"
+    description="Anreicherung, Analyse, WebDB-Import, wie die Daten ins System kommen."
+  />
+  <Card
+    icon={<LineChart />}
+    title="Forscher:innen-Metriken"
+    href="/help/forscher-metriken/metriken"
+    description="count_high, weighted_avg, Bayes-Glättung, die Ranking-Aggregate."
+  />
+  <Card
+    icon={<Settings />}
+    title="Einstellungen"
+    href="/help/einstellungen/einstellungen"
+    description="API-Schlüssel, Reviewer-Name, Batch-Größe."
+  />
+</Cards>

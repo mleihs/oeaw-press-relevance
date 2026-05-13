@@ -1,0 +1,80 @@
+---
+title: Datenquellen im Detail
+description: Was CrossRef, OpenAlex, Unpaywall, Semantic Scholar und der PDF-Volltext jeweils liefern, Stärken und Lücken im Vergleich.
+---
+
+# Datenquellen im Detail
+
+Die App stützt sich auf vier externe APIs plus eine PDF-Volltext-Extraktion,
+um Pubs anzureichern. Jede Quelle hat ein eigenes Profil: was sie gut
+macht, wo sie Lücken hat, und wofür sie in der App eingesetzt wird.
+
+## CrossRef {#source-crossref}
+
+DOI-Registratur und Verlags-Metadaten. Liefert Titel, Abstract (sofern der
+Verlag ihn offen indiziert), Journal, ISSN, Autor:innen-Liste, Datum und
+Lizenz-Infos. Eine der zuverlässigsten Quellen für peer-reviewte Pubs.
+
+**Stärken:** Sehr breite Abdeckung, hohe Datenqualität, stabile API.
+**Lücken:** Abstract oft nicht enthalten, vor allem bei Hybrid-OA und
+Closed-Access-Journals.
+
+## OpenAlex {#source-openalex}
+
+Offene Forschungsdatenbank, Nachfolger von Microsoft Academic. Liefert
+Abstract, Zitationszahlen, Themen-Tags und Open-Access-Status.
+
+**Stärken:** Besonders gut bei Themen-Klassifikation und
+Konferenz-Beiträgen. Liefert oft Abstracts, die bei CrossRef fehlen.
+**Lücken:** Themen-Tags sind generierter Output und manchmal ungenau bei
+Nischen-Themen.
+
+## Unpaywall {#source-unpaywall}
+
+Spezialisiert auf das Auffinden frei zugänglicher PDF-Volltext-Links.
+Indexiert Repository-Versionen, Preprint-Server und Verlags-OA-Optionen.
+
+**Stärken:** Das beste Werkzeug für „gibt es eine freie Version dieses
+Papers?". Liefert Verlags-OA, Green-OA, Repository-Kopien.
+**Lücken:** Nicht alle freien Versionen sind in Unpaywall indexiert,
+besonders bei kleineren institutionellen Repositories.
+
+## Semantic Scholar {#source-semantic-scholar}
+
+KI-gestützte Datenbank vom Allen Institute for AI. Liefert Abstract,
+Zitationsmetriken und einen Influence-Score, der den thematischen Einfluss
+einer Arbeit gewichtet.
+
+**Stärken:** Oft den fehlenden Abstract, sehr gute Erfassung in
+Informatik, KI und biomedizinischer Forschung.
+**Lücken:** Schwächer in Geisteswissenschaften und nicht-englischsprachiger
+Forschung.
+
+## PDF-Volltext {#source-pdf}
+
+Direkter PDF-Download von der Publikations-URL mit anschließender
+Volltext-Extraktion. Wird genutzt, wenn der Abstract über die API-Quellen
+nicht verfügbar ist, das PDF aber frei zugänglich liegt.
+
+**Stärken:** Liefert auch dann Substanz, wenn alle anderen Quellen leer
+sind.
+**Lücken:** Die Extraktion kann an gescannten oder bildbasierten PDFs
+scheitern. Aktuell wird nur Text mit Layout-erhaltender Heuristik
+gelesen.
+
+## Wie die Quellen zusammenspielen {#zusammenspiel}
+
+Die Anreicherungs-Pipeline geht alle aktivierten Quellen der Reihe nach
+durch und nimmt die Felder, die noch nicht gesetzt sind. So entsteht ein
+Pub-Profil, das die Stärken mehrerer Quellen kombiniert: CrossRef für
+Verlags-Metadaten, OpenAlex für Themen-Tags, Semantic Scholar für den
+Abstract, Unpaywall für den freien Volltext-Link.
+
+Bei Konflikten gilt grundsätzlich „first non-empty wins". Wer das
+Verhalten genauer steuern möchte, deaktiviert einzelne Quellen im
+Pipeline-Modal.
+
+## Verwandte Themen
+
+- [Anreicherungs-Pipeline](/help/pipeline/enrichment): wie die Quellen orchestriert werden
+- [Open Access](/help/badges/open-access): wofür der OA-Status genutzt wird

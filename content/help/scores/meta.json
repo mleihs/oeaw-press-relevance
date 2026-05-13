@@ -1,4 +1,10 @@
 {
   "title": "Scores",
-  "pages": ["storyscore"]
+  "pages": [
+    "storyscore",
+    "dimensionen",
+    "score-baender",
+    "score-fehlt",
+    "pitch-felder"
+  ]
 }

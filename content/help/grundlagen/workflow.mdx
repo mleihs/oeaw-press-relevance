@@ -1,0 +1,124 @@
+---
+title: Workflow von Import bis Pitch
+description: Der vollständige Lebenszyklus einer Publikation in StoryScout, von der WebDB bis zur MeisterTask-Karte.
+---
+
+import { Steps, Step } from 'fumadocs-ui/components/steps';
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Workflow von Import bis Pitch
+
+Eine Publikation durchläuft in StoryScout sechs Stationen, von der
+ersten Erfassung in der WebDB bis zur fertigen MeisterTask-Karte. Diese
+Seite ist die zusammenhängende Erklärung, wie alles zusammenpasst.
+
+<Steps>
+
+<Step>
+
+### 1. WebDB-Import
+
+Der Adminer- oder mysqldump-Export der TYPO3-WebDB wird ins lokale
+Postgres geladen. Stammdaten kommen vollständig: Publikationen,
+Personen, Organisationseinheiten, Junction-Tables.
+
+Daraus wird die `publications`-Tabelle befüllt. Status zunächst:
+`enrichment_status = pending`, `analysis_status = pending`.
+
+</Step>
+
+<Step>
+
+### 2. Anreicherung
+
+Die Anreicherungs-Pipeline geht alle Pubs mit Status `pending` durch und
+fragt externe Quellen ab: CrossRef, OpenAlex, Unpaywall, Semantic
+Scholar, plus PDF-Volltext als Fallback.
+
+Erfolgreiche Pubs wechseln auf `enrichment_status = enriched` oder
+`partial`. Pubs ohne verwertbare Daten landen auf `failed`.
+
+</Step>
+
+<Step>
+
+### 3. Analyse
+
+Pubs mit ausreichend Substanz werden an ein Sprachmodell geschickt
+(über OpenRouter). Das Modell liefert pro Pub:
+
+- StoryScore + 5 Dimensionen
+- Pitch-Vorschlag, Blickwinkel, Zielgruppe
+- Begründung und Haiku
+
+Status wechselt auf `analysis_status = analyzed`.
+
+</Step>
+
+<Step>
+
+### 4. Triage-Vorbereitung
+
+Hochbewertete Pubs (≥ 70 %) wandern automatisch in die Sitzungs-Liste
+„Frisch". Pubs mit Eigen-Highlights werden in „ÖAW-Highlights"
+gesammelt. Pubs, die ein Team-Mitglied per Pin-Icon markiert hat,
+landen in „Geflaggt".
+
+</Step>
+
+<Step>
+
+### 5. Triage-Sitzung
+
+In der Sitzung wird pro Pub eine Entscheidung getroffen:
+
+- **Pitch:** Pub geht in den aktiven Pool und automatisch nach
+  MeisterTask
+- **Hold:** parkt, mit optionalem Snooze für ein Wiedervorlage-Datum
+- **Skip:** klares Nein, aus den Default-Listen ausgeblendet
+- **Snooze:** Hold + konkretes Datum
+
+Optional eine Begründungs-Notiz für spätere Audits.
+
+</Step>
+
+<Step>
+
+### 6. MeisterTask-Übergabe
+
+Pitch-Entscheidungen erzeugen automatisch eine Karte in MeisterTask mit
+Titel, Pitch-Vorschlag, Blickwinkel, Zielgruppe, Begründung und
+Deep-Link zurück nach StoryScout.
+
+Ab hier übernimmt das externe Tool. Die redaktionelle Arbeit
+(Recherche, Interview, Text) passiert in MeisterTask, nicht mehr in
+StoryScout.
+
+</Step>
+
+</Steps>
+
+## Wo es Reibung geben kann {#reibung}
+
+<Callout type="info">
+**Re-Import wischt Analyse-Daten:** Ein WebDB-Re-Import schreibt die
+`publications`-Tabelle komplett neu. StoryScores, Pitch-Material, Flags
+und Decisions gehen verloren und müssen aus Production via DOI-Match
+wiederhergestellt werden. Vor einem Re-Import lohnt es sich also, die
+Production zu syncen.
+</Callout>
+
+Andere Reibungspunkte:
+
+- **Min-Wortanzahl:** Pubs unter der Schwelle (Default 150) werden nicht
+  bewertet, bewusst gegen Fabrikation auf zu dünner Datenbasis.
+- **Modell-Wahl bei Re-Run:** Eine bereits bewertete Pub kann erneut
+  analysiert werden. Die alte Bewertung wird dabei überschrieben.
+
+## Verwandte Themen
+
+- [WebDB-Import](/help/pipeline/import): Station 1 im Detail
+- [Anreicherungs-Pipeline](/help/pipeline/enrichment): Station 2 im Detail
+- [Analyse-Pipeline](/help/pipeline/analyse): Station 3 im Detail
+- [Triage-Sitzung](/help/triage/triage-sitzung): Stationen 4 – 5 im Detail
+- [MeisterTask-Übergabe](/help/triage/meistertask): Station 6 im Detail

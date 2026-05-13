@@ -1,0 +1,58 @@
+---
+title: ÖSTAT-3-Sektion
+description: Statistik-Austria-Klassifikation der Wissenschaftsdisziplin auf 3-stelliger Ebene, wo sie greift und wo Cross-Sektion-Vergleiche heikel werden.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# ÖSTAT-3-Sektion
+
+ÖSTAT-3 ist die Statistik-Austria-Klassifikation der Wissenschaftsdisziplin
+auf **3-stelliger Ebene**. Die App nutzt sie für Farbcodes im
+Beeswarm-Chart und optional für Filter, wenn nach Disziplinen sortiert
+werden soll.
+
+## Die Hauptsektionen {#hauptsektionen}
+
+Auf der 1-stelligen Ebene gibt es sechs Super-Domänen:
+
+| Code | Domäne |
+|---|---|
+| 1 | Naturwissenschaften |
+| 2 | Technische Wissenschaften |
+| 3 | Medizinische und Gesundheitswissenschaften |
+| 4 | Agrarwissenschaften und Veterinärmedizin |
+| 5 | Sozialwissenschaften |
+| 6 | Geisteswissenschaften |
+
+Auf der 3-stelligen Ebene wird das feiner: 101 = Mathematik, 103 = Physik,
+105 = Geowissenschaften, 605 = Geschichte, und so weiter.
+
+## Wo sie pro Pub vs. pro Person greift {#pro-pub-vs-person}
+
+Wichtiger Unterschied: Die ÖSTAT-Klassifikation in der App wird **pro
+Person** geführt, nicht pro Publikation. Eine Person mit Schwerpunkt in
+der Physik hat alle ihre Pubs in dieser Sektion gefärbt, auch wenn ein
+einzelnes Paper methodisch eher in die Mathematik fällt.
+
+Der **6-stellige Code** (ÖSTAT-6, 1.411 Codes) ist hingegen **pro Pub**
+gepflegt. Wer auf Pub-Ebene filtern möchte, nutzt den
+[ÖSTAT-6-Filter](/help/filter/filter-oestat6).
+
+## Warum Cross-Sektion-Vergleiche heikel sind {#cross-sektion}
+
+<Callout type="warn">
+Citation- und Press-Patterns unterscheiden sich zwischen den Sektionen um
+**Größenordnungen**. Eine Physik-Pub mit 50 Zitationen ist normal, eine
+Geschichts-Pub mit 50 Zitationen ist ein Ausnahme-Phänomen. Beim Vergleich
+von Forscher:innen über Sektionen hinweg ist Vorsicht geboten.
+</Callout>
+
+Für Press-Patterns gilt Analoges: Naturwissenschaftliche Pubs sind im
+Press-Korpus überrepräsentiert, geisteswissenschaftliche Pubs erreichen
+schwerer hohe StoryScores, ohne dass das ein Aussagen-Defizit wäre.
+
+## Verwandte Themen
+
+- [Beeswarm-Verteilung](/help/forscher-metriken/beeswarm): wo die Farben sichtbar werden
+- [ÖSTAT-6-Filter](/help/filter/filter-oestat6): die feinere Klassifikation pro Pub

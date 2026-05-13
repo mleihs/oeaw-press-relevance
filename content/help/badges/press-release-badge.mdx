@@ -1,0 +1,52 @@
+---
+title: Bereits ÖAW-Pressemitteilung
+description: Wann eine Publikation als bereits gepresst markiert ist, und wie der Filter dazu funktioniert.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Bereits ÖAW-Pressemitteilung
+
+Manche Pubs haben bereits eine eigene Pressemitteilung auf oeaw.ac.at. Das
+Badge „Bereits ÖAW-Pressemitteilung" zeigt das direkt im Pub-Detail und in
+der Liste, praktisch zum Vermeiden von Doppel-Pitches.
+
+## Woher die Verknüpfung kommt {#verknuepfung}
+
+Die Match-Logik liest den TYPO3-News-Dump der ÖAW-Hauptseite (Kategorie
+„ÖAW-Pressemeldungen") und vergleicht die im `event_information`-Feld
+hinterlegten DOIs mit den DOIs der Pubs in der lokalen Datenbank. Bei einem
+Treffer wird die Pub markiert.
+
+Der Match passiert automatisch beim WebDB-Import via
+`promote_press_release_orphans()`. Sobald eine bisher externe Pub als
+Datensatz importiert wird, wird die Zuordnung nachgezogen, niemand muss
+manuell verknüpfen.
+
+## Filter: Mit oder ohne Pressemitteilung {#filter}
+
+In der Pub-Liste gibt es einen entsprechenden Filter „ÖAW-Pressemitteilung":
+
+- **Ja:** nur Publikationen, die schon eine ÖAW-Pressemitteilung haben.
+  Praktisch zum Vermeiden von Doppel-Pitches oder zum Auswerten der
+  bisherigen Press-Pipeline.
+- **Nein:** nur Publikationen ohne bisherige Pressemitteilung, der
+  eigentliche Triage-Pool.
+
+## Im Pub-Detail {#detail}
+
+Auf der Pub-Detail-Seite wird die zugehörige Pressemitteilung mit Titel,
+Veröffentlichungsdatum, Sprache und Abstract verlinkt. So lässt sich vor
+einem neuen Pitch schnell sehen, was bereits draußen ist.
+
+<Callout type="info">
+Wenn die Pressemitteilung zwar existiert, aber im Match-Pool fehlt, liegt
+das meist an einem fehlenden oder falsch hinterlegten DOI im
+`event_information`-Feld. Wenden Sie sich an die Devs, wenn ein Match
+fehlt, der eigentlich da sein müsste.
+</Callout>
+
+## Verwandte Themen
+
+- [Externe Pressemitteilungen](/help/press-releases/orphans): Pressemitteilungen ohne Pub-Match
+- [Press-Releases-Seite](/help/press-releases/seiten-tour): Übersicht aller Pressemitteilungen

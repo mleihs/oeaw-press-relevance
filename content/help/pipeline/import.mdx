@@ -1,0 +1,74 @@
+---
+title: WebDB-Import
+description: Wie ein vollständiger TYPO3-WebDB-Export ins lokale Postgres geladen wird, und was dabei zu beachten ist.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# WebDB-Import
+
+Der WebDB-Import lädt einen vollständigen Adminer- oder mysqldump-Export
+der TYPO3-WebDB ins lokale Postgres. Damit bekommt die App alle
+Stammdaten: Publikationen, Personen, Organisationseinheiten, Projekte,
+Vorträge und alle Verknüpfungstabellen.
+
+## Was übernommen wird {#was-uebernommen}
+
+Vollständig importiert werden:
+
+- **Publikationen** mit allen Metadaten-Feldern aus der WebDB
+- **Personen** inkl. ÖAW-Mitgliedschaft, Verstorben-Flag,
+  ÖSTAT-Klassifikation
+- **Organisationseinheiten** als hierarchischer Baum
+- **Projekte und Vorträge** als sekundäre Entitäten
+- **Junction-Tables** für Personen-Pub-Zuordnungen,
+  Pub-Orgunit-Zuordnungen, Pub-Themen-Zuordnungen
+
+## Was bereinigt wird {#bereinigung}
+
+Beim Import passiert mehr als reines Kopieren:
+
+- **Typo3-Versions- und Mirror-Artefakte** werden ignoriert
+- **Gelöschte Datensätze** werden übersprungen (TYPO3-Soft-Delete-Flag)
+- **UTF-8-mb4** wird erhalten, keine Encoding-Verluste bei Umlauten,
+  Akzenten oder fernöstlichen Zeichen
+- **Unix-Timestamps** werden in Postgres-`timestamptz` konvertiert
+
+Dauer: rund eine Minute für 37.000 Publikationen plus Junctions, auf einem
+durchschnittlichen Dev-Setup.
+
+## Was passiert mit lokalen Analyse-Daten {#analyse-daten}
+
+<Callout type="warn">
+Der Import wischt aktuell die `publications`-Tabelle und lädt vollständig
+neu. **Lokale Analyse-Daten** (StoryScores, Pitch-Material, Haikus, Flags,
+Decisions) **gehen dabei verloren** und müssen separat aus Production via
+DOI-Match wiederhergestellt werden. Vor einem Re-Import lohnt es sich, die
+Production zu syncen.
+</Callout>
+
+Die Personen-, Orgunit- und Mitgliedschafts-Tabellen werden ebenfalls
+geupdated, behalten aber ihre IDs (UPSERT statt DELETE-INSERT).
+Verknüpfungen zu Triage-Decisions, Flags und MeisterTask-Karten bleiben
+dadurch stabil.
+
+## Wann ein Import sinnvoll ist {#wann-importieren}
+
+- **Reguläre Stamm-Updates:** Etwa monatlich, um neue Pubs und Personen
+  aufzunehmen.
+- **Nach größeren WebDB-Korrekturen:** Wenn die Pressestelle weiß, dass im
+  WebDB Daten massenhaft gepflegt wurden (etwa Authorship-Backfill).
+- **Bei Schema-Änderungen:** Wenn der Import-Code selbst aktualisiert
+  wurde und neue Felder unterstützt.
+
+## Die Folge-Schritte {#folge-schritte}
+
+Direkt nach jedem Import sollte die
+[Anreicherung](/help/pipeline/enrichment) mit `enrich-free --apply` laufen.
+Sonst hängen Pubs mit Summary in der WebDB im `pending`-Status fest,
+obwohl sie eigentlich schon Substanz haben.
+
+## Verwandte Themen
+
+- [Anreicherungs-Pipeline](/help/pipeline/enrichment): was nach dem Import läuft
+- [Datenquellen im Detail](/help/datenquellen/quellen-uebersicht): externe Quellen für die Anreicherung

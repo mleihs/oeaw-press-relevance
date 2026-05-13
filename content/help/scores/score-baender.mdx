@@ -1,0 +1,72 @@
+---
+title: Score-Bänder
+description: Die drei Schwellen Hoch/Mittel/Niedrig, wo die 0,70-Linie herkommt und warum sie quer durch die App durchsteht.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Score-Bänder
+
+Drei Schwellen ziehen sich quer durch die App, von der Triage-Liste über die
+Stat-Karten bis ins Forscher:innen-Ranking. Sobald jemand „über 70" sagt, ist
+das Hoch gemeint.
+
+## Die drei Bänder {#baender}
+
+| Band | Range | Lesart |
+|---|---|---|
+| **Hoch** (blau) | ≥ 70 % | Solider Pitch-Kandidat |
+| **Mittel** (amber) | 40 – 69 % | Fallweise prüfen |
+| **Niedrig** (grau) | < 40 % | Spezialpaper, kaum pressetauglich |
+
+Die Farben tauchen überall auf, wo Scores als Badges, Säulen oder Balken erscheinen:
+im Dashboard, in der Pub-Liste, in den Forscher:innen-Sparklines. Wer in den Code
+schaut: die Schwellen sind hardcodiert in den Postgres-Functions. UI und Backend
+teilen sich also dieselbe Logik.
+
+## Woher die 0,70-Linie kommt {#herkunft}
+
+Die Schwelle ist nicht zufällig. Beim 872-Pub-Audit lag der Cutoff, ab dem die
+Pressestelle „würden wir tatsächlich pitchen" sagte, knapp unter 70 %. Die
+0,70-Linie wurde so kalibriert, dass darüber rund 5 – 10 % aller analysierten
+Pubs landen, eine Menge, die das Press-Team in einer Triage-Sitzung tatsächlich
+durchgehen kann.
+
+Wenn der Datensatz wächst und die Verteilung sich verschiebt, wird die Linie
+nachgeführt. Aktuell stimmt sie für ÖAW-Pubs aus 12-Monats-Fenstern.
+
+## Wo die Bänder besonders sichtbar sind {#wo-sichtbar}
+
+- **Forscher:innen-Ranking:** Die `count_high`-Metrik zählt nur Pubs ≥ 70 %.
+  Default-Sortierung im Ranking: wer „echte" Pitch-Kandidat:innen hat, steht oben.
+- **Dashboard-Karten:** Die Kachel „Hohes Story-Potenzial" zeigt direkt die
+  Anzahl der Hoch-Pubs, mit dem Durchschnitt aller Scores als Subline.
+- **Triage „Frisch":** Pubs werden in die Triage-Sitzung nur dann als „frisch"
+  gepusht, wenn sie ≥ 70 % erreichen. Alles drunter bleibt in der normalen Liste.
+
+<Callout type="info">
+Die Bänder sind absolut, nicht relativ. Eine Pub mit 71 % ist „Hoch", egal ob
+sie in einem schwachen oder starken Monat veröffentlicht wurde. Das macht
+Vergleiche über Zeiträume hinweg robust.
+</Callout>
+
+## Wann ein Mittel-Band trotzdem interessant ist {#mittel-band}
+
+Mittel-Pubs (40 – 69 %) sind nicht automatisch Skip-Material. Häufige Gründe für
+eine zweite Runde:
+
+- **Lokale Anschlussfähigkeit:** Ein 0,55-Paper mit Wien-Bezug schlägt ein
+  0,80-Paper ohne regionalen Hänger, wenn gerade ein lokales Magazin angefragt hat.
+- **Tagesaktualität:** Wenn eine Veranstaltung oder ein Event ansteht, kann eine
+  thematisch passende Mittel-Pub die bessere Wahl sein.
+- **Forscher:in mit hohem Profil:** ÖAW-Mitglied oder etablierte Sprecher:in im
+  Themenfeld kann den Pitch tragen, auch wenn die Pub allein nicht durchstartet.
+
+Für genau diese Fälle gibt es den Hold-Status mit Snooze-Funktion: Mittel-Pubs
+parken und bei passender Gelegenheit wieder hochziehen.
+
+## Verwandte Themen
+
+- [StoryScore](/help/scores/storyscore): wie der Score selbst gebildet wird
+- [Die fünf Dimensionen](/help/scores/dimensionen): was unter dem Score liegt
+- [Forscher:innen-Metriken](/help/forscher-metriken/metriken): wo `count_high` greift

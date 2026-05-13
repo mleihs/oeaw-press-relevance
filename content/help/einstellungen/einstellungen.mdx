@@ -1,0 +1,70 @@
+---
+title: Einstellungen
+description: Die vier Settings-Felder, Reviewer-Name, OpenRouter-API-Key, Min-Wortanzahl und Batch-Größe.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Einstellungen
+
+Die Einstellungs-Seite verwaltet vier Felder, die das Verhalten der App
+für die jeweilige Person und das jeweilige Gerät steuern. Alle Werte
+werden im Browser-Local-Storage gespeichert, sie sind also pro Gerät
+und Profil, nicht serverseitig synchronisiert.
+
+## Dein Name {#reviewer-name}
+
+Erscheint bei Flag-Notizen und Triage-Entscheidungen als Urheber. Leer
+lassen heißt: Einträge werden als „team" geführt.
+
+Praktisch im Team-Setting, wenn mehrere Personen dieselbe Pub flaggen
+oder unterschiedliche Entscheidungen nachvollziehbar bleiben sollen.
+
+## OpenRouter API-Schlüssel {#openrouter}
+
+BYOK-Setup (Bring Your Own Key) für die LLM-basierten Analyse-Pipelines.
+Wird verwendet, sobald eine Analyse über OpenRouter läuft (etwa Claude,
+GPT, DeepSeek). Der Schlüssel wird ausschließlich lokal gespeichert und
+bei jedem API-Aufruf direkt von hier übergeben.
+
+<Callout type="info">
+Modell-Wahl erfolgt pro Batch im Analyse-Dialog, kein globales Default.
+Unterschiedliche Pub-Sets profitieren von unterschiedlichen
+Preis-Qualitäts-Profilen.
+</Callout>
+
+## Minimale Wortanzahl {#min-words}
+
+Schwellenwert für die Analyse-Pipeline: nur Publikationen mit
+mindestens so vielen Wörtern angereichertem Inhalt werden vom
+Sprachmodell bewertet. `0` heißt: alle bewertbaren Pubs durchlassen.
+
+Der Sinn dahinter: Pubs mit nur 30 Wörtern Abstract liefern selten
+substantielle Scores. Der Default 150 ist eine bewährte Heuristik gegen
+Fabrikation auf zu dünner Datenbasis.
+
+## Batch-Größe {#batch-size}
+
+Anzahl der Publikationen pro LLM-API-Aufruf (1 bis 5). Kleinere Batches
+geben jedem Paper mehr Kontext-Aufmerksamkeit im Modell, kosten aber
+mehr API-Calls. Größere Batches sind effizienter, riskieren aber
+Quality-Drift bei langen Prompts.
+
+Default 3 ist der empirisch beste Kompromiss aus Kosten und
+Score-Stabilität. Für besonders nuancierte Pubs lohnt sich Batch 1.
+
+## Wo die Einstellungen gespeichert werden {#speicher}
+
+Alle vier Felder werden im Browser-Local-Storage abgelegt:
+
+- **Pro Gerät:** Wer mit Laptop und Desktop arbeitet, hat möglicherweise
+  unterschiedliche Settings, das ist gewollt, weil etwa
+  unterschiedliche API-Keys pro Gerät genutzt werden können.
+- **Pro Browser-Profil:** Inkognito-Sessions starten leer.
+- **Persistent über Sessions:** Browser-Cache leeren entfernt auch die
+  Settings.
+
+## Verwandte Themen
+
+- [Analyse-Pipeline](/help/pipeline/analyse): wo Batch-Größe und Min-Wortanzahl greifen
+- [Triage-Entscheidungen](/help/triage/entscheidungen): wo der Reviewer-Name auftaucht

@@ -1,0 +1,73 @@
+---
+title: Analyse-Pipeline
+description: Wie das Sprachmodell aus angereicherten Pubs StoryScores, Pitch-Material und Haikus erzeugt.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Analyse-Pipeline
+
+Die Analyse-Pipeline schickt angereicherte Publikationen an ein
+Sprachmodell und holt sich pro Pub den StoryScore, die fünf Dimensionen,
+einen Pitch-Vorschlag, einen Blickwinkel, eine Zielgruppe, eine Begründung
+und ein Haiku zurück.
+
+## Welche Modelle möglich sind {#modelle}
+
+Die Pipeline läuft über **OpenRouter** und ist modellunabhängig. Übliche
+Wahlen:
+
+- **anthropic/claude-opus-4.7:** höchste Qualität, höchster Preis
+- **anthropic/claude-sonnet-4.6:** guter Kompromiss
+- **anthropic/claude-haiku-4.5:** günstig, für Routine-Volumen
+- **openai/gpt-4o:** Alternative zum Vergleich
+- **deepseek/deepseek-r1:** sehr günstig, für große Volumen
+
+Modell-Wahl erfolgt pro Batch im Analyse-Dialog, kein globales Default.
+Unterschiedliche Pub-Sets profitieren von unterschiedlichen
+Preis-Qualitäts-Profilen.
+
+<Callout type="info">
+**BYOK** (Bring Your Own Key): Der OpenRouter-API-Schlüssel wird in den
+[Einstellungen](/help/einstellungen/einstellungen) hinterlegt. So lassen
+sich Kosten direkt am eigenen Konto sehen, ohne Umweg über die App.
+</Callout>
+
+## Wie die Batches funktionieren {#batches}
+
+Pro API-Aufruf werden 1 bis 5 Pubs gebündelt (konfigurierbar als
+Batch-Größe in den Einstellungen):
+
+- **Batch 1:** Maximale Kontext-Aufmerksamkeit pro Paper, höchste Kosten.
+  Für besonders nuancierte Pubs sinnvoll.
+- **Batch 3:** Default. Empirisch der beste Kompromiss aus Kosten und
+  Score-Stabilität.
+- **Batch 5:** Effizienter, riskiert aber Quality-Drift bei langen Prompts.
+
+## Was nach dem Lauf passiert {#nach-dem-lauf}
+
+Sobald das Modell antwortet, wird die Pub mit dem neuen Status
+**Analyzed** markiert. Die Felder StoryScore, fünf Dimensionen, Pitch,
+Blickwinkel, Zielgruppe, Begründung, Haiku und die AI-Provenance
+(Modell-ID + Kosten) wandern in die `publications`-Tabelle.
+
+Pro Pub werden außerdem Kosten und Token-Verbrauch mitgeschrieben. Sessions
+ohne kostenpflichtige API (Claude-Code-direkt) werden separat als
+`*-session`-Provenance markiert und kosten nichts.
+
+## Re-Runs und Modell-Wechsel {#re-runs}
+
+Eine bereits bewertete Pub kann erneut analysiert werden, etwa wenn ein
+anderes Modell ausprobiert werden soll oder die Anreicherung nachträglich
+besser geworden ist. Die alte Bewertung wird überschrieben, die
+AI-Provenance auf das neue Modell aktualisiert.
+
+Wer Bewertungen vergleichen will (Modell A vs. Modell B), nutzt
+Audit-Exports oder ad-hoc-Snapshots vor dem Re-Run.
+
+## Verwandte Themen
+
+- [Anreicherungs-Pipeline](/help/pipeline/enrichment): was vor der Analyse passiert
+- [StoryScore](/help/scores/storyscore): wie der Score gebildet wird
+- [Pitch-Felder](/help/scores/pitch-felder): was außer dem Score noch entsteht
+- [Einstellungen](/help/einstellungen/einstellungen): Batch-Größe und API-Schlüssel

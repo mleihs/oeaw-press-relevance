@@ -1,0 +1,109 @@
+---
+title: Glossar
+description: Wichtige Begriffe, Akronyme und Datenmodell-Felder, die in der App auftauchen.
+---
+
+# Glossar
+
+Wer öfter zwischen StoryScout, WebDB und externen Quellen wechselt,
+stolpert über dieselben Begriffe. Hier eine alphabetische Sammlung der
+wichtigsten Begriffe, Akronyme und Datenmodell-Felder.
+
+## A – D {#a-d}
+
+**Abstract:** Kurze Inhaltsangabe einer Publikation. Quelle in der App
+ist meistens nicht die WebDB, sondern eine externe API (CrossRef,
+OpenAlex, Semantic Scholar) oder der extrahierte PDF-Volltext.
+
+**API:** Application Programming Interface. Schnittstelle, über die
+StoryScout mit externen Datenquellen spricht (CrossRef, OpenAlex,
+Unpaywall, Semantic Scholar, OpenRouter, MeisterTask).
+
+**Authorship:** Rolle einer Person an einer Pub: HauptautorIn,
+AlleinautorIn, Co-Autor:in. Wird in der WebDB nur für rund 1,4 % der
+Junction-Rows gepflegt, siehe
+[Autorschaft-Scope](/help/filter/filter-authorship).
+
+**BYOK:** „Bring Your Own Key". Der Nutzer hinterlegt den eigenen
+OpenRouter-API-Schlüssel in den Einstellungen, statt einen projektweiten
+Schlüssel zu teilen.
+
+**Cosinus-Ähnlichkeit:** Maß für die Nähe zweier Vektoren. Wird in der
+[Press-Similarity](/help/press-releases/press-similarity) genutzt, um
+die semantische Nähe zwischen Pub-Embeddings zu messen.
+
+**Drift-Korrektur:** Empirische Anpassung der StoryScore-Dimensionen
+nach Audit-Vergleich gegen Production-Werte. Details siehe
+[Dimensionen](/help/scores/dimensionen).
+
+## E – L {#e-l}
+
+**Embedding:** Vektor-Repräsentation eines Texts. SPECTER2 erzeugt für
+jede Pub einen 768-dimensionalen Vektor aus Titel + Abstract, der für
+Ähnlichkeits-Berechnungen genutzt wird.
+
+**ETL:** „Extract, Transform, Load". Der WebDB-Import ist die typische
+ETL-Pipeline: Daten aus MySQL extrahieren, transformieren (Encoding,
+Datumstypen), in Postgres laden.
+
+**ITA:** Institut für Technikfolgen-Abschätzung. Eigene
+Outreach-Formate mit hohen AI-Scores, per Default ausgeblendet, siehe
+[ITA-Filter](/help/filter/filter-ita).
+
+## M – P {#m-p}
+
+**mahighlight:** WebDB-Flag für **Eigen-Highlights** einer Pub durch
+eine ÖAW-Forscher:in. Trotz `ma`-Präfixes **kein
+Mitgliedschafts-Indikator**, siehe
+[mahighlight](/help/badges/mahighlight).
+
+**MeisterTask:** Externes Projektmanagement-Tool, in dem die
+ÖAW-Pressestelle ihre Pitch-Vorgänge führt. StoryScout pusht Pitch-Pubs
+automatisch als Karten dorthin.
+
+**OA:** Open Access. Bezeichnet frei zugängliche Volltexte. Typen:
+Gold, Hybrid, Green, Bronze, Diamond, siehe
+[Open Access](/help/badges/open-access).
+
+**ÖSTAT:** Statistik Austria. Klassifikationssystem für
+Wissenschaftsdisziplinen. ÖSTAT-3 ist personengeführt, ÖSTAT-6 ist
+pubgeführt.
+
+**Orgunit:** Organisationseinheit in der WebDB: Institut, Abteilung,
+Arbeitsgruppe. Bildet eine hierarchische Struktur (Sub-Orgunits unter
+Eltern-Orgunits).
+
+**Peer-Review:** Begutachtungsverfahren in Fachjournals und
+Konferenzen. Externe Fachpersonen prüfen Methodik und Originalität vor
+der Veröffentlichung.
+
+**Press-Cluster:** Menge der Pubs, die bereits eine
+ÖAW-Pressemitteilung haben, plus externe Co-Author-Pubs. Basis für die
+[Press-Similarity](/help/press-releases/press-similarity).
+
+**Pure:** Forschungsinformationssystem von Elsevier. Geplanter
+Migrationsziel-Pfad nach der aktuellen WebDB-Phase.
+
+## R – Z {#r-z}
+
+**SPECTER2:** Scientific-Paper-Embedding-Modell vom Allen Institute
+for AI. Erzeugt aus Titel + Abstract Vektoren, die für
+Ähnlichkeits-Berechnungen geeignet sind.
+
+**StoryScore:** Die zentrale Press-Relevanz-Bewertung in StoryScout.
+0 bis 100 %, gewichtete Summe aus 5 Dimensionen, siehe
+[StoryScore](/help/scores/storyscore).
+
+**Triage:** Press-Team-Sitzung, in der eingehende Pubs durchgegangen
+werden. Pro Pub eine Entscheidung: Pitch, Hold, Skip, Snooze.
+
+**TYPO3:** CMS, in dem die WebDB der ÖAW läuft. Quelle aller
+Stammdaten in StoryScout.
+
+**WebDB:** Die TYPO3-MySQL-Datenbank der ÖAW. Quelle der Wahrheit für
+alle Publikations- und Personen-Stammdaten in StoryScout.
+
+## Verwandte Themen
+
+- [Was ist StoryScout?](/help/grundlagen/was-ist-storyscout): die Einstiegs-Erklärung
+- [Workflow](/help/grundlagen/workflow): wie die Begriffe zusammenspielen
