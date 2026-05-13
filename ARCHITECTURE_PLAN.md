@@ -12,7 +12,7 @@ Fünf gezielte Architektur-Hebel **nach** Phase 3 (Drizzle-Migration). Ziele:
 4. Story-Bundles als Feature-Hebel für Find→Ship-Loop.
 5. ADRs als Dokumentations-Anker für OSS-Contributors.
 
-Reihenfolge ist **load-bearing**: 7 → 2 → 1 → 4 → 6. Jede Phase baut auf der
+Reihenfolge ist **load-bearing**: 7 → 2 → 1 → 4 → 5 → 6. Jede Phase baut auf der
 vorigen. Pro Phase: Plan-OK, dann Implementation am Stück (per memory
 `feedback_apply_pacing.md`), Block-Status statt File-für-File-Approval.
 
@@ -24,9 +24,10 @@ vorigen. Pro Phase: Plan-OK, dann Implementation am Stück (per memory
 2. [Phase A2 — Repository-Layer für Drizzle](#phase-a2--repository-layer)
 3. [Phase A1 — Domain-Module statt feature-flach](#phase-a1--domain-module)
 4. [Phase A4 — Server-Components für read-heavy pages](#phase-a4--server-components)
-5. [Phase A6 — Story-Bundles via pgvector-Clustering](#phase-a6--story-bundles)
-6. [Cross-cutting: Wo Phase 4 (Vitest) reinpasst](#cross-cutting-vitest)
-7. [Wie hier nach /clear weitermachen](#wie-hier-nach-clear-weitermachen)
+5. [Phase A5 — Editorial Pipeline](#phase-a5--editorial-pipeline)
+6. [Phase A6 — Story-Bundles via pgvector-Clustering](#phase-a6--story-bundles)
+7. [Cross-cutting: Wo Phase 4 (Vitest) reinpasst](#cross-cutting-vitest)
+8. [Wie hier nach /clear weitermachen](#wie-hier-nach-clear-weitermachen)
 
 ---
 
@@ -513,11 +514,133 @@ the pilot recipe: thin `lib/server/<feature>/<name>.ts` wrapper +
 
 ---
 
+## Phase A5 — Editorial Pipeline
+
+**Status:** [ ] pending. **Aufwand:** ~15-20h. **Voraussetzung:** A2
+done (Repos-Pattern für `pitch_log` + `coverage`), A4 done
+(RSC-pilot-pattern für `/pipeline` — mutations → client subtree).
+Plan-Reordering: [ADR 0011](docs/adr/0011-editorial-pipeline-before-stories.md).
+Schema: [ADR 0012](docs/adr/0012-pipeline-state-machine.md).
+
+### Goal
+
+Press-Team-Workflow + Coverage-Outcomes als first-class entities. Aus
+"find newsworthy pubs" wird "find → pitch → cover", mit zurückfließenden
+Outcome-Daten für `press_score`-Iteration. UI-Heimat ist eine
+Kanban-Page `/pipeline`.
+
+### Why
+
+`memory/editorial_pipeline_proposal.md` ist Top-1-Hebel der 2026-04-29
+Architecture-Review. Heute endet das Tool an "score lands in dashboard"
+— Press-Team-Aktionen sind unsichtbar, Coverage-Daten fehlen komplett,
+`press_score`-Iteration läuft blind ohne Outcome-Signal. A5 ist auch
+**die** Voraussetzung für A6
+([ADR 0011](docs/adr/0011-editorial-pipeline-before-stories.md)):
+Story → "Pitch all" erzeugt N `pitch_log`-Einträge statt eines eigenen
+State-Schemas auf `stories`.
+
+### Scope
+
+**In:**
+- Migration: `pitch_log` + `coverage` Tabellen
+  ([ADR 0012](docs/adr/0012-pipeline-state-machine.md))
+- `lib/server/pipeline/` Domain — erste Domain-Module-Extraction nach
+  [ADR 0008](docs/adr/0008-domain-modules-deferred.md). A5 ist der
+  dokumentierte Re-Open-Trigger für `pipeline/`; ADR 0008 bekommt eine
+  Nachtrags-Section, wird nicht superseded.
+- `lib/server/repos/pitch-log.ts` + `lib/server/repos/coverage.ts`
+  (Pattern aus A2; `lib/server/repos/README.md` Tabelle erweitert)
+- Routes: `/api/pipeline/[publicationId]` (GET aktueller Status, PATCH
+  Transition), `/api/pipeline/list` (Kanban-Hydration mit status-
+  gruppierten counts), `/api/coverage/[publicationId]` (CRUD)
+- Page: `/pipeline` als RSC mit pilot-pattern — page-tree RSC, eine
+  client subtree (`PipelineBoard.tsx`) für Status-Mutations +
+  `router.refresh()` nach [ADR 0010](docs/adr/0010-rsc-mutation-router-refresh.md)
+- Pipeline-State-Badge in `/publications/[id]` DecisionToolbar: zweiter
+  Eingangsweg neben `/pipeline` — Direkt-Transition nach `pitching`
+- Smoke: `scripts/smoke/rsc/pipeline.ts` +
+  `scripts/smoke/repos/pitch-log.ts` + `scripts/smoke/repos/coverage.ts`
+
+**Out:**
+- Drag-and-Drop ist nice-to-have; Phase-1 hat Status-Menu pro Kanban-
+  Card. DnD erst wenn Press-Team es konkret anfordert.
+- LLM-Auto-Coverage-Detection (URL → Sentiment-Classifier) — manueller
+  Eintrag reicht initial; Outcome-Daten wachsen langsamer, aber rauschfrei.
+- Editorial-Calendar-View (Coverage-Timeline) — eigener Hebel, später.
+- `assignee_id` UI: Spalte ist im Schema (nullable), aber UI-Filter
+  bleibt leer bis H8 Auth landet
+  ([ADR 0012](docs/adr/0012-pipeline-state-machine.md)).
+
+### Sketch
+
+```typescript
+// lib/server/pipeline/transitions.ts
+export async function transitionPitch(
+  publicationId: string,
+  to: 'backlog' | 'pitching' | 'covered' | 'archived',
+  notes?: string,
+): Promise<PitchLogRow> {
+  return pitchLogRepo.upsert(publicationId, {
+    status: to,
+    notes: notes ?? undefined,
+    status_changed_at: new Date(),
+  });
+}
+```
+
+`pitchLogRepo.upsert` ist `INSERT … ON CONFLICT (publication_id) DO
+UPDATE SET status=…, status_changed_at=…, notes=…, updated_at=NOW()` —
+ein Pub hat zu jedem Zeitpunkt genau eine Pipeline-Row.
+
+### Acceptance Criteria
+
+- [ ] Migration applied: `pitch_log` + `coverage` mit FK-Cascades,
+      Status-Check-Constraints, Indexes
+      ([ADR 0012](docs/adr/0012-pipeline-state-machine.md))
+- [ ] `lib/server/pipeline/` Domain mit Transitions-Helper;
+      `lib/server/repos/{pitch-log,coverage}.ts` per A2-Pattern;
+      `lib/server/repos/README.md` Tabelle erweitert
+- [ ] `/pipeline` Kanban-Page als RSC; ein client subtree für
+      Status-Mutations; per-column counts; URL-State für aktive Filter
+      (status + outlet) per nuqs (analog `/publications`)
+- [ ] `/publications/[id]` DecisionToolbar zeigt aktuelle Pipeline-Status +
+      Transition-DropdownMenu (4 Status-Optionen). Sowohl Toolbar als
+      auch Page rufen `router.refresh()` nach Transition
+- [ ] Smoke + Pure-Function-Tests committed
+- [ ] Lint 0/14, tsc clean, npm test grün (Baseline ab A4: 60+)
+- [ ] [ADR 0008](docs/adr/0008-domain-modules-deferred.md) bekommt eine
+      Nachtrags-Section ("Re-opened in A5") mit Commit-Hash
+- [ ] Cross-link aus `/publications/[id]` zu `/pipeline?pub=<id>` Detail-
+      View; pub-detail zeigt letzte 3 Coverage-Einträge falls vorhanden
+
+### Open Questions
+
+- LLM-Auto-Coverage-Detection als eigener Phase-2-Hebel? Cross-link
+  `memory/iqoqi_reputation_blind_spot.md` — mehr Outcome-Daten würden
+  embedding-basierte press_score-V2 schärfen.
+- Coverage-Sentiment 3-Werte vs. 5-Werte (positive / somewhat-positive /
+  neutral / somewhat-critical / critical)? Phase-1 bleibt bei 3; falls
+  Press-Team es nuanced braucht → additive Migration später.
+- `pitch_log.status` als Postgres-ENUM statt CHECK-Constraint? CHECK ist
+  additiv-erweiterbar ohne `ALTER TYPE` → bleibt bei CHECK.
+
+---
+
 ## Phase A6 — Story-Bundles
 
-**Status:** [ ] pending. **Aufwand:** ~18h. **Voraussetzung:** A2 (Repo
-für embeddings + neuer stories-repo), A1 (`coverage/`-Domain als
-Cluster-Refresh-Heimat).
+**Status:** [ ] pending (Phase 1 only — Phase 2 deferred until H8 Auth,
+per [ADR 0013](docs/adr/0013-story-schema-cluster-first.md)).
+**Aufwand:** ~22-25h (Phase 1). **Voraussetzung:** A5 done (Story →
+"Pitch all" delegiert an `pitch_log`,
+[ADR 0011](docs/adr/0011-editorial-pipeline-before-stories.md)); A2
+done (`lib/server/repos/embeddings.ts` wird in A6 nachgezogen — die
+A2-skip-debt aus `lib/server/repos/README.md` wird hier ehrlich
+bezahlt); A4 done (`/stories` max-RSC, `/stories/[id]` pilot-pattern
+wegen mutations). Schema-Decision:
+[ADR 0013](docs/adr/0013-story-schema-cluster-first.md).
+Clustering-Algorithm:
+[ADR 0014](docs/adr/0014-clustering-sql-pgvector-default.md).
 
 ### Goal
 Aus dem Memory `story_bundles_proposal.md`: semantische Cluster
@@ -528,31 +651,53 @@ sequentiell.
 ### Why
 - Press-Eligibility kommt selten von Einzel-Papers, häufiger von
   Themen-Häufungen ("dieses Quartal kamen 5 Klima-Papers raus")
-- Embedding-Daten + pgvector liegen bereits — Centroid + kNN sind
-  trivial erweiterbar zu Clustering
+- Embedding-Daten + pgvector liegen bereits (`publication_embeddings`,
+  `press_release_embeddings`, `press_cluster_view`) — Centroid + kNN
+  sind trivial erweiterbar zu Clustering
 - Memory `editorial_pipeline_proposal.md` nennt Stories als Top-2-Hebel
-  hinter pitch_log
+  hinter `pitch_log`; A5 schafft die Pipeline-Heimat, zu der Story →
+  "Pitch all" die Bundle-Aktion verbindet
+  ([ADR 0011](docs/adr/0011-editorial-pipeline-before-stories.md))
 
 ### Scope
-**In:**
-- DB-Schema: `stories` Tabelle (id, title, summary, created_at,
-  centroid vector(768), member_count, status enum)
-- `publication_stories` Join (publication_id, story_id, similarity,
-  confidence enum)
-- Clustering-Function: pgvector-DBSCAN oder HDBSCAN per SQL —
-  recherche, sonst Python-Side via scripts/cluster-stories.py
-- Routes: `/api/stories` + `/api/stories/[id]` + `/api/stories/cluster`
-  (admin trigger)
-- UI: `/stories` (List), `/stories/[id]` (Detail mit pub-members + Pitch-Workflow)
-- Auto-Cluster nach jedem successful enrichment-batch
 
-**Out:**
-- Cross-language Clustering (SPECTER2 ist EN-trained, DE-Pubs eigenes
-  Mini-Cluster oder rausnehmen)
+**In (Phase 1 — cluster baseline, [ADR 0013](docs/adr/0013-story-schema-cluster-first.md)):**
+- DB-Schema: `stories` (id, title, summary, status, centroid vector(768),
+  member_count, created_at, updated_at) + `publication_stories` Join
+  (publication_id, story_id, similarity, confidence: auto | manual)
+- Clustering: SQL pgvector-DBSCAN per
+  [ADR 0014](docs/adr/0014-clustering-sql-pgvector-default.md);
+  Python-HDBSCAN nur als dokumentierter Fallback mit eigenem ADR-Trigger
+- `lib/server/repos/embeddings.ts` (A2-Skip-Schuld nachziehen) +
+  `lib/server/repos/stories.ts`
+- `lib/server/stories/cluster.ts` als Domain-Wrapper
+- Routes: `/api/stories` (list), `/api/stories/[id]` (detail),
+  `/api/stories/cluster` (admin trigger)
+- UI: `/stories` als max-RSC List, `/stories/[id]` als RSC mit client
+  subtree für Pitch-Aktionen (pilot-pattern)
+- Story → "Pitch all": eine Action, die N `pitch_log`-Einträge anlegt
+  ([ADR 0012](docs/adr/0012-pipeline-state-machine.md)) — die Verkopplung
+  A5⇄A6, ohne State auf `stories` zu duplizieren
+- Auto-Cluster-Hook nach erfolgreichem enrichment-batch
+
+**Phase 2 — deferred until H8 Auth ([ADR 0013](docs/adr/0013-story-schema-cluster-first.md)):**
+- `stories.pitch` (editorial press-pitch auf Story-Ebene, nicht
+  Pub-Ebene)
+- `stories.haiku` (per-story haiku in derselben Disziplin wie
+  `publications.haiku`, siehe `memory/haiku_discipline.md`)
+- `stories.created_by → users(id)` (manual story creation tracking)
+- LLM-Story-Synthesis für `pitch`-initial-draft (Prompt-Grundlage:
+  `memory/pitch_angle_craft.md`)
+
+**Out (Phase 1):**
+- Cross-language Clustering (SPECTER2 ist EN-trained; DE-Pubs landen in
+  eigenen Mini-Clustern oder bleiben unassigned — Acceptance nimmt das
+  in Kauf)
 - LLM-Story-Summaries first pass — `title` ist initial Hash der
-  Top-3-Pub-Keywords, editorial UI editiert manuell
+  Top-3-Pub-Keywords, editorial UI editiert manuell. LLM-Synthesis
+  wandert in Phase 2.
 
-### Sketch (DB)
+### Sketch (DB) — Phase 1 ([ADR 0013](docs/adr/0013-story-schema-cluster-first.md))
 ```sql
 CREATE TABLE stories (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -580,48 +725,49 @@ CREATE INDEX stories_centroid_ivfflat
 ```
 
 ### Sketch (Clustering)
-**Default: SQL-only via pgvector + iterative Centroid-Build.** Self-
-hoster bleiben dependency-frei (kein Python-Sidekick im Deploy). Python
-nur dann, wenn SQL-Pipeline ungenügende Cluster liefert — dann eine
-Architektur-Entscheidung-ADR die den Trade-off festhält.
 
-SQL-Approach (Skizze):
-1. Seed: pick the embedding furthest from any existing story-centroid
-2. Expand: alle Pubs mit `1 - cosine_distance >= 0.82` zum Seed → neuer
-   Story-Cluster, member_count berechnen
-3. Iterate bis keine seed-fähigen Embeddings mehr (alle in einem
-   Cluster oder explicit-skipped)
-4. Recompute centroids als mean(member_embeddings) (vector
-   AVG-Funktion in pgvector)
+Algorithmus + Threshold + Python-Fallback-Trigger sind in
+[ADR 0014](docs/adr/0014-clustering-sql-pgvector-default.md) festgelegt.
+Kurzfassung: SQL pgvector-DBSCAN (seed → expand → commit if
+`member_count ≥ 3` → iterate → recompute centroid via vector AVG),
+`eps = 0.82` als konservativer Start (median press_similarity ≈ 0.85
+gepresster Paare per `memory/centroid_vs_knn_lesson.md`). Python-
+HDBSCAN nur als Fallback mit eigenem ADR-Trigger — nicht spekulativ
+einbauen.
 
-Threshold-Kalibrierung: kNN-mean von press_similarity (≈0.85 median bei
-gepressten Pairs) als Baseline. Eps=0.82 ist konservativ (engere
-Cluster, mehr Singletons).
+Threshold-Kalibrierung ist Phase-1-Acceptance: nach dem ersten Cluster-
+Pass den `eps`-Wert anhand Silhouette / Singleton-Ratio nachziehen
+und in einem Acceptance-Smoke dokumentieren.
 
-Falls SQL-Clustering inadequat → Fallback:
-```python
-# scripts/cluster-stories.py
-# Lädt publication_embeddings, läuft HDBSCAN, schreibt stories+joins.
-# Idempotent — bestehende Stories werden via Centroid-NN matched.
-```
-
-### Acceptance Criteria
-- [ ] Initial-Clustering läuft auf 38k Pubs in <10min
-- [ ] /stories zeigt Cluster mit ≥3 Members sortiert by member_count
-- [ ] /stories/[id] zeigt Member-Pubs mit individual similarity-to-centroid
-- [ ] Pitch-Flow: Story → "Pitch all" pushed MeisterTask-Tasks gebündelt
-      (eine Card pro Story, Pub-Links als Checklist)
+### Acceptance Criteria (Phase 1)
+- [ ] Initial-Clustering läuft auf ~38k Pubs in <10min
+- [ ] `/stories` zeigt Cluster mit ≥3 Members sortiert by `member_count`
+- [ ] `/stories/[id]` zeigt Member-Pubs mit individual similarity-
+      to-centroid
+- [ ] Pitch-Flow: Story → "Pitch all" erzeugt N `pitch_log`-Einträge
+      (eine pro Member-Pub) per
+      [ADR 0012](docs/adr/0012-pipeline-state-machine.md); MeisterTask-
+      Bundling kann auf bestehender MT-push-Mechanik aufsetzen, aber
+      `pitch_log` ist die kanonische State-Quelle
 - [ ] Cluster-Refresh läuft nach enrichment-batch ohne manuelle Trigger
 - [ ] Edge-cases: zu-kleine Cluster (`member_count < 3`) status='archived'
+- [ ] `lib/server/repos/embeddings.ts` shipped (A2-Skip-Schuld bezahlt);
+      `lib/server/repos/README.md` Tabelle aktualisiert
+- [ ] Threshold `eps` kalibriert per Phase-1-Datenpass; Silhouette-Score
+      oder Singleton-Ratio in Smoke-Output dokumentiert
+- [ ] Smoke unter `scripts/smoke/rsc/stories.ts` +
+      `scripts/smoke/repos/embeddings.ts` +
+      `scripts/smoke/repos/stories.ts`
 
 ### Open Questions
-- HDBSCAN-Python-Dependency vs SQL-only-Clustering. Erstes ist
-  Black-Box weniger transparent, zweites ist eigener Implementierungs-
-  aufwand.
-- Story → Person/Orgunit-Aggregation? "Welche Forscher:innen sind
-  in dieser Story aktiv?"
-- LLM-Story-Synthesis: Top-3-Pubs zu einem Pitch-Vorschlag verdichten —
-  Memory `pitch_angle_craft.md` als Prompt-Grundlage
+- Story → Person/Orgunit-Aggregation? "Welche Forscher:innen sind in
+  dieser Story aktiv?" — additive Read-only-Aggregation, könnte Phase 1
+  oder später.
+- LLM-Story-Synthesis (für Phase-2 `pitch`-initial-draft): Memory
+  `memory/pitch_angle_craft.md` als Prompt-Grundlage.
+- Cross-language Clustering: SPECTER2 EN-trained, ~10-20% DE-Pubs im
+  Corpus — bleiben unassigned (akzeptiert) oder eigenes Mini-Embedding-
+  Modell für DE (separate Phase-Entscheidung).
 
 ---
 
@@ -683,8 +829,8 @@ und Vorgaben:
    Phase-3 §7.10` oder neuer sein. Wenn pressrelease-card-Commit fehlt:
    das ist OK, separate Concern.
 
-3. **Beginne mit Phase A7** (ADRs) — kleinster scope, etabliert
-   Documentation-Pattern für die folgenden Phasen.
+3. **Beginne mit Phase A5** (Editorial Pipeline) — A7/A2/A1/A4 sind
+   geschlossen; A5 ist die nächste pending phase und Voraussetzung für A6.
 
 4. Workflow pro Phase:
    - Plan-OK abnehmen (Block-Status, nicht File-für-File).
