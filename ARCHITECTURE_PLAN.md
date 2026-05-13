@@ -11,7 +11,7 @@ in den Produkt-Track verschoben — siehe
 
 Vier gezielte Architektur-Hebel **nach** Phase 3 (Drizzle-Migration). Ziele:
 1. Drizzle-Codebasis Phase-4-fähig machen (mockbar, repository-layered).
-2. Cross-Feature-Operationen (Triage-Flow) klarer schneiden.
+2. Cross-Feature-Operationen prüfen (Domain-Module-Audit).
 3. Server-Rendering wo es kostenlos schneller ist.
 4. ADRs als Dokumentations-Anker für OSS-Contributors.
 
@@ -189,7 +189,9 @@ zurück, nicht DTOs.
       (`lib/server/repos/publications.ts`, 14 Methoden — Lookups +
       Counts + 5 Filter-ID-Sets + 4 Mutations). Pflicht-Bewertung der
       übrigen Entities ergab: **embeddings → skip** (0 TS-Konsumenten
-      heute, A6-Future), **orgunits/press-releases/sessions/lookups →
+      heute; A6 mittlerweile out of plan scope per
+      [ADR 0015](docs/adr/0015-architecture-plan-scope-ends-at-a4.md)),
+      **orgunits/press-releases/sessions/lookups →
       skip** (1 call-site bzw. trivial-Drizzle). Symmetrie ist
       Cargo-Cult; siehe `lib/server/repos/README.md`.
 - [x] `list.ts`, `queue.ts`, `fetch.ts`, `decisions.ts`, `flag.ts` rufen
@@ -550,12 +552,18 @@ if/when the product initiative starts:
 
 ## Cross-cutting
 
-### Vitest (= Phase 4 aus OSS_READINESS_PLAN.md §8) parallel zu A2/A1
+### Vitest (= Phase 4 aus OSS_READINESS_PLAN.md §8)
 
-- **Nach A2:** Erste Vitest-Specs pro Repo via pg-proxy.
-- **Nach A1:** Domain-Tests (`applyDecision`, `transitionPub`,
-  `promoteOrphans`) — die haben echten Business-Wert, im Gegensatz
-  zu reinen CRUD-Tests.
+A2 + A1 sind geschlossen, Vitest steht aus. Drei konkrete Test-Klassen:
+
+- **Repo-Tests** via pg-proxy: `lib/server/repos/publications.ts` hat
+  15 Methoden ohne Unit-Surface heute.
+- **Domain-Tests** mit echtem Business-Wert: `applyDecision`
+  (`lib/server/publications/decisions.ts`) — orchestriert decision +
+  session lazy-create + MeisterTask-push. Die ursprünglich geplanten
+  `transitionPub` + `promoteOrphans` wurden per
+  [ADR 0008](docs/adr/0008-domain-modules-deferred.md) verworfen bzw.
+  bleiben in plpgsql, sind also keine Test-Targets.
 - **Smoke-Tests committen:** `scripts/smoke/` ablegen, GitHub-Actions
   Cron pingt jede Nacht — würde die Phase-3-Bugs (uuid-Bind,
   Relation-Shadow) sofort gefangen haben.
@@ -643,6 +651,6 @@ und Vorgaben:
   weiterbauen oder pro Phase neue feature-Branch + PR? User entscheidet.
 - **Memory-Hygiene:** Soll dieses File auch Memory bekommen oder reicht
   der Pointer in MEMORY.md? (Aktuell: Pointer-Eintrag wird angelegt.)
-- **Phase-4 Reihenfolge:** Vitest VOR A4 (RSC)? RSC nutzt Repos direkt
-  ohne API — wenn Repos schon getestet sind, ist RSC-Risiko niedriger.
-  Empfehlung: Vitest-Baseline gleich nach A2.
+- ~~**Phase-4 Reihenfolge:** Vitest VOR A4 (RSC)?~~ — **moot 2026-05-14:**
+  A4 ist done ohne Vitest-Baseline, keine Regressionen aufgetaucht.
+  Vitest jetzt eigenständig per Cross-cutting-Plan.

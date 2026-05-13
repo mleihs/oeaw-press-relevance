@@ -49,14 +49,22 @@ A method belongs in a repo if **all** of these hold:
 
 ### Why no `embeddings.ts` yet
 
-A future `embeddings.ts` is planned for Phase A6 (Story-Bundles —
-semantic clustering). Today there are **zero TypeScript consumers** of
-`publication_embeddings` — the table is populated by
-`scripts/embeddings/compute-embeddings.py` and consumed via the
-`similar_pressed_pubs(…)` Postgres function (which goes through ADR
-0005's "SQL functions stay in Postgres" rule, not through Drizzle).
-Writing the repo now would mean a file with no callers. Premature
-abstraction trumps planning symmetry; the repo lands when A6 starts.
+Today there are **zero TypeScript consumers** of `publication_embeddings`
+— the table is populated by `scripts/embeddings/compute-embeddings.py`
+and consumed via the `similar_pressed_pubs(…)` Postgres function (which
+goes through [ADR 0005](../../../docs/adr/0005-sql-functions-stay-in-postgres.md)'s
+"SQL functions stay in Postgres" rule, not through Drizzle). Writing
+the repo now would mean a file with no callers — premature abstraction
+trumps planning symmetry.
+
+Phase A6 (Story-Bundles) was originally drafted as the consumer that
+would justify this repo. Per
+[ADR 0015](../../../docs/adr/0015-architecture-plan-scope-ends-at-a4.md)
+A6 has moved out of Architecture Plan scope into product-track; the
+embeddings-repo lands if/when a product initiative resurrects A6 and
+brings a real TS consumer (technical blueprint preserved in
+[ADR 0013](../../../docs/adr/0013-story-schema-cluster-first.md) +
+[ADR 0014](../../../docs/adr/0014-clustering-sql-pgvector-default.md)).
 
 ### Why no `triage/`, `pipeline/`, `coverage/` domain-modules
 
