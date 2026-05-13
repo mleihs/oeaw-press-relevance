@@ -179,7 +179,7 @@ export default async function PublicationsPage({ searchParams }: PageProps) {
       )}
 
       {totalPages > 1 && (
-        <div className="flex items-center justify-between">
+        <nav aria-label="Seiten" className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
             Zeige {rangeStart}–{rangeEnd} von {data.total.toLocaleString('de-AT')}
           </p>
@@ -199,7 +199,7 @@ export default async function PublicationsPage({ searchParams }: PageProps) {
               <ChevronRight className="h-4 w-4" />
             </PaginationLink>
           </div>
-        </div>
+        </nav>
       )}
     </div>
   );

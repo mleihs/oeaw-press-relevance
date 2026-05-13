@@ -49,16 +49,24 @@ const TIME_TAB_LABELS: Record<DashboardPeriod, string> = {
   all: 'Gesamt',
 };
 
+const MONTH_NAMES_DE = [
+  'Jänner', 'Februar', 'März', 'April', 'Mai', 'Juni',
+  'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember',
+];
+
 function getTimeRangeLabel(period: DashboardPeriod): string {
-  if (period === 'all') return 'Alle Zeiträume';
-  const now = new Date();
-  const monthNames = [
-    'Jänner', 'Februar', 'März', 'April', 'Mai', 'Juni',
-    'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember',
-  ];
-  if (period === 'week') return 'Letzte 7 Tage';
-  if (period === 'month') return `${monthNames[now.getMonth()]} ${now.getFullYear()}`;
-  return 'Letztes Jahr';
+  switch (period) {
+    case 'week':
+      return 'Letzte 7 Tage';
+    case 'month': {
+      const now = new Date();
+      return `${MONTH_NAMES_DE[now.getMonth()]} ${now.getFullYear()}`;
+    }
+    case 'year':
+      return 'Letztes Jahr';
+    case 'all':
+      return 'Alle Zeiträume';
+  }
 }
 
 interface DashboardClientProps {
