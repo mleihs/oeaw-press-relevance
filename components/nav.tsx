@@ -13,6 +13,7 @@ import {
   Users,
   ClipboardCheck,
   Newspaper,
+  HelpCircle,
   type LucideIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -58,6 +59,10 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/upload', label: 'Import', icon: Upload },
       { href: '/settings', label: 'Einstellungen', icon: Settings },
     ],
+  },
+  {
+    title: null,
+    links: [{ href: '/help', label: 'Hilfe', icon: HelpCircle }],
   },
 ];
 

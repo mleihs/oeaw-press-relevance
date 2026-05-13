@@ -6,11 +6,13 @@
     "node": ">=20"
   },
   "scripts": {
+    "predev": "fumadocs-mdx",
     "dev": "next dev --turbo",
+    "prebuild": "fumadocs-mdx",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "fumadocs-mdx && tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "enrich-orphans": "tsx scripts/enrich-orphans.ts",
@@ -27,6 +29,8 @@
     "d3-force": "^3.0.0",
     "date-fns": "^4.1.0",
     "drizzle-orm": "^0.45.2",
+    "fumadocs-mdx": "^15.0.4",
+    "fumadocs-ui": "^16.8.10",
     "lucide-react": "^1.12.0",
     "motion": "^12.38.0",
     "motion-number": "^1.0.0",

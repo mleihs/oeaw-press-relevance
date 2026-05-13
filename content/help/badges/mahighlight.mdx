@@ -1,0 +1,62 @@
+---
+title: mahighlight (Eigen-Highlight)
+description: Das am häufigsten missverstandene Flag aus der WebDB — `mahighlight` heißt Eigen-Highlight, NICHT Akademie-Mitglied.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# mahighlight (Eigen-Highlight)
+
+Wenn eine Publikation in der App das Eigen-Highlight-Badge zeigt (👑 / Krone),
+ist das ein WebDB-Flag aus dem `person_publications.mahighlight`-Feld.
+
+## Was es bedeutet
+
+Eine der beteiligten ÖAW-Autor:innen hat diese Publikation in der WebDB als
+**persönliches Highlight** markiert. Das ist eine Selbst-Kennzeichnung der
+Forscher:in, kein redaktioneller Approval-Stempel.
+
+## Der irreführende Name
+
+<Callout type="warn">
+**`ma`-Präfix ≠ „Mitglied der Akademie".** Trotz des Namens (Typo3-Legacy:
+„MA" stand mal für „Mitglied der Akademie") ist `mahighlight=true` **kein
+Akademie-Endorsement**. Empirisch stammen **90 %** der gesetzten Marker von
+**Nicht-Mitgliedern** der ÖAW-Gelehrtengesellschaft.
+</Callout>
+
+Konkret: In 38 von 41 dokumentierten Audit-Fällen war die markierende Person
+KEIN Mitglied (`member_type_id = NULL`), sondern reguläre:r ÖAW-Forscher:in.
+
+## Wie man es richtig liest
+
+| Richtig | Falsch |
+|---|---|
+| „Eine der beteiligten ÖAW-Autor:innen hat den Beitrag im WebDB als persönliches Highlight markiert" | „Das Akademie-Mitglied selbst hat ihn als Highlight markiert" |
+| „Im WebDB als Eigen-Highlight gekennzeichnet" | „Vom Institut intern als pressetauglich klassifiziert" |
+
+## Wenn man die genaue Markierungs-Person braucht
+
+Per JOIN auf `persons` und `member_types` prüfen, ob die markierende Person
+tatsächlich Mitglied ist. Wenn nein: Person konkret nennen, „Mitglied"
+weglassen.
+
+## Mehrfach-Markierung
+
+Eine Pub kann von mehreren Personen markiert werden — `mahighlight` ist
+person-spezifisch (`person_publications.mahighlight`), nicht
+publication-spezifisch.
+
+## Abgrenzung zu anderen Signalen
+
+- **Orgunit-Highlight** (`highlight_unit`) — Markierung auf Institutsebene
+  (vermutlich Institutsleitung). Strikte Teilmenge ist meist deckungsgleich
+  mit Eigen-Highlights, aber seltener gepflegt.
+- **ÖAW-Mitgliedschaft** (`member_oeaw`) — Aufnahme in eine Akademie-Klasse
+  (Wirklich, Korrespondierend, Junge Akademie, etc.). **Davon ist
+  `mahighlight` strikt zu trennen.**
+
+## Verwandte Themen
+
+- [StoryScore](/help/scores/storyscore) — warum dieser Flag NICHT in die
+  Bewertung fließt

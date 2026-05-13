@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { createMDX } from "fumadocs-mdx/next";
 
 const nextConfig: NextConfig = {
   // React 19 strict-mode is on by default; nothing extra needed for that.
@@ -17,4 +18,7 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Wires the fumadocs-mdx codegen plugin into the Next build/dev pipeline.
+const withMDX = createMDX();
+
+export default withMDX(nextConfig);

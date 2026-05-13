@@ -1,0 +1,86 @@
+---
+title: StoryScore (Press-Relevanz)
+description: Wie der zentrale Press-Score gebildet wird, was die 5 Dimensionen bedeuten, und welche Drift-Korrekturen aus dem 872-Pub-Audit fließen.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# StoryScore (Press-Relevanz)
+
+Der **StoryScore** ist die zentrale Press-Relevanz-Bewertung einer Publikation,
+zwischen **0 und 100 %**. Er entsteht aus einer **gewichteten Summe** von fünf
+Dimensionen, die ein Sprachmodell (z.B. Claude Opus 4.7) auf Basis des
+verfügbaren Inhalts schätzt.
+
+## Formel
+
+```text
+StoryScore =
+  0,20 · Verständlichkeit
++ 0,25 · Gesellschaftliche Relevanz
++ 0,20 · Neuheit
++ 0,20 · Erzählpotenzial
++ 0,15 · Aktualität
+```
+
+Die Gewichtung ist von der Pressestelle festgelegt. **Gesellschaftliche
+Relevanz** wiegt am stärksten, **Aktualität** am schwächsten. Konfiguration in
+`lib/shared/constants.ts`.
+
+## Die 5 Dimensionen
+
+| Dimension | Gewicht | Frage an die Publikation |
+|---|---|---|
+| **Verständlichkeit** | 20 % | Wie zugänglich ist die Forschung für Nicht-Fachleute? |
+| **Gesellschaftliche Relevanz** | 25 % | Wie direkt betrifft sie Gesundheit, Umwelt, Wirtschaft, Kultur, Alltag? |
+| **Neuheit** | 20 % | Durchbruch? Stellt es bestehende Annahmen in Frage? |
+| **Erzählpotenzial** | 20 % | Lässt sich daraus eine fesselnde Story bauen? |
+| **Aktualität** | 15 % | Anschlussfähig an aktuellen Diskurs / saisonale Themen? |
+
+## Score-Bänder
+
+| Band | Range | Lesart |
+|---|---|---|
+| **Hoch** (blau) | ≥ 70 % | Solider Pitch-Kandidat |
+| **Mittel** (amber) | 40–69 % | Fallweise prüfen |
+| **Niedrig** (grau) | < 40 % | Spezialpaper, kaum pressetauglich |
+
+Die 0,70-Linie definiert auch die `count_high`-Metrik im
+Forscher:innen-Ranking.
+
+## Drift-Korrektur (aus dem 872-Pub-Audit)
+
+Beim Vergleich lokaler Bewertungen gegen Production-Werte (auf gepairtem
+Datensatz) zeigte sich eine systematische Drift in vier Dimensionen:
+
+| Dimension | Mittlere Drift (lokal − prod) | Korrektur |
+|---|---|---|
+| Neuheit | +0,121 | −0,10 vom ersten Bauchgefühl |
+| Aktualität | +0,088 | −0,05 |
+| Gesellschaftl. Relevanz | +0,061 | −0,05 |
+| Erzählpotenzial | +0,019 | neutral |
+| Verständlichkeit | −0,032 | bei lebensweltlich-relatable: 0,30+ statt 0,15 |
+
+Netto lagen lokale Werte im Schnitt **+0,05 zu hoch**. Top-Overscores
+systematisch bei Buchrezensionen, Editorials, lokalen archäologischen Funden.
+
+## Was **nicht** einfließt
+
+<Callout type="info">
+Die `popular_science`- und `mahighlight`-Markierungen aus der WebDB fließen
+**nicht** in den StoryScore ein. Die Bewertung ist **inhaltsgetrieben** —
+sie misst, was *im Text steht*, nicht was *Institute selbst eingeordnet haben*.
+</Callout>
+
+Beide Marker sind orthogonale Signale, die separat angezeigt werden (siehe
+[Badges](/help/badges/mahighlight)).
+
+## Konsistenzprüfung beim Schreiben
+
+Wenn der Story-Anker einen **Aktualitätsbezug** benennt, muss `media_timeliness`
+das mitmachen (≥ 0,85). Sonst widersprechen sich Pitch und Score.
+
+## Verwandte Themen
+
+- [Was ist StoryScout?](/help/grundlagen/was-ist-storyscout) — der gesamte Workflow
+- [mahighlight](/help/badges/mahighlight) — das oft missverstandene Eigen-Highlight-Flag

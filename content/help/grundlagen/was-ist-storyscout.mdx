@@ -1,0 +1,55 @@
+---
+title: Was ist StoryScout?
+description: Press-Triage und Pitch-Pipeline für ÖAW-Publikationen — semi-technische Übersicht für das Press-Team.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Was ist StoryScout?
+
+**StoryScout** ist die Triage- und Pitch-Pipeline der ÖAW-Presseabteilung für
+wissenschaftliche Publikationen. Sie beantwortet eine einzige Frage in mehreren
+Schritten:
+
+> Welche der frisch eingegangenen Publikationen sind pressetauglich, und wer
+> könnte mit welchem Angle daraus eine Story machen?
+
+## Was die App leistet
+
+StoryScout zieht den vollständigen Publikations-Export aus der **WebDB** (Typo3-MySQL
+der ÖAW) als Quelle der Wahrheit. Jede Publikation wird angereichert (CrossRef,
+OpenAlex, Unpaywall, Semantic Scholar) und durch ein Sprachmodell bewertet:
+
+- **5 Dimensionen** der Press-Relevanz (Verständlichkeit, Gesellschaftliche
+  Relevanz, Neuheit, Erzählpotenzial, Aktualität)
+- **Gewichtete Summe** ergibt den **StoryScore** (0–100 %)
+- Pro Publikation ein **Pitch-Vorschlag**, ein **Angle**, eine **Zielgruppe**,
+  eine **Begründung** und ein **Haiku** als merkbare Kurzform
+
+Das Press-Team triagiert dann in einer Sitzung: **Pitch / Hold / Skip** pro
+Publikation, optional mit **Snooze** (Hold-bis-Datum) oder **Flag** (für die
+nächste Sitzung markieren). Pitch-Entscheidungen pushen automatisch in
+**MeisterTask**.
+
+## Für wen
+
+- **Press-Team-Mitarbeiter:innen** — Hauptzielgruppe. Triage, Pitch-Vorschläge
+  lesen, MeisterTask-Karten anlegen.
+- **Press-Lead / Editorial** — Reporting, Forscher:innen-Rankings, Datenstand.
+- **Devs** — Datenquellen pflegen, ETL-Pipelines triggern, Settings.
+
+## Was die App **nicht** macht
+
+<Callout type="warn">
+StoryScout **schreibt keine Pressemeldungen**. Die App liefert Pitches und
+Angles als Vorschläge — die redaktionelle Arbeit (Recherche, Interview, Text)
+bleibt beim Press-Team.
+</Callout>
+
+Auch keine automatisierten Outreach- oder Versand-Funktionen. Verbindung zum
+externen System läuft über MeisterTask-Karten, die als Übergabe-Punkt dienen.
+
+## Nächste Schritte
+
+- [StoryScore verstehen](/help/scores/storyscore) — die zentrale Bewertung
+- [Badges entschlüsseln](/help/badges/mahighlight) — was die Marker bedeuten
