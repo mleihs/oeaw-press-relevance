@@ -58,7 +58,16 @@ interface PublicationTableProps {
   showEnrichment?: boolean;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
+  /** Client-mode sort handler. Receives the column key; consumer toggles
+   *  order / resets page. Mutually-exclusive with `sortHrefs` — if both are
+   *  passed, hrefs win (Zero-JS Link wins over onClick). */
   onSort?: (column: string) => void;
+  /** RSC-mode sort targets: pre-computed Link hrefs keyed by column. The
+   *  table renders a `<Link replace scroll={false}>` inside each sortable
+   *  `<th>` so server-rendered pages get Zero-JS sort headers. A record
+   *  (not a builder function) so the prop stays serialisable across the
+   *  RSC → Client component boundary. */
+  sortHrefs?: Partial<Record<string, string>>;
   /** /review-Modus: zeigt Decision-Toolbar im Expand und triggert lazy-session-create. */
   inSession?: boolean;
   /** Callback nach erfolgreicher Decision (für /review: Karte ausblenden). */
@@ -74,18 +83,83 @@ function SortIcon({ column, sortBy, sortOrder }: { column: string; sortBy?: stri
     : <ArrowDown className="h-3 w-3 text-foreground" />;
 }
 
-export function PublicationTable({ publications, showScores, showEnrichment, sortBy, sortOrder, onSort, inSession, onDecided }: PublicationTableProps) {
+// Sortable header cell. Picks between three modes:
+//   1. `sortHrefs[column]` set → Zero-JS <Link> (RSC consumers like /publications)
+//   2. `onSort` set            → client onClick (legacy consumers like /review)
+//   3. neither                 → static, no sort affordance
+// InfoBubble children safely nest inside both Link and onClick variants because
+// `info-bubble.tsx` stops click propagation in its own button.
+function SortHeader({
+  column,
+  label,
+  sortBy,
+  sortOrder,
+  onSort,
+  sortHrefs,
+  trailing,
+}: {
+  column: string;
+  label: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  onSort?: (col: string) => void;
+  sortHrefs?: Partial<Record<string, string>>;
+  trailing?: React.ReactNode;
+}) {
+  const href = sortHrefs?.[column];
+  const sortable = href !== undefined || !!onSort;
+  const inner = (
+    <span className="inline-flex items-center gap-1">
+      {label}
+      {sortable && <SortIcon column={column} sortBy={sortBy} sortOrder={sortOrder} />}
+      {trailing}
+    </span>
+  );
+  if (href !== undefined) {
+    return (
+      <th className="p-0 text-left font-medium">
+        <Link
+          href={href}
+          replace
+          scroll={false}
+          className="block p-3 cursor-pointer select-none hover:bg-muted transition-colors"
+        >
+          {inner}
+        </Link>
+      </th>
+    );
+  }
+  if (onSort) {
+    return (
+      <th
+        className="p-3 text-left font-medium cursor-pointer select-none hover:bg-muted transition-colors"
+        onClick={() => onSort(column)}
+      >
+        {inner}
+      </th>
+    );
+  }
+  return <th className="p-3 text-left font-medium">{inner}</th>;
+}
+
+export function PublicationTable({
+  publications,
+  showScores,
+  showEnrichment,
+  sortBy,
+  sortOrder,
+  onSort,
+  sortHrefs,
+  inSession,
+  onDecided,
+}: PublicationTableProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   if (publications.length === 0) {
     return <EmptyState variant="inline" title="Keine Publikationen gefunden." />;
   }
 
-  const sortable = !!onSort;
-
-  const headerClass = sortable
-    ? 'p-3 text-left font-medium cursor-pointer select-none hover:bg-muted transition-colors'
-    : 'p-3 text-left font-medium';
+  const sortProps = { sortBy, sortOrder, onSort, sortHrefs };
 
   return (
     <>
@@ -108,30 +182,18 @@ export function PublicationTable({ publications, showScores, showEnrichment, sor
               <th className="p-3 text-left font-medium">
                 <span>Autor:innen</span>
               </th>
-              <th className={headerClass} onClick={() => onSort?.('publication_type')}>
-                <span className="inline-flex items-center gap-1">
-                  Typ {sortable && <SortIcon column="publication_type" sortBy={sortBy} sortOrder={sortOrder} />}
-                </span>
-              </th>
-              <th className={headerClass} onClick={() => onSort?.('published_at')}>
-                <span className="inline-flex items-center gap-1">
-                  Jahr {sortable && <SortIcon column="published_at" sortBy={sortBy} sortOrder={sortOrder} />}
-                </span>
-              </th>
+              <SortHeader column="publication_type" label="Typ" {...sortProps} />
+              <SortHeader column="published_at" label="Jahr" {...sortProps} />
               {showEnrichment && (
-                <th className={headerClass} onClick={() => onSort?.('enrichment_status')}>
-                  <span className="inline-flex items-center gap-1">
-                    Enrichment {sortable && <SortIcon column="enrichment_status" sortBy={sortBy} sortOrder={sortOrder} />}
-                  </span>
-                </th>
+                <SortHeader column="enrichment_status" label="Enrichment" {...sortProps} />
               )}
               {showScores && (
-                <th className={headerClass} onClick={() => onSort?.('press_score')}>
-                  <span className="inline-flex items-center gap-1">
-                    Score {sortable && <SortIcon column="press_score" sortBy={sortBy} sortOrder={sortOrder} />}
-                    <InfoBubble id="press_score" />
-                  </span>
-                </th>
+                <SortHeader
+                  column="press_score"
+                  label="Score"
+                  trailing={<InfoBubble id="press_score" />}
+                  {...sortProps}
+                />
               )}
             </tr>
           </thead>
