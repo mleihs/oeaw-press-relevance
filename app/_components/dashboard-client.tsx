@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
@@ -33,6 +32,8 @@ import { DASHBOARD_PERIODS, type DashboardPeriod } from '@/lib/shared/dashboard'
 // — that module transitively imports postgres + drizzle and would fail the
 // RSC → Client boundary check if pulled in as a value import.
 import type { DashboardData } from '@/lib/server/dashboard/fetch';
+import { KeywordCloud } from './keyword-cloud';
+import { ScoreDistributionChart } from './score-distribution-chart';
 
 // Recharts is ~100kB gz; lazy-load via next/dynamic so it only ships when
 // the dashboard actually has data to show in this card.
@@ -220,16 +221,19 @@ export function DashboardClient({ data, period }: DashboardClientProps) {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <span id="time-tabs-label" className="text-xs text-muted-foreground hidden sm:block">Zeitraum:</span>
-            <div role="tablist" aria-labelledby="time-tabs-label" className="flex rounded-lg border bg-muted p-0.5">
+            <span aria-hidden="true" className="text-xs text-muted-foreground hidden sm:block">Zeitraum:</span>
+            {/* URL-driven tabs use <nav> + aria-current per phaseA4 Lesson #16
+                — the in-page <Tabs> primitive is for mutation-driven STATE
+                (still correct on /review's score-mode toggle), this is
+                navigation. */}
+            <nav aria-label="Zeitraum" className="flex rounded-lg border bg-muted p-0.5">
               {DASHBOARD_PERIODS.map((value) => (
                 <Link
                   key={value}
-                  role="tab"
-                  aria-selected={period === value}
-                  href={`/?period=${value}`}
+                  href={`?period=${value}`}
                   replace
                   scroll={false}
+                  aria-current={period === value ? 'page' : undefined}
                   className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
                     period === value
                       ? 'bg-brand text-white shadow-sm'
@@ -239,7 +243,7 @@ export function DashboardClient({ data, period }: DashboardClientProps) {
                   {TIME_TAB_LABELS[value]}
                 </Link>
               ))}
-            </div>
+            </nav>
           </div>
         </CardHeader>
         <CardContent>
@@ -361,119 +365,6 @@ export function DashboardClient({ data, period }: DashboardClientProps) {
           </CardContent>
         </Card>
       )}
-    </div>
-  );
-}
-
-function KeywordCloud({ keywords }: { keywords: { word: string; count: number }[] }) {
-  // Hooks must come BEFORE any early return — React hook count must be stable
-  // across renders or the second render after the dataset toggles produces a warning.
-  const [animated, setAnimated] = useState(false);
-
-  useEffect(() => {
-    const t = setTimeout(() => setAnimated(true), 50);
-    return () => clearTimeout(t);
-  }, []);
-
-  if (keywords.length === 0) return null;
-  const max = Math.max(...keywords.map((k) => k.count));
-  const getSize = (count: number) => 12 + (count / max) * 12;
-
-  return (
-    <>
-      <div
-        className="flex flex-wrap gap-2 justify-center items-baseline"
-        role="presentation"
-        aria-hidden="true"
-      >
-        {keywords.map(({ word, count }, i) => (
-          <span
-            key={word}
-            className="inline-block px-2 py-0.5 rounded-full bg-muted text-foreground/80 hover:bg-brand hover:text-white cursor-default transition-all duration-500 ease-out motion-reduce:transition-none"
-            style={{
-              fontSize: `${getSize(count)}px`,
-              opacity: animated ? 1 : 0,
-              transform: animated ? 'scale(1)' : 'scale(0.5)',
-              transitionDelay: `${i * 30}ms`,
-            }}
-            title={`${count}× in Publikationen`}
-          >
-            {word}
-          </span>
-        ))}
-      </div>
-      {/* W3: AT-friendly equivalent of the visual cloud. */}
-      <ul className="sr-only" aria-label="Top Keywords aus angereicherten Publikationen">
-        {keywords.map(({ word, count }) => (
-          <li key={word}>{word}: {count} mal</li>
-        ))}
-      </ul>
-    </>
-  );
-}
-
-const BUCKET_LABELS = ['0-9%', '10-19%', '20-29%', '30-39%', '40-49%', '50-59%', '60-69%', '70-79%', '80-89%', '90-100%'];
-const BUCKET_COLORS = [
-  'bg-chart-bucket-1',
-  'bg-chart-bucket-2',
-  'bg-chart-bucket-3',
-  'bg-chart-bucket-4',
-  'bg-chart-bucket-5',
-  'bg-chart-bucket-6',
-  'bg-chart-bucket-7',
-  'bg-chart-bucket-8',
-  'bg-chart-bucket-9',
-  'bg-chart-bucket-10',
-];
-
-function ScoreDistributionChart({ buckets }: { buckets: number[] }) {
-  const max = Math.max(...buckets, 1);
-  const [animated, setAnimated] = useState(false);
-
-  useEffect(() => {
-    const t = setTimeout(() => setAnimated(true), 50);
-    return () => clearTimeout(t);
-  }, []);
-
-  return (
-    <div className="space-y-1" role="presentation">
-      <div className="flex items-end gap-1 h-32" aria-hidden="true">
-        {buckets.map((count, i) => {
-          const targetHeight = Math.max(count > 0 ? 4 : 0, (count / max) * 100);
-          return (
-            <div key={i} className="flex-1 flex flex-col items-center justify-end h-full">
-              {count > 0 && (
-                <span
-                  className={`text-[10px] text-muted-foreground mb-0.5 transition-opacity duration-300 motion-reduce:transition-none ${animated ? 'opacity-100' : 'opacity-0'}`}
-                  style={{ transitionDelay: `${i * 50}ms` }}
-                >
-                  {count}
-                </span>
-              )}
-              <div
-                className={`w-full rounded-t ${BUCKET_COLORS[i]} transition-all duration-500 ease-out motion-reduce:transition-none`}
-                style={{
-                  height: animated ? `${targetHeight}%` : '0%',
-                  transitionDelay: `${i * 50}ms`,
-                }}
-              />
-            </div>
-          );
-        })}
-      </div>
-      <div className="flex gap-1" aria-hidden="true">
-        {BUCKET_LABELS.map((label, i) => (
-          <div key={i} className="flex-1 text-center text-[9px] text-muted-foreground">
-            {label}
-          </div>
-        ))}
-      </div>
-      {/* W3: AT-friendly equivalent of the visual chart. */}
-      <ul className="sr-only" aria-label="StoryScore-Verteilung">
-        {buckets.map((count, i) => (
-          <li key={i}>{BUCKET_LABELS[i]}: {count} Publikationen</li>
-        ))}
-      </ul>
     </div>
   );
 }
