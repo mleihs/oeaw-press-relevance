@@ -7,6 +7,12 @@ supersedes: none
 
 # 0013 — Story schema: cluster-centric baseline, editorial fields deferred
 
+> **Status note 2026-05-13 (post-commit `7142725`):** A6 moved out of
+> Architecture Plan scope per
+> [ADR 0015](0015-architecture-plan-scope-ends-at-a4.md). This ADR's
+> technical content remains the blueprint if/when A6 is built as a
+> product-track initiative.
+
 ## Context
 
 Phase A6 has two competing schemas. `memory/story_bundles_proposal.md`

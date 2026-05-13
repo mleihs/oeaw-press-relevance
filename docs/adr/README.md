@@ -38,10 +38,11 @@ the *why* without spelunking through commit messages and memory files.
 | 0008 | [Domain-modules (`triage/`, `pipeline/`, `coverage/`) deferred](0008-domain-modules-deferred.md) | accepted |
 | 0009 | [Server-Components fetch through `lib/server/*`; force-dynamic default](0009-rsc-server-components-pilot.md) | accepted |
 | 0010 | [RSC mutation flow: invalidate + `router.refresh()`](0010-rsc-mutation-router-refresh.md) | accepted |
-| 0011 | [Editorial pipeline (A5) ships before story bundles (A6)](0011-editorial-pipeline-before-stories.md) | accepted |
+| 0011 | [Editorial pipeline (A5) ships before story bundles (A6)](0011-editorial-pipeline-before-stories.md) | deprecated |
 | 0012 | [Editorial pipeline state machine: `pitch_log` + `coverage`](0012-pipeline-state-machine.md) | accepted |
 | 0013 | [Story schema: cluster-centric baseline, editorial fields deferred](0013-story-schema-cluster-first.md) | accepted |
 | 0014 | [Story clustering: SQL pgvector-DBSCAN default](0014-clustering-sql-pgvector-default.md) | accepted |
+| 0015 | [Architecture Plan ends at A4; A5/A6 are product-track](0015-architecture-plan-scope-ends-at-a4.md) | accepted |
 
 ## When to write an ADR
 

@@ -1,11 +1,19 @@
 ---
 date: 2026-05-13
-status: accepted
+status: deprecated
 deciders: Phase-A5/A6 audit session
 supersedes: none
 ---
 
 # 0011 — Editorial pipeline (A5) ships before story bundles (A6)
+
+> **Status note 2026-05-13 (post-commit `7142725`):** A5/A6 moved out
+> of Architecture Plan scope per
+> [ADR 0015](0015-architecture-plan-scope-ends-at-a4.md). This ADR's
+> decision (A5 before A6) is moot when neither phase is scheduled;
+> status downgraded to `deprecated`. The reasoning is preserved — if a
+> future product initiative resurrects both phases, "pipeline before
+> bundles" still applies.
 
 ## Context
 

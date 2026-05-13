@@ -7,6 +7,12 @@ supersedes: none
 
 # 0014 — Story clustering: SQL pgvector-DBSCAN as default; Python only on documented failure
 
+> **Status note 2026-05-13 (post-commit `7142725`):** A6 moved out of
+> Architecture Plan scope per
+> [ADR 0015](0015-architecture-plan-scope-ends-at-a4.md). This ADR's
+> technical content remains the blueprint if/when A6 is built as a
+> product-track initiative.
+
 ## Context
 
 Phase A6 ([ADR 0013](0013-story-schema-cluster-first.md)) needs to

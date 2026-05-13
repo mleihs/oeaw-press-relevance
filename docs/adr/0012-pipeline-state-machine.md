@@ -7,6 +7,12 @@ supersedes: none
 
 # 0012 — Editorial pipeline state machine: `pitch_log` + `coverage`
 
+> **Status note 2026-05-13 (post-commit `7142725`):** A5 moved out of
+> Architecture Plan scope per
+> [ADR 0015](0015-architecture-plan-scope-ends-at-a4.md). This ADR's
+> technical content remains the blueprint if/when A5 is built as a
+> product-track initiative.
+
 ## Context
 
 Phase A5 ([ADR 0011](0011-editorial-pipeline-before-stories.md))
