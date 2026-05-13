@@ -1,9 +1,9 @@
 # Architecture Hardening Plan — Post-Phase-3
 
-**Stand:** 2026-05-13
-**Status:** A7/A2/A1/A4 closed 2026-05-12/13; Cross-cutting offen (Vitest,
-withApiError, env-validation, structured logging). A5/A6 wurden 2026-05-13
-in den Produkt-Track verschoben — siehe
+**Stand:** 2026-05-14
+**Status:** A7/A2/A1/A4 closed 2026-05-12/13; withApiError + env-validation
+done 2026-05-14; Cross-cutting offen (Vitest, structured logging). A5/A6
+wurden 2026-05-13 in den Produkt-Track verschoben — siehe
 [ADR 0015](docs/adr/0015-architecture-plan-scope-ends-at-a4.md) +
 § "Out of scope" unten.
 **Vorgänger:** `OSS_READINESS_PLAN.md` (Phasen 1–3 done; Phase 4 = Vitest noch offen)
@@ -589,12 +589,28 @@ Helper, wurde aber nie genutzt.
 
 ### Boot-time env validation
 
-Phase 3 endete mit einer halben Stunde Debug, weil DATABASE_URL fehlte
-und ein Drizzle-`postgres('')` cryptisch failed. `lib/server/env.ts`
-mit zod-Schema das beim Boot alle erwarteten Vars validiert (DATABASE_URL,
-SUPABASE_URL, GATE_TOKEN, MEISTERTASK_API_TOKEN, …). Bei Fehlen: Process
-exitet mit klarer Liste fehlender Vars. Aufwand ~2h, ROI hoch für
-Self-Hoster.
+**Status:** [x] done 2026-05-14. `lib/server/env.ts` mit zod-Schema das
+beim Boot alle App-Code-relevanten Vars validiert (DATABASE_URL,
+SUPABASE_URL/ANON-KEY pairs, SERVICE_ROLE_KEY, GATE_TOKEN+PASSWORD,
+OPENROUTER, LLM_DEFAULT_MODEL, MEISTERTASK_*). `instrumentation.ts`
+als Next-16-Hook ruft `validateEnv()` beim Boot — bei Fehlern: eine
+nummerierte, aggregierte Liste aller Issues + `process.exit(1)`, statt
+Drizzle's cryptisches `Failed query: ...`. Schema-Field-Checks + 5
+Cross-Field-Refines (Supabase-URL/ANON-Pairs, GATE-Pair, MT-Token/Section,
+MT-Label-Pair) laufen unconditionally (zod-4-`.superRefine` short-
+circuited bei Field-Errors → manuelle Aggregation in `parseEnv`).
+Smoke unter `scripts/smoke/env/validation.ts` (28 Assertions, 13 Cases).
+Script-only Vars (MYSQL_*, PG_DATABASE_URL, GATE_COOKIE, BATCH_SIZE)
+sind out-of-scope — eigener Script-Lifecycle. **Aufwand actual:** ~1.5h.
+
+**Follow-ups (out of scope, separate Issues):**
+- `.env.example` hat `WEBDB_MYSQL_*`, Code liest `MYSQL_*` →
+  Script-side Naming-Drift, betrifft nur `scripts/webdb-import.mjs`.
+- `.env.example` doc'd `MEISTERTASK_PROJECT_ID`, kein App-Code liest
+  es → vermutlich legacy, könnte aus `.env.example` raus.
+- Migration der existierenden `process.env.X`-Calls auf das exportierte
+  `env`-Singleton ist ein optionaler Cleanup-Pass (>20 Touchpoints,
+  separater Refactor).
 
 ### Structured logging
 
