@@ -568,14 +568,24 @@ A2 + A1 sind geschlossen, Vitest steht aus. Drei konkrete Test-Klassen:
   Cron pingt jede Nacht — würde die Phase-3-Bugs (uuid-Bind,
   Relation-Shadow) sofort gefangen haben.
 
-### Error-handling helper (mit A2 ziehen)
+### Error-handling helper (`withApiError`)
 
-Aktuell `try { ... } catch (err) { return apiError(err instanceof Error
-? err.message : 'Unknown error', 500) }` in ~25 Routes dupliziert.
-`lib/server/http.ts` hat schon `errorToApiResponse(err, status)` —
-nutzen aber kaum jemand. Schritt eins: durchziehen. Schritt zwei:
-`withApiError(handler)` Higher-Order-Function die das tryCatch
-abstract — Routes werden einzeilig. Aufwand ~1h, Lessen ~50 LOC.
+**Status:** [x] done 2026-05-14. `lib/server/http.ts` bekam
+`withApiError(handler)` HOF, der den Happy-Path einer Route mit
+try/catch → `errorToApiResponse` umwickelt. `errorToApiResponse(err,
+status, fallback)` ist um einen optionalen Fallback-String erweitert
+(für Routes die `'Invalid request'` / `'Configuration error'` /
+`'Invalid payload'` statt `'Unknown error'` zurückgeben). 24 Routes
+migriert — 18 simple (try/catch komplett raus, Happy-Path linear) +
+6 mixed (inner try für JSON-parse / specific error class bleibt,
+fallback-Ternary → `errorToApiResponse(err, status, fallback)` oder
+`throw err` zum äußeren HOF). Netto ~150 LOC weniger; tsc/eslint
+0/13 / tests 60/60 unverändert. **Aufwand actual:** ~1.5h.
+
+Originaler Anstoß: `try { ... } catch (err) { return apiError(err
+instanceof Error ? err.message : 'Unknown error', 500) }` in ~25 Routes
+dupliziert; `errorToApiResponse(err, status)` existierte schon im
+Helper, wurde aber nie genutzt.
 
 ### Boot-time env validation
 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from 'drizzle-orm';
 import { db } from '@/lib/server/db';
-import { apiError } from '@/lib/server/http';
+import { apiError, withApiError } from '@/lib/server/http';
 import type {
   AuthorshipScope,
   DistributionPoint,
@@ -19,7 +19,7 @@ function csv(s: string | null): string[] | null {
   return arr.length ? arr : null;
 }
 
-export async function GET(req: NextRequest) {
+export const GET = withApiError(async (req: NextRequest) => {
   const u = req.nextUrl.searchParams;
 
   const since = u.get('since');
@@ -45,25 +45,21 @@ export async function GET(req: NextRequest) {
   const excludeIta = u.get('exclude_ita') !== 'false';
   const excludeOutreach = u.get('exclude_outreach') !== 'false';
 
-  try {
-    // See researchers/top route for the sql.param + cast rationale.
-    const points = (await db.execute(
-      sql`SELECT * FROM researcher_distribution(
-        ${since}::date,
-        ${metric},
-        ${scope},
-        ${sql.param(oestat3Ids)}::text[],
-        ${includeExternal},
-        ${includeDeceased},
-        ${memberOnly},
-        ${minValue}::numeric,
-        ${limit}::int,
-        ${excludeIta},
-        ${excludeOutreach}
-      )`,
-    )) as unknown as DistributionPoint[];
-    return NextResponse.json({ points });
-  } catch (err) {
-    return apiError(err instanceof Error ? err.message : 'Unknown error', 500);
-  }
-}
+  // See researchers/top route for the sql.param + cast rationale.
+  const points = (await db.execute(
+    sql`SELECT * FROM researcher_distribution(
+      ${since}::date,
+      ${metric},
+      ${scope},
+      ${sql.param(oestat3Ids)}::text[],
+      ${includeExternal},
+      ${includeDeceased},
+      ${memberOnly},
+      ${minValue}::numeric,
+      ${limit}::int,
+      ${excludeIta},
+      ${excludeOutreach}
+    )`,
+  )) as unknown as DistributionPoint[];
+  return NextResponse.json({ points });
+});

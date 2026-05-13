@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { apiError } from '@/lib/server/http';
+import { withApiError } from '@/lib/server/http';
 import {
   getPressReleasesStats,
   listPressReleases,
@@ -13,23 +13,19 @@ import {
  *   ?with_pub=true  joins lightweight publication fields for listing page
  *   (none)          all press-releases
  */
-export async function GET(req: NextRequest) {
-  try {
-    const sp = req.nextUrl.searchParams;
+export const GET = withApiError(async (req: NextRequest) => {
+  const sp = req.nextUrl.searchParams;
 
-    if (sp.get('stats') === 'true') {
-      const stats = await getPressReleasesStats();
-      return NextResponse.json(stats);
-    }
-
-    const orphansParam = sp.get('orphans');
-    const result = await listPressReleases({
-      orphans:
-        orphansParam === 'true' || orphansParam === 'false' ? orphansParam : null,
-      withPub: sp.get('with_pub') === 'true',
-    });
-    return NextResponse.json(result);
-  } catch (err) {
-    return apiError(err instanceof Error ? err.message : 'Unknown error', 500);
+  if (sp.get('stats') === 'true') {
+    const stats = await getPressReleasesStats();
+    return NextResponse.json(stats);
   }
-}
+
+  const orphansParam = sp.get('orphans');
+  const result = await listPressReleases({
+    orphans:
+      orphansParam === 'true' || orphansParam === 'false' ? orphansParam : null,
+    withPub: sp.get('with_pub') === 'true',
+  });
+  return NextResponse.json(result);
+});

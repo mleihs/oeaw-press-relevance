@@ -1,12 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { apiError } from '@/lib/server/http';
+import { withApiError } from '@/lib/server/http';
 import { buildReviewQueue } from '@/lib/server/review/queue';
 
-export async function GET(req: NextRequest) {
-  try {
-    const result = await buildReviewQueue(new URL(req.url).searchParams);
-    return NextResponse.json(result);
-  } catch (err) {
-    return apiError(err instanceof Error ? err.message : 'Unknown error', 500);
-  }
-}
+export const GET = withApiError(async (req: NextRequest) => {
+  const result = await buildReviewQueue(new URL(req.url).searchParams);
+  return NextResponse.json(result);
+});

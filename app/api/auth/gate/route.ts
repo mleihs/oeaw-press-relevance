@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createHash } from 'crypto';
+import { apiError, withApiError } from '@/lib/server/http';
 
 // Login endpoint for the middleware gate. The browser POSTs the password
 // here; we compare against GATE_PASSWORD server-side and, on match, set
@@ -16,12 +17,12 @@ function tokenize(password: string): string {
   return createHash('sha256').update(password, 'utf8').digest('hex');
 }
 
-export async function POST(req: NextRequest) {
+export const POST = withApiError(async (req: NextRequest) => {
   let body: { password?: unknown };
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+    return apiError('Invalid request body', 400);
   }
 
   const password = typeof body.password === 'string' ? body.password : '';
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (password !== expectedPassword) {
-    return NextResponse.json({ error: 'Invalid password' }, { status: 401 });
+    return apiError('Invalid password', 401);
   }
 
   const token = tokenize(password);
@@ -46,7 +47,7 @@ export async function POST(req: NextRequest) {
     maxAge: 60 * 60 * 24 * 30, // 30 days
   });
   return res;
-}
+});
 
 // DELETE for explicit logout (clears the cookie).
 export async function DELETE() {

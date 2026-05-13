@@ -62,9 +62,39 @@ export function createSSEStream() {
 /**
  * Maps a thrown value to an `apiError` payload. Use in route catch blocks
  * to keep handlers focused on the happy path. Status defaults to 500;
- * pass another for billing/auth/etc.
+ * pass another for validation/billing/auth/etc. Optional `fallback`
+ * overrides the "Unknown error" string used when `err` is not an Error
+ * instance (e.g. set to "Invalid request" for JSON-parse catches).
  */
-export function errorToApiResponse(err: unknown, status = 500) {
-  const message = err instanceof Error ? err.message : 'Unknown error';
+export function errorToApiResponse(
+  err: unknown,
+  status = 500,
+  fallback = 'Unknown error',
+) {
+  const message = err instanceof Error ? err.message : fallback;
   return apiError(message, status);
+}
+
+/**
+ * Higher-order wrapper that turns any uncaught throw inside a route
+ * handler into a 500 `{ error: <message> }` response via
+ * `errorToApiResponse`. Use to drop the try/catch boilerplate from
+ * route bodies — the happy path stays linear, validation errors remain
+ * explicit `return apiError(...)` early-returns.
+ *
+ * For sub-steps that need a non-500 status or custom fallback (JSON
+ * parse → 400 "Invalid request", payload validation → 400 with a
+ * specific error class), keep an inner try/catch and call
+ * `errorToApiResponse(err, status, fallback)` directly.
+ */
+export function withApiError<Args extends unknown[]>(
+  handler: (...args: Args) => Promise<Response> | Response,
+): (...args: Args) => Promise<Response> {
+  return async (...args: Args) => {
+    try {
+      return await handler(...args);
+    } catch (err) {
+      return errorToApiResponse(err);
+    }
+  };
 }

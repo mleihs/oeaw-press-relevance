@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { apiError } from '@/lib/server/http';
+import { apiError, withApiError } from '@/lib/server/http';
 import { decisionPayloadSchema } from '@/lib/shared/schemas';
 import { applyDecision } from '@/lib/server/publications/decisions';
 import { PublicationNotFoundError } from '@/lib/server/publications/errors';
 
-export async function PATCH(
+export const PATCH = withApiError(async (
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
-) {
+) => {
   const { id } = await params;
 
   let raw: unknown;
@@ -31,6 +31,6 @@ export async function PATCH(
     if (err instanceof PublicationNotFoundError) {
       return apiError(err.message, 404);
     }
-    return apiError(err instanceof Error ? err.message : 'Unknown error', 500);
+    throw err;
   }
-}
+});

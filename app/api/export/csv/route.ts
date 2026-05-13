@@ -5,7 +5,7 @@ import {
   publications as publicationsTable,
   descNullsLast,
 } from '@/lib/server/db';
-import { apiError } from '@/lib/server/http';
+import { withApiError } from '@/lib/server/http';
 
 // CSV column whitelist — mirrors the Publication wire-shape names. Listed
 // explicitly so a schema rename surfaces here as a tsc error (the row[h] index
@@ -26,10 +26,9 @@ function escapeCsv(val: unknown): string {
   return str;
 }
 
-export async function GET(req: NextRequest) {
-  try {
-    const { searchParams } = new URL(req.url);
-    const onlyAnalyzed = searchParams.get('analyzed') !== 'false';
+export const GET = withApiError(async (req: NextRequest) => {
+  const { searchParams } = new URL(req.url);
+  const onlyAnalyzed = searchParams.get('analyzed') !== 'false';
 
     // Project only the columns the CSV uses. NULLS LAST so analysed pubs with
     // no score still land at the bottom (vs. PostgREST's nullsFirst:false sort).
@@ -61,20 +60,17 @@ export async function GET(req: NextRequest) {
       .where(onlyAnalyzed ? eq(publicationsTable.analysisStatus, 'analyzed') : undefined)
       .orderBy(descNullsLast(publicationsTable.pressScore));
 
-    const lines: string[] = [COLUMNS.join(',')];
-    for (const row of rows) {
-      const r = row as Record<string, unknown>;
-      lines.push(COLUMNS.map((h) => escapeCsv(r[h])).join(','));
-    }
-    const csv = lines.join('\n');
-
-    return new Response(csv, {
-      headers: {
-        'Content-Type': 'text/csv; charset=utf-8',
-        'Content-Disposition': `attachment; filename="storyscout-${new Date().toISOString().slice(0, 10)}.csv"`,
-      },
-    });
-  } catch (err) {
-    return apiError(err instanceof Error ? err.message : 'Unknown error', 500);
+  const lines: string[] = [COLUMNS.join(',')];
+  for (const row of rows) {
+    const r = row as Record<string, unknown>;
+    lines.push(COLUMNS.map((h) => escapeCsv(r[h])).join(','));
   }
-}
+  const csv = lines.join('\n');
+
+  return new Response(csv, {
+    headers: {
+      'Content-Type': 'text/csv; charset=utf-8',
+      'Content-Disposition': `attachment; filename="storyscout-${new Date().toISOString().slice(0, 10)}.csv"`,
+    },
+  });
+});

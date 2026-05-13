@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { apiError } from '@/lib/server/http';
+import { apiError, withApiError } from '@/lib/server/http';
 import {
   flagSetPayloadSchema,
   flagDeletePayloadSchema,
@@ -7,10 +7,10 @@ import {
 import { setFlag, clearFlag } from '@/lib/server/publications/flag';
 import { PublicationNotFoundError } from '@/lib/server/publications/errors';
 
-export async function POST(
+export const POST = withApiError(async (
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
-) {
+) => {
   const { id } = await params;
   let raw: unknown;
   try {
@@ -29,14 +29,14 @@ export async function POST(
     if (err instanceof PublicationNotFoundError) {
       return apiError(err.message, 404);
     }
-    return apiError(err instanceof Error ? err.message : 'Unknown error', 500);
+    throw err;
   }
-}
+});
 
-export async function DELETE(
+export const DELETE = withApiError(async (
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
-) {
+) => {
   const { id } = await params;
   let raw: unknown;
   try {
@@ -55,6 +55,6 @@ export async function DELETE(
     if (err instanceof PublicationNotFoundError) {
       return apiError(err.message, 404);
     }
-    return apiError(err instanceof Error ? err.message : 'Unknown error', 500);
+    throw err;
   }
-}
+});

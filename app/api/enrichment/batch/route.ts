@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { apiError, createSSEStream } from '@/lib/server/http';
+import {
+  apiError,
+  createSSEStream,
+  errorToApiResponse,
+  withApiError,
+} from '@/lib/server/http';
 import {
   fetchPublicationsForEnrichment,
   InvalidEnrichmentPayloadError,
@@ -9,12 +14,12 @@ import {
 
 export const maxDuration = 300;
 
-export async function POST(req: NextRequest) {
+export const POST = withApiError(async (req: NextRequest) => {
   let body: Record<string, unknown>;
   try {
     body = await req.json();
   } catch (err) {
-    return apiError(err instanceof Error ? err.message : 'Invalid request', 400);
+    return errorToApiResponse(err, 400, 'Invalid request');
   }
 
   let filters;
@@ -24,15 +29,11 @@ export async function POST(req: NextRequest) {
     if (err instanceof InvalidEnrichmentPayloadError) {
       return apiError(err.message, 400);
     }
-    return apiError(err instanceof Error ? err.message : 'Invalid payload', 400);
+    return errorToApiResponse(err, 400, 'Invalid payload');
   }
 
-  let pubs;
-  try {
-    pubs = await fetchPublicationsForEnrichment(filters);
-  } catch (err) {
-    return apiError(err instanceof Error ? err.message : 'Unknown error', 500);
-  }
+  // Uncaught throws bubble to withApiError → 500.
+  const pubs = await fetchPublicationsForEnrichment(filters);
   if (pubs.length === 0) {
     return NextResponse.json({ message: 'No publications to enrich' });
   }
@@ -52,4 +53,4 @@ export async function POST(req: NextRequest) {
       Connection: 'keep-alive',
     },
   });
-}
+});

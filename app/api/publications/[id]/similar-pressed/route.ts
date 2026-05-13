@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eq, sql } from 'drizzle-orm';
 import { db, publications } from '@/lib/server/db';
-import { apiError } from '@/lib/server/http';
+import { withApiError } from '@/lib/server/http';
 
 /**
  * GET /api/publications/:id/similar-pressed
@@ -29,38 +29,34 @@ type SimilarPressedRow = {
   press_url: string;
 };
 
-export async function GET(
+export const GET = withApiError(async (
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
-) {
-  try {
-    const { id } = await params;
-    const url = new URL(req.url);
-    const limit = Math.min(
-      20,
-      Math.max(1, parseInt(url.searchParams.get('limit') ?? '3', 10) || 3),
-    );
-    const model = url.searchParams.get('model') ?? 'allenai/specter2_base';
+) => {
+  const { id } = await params;
+  const url = new URL(req.url);
+  const limit = Math.min(
+    20,
+    Math.max(1, parseInt(url.searchParams.get('limit') ?? '3', 10) || 3),
+  );
+  const model = url.searchParams.get('model') ?? 'allenai/specter2_base';
 
-    const [selfRows, similarRows] = await Promise.all([
-      db
-        .select({ pressSimilarity: publications.pressSimilarity })
-        .from(publications)
-        .where(eq(publications.id, id))
-        .limit(1),
-      db.execute<SimilarPressedRow>(
-        sql`SELECT kind, publication_id, press_release_id, similarity, title, released_at, press_url
-            FROM similar_pressed_pubs(${id}::uuid, ${model}, ${limit})`,
-      ),
-    ]);
+  const [selfRows, similarRows] = await Promise.all([
+    db
+      .select({ pressSimilarity: publications.pressSimilarity })
+      .from(publications)
+      .where(eq(publications.id, id))
+      .limit(1),
+    db.execute<SimilarPressedRow>(
+      sql`SELECT kind, publication_id, press_release_id, similarity, title, released_at, press_url
+          FROM similar_pressed_pubs(${id}::uuid, ${model}, ${limit})`,
+    ),
+  ]);
 
-    return NextResponse.json({
-      publication_id: id,
-      press_similarity: selfRows[0]?.pressSimilarity ?? null,
-      model,
-      similar: similarRows,
-    });
-  } catch (err) {
-    return apiError(err instanceof Error ? err.message : 'Unknown error', 500);
-  }
-}
+  return NextResponse.json({
+    publication_id: id,
+    press_similarity: selfRows[0]?.pressSimilarity ?? null,
+    model,
+    similar: similarRows,
+  });
+});

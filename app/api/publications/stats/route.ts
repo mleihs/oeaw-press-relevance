@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from 'drizzle-orm';
 import { db } from '@/lib/server/db';
-import { apiError } from '@/lib/server/http';
+import { withApiError } from '@/lib/server/http';
 
 // Stats-Endpoint für das Dashboard. Aus /api/publications ausgegliedert,
 // damit `revalidate = 60` greift und Vercel die Antwort 60s am Edge cached.
@@ -30,32 +30,28 @@ type StatsPayload = {
   top_keywords?: { word: string; count: number }[];
 };
 
-export async function GET(req: NextRequest) {
-  try {
-    const { searchParams } = new URL(req.url);
-    const defaultEligible = searchParams.get('default_eligible') === 'true';
+export const GET = withApiError(async (req: NextRequest) => {
+  const { searchParams } = new URL(req.url);
+  const defaultEligible = searchParams.get('default_eligible') === 'true';
 
-    const rows = await db.execute<{ stats: StatsPayload | null }>(
-      sql`SELECT publication_dashboard_stats(${defaultEligible}) AS stats`,
-    );
-    const stats = rows[0]?.stats ?? {};
+  const rows = await db.execute<{ stats: StatsPayload | null }>(
+    sql`SELECT publication_dashboard_stats(${defaultEligible}) AS stats`,
+  );
+  const stats = rows[0]?.stats ?? {};
 
-    return NextResponse.json({
-      total: stats.total || 0,
-      enriched: stats.enriched || 0,
-      partial: stats.partial || 0,
-      with_abstract: stats.with_abstract || 0,
-      analyzed: stats.analyzed || 0,
-      peer_reviewed: stats.peer_reviewed || 0,
-      popular_science: stats.popular_science || 0,
-      bilingual_summary: stats.bilingual_summary || 0,
-      avg_score: stats.avg_score ?? null,
-      high_score_count: stats.high_score_count || 0,
-      score_distribution: stats.score_distribution ?? new Array(10).fill(0),
-      dimension_avgs: stats.dimension_avgs ?? {},
-      top_keywords: stats.top_keywords ?? [],
-    });
-  } catch (err) {
-    return apiError(err instanceof Error ? err.message : 'Unknown error', 500);
-  }
-}
+  return NextResponse.json({
+    total: stats.total || 0,
+    enriched: stats.enriched || 0,
+    partial: stats.partial || 0,
+    with_abstract: stats.with_abstract || 0,
+    analyzed: stats.analyzed || 0,
+    peer_reviewed: stats.peer_reviewed || 0,
+    popular_science: stats.popular_science || 0,
+    bilingual_summary: stats.bilingual_summary || 0,
+    avg_score: stats.avg_score ?? null,
+    high_score_count: stats.high_score_count || 0,
+    score_distribution: stats.score_distribution ?? new Array(10).fill(0),
+    dimension_avgs: stats.dimension_avgs ?? {},
+    top_keywords: stats.top_keywords ?? [],
+  });
+});

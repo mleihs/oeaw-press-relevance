@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { apiError, createSSEStream } from '@/lib/server/http';
+import {
+  createSSEStream,
+  errorToApiResponse,
+  withApiError,
+} from '@/lib/server/http';
 import { getLLMModel, getOpenRouterKey } from '@/lib/server/llm';
 import {
   fetchPublicationsForAnalysis,
@@ -9,23 +13,19 @@ import {
 
 export const maxDuration = 300;
 
-export async function POST(req: NextRequest) {
+export const POST = withApiError(async (req: NextRequest) => {
   let apiKey, model, body: Record<string, unknown>;
   try {
     apiKey = getOpenRouterKey(req);
     model = getLLMModel(req);
     body = await req.json();
   } catch (err) {
-    return apiError(err instanceof Error ? err.message : 'Configuration error', 400);
+    return errorToApiResponse(err, 400, 'Configuration error');
   }
 
   const filters = parseAnalysisBatchBody(body);
-  let pubs;
-  try {
-    pubs = await fetchPublicationsForAnalysis(filters);
-  } catch (err) {
-    return apiError(err instanceof Error ? err.message : 'Unknown error', 500);
-  }
+  // Uncaught throws bubble to withApiError → 500.
+  const pubs = await fetchPublicationsForAnalysis(filters);
   if (pubs.length === 0) {
     return NextResponse.json({ message: 'No publications to analyze' });
   }
@@ -50,4 +50,4 @@ export async function POST(req: NextRequest) {
       Connection: 'keep-alive',
     },
   });
-}
+});

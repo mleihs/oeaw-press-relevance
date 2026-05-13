@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { apiError } from '@/lib/server/http';
+import { apiError, withApiError } from '@/lib/server/http';
 import { meistertaskPushPayloadSchema } from '@/lib/shared/schemas';
 import { pushPublicationToMeistertask } from '@/lib/server/meistertask/push';
 import type { MeistertaskPushResult } from '@/lib/shared/meistertask-types';
 
-export async function POST(req: NextRequest) {
+export const POST = withApiError(async (req: NextRequest) => {
   let raw: unknown;
   try {
     raw = await req.json();
@@ -23,13 +23,13 @@ export async function POST(req: NextRequest) {
     );
     return resultToResponse(result);
   } catch (err) {
-    // Without this catch the Lambda would return an empty 500 which the UI
-    // surfaces as "Unexpected end of JSON input" — opaque to the user.
+    // Server-side log preserves the diagnostic; the error message is
+    // surfaced to the UI by `withApiError`'s 500 fallback, so the old
+    // "Unexpected end of JSON input" opaque-500 risk stays solved.
     console.error('[meistertask/push] uncaught exception', err);
-    const detail = err instanceof Error ? err.message : 'unknown error';
-    return apiError(`MeisterTask push crashed: ${detail}`, 500);
+    throw err;
   }
-}
+});
 
 function resultToResponse(result: MeistertaskPushResult): Response {
   switch (result.status) {
