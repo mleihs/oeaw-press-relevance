@@ -199,3 +199,26 @@
 .animate-capybara-scratch   { animation: capybara-scratch 0.5s ease-in-out infinite; }
 .animate-capybara-happy     { animation: capybara-happy 1.5s ease-in-out infinite; }
 .animate-capybara-shrug     { animation: capybara-shrug 2s ease-in-out infinite; }
+/* Fumadocs A11y: the default `text-fd-muted-foreground` on the search-trigger
+   button hits 4.46:1 against the muted background, one hundredth below WCAG
+   AA. Hard-code a slightly darker / lighter neutral so the search button
+   passes axe's color-contrast rule in both modes. */
+[data-search-full],
+[data-search-sm] {
+  color: #525252; /* neutral-600 → ~6.4:1 on #f8f8f8 (light mode) */
+}
+.dark [data-search-full],
+.dark [data-search-sm] {
+  color: #a3a3a3; /* neutral-400 → ~5.7:1 on dark card surfaces */
+}
+
+/* Fumadocs A11y: bump the muted-foreground token a notch darker (light) /
+   lighter (dark) so all `text-fd-muted-foreground` instances clear WCAG AA
+   4.5:1. Default values were 4.34–4.46:1 — just below threshold. Applies to
+   sidebar links, TOC code spans, and search trigger uniformly. */
+:root {
+  --color-fd-muted-foreground: #525252; /* neutral-600 */
+}
+.dark {
+  --color-fd-muted-foreground: #b3b3b3; /* neutral-400-ish */
+}

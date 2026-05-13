@@ -116,7 +116,7 @@ export function Nav() {
         </nav>
 
         <div className="ml-auto flex items-center gap-1">
-          <span className="text-white/60 text-xs font-medium tracking-wider hidden sm:block mr-2">
+          <span className="text-white/85 text-xs font-medium tracking-wider hidden sm:block mr-2">
             ÖAW
           </span>
           <ThemeToggle />
