@@ -28,7 +28,7 @@ import {
 import { cn } from '@/lib/shared/utils';
 
 import type { FilterValues, TriState } from '../_filters';
-import { SUPER_DOMAIN_LABELS } from '../_constants';
+import { SUPER_DOMAIN_LABELS, SUPER_DOMAINS } from '../_constants';
 import type { Lookups } from './use-lookups';
 
 type Patch = Partial<FilterValues>;
@@ -238,8 +238,6 @@ function InstituteFacet({ filters, setFilters, lookups }: Props) {
     </FacetSection>
   );
 }
-
-const SUPER_DOMAINS = [1, 2, 3, 4, 5, 6] as const;
 
 function Oestat6Facet({ filters, setFilters, lookups }: Props) {
   const [activeSuper, setActiveSuper] = React.useState<number | 'all'>('all');

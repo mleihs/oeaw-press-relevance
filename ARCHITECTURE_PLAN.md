@@ -292,22 +292,31 @@ Dev-verified `/api/press-releases?stats=true`, `?orphans=true`,
 **Status:** [x] **Pilot done 2026-05-12** on `/persons/[id]` +
 **Phase 1 page `/publications/[id]` done 2026-05-12** +
 **Phase 1 page `/press-releases` done 2026-05-13** as **Zero-JS RSC**
-(Phase 1 closed). Pilot validated: TTFB-Win + zero hydration-mismatch.
-Phase-1 `/publications/[id]` validated: first mutation-bearing RSC
-page in the codebase + ADR 0010 (props + `router.refresh()`) closes
-the ADR-0009 open question on mutation flow. Phase-1 `/press-releases`
+(Phase 1 closed) +
+**Phase 2 page `/publications` (list) done 2026-05-13** as max-RSC
+with 4 client islands (Phase 2 partial — `/` Dashboard still open).
+Pilot validated: TTFB-Win + zero hydration-mismatch. Phase-1
+`/publications/[id]` validated: first mutation-bearing RSC page in
+the codebase + ADR 0010 (props + `router.refresh()`) closes the
+ADR-0009 open question on mutation flow. Phase-1 `/press-releases`
 validated: first list page taken to **max-RSC** — `<Link>`-based tab
 navigation replaces shadcn `Tabs`, native `<details name=>` replaces
 the `useState` row-expand toggle, zero `'use client'` in the page tree
-itself. The migration also surfaced the **pilot-vs-max-RSC
-discriminator** (see phaseA4 Lesson #21) and fixed a latent
-camelCase/snake_case bug the previous `as unknown as` cast masked.
-See [ADR 0009](docs/adr/0009-rsc-server-components-pilot.md),
+itself. Phase-2 `/publications` (list) validated: max-RSC scales to
+heavy nuqs filter state via `createLoader`+`createSerializer` from
+`nuqs/server` — the page tree is RSC with 4 client islands (filter UI,
+pipeline actions, export, plus the existing `PublicationTable`
+treated as an island via a new `sortHrefs` record prop). The
+migration also surfaced **Lessons #23-25** (function-prop crash
+across RSC → Client, `nuqs/server` isomorphic parser entry-point,
+pre-computed records over builder functions). See
+[ADR 0009](docs/adr/0009-rsc-server-components-pilot.md),
 [ADR 0010](docs/adr/0010-rsc-mutation-router-refresh.md), pilot closeout
-below, and the phase-1 Acceptance checkboxes. **Only Phase 2
-(`/`, `/publications` list) pages remain.** **Aufwand pilot:** ~3h;
+below, and the phase-1 / phase-2 Acceptance checkboxes. **Phase 2 `/`
+Dashboard still open.** **Aufwand pilot:** ~3h;
 **phase-1 `/publications/[id]`:** ~3h; **phase-1 `/press-releases`:**
-~5h (incl. Zero-JS refactor following fresh-eyes self-review).
+~5h (incl. Zero-JS refactor following fresh-eyes self-review);
+**phase-2 `/publications` list:** ~4h.
 **Voraussetzung:** A2 done (Repos sind das, was RSCs sauber aufrufen
 können — `useApiQuery` wird durch direkte Repo-Calls ersetzt).
 
@@ -390,8 +399,32 @@ Stack" markieren.
 **Phase 2 (komplexer, evaluieren):**
 - [ ] `/` (Dashboard) — hat aktuell Realtime-Pulse Animationen,
       Hybrid-Pattern probieren
-- [ ] `/publications` (List) — heavy nuqs filter state, könnte
-      `searchParams` props nutzen statt Client-Side-URL-Parse
+- [x] `/publications` (List) — **Landed 2026-05-13.** Page is an `async`
+      server-component reading 27 nuqs filter fields via
+      `loadFilters(searchParams)` (the nuqs `createLoader` counterpart
+      to `use-filters.ts::useQueryStates`), feeding `buildApiParams`
+      into `lib/server/publications/list.ts::listPublications`. Render
+      tree: header / dim-avgs / pagination / empty-state are RSC inline
+      (Link-based reset + Zero-JS prev/next); filters / pipeline
+      cards + modals / export are 4 client islands under `_components/`.
+      `PublicationTable` (782-LOC shared client component, still
+      backing /review) gained a `sortHrefs?: Partial<Record<string,
+      string>>` prop alongside `onSort` — pre-computed in the RSC page
+      so sort headers become Zero-JS `<Link>` for RSC consumers without
+      crossing the RSC → Client boundary with a function (see
+      phaseA4 Lesson #23). New `app/publications/_filters.ts` bundles
+      `loadFilters` + `serializeFilters` + `buildUrl(filters, patch)` +
+      `buildApiParams` (handles the intentional UI ↔ API name/encoding
+      divergence — TriState ↔ Bool, `showAll` ↔ inverted
+      `default_eligible`, `minScore` 0-100 ↔ 0-1.0). Pre-existing bug
+      fixed in passing: the legacy client `queryString` builder forgot
+      to forward `filters.flagged` — the "Geflaggt für Sitzung" filter
+      was dead end-to-end; `buildApiParams` now emits it and the smoke
+      verifies. Smoke at `scripts/smoke/rsc/publications-list.ts`;
+      pure-function tests at `app/publications/_filters.test.ts`
+      (covers the API translation + URL serializer + active-filter
+      detection — 23 cases). Playwright /publications light/dark +
+      enrichment-modal × light/dark all green.
 
 **Explicit out:**
 - `/review` bleibt Client (Triage ist mutation-heavy, TanStack-Query

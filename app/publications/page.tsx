@@ -1,285 +1,94 @@
-'use client';
-
-import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { Publication } from '@/lib/shared/types';
-import { useApiQuery } from '@/lib/client/hooks/use-api-query';
-import { useKeyboardShortcuts } from '@/lib/client/hooks/use-keyboard-shortcuts';
-import { PublicationTable } from '@/components/publication-table';
-import { EnrichmentModal } from '@/components/enrichment-modal';
-import { AnalysisModal } from '@/components/analysis-modal';
-import { EmptyState } from '@/components/empty-state';
+import Link from 'next/link';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { EmptyState } from '@/components/empty-state';
+import { PublicationTable } from '@/components/publication-table';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { getApiHeaders } from '@/lib/client/stores/settings-store';
-import { SCORE_LABELS, SCORE_COLORS } from '@/lib/shared/constants';
-import { Search, ChevronLeft, ChevronRight, Sparkles, Brain, Download, ChevronDown } from 'lucide-react';
+  SCORE_COLORS,
+  SCORE_DIMENSIONS,
+  SCORE_LABELS,
+  type ScoreDimension,
+} from '@/lib/shared/constants';
+import {
+  listPublications,
+  type PublicationListItem,
+} from '@/lib/server/publications/list';
+import {
+  buildApiParams,
+  buildUrl,
+  hasAnyActiveFilter,
+  loadFilters,
+  type FilterValues,
+  type SortOrder,
+} from './_filters';
+import { PAGE_SIZE } from './_constants';
+import { ExportDropdown } from './_components/export-dropdown';
+import { FiltersBar } from './_components/filters-bar';
+import { PipelineActions } from './_components/pipeline-actions';
 
-import { useFilters } from './use-filters';
-import { FILTER_DEFAULTS, PRESET_FIELDS, type FilterValues, type PresetKey } from './_filters';
-import { useLookups } from './_components/use-lookups';
-import { PresetBar } from './_components/preset-bar';
-import { ActiveFilters } from './_components/active-filters';
-import { ShowAllToggle } from './_components/show-all-toggle';
-import { FilterSheet } from './_components/filter-sheet';
-import { LoadingState } from '@/components/loading-state';
-import { WISS_TYPE_UIDS } from './_constants';
-import { RotateCcw } from 'lucide-react';
+// Per ADR 0009: read-heavy admin pages opt out of ISR. Filter combinations
+// have an enormous URL space (~27 nuqs params), so cache hit rate would be
+// near-zero anyway — revisit only if traffic justifies a tuned `revalidate`.
+export const dynamic = 'force-dynamic';
 
-const PAGE_SIZE = 20;
-
-interface PublicationsResponse {
-  publications: Publication[];
-  total: number;
-  total_hidden: number;
+// Pure helper: averages each LLM-evaluated dimension across the currently-
+// fetched page. Dimensions with no non-null values are omitted — empty
+// object => the avgs card doesn't render.
+function computeDimAvgs(
+  publications: PublicationListItem[],
+): Partial<Record<ScoreDimension, number>> {
+  const out: Partial<Record<ScoreDimension, number>> = {};
+  for (const dim of SCORE_DIMENSIONS) {
+    const vals = publications
+      .map((pub) => pub[dim])
+      .filter((v): v is number => v !== null);
+    if (vals.length > 0) {
+      out[dim] = vals.reduce((a, b) => a + b, 0) / vals.length;
+    }
+  }
+  return out;
 }
 
-const PUBS_QUERY_KEY = 'publications-list';
+// PublicationTable's sortable columns. Each href is pre-computed in the RSC
+// page (functions can't cross the RSC → Client boundary) and passed as a
+// serialisable record. Toggling: same column → flip order; new column → asc.
+// Always returns to page 1 since a new sort rarely shows the same rows.
+const SORTABLE_COLUMNS = [
+  'publication_type',
+  'published_at',
+  'enrichment_status',
+  'press_score',
+] as const;
 
-export default function PublicationsPage() {
-  const [enrichOpen, setEnrichOpen] = useState(false);
-  const [analysisOpen, setAnalysisOpen] = useState(false);
-  const searchRef = useRef<HTMLInputElement>(null);
+function buildSortHrefs(filters: FilterValues): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const col of SORTABLE_COLUMNS) {
+    const order: SortOrder =
+      filters.sort === col
+        ? filters.order === 'asc'
+          ? 'desc'
+          : 'asc'
+        : 'asc';
+    out[col] = buildUrl(filters, { sort: col, order, page: 1 });
+  }
+  return out;
+}
 
-  const [filters, setFilters] = useFilters();
-  const lookups = useLookups();
-  const queryClient = useQueryClient();
+interface PageProps {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
 
-  const [searchInput, setSearchInput] = useState(filters.q);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+export default async function PublicationsPage({ searchParams }: PageProps) {
+  const filters = await loadFilters(searchParams);
+  const data = await listPublications(buildApiParams(filters));
+  const dimAvgs = computeDimAvgs(data.publications);
+  const hasFilters = hasAnyActiveFilter(filters);
+  const sortHrefs = buildSortHrefs(filters);
 
-  // Keep the visible search input in sync if the URL changes externally
-  // (e.g. preset clicked, filter chip removed, browser back).
-  useEffect(() => {
-    setSearchInput(filters.q);
-  }, [filters.q]);
-
-  const handleSearchChange = useCallback(
-    (v: string) => {
-      setSearchInput(v);
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(() => {
-        // Search is a modifier, not a preset-territory field — don't clear preset.
-        setFilters({ q: v, page: 1 });
-      }, 300);
-    },
-    [setFilters],
-  );
-
-  // What does a given preset prescribe for the preset-territory fields?
-  // Returns only the fields the preset CARES about. The applyPreset machinery
-  // resets all other preset-territory fields to defaults; modifier fields
-  // (search, oestat, units, dates, etc.) are never touched.
-  const getPresetSpec = useCallback(
-    (key: Exclude<PresetKey, 'custom'>): Partial<FilterValues> => {
-      switch (key) {
-        case 'pitch':
-          return { peer: 'yes', hasSumDe: true, minScore: 70, showAll: false };
-        case 'mahighlights':
-          return { maHl: true, showAll: true };
-        case 'popsci':
-          return { popsci: 'yes' };
-        case 'peer':
-          return { peer: 'yes' };
-        case 'wiss': {
-          const ids = (lookups?.publicationTypes ?? [])
-            .filter((t) => WISS_TYPE_UIDS.includes(t.webdb_uid))
-            .map((t) => t.id);
-          return { types: ids };
-        }
-      }
-    },
-    [lookups],
-  );
-
-  // Type-safe field copy helper: TS can prove K is the same on both sides per call,
-  // so we don't need `as Record<string, unknown>` escape hatches anywhere below.
-  const setField = <K extends keyof FilterValues>(
-    target: Partial<FilterValues>,
-    key: K,
-    value: FilterValues[K],
-  ) => {
-    target[key] = value;
-  };
-
-  const applyPreset = useCallback(
-    (key: PresetKey) => {
-      // Toggle off the active preset: reset preset-territory only, preserve modifiers.
-      if (filters.preset === key) {
-        const reset: Partial<FilterValues> = { preset: 'custom', page: 1 };
-        for (const f of PRESET_FIELDS) setField(reset, f, FILTER_DEFAULTS[f]);
-        setFilters(reset);
-        return;
-      }
-      if (key === 'custom') return;
-
-      // Switching presets: reset preset-territory to defaults, then apply the
-      // new preset's specific values. Modifier fields survive untouched.
-      const spec = getPresetSpec(key);
-      const patch: Partial<FilterValues> = { preset: key, page: 1 };
-      for (const f of PRESET_FIELDS) setField(patch, f, FILTER_DEFAULTS[f]);
-      Object.assign(patch, spec);
-      setFilters(patch);
-    },
-    [filters.preset, getPresetSpec, setFilters],
-  );
-
-  // Detects when the active preset's territory has been hand-modified
-  // (e.g. user toggled `peer: yes` off after picking the Pitch preset).
-  // Lets us show a "Modifiziert · Zurücksetzen"-pill for one-click recovery.
-  const presetModified = (() => {
-    if (filters.preset === 'custom') return false;
-    const spec = getPresetSpec(filters.preset);
-    for (const f of PRESET_FIELDS) {
-      const expected = spec[f] ?? FILTER_DEFAULTS[f];
-      const actual = filters[f];
-      if (Array.isArray(expected) && Array.isArray(actual)) {
-        if (expected.length !== actual.length) return true;
-        if (expected.some((v, i) => v !== actual[i])) return true;
-      } else if (expected !== actual) {
-        return true;
-      }
-    }
-    return false;
-  })();
-
-  const resetPresetTerritory = useCallback(() => {
-    if (filters.preset === 'custom') return;
-    const spec = getPresetSpec(filters.preset);
-    const patch: Partial<FilterValues> = { page: 1 };
-    for (const f of PRESET_FIELDS) setField(patch, f, FILTER_DEFAULTS[f]);
-    Object.assign(patch, spec);
-    setFilters(patch);
-  }, [filters.preset, getPresetSpec, setFilters]);
-
-  // Resets EVERYTHING (preset + all modifiers) to factory defaults except sort/order.
-  // Used by the empty-state escape hatch when filters conflict to zero.
-  const resetAllFilters = useCallback(() => {
-    setFilters({
-      ...FILTER_DEFAULTS,
-      sort: filters.sort,
-      order: filters.order,
-    });
-  }, [filters.sort, filters.order, setFilters]);
-
-  // True when any user-set filter — preset or modifier — diverges from defaults.
-  const hasAnyActiveFilter = (() => {
-    const ignore = new Set(['sort', 'order', 'page']);
-    for (const k of Object.keys(FILTER_DEFAULTS) as Array<keyof FilterValues>) {
-      if (ignore.has(k)) continue;
-      const def = FILTER_DEFAULTS[k];
-      const cur = filters[k];
-      if (Array.isArray(def) && Array.isArray(cur)) {
-        if (cur.length !== def.length) return true;
-      } else if (cur !== def) {
-        return true;
-      }
-    }
-    return false;
-  })();
-
-  const queryString = useMemo(() => {
-    const p = new URLSearchParams();
-    p.set('page', String(filters.page));
-    p.set('pageSize', String(PAGE_SIZE));
-    p.set('sort', filters.sort);
-    p.set('order', filters.order);
-    if (filters.q) p.set('search', filters.q);
-    if (filters.enrich) p.set('enrichment_status', filters.enrich);
-    if (filters.analysis) p.set('analysis_status', filters.analysis);
-    if (filters.types.length) p.set('pub_type_ids', filters.types.join(','));
-    if (filters.units.length) p.set('orgunit_ids', filters.units.join(','));
-    if (filters.oestat.length) p.set('oestat6_ids', filters.oestat.join(','));
-    if (filters.oestat3.length) p.set('oestat3_domains', filters.oestat3.join(','));
-    if (filters.topUnitOnly) p.set('top_level_only', 'true');
-    if (filters.peer === 'yes') p.set('peer_reviewed', 'true');
-    if (filters.peer === 'no') p.set('peer_reviewed', 'false');
-    if (filters.popsci === 'yes') p.set('popular_science', 'true');
-    if (filters.popsci === 'no') p.set('popular_science', 'false');
-    if (filters.oa === 'yes') p.set('open_access', 'true');
-    if (filters.oa === 'no') p.set('open_access', 'false');
-    if (filters.hasSumDe) p.set('has_summary_de', 'true');
-    if (filters.hasSumEn) p.set('has_summary_en', 'true');
-    if (filters.hasPdf) p.set('has_pdf', 'true');
-    if (filters.hasDoi) p.set('has_doi', 'true');
-    if (filters.maHl) p.set('mahighlight', 'true');
-    if (filters.hl) p.set('highlight', 'true');
-    if (filters.from) p.set('from', filters.from);
-    if (filters.to) p.set('to', filters.to);
-    if (filters.minScore > 0) p.set('min_score', String(filters.minScore / 100));
-    if (filters.pressReleased === 'yes') p.set('press_released', 'true');
-    if (filters.pressReleased === 'no') p.set('press_released', 'false');
-    if (!filters.showAll) p.set('default_eligible', 'true');
-    return p.toString();
-  }, [filters]);
-
-  const { data, isLoading: loading } = useApiQuery<PublicationsResponse>(
-    [PUBS_QUERY_KEY, queryString],
-    `/api/publications?${queryString}`,
-  );
-
-  const publications = data?.publications ?? [];
-  const total = data?.total ?? 0;
-  const hidden = data?.total_hidden ?? 0;
-
-  const dimAvgs = useMemo(() => {
-    const dims = ['public_accessibility', 'societal_relevance', 'novelty_factor', 'storytelling_potential', 'media_timeliness'] as const;
-    const out: Record<string, number> = {};
-    for (const dim of dims) {
-      const vals = publications
-        .map((pub) => pub[dim])
-        .filter((v): v is number => v !== null);
-      if (vals.length > 0) out[dim] = vals.reduce((a, b) => a + b, 0) / vals.length;
-    }
-    return out;
-  }, [publications]);
-
-  const refetch = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: [PUBS_QUERY_KEY] });
-  }, [queryClient]);
-
-  const handleExport = useCallback((format: 'csv' | 'json') => {
-    fetch(`/api/export/${format}`, { headers: getApiHeaders() })
-      .then((res) => res.blob())
-      .then((blob) => {
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `storyscout-export.${format}`;
-        a.click();
-        URL.revokeObjectURL(a.href);
-      });
-  }, []);
-
-  const handleSort = useCallback(
-    (column: string) => {
-      if (filters.sort === column) {
-        setFilters({ order: filters.order === 'asc' ? 'desc' : 'asc', page: 1 });
-      } else {
-        setFilters({ sort: column, order: 'asc', page: 1 });
-      }
-    },
-    [filters.sort, filters.order, setFilters],
-  );
-
-  useKeyboardShortcuts({
-    onSearch: () => searchRef.current?.focus(),
-    onPrevPage: () => setFilters({ page: Math.max(1, filters.page - 1) }),
-    onNextPage: () => {
-      const tp = Math.ceil(total / PAGE_SIZE);
-      setFilters({ page: Math.min(tp || 1, filters.page + 1) });
-    },
-  });
-
-  const totalPages = Math.ceil(total / PAGE_SIZE);
-  const rangeStart = total > 0 ? (filters.page - 1) * PAGE_SIZE + 1 : 0;
-  const rangeEnd = Math.min(filters.page * PAGE_SIZE, total);
+  const totalPages = Math.ceil(data.total / PAGE_SIZE);
+  const rangeStart = data.total > 0 ? (filters.page - 1) * PAGE_SIZE + 1 : 0;
+  const rangeEnd = Math.min(filters.page * PAGE_SIZE, data.total);
 
   return (
     <div className="space-y-5">
@@ -287,115 +96,26 @@ export default function PublicationsPage() {
         <div>
           <h1 className="text-2xl font-bold">Publikationen</h1>
           <p className="text-muted-foreground" role="status" aria-live="polite">
-            {total.toLocaleString('de-AT')} Publikationen
-            {!filters.showAll && hidden > 0 && (
+            {data.total.toLocaleString('de-AT')} Publikationen
+            {!filters.showAll && data.total_hidden > 0 && (
               <span className="ml-2 text-muted-foreground">
-                ({hidden.toLocaleString('de-AT')} ausgeblendet)
+                ({data.total_hidden.toLocaleString('de-AT')} ausgeblendet)
               </span>
             )}
           </p>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              title="Exportiert alle analysierten Publikationen — die aktuell aktiven Filter werden NICHT angewendet."
-            >
-              <Download className="mr-2 h-4 w-4" />
-              Exportieren
-              <ChevronDown className="ml-2 h-3 w-3" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => handleExport('csv')}>Als CSV (alle analysierten)</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleExport('json')}>Als JSON (alle analysierten)</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <ExportDropdown />
       </div>
 
-      <Card>
-        <CardContent className="p-3 space-y-3">
-          <div className="flex flex-col lg:flex-row lg:items-center gap-3">
-            <div className="relative w-full lg:max-w-xs">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/70" />
-              <Input
-                ref={searchRef}
-                value={searchInput}
-                onChange={(e) => handleSearchChange(e.target.value)}
-                placeholder="Titel suchen…  (/ oder ⌘K)"
-                className="pl-9 h-9"
-              />
-            </div>
-            <div className="flex-1 min-w-0 flex items-center gap-2 flex-wrap">
-              <PresetBar active={filters.preset} onSelect={applyPreset} />
-              {presetModified && (
-                <button
-                  type="button"
-                  onClick={resetPresetTerritory}
-                  title="Voreinstellung des Presets wiederherstellen"
-                  className="inline-flex items-center gap-1 rounded-full border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/[0.08] px-2.5 py-1 text-[11px] font-medium text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-500/15 transition-colors"
-                >
-                  <RotateCcw className="h-3 w-3" />
-                  Preset modifiziert · zurücksetzen
-                </button>
-              )}
-            </div>
-            <div className="flex items-center gap-3">
-              <ShowAllToggle
-                showAll={filters.showAll}
-                onChange={(v) => setFilters({ showAll: v, page: 1 })}
-                hiddenCount={hidden}
-              />
-              <FilterSheet filters={filters} setFilters={setFilters} lookups={lookups} />
-            </div>
-          </div>
+      <FiltersBar total={data.total} hidden={data.total_hidden} />
 
-          <ActiveFilters filters={filters} setFilters={setFilters} lookups={lookups} />
-        </CardContent>
-      </Card>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Card>
-          <CardContent className="p-4 flex items-center justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-2 text-base font-medium">
-                <Sparkles className="h-4 w-4 text-brand" /> Enrichment
-              </div>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Metadaten aus CrossRef + OpenAlex anreichern.
-              </p>
-            </div>
-            <Button onClick={() => setEnrichOpen(true)} size="sm">
-              Starten
-            </Button>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 flex items-center justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-2 text-base font-medium">
-                <Brain className="h-4 w-4 text-brand" /> Analyse
-              </div>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                LLM-Bewertung über OpenRouter.
-              </p>
-            </div>
-            <Button onClick={() => setAnalysisOpen(true)} size="sm">
-              Starten
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-
-      <EnrichmentModal open={enrichOpen} onOpenChange={setEnrichOpen} onComplete={refetch} />
-      <AnalysisModal open={analysisOpen} onOpenChange={setAnalysisOpen} onComplete={refetch} />
+      <PipelineActions />
 
       {Object.keys(dimAvgs).length > 0 && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base">
-              Durchschnitt dieser {publications.length} Publikationen
+              Durchschnitt dieser {data.publications.length} Publikationen
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -408,8 +128,11 @@ export default function PublicationsPage() {
                   </div>
                   <div className="h-2 rounded-full bg-muted overflow-hidden">
                     <div
-                      className="h-full rounded-full transition-all duration-300 motion-reduce:transition-none"
-                      style={{ width: `${Math.round(avg * 100)}%`, backgroundColor: SCORE_COLORS[dim] }}
+                      className="h-full rounded-full motion-reduce:transition-none"
+                      style={{
+                        width: `${Math.round(avg * 100)}%`,
+                        backgroundColor: SCORE_COLORS[dim],
+                      }}
                     />
                   </div>
                 </div>
@@ -419,9 +142,7 @@ export default function PublicationsPage() {
         </Card>
       )}
 
-      {loading ? (
-        <LoadingState label="Lade Publikationen …" />
-      ) : publications.length === 0 && hasAnyActiveFilter ? (
+      {data.publications.length === 0 && hasFilters ? (
         <EmptyState
           className="border-dashed"
           title="Keine Treffer"
@@ -439,55 +160,76 @@ export default function PublicationsPage() {
             </>
           }
           action={
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              {presetModified && (
-                <Button onClick={resetPresetTerritory} variant="outline" size="sm">
-                  <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
-                  Preset-Modifikationen zurücknehmen
-                </Button>
-              )}
-              <Button onClick={resetAllFilters} variant="outline" size="sm">
+            <Button asChild variant="outline" size="sm">
+              <Link href="/publications" replace scroll={false}>
                 Alle Filter zurücksetzen
-              </Button>
-            </div>
+              </Link>
+            </Button>
           }
         />
       ) : (
         <PublicationTable
-          publications={publications}
+          publications={data.publications}
           showScores
           showEnrichment
           sortBy={filters.sort}
           sortOrder={filters.order}
-          onSort={handleSort}
+          sortHrefs={sortHrefs}
         />
       )}
 
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            Zeige {rangeStart}–{rangeEnd} von {total.toLocaleString('de-AT')}
+            Zeige {rangeStart}–{rangeEnd} von {data.total.toLocaleString('de-AT')}
           </p>
           <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setFilters({ page: Math.max(1, filters.page - 1) })}
+            <PaginationLink
               disabled={filters.page <= 1}
+              href={buildUrl(filters, { page: filters.page - 1 })}
+              label="Vorige Seite"
             >
               <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setFilters({ page: Math.min(totalPages, filters.page + 1) })}
+            </PaginationLink>
+            <PaginationLink
               disabled={filters.page >= totalPages}
+              href={buildUrl(filters, { page: filters.page + 1 })}
+              label="Nächste Seite"
             >
               <ChevronRight className="h-4 w-4" />
-            </Button>
+            </PaginationLink>
           </div>
         </div>
       )}
     </div>
+  );
+}
+
+// Local Zero-JS pagination control. Disabled state renders a plain Button
+// (no anchor) so we don't ship a clickable-but-inert `<a>` to the DOM.
+function PaginationLink({
+  disabled,
+  href,
+  label,
+  children,
+}: {
+  disabled: boolean;
+  href: string;
+  label: string;
+  children: React.ReactNode;
+}) {
+  if (disabled) {
+    return (
+      <Button variant="outline" size="sm" disabled aria-label={label}>
+        {children}
+      </Button>
+    );
+  }
+  return (
+    <Button asChild variant="outline" size="sm">
+      <Link href={href} replace scroll={false} aria-label={label}>
+        {children}
+      </Link>
+    </Button>
   );
 }

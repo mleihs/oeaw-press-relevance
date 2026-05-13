@@ -3,6 +3,8 @@
 // Re-exported here for convenience if the publications page wants to read it.
 export { ELIGIBILITY_EXCLUDE_TYPE_UIDS } from '@/lib/shared/eligibility';
 
+export const PAGE_SIZE = 20;
+
 // publication_type webdb_uids forming the "Wissenschaftlich" preset.
 export const WISS_TYPE_UIDS = [
   1,  // Beitrag in Fachzeitschrift  (Journal article)
@@ -21,10 +23,6 @@ export const SUPER_DOMAIN_LABELS: Record<number, string> = {
   6: 'Geisteswissenschaften',
 };
 
-export const PRESETS = [
-  { key: 'pitch', label: 'Pitch-fertig' },
-  { key: 'mahighlights', label: 'Eigen-Highlights' },
-  { key: 'wiss', label: 'Wissenschaftlich' },
-  { key: 'popsci', label: 'Popular Science' },
-  { key: 'peer', label: 'Peer-reviewed' },
-] as const;
+export const SUPER_DOMAINS = Object.keys(SUPER_DOMAIN_LABELS)
+  .map(Number)
+  .sort((a, b) => a - b);
