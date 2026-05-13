@@ -289,12 +289,10 @@ Dev-verified `/api/press-releases?stats=true`, `?orphans=true`,
 
 ## Phase A4 — Server-Components
 
-**Status:** [x] **Pilot done 2026-05-12** on `/persons/[id]` +
-**Phase 1 page `/publications/[id]` done 2026-05-12** +
-**Phase 1 page `/press-releases` done 2026-05-13** as **Zero-JS RSC**
-(Phase 1 closed) +
-**Phase 2 page `/publications` (list) done 2026-05-13** as max-RSC
-with 4 client islands (Phase 2 partial — `/` Dashboard still open).
+**Status:** [x] **Phase A4 fully closed 2026-05-13.** Pilot done on
+`/persons/[id]`, Phase 1 done on `/publications/[id]` + `/press-releases`,
+Phase 2 done on `/publications` (list) + `/` (Dashboard) — every
+read-heavy admin page in the app is now an `async` server component.
 Pilot validated: TTFB-Win + zero hydration-mismatch. Phase-1
 `/publications/[id]` validated: first mutation-bearing RSC page in
 the codebase + ADR 0010 (props + `router.refresh()`) closes the
@@ -309,14 +307,20 @@ pipeline actions, export, plus the existing `PublicationTable`
 treated as an island via a new `sortHrefs` record prop). The
 migration also surfaced **Lessons #23-25** (function-prop crash
 across RSC → Client, `nuqs/server` isomorphic parser entry-point,
-pre-computed records over builder functions). See
+pre-computed records over builder functions). Phase-2 `/` Dashboard
+validated: third pilot-pattern page (after `/persons/[id]` and
+`/publications/[id]`) — composite page with five `useApiQuery` calls
+collapsed to one server-side `Promise.all`, time-period state lifted
+from local `useState` to URL state. Surfaced **Lesson #26** (split
+isomorphic values from server-only modules to keep postgres out of the
+client bundle). See
 [ADR 0009](docs/adr/0009-rsc-server-components-pilot.md),
 [ADR 0010](docs/adr/0010-rsc-mutation-router-refresh.md), pilot closeout
-below, and the phase-1 / phase-2 Acceptance checkboxes. **Phase 2 `/`
-Dashboard still open.** **Aufwand pilot:** ~3h;
-**phase-1 `/publications/[id]`:** ~3h; **phase-1 `/press-releases`:**
-~5h (incl. Zero-JS refactor following fresh-eyes self-review);
-**phase-2 `/publications` list:** ~4h.
+below, and the phase-1 / phase-2 Acceptance checkboxes.
+**Aufwand pilot:** ~3h; **phase-1 `/publications/[id]`:** ~3h;
+**phase-1 `/press-releases`:** ~5h (incl. Zero-JS refactor);
+**phase-2 `/publications` list:** ~4h;
+**phase-2 `/` Dashboard:** ~2h.
 **Voraussetzung:** A2 done (Repos sind das, was RSCs sauber aufrufen
 können — `useApiQuery` wird durch direkte Repo-Calls ersetzt).
 
@@ -397,8 +401,28 @@ Stack" markieren.
       Lessons #21 + #22).
 
 **Phase 2 (komplexer, evaluieren):**
-- [ ] `/` (Dashboard) — hat aktuell Realtime-Pulse Animationen,
-      Hybrid-Pattern probieren
+- [x] `/` (Dashboard) — **Landed 2026-05-13.** Page is an `async` server-
+      component reading `?period=week|month|year|all` from `searchParams`
+      (defaults to `month`). `lib/server/dashboard/fetch.ts::
+      getDashboardData(period)` parallel-fetches all five legacy
+      `useApiQuery` sources (`publication_dashboard_stats` PG function +
+      `listPublications` for Top-10 + three count queries via the same
+      wrapper). The whole render tree lives in a single client subtree
+      `app/_components/dashboard-client.tsx` — the **pilot pattern**
+      per Lesson #21 because the page has BOTH client-only deps
+      (recharts via `DimensionsRadar`, motion library, motion-number's
+      `AnimateNumber`) AND mutations (`PublicationFlag` per Top-10 row).
+      Time-period tabs are `<Link replace scroll={false}>` so switching
+      triggers a server-side re-fetch with the new period in URL — also
+      makes the dashboard view shareable (was local `useState` before).
+      Isomorphic constants live in `lib/shared/dashboard.ts` so the
+      client subtree can import `DASHBOARD_PERIODS` (value) without
+      pulling postgres into the bundle; `DashboardData`/`DashboardStats`
+      types are imported via `import type` from the server module so
+      Turbopack erases the reference (see phaseA4 Lesson #26). Smoke at
+      `scripts/smoke/rsc/dashboard.ts` covers three periods with the
+      monotonic-window invariant + Top-10 sort + analysis-status filter.
+      **Phase A4 is now fully closed.**
 - [x] `/publications` (List) — **Landed 2026-05-13.** Page is an `async`
       server-component reading 27 nuqs filter fields via
       `loadFilters(searchParams)` (the nuqs `createLoader` counterpart
