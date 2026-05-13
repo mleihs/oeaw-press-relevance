@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import {
-  ExternalLink, FileText, Brain, Info,
+  ExternalLink, FileText, Brain,
   Award, ShieldCheck, Megaphone, Users, Building2, FolderOpen, BookText,
   Mail, Crown, Newspaper,
 } from 'lucide-react';
@@ -12,11 +12,11 @@ import { doiToUrl } from '@/lib/shared/doi-utils';
 import {
   SOURCE_LABELS,
   SOURCE_BADGE_CLASSES as SOURCE_COLORS,
-  SOURCE_DESCRIPTIONS,
   STATUS_LABELS,
   STATUS_COLORS,
   OA_LABELS,
 } from '@/lib/shared/constants';
+import { EXPL } from '@/lib/client/explanations';
 import { getScoreBandClass, getScoreBandStoryLabel } from '@/lib/shared/score-utils';
 import { ScoreBar } from '@/components/score-bar';
 import { HaikuBlock } from '@/components/haiku-block';
@@ -30,6 +30,15 @@ import { TintBadge } from '@/components/tint-badge';
 import { SectionLabel } from '@/components/section-label';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { PressReferenceCard } from './press-reference-card';
+
+// Dynamic-key lookup for source bubbles: maps an enrichment-source slug
+// (`crossref`, `openalex`, …) to the matching EXPL entry. Returns null if
+// no atomar entry exists — keeps the component silent for unknown sources.
+function SourceInfoBubble({ source }: { source: string }) {
+  const explId = `source_${source}` as keyof typeof EXPL;
+  if (!(explId in EXPL)) return null;
+  return <InfoBubble id={explId} size="sm" />;
+}
 
 interface Props {
   pub: PublicationWithRelations;
@@ -117,19 +126,28 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
         {/* Badges row */}
         <div className="flex flex-wrap items-center gap-2">
           {pub.peer_reviewed && (
-            <TintBadge color="blue" className="gap-1">
-              <ShieldCheck className="h-3 w-3" /> Peer-reviewed
-            </TintBadge>
+            <span className="inline-flex items-center gap-1">
+              <TintBadge color="blue" className="gap-1">
+                <ShieldCheck className="h-3 w-3" /> Peer-reviewed
+              </TintBadge>
+              <InfoBubble id="peer_reviewed" size="sm" />
+            </span>
           )}
           {pub.popular_science && (
-            <TintBadge color="purple" className="gap-1">
-              <Megaphone className="h-3 w-3" /> Popular Science
-            </TintBadge>
+            <span className="inline-flex items-center gap-1">
+              <TintBadge color="purple" className="gap-1">
+                <Megaphone className="h-3 w-3" /> Popular Science
+              </TintBadge>
+              <InfoBubble id="popular_science_badge" size="sm" />
+            </span>
           )}
           {pub.open_access_status && (
-            <TintBadge color="emerald">
-              {OA_LABELS[pub.open_access_status] || pub.open_access_status}
-            </TintBadge>
+            <span className="inline-flex items-center gap-1">
+              <TintBadge color="emerald">
+                {OA_LABELS[pub.open_access_status] || pub.open_access_status}
+              </TintBadge>
+              <InfoBubble id="open_access" size="sm" />
+            </span>
           )}
           <Badge className={STATUS_COLORS[pub.enrichment_status] || STATUS_COLORS.pending}>
             {STATUS_LABELS[pub.enrichment_status] || pub.enrichment_status}
@@ -200,8 +218,9 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
             <div className="flex items-start gap-3">
               <Newspaper className="h-5 w-5 text-emerald-700 dark:text-emerald-300 mt-0.5 shrink-0" />
               <div className="flex-1 min-w-0">
-                <h3 className="text-xs font-medium text-emerald-900 dark:text-emerald-200 uppercase tracking-wide">
+                <h3 className="text-xs font-medium text-emerald-900 dark:text-emerald-200 uppercase tracking-wide inline-flex items-center gap-1">
                   Bereits ÖAW-Pressemitteilung
+                  <InfoBubble id="press_release_badge" size="sm" />
                 </h3>
                 <a
                   href={pub.press_release.url}
@@ -255,20 +274,32 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
       {hasAnalysis && pub.pitch_suggestion && (
         <Card className="border-brand/20 bg-brand/[0.02]">
           <CardContent className="p-5">
-            <h3 className="text-xs font-medium text-brand uppercase mb-2">Pitch-Vorschlag</h3>
+            <h3 className="text-xs font-medium text-brand uppercase mb-2 inline-flex items-center gap-1">
+              Pitch-Vorschlag
+              <InfoBubble id="pitch_suggestion" size="sm" />
+            </h3>
             <p className="text-sm leading-relaxed">{pub.pitch_suggestion}</p>
             {pub.suggested_angle && (
               <p className="text-sm text-foreground/80 mt-3">
-                <span className="font-medium text-muted-foreground">Blickwinkel:</span> {pub.suggested_angle}
+                <span className="font-medium text-muted-foreground inline-flex items-center gap-1">
+                  Blickwinkel:
+                  <InfoBubble id="suggested_angle" size="sm" />
+                </span>{' '}
+                {pub.suggested_angle}
               </p>
             )}
             {pub.target_audience && (
               <p className="text-sm text-foreground/80 mt-1">
-                <span className="font-medium text-muted-foreground">Zielgruppe:</span> {pub.target_audience}
+                <span className="font-medium text-muted-foreground inline-flex items-center gap-1">
+                  Zielgruppe:
+                  <InfoBubble id="target_audience" size="sm" />
+                </span>{' '}
+                {pub.target_audience}
               </p>
             )}
-            <div className="mt-4 pt-4 border-t border-brand/10 flex justify-end">
+            <div className="mt-4 pt-4 border-t border-brand/10 flex justify-end items-center gap-1.5">
               <MeistertaskButton pub={pub} />
+              <InfoBubble id="meistertask_pitch" size="sm" />
             </div>
           </CardContent>
         </Card>
@@ -462,7 +493,10 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
             </div>
             {pub.reasoning && (
               <div>
-                <SectionLabel>Begründung</SectionLabel>
+                <SectionLabel className="inline-flex items-center gap-1">
+                  Begründung
+                  <InfoBubble id="reasoning" size="sm" />
+                </SectionLabel>
                 <p className="text-sm text-foreground/80">{pub.reasoning}</p>
               </div>
             )}
@@ -534,21 +568,6 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
         </CardContent>
       </Card>
     </div>
-  );
-}
-
-function SourceInfoBubble({ source }: { source: string }) {
-  const desc = SOURCE_DESCRIPTIONS[source];
-  if (!desc) return null;
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <button type="button" className="text-current opacity-40 hover:opacity-80 transition-opacity ml-0.5">
-          <Info className="h-3 w-3" />
-        </button>
-      </TooltipTrigger>
-      <TooltipContent side="top" className="max-w-52 font-normal">{desc}</TooltipContent>
-    </Tooltip>
   );
 }
 

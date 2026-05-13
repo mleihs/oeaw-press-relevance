@@ -3,6 +3,7 @@ import { ChevronDown, AlertCircle, Users, ExternalLink } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { SectionLabel } from '@/components/section-label';
+import { InfoBubble } from '@/components/info-bubble';
 import { cn } from '@/lib/shared/utils';
 import type { PressReleaseWithPub } from '@/lib/server/press-releases/list';
 import type { PressRelease } from '@/lib/shared/types';
@@ -43,7 +44,10 @@ export function PressReleasesOrphansList({ orphans }: { orphans: PressReleaseWit
         <CardContent className="p-4 flex items-start gap-3">
           <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
           <div className="text-sm text-amber-900 dark:text-amber-200">
-            <p className="font-medium">Externe Pressemitteilungen ohne WebDB-Eintrag</p>
+            <p className="font-medium inline-flex items-center gap-1">
+              Externe Pressemitteilungen ohne WebDB-Eintrag
+              <InfoBubble id="orphan_press_release" size="sm" />
+            </p>
             <p className="mt-1 text-amber-800/90 dark:text-amber-200/80 leading-relaxed">
               {orphans.length} Pressemitteilungen mit DOI-Verweis, deren zugehörige Publikation
               nicht in der WebDB-Datenbank verzeichnet ist. Häufig sind ÖAW-Personen als

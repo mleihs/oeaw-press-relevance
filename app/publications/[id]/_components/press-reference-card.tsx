@@ -6,6 +6,7 @@ import { Sparkles, ChevronRight, Info, ExternalLink } from 'lucide-react';
 import { useApiQuery } from '@/lib/client/hooks/use-api-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { InfoBubble } from '@/components/info-bubble';
 import { AtmosphericOrb } from '@/components/atmospheric-orb';
 
 /** Discriminated union: `kind` narrows `publication_id` to non-null for
@@ -93,18 +94,7 @@ export function PressReferenceCard({
                 <h3 className="text-[10px] font-semibold text-purple-700 dark:text-purple-300 uppercase tracking-wider">
                   Press-Referenz
                 </h3>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Info className="h-3 w-3 text-purple-500/70 cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="max-w-md text-xs">
-                    Cosinus-Ähnlichkeit des SPECTER2-Embeddings (Title + Abstract)
-                    zum Press-Cluster: alle bisher ÖAW-gepressten Papers, sowohl
-                    in WebDB gematchte als auch externe Co-Author-Pubs. Hohe
-                    Ähnlichkeit heißt: thematisch nahe an dem, was die
-                    Pressestelle bisher pitchwürdig fand.
-                  </TooltipContent>
-                </Tooltip>
+                <InfoBubble id="press_similarity" size="sm" />
               </div>
               <p className="text-sm text-foreground mt-1.5 leading-snug">
                 Semantisch{' '}

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { RotateCcw, Search } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { InfoBubble } from '@/components/info-bubble';
 import { useKeyboardShortcuts } from '@/lib/client/hooks/use-keyboard-shortcuts';
 import { useFilters } from '../use-filters';
 import {
@@ -145,15 +146,18 @@ export function FiltersBar({ total, hidden }: Props) {
     <Card>
       <CardContent className="p-3 space-y-3">
         <div className="flex flex-col lg:flex-row lg:items-center gap-3">
-          <div className="relative w-full lg:max-w-xs">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/70" />
-            <Input
-              ref={searchRef}
-              value={searchInput}
-              onChange={(e) => handleSearchChange(e.target.value)}
-              placeholder="Titel suchen…  (/ oder ⌘K)"
-              className="pl-9 h-9"
-            />
+          <div className="relative w-full lg:max-w-xs inline-flex items-center gap-1">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/70" />
+              <Input
+                ref={searchRef}
+                value={searchInput}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                placeholder="Titel suchen…  (/ oder ⌘K)"
+                className="pl-9 h-9"
+              />
+            </div>
+            <InfoBubble id="search_scope" size="sm" />
           </div>
           <div className="flex-1 min-w-0 flex items-center gap-2 flex-wrap">
             <PresetBar active={filters.preset} onSelect={applyPreset} />

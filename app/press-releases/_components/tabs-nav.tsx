@@ -1,7 +1,9 @@
 import Link from 'next/link';
 import { Layers, Link2, FileQuestion, type LucideIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { InfoBubble } from '@/components/info-bubble';
 import { cn } from '@/lib/shared/utils';
+import type { EXPL } from '@/lib/client/explanations';
 import {
   TAB_VALUES,
   type PressReleasesStats,
@@ -13,11 +15,16 @@ import {
 // a `Record`-completeness TS error.
 const TAB_DISPLAY: Record<
   Tab,
-  { label: string; Icon: LucideIcon; statsKey: keyof PressReleasesStats }
+  {
+    label: string;
+    Icon: LucideIcon;
+    statsKey: keyof PressReleasesStats;
+    explId?: keyof typeof EXPL;
+  }
 > = {
   all:     { label: 'Alle',           Icon: Layers,       statsKey: 'total' },
-  matched: { label: 'Mit Pub-Match',  Icon: Link2,        statsKey: 'matched' },
-  orphans: { label: 'Ohne Pub-Match', Icon: FileQuestion, statsKey: 'orphans' },
+  matched: { label: 'Mit Pub-Match',  Icon: Link2,        statsKey: 'matched', explId: 'pr_tab_matched' },
+  orphans: { label: 'Ohne Pub-Match', Icon: FileQuestion, statsKey: 'orphans', explId: 'pr_tab_orphans' },
 };
 
 /**
@@ -49,33 +56,35 @@ export function PressReleasesTabsNav({
       className="bg-muted text-muted-foreground rounded-lg p-[3px] h-9 inline-flex w-full sm:w-auto items-center justify-center"
     >
       {TAB_VALUES.map((value) => {
-        const { label, Icon, statsKey } = TAB_DISPLAY[value];
+        const { label, Icon, statsKey, explId } = TAB_DISPLAY[value];
         const isActive = value === activeTab;
         const href = value === 'all' ? '/press-releases' : `/press-releases?tab=${value}`;
         return (
-          <Link
-            key={value}
-            href={href}
-            replace
-            scroll={false}
-            prefetch={false}
-            aria-current={isActive ? 'page' : undefined}
-            className={cn(
-              'flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5',
-              'h-[calc(100%-1px)] rounded-md border border-transparent px-2 py-1',
-              'text-sm font-medium whitespace-nowrap transition-all',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-              isActive
-                ? 'bg-background text-foreground shadow-sm dark:bg-input/30 dark:border-input dark:text-foreground'
-                : 'text-foreground/60 hover:text-foreground dark:text-muted-foreground dark:hover:text-foreground',
-            )}
-          >
-            <Icon className="h-4 w-4" />
-            {label}
-            <Badge variant="secondary" className="ml-0.5 text-[10px] px-1.5 py-0 tabular-nums">
-              {stats[statsKey]}
-            </Badge>
-          </Link>
+          <span key={value} className="flex-1 sm:flex-initial inline-flex items-center">
+            <Link
+              href={href}
+              replace
+              scroll={false}
+              prefetch={false}
+              aria-current={isActive ? 'page' : undefined}
+              className={cn(
+                'flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5',
+                'h-[calc(100%-1px)] rounded-md border border-transparent px-2 py-1',
+                'text-sm font-medium whitespace-nowrap transition-all',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+                isActive
+                  ? 'bg-background text-foreground shadow-sm dark:bg-input/30 dark:border-input dark:text-foreground'
+                  : 'text-foreground/60 hover:text-foreground dark:text-muted-foreground dark:hover:text-foreground',
+              )}
+            >
+              <Icon className="h-4 w-4" />
+              {label}
+              <Badge variant="secondary" className="ml-0.5 text-[10px] px-1.5 py-0 tabular-nums">
+                {stats[statsKey]}
+              </Badge>
+            </Link>
+            {explId && <InfoBubble id={explId} size="sm" className="ml-1" />}
+          </span>
         );
       })}
     </nav>

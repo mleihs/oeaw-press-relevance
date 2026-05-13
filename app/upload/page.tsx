@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { TintBadge } from '@/components/tint-badge';
 import { Database, FileArchive, Terminal, Info, RefreshCcw } from 'lucide-react';
+import { InfoBubble } from '@/components/info-bubble';
 import { useApiQuery } from '@/lib/client/hooks/use-api-query';
 
 interface SyncCounts {
@@ -30,7 +31,10 @@ export default function ImportPage() {
   return (
     <div className="space-y-6 max-w-4xl">
       <div>
-        <h1 className="text-2xl font-bold">WebDB-Import</h1>
+        <h1 className="text-2xl font-bold inline-flex items-center gap-1.5">
+          WebDB-Import
+          <InfoBubble id="upload_pipeline" size="md" />
+        </h1>
         <p className="text-muted-foreground">
           Die Datenquelle für die Plattform ist der vollständige WebDB-Export
           (Typo3 / MySQL). Publikationen, Personen, Organisationseinheiten,

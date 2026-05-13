@@ -4,6 +4,7 @@ import * as React from 'react';
 import { de } from 'date-fns/locale';
 import { CalendarIcon, SlidersHorizontal } from 'lucide-react';
 import { InfoBubble } from '@/components/info-bubble';
+import type { EXPL } from '@/lib/client/explanations';
 
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -106,16 +107,21 @@ function countDimensionalFilters(f: FilterValues): number {
 function FacetSection({
   title,
   hint,
+  explId,
   children,
 }: {
   title: string;
   hint?: string;
+  explId?: keyof typeof EXPL;
   children: React.ReactNode;
 }) {
   return (
     <section className="space-y-2.5">
       <header>
-        <h3 className="text-sm font-semibold">{title}</h3>
+        <h3 className="text-sm font-semibold inline-flex items-center gap-1">
+          {title}
+          {explId && <InfoBubble id={explId} size="sm" />}
+        </h3>
         {hint && <p className="text-xs text-muted-foreground mt-0.5">{hint}</p>}
       </header>
       {children}
@@ -192,7 +198,7 @@ function PublicationTypeFacet({ filters, setFilters, lookups }: Props) {
     [lookups],
   );
   return (
-    <FacetSection title="Publikationstyp" hint="26 Typen — Standard blendet Theses, Poster usw. aus.">
+    <FacetSection title="Publikationstyp" explId="filter_publikationstyp" hint="26 Typen — Standard blendet Theses, Poster usw. aus.">
       <VirtualizedMultiSelect
         items={items}
         value={filters.types}
@@ -218,7 +224,7 @@ function InstituteFacet({ filters, setFilters, lookups }: Props) {
   }, [lookups, filters.topUnitOnly]);
 
   return (
-    <FacetSection title="Institut" hint={`${items.length.toLocaleString('de-AT')} verfügbar`}>
+    <FacetSection title="Institut" explId="filter_institut" hint={`${items.length.toLocaleString('de-AT')} verfügbar`}>
       <label className="flex items-center justify-between text-xs text-foreground cursor-pointer">
         <span>nur Forschungseinrichtungen</span>
         <Switch
@@ -261,6 +267,7 @@ function Oestat6Facet({ filters, setFilters, lookups }: Props) {
   return (
     <FacetSection
       title="Forschungsgebiet (ÖSTAT6)"
+      explId="filter_oestat6"
       hint="1.411 Kategorien, gruppiert nach Super-Domäne."
     >
       <div className="flex flex-wrap gap-1">
@@ -503,7 +510,7 @@ function ScoreFacet({
   setFilters: (p: Patch) => void;
 }) {
   return (
-    <FacetSection title="Mindest-Score" hint="Nur analysierte Publikationen mit Score ≥ X.">
+    <FacetSection title="Mindest-Score" explId="filter_min_score" hint="Nur analysierte Publikationen mit Score ≥ X.">
       <div className="flex items-center gap-3">
         <Slider
           value={[filters.minScore]}

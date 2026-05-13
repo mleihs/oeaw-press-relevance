@@ -10,6 +10,7 @@ import { loadSettings, getApiHeaders } from '@/lib/client/stores/settings-store'
 import { DEFAULT_REVIEWER_NAME } from '@/lib/shared/constants';
 import { QK } from '@/lib/client/query-keys';
 import { DECISION_VARIANTS } from '@/components/decision-badge';
+import { InfoBubble } from '@/components/info-bubble';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -190,6 +191,7 @@ export function PublicationFlag({ pubId, flagNotes, onChange, size = 'md', decis
           <div className="flex items-center gap-2">
             <Pin className="h-4 w-4 text-amber-500" />
             <h4 className="text-sm font-semibold">Flag</h4>
+            <InfoBubble id="publication_flag" size="sm" />
             {totalCount > 0 && (
               <span className="ml-auto text-[10px] text-muted-foreground">
                 {totalCount} Flag{totalCount > 1 ? 's' : ''}

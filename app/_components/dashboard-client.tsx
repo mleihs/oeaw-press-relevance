@@ -229,7 +229,10 @@ export function DashboardClient({ data, period }: DashboardClientProps) {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <span aria-hidden="true" className="text-xs text-muted-foreground hidden sm:block">Zeitraum:</span>
+            <span aria-hidden="true" className="text-xs text-muted-foreground hidden sm:inline-flex items-center gap-1">
+              Zeitraum:
+              <InfoBubble id="dashboard_time_range" size="sm" />
+            </span>
             {/* URL-driven tabs use <nav> + aria-current per phaseA4 Lesson #16
                 — the in-page <Tabs> primitive is for mutation-driven STATE
                 (still correct on /review's score-mode toggle), this is

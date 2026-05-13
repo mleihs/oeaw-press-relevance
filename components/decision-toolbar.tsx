@@ -15,6 +15,7 @@ import {
 } from '@/lib/client/stores/session-store';
 import { QK } from '@/lib/client/query-keys';
 import { DECISION_VARIANTS, getDecisionLabel } from '@/components/decision-badge';
+import { InfoBubble } from '@/components/info-bubble';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
@@ -173,27 +174,36 @@ export function DecisionToolbar({ pub, inSession = false, onDecided }: DecisionT
   return (
     <div className="rounded-lg border border-border bg-card p-3 space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <DecisionButton
-          decision="pitch"
-          current={current}
-          pending={pendingDecision}
-          isPending={isPending}
-          onClick={() => triggerDecision('pitch', null)}
-        />
-        <DecisionButton
-          decision="hold"
-          current={current}
-          pending={pendingDecision}
-          isPending={isPending}
-          onClick={() => triggerDecision('hold')}
-        />
-        <DecisionButton
-          decision="skip"
-          current={current}
-          pending={pendingDecision}
-          isPending={isPending}
-          onClick={() => triggerDecision('skip', null)}
-        />
+        <span className="inline-flex items-center gap-1">
+          <DecisionButton
+            decision="pitch"
+            current={current}
+            pending={pendingDecision}
+            isPending={isPending}
+            onClick={() => triggerDecision('pitch', null)}
+          />
+          <InfoBubble id="decision_pitch" size="sm" />
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <DecisionButton
+            decision="hold"
+            current={current}
+            pending={pendingDecision}
+            isPending={isPending}
+            onClick={() => triggerDecision('hold')}
+          />
+          <InfoBubble id="decision_hold" size="sm" />
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <DecisionButton
+            decision="skip"
+            current={current}
+            pending={pendingDecision}
+            isPending={isPending}
+            onClick={() => triggerDecision('skip', null)}
+          />
+          <InfoBubble id="decision_skip" size="sm" />
+        </span>
 
         {current !== 'undecided' && (
           <Button
@@ -208,7 +218,10 @@ export function DecisionToolbar({ pub, inSession = false, onDecided }: DecisionT
         )}
 
         <div className="ml-auto flex items-center gap-1.5">
-          <span className="text-[11px] text-muted-foreground font-medium">Snooze:</span>
+          <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground font-medium">
+            Snooze:
+            <InfoBubble id="decision_snooze" size="sm" />
+          </span>
           <SnoozeButton label="1W" isoDate={addDays(7)} disabled={isPending} onPick={(d) => triggerDecision('hold', d)} />
           <SnoozeButton label="4W" isoDate={addDays(28)} disabled={isPending} onPick={(d) => triggerDecision('hold', d)} />
           <SnoozeButton label="Quartal" isoDate={addDays(91)} disabled={isPending} onPick={(d) => triggerDecision('hold', d)} />
@@ -247,15 +260,18 @@ export function DecisionToolbar({ pub, inSession = false, onDecided }: DecisionT
       )}
 
       <div className="flex items-start gap-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setRationaleOpen((v) => !v)}
-          className="h-7 px-2 text-[11px] text-muted-foreground hover:text-foreground"
-        >
-          <MessageSquarePlus className="h-3.5 w-3.5 mr-1" />
-          {rationaleOpen ? 'Notiz ausblenden' : rationale ? 'Notiz bearbeiten' : 'Notiz hinzufügen'}
-        </Button>
+        <span className="inline-flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setRationaleOpen((v) => !v)}
+            className="h-7 px-2 text-[11px] text-muted-foreground hover:text-foreground"
+          >
+            <MessageSquarePlus className="h-3.5 w-3.5 mr-1" />
+            {rationaleOpen ? 'Notiz ausblenden' : rationale ? 'Notiz bearbeiten' : 'Notiz hinzufügen'}
+          </Button>
+          <InfoBubble id="decision_rationale" size="sm" />
+        </span>
         {!rationaleOpen && rationale && (
           <p className="text-[11px] text-foreground/80 mt-1.5 line-clamp-1 flex-1 min-w-0 truncate">
             {rationale}

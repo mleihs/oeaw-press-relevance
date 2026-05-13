@@ -91,9 +91,9 @@ export function FiltersBar() {
         />
         <ToggleField
           label="Verstorben"
+          explId="filter_deceased"
           checked={filters.deceased}
           onChange={(v) => setFilters({ deceased: v })}
-          fallbackHelp="Verstorbene Forschende einbeziehen."
         />
         <ToggleField
           label="ITA"
@@ -120,13 +120,11 @@ function metricExplKey(metric: LeaderboardMetric): keyof typeof EXPL {
 function ToggleField({
   label,
   explId,
-  fallbackHelp,
   checked,
   onChange,
 }: {
   label: string;
   explId?: keyof typeof EXPL;
-  fallbackHelp?: string;
   checked: boolean;
   onChange: (v: boolean) => void;
 }) {
@@ -135,11 +133,7 @@ function ToggleField({
       <Switch checked={checked} onCheckedChange={onChange} id={`f-${label}`} />
       <Label htmlFor={`f-${label}`} className="flex cursor-pointer items-center gap-1 text-xs">
         {label}
-        {explId ? (
-          <InfoBubble id={explId} />
-        ) : fallbackHelp ? (
-          <InfoBubble content={{ title: label, body: <p className="leading-relaxed">{fallbackHelp}</p> }} />
-        ) : null}
+        {explId && <InfoBubble id={explId} />}
       </Label>
     </div>
   );

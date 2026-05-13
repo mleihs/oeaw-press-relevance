@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { EnrichmentModal } from '@/components/enrichment-modal';
 import { AnalysisModal } from '@/components/analysis-modal';
+import { InfoBubble } from '@/components/info-bubble';
 
 // Triggers the two batch ETL pipelines (enrichment + analyse) the press
 // editorial team runs from this page. The modals are pre-existing controlled
@@ -27,6 +28,7 @@ export function PipelineActions() {
             <div>
               <div className="flex items-center gap-2 text-base font-medium">
                 <Sparkles className="h-4 w-4 text-brand" /> Enrichment
+                <InfoBubble id="pipeline_enrichment" size="sm" />
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
                 Metadaten aus CrossRef + OpenAlex anreichern.
@@ -42,6 +44,7 @@ export function PipelineActions() {
             <div>
               <div className="flex items-center gap-2 text-base font-medium">
                 <Brain className="h-4 w-4 text-brand" /> Analyse
+                <InfoBubble id="pipeline_analysis" size="sm" />
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
                 LLM-Bewertung über OpenRouter.

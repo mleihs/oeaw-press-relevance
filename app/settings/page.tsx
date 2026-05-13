@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { AppSettings, DEFAULT_SETTINGS } from '@/lib/shared/types';
 import { loadSettings, saveSettings } from '@/lib/client/stores/settings-store';
 import { useInfoBubblesEnabled } from '@/lib/client/hooks/use-info-bubbles';
+import { InfoBubble } from '@/components/info-bubble';
 import { Save, CheckCircle2, Eye, EyeOff, Loader2, XCircle, ShieldCheck, Info, User } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -71,6 +72,7 @@ export default function SettingsPage() {
           <Label htmlFor="reviewer-name" className="flex items-center gap-2">
             <User className="h-4 w-4 text-muted-foreground/70" />
             Dein Name
+            <InfoBubble id="settings_reviewer_name" size="sm" />
           </Label>
           <Input
             id="reviewer-name"
@@ -157,7 +159,10 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="api-key">OpenRouter API-Schlüssel</Label>
+            <Label htmlFor="api-key" className="inline-flex items-center gap-1">
+              OpenRouter API-Schlüssel
+              <InfoBubble id="settings_openrouter" size="sm" />
+            </Label>
             <div className="relative">
               <Input
                 id="api-key"
@@ -191,7 +196,10 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="min-word-count">Minimale Wortanzahl</Label>
+            <Label htmlFor="min-word-count" className="inline-flex items-center gap-1">
+              Minimale Wortanzahl
+              <InfoBubble id="settings_min_words" size="sm" />
+            </Label>
             <Input
               id="min-word-count"
               type="number"
@@ -205,7 +213,10 @@ export default function SettingsPage() {
             </p>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="batch-size">Batch-Größe</Label>
+            <Label htmlFor="batch-size" className="inline-flex items-center gap-1">
+              Batch-Größe
+              <InfoBubble id="settings_batch_size" size="sm" />
+            </Label>
             <Input
               id="batch-size"
               type="number"

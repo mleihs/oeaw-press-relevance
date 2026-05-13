@@ -37,10 +37,9 @@ import {
   STATUS_COLORS,
   SOURCE_LABELS,
   SOURCE_BADGE_CLASSES as SOURCE_COLOR,
-  SOURCE_DESCRIPTIONS,
 } from '@/lib/shared/constants';
 import {
-  ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ChevronUp, ExternalLink, Info,
+  ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ChevronUp, ExternalLink,
   ShieldCheck, Megaphone, Newspaper,
 } from 'lucide-react';
 
@@ -801,25 +800,9 @@ function ExpandedDetail({ pub, showScores }: { pub: Publication; showScores?: bo
 }
 
 function SourceInfoBubble({ source }: { source: string }) {
-  const desc = SOURCE_DESCRIPTIONS[source];
-  if (!desc) return null;
-
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <button
-          type="button"
-          className="text-current opacity-40 hover:opacity-80 transition-opacity ml-0.5"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <Info className="h-3 w-3" />
-        </button>
-      </TooltipTrigger>
-      <TooltipContent side="top" className="max-w-52 font-normal">
-        {desc}
-      </TooltipContent>
-    </Tooltip>
-  );
+  const explId = `source_${source}` as keyof typeof EXPL;
+  if (!(explId in EXPL)) return null;
+  return <InfoBubble id={explId} size="sm" />;
 }
 
 function SnippetDisplay({ text }: { text: string }) {

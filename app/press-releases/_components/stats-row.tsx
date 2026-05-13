@@ -19,6 +19,7 @@ export function PressReleasesStatsRow({ stats }: { stats: PressReleasesStats }) 
       <StatCard
         icon={<Layers className="h-5 w-5" />}
         label="Pressemitteilungen gesamt"
+        explId="pr_stat_total"
         value={stats.total}
         accent="brand"
         animate={false}
@@ -26,6 +27,7 @@ export function PressReleasesStatsRow({ stats }: { stats: PressReleasesStats }) 
       <StatCard
         icon={<Link2 className="h-5 w-5" />}
         label="Mit Publikations-Match"
+        explId="pr_stat_matched"
         value={stats.matched}
         accent="emerald"
         subtitle={matchedPct}
@@ -34,6 +36,7 @@ export function PressReleasesStatsRow({ stats }: { stats: PressReleasesStats }) 
       <StatCard
         icon={<FileQuestion className="h-5 w-5" />}
         label="Externe Referenzen"
+        explId="pr_stat_orphans"
         value={stats.orphans}
         accent="amber"
         subtitle="OpenAlex/CrossRef-Anreicherung"
@@ -42,6 +45,7 @@ export function PressReleasesStatsRow({ stats }: { stats: PressReleasesStats }) 
       <StatCard
         icon={<CalendarDays className="h-5 w-5" />}
         label="Aktuelles Jahr"
+        explId="pr_stat_year"
         value={stats.this_year}
         accent="purple"
         subtitle={`${stats.this_month} diesen Monat`}
