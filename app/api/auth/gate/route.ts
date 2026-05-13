@@ -50,8 +50,8 @@ export const POST = withApiError(async (req: NextRequest) => {
 });
 
 // DELETE for explicit logout (clears the cookie).
-export async function DELETE() {
+export const DELETE = withApiError(async () => {
   const res = NextResponse.json({ ok: true });
   res.cookies.delete('gate');
   return res;
-}
+});
