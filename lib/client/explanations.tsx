@@ -579,14 +579,26 @@ export const EXPL = {
     ),
   },
   score_distribution_chart: {
-    title: 'StoryScore-Verteilung',
+    title: 'Verteilungen: StoryScore & Press-Similarity',
     body: (
-      <Para>
-        Histogramm der Press-Scores aller analysierten Pubs in Buckets von 10 %.
-        Zeigt die Form der Score-Verteilung — bei einem gesunden Datensatz erwartet
-        man einen Peak im 20–40 %-Bereich (typisches Fachpaper) und einen langen
-        Tail nach rechts (echte Pitch-Kandidaten).
-      </Para>
+      <>
+        <Para>
+          Spiegel-Histogramm mit gemeinsamer X-Achse (10 Buckets, 0 – 100 %).
+          Oben wachsen die <strong>StoryScore</strong>-Balken: Press-Score
+          aller analysierten Pubs in 10er-Buckets. Unten spiegelt die
+          <strong> Press-Similarity</strong>-Verteilung — die SPECTER2-basierte
+          semantische Nähe jeder Pub zum historischen Press-Cluster.
+        </Para>
+        <Para>
+          Beide Distributionen teilen die gleiche Y-Skala (gemeinsamer Max-Wert),
+          damit man Magnituden direkt vergleichen kann. Bei einem gesunden
+          Datensatz erwartet man einen StoryScore-Peak im 20 – 40 %-Bereich
+          (typische Fachpaper) und einen langen Tail nach rechts (Pitch-Kandidaten).
+          Die Similarity-Verteilung ist meist breiter, weil das Embedding für
+          jede angereicherte Pub berechnet wird, unabhängig von der inhaltlichen
+          Bewertung.
+        </Para>
+      </>
     ),
   },
   dimensions_profile: {

@@ -51,15 +51,47 @@ export type DashboardStats = {
   avg_score: number | null;
   high_score_count: number;
   score_distribution: number[];
+  /** Histogram of `press_similarity` in 10 buckets (0.0–1.0, last bucket
+   *  inclusive of 1.0). Same eligibility filter as score_distribution. */
+  similarity_distribution: number[];
   dimension_avgs: Record<string, number>;
   top_keywords: { word: string; count: number }[];
 };
 
+// Press-similarity histogram. Mirrors the shape of `score_distribution` (10
+// equal-width buckets across 0..1) and matches its scope: any pub with the
+// metric set, no archive/eligibility filter — the existing score_stats SQL
+// function chose the same scope so the two histograms render against
+// comparable universes.
+async function getSimilarityDistribution(): Promise<number[]> {
+  // `width_bucket(value, lo, hi, n)` returns 1..n for in-range values and 0 /
+  // n+1 for under/overflow. We clamp the overflow bucket (1.0 exactly) into
+  // bucket 10 with LEAST so the histogram has 10 cells, indices 0..9.
+  const rows = await db.execute<{ bucket: number; count: number }>(sql`
+    SELECT
+      LEAST(width_bucket(press_similarity, 0::float8, 1::float8, 10), 10) AS bucket,
+      count(*)::int AS count
+    FROM publications
+    WHERE press_similarity IS NOT NULL
+    GROUP BY bucket
+    ORDER BY bucket
+  `);
+  const buckets = new Array(10).fill(0) as number[];
+  for (const r of rows) {
+    const idx = Math.max(0, Math.min(9, r.bucket - 1));
+    buckets[idx] += r.count;
+  }
+  return buckets;
+}
+
 async function getStats(defaultEligible: boolean): Promise<DashboardStats> {
-  const rows = await db.execute<{ stats: StatsPayload | null }>(
-    sql`SELECT publication_dashboard_stats(${defaultEligible}) AS stats`,
-  );
-  const stats = rows[0]?.stats ?? {};
+  const [statsRows, similarityBuckets] = await Promise.all([
+    db.execute<{ stats: StatsPayload | null }>(
+      sql`SELECT publication_dashboard_stats(${defaultEligible}) AS stats`,
+    ),
+    getSimilarityDistribution(),
+  ]);
+  const stats = statsRows[0]?.stats ?? {};
   return {
     total: stats.total || 0,
     enriched: stats.enriched || 0,
@@ -72,6 +104,7 @@ async function getStats(defaultEligible: boolean): Promise<DashboardStats> {
     avg_score: stats.avg_score ?? null,
     high_score_count: stats.high_score_count || 0,
     score_distribution: stats.score_distribution ?? new Array(10).fill(0),
+    similarity_distribution: similarityBuckets,
     dimension_avgs: stats.dimension_avgs ?? {},
     top_keywords: stats.top_keywords ?? [],
   };

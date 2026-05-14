@@ -360,17 +360,23 @@ export function DashboardClient({ data, period }: DashboardClientProps) {
         </CardContent>
       </Card>
 
-      {/* Score distribution chart */}
-      {scoreDistribution.some((v) => v > 0) && (
+      {/* Score + Press-Similarity mirror histogram */}
+      {(scoreDistribution.some((v) => v > 0) || stats.similarity_distribution.some((v) => v > 0)) && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base inline-flex items-center gap-1.5">
-              StoryScore-Verteilung
+              Verteilungen: StoryScore &amp; Press-Similarity
               <InfoBubble id="score_distribution_chart" size="md" />
             </CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">
+              Inhaltsbewertung (oben) vs. semantische Nähe zum Press-Cluster (unten)
+            </p>
           </CardHeader>
           <CardContent>
-            <ScoreDistributionChart buckets={scoreDistribution} />
+            <ScoreDistributionChart
+              scoreBuckets={scoreDistribution}
+              similarityBuckets={stats.similarity_distribution}
+            />
           </CardContent>
         </Card>
       )}
