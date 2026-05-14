@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { AnimatePresence, motion } from 'motion/react';
-import { ChevronDown, Sparkles } from 'lucide-react';
+import { ArrowUpRight, ChevronDown, Sparkles } from 'lucide-react';
 import { changelogBackground, changelogClosing, changelogEntries } from '@/lib/shared/changelog';
 
 interface Props {
@@ -95,7 +96,19 @@ export function ChangelogPanel({ className }: Props) {
                 >
                   <dt className="flex items-center gap-2 font-semibold text-brand">
                     <span className="h-1.5 w-1.5 rounded-full bg-brand" aria-hidden />
-                    <span>{entry.title}</span>
+                    {entry.href ? (
+                      <Link
+                        href={entry.href}
+                        onClick={() => setOpen(false)}
+                        className="inline-flex items-center gap-1 hover:underline underline-offset-2 decoration-brand/40"
+                      >
+                        {entry.title}
+                        <ArrowUpRight className="h-3 w-3 opacity-70" aria-hidden />
+                        <span className="sr-only">(im Hilfe-Center)</span>
+                      </Link>
+                    ) : (
+                      <span>{entry.title}</span>
+                    )}
                   </dt>
                   <dd className="ml-3.5 mt-1 leading-snug text-foreground/90">{entry.body}</dd>
                 </motion.div>
