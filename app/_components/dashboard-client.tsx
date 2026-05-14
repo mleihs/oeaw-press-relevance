@@ -28,7 +28,12 @@ import { ChangelogPanel } from '@/components/changelog-panel';
 import { PublicationFlag } from '@/components/publication-flag';
 import { displayTitle } from '@/lib/shared/html-utils';
 import { displayAuthor, displayInstitute } from '@/lib/shared/publication-display';
-import { DASHBOARD_PERIODS, type DashboardPeriod } from '@/lib/shared/dashboard';
+import {
+  DASHBOARD_PERIODS,
+  TOP_PUBS_MAX,
+  TOP_PUBS_STEP,
+  type DashboardPeriod,
+} from '@/lib/shared/dashboard';
 // `import type` keeps `lib/server/dashboard/fetch.ts` out of the client bundle
 // — that module transitively imports postgres + drizzle and would fail the
 // RSC → Client boundary check if pulled in as a value import.
@@ -68,9 +73,6 @@ interface DashboardClientProps {
   period: DashboardPeriod;
 }
 
-// How many extra pubs each „Mehr laden" click reveals.
-const TOP_PUBS_STEP = 20;
-
 export function DashboardClient({ data, period }: DashboardClientProps) {
   const {
     stats,
@@ -84,8 +86,11 @@ export function DashboardClient({ data, period }: DashboardClientProps) {
   const scoreDistribution = stats.score_distribution;
   const dimensionAvgs = stats.dimension_avgs;
   const topKeywords = stats.top_keywords;
-  const hasMorePubs = topPubs.length < topPubsTotal;
-  const nextLimit = topPubsLimit + TOP_PUBS_STEP;
+  // „Mehr laden" only when more pubs exist AND the cap isn't reached yet — at
+  // limit=TOP_PUBS_MAX the URL parser would clamp the next click back to MAX
+  // and the request would no-op, so we hide the button instead.
+  const hasMorePubs = topPubs.length < topPubsTotal && topPubsLimit < TOP_PUBS_MAX;
+  const nextLimit = Math.min(topPubsLimit + TOP_PUBS_STEP, TOP_PUBS_MAX);
 
   return (
     <div className="space-y-6">
