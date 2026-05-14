@@ -142,7 +142,7 @@ export function SpotlightPodium({ rows, metric }: SpotlightPodiumProps) {
                           title: 'Stärkste Pub',
                           body: (
                             <p className="leading-relaxed">
-                              Die Pub mit dem höchsten StoryScore aus dem aktuellen
+                              Die Pub mit dem höchsten Story Score aus dem aktuellen
                               Filter-Scope dieser Person. Klick auf die Karte führt zur
                               Detail-Seite.
                             </p>

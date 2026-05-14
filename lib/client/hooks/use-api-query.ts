@@ -4,7 +4,7 @@ import { useQuery, type UseQueryOptions, type QueryKey, keepPreviousData } from 
 import { getApiHeaders } from '@/lib/client/stores/settings-store';
 
 /**
- * Wrapper around `useQuery` for the StoryScout JSON API. Resolves three
+ * Wrapper around `useQuery` for the Story Scout JSON API. Resolves three
  * pieces of boilerplate that drifted across migration sites:
  *
  * 1. `getApiHeaders()` is auto-injected — no per-site repetition.

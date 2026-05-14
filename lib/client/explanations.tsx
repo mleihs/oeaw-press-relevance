@@ -28,7 +28,7 @@ const Code = ({ children }: { children: ReactNode }) => (
 export const EXPL = {
   // ─── Per-publication press_score ─────────────────────────────────────────
   press_score: {
-    title: 'StoryScore (Press-Relevanz)',
+    title: 'Story Score (Press-Relevanz)',
     formula:
       '0.20·Verständlichkeit + 0.25·Gesellschaftl. Relevanz + 0.20·Neuheit + 0.20·Erzählpotenzial + 0.15·Aktualität',
     body: (
@@ -68,7 +68,7 @@ export const EXPL = {
     body: (
       <Para>
         Wie direkt betrifft die Forschung Gesundheit, Umwelt, Wirtschaft, Kultur oder Alltag?
-        Höchstes Gewicht im StoryScore — das wichtigste Kriterium für Pressetauglichkeit.
+        Höchstes Gewicht im Story Score und damit das wichtigste Kriterium für Pressetauglichkeit.
       </Para>
     ),
   },
@@ -95,7 +95,7 @@ export const EXPL = {
     body: (
       <Para>
         Anschlussfähig an aktuellen öffentlichen Diskurs, jüngste Ereignisse, Trends,
-        saisonale Themen? Niedrigstes Gewicht im StoryScore.
+        saisonale Themen? Niedrigstes Gewicht im Story Score.
       </Para>
     ),
   },
@@ -107,9 +107,9 @@ export const EXPL = {
       <>
         <Para>Drei Schwellen, die die UI durchgängig nutzt:</Para>
         <ul className="ml-3 mt-1 space-y-0.5 list-disc">
-          <li><strong>Hoch (blau)</strong>: ≥ 70 % — solider Pitch-Kandidat</li>
-          <li><strong>Mittel (amber)</strong>: 40–69 % — fallweise prüfen</li>
-          <li><strong>Niedrig (grau)</strong>: &lt; 40 % — Spezialpaper, kaum pressetauglich</li>
+          <li><strong>Hoch (blau)</strong>: ≥ 70 % (solider Pitch-Kandidat)</li>
+          <li><strong>Mittel (amber)</strong>: 40–69 % (fallweise prüfen)</li>
+          <li><strong>Niedrig (grau)</strong>: &lt; 40 % (Spezialpaper, kaum pressetauglich)</li>
         </ul>
       </>
     ),
@@ -127,8 +127,8 @@ export const EXPL = {
     formula: 'count(WHERE press_score ≥ 0.7) im Zeitfenster',
     body: (
       <Para>
-        Wieviele Publikationen einer Person im gewählten Zeitraum einen StoryScore ≥ 0,70
-        erreichen. Default-Sortierung der Rangliste — robusteste Reliability-Metrik
+        Wieviele Publikationen einer Person im gewählten Zeitraum einen Story Score ≥ 0,70
+        erreichen. Default-Sortierung der Rangliste: robusteste Reliability-Metrik
         für „echte Pitch-Kandidat:innen".
       </Para>
     ),
@@ -138,7 +138,7 @@ export const EXPL = {
     formula: 'sum(press_score) im Zeitfenster',
     body: (
       <Para>
-        Summe aller StoryScores einer Person. Belohnt Volumen — auch viele
+        Summe aller Story Scores einer Person. Belohnt Volumen: auch viele
         mittelmäßige Pubs ergeben eine hohe Summe.
       </Para>
     ),
@@ -205,7 +205,7 @@ export const EXPL = {
     formula: 'count(*) im Zeitfenster',
     body: (
       <Para>
-        Alle bewerteten Publikationen einer Person im Zeitraum, unabhängig vom StoryScore.
+        Alle bewerteten Publikationen einer Person im Zeitraum, unabhängig vom Story Score.
         Reine Volumen-Metrik.
       </Para>
     ),
@@ -241,8 +241,8 @@ export const EXPL = {
         </Para>
         <Para>
           Bei Ties zeigen mehrere Personen denselben Rang (z.B. zwei Personen auf #2,
-          dann nächste Person auf #4). Top 50 werden hart gecappt — keine vollständige
-          Rangliste.
+          dann nächste Person auf #4). Top 50 werden hart gecappt, es gibt keine
+          vollständige Rangliste.
         </Para>
       </>
     ),
@@ -262,7 +262,7 @@ export const EXPL = {
       <Para>
         Polylinie über monatliche Buckets. Y-Wert pro Bucket = Anzahl hochbewerteter Pubs
         (≥ 70 %) in diesem Monat. Skala ist personen-relativ (auf eigenes Maximum normiert),
-        nicht global vergleichbar — sie zeigt Trend, nicht Absolutwert.
+        nicht global vergleichbar. Sie zeigt Trend, nicht Absolutwert.
       </Para>
     ),
   },
@@ -273,14 +273,14 @@ export const EXPL = {
     body: (
       <Para>
         Person hat ein Eintrag in <Code>persons.member_type_id</Code> mit Bezug auf
-        <Code>member_types</Code> — also in einer Akademie-Klasse aufgenommen
+        <Code>member_types</Code>, also in einer Akademie-Klasse aufgenommen
         (Wirklich, Korrespondierend In-/Ausland, Junge Akademie, Ehrenmitglied
         etc.). Stammdaten aus der WebDB.
       </Para>
     ),
     note: (
       <Para>
-        Nicht zu verwechseln mit <Code>person_publications.mahighlight</Code> —
+        Nicht zu verwechseln mit <Code>person_publications.mahighlight</Code>:
         das ist eine selbst gesetzte Pub-Markierung, die <em>nicht</em> Mitgliedschaft
         bedeutet (90 % der mahighlights stammen von Nicht-Mitgliedern).
       </Para>
@@ -290,7 +290,7 @@ export const EXPL = {
     title: 'Externe Person',
     body: (
       <Para>
-        Im WebDB als externe Co-Autor:in geführt — nicht ÖAW-Personal, sondern
+        Im WebDB als externe Co-Autor:in geführt, nicht ÖAW-Personal, sondern
         Gast-/Kooperationsautor:in. Per Default in der Rangliste ausgeblendet.
       </Para>
     ),
@@ -300,7 +300,7 @@ export const EXPL = {
     body: (
       <Para>
         Statistik-Austria-Klassifikation der Wissenschaftsdisziplin auf 3-stelliger Ebene
-        (Naturwissenschaften, Geisteswissenschaften etc.). Wird pro Person geführt — nicht
+        (Naturwissenschaften, Geisteswissenschaften etc.). Wird pro Person geführt, nicht
         pro Publikation. Vergleiche zwischen Sektionen sind heikel: Citation- und
         Press-Patterns unterscheiden sich um Größenordnungen.
       </Para>
@@ -318,7 +318,7 @@ export const EXPL = {
           <Code>ITA_Allgemein</Code>, <Code>ITA_AG_Nentwich</Code>).
         </Para>
         <Para>
-          Default aktiv, weil ITA-Dossiers eigene Pop-Sci-Outreach-Formate sind — sie
+          Default aktiv, weil ITA-Dossiers eigene Pop-Sci-Outreach-Formate sind. Sie
           erzielen hohe AI-Scores wegen ihrer zugänglichen Sprache, sind aber bereits
           publizierte Outreach-Inhalte, keine Press-Targets.
         </Para>
@@ -331,7 +331,7 @@ export const EXPL = {
       <>
         <Para>
           Schließt Publikationen mit dem Typ <Code>aufwändige Multimedia-Publikation</Code>
-          aus — das umfasst u.a. die Pragmaticus- und ÖAW-Hiccup-Podcast-Reihen.
+          aus. Das umfasst u.a. die Pragmaticus- und ÖAW-Hiccup-Podcast-Reihen.
         </Para>
         <Para>
           Default aktiv. Begründung wie ITA: bereits publizierte Eigenmedien, keine
@@ -403,7 +403,7 @@ export const EXPL = {
         </Para>
         <Para>
           Trotz <Code>ma</Code>-Präfix (Typo3-Legacy: „Mitglied der Akademie") <strong>kein
-          Akademie-Endorsement</strong> — empirisch stammen 90 % der gesetzten Marker
+          Akademie-Endorsement</strong>. Empirisch stammen 90 % der gesetzten Marker
           von Nicht-Mitgliedern. Eine Pub kann von mehreren Personen markiert werden.
         </Para>
       </>
@@ -479,8 +479,8 @@ export const EXPL = {
       <>
         <Para>
           Anzahl Pubs mit <Code>popular_science = true</Code> aus der WebDB. Markierung
-          erfolgt durch das publizierende Institut, ist aber nicht streng kuratiert —
-          deshalb fließt das Flag <strong>nicht</strong> in den StoryScore ein.
+          erfolgt durch das publizierende Institut, ist aber nicht streng kuratiert.
+          Deshalb fließt das Flag <strong>nicht</strong> in den Story Score ein.
         </Para>
         <Para>Reines Datenherkunfts-Signal, kein Qualitätsmerkmal.</Para>
       </>
@@ -490,8 +490,8 @@ export const EXPL = {
     title: 'Analysierte Publikationen',
     body: (
       <Para>
-        Pubs mit <Code>analysis_status = 'analyzed'</Code> — d.h. ein Sprachmodell hat
-        StoryScore + 5 Dimensionen + Pitch + Begründung + Haiku berechnet. Die übrigen
+        Pubs mit <Code>analysis_status = 'analyzed'</Code>, d.h. ein Sprachmodell hat
+        Story Score + 5 Dimensionen + Pitch + Begründung + Haiku berechnet. Die übrigen
         sind <Code>pending</Code> und können über die Analyse-Seite nachbewertet werden.
       </Para>
     ),
@@ -501,7 +501,7 @@ export const EXPL = {
     formula: 'count(WHERE press_score ≥ 0.7)',
     body: (
       <Para>
-        Pubs mit StoryScore ≥ 70 % über alle Zeiträume. Der Subline „Durchschnitt"
+        Pubs mit Story Score ≥ 70 % über alle Zeiträume. Der Subline „Durchschnitt"
         zeigt den Mittelwert über <em>alle</em> analysierten Pubs (nicht nur die hohen).
       </Para>
     ),
@@ -514,7 +514,7 @@ export const EXPL = {
       <>
         <Para>
           Publikationen, die ein Team-Mitglied per Pin-Icon zur Diskussion in der
-          Triage-Sitzung markiert hat. Flag-Notes sind frei formulierbare Kommentare —
+          Triage-Sitzung markiert hat. Flag-Notes sind frei formulierbare Kommentare,
           sichtbar im Tooltip des Pin-Icons.
         </Para>
         <Para>
@@ -530,7 +530,7 @@ export const EXPL = {
     body: (
       <Para>
         Publikationen, die seit der letzten abgeschlossenen Sitzung neu analysiert
-        wurden und einen StoryScore von mindestens 70 % erreicht haben. Stellt sicher,
+        wurden und einen Story Score von mindestens 70 % erreicht haben. Stellt sicher,
         dass hochbewertete Frisch-Eingänge nicht in der Allgemein-Liste untergehen,
         sondern direkt in der nächsten Triage landen.
       </Para>
@@ -548,13 +548,13 @@ export const EXPL = {
       <>
         <Para>
           Publikationen, bei denen die Institute-Selbstdarstellung in der WebDB ein
-          <Code>mahighlight=true</Code>-Flag gesetzt hat — das Institut sieht das
+          <Code>mahighlight=true</Code>-Flag gesetzt hat. Das Institut sieht das
           Paper als bemerkenswert für die ÖAW-Außenwirkung.
         </Para>
         <Para>
           <strong>Achtung</strong>: <Code>mahighlight</Code> heißt <em>Eigen-Highlight</em>,
           nicht „Akademie-Mitglied". 90 % der Highlights kommen tatsächlich von Pubs
-          ohne Akademie-Mitglied im Author-Pool — die Institute markieren also auch
+          ohne Akademie-Mitglied im Author-Pool. Die Institute markieren also auch
           ohne Mitgliedsbezug.
         </Para>
       </>
@@ -565,7 +565,7 @@ export const EXPL = {
     body: (
       <>
         <Para>
-          Die zwanzig Pubs mit höchstem StoryScore im gewählten Zeitraum (basierend auf
+          Die zwanzig Pubs mit höchstem Story Score im gewählten Zeitraum (basierend auf
           <Code>published_at</Code>). Sortierung absteigend nach <Code>press_score</Code>.
           Über den Button „Mehr laden" werden jeweils 20 weitere Pubs aus demselben
           Pool nachgeladen, bis zu einem Maximum von 200.
@@ -579,22 +579,22 @@ export const EXPL = {
     ),
   },
   score_distribution_chart: {
-    title: 'Verteilungen: StoryScore & Press-Similarity',
+    title: 'Verteilungen: Story Score & Press-Similarity',
     body: (
       <>
         <Para>
           Spiegel-Histogramm mit zwei unabhängigen X-Achsen: oben wachsen die
-          <strong> StoryScore</strong>-Balken (0 – 100 %), unten spiegelt die
+          <strong> Story Score</strong>-Balken (0 – 100 %), unten spiegelt die
           <strong> Press-Similarity</strong>-Verteilung (70 – 100 %, gezoomt,
           weil SPECTER2-Cosinus naturgemäß in diesem Band sitzt). Beide
           Distributionen teilen die gleiche Y-Skala, damit Magnituden direkt
           vergleichbar sind.
         </Para>
         <Para>
-          <strong>Empirische Score-Decke:</strong> Der obere StoryScore-Bucket
+          <strong>Empirische Score-Decke:</strong> Der obere Story Score-Bucket
           (90 – 100 %) ist im Datensatz leer. Der höchste tatsächlich erreichte
           Score liegt bei rund 0,82. Grund: die gewichtete 5-Dim-Formel
-          erzwingt für ≥ 90 % praktisch alle Dimensionen gleichzeitig ≥ 0,9 —
+          erzwingt für ≥ 90 % praktisch alle Dimensionen gleichzeitig ≥ 0,9,
           eine Kombination, die empirisch nicht vorkommt (typische Pubs haben
           eine starke Achse und mehrere mittlere). Plus eine systematische
           Drift-Korrektur (~0,05 nach unten) aus dem 872-Pub-Audit. Lesart:
@@ -607,9 +607,9 @@ export const EXPL = {
     title: 'Dimensions-Profil',
     body: (
       <Para>
-        Radar-Chart über die fünf StoryScore-Dimensionen mit den Mittelwerten aller
+        Radar-Chart über die fünf Story Score-Dimensionen mit den Mittelwerten aller
         analysierten Pubs. Zeigt, welche Achsen die ÖAW-Forschung im Schnitt stark/schwach
-        besetzt — z.B. „durchschnittlich hohe gesellschaftliche Relevanz, schwache
+        besetzt, z.B. „durchschnittlich hohe gesellschaftliche Relevanz, schwache
         Verständlichkeit".
       </Para>
     ),
@@ -620,7 +620,7 @@ export const EXPL = {
       <Para>
         Häufigste Schlagwörter aus <Code>enriched_keywords</Code> (angereichert via
         OpenAlex, Semantic Scholar etc.). Größe ∝ Häufigkeit. Nur aus
-        OpenAccess-/enrichten Pubs — Closed-Access ohne API-Daten fehlt hier.
+        OpenAccess-/enrichten Pubs. Closed-Access ohne API-Daten fehlt hier.
       </Para>
     ),
   },
@@ -636,8 +636,8 @@ export const EXPL = {
           Abstract und Keywords kommen erst durch die Anreicherung dazu.
         </Para>
         <Para>
-          Solange das nicht geschehen ist, kann die Pub auch nicht inhaltlich bewertet werden —
-          eine Bewertung ohne Substanz wäre Fabrikation.
+          Solange das nicht geschehen ist, kann die Pub auch nicht inhaltlich bewertet werden,
+          denn eine Bewertung ohne Substanz wäre Fabrikation.
         </Para>
       </>
     ),
@@ -646,7 +646,7 @@ export const EXPL = {
     title: 'Anreicherung erfolgreich',
     body: (
       <Para>
-        Mindestens eine externe Quelle hat zusätzliche Metadaten geliefert — typischerweise
+        Mindestens eine externe Quelle hat zusätzliche Metadaten geliefert, typischerweise
         Abstract, Keywords oder Volltext-Snippet. Die Pub ist damit bereit für die inhaltliche
         Bewertung durch ein Sprachmodell.
       </Para>
@@ -676,9 +676,14 @@ export const EXPL = {
     title: 'Anreicherung fehlgeschlagen',
     body: (
       <Para>
-        Alle externen Quellen wurden abgefragt, keine lieferte verwertbare Daten. Häufige
-        Ursachen: Pub hat keinen DOI, DOI ist in keiner Datenbank registriert, oder der
-        Abstract liegt nur in einem Format vor, das die APIs nicht ausliefern.
+        Alle externen Quellen (CrossRef, OpenAlex, Unpaywall, Semantic Scholar) wurden
+        abgefragt, keine lieferte verwertbare Daten. Häufige Ursachen: Pub hat keinen DOI;
+        DOI ist in keiner Datenbank registriert; der Abstract liegt nur in einem Format
+        vor, das die APIs nicht ausliefern; oder das Paper ist „in press" mit bereits
+        zugewiesenem DOI, aber das Erscheinungsdatum liegt noch in der Zukunft, sodass die
+        APIs den Eintrag noch nicht indexiert haben (klassisches Pre-Publication-Window).
+        Im letzten Fall hilft ein Re-Enrichment-Lauf, sobald die Pub formal erschienen ist,
+        üblich Tage bis Wochen nach Online-Publication.
       </Para>
     ),
   },
@@ -709,7 +714,7 @@ export const EXPL = {
         </Para>
         <Para>
           <strong>Nein:</strong> nur Publikationen ohne bisherige
-          ÖAW-Pressemitteilung — der eigentliche Triage-Pool.
+          ÖAW-Pressemitteilung. Der eigentliche Triage-Pool.
         </Para>
       </>
     ),
@@ -720,12 +725,12 @@ export const EXPL = {
     title: 'Kein Press-Score',
     body: (
       <Para>
-        Diese Publikation wurde noch nicht inhaltlich bewertet — daher kein StoryScore.
+        Diese Publikation wurde noch nicht inhaltlich bewertet, daher kein Story Score.
       </Para>
     ),
   },
   score_na_pending_pending: {
-    title: 'Kein Score — keine Anreicherung versucht',
+    title: 'Kein Score: keine Anreicherung versucht',
     body: (
       <>
         <Para>
@@ -742,7 +747,7 @@ export const EXPL = {
     ),
   },
   score_na_pending_partial: {
-    title: 'Kein Score — Anreicherung teilweise',
+    title: 'Kein Score: Anreicherung teilweise',
     body: (
       <>
         <Para>
@@ -751,7 +756,7 @@ export const EXPL = {
           aber der Abstract steht nur hinter Paywall und kommt nicht über die freien APIs.
         </Para>
         <Para>
-          Eine Bewertung allein auf Basis von Titel und Keywords wäre Fabrikation — daher
+          Eine Bewertung allein auf Basis von Titel und Keywords wäre Fabrikation, daher
           kein Score. Optionen: <Code>enrich-augment</Code> für zusätzliche Quellen, oder
           die Pub manuell bewerten lassen.
         </Para>
@@ -759,17 +764,17 @@ export const EXPL = {
     ),
   },
   score_na_pending_enriched: {
-    title: 'Kein Score — bewertbar, aber Scoring fehlt',
+    title: 'Kein Score: bewertbar, aber Scoring fehlt',
     body: (
       <Para>
-        Die Anreicherung ist durch und ein Abstract liegt vor — die Pub könnte sofort durch
+        Die Anreicherung ist durch und ein Abstract liegt vor. Die Pub könnte sofort durch
         ein Sprachmodell bewertet werden. Es fehlt nur der Trigger einer Scoring-Session.
         Über die Analyse-Seite oder per Pipeline-Befehl auslösbar.
       </Para>
     ),
   },
   score_na_pending_failed: {
-    title: 'Kein Score — Anreicherung fehlgeschlagen',
+    title: 'Kein Score: Anreicherung fehlgeschlagen',
     body: (
       <Para>
         Alle externen Quellen wurden abgefragt, keine lieferte verwertbare Daten. Häufige
@@ -780,7 +785,7 @@ export const EXPL = {
     ),
   },
   score_na_analysis_failed: {
-    title: 'Kein Score — Bewertung fehlgeschlagen',
+    title: 'Kein Score: Bewertung fehlgeschlagen',
     body: (
       <Para>
         Eine Scoring-Session lief, aber das Sprachmodell konnte keine valide Bewertung
@@ -793,7 +798,7 @@ export const EXPL = {
 
   // ─── Publications table ──────────────────────────────────────────────────
   pub_score_column: {
-    title: 'StoryScore-Spalte',
+    title: 'Story Score-Spalte',
     body: (
       <>
         <Para>
@@ -826,7 +831,7 @@ export const EXPL = {
       <Para>
         Filtert auf Publikationen mit <Code>published_at ≥ heute − N Monate</Code>.
         Default 12 Monate. „Alle" greift zurück auf alle bewerteten Pubs (effektiv
-        unbegrenzt — 600 Monate Cap).
+        unbegrenzt: 600 Monate Cap).
       </Para>
     ),
     note: (
@@ -998,7 +1003,7 @@ export const EXPL = {
     note: (
       <Para>
         Reines Datenherkunfts-Signal, kein Qualitätsmerkmal. Fließt nicht in den
-        StoryScore ein, weil die inhaltliche Press-Eignung weiterhin vom Sprachmodell
+        Story Score ein, weil die inhaltliche Press-Eignung weiterhin vom Sprachmodell
         beurteilt wird.
       </Para>
     ),
@@ -1091,7 +1096,7 @@ export const EXPL = {
     title: 'Begründung',
     body: (
       <Para>
-        Die Erklärung des Sprachmodells, warum der StoryScore so ausgefallen ist. Hebt
+        Die Erklärung des Sprachmodells, warum der Story Score so ausgefallen ist. Hebt
         die treibenden Stärken hervor und benennt offene Schwächen. Ein durchgehender
         Fließtext, keine Aufzählung von Variablen.
       </Para>
@@ -1196,7 +1201,7 @@ export const EXPL = {
     body: (
       <Para>
         Die schärfste Vorauswahl: peer-reviewed, mit deutscher Zusammenfassung,
-        StoryScore ≥ 70 %, nicht-pressetaugliche Formate ausgeblendet. Die Triage-Sicht
+        Story Score ≥ 70 %, nicht-pressetaugliche Formate ausgeblendet. Die Triage-Sicht
         für die Frage „was kommt diese Woche auf den Tisch".
       </Para>
     ),
@@ -1400,7 +1405,7 @@ export const EXPL = {
         Häufigste Ursache: das Institut hat die Pub intern
         <strong> nicht für die Web-Anzeige freigegeben</strong>. Solche Pubs
         landen erst gar nicht in der WebDB und folglich auch nicht im
-        lokalen Datenbestand von StoryScout. Seltener: das Paper ist erst
+        lokalen Datenbestand von Story Scout. Seltener: das Paper ist erst
         nach dem letzten Import erschienen. Metadaten werden via OpenAlex
         und CrossRef nachgereichert. Wird die Pub später freigegeben und
         importiert, übernimmt der Match-Job die Zuordnung automatisch.
@@ -1458,7 +1463,7 @@ export const EXPL = {
           <strong>Häufigste Ursache:</strong> Das publizierende Institut hat
           die Pub intern nicht für die Web-Anzeige freigegeben. Solche Pubs
           landen erst gar nicht in der WebDB und folglich auch nicht im
-          lokalen Datenstand von StoryScout. Seltener kommt vor, dass die Pub
+          lokalen Datenstand von Story Scout. Seltener kommt vor, dass die Pub
           erst nach dem letzten Import publiziert wurde.
         </Para>
         <Para>
@@ -1568,7 +1573,7 @@ export const EXPL = {
     note: (
       <Para>
         Der Import läuft als <strong>UPSERT pro <Code>webdb_uid</Code></strong>:
-        StoryScores, Pitch-Material, Haiku, Begründung, Flags, Decisions und
+        Story Scores, Pitch-Material, Haiku, Begründung, Flags, Decisions und
         Enrichment-Daten werden nicht angefasst. Pubs, die im neuen Dump fehlen,
         werden auf <Code>archived = true</Code> gesetzt statt gelöscht, damit alle
         Verknüpfungen zu Decisions und MeisterTask-Karten stabil bleiben.
@@ -1604,7 +1609,7 @@ export const EXPL = {
     body: (
       <Para>
         Schickt angereicherte Publikationen an das gewählte Sprachmodell (über
-        OpenRouter) und berechnet StoryScore, fünf Dimensionen, Pitch-Vorschlag,
+        OpenRouter) und berechnet Story Score, fünf Dimensionen, Pitch-Vorschlag,
         Blickwinkel, Zielgruppe, Begründung und Haiku. Pro Aufruf werden 1 bis 5 Pubs
         gebündelt (Batch-Größe in den Einstellungen).
       </Para>
@@ -1626,7 +1631,7 @@ export const EXPL = {
         Filtert die Top-Publikationen-Liste (Default 20 Pubs, per
         „Mehr laden" in 20er-Schritten erweiterbar bis 200), die
         Score-Verteilung und das Dimensions-Profil auf ein Zeitfenster:
-        Woche, 2 Monate, Jahr oder Gesamt. Default ist 2 Monate — wide genug,
+        Woche, 2 Monate, Jahr oder Gesamt. Default ist 2 Monate, wide genug,
         damit die Top-N-Liste verlässlich gefüllt ist. Der gewählte Tab wird
         in der URL gespeichert, Bookmarks und geteilte Links behalten die
         Ansicht.

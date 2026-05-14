@@ -105,7 +105,7 @@ export default function ImportPage() {
             <span>
               Der Import wischt aktuell die <code>publications</code>-Tabelle und
               lädt vollständig neu. Eigene Analyse-Daten gehen dabei lokal
-              verloren — sie können separat aus Production via DOI-Match
+              verloren. Sie können separat aus Production via DOI-Match
               wiederhergestellt werden.
             </span>
           </div>
@@ -168,15 +168,15 @@ export default function ImportPage() {
             </li>
             <li className="flex gap-2">
               <TintBadge color="purple" className="shrink-0">PS</TintBadge>
-              <span><strong>Popular-Science-Flag</strong> für 3.185 Publikationen — direktes Press-Relevanz-Signal</span>
+              <span><strong>Popular-Science-Flag</strong> für 3.185 Publikationen: direktes Press-Relevanz-Signal</span>
             </li>
             <li className="flex gap-2">
               <TintBadge color="amber" className="shrink-0">★</TintBadge>
-              <span><strong>Eigen-Highlights</strong> (mahighlight): rund 220 von den Autor:innen selbst markierte Pubs — meist Nicht-Mitglieder</span>
+              <span><strong>Eigen-Highlights</strong> (mahighlight): rund 220 von den Autor:innen selbst markierte Pubs, meist Nicht-Mitglieder</span>
             </li>
             <li className="flex gap-2">
               <Badge variant="outline" className="shrink-0">DE/EN</Badge>
-              <span><strong>Bilinguale Zusammenfassungen</strong> aus der Quelle (wo vorhanden) — keine LLM-Übersetzung mehr nötig</span>
+              <span><strong>Bilinguale Zusammenfassungen</strong> aus der Quelle (wo vorhanden): keine LLM-Übersetzung mehr nötig</span>
             </li>
             <li className="flex gap-2">
               <Badge variant="outline" className="shrink-0">👥</Badge>
@@ -196,7 +196,7 @@ export default function ImportPage() {
             </li>
             <li className="flex gap-2">
               <Badge variant="outline" className="shrink-0">🧭</Badge>
-              <span><strong>ÖSTAT6-Klassifikation</strong> (1.411 Codes) — österreichische Wissenschaftstaxonomie als Themen-Spine</span>
+              <span><strong>ÖSTAT6-Klassifikation</strong> (1.411 Codes): österreichische Wissenschaftstaxonomie als Themen-Spine</span>
             </li>
           </ul>
         </CardContent>

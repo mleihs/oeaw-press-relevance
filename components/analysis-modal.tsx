@@ -282,12 +282,12 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
           <div className="flex items-center gap-3">
             <CapybaraModalAvatar variant="analyst" state={status} />
             <div className="flex-1 min-w-0">
-              <DialogTitle>StoryScout Analyse</DialogTitle>
+              <DialogTitle>Story Scout Analyse</DialogTitle>
               <DialogDescription>
                 {status === 'idle' && 'Publikationen per LLM auf Story-Potenzial bewerten.'}
                 {status === 'running' && `Analysiere ${progress.processed} / ${progress.total} Publikationen...`}
                 {status === 'complete' && 'Analyse abgeschlossen!'}
-                {status === 'cancelled' && `Analyse abgebrochen — ${progress.processed} von ${progress.total} Publikationen analysiert.`}
+                {status === 'cancelled' && `Analyse abgebrochen: ${progress.processed} von ${progress.total} Publikationen analysiert.`}
                 {status === 'error' && 'Fehler bei der Analyse.'}
               </DialogDescription>
             </div>
@@ -391,7 +391,7 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
               {keyBalance && keyBalance.effectiveBudget !== null && keyBalance.effectiveBudget < 0.50 && keyBalance.effectiveBudget >= 0.01 && (
                 <div className="flex items-center gap-1.5 text-xs text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-500/15 rounded px-2 py-1">
                   <AlertCircle className="h-3 w-3 shrink-0" />
-                  <span>Niedriges Guthaben — bald Credits aufladen auf openrouter.ai/settings/credits</span>
+                  <span>Niedriges Guthaben, bald Credits aufladen auf openrouter.ai/settings/credits</span>
                 </div>
               )}
             </div>

@@ -12,6 +12,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "check-em-dashes": "bash scripts/check-em-dashes.sh",
     "typecheck": "fumadocs-mdx && tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",

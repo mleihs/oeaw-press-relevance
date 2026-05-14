@@ -10,7 +10,7 @@ export default function HelpLayout({ children }: { children: ReactNode }) {
   return (
     <DocsLayout
       tree={source.pageTree}
-      nav={{ enabled: false, title: 'StoryScout · Hilfe' }}
+      nav={{ enabled: false, title: 'Story Scout · Hilfe' }}
     >
       {children}
     </DocsLayout>

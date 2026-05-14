@@ -56,7 +56,7 @@ export function SimilarityIndicator({ similarity }: SimilarityIndicatorProps) {
         </span>
       </TooltipTrigger>
       <TooltipContent side="top" className="max-w-xs text-xs">
-        <p className="font-medium">Press-Similarity {pct}% — {b.label}</p>
+        <p className="font-medium">Press-Similarity {pct}% ({b.label})</p>
         <p className="text-muted-foreground mt-1">
           Wie ähnlich ist diese Publikation den schon gepressten Pubs der ÖAW?
           Cosine-Similarity über SPECTER2-Embeddings (k-NN avg, Top-5).

@@ -95,16 +95,16 @@ function notifyMeistertask(mt: MeistertaskPushResult | null) {
       break;
     case 'skipped':
       if (mt.reason === 'not_configured') {
-        toast.warning('MeisterTask ist nicht konfiguriert — Decision wurde gespeichert.');
+        toast.warning('MeisterTask ist nicht konfiguriert. Decision wurde gespeichert.');
       }
       break;
     case 'error':
       if (mt.reason === 'rate_limited') {
         toast.warning(`MeisterTask rate-limited (Retry in ${mt.retry_after_seconds ?? '?'}s).`);
       } else if (mt.reason === 'auth') {
-        toast.error('MeisterTask-Auth fehlgeschlagen — Token rotieren.');
+        toast.error('MeisterTask-Auth fehlgeschlagen. Token rotieren.');
       } else {
-        toast.error('MeisterTask-Upstream-Fehler — Decision wurde aber gespeichert.');
+        toast.error('MeisterTask-Upstream-Fehler. Decision wurde aber gespeichert.');
       }
       break;
   }
@@ -283,7 +283,7 @@ export function DecisionToolbar({ pub, inSession = false, onDecided }: DecisionT
         <Textarea
           value={rationale}
           onChange={(e) => setRationale(e.target.value)}
-          placeholder="Optional: Begründung der Entscheidung — wird mit dem nächsten Klick gespeichert."
+          placeholder="Optional: Begründung der Entscheidung, die mit dem nächsten Klick gespeichert wird."
           className="min-h-[60px] text-xs"
           disabled={isPending}
         />

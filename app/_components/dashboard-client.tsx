@@ -1,9 +1,9 @@
 'use client';
 
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import Image from 'next/image';
-import { motion } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
 import { AnimateNumber } from 'motion-number';
 import {
   BarChart3,
@@ -11,8 +11,8 @@ import {
   ClipboardCheck,
   Newspaper,
   Pin,
-  Sparkles,
   TrendingUp,
+  X,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,15 +25,24 @@ import { InfoBubble } from '@/components/info-bubble';
 import { EmptyState } from '@/components/empty-state';
 import { CapybaraEmpty } from '@/components/capybara-logo';
 import { ChangelogPanel } from '@/components/changelog-panel';
+import { CapybaraGlitch } from '@/components/capybara-glitch';
 import { PublicationFlag } from '@/components/publication-flag';
+import { AUTH_STORAGE_KEY, AUTH_SUCCESS_EVENT } from '@/lib/client/auth-events';
 import { displayTitle } from '@/lib/shared/html-utils';
 import { displayAuthor, displayInstitute } from '@/lib/shared/publication-display';
 import {
+  buildDashboardHref,
   DASHBOARD_PERIODS,
+  DBKEY_TO_SORT_KEY,
+  SORT_BY_LABELS,
   TOP_PUBS_MAX,
   TOP_PUBS_STEP,
   type DashboardPeriod,
+  type DimensionDbKey,
+  type DimensionSortKey,
+  type SortBy,
 } from '@/lib/shared/dashboard';
+import type { PublicationListItem } from '@/lib/server/publications/list';
 // `import type` keeps `lib/server/dashboard/fetch.ts` out of the client bundle
 // — that module transitively imports postgres + drizzle and would fail the
 // RSC → Client boundary check if pulled in as a value import.
@@ -71,9 +80,52 @@ function getTimeRangeLabel(period: DashboardPeriod): string {
 interface DashboardClientProps {
   data: DashboardData;
   period: DashboardPeriod;
+  sortBy: SortBy;
 }
 
-export function DashboardClient({ data, period }: DashboardClientProps) {
+/**
+ * Typed getter table: each entry pulls the matching dimension field off a Pub
+ * without the unsafe `as unknown as Record<...>` cast. If PublicationListItem
+ * ever loses one of these fields, the TypeScript build fails right here.
+ */
+const DIMENSION_GETTERS: Record<
+  DimensionSortKey,
+  (pub: PublicationListItem) => number | null
+> = {
+  accessibility: (pub) => pub.public_accessibility,
+  relevance:     (pub) => pub.societal_relevance,
+  novelty:       (pub) => pub.novelty_factor,
+  storytelling:  (pub) => pub.storytelling_potential,
+  timeliness:    (pub) => pub.media_timeliness,
+};
+
+function DimensionBadge({
+  pub,
+  sortBy,
+}: {
+  pub: PublicationListItem;
+  sortBy: DimensionSortKey;
+}) {
+  const value = DIMENSION_GETTERS[sortBy](pub);
+  if (value === null) return null;
+  return (
+    <Badge
+      variant="outline"
+      className="text-[10px] border-brand/30 bg-brand/5 text-brand tabular-nums px-1.5 py-0"
+    >
+      {SORT_BY_LABELS[sortBy]} {Math.round(value * 100)} %
+    </Badge>
+  );
+}
+
+const DASHBOARD_GLITCH_DATE_KEY = 'storyscout-dashboard-glitch-date';
+
+/** Local-timezone YYYY-MM-DD via en-CA locale (ISO format, no UTC offset confusion). */
+function todayLocal(): string {
+  return new Date().toLocaleDateString('en-CA');
+}
+
+export function DashboardClient({ data, period, sortBy }: DashboardClientProps) {
   const {
     stats,
     topPubs,
@@ -92,6 +144,62 @@ export function DashboardClient({ data, period }: DashboardClientProps) {
   const hasMorePubs = topPubs.length < topPubsTotal && topPubsLimit < TOP_PUBS_MAX;
   const nextLimit = Math.min(topPubsLimit + TOP_PUBS_STEP, TOP_PUBS_MAX);
 
+  // Capybara boot-sequence: play once per local-calendar-day. Triggered either
+  // on mount (returning user already authenticated in this session) or on the
+  // auth-success event (first password entry of the session). Either path
+  // ends in the cyber image staying visible after the animation completes.
+  const [playGlitch, setPlayGlitch] = useState(false);
+  useEffect(() => {
+    const tryTrigger = () => {
+      if (sessionStorage.getItem(AUTH_STORAGE_KEY) !== '1') return false;
+      const last = localStorage.getItem(DASHBOARD_GLITCH_DATE_KEY);
+      if (last !== todayLocal()) setPlayGlitch(true);
+      return true;
+    };
+    if (tryTrigger()) return;
+    window.addEventListener(AUTH_SUCCESS_EVENT, tryTrigger);
+    return () => window.removeEventListener(AUTH_SUCCESS_EVENT, tryTrigger);
+  }, []);
+
+  const handleGlitchComplete = useCallback(() => {
+    localStorage.setItem(DASHBOARD_GLITCH_DATE_KEY, todayLocal());
+  }, []);
+
+  // Single navigation primitive: replace the URL with the same period+limit
+  // but a different sortBy. router.replace + scroll:false keeps the scroll
+  // position so the sort feels in-place rather than a full re-load. Both
+  // the radar click and the pill's X reset route through here.
+  // Navigate by changing the URL with a real navigation rather than
+  // router.replace — the latter silently no-ops on query-only updates in
+  // this Next.js 16.2.4 setup (Playwright-verified). The browser-native
+  // cross-document View Transitions in `app/globals.css` make the perceived
+  // UX a 200ms crossfade rather than a white-flash. Switch back to
+  // `router.replace(href, { scroll: false })` if the Next.js navigation
+  // regression is upstream-fixed; the View-Transition rule layers on top
+  // of SPA transitions too and stays useful.
+  const navigateToSort = useCallback(
+    (next: SortBy) => {
+      const href = buildDashboardHref({ period, topPubs: topPubsLimit, sortBy: next });
+      window.location.assign(href);
+    },
+    [period, topPubsLimit],
+  );
+
+  // Radar click-to-sort. The axis emits a typed DimensionDbKey; the table
+  // lookup is exhaustive by type, so no runtime guard is needed.
+  const handleAxisClick = useCallback(
+    (dbKey: DimensionDbKey) => {
+      const sortKey = DBKEY_TO_SORT_KEY[dbKey];
+      navigateToSort(sortBy === sortKey ? 'score' : sortKey);
+    },
+    [sortBy, navigateToSort],
+  );
+
+  const clearSort = useCallback(() => navigateToSort('score'), [navigateToSort]);
+
+  // The active dimension sort key (or null when sorted by Story Score).
+  const activeDimensionSort: DimensionSortKey | null = sortBy === 'score' ? null : sortBy;
+
   return (
     <div className="space-y-6">
       {/* Hero — atmospheric gradient panel with animated live stats */}
@@ -106,18 +214,20 @@ export function DashboardClient({ data, period }: DashboardClientProps) {
 
         <div className="relative flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-5">
-            <Image
-              src="/capybara-logo.png"
-              alt="StoryScout Capybara"
-              width={140}
-              height={140}
-              className="shrink-0 mix-blend-multiply dark:mix-blend-normal dark:opacity-90"
+            <CapybaraGlitch
+              oldSrc="/capybara-logo-alpha.png"
+              cyberSrc="/capybara-logo-cyber-alpha.png"
+              oldAlt="Story Scout Capybara"
+              cyberAlt="Story Scout Capybara, Cyber-Edition"
+              play={playGlitch}
+              onComplete={handleGlitchComplete}
+              className="h-[140px] w-[140px] shrink-0"
               priority
             />
 
             <div>
               <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-br from-foreground via-foreground to-foreground/70 bg-clip-text text-transparent">
-                StoryScout
+                Story Scout 0.2
               </h1>
               <p className="text-muted-foreground mt-1.5 max-w-md">
                 Press-Triage und Pitch-Pipeline für ÖAW-Publikationen.
@@ -146,7 +256,7 @@ export function DashboardClient({ data, period }: DashboardClientProps) {
       </motion.section>
 
       {/* Stats cards */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-3">
         <StatCard
           label="Publikationen gesamt"
           explId="stat_total_pubs"
@@ -156,17 +266,6 @@ export function DashboardClient({ data, period }: DashboardClientProps) {
             stats.peer_reviewed && stats.total
               ? `${stats.peer_reviewed.toLocaleString('de-AT')} peer-reviewed (${Math.round((stats.peer_reviewed / stats.total) * 100)}%)`
               : undefined
-          }
-        />
-        <StatCard
-          label="Popular Science"
-          explId="stat_popular_science"
-          value={stats.popular_science}
-          icon={<Sparkles className="h-5 w-5" />}
-          subtitle={
-            stats.popular_science && stats.total
-              ? `${Math.round((stats.popular_science / stats.total) * 100)}% aller Publikationen — Quellsignal`
-              : 'Vorklassifiziert in WebDB'
           }
         />
         <StatCard
@@ -209,19 +308,11 @@ export function DashboardClient({ data, period }: DashboardClientProps) {
               )}
             </Link>
           </Button>
-          {pressReleasedCount > 0 && (
+          {pressReleasedCount + orphansCount > 0 && (
             <Button asChild variant="outline" className="border-emerald-300 text-emerald-900 hover:bg-emerald-50 dark:border-emerald-500/30 dark:text-emerald-300 dark:hover:bg-emerald-500/15">
-              <Link href="/publications?pressReleased=yes">
+              <Link href="/press-releases">
                 <Newspaper className="mr-2 h-4 w-4" />
-                {pressReleasedCount} mit ÖAW-Pressemitteilung
-              </Link>
-            </Button>
-          )}
-          {orphansCount > 0 && (
-            <Button asChild variant="outline" className="border-emerald-200 text-emerald-800 hover:bg-emerald-50 dark:border-emerald-500/30 dark:text-emerald-300 dark:hover:bg-emerald-500/15">
-              <Link href="/press-releases?tab=orphans">
-                <Newspaper className="mr-2 h-4 w-4 opacity-60" />
-                {orphansCount} Pressemitteilungen ohne Pub-Match
+                {pressReleasedCount + orphansCount} ÖAW-Pressemitteilungen
               </Link>
             </Button>
           )}
@@ -232,9 +323,30 @@ export function DashboardClient({ data, period }: DashboardClientProps) {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
           <div>
-            <CardTitle className="text-base inline-flex items-center gap-1.5">
-              Top {topPubs.length} Publikationen (nach StoryScore)
+            <CardTitle className="text-base inline-flex items-center gap-1.5 flex-wrap">
+              Top {topPubs.length} Publikationen
+              {sortBy === 'score' && (
+                <span className="text-muted-foreground/70 font-normal">(nach Story Score)</span>
+              )}
               <InfoBubble id="top10_panel" size="md" />
+              <AnimatePresence>
+                {activeDimensionSort && (
+                  <motion.button
+                    key="sort-pill"
+                    type="button"
+                    onClick={clearSort}
+                    initial={{ opacity: 0, scale: 0.85, y: -2 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.85, y: -2 }}
+                    transition={{ type: 'spring', stiffness: 380, damping: 26 }}
+                    className="inline-flex items-center gap-1 rounded-full bg-brand/10 hover:bg-brand/15 px-2.5 py-0.5 text-[11px] font-medium text-brand transition-colors ring-1 ring-inset ring-brand/20"
+                    aria-label={`Sortierung nach ${SORT_BY_LABELS[activeDimensionSort]} aufheben`}
+                  >
+                    Sortiert: {SORT_BY_LABELS[activeDimensionSort]}
+                    <X className="h-3 w-3 opacity-70" aria-hidden />
+                  </motion.button>
+                )}
+              </AnimatePresence>
             </CardTitle>
             <p className="text-xs text-muted-foreground mt-1">
               {getTimeRangeLabel(period)} · ohne Pop-Science
@@ -251,14 +363,19 @@ export function DashboardClient({ data, period }: DashboardClientProps) {
             {/* URL-driven tabs use <nav> + aria-current per phaseA4 Lesson #16
                 — the in-page <Tabs> primitive is for mutation-driven STATE
                 (still correct on /review's score-mode toggle), this is
-                navigation. */}
+                navigation. buildDashboardHref preserves sortBy across period
+                changes so an active dimension sort survives the click. */}
             <nav aria-label="Zeitraum" className="flex rounded-lg border bg-muted p-0.5">
               {DASHBOARD_PERIODS.map((value) => (
-                <Link
+                // Plain <a> rather than <Link> because Next.js Link's onClick
+                // intercepts the navigation and calls a router method that
+                // silently no-ops on query-only dashboard updates in this
+                // setup (same regression as the radar's click-to-sort).
+                // <a> falls back to native browser navigation = real URL
+                // change + server-rendered new content. See navigateToSort.
+                <a
                   key={value}
-                  href={`?period=${value}`}
-                  replace
-                  scroll={false}
+                  href={buildDashboardHref({ period: value, topPubs: topPubsLimit, sortBy })}
                   aria-current={period === value ? 'page' : undefined}
                   className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
                     period === value
@@ -267,7 +384,7 @@ export function DashboardClient({ data, period }: DashboardClientProps) {
                   }`}
                 >
                   {TIME_TAB_LABELS[value]}
-                </Link>
+                </a>
               ))}
             </nav>
           </div>
@@ -327,6 +444,12 @@ export function DashboardClient({ data, period }: DashboardClientProps) {
                         />
                         <InfoBubble id="press_score" size="sm" />
                       </div>
+                      {/* Active-dimension badge appears only while the radar
+                          is driving the sort, so the reason this pub is at
+                          its current rank is visible at-a-glance. */}
+                      {activeDimensionSort && (
+                        <DimensionBadge pub={pub} sortBy={activeDimensionSort} />
+                      )}
                       {pub.press_similarity !== null && pub.press_similarity !== undefined && (
                         <div className="inline-flex items-center gap-1">
                           <SimilarityIndicator similarity={pub.press_similarity} />
@@ -345,15 +468,14 @@ export function DashboardClient({ data, period }: DashboardClientProps) {
           {hasMorePubs && (
             <div className="mt-4 flex justify-center">
               <Button asChild variant="outline" size="sm">
-                {/* `scroll={false}` keeps the user at the load-more position
-                    when the server re-renders with more pubs in the list. */}
-                <Link
-                  href={`?period=${period}&topPubs=${nextLimit}`}
-                  scroll={false}
+                {/* Plain <a> rather than <Link> — see Period-Tab comment
+                    above. Same Next.js query-only navigation regression. */}
+                <a
+                  href={buildDashboardHref({ period, topPubs: nextLimit, sortBy })}
                   aria-label={`${TOP_PUBS_STEP} weitere Publikationen laden`}
                 >
                   Mehr laden ({TOP_PUBS_STEP} weitere)
-                </Link>
+                </a>
               </Button>
             </div>
           )}
@@ -365,7 +487,7 @@ export function DashboardClient({ data, period }: DashboardClientProps) {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base inline-flex items-center gap-1.5">
-              Verteilungen: StoryScore &amp; Press-Similarity
+              Verteilungen: Story Score &amp; Press-Similarity
               <InfoBubble id="score_distribution_chart" size="md" />
             </CardTitle>
             <p className="text-xs text-muted-foreground mt-1">
@@ -383,7 +505,9 @@ export function DashboardClient({ data, period }: DashboardClientProps) {
         </Card>
       )}
 
-      {/* Dimensions radar */}
+      {/* Dimensions radar — click an axis to sort the Top-Pubs panel above
+          by that dimension. The polygon itself shows the corpus average;
+          the interactive layer flips the Top-N sort key. */}
       {Object.keys(dimensionAvgs).length > 0 && (
         <Card>
           <CardHeader className="pb-3">
@@ -391,10 +515,17 @@ export function DashboardClient({ data, period }: DashboardClientProps) {
               Dimensions-Profil (Durchschnitt)
               <InfoBubble id="dimensions_profile" size="md" />
             </CardTitle>
-            <p className="text-xs text-muted-foreground">Durchschnittswerte aller analysierten Publikationen</p>
+            <p className="text-xs text-muted-foreground">
+              Durchschnittswerte aller analysierten Publikationen. Klick eine
+              Achse, um die Top-Pubs nach dieser Dimension zu sortieren.
+            </p>
           </CardHeader>
           <CardContent>
-            <DimensionsRadar averages={dimensionAvgs} />
+            <DimensionsRadar
+              averages={dimensionAvgs}
+              activeSortBy={sortBy}
+              onAxisClick={handleAxisClick}
+            />
           </CardContent>
         </Card>
       )}

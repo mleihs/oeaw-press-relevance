@@ -222,3 +222,50 @@
 .dark {
   --color-fd-muted-foreground: #b3b3b3; /* neutral-400-ish */
 }
+
+/* ============================================================
+   Cross-document View Transitions
+   ============================================================
+   The dashboard's interactive controls (radar click-to-sort, period tabs,
+   Mehr-laden) navigate by changing the URL with native `<a href>` or
+   `window.location.assign`, which trigger a full server-rendered roundtrip
+   rather than client-side router push (the latter silently no-ops on
+   query-only updates in this Next.js 16.2.4 setup — confirmed by Playwright
+   probe). Without animation, every click would white-flash.
+
+   `@view-transition { navigation: auto }` is a single browser-native
+   declaration that turns every same-origin navigation into a GPU-composited
+   crossfade between the outgoing and incoming pages. No JS, no framework
+   coupling, no architectural shift. Chromium 111+, Safari 18+; Firefox
+   does not yet support cross-document VT but falls back gracefully (no
+   animation, navigation still works — same as the pre-rule behaviour).
+
+   When Next.js' router regression is patched and we can move back to
+   `router.replace()`, this rule stays useful: same-document view-transitions
+   are layered on top automatically for any SPA-style navigation. */
+@view-transition {
+  navigation: auto;
+}
+
+@keyframes vt-fade-out {
+  to { opacity: 0; }
+}
+@keyframes vt-fade-in {
+  from { opacity: 0; }
+}
+
+::view-transition-old(root) {
+  animation: vt-fade-out 180ms cubic-bezier(0.4, 0, 1, 1);
+}
+::view-transition-new(root) {
+  /* Slight stagger so the new page fades in just after the old has begun
+     fading out — feels like a soft dissolve rather than a hard swap. */
+  animation: vt-fade-in 220ms cubic-bezier(0, 0, 0.2, 1) 40ms backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+}

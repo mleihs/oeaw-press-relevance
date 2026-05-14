@@ -1,12 +1,12 @@
 ---
 title: Workflow von Import bis Pitch
-description: Der vollständige Lebenszyklus einer Publikation in StoryScout, von der WebDB bis zur MeisterTask-Karte.
+description: Der vollständige Lebenszyklus einer Publikation in Story Scout, von der WebDB bis zur MeisterTask-Karte.
 ---
 
 import { Steps, Step } from 'fumadocs-ui/components/steps';
 import { Callout } from 'fumadocs-ui/components/callout';
 
-Eine Publikation durchläuft in StoryScout sechs Stationen, von der
+Eine Publikation durchläuft in Story Scout sechs Stationen, von der
 ersten Erfassung in der WebDB bis zur fertigen MeisterTask-Karte. Diese
 Seite ist die zusammenhängende Erklärung, wie alles zusammenpasst.
 
@@ -47,7 +47,7 @@ Erfolgreiche Pubs wechseln auf `enrichment_status = enriched` oder
 Pubs mit ausreichend Substanz werden an ein Sprachmodell geschickt
 (über OpenRouter). Das Modell liefert pro Pub:
 
-- StoryScore + 5 Dimensionen
+- Story Score + 5 Dimensionen
 - Pitch-Vorschlag, Blickwinkel, Zielgruppe
 - Begründung und Haiku
 
@@ -88,11 +88,11 @@ Optional eine Begründungs-Notiz für spätere Audits.
 
 Pitch-Entscheidungen erzeugen automatisch eine Karte in MeisterTask mit
 Titel, Pitch-Vorschlag, Blickwinkel, Zielgruppe, Begründung und
-Deep-Link zurück nach StoryScout.
+Deep-Link zurück nach Story Scout.
 
 Ab hier übernimmt das externe Tool. Die redaktionelle Arbeit
 (Recherche, Interview, Text) passiert in MeisterTask, nicht mehr in
-StoryScout.
+Story Scout.
 
 </Step>
 
@@ -104,7 +104,7 @@ StoryScout.
 **Re-Imports lassen Analyse-Daten in Ruhe:** Der WebDB-Import nutzt seit
 2026-04-30 einen UPSERT-Pfad pro `webdb_uid`. Er aktualisiert nur die
 Felder, die die WebDB selbst pflegt (Titel, Abstract-DE/EN, DOI,
-Citation-Formate, Lead-Author, OA-Status). StoryScores, Dimensionen,
+Citation-Formate, Lead-Author, OA-Status). Story Scores, Dimensionen,
 Pitch-Material, Haiku, Begründung, Flags, Decisions und alle
 Enrichment-Daten bleiben unberührt. Pubs, die im neuen Dump fehlen,
 werden auf `archived = true` gesetzt statt gelöscht, damit Verknüpfungen

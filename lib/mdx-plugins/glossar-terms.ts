@@ -14,7 +14,7 @@
 
 export const GLOSSAR_TERMS: Record<string, string> = {
   // R – Z
-  StoryScore: '/help/grundlagen/glossar#r-z',
+  'Story Score': '/help/grundlagen/glossar#r-z',
   WebDB: '/help/grundlagen/glossar#r-z',
   SPECTER2: '/help/grundlagen/glossar#r-z',
   TYPO3: '/help/grundlagen/glossar#r-z',

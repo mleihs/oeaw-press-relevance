@@ -6,9 +6,11 @@ import {
 } from '@/lib/server/publications/list';
 import { listPressReleases } from '@/lib/server/press-releases/list';
 import {
+  DIMENSION_SORT_MAP,
   SIMILARITY_RANGE_MAX,
   SIMILARITY_RANGE_MIN,
   type DashboardPeriod,
+  type SortBy,
 } from '@/lib/shared/dashboard';
 
 function publishedAfter(period: DashboardPeriod): string | null {
@@ -118,16 +120,21 @@ async function getStats(defaultEligible: boolean): Promise<DashboardStats> {
 async function getTopPubs(
   period: DashboardPeriod,
   limit: number,
+  sortBy: SortBy,
 ): Promise<{ pubs: PublicationListItem[]; total: number }> {
   // What should the press team pitch? Pop-Science excluded because those
   // papers are already outreach; ITA subtree excluded because handled by
   // their own communications. `default_eligible=true` filters out theses
   // and posters. `limit` is page-size, set by the caller — default 20 with
   // a "Mehr laden" UI lifting it in 20-row chunks.
+  // The radar's click-to-sort overrides the default press_score order with
+  // one of the five raw LLM dimensions; the translation table lives in
+  // lib/shared/dashboard so the URL key and DB column name stay aligned.
+  const sortColumn = sortBy === 'score' ? 'press_score' : DIMENSION_SORT_MAP[sortBy];
   const params = new URLSearchParams({
     page: '1',
     pageSize: String(limit),
-    sort: 'press_score',
+    sort: sortColumn,
     order: 'desc',
     analysis_status: 'analyzed',
     default_eligible: 'true',
@@ -172,10 +179,11 @@ export interface DashboardData {
 export async function getDashboardData(
   period: DashboardPeriod,
   topPubsLimit: number,
+  sortBy: SortBy = 'score',
 ): Promise<DashboardData> {
   const [stats, topPubsResult, flaggedCount, pressReleasedCount, orphansResult] = await Promise.all([
     getStats(true),
-    getTopPubs(period, topPubsLimit),
+    getTopPubs(period, topPubsLimit, sortBy),
     countWith(new URLSearchParams({ flagged: 'true' })),
     countWith(new URLSearchParams({ press_released: 'true' })),
     listPressReleases({ orphans: 'true', withPub: false }),

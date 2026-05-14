@@ -28,8 +28,8 @@ const newsreader = Newsreader({
 });
 
 export const metadata: Metadata = {
-  title: "StoryScout — ÖAW",
-  description: "StoryScout findet die besten Stories in Publikationen der Österreichischen Akademie der Wissenschaften",
+  title: "Story Scout | ÖAW",
+  description: "Story Scout findet die besten Stories in Publikationen der Österreichischen Akademie der Wissenschaften",
 };
 
 export default function RootLayout({
@@ -55,7 +55,7 @@ export default function RootLayout({
                   </main>
                   <footer className="border-t bg-background/50 mt-auto">
                     <div className="mx-auto max-w-7xl px-4 py-4 flex items-center justify-between text-xs text-muted-foreground">
-                      <span>StoryScout v0.1.0</span>
+                      <span>Story Scout 0.2</span>
                       <div className="flex items-center gap-4">
                         <Link href="/settings" className="hover:text-foreground transition-colors">
                           Einstellungen

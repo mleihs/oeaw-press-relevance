@@ -568,7 +568,7 @@ function PublicationRow({
                 <StatusBanner variant="success" icon={<Newspaper className="h-4 w-4 mt-0.5 shrink-0" />}>
                   <span className="font-medium">Bereits ÖAW-pressed</span>
                   {pub.press_release.released_at && <> am {pub.press_release.released_at}</>}
-                  {' '}—{' '}
+                  {' · '}
                   <a
                     href={pub.press_release.url}
                     target="_blank"

@@ -1,11 +1,11 @@
 ---
 title: Was läuft unter der Haube
-description: Tech-Stack-Übersicht für neugierige Nutzer:innen und Devs — Next.js + PostgreSQL + Drizzle + pgvector + SPECTER2.
+description: 'Tech-Stack-Übersicht für neugierige Nutzer:innen und Devs: Next.js + PostgreSQL + Drizzle + pgvector + SPECTER2.'
 ---
 
 import { Callout } from 'fumadocs-ui/components/callout';
 
-Kurz erklärt, mit welchen Bausteinen StoryScout gebaut ist. Für Devs,
+Kurz erklärt, mit welchen Bausteinen Story Scout gebaut ist. Für Devs,
 Power-User und alle, die wissen wollen, was zwischen Klick und
 Pub-Detail eigentlich passiert.
 
@@ -22,12 +22,12 @@ Pub-Detail eigentlich passiert.
 | Embedding | SPECTER2 (Allen AI) | Semantische Press-Similarity, lokal lauffähig |
 | ETL | TYPO3-MySQL → Postgres | WebDB-Import als UPSERT pro `webdb_uid` |
 
-## Drizzle ORM — typsicher statt Roh-SQL {#drizzle}
+## Drizzle ORM: typsicher statt Roh-SQL {#drizzle}
 
-StoryScout greift seit der Migration im Mai 2026 mit **Drizzle ORM** auf
+Story Scout greift seit der Migration im Mai 2026 mit **Drizzle ORM** auf
 die Datenbank zu. Vorher: rohe SQL-Strings, in TypeScript-Templates
 eingebettet. Risiko: Spaltennamen-Typos oder Schema-Drift werden erst
-zur Laufzeit entdeckt — typisch durch einen 500-Fehler in der UI.
+zur Laufzeit entdeckt, typischerweise durch einen 500-Fehler in der UI.
 
 Mit Drizzle wird das Datenbank-Schema im TypeScript-Code abgebildet
 (`lib/server/db/schema.ts`). Queries lesen sich wie normaler TS-Code:
@@ -43,7 +43,7 @@ const pub = await db.query.publications.findFirst({
 ```
 
 Der TypeScript-Compiler kennt das Schema und meldet bei `publications.titel`
-(statt `publications.title`) sofort einen Fehler — Stunden vor dem Deploy.
+(statt `publications.title`) sofort einen Fehler, Stunden vor dem Deploy.
 
 <Callout type="info">
 **Effekt für End-User:** weniger 500-Fehler durch Tipper im SQL,
@@ -57,17 +57,17 @@ Edge-Cases überhaupt entstehen.
 Schema-Änderungen leben in `supabase/migrations/` als nummerierte
 SQL-Dateien (`20260514000001_*.sql`). Beim Deploy spielt Supabase die
 neuen Migrations automatisch ein. Jede Migration ist **idempotent**, also
-neu-anwendbar ohne Schaden — wenn die Spalte schon existiert, passiert
+neu-anwendbar ohne Schaden. Wenn die Spalte schon existiert, passiert
 nichts.
 
 Architecture Decision Records (ADRs) in `docs/adr/` halten fest, warum
-bestimmte Entscheidungen so getroffen wurden — etwa „warum keine ISR"
+bestimmte Entscheidungen so getroffen wurden, etwa „warum keine ISR"
 (ADR 0009) oder „warum repository-layer über raw queries" (ADR 0008).
 
 ## RSC vs. Client Components {#rsc}
 
 Next.js 16 lässt jede Komponente entweder **serverseitig** (RSC,
-Default) oder **clientseitig** (`'use client'`) rendern. StoryScout
+Default) oder **clientseitig** (`'use client'`) rendern. Story Scout
 nutzt RSC, wo immer möglich:
 
 - **Server**: Datenladen, Dashboards, Pub-Listen, Hilfe-Artikel
@@ -77,13 +77,13 @@ Das spart Client-Bundle-Größe und macht Initial-Loads spürbar schneller.
 
 ## Weiterführend für Devs {#weiter}
 
-- `ARCHITECTURE_PLAN.md` — laufender Hardening-Plan
-- `docs/adr/` — Architecture Decision Records
-- `lib/server/db/schema.ts` — vollständiges Drizzle-Schema
-- `supabase/migrations/` — alle Schema-Migrationen in chronologischer Reihenfolge
+- `ARCHITECTURE_PLAN.md`: laufender Hardening-Plan
+- `docs/adr/`: Architecture Decision Records
+- `lib/server/db/schema.ts`: vollständiges Drizzle-Schema
+- `supabase/migrations/`: alle Schema-Migrationen in chronologischer Reihenfolge
 
 ## Verwandte Themen
 
-- [WebDB-Import](/help/pipeline/import) — wie der ETL läuft und warum Analyse-Daten erhalten bleiben
-- [SPECTER2-Embeddings](/help/datenquellen/specter2-embeddings) — das Embedding-Modell im Detail
-- [Anreicherungs-Pipeline](/help/pipeline/enrichment) — wie externe APIs angeschlossen werden
+- [WebDB-Import](/help/pipeline/import): wie der ETL läuft und warum Analyse-Daten erhalten bleiben
+- [SPECTER2-Embeddings](/help/datenquellen/specter2-embeddings): das Embedding-Modell im Detail
+- [Anreicherungs-Pipeline](/help/pipeline/enrichment): wie externe APIs angeschlossen werden

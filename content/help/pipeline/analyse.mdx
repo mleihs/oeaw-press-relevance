@@ -1,12 +1,12 @@
 ---
 title: Analyse-Pipeline
-description: Wie das Sprachmodell aus angereicherten Pubs StoryScores, Pitch-Material und Haikus erzeugt.
+description: Wie das Sprachmodell aus angereicherten Pubs Story Scores, Pitch-Material und Haikus erzeugt.
 ---
 
 import { Callout } from 'fumadocs-ui/components/callout';
 
 Die Analyse-Pipeline schickt angereicherte Publikationen an ein
-Sprachmodell und holt sich pro Pub den StoryScore, die fünf Dimensionen,
+Sprachmodell und holt sich pro Pub den Story Score, die fünf Dimensionen,
 einen Pitch-Vorschlag, einen Blickwinkel, eine Zielgruppe, eine Begründung
 und ein Haiku zurück.
 
@@ -45,7 +45,7 @@ Batch-Größe in den Einstellungen):
 ## Was nach dem Lauf passiert {#nach-dem-lauf}
 
 Sobald das Modell antwortet, wird die Pub mit dem neuen Status
-**Analyzed** markiert. Die Felder StoryScore, fünf Dimensionen, Pitch,
+**Analyzed** markiert. Die Felder Story Score, fünf Dimensionen, Pitch,
 Blickwinkel, Zielgruppe, Begründung, Haiku und die AI-Provenance
 (Modell-ID + Kosten) wandern in die `publications`-Tabelle.
 
@@ -66,6 +66,6 @@ Audit-Exports oder ad-hoc-Snapshots vor dem Re-Run.
 ## Verwandte Themen
 
 - [Anreicherungs-Pipeline](/help/pipeline/enrichment): was vor der Analyse passiert
-- [StoryScore](/help/scores/storyscore): wie der Score gebildet wird
+- [Story Score](/help/scores/storyscore): wie der Score gebildet wird
 - [Pitch-Felder](/help/scores/pitch-felder): was außer dem Score noch entsteht
 - [Einstellungen](/help/einstellungen/einstellungen): Batch-Größe und API-Schlüssel

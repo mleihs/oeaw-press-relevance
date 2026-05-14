@@ -463,7 +463,7 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <Brain className="h-4 w-4 text-brand" />
-              StoryScout Analyse
+              Story Scout Analyse
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
@@ -475,7 +475,7 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
               </div>
               <div>
                 <p className="font-medium text-lg flex items-center gap-1.5">
-                  StoryScore
+                  Story Score
                   <InfoBubble id="press_score" size="md" />
                 </p>
                 <p className="text-sm text-muted-foreground inline-flex items-center gap-1">

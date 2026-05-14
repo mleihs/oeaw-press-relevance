@@ -408,7 +408,7 @@ export function EnrichmentModal({
                 {status === 'idle' && 'Metadaten von CrossRef, OpenAlex, Unpaywall & Semantic Scholar abrufen.'}
                 {status === 'running' && `Verarbeite ${pubIndex + 1} / ${pubTotal} Publikationen...`}
                 {status === 'complete' && 'Enrichment abgeschlossen!'}
-                {status === 'cancelled' && `Enrichment abgebrochen — ${completed.length} von ${pubTotal} Publikationen verarbeitet.`}
+                {status === 'cancelled' && `Enrichment abgebrochen: ${completed.length} von ${pubTotal} Publikationen verarbeitet.`}
                 {status === 'error' && 'Fehler beim Enrichment.'}
               </DialogDescription>
             </div>

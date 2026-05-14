@@ -198,7 +198,7 @@ function PublicationTypeFacet({ filters, setFilters, lookups }: Props) {
     [lookups],
   );
   return (
-    <FacetSection title="Publikationstyp" explId="filter_publikationstyp" hint="26 Typen — Standard blendet Theses, Poster usw. aus.">
+    <FacetSection title="Publikationstyp" explId="filter_publikationstyp" hint="26 Typen; Standard blendet Theses, Poster usw. aus.">
       <VirtualizedMultiSelect
         items={items}
         value={filters.types}
@@ -218,7 +218,7 @@ function InstituteFacet({ filters, setFilters, lookups }: Props) {
     const filtered = filters.topUnitOnly ? all.filter((o) => o.is_research_unit) : all;
     return filtered.map((o) => ({
       value: o.id,
-      label: o.akronym_de ? `${o.akronym_de} — ${o.name_de}` : o.name_de,
+      label: o.akronym_de ? `${o.akronym_de}: ${o.name_de}` : o.name_de,
       sublabel: o.name_en ?? undefined,
     }));
   }, [lookups, filters.topUnitOnly]);

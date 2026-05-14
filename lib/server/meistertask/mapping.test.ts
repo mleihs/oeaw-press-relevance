@@ -108,12 +108,12 @@ describe('mapPublicationToTask', () => {
     expect(result.notes).not.toContain('## Begründung');
     expect(result.notes).not.toContain('## Haiku');
     // Footer must still be present.
-    expect(result.notes).toContain('**StoryScore:**');
+    expect(result.notes).toContain('**Story Score:**');
   });
 
-  it('formats StoryScore as integer percent', () => {
+  it('formats Story Score as integer percent', () => {
     const result = mapPublicationToTask(makePub({ press_score: 0.847 }), { appBaseUrl: BASE_URL });
-    expect(result.notes).toContain('**StoryScore:** 85%');
+    expect(result.notes).toContain('**Story Score:** 85%');
   });
 
   it('uses dash for missing DOI and shows DOI when present', () => {

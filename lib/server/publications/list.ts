@@ -42,6 +42,16 @@ const SORTABLE_COLUMNS: Record<string, AnyColumn> = {
   webdb_uid: publications.webdbUid,
   enrichment_status: publications.enrichmentStatus,
   analysis_status: publications.analysisStatus,
+  // 5 LLM dimensions — used by the dashboard radar's click-to-sort
+  // interaction so the user can re-order the Top-N panel by any single
+  // dimension. NULLS LAST is the default order direction in the query
+  // builder, so unanalysed pubs (null score on every dim) drop off the
+  // bottom and never poison the top of the list.
+  public_accessibility: publications.publicAccessibility,
+  societal_relevance: publications.societalRelevance,
+  novelty_factor: publications.noveltyFactor,
+  storytelling_potential: publications.storytellingPotential,
+  media_timeliness: publications.mediaTimeliness,
 };
 
 // Sentinel UUID guaranteed not to match any row — used when a pre-fetch

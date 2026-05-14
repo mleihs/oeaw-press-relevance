@@ -81,7 +81,7 @@ export async function analyzePublications(
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
         'HTTP-Referer': 'https://oeaw-press-relevance.vercel.app',
-        'X-Title': 'StoryScout',
+        'X-Title': 'Story Scout',
       },
       body: JSON.stringify({
         model,

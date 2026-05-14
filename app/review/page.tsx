@@ -296,7 +296,7 @@ const EMPTY_COPY: Record<Decision, { title: string; body: React.ReactNode }> = {
         <Link href="/publications" className="text-brand hover:underline">
           /publikationen
         </Link>
-        , um sie hier hinzuzufügen — oder warte, bis frisch analysierte Pubs eintreffen.
+        , um sie hier hinzuzufügen, oder warte, bis frisch analysierte Pubs eintreffen.
       </>
     ),
   },
@@ -310,7 +310,7 @@ const EMPTY_COPY: Record<Decision, { title: string; body: React.ReactNode }> = {
   },
   skip: {
     title: 'Nichts verworfen',
-    body: 'Skip-Pubs werden hier archiviert sichtbar — als Triage-Historie.',
+    body: 'Skip-Pubs werden hier als Triage-Historie archiviert sichtbar.',
   },
 };
 
@@ -344,7 +344,7 @@ function OnboardingBanner({ recent }: { recent: RecentResponse['recent'] }) {
                 Die Liste zeigt drei Kategorien zusammen: <strong>geflaggte</strong> Pubs aus dem
                 Team, <strong>ÖAW-Highlights</strong> der Institute und <strong>frische
                 Pubs</strong> mit hohem Score seit der letzten Sitzung. Pro Pub: Pitch / Hold /
-                Skip — sobald entschieden, wandert sie in den entsprechenden Tab oben.
+                Skip. Sobald entschieden, wandert sie in den entsprechenden Tab oben.
               </p>
             </div>
             {recent && <RecentSessionRecap recent={recent} />}
@@ -367,7 +367,7 @@ function RecentSessionRecap({ recent }: { recent: NonNullable<RecentResponse['re
       <span className="text-muted-foreground">
         Letzte Sitzung am <span className="font-medium text-foreground">{dateLabel}</span>
         {facilitator && <> mit <span className="font-medium text-foreground">{facilitator}</span></>}
-        {' '}—
+        :
       </span>
       {DECIDED_DECISIONS.map((d) => {
         const v = DECISION_VARIANTS[d];

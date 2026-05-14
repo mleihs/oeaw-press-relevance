@@ -51,6 +51,46 @@ const eslintConfig = defineConfig([
       ],
     },
   },
+  // Em-Dash-Gate für deutsche UI-Strings (KB-writing-style: keine em-dashes).
+  // Triggert auf "—" in String-Literals, JSX-Text und Template-Literals.
+  // Scope: UI-Code mit deutschen Strings (app/, components/, lib/client/,
+  // lib/shared/changelog.ts). NICHT lib/server/** (englische Server-Comments
+  // dürfen em-dashes haben) und NICHT scripts/** (Operations-Logs).
+  // Comments (JSDoc, //) sind im AST kein Literal/JSXText/TemplateElement und
+  // werden vom Selector korrekt nicht erfasst.
+  // MDX-Content (content/help/**) wird separat über `npm run check-em-dashes`
+  // geprüft (grep-basiert; MDX braucht eslint-plugin-mdx, das wir nicht haben).
+  {
+    files: [
+      "app/**/*.{ts,tsx}",
+      "components/**/*.{ts,tsx}",
+      "lib/client/**/*.{ts,tsx}",
+      "lib/shared/changelog.ts",
+    ],
+    // Test-Files raus: Vitest/Jest-Test-Beschreibungen sind konventionell
+    // englisch, und englische Texte dürfen em-dashes haben.
+    ignores: ["**/*.test.{ts,tsx}", "**/*.spec.{ts,tsx}"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "Literal[value=/\\u2014/]",
+          message:
+            "Em-Dash (—, U+2014) in deutschem UI-String nicht erlaubt. Bitte Komma, Doppelpunkt oder Punkt+Neusatz nutzen (siehe memory/kb_writing_style.md).",
+        },
+        {
+          selector: "JSXText[value=/\\u2014/]",
+          message:
+            "Em-Dash (—, U+2014) in deutschem JSX-Text nicht erlaubt. Bitte Komma, Doppelpunkt oder Punkt+Neusatz nutzen (siehe memory/kb_writing_style.md).",
+        },
+        {
+          selector: "TemplateElement[value.raw=/\\u2014/]",
+          message:
+            "Em-Dash (—, U+2014) in deutschem Template-Literal nicht erlaubt. Bitte Komma, Doppelpunkt oder Punkt+Neusatz nutzen (siehe memory/kb_writing_style.md).",
+        },
+      ],
+    },
+  },
   // Phase-2 architecture-boundaries hardening (Plan §6.3 + §6.6 step 5).
   // - Uses boundaries/dependencies (v6 rule name; element-types is the
   //   deprecated v5 name).

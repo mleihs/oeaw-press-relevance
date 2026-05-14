@@ -1,6 +1,7 @@
 import { getDashboardData } from '@/lib/server/dashboard/fetch';
 import {
   isDashboardPeriod,
+  parseSortBy,
   parseTopPubsLimit,
   type DashboardPeriod,
 } from '@/lib/shared/dashboard';
@@ -14,7 +15,11 @@ import { DashboardClient } from './_components/dashboard-client';
 export const dynamic = 'force-dynamic';
 
 interface PageProps {
-  searchParams: Promise<{ period?: string | string[]; topPubs?: string | string[] }>;
+  searchParams: Promise<{
+    period?: string | string[];
+    topPubs?: string | string[];
+    sortBy?: string | string[];
+  }>;
 }
 
 export default async function DashboardPage({ searchParams }: PageProps) {
@@ -25,8 +30,9 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   // over-reaching into stale material.
   const period: DashboardPeriod = isDashboardPeriod(rawPeriod) ? rawPeriod : 'month';
   const topPubsLimit = parseTopPubsLimit(sp.topPubs);
+  const sortBy = parseSortBy(sp.sortBy);
 
-  const data = await getDashboardData(period, topPubsLimit);
+  const data = await getDashboardData(period, topPubsLimit, sortBy);
 
-  return <DashboardClient data={data} period={period} />;
+  return <DashboardClient data={data} period={period} sortBy={sortBy} />;
 }

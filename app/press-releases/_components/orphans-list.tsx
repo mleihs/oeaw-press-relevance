@@ -69,7 +69,7 @@ export function PressReleasesOrphansList({ orphans }: { orphans: PressReleaseWit
       {orphans.length === 0 ? (
         <Card className="border-dashed">
           <CardContent className="p-8 text-center text-muted-foreground">
-            Keine ungebundenen Pressemitteilungen — alle DOIs sind zugeordnet.
+            Keine ungebundenen Pressemitteilungen. Alle DOIs sind zugeordnet.
           </CardContent>
         </Card>
       ) : (
@@ -249,8 +249,8 @@ function OrphanDetail({ pr }: { pr: PressRelease }) {
             ))}
           </div>
           <p className="text-[10px] text-muted-foreground mt-1">
-            Zuordnung über Nachname + Vornamen-Initial gegen die <code>persons</code>-Tabelle
-            — manuelle Verifikation empfohlen.
+            Zuordnung über Nachname + Vornamen-Initial gegen die <code>persons</code>-Tabelle.
+            Manuelle Verifikation empfohlen.
           </p>
         </div>
       )}

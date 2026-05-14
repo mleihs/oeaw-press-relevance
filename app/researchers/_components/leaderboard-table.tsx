@@ -164,7 +164,7 @@ export function LeaderboardTable({ rows, loading }: LeaderboardTableProps) {
                 </div>
 
                 <div role="cell" className="truncate text-xs text-muted-foreground">
-                  {row.oestat3_name_de || <span className="text-muted-foreground/50">—</span>}
+                  {row.oestat3_name_de || <span className="text-muted-foreground/50">–</span>}
                 </div>
 
                 <div role="cell" className="flex items-center gap-2">

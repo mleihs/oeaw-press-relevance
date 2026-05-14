@@ -82,7 +82,7 @@ export function Nav() {
     <header className="bg-brand shadow-md">
       <div className="mx-auto flex h-14 max-w-7xl items-center px-4">
         <Link href="/" className="mr-6 font-semibold text-lg text-white">
-          StoryScout
+          Story Scout
         </Link>
 
         {/* Desktop nav: groups separated by thin dividers */}
@@ -139,7 +139,7 @@ export function Nav() {
             >
               <SheetHeader className="px-4 pt-4 pb-2">
                 <SheetTitle className="text-white text-lg font-semibold">
-                  StoryScout
+                  Story Scout
                 </SheetTitle>
               </SheetHeader>
               <nav className="flex-1 flex flex-col gap-3 px-2 py-2 overflow-y-auto">

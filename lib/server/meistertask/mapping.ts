@@ -59,7 +59,7 @@ export function mapPublicationToTask(pub: TaskPublicationInput, opts: MapOptions
   if (pub.haiku) sections.push(`## Haiku\n${pub.haiku}`);
 
   const footerLines = [
-    `**StoryScore:** ${scorePercent}%`,
+    `**Story Score:** ${scorePercent}%`,
     `**Lead-Autor:in:** ${pub.lead_author ?? '–'}`,
     `**DOI:** ${pub.doi ?? '–'}`,
     ``,

@@ -1,15 +1,37 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import Image from 'next/image';
+import { CapybaraGlitch } from '@/components/capybara-glitch';
+import { AUTH_STORAGE_KEY, AUTH_SUCCESS_EVENT } from '@/lib/client/auth-events';
 
 // G1: Real auth via /api/auth/gate. The server compares against GATE_PASSWORD
 // (env-side only) and sets an HttpOnly cookie that the middleware checks on
 // every subsequent request. The password never lives in client JS anymore;
 // the only client responsibility is collecting it from the input.
-const STORAGE_KEY = 'storyscout-auth-marker';
 
 export function PasswordGate({ children }: { children: React.ReactNode }) {
+  // Local-dev bypass: skip the gate UI entirely. The server middleware is
+  // already pass-through when GATE_TOKEN isn't set (typical .env.local
+  // omits it). DevPassthrough still seeds the session marker + auth-event
+  // so post-auth consumers (e.g. dashboard's daily glitch) behave as if
+  // the user came through the gate normally. To re-test the gate locally,
+  // comment out this branch temporarily.
+  if (process.env.NODE_ENV === 'development') {
+    return <DevPassthrough>{children}</DevPassthrough>;
+  }
+
+  return <RealGate>{children}</RealGate>;
+}
+
+function DevPassthrough({ children }: { children: React.ReactNode }) {
+  useEffect(() => {
+    sessionStorage.setItem(AUTH_STORAGE_KEY, '1');
+    window.dispatchEvent(new CustomEvent(AUTH_SUCCESS_EVENT));
+  }, []);
+  return <>{children}</>;
+}
+
+function RealGate({ children }: { children: React.ReactNode }) {
   const [authenticated, setAuthenticated] = useState(false);
   const [checking, setChecking] = useState(true);
   const [password, setPassword] = useState('');
@@ -18,7 +40,7 @@ export function PasswordGate({ children }: { children: React.ReactNode }) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (sessionStorage.getItem(STORAGE_KEY) === '1') {
+    if (sessionStorage.getItem(AUTH_STORAGE_KEY) === '1') {
       setAuthenticated(true);
     }
     setChecking(false);
@@ -39,8 +61,9 @@ export function PasswordGate({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ password }),
       });
       if (res.ok) {
-        sessionStorage.setItem(STORAGE_KEY, '1');
+        sessionStorage.setItem(AUTH_STORAGE_KEY, '1');
         setAuthenticated(true);
+        window.dispatchEvent(new CustomEvent(AUTH_SUCCESS_EVENT));
       } else {
         setError(true);
         setShaking(true);
@@ -66,7 +89,7 @@ export function PasswordGate({ children }: { children: React.ReactNode }) {
   return (
     <>
       {/* Blurred app content behind. `inert` blocks ALL keyboard/AT
-          interaction (W6) — without this, sighted-keyboard and AT users
+          interaction (W6) without this, sighted-keyboard and AT users
           could tab through the ghost UI behind the gate. */}
       <div
         className="blur-md pointer-events-none select-none opacity-40"
@@ -79,18 +102,20 @@ export function PasswordGate({ children }: { children: React.ReactNode }) {
       {/* Gate overlay */}
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#f5f3ef]/80 dark:bg-background/80 backdrop-blur-sm">
         <div className="flex flex-col items-center w-full max-w-lg px-6">
-          {/* Capybara illustration */}
-          <div className="relative w-full max-w-md aspect-[16/10] mb-6">
-            <Image
-              src="/capybara-gate.png"
-              alt="Capybara-Türsteher vor der ÖAW"
-              fill
-              className="object-contain mix-blend-multiply"
-              priority
-            />
-          </div>
+          {/* Capybara boot sequence. Always plays on every gate-mount (the
+              gate only mounts when unauthenticated, so it's effectively
+              once-per-session). */}
+          <CapybaraGlitch
+            oldSrc="/capybara-gate-alpha.png"
+            cyberSrc="/capybara-gate-cyber-alpha.png"
+            oldAlt="Capybara-Türsteher vor der ÖAW"
+            cyberAlt="Capybara-Türsteher, Cyber-Edition"
+            play={true}
+            className="w-full max-w-md aspect-[16/10] mb-6"
+            priority
+          />
 
-          {/* Password form — minimal, sketch-aesthetic */}
+          {/* Password form, minimal sketch-aesthetic */}
           <form onSubmit={handleSubmit} className="w-full max-w-xs space-y-4">
             <div className={`relative ${shaking ? 'animate-shake' : ''}`}>
               <input
@@ -132,7 +157,7 @@ export function PasswordGate({ children }: { children: React.ReactNode }) {
             className="mt-8 text-xs text-muted-foreground/70 tracking-widest uppercase"
             style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}
           >
-            StoryScout &middot; ÖAW
+            Story Scout &middot; ÖAW
           </p>
         </div>
       </div>

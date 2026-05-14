@@ -1,12 +1,12 @@
 ---
 title: SPECTER2-Embeddings im Detail
-description: Wie StoryScout SPECTER2 von Allen AI nutzt, um Publikationen semantisch zu vergleichen — Modell, Training, Tooling, Self-Improvement-Loop.
+description: 'Wie Story Scout SPECTER2 von Allen AI nutzt, um Publikationen semantisch zu vergleichen: Modell, Training, Tooling, Self-Improvement-Loop.'
 ---
 
 import { Callout } from 'fumadocs-ui/components/callout';
 
 Die Press-Similarity-Bewertung steht und fällt mit dem Sprachmodell, das
-die semantische Distanz zwischen Publikationen berechnet. StoryScout nutzt
+die semantische Distanz zwischen Publikationen berechnet. Story Scout nutzt
 dafür **SPECTER2**, ein open-source Embedding-Modell vom Allen Institute
 for AI (AI2), das speziell für wissenschaftliche Texte trainiert wurde.
 
@@ -27,13 +27,13 @@ fachliche Nähe ein, nicht nur oberflächliche Wortähnlichkeit.
 
 Zwei wissenschaftliche Arbeiten haben SPECTER2 möglich gemacht:
 
-- **SPECTER (2020)** — *„SPECTER: Document-level Representation Learning
+- **SPECTER (2020)**: *„SPECTER: Document-level Representation Learning
   using Citation-informed Transformers"* von Arman Cohan, Sergey
   Feldman, Iz Beltagy, Doug Downey und Daniel S. Weld (ACL 2020).
   [arxiv:2004.07180](https://arxiv.org/abs/2004.07180). Hat den
   citation-based Contrastive-Learning-Ansatz erfunden, auf dem alle
   späteren Versionen aufbauen.
-- **SciRepEval / SPECTER2 (2022)** — *„SciRepEval: A Multi-Format
+- **SciRepEval / SPECTER2 (2022)**: *„SciRepEval: A Multi-Format
   Benchmark for Scientific Document Representations"* von Amanpreet
   Singh, Mike D'Arcy, Arman Cohan, Doug Downey, Sergey Feldman.
   [arxiv:2211.13308](https://arxiv.org/abs/2211.13308). Erweitert das
@@ -57,13 +57,13 @@ Das Training läuft in drei Schritten:
    zusammen und schiebt das Negative weg.
 3. **Multi-Task-Adapter (Version 2):** Statt einer einzigen
    Embedding-Funktion gibt es vier spezialisierte Adapter, die auf der
-   Basis dasselbe Backbone-Modell unterschiedlich nutzen — z. B. einen
+   Basis dasselbe Backbone-Modell unterschiedlich nutzen, z. B. einen
    für Suchanfragen, einen für Ähnlichkeitsproximity.
 
 <Callout type="info">
 **Wir nutzen die Proximity-Variante** (`allenai/specter2` als Adapter
 über `allenai/specter2_base` als Basis). Sie ist speziell für „Pub A
-ähnlich Pub B?"-Fragen optimiert — also genau unser Use-Case beim
+ähnlich Pub B?"-Fragen optimiert, also genau unser Use-Case beim
 Press-Similarity-Vergleich.
 </Callout>
 
@@ -85,18 +85,18 @@ Entscheidungen relevant ist. Open-source bedeutet außerdem: das Modell
 läuft lokal, ohne API-Kosten, ohne Daten-Lock-in, und ohne
 Datenschutz-Komplikationen beim Anreichern interner Publikationen.
 
-## Wie StoryScout SPECTER2 einsetzt {#einsatz}
+## Wie Story Scout SPECTER2 einsetzt {#einsatz}
 
 Die Pipeline lebt in `scripts/embeddings/`:
 
 ```
 scripts/embeddings/
-  compute-embeddings.py   Python-Skript — lädt Modell + Adapter via HuggingFace,
+  compute-embeddings.py   Python-Skript, lädt Modell + Adapter via HuggingFace,
                           embed-et eine konfigurierbare Pub-Menge, persistiert
                           die 768-dim Vektoren in `publication_embeddings`
                           (pgvector-Spalte).
   run-chunked.sh          Bash-Wrapper, der das Skript in Chunks von 400 Pubs
-                          aufruft — workaround für einen PyTorch-CPU-Memory-Leak,
+                          aufruft, workaround für einen PyTorch-CPU-Memory-Leak,
                           der sonst nach langen Läufen Speicher frisst.
   README.md               Operative Anleitung.
 ```
@@ -119,14 +119,14 @@ nach `publications.press_similarity`.
 **Warum k-NN-Average und nicht Centroid?** Empirisch klar besser. Ein
 einzelner Centroid-Vektor wird von dominanten Themen-Clustern verschoben
 und gibt seltenen Press-Themen zu wenig Gewicht. k-NN über die Top-5
-findet pro Pub die spezifisch nächstgelegenen Press-Anker — ΔAP +0,049 im
-Pressclusters-Vorhersage-Benchmark. Siehe die Analyse-Notiz im
+findet pro Pub die spezifisch nächstgelegenen Press-Anker (ΔAP +0,049
+im Pressclusters-Vorhersage-Benchmark). Siehe die Analyse-Notiz im
 `memory/centroid_vs_knn_lesson.md`.
 </Callout>
 
 ## Selbstlern-Mechanismus {#selbstlernen}
 
-SPECTER2 selbst wird **nicht** retrainiert — wir verwenden die Allen-AI-
+SPECTER2 selbst wird **nicht** retrainiert. Wir verwenden die Allen-AI-
 Gewichte unverändert. Das ist Absicht: das Modell ist auf Millionen
 wissenschaftlicher Paper trainiert, jede lokale Nach-Justage würde mehr
 zerstören als verbessern.
@@ -159,13 +159,13 @@ einbettet wie englische. Mittelfristig wäre ein multilinguales Modell wie
 
 ## Speicherung & Performance {#storage}
 
-- **Tabelle `publication_embeddings`** — eine Zeile pro Pub, Spalte
+- **Tabelle `publication_embeddings`**: eine Zeile pro Pub, Spalte
   `embedding vector(768)` via [pgvector](https://github.com/pgvector/pgvector).
-- **`source_text_hash`** — SHA-256 über Titel + Abstract. Beim
+- **`source_text_hash`**: SHA-256 über Titel + Abstract. Beim
   Refresh-Lauf überspringt das Skript Pubs, deren Text sich seit dem
   letzten Embedding nicht geändert hat. Spart ~95 % der Rechenzeit
   bei reinen Update-Läufen.
-- **Index** — pgvector unterstützt IVF-Flat und HNSW; in StoryScout
+- **Index**: pgvector unterstützt IVF-Flat und HNSW; in Story Scout
   läuft IVF mit `lists = 100`. Bei ~7.500 Pubs ist k-NN-Search im
   einstelligen Millisekunden-Bereich.
 
@@ -173,32 +173,32 @@ einbettet wie englische. Mittelfristig wäre ein multilinguales Modell wie
 
 **Modell & Paper**
 
-- [SPECTER2 auf HuggingFace](https://huggingface.co/allenai/specter2_base) — Model-Card mit Usage-Examples
-- [SPECTER2 Proximity Adapter](https://huggingface.co/allenai/specter2) — der spezifische Adapter, den wir laden
+- [SPECTER2 auf HuggingFace](https://huggingface.co/allenai/specter2_base): Model-Card mit Usage-Examples
+- [SPECTER2 Proximity Adapter](https://huggingface.co/allenai/specter2): der spezifische Adapter, den wir laden
 - [SPECTER (2020) Paper](https://arxiv.org/abs/2004.07180)
 - [SPECTER2 / SciRepEval Paper](https://arxiv.org/abs/2211.13308)
-- [Allen Institute for AI](https://allenai.org/) — der Forschungs-Hub hinter SPECTER, SciBERT, Semantic Scholar
+- [Allen Institute for AI](https://allenai.org/): der Forschungs-Hub hinter SPECTER, SciBERT, Semantic Scholar
 
 **Implementierungs-Toolkit**
 
-- [HuggingFace Transformers](https://huggingface.co/docs/transformers) — Lade-Library für das Basismodell
-- [AdapterHub](https://docs.adapterhub.ml/) — Adapter-Framework
+- [HuggingFace Transformers](https://huggingface.co/docs/transformers): Lade-Library für das Basismodell
+- [AdapterHub](https://docs.adapterhub.ml/): Adapter-Framework
   für die SPECTER2-Multi-Task-Variante
-- [pgvector](https://github.com/pgvector/pgvector) — PostgreSQL-Extension
+- [pgvector](https://github.com/pgvector/pgvector): PostgreSQL-Extension
   für Vektor-Spalten und HNSW/IVF-Indizes
-- [Semantic Scholar API](https://www.semanticscholar.org/product/api) —
+- [Semantic Scholar API](https://www.semanticscholar.org/product/api):
   Trainingsdaten-Quelle des Allen-AI-Korpus
 
 **Project-interne Referenzen**
 
-- `scripts/embeddings/README.md` — operative Anleitung
-- `scripts/embeddings/compute-embeddings.py` — der eigentliche
+- `scripts/embeddings/README.md`: operative Anleitung
+- `scripts/embeddings/compute-embeddings.py`: der eigentliche
   Inference-Code (~250 Zeilen)
-- `supabase/migrations/20260509000007_embedding_similarity.sql` —
+- `supabase/migrations/20260509000007_embedding_similarity.sql`:
   Schema + `refresh_embedding_pipeline()` SQL-Funktion
 
 ## Verwandte Themen
 
-- [Press-Similarity](/help/press-releases/press-similarity) — wie der Wert in die Pub-Bewertung einfließt
-- [StoryScore](/help/scores/storyscore) — die parallele inhaltliche Bewertung durch ein LLM
-- [Datenquellen-Übersicht](/help/datenquellen/quellen-uebersicht) — die externen APIs, die SPECTER2 mit Input versorgen
+- [Press-Similarity](/help/press-releases/press-similarity): wie der Wert in die Pub-Bewertung einfließt
+- [Story Score](/help/scores/storyscore): die parallele inhaltliche Bewertung durch ein LLM
+- [Datenquellen-Übersicht](/help/datenquellen/quellen-uebersicht): die externen APIs, die SPECTER2 mit Input versorgen

@@ -36,7 +36,11 @@ export function HaikuBlock({ haiku, model }: HaikuBlockProps) {
           style={{ fontFamily: 'var(--font-newsreader), Georgia, serif' }}
         >
           {lines.map((line, lineIdx) => (
-            <div key={lineIdx} className="block">
+            // whitespace-nowrap keeps each haiku line on exactly one visual
+            // line; without it the 7-syllable middle line wraps in narrower
+            // containers and the haiku looks like 4 lines (5-2-7-5) instead
+            // of the intended 5-7-5 structure.
+            <div key={lineIdx} className="block whitespace-nowrap">
               {line.split(/\s+/).map((word, wIdx) => {
                 const i = wordIndex++;
                 return (
@@ -55,7 +59,7 @@ export function HaikuBlock({ haiku, model }: HaikuBlockProps) {
         </div>
       </div>
       <div className="hidden border-l border-border pl-4 text-right text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70 md:block">
-        <p>5 — 7 — 5</p>
+        <p>5 · 7 · 5</p>
         {model && <p className="mt-1 normal-case tracking-normal text-muted-foreground/70">{model.split('/').pop()}</p>}
       </div>
     </section>

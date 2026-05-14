@@ -5,7 +5,7 @@ description: Die fünf Aggregate für das Ranking, von der robusten count_high b
 
 import { Callout } from 'fumadocs-ui/components/callout';
 
-Das Forscher:innen-Ranking aggregiert StoryScores einzelner Pubs zu
+Das Forscher:innen-Ranking aggregiert Story Scores einzelner Pubs zu
 Personen-Metriken. Fünf davon stehen als Sortier-Modi zur Verfügung. Jede
 beantwortet eine etwas andere Frage. Die Auswahl bestimmt, wer oben
 steht.
@@ -14,7 +14,7 @@ steht.
 
 **Formel:** `count(WHERE press_score ≥ 0.7)` im Zeitfenster.
 
-Wieviele Publikationen einer Person erreichen einen StoryScore von
+Wieviele Publikationen einer Person erreichen einen Story Score von
 mindestens 70 %? Das ist die **Default-Sortierung** der Rangliste und die
 robusteste Reliability-Metrik für „echte Pitch-Kandidat:innen".
 
@@ -25,7 +25,7 @@ nachweislich pressetaugliches Material publiziert.
 
 **Formel:** `sum(press_score)` im Zeitfenster.
 
-Summe aller StoryScores einer Person. Belohnt Volumen, auch viele
+Summe aller Story Scores einer Person. Belohnt Volumen, auch viele
 mittelmäßige Pubs ergeben eine hohe Summe.
 
 <Callout type="warn">
@@ -89,7 +89,7 @@ weighted_avg robust gegen Datenmengen-Änderungen.
 **Formel:** `count(*)` im Zeitfenster.
 
 Alle bewerteten Publikationen einer Person im Zeitraum, unabhängig vom
-StoryScore. Reine Volumen-Metrik. Nützlich, wenn die Frage nicht
+Story Score. Reine Volumen-Metrik. Nützlich, wenn die Frage nicht
 „pitch-tauglich" sondern „aktiv im Themenfeld" ist.
 
 ## Wann welche Metrik? {#wann-welche}

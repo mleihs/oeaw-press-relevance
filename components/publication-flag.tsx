@@ -235,7 +235,7 @@ export function PublicationFlag({ pubId, flagNotes, onChange, size = 'md', decis
             />
             {!reviewerName.trim() && (
               <p className="text-[10px] text-amber-600 dark:text-amber-400">
-                Kein Name in den Einstellungen — Eintrag wird als „{DEFAULT_REVIEWER_NAME}" gespeichert.
+                Kein Name in den Einstellungen, daher wird der Eintrag als „{DEFAULT_REVIEWER_NAME}" gespeichert.
               </p>
             )}
           </div>

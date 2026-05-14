@@ -109,7 +109,7 @@ export function PressReferenceCard({
                   <span>
                     SPECTER2 ist auf englischen Texten trainiert. Deutschsprachige
                     Pubs sind im Korpus selten und unter den historisch gepressten
-                    praktisch nicht vertreten — die Similarity hier ist nur
+                    praktisch nicht vertreten. Die Similarity hier ist nur
                     orientierend, nicht direkt vergleichbar.
                   </span>
                 </p>

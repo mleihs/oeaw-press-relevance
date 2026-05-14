@@ -25,7 +25,7 @@ Drei Bestandteile:
 - **Embedding-Modell:** SPECTER2 (Allen AI), trainiert auf
   wissenschaftlichen Texten. Vektor pro Pub aus Titel + Abstract.
 - **Press-Cluster:** Alle ÖAW-Pubs, die bereits eine Pressemitteilung
-  haben — sowohl die mit lokalem WebDB-Match als auch die ohne Match
+  haben, sowohl die mit lokalem WebDB-Match als auch die ohne Match
   (Pubs ohne Web-Freigabe, deren PR trotzdem aus dem ÖAW-Outreach
   stammt). Alle Beiträge im Cluster sind ÖAW-Output, kein externes
   Material.
@@ -48,12 +48,12 @@ Press-Cluster-Vorhersage.
 ## Wo sie greift {#greift}
 
 Im Pub-Detail erscheint Press-Similarity als zusätzliches Signal neben
-dem StoryScore. Hohe Werte (≥ 0,75) deuten darauf hin, dass die Pub
+dem Story Score. Hohe Werte (≥ 0,75) deuten darauf hin, dass die Pub
 thematisch in dieselbe Ecke wie bisherige Pitch-Erfolge fällt.
 
 <Callout type="info">
-Press-Similarity fließt **nicht** in den StoryScore ein. Sie ist ein
-**unabhängiges Signal**, zwei Pubs mit demselben StoryScore können sehr
+Press-Similarity fließt **nicht** in den Story Score ein. Sie ist ein
+**unabhängiges Signal**, zwei Pubs mit demselben Story Score können sehr
 unterschiedliche Press-Similarities haben.
 </Callout>
 
@@ -72,5 +72,5 @@ ein gutes Signal. Wer eine mit niedriger hat: nicht überinterpretieren.
 ## Verwandte Themen
 
 - [SPECTER2-Embeddings im Detail](/help/datenquellen/specter2-embeddings): Modell, Training, Selbstlern-Mechanismus, Toolset
-- [StoryScore](/help/scores/storyscore): das parallel laufende inhaltliche Signal
+- [Story Score](/help/scores/storyscore): das parallel laufende inhaltliche Signal
 - [Press-Releases-Seite](/help/press-releases/seiten-tour): wo der Press-Cluster herkommt

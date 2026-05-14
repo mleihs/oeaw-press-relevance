@@ -1,11 +1,11 @@
 ---
-title: StoryScore (Press-Relevanz)
+title: Story Score (Press-Relevanz)
 description: Wie der zentrale Press-Score gebildet wird, was die 5 Dimensionen bedeuten, und welche Drift-Korrekturen aus dem 872-Pub-Audit fließen.
 ---
 
 import { Callout } from 'fumadocs-ui/components/callout';
 
-Der **StoryScore** ist die zentrale Press-Relevanz-Bewertung einer Publikation,
+Der **Story Score** ist die zentrale Press-Relevanz-Bewertung einer Publikation,
 zwischen **0 und 100 %**. Er entsteht aus einer **gewichteten Summe** von fünf
 Dimensionen, die ein Sprachmodell (z.B. Claude Opus 4.7) auf Basis des
 verfügbaren Inhalts schätzt.
@@ -13,7 +13,7 @@ verfügbaren Inhalts schätzt.
 ## Formel
 
 ```text
-StoryScore =
+Story Score =
   0,20 · Verständlichkeit
 + 0,25 · Gesellschaftliche Relevanz
 + 0,20 · Neuheit
@@ -62,11 +62,51 @@ Datensatz) zeigte sich eine systematische Drift in vier Dimensionen:
 Netto lagen lokale Werte im Schnitt **+0,05 zu hoch**. Top-Overscores
 systematisch bei Buchrezensionen, Editorials, lokalen archäologischen Funden.
 
+## Was die echten Pitch-Entscheidungen verschoben haben
+
+Sobald genug Pitch- / Hold- / Skip-Entscheidungen gesammelt waren, ließ sich
+der Story Score gegen das tatsächliche redaktionelle Verhalten validieren:
+welche der fünf Dimensionen sagen am stärksten vorher, was die Pressestelle
+am Ende auswählt? Ergebnis aus dem Pitched-vs-Rejected-Vergleich:
+
+- **Neuheit + Erzählpotenzial tragen rund 75 %** der gesamten Vorhersagekraft.
+  Pubs mit hohen Werten auf diesen beiden Achsen werden überproportional oft
+  gepitcht.
+- **Gesellschaftliche Relevanz hat fast keinen Vorhersagewert.** Trotz
+  höchstem Gewicht (25 %) in der aktuellen Formel korreliert sie kaum mit
+  realen Pitch-Entscheidungen, weil sie sich über alle Pubs hinweg im
+  Mittelfeld konzentriert (Regression-to-Mean).
+- **Die fünf Dimensionen sind stark korreliert** (VIF 12 bis 32). Halo-Effekt:
+  das LLM verteilt eine implizite Gesamt-Einschätzung relativ uniform auf
+  alle Achsen. Einzelne Dimensions-Werte sind daher verrauscht, der
+  aggregierte Story Score ist robust.
+- **Blind Spot bei Grundlagen-Physik:** Sieben von zehn False-Negatives
+  (vom Press-Team gepitcht, aber Score zu niedrig) kamen aus dem IQOQI.
+  Quanten-Papers sind fachsprachlich abgeschottet, das LLM unterschätzt sie
+  systematisch.
+
+Daraus folgten zwei Anpassungen:
+
+1. **V2-Gewichtung in Vorbereitung:** höhere Anteile für Neuheit und
+   Erzählpotenzial, reduzierter Anteil für Gesellschaftliche Relevanz. Die
+   aktuelle Formel oben bleibt produktiv, bis die V2 freigegeben ist.
+2. **[SPECTER2-Embeddings](/help/datenquellen/specter2-embeddings) als zweite
+   Bewertungs-Achse:** semantische Nähe zum Press-Cluster ergänzt den
+   inhaltlichen Score. Die Embeddings sind fach-jargon-blind und fangen den
+   Quanten-Blind-Spot ab.
+
+<Callout type="info">
+Die Validierung lief über den `pitch_log` gegen die gewichtete Summe und gegen
+eine logistische Regression über die fünf rohen Dimensions-Werte. CV-AUC der
+LLM-Aggregation: 0,85. AP gegenüber dem Press-Baseline-Rate (8,8 %) auf
+0,114. Methodisch sauber genug, um daraus die V2-Empfehlung abzuleiten.
+</Callout>
+
 ## Was **nicht** einfließt
 
 <Callout type="info">
 Die `popular_science`- und `mahighlight`-Markierungen aus der WebDB fließen
-**nicht** in den StoryScore ein. Die Bewertung ist **inhaltsgetrieben**:
+**nicht** in den Story Score ein. Die Bewertung ist **inhaltsgetrieben**:
 sie misst, was *im Text steht*, nicht was *Institute selbst eingeordnet haben*.
 </Callout>
 
@@ -80,5 +120,5 @@ das mitmachen (≥ 0,85). Sonst widersprechen sich Pitch und Score.
 
 ## Verwandte Themen
 
-- [Was ist StoryScout?](/help/grundlagen/was-ist-storyscout): der gesamte Workflow
+- [Was ist Story Scout?](/help/grundlagen/was-ist-storyscout): der gesamte Workflow
 - [mahighlight](/help/badges/mahighlight): das oft missverstandene Eigen-Highlight-Flag

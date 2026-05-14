@@ -6,7 +6,7 @@ import {
   SIMILARITY_RANGE_MIN,
 } from '@/lib/shared/dashboard';
 
-// StoryScore histogram covers the full 0–100% range in 10 equal buckets.
+// Story Score histogram covers the full 0–100% range in 10 equal buckets.
 const SCORE_LABELS = [
   '0–10', '10–20', '20–30', '30–40', '40–50',
   '50–60', '60–70', '70–80', '80–90', '90–100',
@@ -31,8 +31,8 @@ interface Props {
 /**
  * Mirror histogram with two independent X-axes.
  *
- *   ▆▇█▇▆▅▄        ← StoryScore (grows up, axis: 0–100%)
- *   0  10 20 ...   ← StoryScore X-axis labels
+ *   ▆▇█▇▆▅▄        ← Story Score (grows up, axis: 0–100%)
+ *   0  10 20 ...   ← Story Score X-axis labels
  *   ━━━━━━━━━━━    ← divider
  *   70 73 76 ...   ← Press-Similarity X-axis labels
  *      ▂▄▆▇▅▃     ← Press-Similarity (grows down, axis: 70–100%)
@@ -60,7 +60,7 @@ export function ScoreDistributionChart({ scoreBuckets, similarityBuckets }: Prop
       <div className="flex items-center justify-end gap-4 text-[11px]" aria-hidden="true">
         <span className="inline-flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-sm bg-brand/85" />
-          <span className="text-muted-foreground">StoryScore (0–100 %)</span>
+          <span className="text-muted-foreground">Story Score (0–100 %)</span>
         </span>
         <span className="inline-flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-sm bg-purple-500/85" />
@@ -69,7 +69,7 @@ export function ScoreDistributionChart({ scoreBuckets, similarityBuckets }: Prop
       </div>
 
       <div className="space-y-px" aria-hidden="true">
-        {/* StoryScore — bars grow UP */}
+        {/* Story Score — bars grow UP */}
         <div className="flex items-end gap-1 h-28">
           {scoreBuckets.map((count, i) => {
             const targetHeight = (count / max) * 100;
@@ -95,7 +95,7 @@ export function ScoreDistributionChart({ scoreBuckets, similarityBuckets }: Prop
           })}
         </div>
 
-        {/* StoryScore X-axis labels — sit directly under the bars */}
+        {/* Story Score X-axis labels — sit directly under the bars */}
         <div className="flex gap-1">
           {SCORE_LABELS.map((label, i) => (
             <div
@@ -152,7 +152,7 @@ export function ScoreDistributionChart({ scoreBuckets, similarityBuckets }: Prop
       {/* AT-friendly equivalent of the visual chart */}
       <ul className="sr-only" aria-label="Score- und Similarity-Verteilung">
         {SCORE_LABELS.map((label, i) => (
-          <li key={`sa-${i}`}>StoryScore {label} %: {scoreBuckets[i] ?? 0} Publikationen</li>
+          <li key={`sa-${i}`}>Story Score {label} %: {scoreBuckets[i] ?? 0} Publikationen</li>
         ))}
         {SIMILARITY_LABELS.map((label, i) => (
           <li key={`pa-${i}`}>Press-Similarity {label} %: {similarityBuckets[i] ?? 0} Publikationen</li>

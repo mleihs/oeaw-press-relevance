@@ -124,7 +124,7 @@ export default function SettingsPage() {
             <div>
               <p className="font-medium mb-0.5">Server-konfiguriert</p>
               <p>
-                Supabase-Verbindung ist über Server-Env-Variablen (<code className="font-mono">SUPABASE_URL</code> + <code className="font-mono">SUPABASE_ANON_KEY</code>) gesetzt — der Browser kann die Verbindung nicht überschreiben. So ist sichergestellt, dass kein anonymer Besucher mit eigenem Key durch die App fragmentieren kann.
+                Supabase-Verbindung ist über Server-Env-Variablen (<code className="font-mono">SUPABASE_URL</code> + <code className="font-mono">SUPABASE_ANON_KEY</code>) gesetzt. Der Browser kann die Verbindung nicht überschreiben. So ist sichergestellt, dass kein anonymer Besucher mit eigenem Key durch die App fragmentieren kann.
               </p>
             </div>
           </div>

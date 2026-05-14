@@ -31,7 +31,7 @@ export function ExportDropdown() {
         <Button
           variant="outline"
           size="sm"
-          title="Exportiert alle analysierten Publikationen — die aktuell aktiven Filter werden NICHT angewendet."
+          title="Exportiert alle analysierten Publikationen. Die aktuell aktiven Filter werden NICHT angewendet."
         >
           <Download className="mr-2 h-4 w-4" />
           Exportieren

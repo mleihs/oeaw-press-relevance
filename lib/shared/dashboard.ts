@@ -42,3 +42,70 @@ export function parseTopPubsLimit(raw: string | string[] | undefined): number {
   if (Number.isNaN(n) || n <= 0) return TOP_PUBS_DEFAULT;
   return Math.min(n, TOP_PUBS_MAX);
 }
+
+// Top-Pubs sort order. The dashboard radar's click-to-sort interaction
+// flips this between `score` (the press_score weighted aggregate, default)
+// and one of the five raw LLM dimensions. Lives in shared so both the
+// URL parser (`app/page.tsx`) and the client subtree speak the same
+// strings without each side knowing the DB column names.
+export const DIMENSION_SORT_MAP = {
+  accessibility: 'public_accessibility',
+  relevance:     'societal_relevance',
+  novelty:       'novelty_factor',
+  storytelling:  'storytelling_potential',
+  timeliness:    'media_timeliness',
+} as const;
+
+export type DimensionSortKey = keyof typeof DIMENSION_SORT_MAP;
+export type DimensionDbKey  = (typeof DIMENSION_SORT_MAP)[DimensionSortKey];
+export type SortBy           = 'score' | DimensionSortKey;
+
+export const DIMENSION_SORT_KEYS = Object.keys(DIMENSION_SORT_MAP) as DimensionSortKey[];
+export const DIMENSION_DB_KEYS   = Object.values(DIMENSION_SORT_MAP) as DimensionDbKey[];
+
+export function isSortBy(value: unknown): value is SortBy {
+  if (value === 'score') return true;
+  return typeof value === 'string' && value in DIMENSION_SORT_MAP;
+}
+
+export function parseSortBy(raw: string | string[] | undefined): SortBy {
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  return isSortBy(value) ? value : 'score';
+}
+
+// Reverse map: DB column name → URL short key. Typed with DimensionDbKey on
+// both sides so a stray (non-dimension) string can't sneak in at compile time.
+// The radar's tick component receives the DB-column name and uses this to
+// dispatch the URL navigation in short-key form.
+export const DBKEY_TO_SORT_KEY: Record<DimensionDbKey, DimensionSortKey> = Object.fromEntries(
+  Object.entries(DIMENSION_SORT_MAP).map(([k, v]) => [v, k]),
+) as Record<DimensionDbKey, DimensionSortKey>;
+
+// German display labels for the heading pill and the per-pub badge when
+// the sort is active.
+export const SORT_BY_LABELS: Record<SortBy, string> = {
+  score:         'Story Score',
+  accessibility: 'Verständlichkeit',
+  relevance:     'Gesellschaftliche Relevanz',
+  novelty:       'Neuheit',
+  storytelling:  'Erzählpotenzial',
+  timeliness:    'Aktualität',
+};
+
+/**
+ * Build a dashboard URL preserving all non-default params. The period tabs,
+ * the „Mehr laden" link, and the radar's sort-toggle all route through here
+ * so changing one dimension doesn't silently reset the others.
+ */
+export function buildDashboardHref(params: {
+  period: DashboardPeriod;
+  topPubs: number;
+  sortBy: SortBy;
+}): string {
+  const sp = new URLSearchParams();
+  if (params.period !== 'month') sp.set('period', params.period);
+  if (params.topPubs !== TOP_PUBS_DEFAULT) sp.set('topPubs', String(params.topPubs));
+  if (params.sortBy !== 'score') sp.set('sortBy', params.sortBy);
+  const qs = sp.toString();
+  return qs ? `/?${qs}` : '/';
+}

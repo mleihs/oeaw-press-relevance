@@ -41,7 +41,7 @@ export default async function PressReleasesPage({
           Pressemitteilungen
         </h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Alle ÖAW-Pressemitteilungen mit DOI-Verweis — gematcht gegen die Publications-Datenbank
+          Alle ÖAW-Pressemitteilungen mit DOI-Verweis, entweder gematcht gegen die Publications-Datenbank
           oder als externe Referenz angereichert.
         </p>
       </div>
