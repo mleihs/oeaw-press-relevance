@@ -25,7 +25,10 @@ Drei Bestandteile:
 - **Embedding-Modell:** SPECTER2 (Allen AI), trainiert auf
   wissenschaftlichen Texten. Vektor pro Pub aus Titel + Abstract.
 - **Press-Cluster:** Alle ÖAW-Pubs, die bereits eine Pressemitteilung
-  haben, plus externe Co-Author-Pubs aus dem Orphan-Pool.
+  haben — sowohl die mit lokalem WebDB-Match als auch die ohne Match
+  (Pubs ohne Web-Freigabe, deren PR trotzdem aus dem ÖAW-Outreach
+  stammt). Alle Beiträge im Cluster sind ÖAW-Output, kein externes
+  Material.
 - **Cosinus-Ähnlichkeit:** Klassische Vektor-Geometrie. 1,0 = identische
   Richtung, 0 = orthogonal.
 

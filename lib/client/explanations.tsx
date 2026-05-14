@@ -1100,8 +1100,9 @@ export const EXPL = {
         <Para>
           Wie nah liegt diese Pub semantisch an dem, was die ÖAW-Pressestelle bisher
           pitchwürdig fand? Berechnet als mittlere Cosinus-Ähnlichkeit zu den fünf
-          nächsten Nachbarn im Press-Cluster (gepresste Papers plus externe
-          Co-Author-Pubs), Self-Match wird ausgeschlossen.
+          nächsten Nachbarn im Press-Cluster (alle gepressten ÖAW-Papers plus
+          Pubs ohne lokalen WebDB-Match, deren PR aus dem ÖAW-Outreach kommt).
+          Self-Match wird ausgeschlossen.
         </Para>
         <Para>
           Embedding-Modell: SPECTER2 über Titel und Abstract. Hohe Werte deuten auf
