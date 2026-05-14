@@ -10,6 +10,16 @@ export interface ChangelogEntry {
 // einsammeln, sobald die Liste über ~6 Einträge wächst.
 export const changelogEntries: ChangelogEntry[] = [
   {
+    title: 'SPECTER2-Embeddings als zweite Bewertungs-Achse',
+    body: 'Press-Similarity ist die SPECTER2-basierte semantische Nähe einer Pub zum historischen Press-Cluster — ein vom inhaltlichen StoryScore unabhängiges Signal. Eigene Hilfe-Section beschreibt Modell, Trainings-Paper (Cohan 2020, Singh 2022), Vergleich zu OpenAI/SBERT/SciNCL und den Press-Cluster-Lernloop ohne Modell-Retraining.',
+    href: '/help/datenquellen/specter2-embeddings',
+  },
+  {
+    title: 'Mirror-Diagramm: StoryScore + Press-Similarity',
+    body: 'Aus der StoryScore-Verteilung wurde ein Spiegel-Histogramm. Oben StoryScore (0–100 %), unten Press-Similarity (gezoomt auf 70–100 %, das SPECTER2-Cosinus-Band). Press-Similarity-Pille jetzt auch in der Top-Pubs-Liste sichtbar.',
+    href: '/help/dashboard/dashboard-tour#score-distribution',
+  },
+  {
     title: 'In-App-Hilfe-Center',
     body: 'Über 40 Artikel zu Scores, Filtern, Triage, Pipeline und Datenquellen. Alle Erklär-Bubbles enden mit einem „Mehr im Hilfe-Center →"-Link auf die Tiefen-Erklärung.',
     href: '/help',
@@ -23,16 +33,6 @@ export const changelogEntries: ChangelogEntry[] = [
     title: 'Top-20 Publikationen mit „Mehr laden"',
     body: 'Das Dashboard zeigt jetzt die Top 20 statt der Top 10 über die letzten 2 Monate. „Mehr laden" lädt in 20er-Schritten weitere Pubs nach, bis zu 200 Einträgen.',
     href: '/help/dashboard/dashboard-tour#top10',
-  },
-  {
-    title: 'Mirror-Diagramm: StoryScore + Press-Similarity',
-    body: 'Aus der StoryScore-Verteilung wurde ein Spiegel-Histogramm. Oben StoryScore (0–100 %), unten Press-Similarity (gezoomt auf 70–100 %, das SPECTER2-Cosinus-Band). Press-Similarity-Pille jetzt auch in der Top-Pubs-Liste sichtbar.',
-    href: '/help/dashboard/dashboard-tour#score-distribution',
-  },
-  {
-    title: 'SPECTER2 transparent gemacht',
-    body: 'Eigene Hilfe-Section beschreibt das Embedding-Modell, die Trainings-Paper (Cohan 2020, Singh 2022), warum SPECTER2 statt OpenAI oder SBERT, und den Press-Cluster-Lernloop ohne Modell-Retraining.',
-    href: '/help/datenquellen/specter2-embeddings',
   },
   {
     title: 'Pressemitteilungen aufgeräumt',
