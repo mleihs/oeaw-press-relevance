@@ -26,6 +26,16 @@ export const TOP_PUBS_DEFAULT = 20;
 export const TOP_PUBS_STEP = 20;
 export const TOP_PUBS_MAX = 200;
 
+// Press-Similarity histogram X-axis range. SPECTER2 cosine between two
+// scientific abstracts is naturally clustered in the upper band even for
+// thematically unrelated papers (min ≈ 0.80, max ≈ 0.95 on the live
+// dataset). A [0..1] X-axis would clump every bucket against the right
+// edge — zoom into [0.70..1.00] to show the actual shape. 0.70 is also
+// the project's `PRESS_SIMILARITY_BAND_MID` threshold, so the lower edge
+// is meaningful, not arbitrary.
+export const SIMILARITY_RANGE_MIN = 0.70;
+export const SIMILARITY_RANGE_MAX = 1.00;
+
 export function parseTopPubsLimit(raw: string | string[] | undefined): number {
   const value = Array.isArray(raw) ? raw[0] : raw;
   const n = value ? Number.parseInt(value, 10) : NaN;

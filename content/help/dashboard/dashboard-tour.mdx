@@ -65,20 +65,40 @@ Filter dafür.
 
 ## Verteilungen: StoryScore & Press-Similarity {#score-distribution}
 
-Spiegel-Histogramm mit gemeinsamer X-Achse (10 Buckets, 0 – 100 %).
+Spiegel-Histogramm mit zwei unabhängigen X-Achsen:
 
-- **Oben** wachsen die StoryScore-Balken: Press-Score aller analysierten
-  Pubs, gebucketet in 10er-Schritten.
-- **Unten** spiegelt die Press-Similarity-Verteilung: SPECTER2-basierte
-  semantische Nähe jeder Pub zum historischen Press-Cluster.
+- **Oben** wachsen die StoryScore-Balken (0 – 100 %): Press-Score aller
+  analysierten Pubs, gebucketet in 10er-Schritten.
+- **Unten** spiegelt die Press-Similarity-Verteilung (70 – 100 %,
+  gezoomt): SPECTER2-basierte semantische Nähe jeder Pub zum
+  historischen Press-Cluster.
 
-Beide Distributionen teilen die gleiche Y-Skala (gemeinsamer Max-Wert),
-damit Magnituden direkt vergleichbar sind. Bei einem gesunden Datensatz
-erwartet man einen StoryScore-Peak im 20 – 40 %-Bereich (typische
-Fachpaper) und einen langen Tail nach rechts (echte Pitch-Kandidaten).
-Die Similarity-Verteilung ist meist breiter, weil das Embedding für jede
-angereicherte Pub berechnet wird, unabhängig von der inhaltlichen
-Bewertung.
+Press-Similarity ist gezoomt, weil SPECTER2-Cosinus für wissenschaftliche
+Texte naturgemäß im 0,80 – 0,95-Band sitzt — eine ungezoomte 0 – 100 %-Achse
+würde alle Buckets gegen den rechten Rand drücken. Beide Distributionen
+teilen die gleiche Y-Skala, damit Magnituden direkt vergleichbar sind.
+
+### Warum der obere StoryScore-Bucket meist leer ist {#score-ceiling}
+
+Der 90 – 100 %-Bucket auf der StoryScore-Seite bleibt empirisch leer. Der
+höchste tatsächlich erreichte Score im Bestand liegt bei rund **0,82**.
+Grund ist die gewichtete 5-Dim-Formel:
+
+```text
+press_score =
+  0,20·Verständlichkeit + 0,25·Relevanz + 0,20·Neuheit
+  + 0,20·Erzählpotenzial + 0,15·Aktualität
+```
+
+Damit der Score ≥ 0,9 erreicht, müssten **alle fünf Dimensionen
+gleichzeitig** ≥ 0,9 sein — eine Kombination, die in der Realität nicht
+vorkommt. Typische Pubs haben eine starke Achse (z. B. hohe Neuheit) und
+mehrere mittlere (Verständlichkeit, Aktualität). Dazu kommt die
+systematische Drift-Korrektur aus dem 872-Pub-Audit, die Werte um etwa
+0,05 nach unten ziehen kann.
+
+**Lesart für die Pressestelle:** Schon ein Score von 70 % ist solide
+Pitch-Substanz, 80 % außergewöhnlich.
 
 ## Dimensions-Profil {#dim-profil}
 

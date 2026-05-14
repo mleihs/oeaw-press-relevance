@@ -583,20 +583,22 @@ export const EXPL = {
     body: (
       <>
         <Para>
-          Spiegel-Histogramm mit gemeinsamer X-Achse (10 Buckets, 0 – 100 %).
-          Oben wachsen die <strong>StoryScore</strong>-Balken: Press-Score
-          aller analysierten Pubs in 10er-Buckets. Unten spiegelt die
-          <strong> Press-Similarity</strong>-Verteilung — die SPECTER2-basierte
-          semantische Nähe jeder Pub zum historischen Press-Cluster.
+          Spiegel-Histogramm mit zwei unabhängigen X-Achsen: oben wachsen die
+          <strong> StoryScore</strong>-Balken (0 – 100 %), unten spiegelt die
+          <strong> Press-Similarity</strong>-Verteilung (70 – 100 %, gezoomt,
+          weil SPECTER2-Cosinus naturgemäß in diesem Band sitzt). Beide
+          Distributionen teilen die gleiche Y-Skala, damit Magnituden direkt
+          vergleichbar sind.
         </Para>
         <Para>
-          Beide Distributionen teilen die gleiche Y-Skala (gemeinsamer Max-Wert),
-          damit man Magnituden direkt vergleichen kann. Bei einem gesunden
-          Datensatz erwartet man einen StoryScore-Peak im 20 – 40 %-Bereich
-          (typische Fachpaper) und einen langen Tail nach rechts (Pitch-Kandidaten).
-          Die Similarity-Verteilung ist meist breiter, weil das Embedding für
-          jede angereicherte Pub berechnet wird, unabhängig von der inhaltlichen
-          Bewertung.
+          <strong>Empirische Score-Decke:</strong> Der obere StoryScore-Bucket
+          (90 – 100 %) ist im Datensatz leer. Der höchste tatsächlich erreichte
+          Score liegt bei rund 0,82. Grund: die gewichtete 5-Dim-Formel
+          erzwingt für ≥ 90 % praktisch alle Dimensionen gleichzeitig ≥ 0,9 —
+          eine Kombination, die empirisch nicht vorkommt (typische Pubs haben
+          eine starke Achse und mehrere mittlere). Plus eine systematische
+          Drift-Korrektur (~0,05 nach unten) aus dem 872-Pub-Audit. Lesart:
+          70 % ist schon sehr gut, 80 % außergewöhnlich.
         </Para>
       </>
     ),

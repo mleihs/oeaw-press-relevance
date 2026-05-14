@@ -5,7 +5,11 @@ import {
   type PublicationListItem,
 } from '@/lib/server/publications/list';
 import { listPressReleases } from '@/lib/server/press-releases/list';
-import type { DashboardPeriod } from '@/lib/shared/dashboard';
+import {
+  SIMILARITY_RANGE_MAX,
+  SIMILARITY_RANGE_MIN,
+  type DashboardPeriod,
+} from '@/lib/shared/dashboard';
 
 function publishedAfter(period: DashboardPeriod): string | null {
   if (period === 'all') return null;
@@ -58,18 +62,19 @@ export type DashboardStats = {
   top_keywords: { word: string; count: number }[];
 };
 
-// Press-similarity histogram. Mirrors the shape of `score_distribution` (10
-// equal-width buckets across 0..1) and matches its scope: any pub with the
-// metric set, no archive/eligibility filter — the existing score_stats SQL
-// function chose the same scope so the two histograms render against
-// comparable universes.
+// Press-similarity histogram. 10 equal-width buckets across the meaningful
+// SPECTER2-cosine band [SIMILARITY_RANGE_MIN, SIMILARITY_RANGE_MAX] — a full
+// [0..1] axis would clump all data against the right edge (live values sit
+// in ≈ 0.80–0.95). Same scope as score_distribution: any pub with the metric
+// set, no archive/eligibility filter.
 async function getSimilarityDistribution(): Promise<number[]> {
-  // `width_bucket(value, lo, hi, n)` returns 1..n for in-range values and 0 /
-  // n+1 for under/overflow. We clamp the overflow bucket (1.0 exactly) into
-  // bucket 10 with LEAST so the histogram has 10 cells, indices 0..9.
+  // `width_bucket(value, lo, hi, n)` returns 1..n for in-range, 0 / n+1 for
+  // under/overflow. Clamp both edges with GREATEST/LEAST so a future outlier
+  // outside the [MIN, MAX] band still lands inside the 10-cell histogram
+  // rather than vanishing.
   const rows = await db.execute<{ bucket: number; count: number }>(sql`
     SELECT
-      LEAST(width_bucket(press_similarity, 0::float8, 1::float8, 10), 10) AS bucket,
+      GREATEST(LEAST(width_bucket(press_similarity, ${SIMILARITY_RANGE_MIN}::float8, ${SIMILARITY_RANGE_MAX}::float8, 10), 10), 1) AS bucket,
       count(*)::int AS count
     FROM publications
     WHERE press_similarity IS NOT NULL

@@ -1,6 +1,7 @@
 {
   "title": "Datenquellen",
   "pages": [
-    "quellen-uebersicht"
+    "quellen-uebersicht",
+    "specter2-embeddings"
   ]
 }

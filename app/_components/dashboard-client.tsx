@@ -369,7 +369,9 @@ export function DashboardClient({ data, period }: DashboardClientProps) {
               <InfoBubble id="score_distribution_chart" size="md" />
             </CardTitle>
             <p className="text-xs text-muted-foreground mt-1">
-              Inhaltsbewertung (oben) vs. semantische Nähe zum Press-Cluster (unten)
+              Inhaltsbewertung (oben, 0–100 %) vs. semantische Nähe zum Press-Cluster
+              (unten, gezoomt auf 70–100 %, weil SPECTER2-Cosinus naturgemäß in
+              diesem Band sitzt)
             </p>
           </CardHeader>
           <CardContent>
