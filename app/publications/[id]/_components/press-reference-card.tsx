@@ -166,7 +166,7 @@ function SimilarRow({ item }: { item: SimilarPressed }) {
             <ExternalLink className="h-3 w-3 text-purple-500/70 dark:text-purple-400/70 shrink-0 transition-transform group-hover:translate-x-0.5" />
           </TooltipTrigger>
           <TooltipContent side="top" className="max-w-xs text-xs">
-            Externe Pressemitteilung — Paper nicht in WebDB, Link öffnet die ÖAW-Newsseite.
+            ÖAW-Pressemitteilung; das zugehörige Paper liegt noch nicht in der WebDB. Link öffnet die ÖAW-Newsseite.
           </TooltipContent>
         </Tooltip>
       ) : (

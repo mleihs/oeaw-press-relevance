@@ -103,7 +103,7 @@ function PressReleaseRow({
             </span>
             <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300 px-1.5 py-0.5 text-[10px] font-medium ring-1 ring-inset ring-amber-200 dark:ring-amber-500/30">
               <AlertCircle className="h-2.5 w-2.5" />
-              Externe Referenz
+              Pub noch nicht in WebDB
             </span>
           </div>
         )}

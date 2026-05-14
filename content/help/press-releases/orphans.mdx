@@ -1,40 +1,43 @@
 ---
-title: Externe Pressemitteilungen
-description: Pressemitteilungen ohne Pub-Match, warum es sie gibt, wie sie zugeordnet werden, und welche Heuristik dabei hilft.
+title: ÖAW-Pressemitteilungen ohne Pub-Match
+description: Reguläre ÖAW-Pressemitteilungen, deren zugehöriges Paper lokal noch nicht in der WebDB liegt. Warum das passiert und wie sich der Match später automatisch herstellt.
 ---
 
 import { Callout } from 'fumadocs-ui/components/callout';
 
-Eine ÖAW-Pressemitteilung wird als „extern" (Orphan) geführt, wenn ihre
-DOI sich keinem Publikations-Datensatz in der lokalen Datenbank zuordnen
-lässt. Das heißt nicht, dass die Pressemitteilung obsolet wäre, meist
-fehlt nur das zugehörige Paper noch in der WebDB.
+Eine ÖAW-Pressemitteilung wird in der App als „ohne Pub-Match" geführt,
+wenn ihre DOI sich keinem Publikations-Datensatz in der lokalen Datenbank
+zuordnen lässt. **Die Pressemitteilung selbst ist nicht „extern"** — sie
+stammt vollständig aus dem ÖAW-Outreach. Es fehlt nur das zugehörige
+Paper im lokalen Datensatz.
 
-## Warum es Orphans gibt {#warum-orphans}
+## Warum es Pub-Lücken gibt {#warum-orphans}
 
-Häufige Gründe:
+Die häufigste Ursache ist nicht-technisch, sondern redaktionell:
 
-- **ÖAW-Co-Authorship statt Lead-Authorship.** Die WebDB erfasst primär
-  Lead-Authorships. Wenn ein:e ÖAW-Forscher:in nur als Co-Autor:in an
-  einem Paper beteiligt ist und das Lead-Institut extern liegt, kommt
-  das Paper nicht in den WebDB-Import.
-- **Paper noch nicht in der WebDB.** Manche Pubs erscheinen mit einigem
-  zeitlichen Abstand zum Press-Release. Bis zum nächsten WebDB-Import
-  sind sie also „extern".
+- **Web-Freigabe-Status.** Diverse Institute geben ihre Publikationen
+  intern **nicht für die Web-Anzeige frei**. Solche Pubs **landen erst
+  gar nicht in der WebDB** — also auch nicht im lokalen Datenstand von
+  StoryScout. Die ÖAW-Pressestelle veröffentlicht die zugehörige PR
+  trotzdem, sie ist nicht an die Web-Freigabe gebunden.
+- **Zeitlicher Versatz.** Manche Pubs erscheinen mit einigem zeitlichen
+  Abstand zum Press-Release oder werden erst nach dem letzten WebDB-Import
+  in die WebDB eingetragen. Bis zum nächsten Import bleibt das Paper
+  lokal unverknüpft.
 - **DOI-Fehler.** Selten, aber möglich: die DOI im
   `event_information`-Feld der Pressemitteilung ist falsch hinterlegt
   oder existiert nicht.
 
 ## Wie Metadaten nachgereicht werden {#metadaten}
 
-Für jeden Orphan zieht die App Metadaten aus **OpenAlex** und
+Für jeden Pub-losen Eintrag zieht die App Metadaten aus **OpenAlex** und
 **CrossRef**: Titel, Abstract, Autor:innen-Liste, Journal,
-Veröffentlichungsdatum. So lassen sich Orphans inhaltlich einschätzen,
-auch wenn das Paper selbst nicht in der lokalen WebDB liegt.
+Veröffentlichungsdatum. So lassen sich die Einträge inhaltlich
+einschätzen, auch wenn das Paper selbst nicht im lokalen Datensatz liegt.
 
 ## Die Beteiligungs-Heuristik {#heuristik}
 
-Pro Orphan läuft eine **Nachnamens-Heuristik**: alle Autor:innen-Namen
+Pro Eintrag läuft eine **Nachnamens-Heuristik**: alle Autor:innen-Namen
 werden gegen die `persons`-Tabelle gematcht (Nachname plus
 Vornamen-Initial). Bei einem Treffer wird die Pressemitteilung als
 „mutmaßliche ÖAW-Beteiligung" markiert und der vermutete Match wird im
@@ -43,22 +46,24 @@ aufgeklappten Panel angezeigt.
 <Callout type="warn">
 **Manuelle Verifikation empfohlen.** Nachnamens-Match schließt Homonyme
 nicht aus, zwei Personen mit demselben Nachnamen und Vornamen-Initial
-können fälschlich zugeordnet werden. Vor einer Pitch-Aktion gegen einen
-ÖAW-Co-Autor lieber kurz prüfen, ob der Match wirklich passt.
+können fälschlich zugeordnet werden. Vor einer Pitch-Aktion lieber kurz
+prüfen, ob der Match wirklich passt.
 </Callout>
 
-## Wie aus Orphans Matches werden {#match-werden}
+## Wie aus „ohne Pub-Match" Matches werden {#match-werden}
 
-Sobald das Paper später ins WebDB importiert wird, übernimmt der
-Match-Job die Zuordnung **automatisch**. Die Pressemitteilung wandert vom
-Tab „Ohne Pub-Match" in den Tab „Mit Pub-Match", und die zugehörige Pub
+Sobald die Pub freigegeben oder nachgereicht und beim nächsten Import
+übernommen wird, verknüpft `promote_press_release_orphans()` die
+Pressemitteilung **automatisch** mit der Pub. Sie wandert vom Tab
+„Ohne Pub-Match" in den Tab „Mit Pub-Match", und die zugehörige Pub
 bekommt das Badge „Bereits ÖAW-Pressemitteilung".
 
-Das ist die elegante Seite des Match-Designs: Orphans sind kein
-Verwaltungsaufwand, sie lösen sich von selbst auf, sobald die WebDB
-nachgezogen hat.
+Das ist die elegante Seite des Match-Designs: nicht-gematchte
+Pressemitteilungen sind kein Verwaltungsaufwand, sie lösen sich von
+selbst auf, sobald die WebDB nachgezogen hat.
 
 ## Verwandte Themen
 
-- [Press-Releases-Seite](/help/press-releases/seiten-tour): wo Orphans im UI sichtbar werden
+- [Press-Releases-Seite](/help/press-releases/seiten-tour): wo „ohne Pub-Match" im UI sichtbar wird
 - [Bereits ÖAW-Pressemitteilung](/help/badges/press-release-badge): was nach dem Match passiert
+- [WebDB-Import](/help/pipeline/import): wann + wie Pubs in den lokalen Datenbestand wandern

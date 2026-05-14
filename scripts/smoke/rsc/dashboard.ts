@@ -29,9 +29,12 @@ function assert(cond: unknown, msg: string): asserts cond {
   }
 }
 
+// Mirror app/page.tsx default — keep smoke assertions in sync with the UI.
+const SMOKE_LIMIT = 20;
+
 async function main() {
   // 1. Default period
-  const month = await getDashboardData('month');
+  const month = await getDashboardData('month', SMOKE_LIMIT);
   assert(month.stats.total >= 0, 'month stats.total negative');
   assert(month.stats.analyzed >= 0, 'month stats.analyzed negative');
   assert(month.stats.high_score_count >= 0, 'month stats.high_score_count negative');
@@ -48,57 +51,65 @@ async function main() {
   assert(month.pressReleasedCount >= 0, 'pressReleasedCount negative');
   assert(month.orphansCount >= 0, 'orphansCount negative');
   assert(
-    month.topPubs.length <= 10,
-    `topPubs.length ${month.topPubs.length} > 10`,
+    month.topPubs.length <= SMOKE_LIMIT,
+    `topPubs.length ${month.topPubs.length} > ${SMOKE_LIMIT}`,
+  );
+  assert(
+    month.topPubsTotal >= month.topPubs.length,
+    `topPubsTotal ${month.topPubsTotal} < topPubs.length ${month.topPubs.length}`,
+  );
+  assert(
+    month.topPubsLimit === SMOKE_LIMIT,
+    `topPubsLimit ${month.topPubsLimit} !== requested ${SMOKE_LIMIT}`,
   );
   for (const pub of month.topPubs) {
     assert(
       pub.analysis_status === 'analyzed',
-      `top-10 row ${pub.id} analysis_status=${pub.analysis_status} (must be analyzed)`,
+      `top-pub row ${pub.id} analysis_status=${pub.analysis_status} (must be analyzed)`,
     );
     assert(
       pub.popular_science !== true,
-      `top-10 row ${pub.id} popular_science=true (filter says false)`,
+      `top-pub row ${pub.id} popular_science=true (filter says false)`,
     );
   }
-  // Top-10 must be sorted by press_score desc — non-null block first.
+  // Top-N must be sorted by press_score desc — non-null block first.
   let lastScore: number | null = null;
   for (const pub of month.topPubs) {
     if (pub.press_score === null) continue;
     if (lastScore !== null) {
       assert(
         pub.press_score <= lastScore,
-        `top-10 not sorted desc: ${pub.press_score} > ${lastScore} for ${pub.id}`,
+        `top-pubs not sorted desc: ${pub.press_score} > ${lastScore} for ${pub.id}`,
       );
     }
     lastScore = pub.press_score;
   }
   console.log(
     `  ok: month stats total=${month.stats.total} analyzed=${month.stats.analyzed} highScore=${month.stats.high_score_count} `
-      + `top10=${month.topPubs.length} flagged=${month.flaggedCount} pressed=${month.pressReleasedCount} orphans=${month.orphansCount}`,
+      + `topPubs=${month.topPubs.length}/${month.topPubsTotal} flagged=${month.flaggedCount} pressed=${month.pressReleasedCount} orphans=${month.orphansCount}`,
   );
 
-  // 2. period='all' — top-10 covers the universe (≥ any narrower window)
-  const all = await getDashboardData('all');
+  // 2. period='all' — top-N covers the universe (≥ any narrower window)
+  const all = await getDashboardData('all', SMOKE_LIMIT);
   assert(
     all.stats.total === month.stats.total,
     `'all' stats.total ${all.stats.total} !== 'month' stats.total ${month.stats.total} (stats are period-independent)`,
   );
   assert(
     all.topPubs.length >= month.topPubs.length,
-    `'all' top-10 count ${all.topPubs.length} < 'month' top-10 count ${month.topPubs.length} (widening window must not shrink)`,
+    `'all' top-N count ${all.topPubs.length} < 'month' top-N count ${month.topPubs.length} (widening window must not shrink)`,
   );
-  console.log(`  ok: all top10=${all.topPubs.length} (≥ month=${month.topPubs.length})`);
+  console.log(`  ok: all topPubs=${all.topPubs.length}/${all.topPubsTotal} (≥ month=${month.topPubs.length})`);
 
-  // 3. period='week' — narrower, top-10 may be smaller, structurally same
-  const week = await getDashboardData('week');
+  // 3. period='week' — narrower, top-N may be smaller, structurally same
+  const week = await getDashboardData('week', SMOKE_LIMIT);
   assert(
-    week.topPubs.length <= 10,
-    `week top-10 length ${week.topPubs.length} > 10`,
+    week.topPubs.length <= SMOKE_LIMIT,
+    `week top-N length ${week.topPubs.length} > ${SMOKE_LIMIT}`,
   );
   assert(
     week.topPubs.length <= all.topPubs.length,
-    `week top-10 ${week.topPubs.length} > all top-10 ${all.topPubs.length} (narrower window must not grow)`,
+    `week top-N ${week.topPubs.length} > all top-N ${all.topPubs.length} (narrower window must not grow)`,
   );
   console.log(`  ok: week top10=${week.topPubs.length} (≤ all=${all.topPubs.length})`);
 

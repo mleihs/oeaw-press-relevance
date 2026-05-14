@@ -45,15 +45,17 @@ export function PressReleasesOrphansList({ orphans }: { orphans: PressReleaseWit
           <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
           <div className="text-sm text-amber-900 dark:text-amber-200">
             <p className="font-medium inline-flex items-center gap-1">
-              Externe Pressemitteilungen ohne WebDB-Eintrag
+              ÖAW-Pressemitteilungen ohne Pub-Match
               <InfoBubble id="orphan_press_release" size="sm" />
             </p>
             <p className="mt-1 text-amber-800/90 dark:text-amber-200/80 leading-relaxed">
-              {orphans.length} Pressemitteilungen mit DOI-Verweis, deren zugehörige Publikation
-              nicht in der WebDB-Datenbank verzeichnet ist. Häufig sind ÖAW-Personen als
-              Co-Author beteiligt — die WebDB erfasst aber nur Lead-Authorships zuverlässig.
-              Sobald das Paper importiert wird, übernimmt <code>promote_press_release_orphans()</code>
-              die Zuordnung automatisch. Metadaten via OpenAlex / CrossRef.
+              {orphans.length} ÖAW-Pressemitteilungen mit DOI-Verweis, deren zugehörige
+              Publikation (noch) nicht in der WebDB verzeichnet ist. Häufigste Ursache:
+              das publizierende Institut hat die Pub intern nicht für die Web-Anzeige
+              freigegeben, daher landet sie gar nicht erst in der WebDB. Sobald die Pub
+              freigegeben und beim nächsten Import übernommen wird, verknüpft
+              <code> promote_press_release_orphans()</code> die Zuordnung automatisch.
+              Metadaten via OpenAlex / CrossRef.
               {enrichedCount > 0 && (
                 <span className="ml-1 opacity-70">
                   {' '}({enrichedCount} vollständig, {partialCount} teilweise angereichert)

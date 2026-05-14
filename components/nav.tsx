@@ -42,16 +42,16 @@ const NAV_GROUPS: NavGroup[] = [
     links: [{ href: '/', label: 'Dashboard', icon: BarChart3 }],
   },
   {
-    title: 'Workflow',
-    links: [{ href: '/review', label: 'Triage', icon: ClipboardCheck }],
-  },
-  {
     title: 'Bibliothek',
     links: [
       { href: '/publications', label: 'Publikationen', icon: BookOpen },
       { href: '/press-releases', label: 'Pressemitteilungen', icon: Newspaper },
       { href: '/researchers', label: 'Forscher:innen', icon: Users },
     ],
+  },
+  {
+    title: 'Workflow',
+    links: [{ href: '/review', label: 'Triage', icon: ClipboardCheck }],
   },
   {
     title: 'System',

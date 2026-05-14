@@ -11,7 +11,10 @@ function publishedAfter(period: DashboardPeriod): string | null {
   if (period === 'all') return null;
   const d = new Date();
   if (period === 'week') d.setDate(d.getDate() - 7);
-  else if (period === 'month') d.setMonth(d.getMonth() - 1);
+  // The 'month' bucket is the default dashboard period and intentionally
+  // covers the trailing two months — the analyzed pool in a single calendar
+  // month is typically too thin (single digits) to fill the Top-N panel.
+  else if (period === 'month') d.setMonth(d.getMonth() - 2);
   else if (period === 'year') d.setFullYear(d.getFullYear() - 1);
   return d.toISOString().slice(0, 10);
 }
@@ -74,14 +77,18 @@ async function getStats(defaultEligible: boolean): Promise<DashboardStats> {
   };
 }
 
-async function getTopPubs(period: DashboardPeriod): Promise<PublicationListItem[]> {
-  // Top-10 = what should the press team pitch? Pop-Science excluded because
-  // those papers are already outreach; ITA subtree excluded because handled
-  // by their own communications. `default_eligible=true` filters out theses
-  // and posters.
+async function getTopPubs(
+  period: DashboardPeriod,
+  limit: number,
+): Promise<{ pubs: PublicationListItem[]; total: number }> {
+  // What should the press team pitch? Pop-Science excluded because those
+  // papers are already outreach; ITA subtree excluded because handled by
+  // their own communications. `default_eligible=true` filters out theses
+  // and posters. `limit` is page-size, set by the caller — default 20 with
+  // a "Mehr laden" UI lifting it in 20-row chunks.
   const params = new URLSearchParams({
     page: '1',
-    pageSize: '10',
+    pageSize: String(limit),
     sort: 'press_score',
     order: 'desc',
     analysis_status: 'analyzed',
@@ -92,7 +99,7 @@ async function getTopPubs(period: DashboardPeriod): Promise<PublicationListItem[
   const after = publishedAfter(period);
   if (after) params.set('published_after', after);
   const res = await listPublications(params);
-  return res.publications;
+  return { pubs: res.publications, total: res.total };
 }
 
 // Count helper: piggybacks on listPublications with pageSize=1 so the filter
@@ -108,7 +115,14 @@ async function countWith(params: URLSearchParams): Promise<number> {
 
 export interface DashboardData {
   stats: DashboardStats;
+  /** Top press-score pubs in the current period, bounded by `topPubsLimit`. */
   topPubs: PublicationListItem[];
+  /** Total matching pubs in the period — used by the UI to decide whether
+   *  to render a „Mehr laden" link below the list. */
+  topPubsTotal: number;
+  /** The effective page-size that the caller resolved (default 20). Round-
+   *  trips back to the client so the "Mehr laden" link knows what to add. */
+  topPubsLimit: number;
   flaggedCount: number;
   pressReleasedCount: number;
   orphansCount: number;
@@ -119,17 +133,20 @@ export interface DashboardData {
 // roundtrip (single Promise.all) embedded in the initial HTML.
 export async function getDashboardData(
   period: DashboardPeriod,
+  topPubsLimit: number,
 ): Promise<DashboardData> {
-  const [stats, topPubs, flaggedCount, pressReleasedCount, orphansResult] = await Promise.all([
+  const [stats, topPubsResult, flaggedCount, pressReleasedCount, orphansResult] = await Promise.all([
     getStats(true),
-    getTopPubs(period),
+    getTopPubs(period, topPubsLimit),
     countWith(new URLSearchParams({ flagged: 'true' })),
     countWith(new URLSearchParams({ press_released: 'true' })),
     listPressReleases({ orphans: 'true', withPub: false }),
   ]);
   return {
     stats,
-    topPubs,
+    topPubs: topPubsResult.pubs,
+    topPubsTotal: topPubsResult.total,
+    topPubsLimit,
     flaggedCount,
     pressReleasedCount,
     orphansCount: orphansResult.total,

@@ -35,11 +35,11 @@ export function PressReleasesStatsRow({ stats }: { stats: PressReleasesStats }) 
       />
       <StatCard
         icon={<FileQuestion className="h-5 w-5" />}
-        label="Externe Referenzen"
+        label="Ohne Pub-Match"
         explId="pr_stat_orphans"
         value={stats.orphans}
         accent="amber"
-        subtitle="OpenAlex/CrossRef-Anreicherung"
+        subtitle="Paper noch nicht in WebDB"
         animate={false}
       />
       <StatCard

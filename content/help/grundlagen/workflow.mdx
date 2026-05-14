@@ -101,11 +101,14 @@ StoryScout.
 ## Wo es Reibung geben kann {#reibung}
 
 <Callout type="info">
-**Re-Import wischt Analyse-Daten:** Ein WebDB-Re-Import schreibt die
-`publications`-Tabelle komplett neu. StoryScores, Pitch-Material, Flags
-und Decisions gehen verloren und müssen aus Production via DOI-Match
-wiederhergestellt werden. Vor einem Re-Import lohnt es sich also, die
-Production zu syncen.
+**Re-Imports lassen Analyse-Daten in Ruhe:** Der WebDB-Import nutzt seit
+2026-04-30 einen UPSERT-Pfad pro `webdb_uid`. Er aktualisiert nur die
+Felder, die die WebDB selbst pflegt (Titel, Abstract-DE/EN, DOI,
+Citation-Formate, Lead-Author, OA-Status). StoryScores, Dimensionen,
+Pitch-Material, Haiku, Begründung, Flags, Decisions und alle
+Enrichment-Daten bleiben unberührt. Pubs, die im neuen Dump fehlen,
+werden auf `archived = true` gesetzt statt gelöscht, damit Verknüpfungen
+zu Decisions und MeisterTask-Karten stabil bleiben.
 </Callout>
 
 Andere Reibungspunkte:

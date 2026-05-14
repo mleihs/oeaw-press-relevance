@@ -561,16 +561,18 @@ export const EXPL = {
     ),
   },
   top10_panel: {
-    title: 'Top-10-Panel',
+    title: 'Top-Publikationen-Panel',
     body: (
       <>
         <Para>
-          Die zehn Pubs mit höchstem StoryScore im gewählten Zeitraum (basierend auf
+          Die zwanzig Pubs mit höchstem StoryScore im gewählten Zeitraum (basierend auf
           <Code>published_at</Code>). Sortierung absteigend nach <Code>press_score</Code>.
+          Über den Button „Mehr laden" werden jeweils 20 weitere Pubs aus demselben
+          Pool nachgeladen, bis zu einem Maximum von 200.
         </Para>
         <Para>
           <strong>ITA-Bias-Korrektur</strong>: Pubs aus dem ITA-Subtree werden im
-          Dashboard-Panel ausgeblendet, damit eine einzelne Abteilung nicht die Top-10
+          Dashboard-Panel ausgeblendet, damit eine einzelne Abteilung nicht die Liste
           dominiert. Auf der Forscher:innen-Seite gibt es einen separaten Filter dafür.
         </Para>
       </>
@@ -1369,18 +1371,24 @@ export const EXPL = {
     ),
   },
   pr_stat_orphans: {
-    title: 'Externe Referenzen',
+    title: 'ÖAW-PR ohne Pub-Match',
     body: (
       <Para>
-        Pressemitteilungen mit DOI-Verweis, deren Paper nicht in der WebDB existiert.
-        Häufig sind ÖAW-Personen als Co-Autor:innen beteiligt; die WebDB erfasst aber
-        primär Lead-Authorships. Metadaten werden via OpenAlex und CrossRef nachgereichert.
+        ÖAW-Pressemitteilungen mit DOI-Verweis, deren zugehöriges Paper noch nicht
+        in der lokalen WebDB liegt. „Ohne Pub-Match" beschreibt also die
+        <strong> Publikation</strong>, nicht die Pressemitteilung selbst: die PR
+        ist regulärer ÖAW-Output, das Paper ist nur lokal (noch) nicht verfügbar.
       </Para>
     ),
     note: (
       <Para>
-        Sobald das Paper später importiert wird, übernimmt der Match-Job die Zuordnung
-        automatisch.
+        Häufigste Ursache: das Institut hat die Pub intern
+        <strong> nicht für die Web-Anzeige freigegeben</strong>. Solche Pubs
+        landen erst gar nicht in der WebDB und folglich auch nicht im
+        lokalen Datenbestand von StoryScout. Seltener: das Paper ist erst
+        nach dem letzten Import erschienen. Metadaten werden via OpenAlex
+        und CrossRef nachgereichert. Wird die Pub später freigegeben und
+        importiert, übernimmt der Match-Job die Zuordnung automatisch.
       </Para>
     ),
   },
@@ -1413,33 +1421,44 @@ export const EXPL = {
     title: 'Tab: Ohne Pub-Match',
     body: (
       <Para>
-        Zeigt nur externe Referenzen, also Pressemitteilungen mit DOI, deren Paper noch
-        nicht in der WebDB liegt. Jede Zeile ist aufklappbar und offenbart Abstract,
-        Autor:innen, Journal und mutmaßliche ÖAW-Beteiligung.
+        Zeigt nur Pressemitteilungen, deren zugehöriges Paper noch nicht in der
+        WebDB liegt. Alles sind reguläre ÖAW-Pressemitteilungen; „ohne Pub-Match"
+        bezieht sich auf die fehlende Publikation, nicht auf die PR. Jede Zeile
+        ist aufklappbar und offenbart Abstract, Autor:innen, Journal und
+        mutmaßliche ÖAW-Beteiligung.
       </Para>
     ),
   },
   orphan_press_release: {
-    title: 'Externe Pressemitteilung',
+    title: 'ÖAW-Pressemitteilung ohne Pub-Match',
     body: (
       <>
         <Para>
-          Eine ÖAW-Pressemitteilung, deren zugehöriges Paper noch nicht in der WebDB
-          liegt. Häufige Gründe: das Paper hat ÖAW-Beteiligung als Co-Authorship (die
-          WebDB erfasst primär Lead-Authorships), oder es ist erst nach dem letzten
-          Import erschienen.
+          Eine reguläre ÖAW-Pressemitteilung, deren zugehöriges Paper lokal
+          (noch) nicht in der WebDB liegt. Die PR selbst ist nicht „extern",
+          sondern stammt vollständig aus dem ÖAW-Outreach; nur das Paper fehlt
+          im importierten Datensatz.
         </Para>
         <Para>
-          Metadaten kommen aus OpenAlex und CrossRef. Eine Beteiligungs-Heuristik matcht
-          Nachname plus Vornamen-Initial gegen die <Code>persons</Code>-Tabelle. Beim
-          nächsten Import wird das Paper automatisch verknüpft.
+          <strong>Häufigste Ursache:</strong> Das publizierende Institut hat
+          die Pub intern nicht für die Web-Anzeige freigegeben. Solche Pubs
+          landen erst gar nicht in der WebDB und folglich auch nicht im
+          lokalen Datenstand von StoryScout. Seltener kommt vor, dass die Pub
+          erst nach dem letzten Import publiziert wurde.
+        </Para>
+        <Para>
+          Metadaten kommen aus OpenAlex und CrossRef. Eine
+          Beteiligungs-Heuristik matcht Nachname plus Vornamen-Initial gegen
+          die <Code>persons</Code>-Tabelle. Sobald die Pub später freigegeben
+          oder nachgereicht und importiert wird, wird das Paper automatisch
+          verknüpft.
         </Para>
       </>
     ),
     note: (
       <Para>
-        Manuelle Verifikation der ÖAW-Beteiligung wird empfohlen, weil Nachnamens-Match
-        Homonyme nicht ausschließt.
+        Manuelle Verifikation der ÖAW-Beteiligung wird empfohlen, weil
+        Nachnamens-Match Homonyme nicht ausschließt.
       </Para>
     ),
   },
@@ -1533,9 +1552,11 @@ export const EXPL = {
     ),
     note: (
       <Para>
-        Der Import wischt aktuell die <Code>publications</Code>-Tabelle und lädt
-        vollständig neu. Lokale Analyse-Daten gehen dabei verloren und müssen separat
-        aus Production via DOI-Match wiederhergestellt werden.
+        Der Import läuft als <strong>UPSERT pro <Code>webdb_uid</Code></strong>:
+        StoryScores, Pitch-Material, Haiku, Begründung, Flags, Decisions und
+        Enrichment-Daten werden nicht angefasst. Pubs, die im neuen Dump fehlen,
+        werden auf <Code>archived = true</Code> gesetzt statt gelöscht, damit alle
+        Verknüpfungen zu Decisions und MeisterTask-Karten stabil bleiben.
       </Para>
     ),
   },
@@ -1587,16 +1608,20 @@ export const EXPL = {
     title: 'Zeitraum-Tabs',
     body: (
       <Para>
-        Filtert die Top-10-Liste, die Score-Verteilung und das Dimensions-Profil auf
-        ein Zeitfenster: Woche, Monat, Jahr oder Gesamt. Der gewählte Tab wird in der
-        URL gespeichert, Bookmarks und geteilte Links behalten die Ansicht.
+        Filtert die Top-Publikationen-Liste (Default 20 Pubs, per
+        „Mehr laden" in 20er-Schritten erweiterbar bis 200), die
+        Score-Verteilung und das Dimensions-Profil auf ein Zeitfenster:
+        Woche, 2 Monate, Jahr oder Gesamt. Default ist 2 Monate — wide genug,
+        damit die Top-N-Liste verlässlich gefüllt ist. Der gewählte Tab wird
+        in der URL gespeichert, Bookmarks und geteilte Links behalten die
+        Ansicht.
       </Para>
     ),
     note: (
       <Para>
         Die Stats-Karten oben (Pubs gesamt, Popular Science, Analysiert, Hohes
-        Story-Potenzial) sind nicht von den Tabs betroffen. Sie zeigen immer den
-        Gesamtzustand.
+        Story-Potenzial) sind nicht von den Tabs betroffen. Sie zeigen immer
+        den Gesamtzustand.
       </Para>
     ),
   },

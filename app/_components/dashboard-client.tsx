@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PressScoreBadge } from '@/components/score-bar';
+import { SimilarityIndicator } from '@/components/similarity-indicator';
 import { StatCard } from '@/components/stat-card';
 import { AtmosphericOrb } from '@/components/atmospheric-orb';
 import { InfoBubble } from '@/components/info-bubble';
@@ -44,24 +45,17 @@ const DimensionsRadar = dynamic(() => import('./dimensions-radar'), {
 
 const TIME_TAB_LABELS: Record<DashboardPeriod, string> = {
   week: 'Woche',
-  month: 'Monat',
+  month: '2 Monate',
   year: 'Jahr',
   all: 'Gesamt',
 };
-
-const MONTH_NAMES_DE = [
-  'Jänner', 'Februar', 'März', 'April', 'Mai', 'Juni',
-  'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember',
-];
 
 function getTimeRangeLabel(period: DashboardPeriod): string {
   switch (period) {
     case 'week':
       return 'Letzte 7 Tage';
-    case 'month': {
-      const now = new Date();
-      return `${MONTH_NAMES_DE[now.getMonth()]} ${now.getFullYear()}`;
-    }
+    case 'month':
+      return 'Letzte 2 Monate';
     case 'year':
       return 'Letztes Jahr';
     case 'all':
@@ -74,11 +68,24 @@ interface DashboardClientProps {
   period: DashboardPeriod;
 }
 
+// How many extra pubs each „Mehr laden" click reveals.
+const TOP_PUBS_STEP = 20;
+
 export function DashboardClient({ data, period }: DashboardClientProps) {
-  const { stats, topPubs, flaggedCount, pressReleasedCount, orphansCount } = data;
+  const {
+    stats,
+    topPubs,
+    topPubsTotal,
+    topPubsLimit,
+    flaggedCount,
+    pressReleasedCount,
+    orphansCount,
+  } = data;
   const scoreDistribution = stats.score_distribution;
   const dimensionAvgs = stats.dimension_avgs;
   const topKeywords = stats.top_keywords;
+  const hasMorePubs = topPubs.length < topPubsTotal;
+  const nextLimit = topPubsLimit + TOP_PUBS_STEP;
 
   return (
     <div className="space-y-6">
@@ -207,9 +214,9 @@ export function DashboardClient({ data, period }: DashboardClientProps) {
           )}
           {orphansCount > 0 && (
             <Button asChild variant="outline" className="border-emerald-200 text-emerald-800 hover:bg-emerald-50 dark:border-emerald-500/30 dark:text-emerald-300 dark:hover:bg-emerald-500/15">
-              <Link href="/press-releases">
+              <Link href="/press-releases?tab=orphans">
                 <Newspaper className="mr-2 h-4 w-4 opacity-60" />
-                {orphansCount} externe Pressemitteilungen
+                {orphansCount} Pressemitteilungen ohne Pub-Match
               </Link>
             </Button>
           )}
@@ -221,11 +228,14 @@ export function DashboardClient({ data, period }: DashboardClientProps) {
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
           <div>
             <CardTitle className="text-base inline-flex items-center gap-1.5">
-              Top 10 Publikationen (nach StoryScore)
+              Top {topPubs.length} Publikationen (nach StoryScore)
               <InfoBubble id="top10_panel" size="md" />
             </CardTitle>
             <p className="text-xs text-muted-foreground mt-1">
               {getTimeRangeLabel(period)} · ohne Pop-Science
+              {topPubsTotal > topPubs.length && (
+                <span> · {topPubsTotal.toLocaleString('de-AT')} insgesamt im Pool</span>
+              )}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -303,13 +313,44 @@ export function DashboardClient({ data, period }: DashboardClientProps) {
                     >
                       <PublicationFlag pubId={pub.id} flagNotes={pub.flag_notes ?? []} size="sm" decision={pub.decision} />
                     </div>
-                    <PressScoreBadge score={pub.press_score} analysisStatus={pub.analysis_status} enrichmentStatus={pub.enrichment_status} />
+                    <div className="flex shrink-0 flex-col items-end gap-1">
+                      <div className="inline-flex items-center gap-1">
+                        <PressScoreBadge
+                          score={pub.press_score}
+                          analysisStatus={pub.analysis_status}
+                          enrichmentStatus={pub.enrichment_status}
+                        />
+                        <InfoBubble id="press_score" size="sm" />
+                      </div>
+                      {pub.press_similarity !== null && pub.press_similarity !== undefined && (
+                        <div className="inline-flex items-center gap-1">
+                          <SimilarityIndicator similarity={pub.press_similarity} />
+                          <InfoBubble id="press_similarity" size="sm" />
+                        </div>
+                      )}
+                    </div>
                   </Link>
                 );
               })}
             </div>
           ) : (
             <EmptyState variant="inline" title="Keine analysierten Publikationen in diesem Zeitraum." />
+          )}
+
+          {hasMorePubs && (
+            <div className="mt-4 flex justify-center">
+              <Button asChild variant="outline" size="sm">
+                {/* `scroll={false}` keeps the user at the load-more position
+                    when the server re-renders with more pubs in the list. */}
+                <Link
+                  href={`?period=${period}&topPubs=${nextLimit}`}
+                  scroll={false}
+                  aria-label={`${TOP_PUBS_STEP} weitere Publikationen laden`}
+                >
+                  Mehr laden ({TOP_PUBS_STEP} weitere)
+                </Link>
+              </Button>
+            </div>
           )}
         </CardContent>
       </Card>
