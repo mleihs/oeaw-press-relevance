@@ -67,6 +67,30 @@ test.describe('Hilfe-Center flows', () => {
     expect(hits.some((h) => h.url.includes('forscher-metriken/metriken'))).toBe(true);
   });
 
+  test('Glossar auto-link rewrites first-occurrence terms to /help/grundlagen/glossar', async ({ page }) => {
+    // dimensionen.mdx mentions "StoryScore" and "Drift-Korrektur" in prose;
+    // the remark-glossar-links plugin should turn the first occurrence of
+    // each into a link to the glossar.
+    await page.goto('/help/scores/dimensionen');
+    await page.waitForLoadState('networkidle');
+
+    const storyScoreLink = page.getByRole('link', { name: 'StoryScore', exact: true })
+      .filter({ has: page.locator(':scope') })
+      .first();
+    await expect(storyScoreLink).toBeVisible();
+    await expect(storyScoreLink).toHaveAttribute('href', /\/help\/grundlagen\/glossar#r-z/);
+  });
+
+  test('Glossar article itself contains no recursive self-links', async ({ page }) => {
+    await page.goto('/help/grundlagen/glossar');
+    await page.waitForLoadState('networkidle');
+
+    // The plugin must skip glossar.mdx — every term reference inside the
+    // glossar article would otherwise become a self-anchor.
+    const selfLinks = page.locator('a[href*="/help/grundlagen/glossar#"]');
+    await expect(selfLinks).toHaveCount(0);
+  });
+
   test('Verwandte-Themen cross-links navigate to a 200', async ({ page }) => {
     await page.goto('/help/scores/dimensionen');
     await page.waitForLoadState('networkidle');
