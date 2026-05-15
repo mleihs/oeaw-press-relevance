@@ -140,7 +140,7 @@ Optional: Sektions-Kommentar erklären welche vars script-only sind (MEISTERTASK
 
 **Acceptance:** 6 schnelle invalid-POSTs → 5×401 + 1×429; korrekter Password klappt immer noch first-try.
 
-### - [ ] 2.4 — MeisterTask-Push Error-Redaktion [P1, ~15min]
+### - [x] 2.4 — MeisterTask-Push Error-Redaktion [P1, ~15min]
 
 **Why:** `app/api/meistertask/push/route.ts:32-33` echo't `err.message` der Upstream-API in Response — kann Tokens/IDs leaken.
 

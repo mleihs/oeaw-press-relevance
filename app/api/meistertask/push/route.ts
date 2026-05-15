@@ -23,14 +23,11 @@ export const POST = withApiError(async (req: NextRequest) => {
     );
     return resultToResponse(result);
   } catch (err) {
-    // Preserved verbatim: the prefix is a UI categorisation hint (the
-    // detail toast prefixes "MeisterTask push crashed:" so the operator
-    // knows the failure surface before reading the rest of the message).
-    // withApiError would have stripped the prefix — keep the explicit
-    // `apiError(...)` here, just for this route's catch.
+    // Don't echo err.message back: upstream API errors can include tokens,
+    // user IDs, or project metadata. Log server-side so operators can still
+    // diagnose; response stays generic.
     console.error('[meistertask/push] uncaught exception', err);
-    const detail = err instanceof Error ? err.message : 'unknown error';
-    return apiError(`MeisterTask push crashed: ${detail}`, 500);
+    return apiError('MeisterTask push failed (see server logs)', 500);
   }
 });
 
