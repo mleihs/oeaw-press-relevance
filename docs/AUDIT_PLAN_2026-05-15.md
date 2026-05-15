@@ -86,7 +86,7 @@ Optional: Sektions-Kommentar erklären welche vars script-only sind (MEISTERTASK
 
 **Acceptance:** unused-var subset = 0 warnings; remaining 7 zähle ich nicht mehr unter 1.5 sondern unter 5.6.
 
-### - [ ] 1.6 — Fresh `.next/` für sauberen tsc-Run [P2, ~2min]
+### - [x] 1.6 — Fresh `.next/` für sauberen tsc-Run [P2, ~2min]
 
 **Why:** tsc reported 3 errors in `.next/dev/types/*` (generated files vom Dev-Server). Nicht-Source, aber confused-machend für neue Devs.
 
