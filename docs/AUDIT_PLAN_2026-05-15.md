@@ -47,7 +47,7 @@ Phases ordered by **risk-adjusted impact**, not raw P0/P1/P2 severity. Phase 1 g
 
 **Acceptance:** Visual-check auf `/press-releases` — Orphans ohne released_at landen am Ende; Vitest + smoke unverändert grün.
 
-### - [ ] 1.3 — `docs/TECH_HANDOVER.md` Header refresh [P0, ~5min]
+### - [x] 1.3 — `docs/TECH_HANDOVER.md` Header refresh [P0, ~5min]
 
 **Why:** Header sagt „Last refresh: 2026-04-29 (after MT3 ship)" + „Branch state: main, 4 commits ahead". Heute = 2026-05-15. 16 Tage stale + falsche Branch-Behauptung; wer's als Resume-Doc liest, kriegt falsches Mental-Model.
 

@@ -1,11 +1,22 @@
 # TECH_HANDOVER
 
-**Last refresh:** 2026-04-29 (after MT3 ship — MeisterTask-Integration MVP)
-**Branch state at handover:** `main`, **4 commits ahead of `origin/main`** (MT1, MT2, MT1b, MT3 — push pending).
+**Last refresh:** 2026-05-15 (header refresh — body below is the 2026-04-29 snapshot)
+**Branch state at handover:** `main`, in sync with `origin/main`.
 
 This is the technical handover doc — distinct from `HANDOVER.md`, which is the
 ongoing scoring-session log. If you're picking this up after a `/clear` or in
 a fresh session, read this first. It cross-references everything else.
+
+> **Snapshot scope note (2026-05-15):** Sections below were written 2026-04-29
+> and reflect that day's state. ~160 commits have landed since across multiple
+> phases. For the current state, the canonical sources are:
+> - `docs/AUDIT_PLAN_2026-05-15.md` — current 25-task work plan
+> - `ARCHITECTURE_PLAN.md` — closed phases A7/A2/A1/A4, ADR-0015 scope pivot
+> - `memory/MEMORY.md` — phase handovers (phase{1,2,3,A7,A2,A1,A4}, kb_phase{2,3a,3b,4})
+> - `memory/audit_plan_2026-05-15.md` — pointer + resume command
+>
+> Wave-status table below (H1-H10 + MT1-MT3) is historically correct; not a
+> claim about today's tech-debt or roadmap.
 
 ---
 
