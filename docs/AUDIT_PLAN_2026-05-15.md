@@ -254,7 +254,7 @@ Optional: Sektions-Kommentar erklären welche vars script-only sind (MEISTERTASK
 
 **Acceptance:** Vitest +5-7 Tests; Repo-Refactor-Sicherheit beim nächsten Schema-Change.
 
-### - [ ] 4.4 — Smoke für `/review` + `/researchers` [P1, ~1h]
+### - [x] 4.4 — Smoke für `/review` + `/researchers` [P1, ~1h]
 
 **Why:** 3 von 7 RSC-Pages ohne Smoke-File. `/help` ist Fumadocs, vermutlich intentional skipped; `/review` + `/researchers` sollten dazu.
 
