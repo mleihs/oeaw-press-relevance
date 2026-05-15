@@ -7,33 +7,10 @@ import {
 } from './openrouter';
 import type { PublicationForPrompt } from './prompts';
 import { publicationToApi } from '../publications/to-api';
+import type { AnalysisBatchPayload } from '@/lib/shared/schemas';
 
-export interface AnalysisBatchFilters {
-  limit: number;
-  batchSize: number;
-  minWordCount: number;
-  forceReanalyze: boolean;
-  enrichedOnly: boolean;
-  includePartial: boolean;
-}
-
-/**
- * Coerces the raw POST body into a normalized filter object. Numeric fields
- * are capped (not rejected) to preserve the existing laissez-faire UI
- * contract: pages can pass `limit: 5000` and expect "at most 1000".
- */
-export function parseAnalysisBatchBody(
-  body: Record<string, unknown>,
-): AnalysisBatchFilters {
-  return {
-    limit: Math.min((body.limit as number) || 20, 1000),
-    batchSize: Math.min((body.batchSize as number) || 3, 5),
-    minWordCount: (body.minWordCount as number) || 0,
-    forceReanalyze: Boolean(body.forceReanalyze),
-    enrichedOnly: body.enrichedOnly !== false,
-    includePartial: Boolean(body.includePartial),
-  };
-}
+// Wire shape and internal filter shape match 1:1 (camelCase throughout).
+export type AnalysisBatchFilters = AnalysisBatchPayload;
 
 export async function fetchPublicationsForAnalysis(
   filters: AnalysisBatchFilters,

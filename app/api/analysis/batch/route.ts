@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
+  apiError,
   createSSEStream,
   errorToApiResponse,
   withApiError,
@@ -7,23 +8,34 @@ import {
 import { getLLMModel, getOpenRouterKey } from '@/lib/server/llm';
 import {
   fetchPublicationsForAnalysis,
-  parseAnalysisBatchBody,
   runAnalysisBatch,
 } from '@/lib/server/analysis/batch';
+import { analysisBatchPayloadSchema } from '@/lib/shared/schemas';
 
 export const maxDuration = 300;
 
 export const POST = withApiError(async (req: NextRequest) => {
-  let apiKey, model, body: Record<string, unknown>;
+  let apiKey, model;
   try {
     apiKey = getOpenRouterKey(req);
     model = getLLMModel(req);
-    body = await req.json();
   } catch (err) {
     return errorToApiResponse(err, 400, 'Configuration error');
   }
 
-  const filters = parseAnalysisBatchBody(body);
+  let raw: unknown;
+  try {
+    raw = await req.json();
+  } catch {
+    raw = {};
+  }
+
+  const parsed = analysisBatchPayloadSchema.safeParse(raw);
+  if (!parsed.success) {
+    return apiError(parsed.error.issues[0]?.message ?? 'Invalid payload', 400);
+  }
+  const filters = parsed.data;
+
   // Uncaught throws bubble to withApiError → 500.
   const pubs = await fetchPublicationsForAnalysis(filters);
   if (pubs.length === 0) {

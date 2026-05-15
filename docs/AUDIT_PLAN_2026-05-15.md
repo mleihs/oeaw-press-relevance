@@ -115,7 +115,7 @@ Optional: Sektions-Kommentar erklären welche vars script-only sind (MEISTERTASK
 
 **Acceptance:** Cross-origin curl `POST /api/publications/<id>/decision` returns 403; same-origin POST funktioniert; `scripts/smoke/rsc/publications-detail.ts` grün.
 
-### - [ ] 2.2 — zod-Validation in Batch-Routes [P1, ~30min]
+### - [x] 2.2 — zod-Validation in Batch-Routes [P1, ~30min]
 
 **Why:** Zwei Outlier-Routes (`enrichment/batch`, `analysis/batch`) parsen Bodies mit Custom-Throw-Functions statt zod-safeParse — andere mutating-Routes (`flag`, `decision`, `finish`, `meistertask/push`) nutzen alle zod.
 

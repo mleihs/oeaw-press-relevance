@@ -447,15 +447,15 @@ export function EnrichmentModal({
                   id="enrich-limit"
                   type="number"
                   min={1}
-                  max={1000}
+                  max={500}
                   value={config.limit}
-                  onChange={(e) => setConfig(c => ({ ...c, limit: Math.min(1000, Math.max(1, parseInt(e.target.value) || 1)) }))}
+                  onChange={(e) => setConfig(c => ({ ...c, limit: Math.min(500, Math.max(1, parseInt(e.target.value) || 1)) }))}
                   className="w-24"
                 />
                 <input
                   type="range"
                   min={1}
-                  max={1000}
+                  max={500}
                   value={config.limit}
                   onChange={(e) => setConfig(c => ({ ...c, limit: parseInt(e.target.value) }))}
                   className="flex-1"

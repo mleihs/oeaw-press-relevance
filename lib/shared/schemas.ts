@@ -47,3 +47,25 @@ export const flagDeletePayloadSchema = z.object({
 });
 
 export type FlagDeletePayload = z.infer<typeof flagDeletePayloadSchema>;
+
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export const enrichmentBatchPayloadSchema = z.object({
+  limit: z.coerce.number().int().min(1).max(500).default(20),
+  include_partial: z.boolean().default(false),
+  include_no_doi: z.boolean().default(false),
+  ids: z.array(z.string().regex(uuidPattern, 'ids must be UUIDs')).optional(),
+});
+
+export type EnrichmentBatchPayload = z.infer<typeof enrichmentBatchPayloadSchema>;
+
+export const analysisBatchPayloadSchema = z.object({
+  limit: z.coerce.number().int().min(1).max(1000).default(20),
+  batchSize: z.coerce.number().int().min(1).max(5).default(3),
+  minWordCount: z.coerce.number().int().min(0).default(0),
+  forceReanalyze: z.boolean().default(false),
+  enrichedOnly: z.boolean().default(true),
+  includePartial: z.boolean().default(false),
+});
+
+export type AnalysisBatchPayload = z.infer<typeof analysisBatchPayloadSchema>;

@@ -16,6 +16,7 @@ import { enrichFromSemanticScholar } from './semantic-scholar';
 import { enrichFromPdf } from './pdf-extract';
 import { enrichFromWebDb, WEBDB_SOURCE_TAG } from './webdb-native';
 import { publicationToApi } from '../publications/to-api';
+import type { EnrichmentBatchPayload } from '@/lib/shared/schemas';
 
 // Sources that require a DOI (order: CrossRef, OpenAlex, Unpaywall, then
 // Semantic Scholar last because it's the slowest).
@@ -31,8 +32,6 @@ const SOURCE_FETCHERS: Record<SourceName, (doi: string) => Promise<EnrichmentRes
   semantic_scholar: enrichFromSemanticScholar,
 };
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 function truncate(text: string | undefined, max: number): string | undefined {
   if (!text) return undefined;
   return text.length > max ? text.slice(0, max) + '...' : text;
@@ -40,13 +39,6 @@ function truncate(text: string | undefined, max: number): string | undefined {
 
 function isPdfUrl(url: string | null): boolean {
   return !!url && /\.pdf$/i.test(url);
-}
-
-export class InvalidEnrichmentPayloadError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'InvalidEnrichmentPayloadError';
-  }
 }
 
 export interface EnrichmentBatchFilters {
@@ -57,27 +49,18 @@ export interface EnrichmentBatchFilters {
 }
 
 /**
- * Parses the raw POST body. UUIDs in `ids` are strictly validated (anything
- * that doesn't match the shape rejects with InvalidEnrichmentPayloadError so
- * the route can 400 instead of 500-ing on garbage input).
+ * Adapts the zod-validated wire payload (snake_case keys) to the internal
+ * camelCase filter object the rest of the module uses.
  */
-export function parseEnrichmentBatchBody(
-  body: Record<string, unknown>,
+export function enrichmentPayloadToFilters(
+  payload: EnrichmentBatchPayload,
 ): EnrichmentBatchFilters {
-  const limit = Math.min((body.limit as number) || 20, 500);
-  const includePartial = body.include_partial === true;
-  const includeNoDoi = body.include_no_doi === true;
-
-  let explicitIds: string[] | null = null;
-  if (Array.isArray(body.ids)) {
-    const allValid = body.ids.every(
-      (x): x is string => typeof x === 'string' && UUID_RE.test(x),
-    );
-    if (!allValid) throw new InvalidEnrichmentPayloadError('ids must be UUIDs');
-    explicitIds = body.ids as string[];
-  }
-
-  return { limit, includePartial, includeNoDoi, explicitIds };
+  return {
+    limit: payload.limit,
+    includePartial: payload.include_partial,
+    includeNoDoi: payload.include_no_doi,
+    explicitIds: payload.ids ?? null,
+  };
 }
 
 export async function fetchPublicationsForEnrichment(
