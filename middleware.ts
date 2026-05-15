@@ -46,8 +46,13 @@ export async function middleware(req: NextRequest) {
   const cookie = req.cookies.get(COOKIE_NAME)?.value;
   const expected = process.env.GATE_TOKEN;
 
-  // No GATE_TOKEN configured → middleware is in pass-through mode (dev only).
-  // The PasswordGate UI still does the client-side check as a fallback.
+  // Defensive pass-through if GATE_TOKEN is somehow unset in the Edge
+  // runtime. The Node-runtime env validator (instrumentation.ts +
+  // lib/server/env.ts) requires it and exits otherwise, so in practice
+  // this branch is unreachable once the server has booted at all. Kept
+  // because Edge runtime loads env independently of Node — a Vercel
+  // misconfig that sets the var for Node but not Edge would otherwise
+  // crash every request here.
   if (!expected) return NextResponse.next();
 
   if (cookie === expected) return NextResponse.next();

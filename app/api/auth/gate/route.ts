@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createHash, timingSafeEqual } from 'crypto';
 import { apiError, withApiError } from '@/lib/server/http';
+import { createRateLimiter, getClientIp } from '@/lib/server/rate-limit';
 
 // Login endpoint for the middleware gate. The browser POSTs the password
 // here; we compare against GATE_PASSWORD server-side and, on match, set
@@ -25,47 +26,12 @@ function timingSafePasswordMatch(input: string, expected: string): boolean {
   return timingSafeEqual(inputHash, expectedHash);
 }
 
-// In-memory rate limit per Lambda instance. On serverless, multiple
-// instances mean a determined attacker can scale around this — for a
-// shared limit we'd need Redis/Upstash. Single instance still raises
-// the cost of brute-force enough to matter for our internal-tool
-// threat model.
-const MAX_ATTEMPTS = 5;
-const WINDOW_MS = 60_000;
-const attempts = new Map<string, { count: number; resetAt: number }>();
-
-function getClientIp(req: NextRequest): string {
-  // x-forwarded-for is "client, proxy1, proxy2…" — take the first hop.
-  const xff = req.headers.get('x-forwarded-for');
-  if (xff) return xff.split(',')[0].trim();
-  return req.headers.get('x-real-ip') ?? 'unknown';
-}
-
-function isRateLimited(ip: string): boolean {
-  const now = Date.now();
-  const entry = attempts.get(ip);
-  if (!entry || entry.resetAt < now) return false;
-  return entry.count >= MAX_ATTEMPTS;
-}
-
-function recordFailure(ip: string): void {
-  const now = Date.now();
-  const entry = attempts.get(ip);
-  if (!entry || entry.resetAt < now) {
-    attempts.set(ip, { count: 1, resetAt: now + WINDOW_MS });
-    return;
-  }
-  entry.count++;
-}
-
-// Exported for tests; resets the in-memory rate-limit map.
-export function _resetRateLimit(): void {
-  attempts.clear();
-}
+// Module-scoped limiter persists for the lifetime of the Lambda instance.
+const limiter = createRateLimiter({ maxAttempts: 5, windowMs: 60_000 });
 
 export const POST = withApiError(async (req: NextRequest) => {
   const ip = getClientIp(req);
-  if (isRateLimited(ip)) {
+  if (limiter.isBlocked(ip)) {
     return apiError('Too many login attempts. Try again in 1 minute.', 429);
   }
 
@@ -77,20 +43,17 @@ export const POST = withApiError(async (req: NextRequest) => {
   }
 
   const password = typeof body.password === 'string' ? body.password : '';
-  const expectedPassword = process.env.GATE_PASSWORD;
-
-  if (!expectedPassword) {
-    // Dev mode without GATE_PASSWORD configured — accept anything but warn.
-    return NextResponse.json({ ok: true, mode: 'dev-passthrough' });
-  }
+  // GATE_PASSWORD is required by the env validator (lib/server/env.ts).
+  // The Node-runtime boot would have process.exit'd before reaching this
+  // handler if it were unset, so the non-null assertion is safe.
+  const expectedPassword = process.env.GATE_PASSWORD!;
 
   if (!timingSafePasswordMatch(password, expectedPassword)) {
-    recordFailure(ip);
+    limiter.recordFailure(ip);
     return apiError('Invalid password', 401);
   }
 
-  // Success: clear failure history for this IP.
-  attempts.delete(ip);
+  limiter.reset(ip);
 
   const token = tokenize(password);
   const res = NextResponse.json({ ok: true });
