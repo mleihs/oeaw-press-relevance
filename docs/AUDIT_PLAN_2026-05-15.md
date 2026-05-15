@@ -193,7 +193,7 @@ Optional: Sektions-Kommentar erklären welche vars script-only sind (MEISTERTASK
 
 **Acceptance:** Network-Tab beim Mount auf Leaderboard-View → kein Distribution-Request; Switch zu Distribution → ein Request.
 
-### - [ ] 3.2 — `/press-releases` zu ISR [P1, ~10min]
+### - [x] 3.2 — `/press-releases` zu ISR [P1, ~10min]
 
 **Why:** `force-dynamic` ohne zwingenden Grund (kein per-User-State, keine Decision-Toolbar auf dieser Page). `revalidate=60` würde p95 deutlich senken.
 

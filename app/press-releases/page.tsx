@@ -11,11 +11,13 @@ import { PressReleasesStatsRow } from './_components/stats-row';
 import { PressReleasesMainTable } from './_components/main-table';
 import { PressReleasesOrphansList } from './_components/orphans-list';
 
-// Per ADR 0009: read-heavy admin pages opt out of ISR. The press-releases
-// list changes whenever the ETL imports new news rows or the orphan-promotion
-// SQL function runs — stale snapshots would mislead reviewers. Revisit if
-// traffic ever justifies a tuned `revalidate=N` window.
-export const dynamic = 'force-dynamic';
+// Carve-out from ADR 0009's force-dynamic default: this page is the only
+// read-heavy admin page with no per-user state, no decision toolbar, and no
+// query-parameter scope (the `tab` segments are pre-known). 60-second ISR
+// cuts p95 sharply while keeping ETL-imported rows visible within a minute.
+// All other RSC pages (dashboard, publications/[id], persons/[id]) still
+// stay force-dynamic per ADR 0009.
+export const revalidate = 60;
 
 export default async function PressReleasesPage({
   searchParams,
