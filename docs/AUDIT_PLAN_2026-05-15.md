@@ -244,7 +244,7 @@ Optional: Sektions-Kommentar erklären welche vars script-only sind (MEISTERTASK
 
 **Acceptance:** Vitest +8-10 Tests; Coverage-Report für `to-api.ts` zeigt >85%.
 
-### - [ ] 4.3 — Vitest für `repos/publications.ts` [P1, ~1.5h]
+### - [x] 4.3 — Vitest für `repos/publications.ts` [P1, ~1.5h]
 
 **Why:** Repository ist seit Phase A2 die canonical Daten-Schicht (15 Methods). Smoke covers happy paths; Unit-Tests catchen Edge-Cases.
 
