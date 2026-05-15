@@ -387,33 +387,41 @@ Optional: Sektions-Kommentar erklären welche vars script-only sind (MEISTERTASK
 ## Resume Command (für nach /clear)
 
 ```
-Pick up post-audit work auf refactor/drizzle-press-releases (== main, last
-commit 616b0b1 vom 2026-05-14).
+Pick up post-audit Phase 5 auf main (last commit 4d717d2 vom 2026-05-15,
+20 Commits diese Session, in sync mit origin/main).
 
 Read in order:
 1. memory/MEMORY.md (full index)
-2. docs/AUDIT_PLAN_2026-05-15.md (DIESER Plan — Source of Truth für was als Nächstes)
-3. memory/prod_incident_2026-05-14_env_validator.md (gestern's Outage-Kontext, wichtig für 2.5)
-4. memory/vercel_cli_workflow.md (CLI-Setup, eingeloggt als mleihs)
+2. docs/AUDIT_PLAN_2026-05-15.md (DIESER Plan — Phase 1-4 alle abgehakt,
+   Phase 5 ist offen; Source of Truth)
+3. memory/vitest_db_coupling_pattern.md (NEU — relevant für Task 5.1 enrichment Vitest)
+4. memory/vercel_cli_workflow.md (CLI-Setup, eingeloggt als mleihs,
+   .vercel/ ist auf oeaw-press-relevance gelinkt)
 5. memory/user_preferences.md (Stil-Defaults)
 6. memory/feedback_apply_pacing.md (Plan-OK = Block-Cadence)
 
-State:
-- Audit 2026-05-15 closed, alle Findings in AUDIT_PLAN_2026-05-15.md
-- Baseline: lint 0/17, vitest 60/60 grün
-- Prod up: oeaw-press-relevance.vercel.app, 11/11 env vars
-- Nichts implementing-side noch angefangen
+State nach Session 2026-05-15:
+- Phases 1-4 fertig (19/19 + Task 5.6 als Spillover von 1.5; insgesamt 19 ticks)
+- Phase 5 offen: 5.1 (Vitest enrichment 3-4h), 5.2 (structured logging 2-3h),
+  5.3 (View-body refresh), 5.4 (stale press_release_orphans-Strings),
+  5.5 (ARCHITECTURE_PLAN refresh), 5.6 (7 setState-in-effect)
+- Baseline: lint 0 errors / 7 warnings (alle 7 sind setState-in-effect = Task 5.6),
+  vitest 83/83 grün, tsc clean, alle Smokes grün
+- Prod: oeaw-press-relevance.vercel.app deployed nach 2.5+2.6, verified
+  homepage 200 + /api/auth/gate 401
+- GATE_TOKEN + GATE_PASSWORD jetzt REQUIRED im Validator; beide Vercel-Projekte
+  haben sie. ALLOWED_ORIGINS optional mit Default-Allowlist (relevance/release/localhost)
 
 Aufgabe: nächste unticked Task in AUDIT_PLAN_2026-05-15.md anpacken.
-Start mit Phase 1 wenn nichts gehakelt ist. Per Task: implement am Stück,
-Checkbox abhaken IM PLAN-FILE, commit individuell mit Co-Authored-By Trailer,
-push.
+Phase 5 startet mit 5.1 (höchster Risiko-ROI, plus vitest_db_coupling_pattern
+hilft direkt). Per Task: implement am Stück, Checkbox abhaken IM PLAN-FILE,
+commit individuell mit Co-Authored-By Trailer, push.
 
-Vor Phase 2.5 (GATE-required im Validator): UNBEDINGT vorab beide
-Vercel-Projekte mit `vercel env ls production` checken, sonst recreate'st
-du gestern's Incident.
+Achtung Task 5.2 (structured logging): touches alle Routes via withApiError —
+vor dem Commit Smoke + Vitest cross-checken weil signature-änderung möglich.
 
-Style: deutsche Anführungszeichen, keine em-dashes (ESLint gate),
+Style: deutsche Anführungszeichen, keine em-dashes (ESLint gate auf
+lib-client/changelog.ts + MDX; in TS-Files auch konvention),
 „Story Scout" + „Story Score" mit Space.
 
 ultrathink.
