@@ -127,7 +127,7 @@ Optional: Sektions-Kommentar erklären welche vars script-only sind (MEISTERTASK
 
 **Acceptance:** Invalid payload returnt 400 mit zod-Error-Details (statt 500); existing happy paths grün.
 
-### - [ ] 2.3 — Constant-Time-Compare + Rate-Limit auf Gate [P1, ~30min]
+### - [x] 2.3 — Constant-Time-Compare + Rate-Limit auf Gate [P1, ~30min]
 
 **Why:** Single-Password-Gate ist brute-forceable; `password !== expectedPassword` ist eine Timing-Oracle.
 
