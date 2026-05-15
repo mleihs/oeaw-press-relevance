@@ -23,7 +23,7 @@ Phases ordered by **risk-adjusted impact**, not raw P0/P1/P2 severity. Phase 1 g
 
 ## Phase 1 — Same-Day Quick Wins (~1.5h)
 
-### - [ ] 1.1 — Dimension-Sort-Indexes Migration [P0, ~15min]
+### - [x] 1.1 — Dimension-Sort-Indexes Migration [P0, ~15min]
 
 **Why:** jeder Radar-Achsen-Click full-table-scans ~7.375 Publications. `press_score` und `published_at` sind indexed, die 5 Dimension-Spalten nicht.
 
