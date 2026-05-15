@@ -76,17 +76,15 @@ Optional: Sektions-Kommentar erklären welche vars script-only sind (MEISTERTASK
 
 **Acceptance:** Diff `.env.example` ↔ zod-Schema in `lib/server/env.ts` = leer (für App-Code-vars); `scripts/smoke/env/validation.ts` grün.
 
-### - [ ] 1.5 — Lint-Warnings auf 0 [P2, ~30min]
+### - [x] 1.5 — Lint-Warnings auf 0 (unused-vars subset) [P2, ~30min]
 
 **Why:** Wachstumsbasis — ein „0 errors / 0 warnings"-Baseline macht künftige Drift sichtbar.
 
-**Files:** lt. `npm run lint` output (Snapshot: 17 warnings, alle unused-var oder unused-import)
+**Scope revision (2026-05-15):** Baseline-Annahme „alle 17 unused-var/import" stimmte nicht. Reality split:
+- 10 unused-vars/imports in `scripts/*` + `components/ui/virtualized-multi-select.tsx` (React Compiler incompat) + `lib/client/hooks/use-info-bubbles.ts` (setState-in-effect, kanonisch refactorbar via `useSyncExternalStore`) → done, 17 → 7.
+- 7 verbleibende `react-hooks/set-state-in-effect` warnings sind TECH_HANDOVER #1 Architektur-Schuld (verschiedene Patterns: theme hydration, filter sync, animation control, localStorage init); jeder Refactor ist eigenständig + non-trivial. Split off as Task 5.6.
 
-**Steps:**
-1. `npm run lint` für aktuelle Liste.
-2. Pro File: entweder var/import löschen ODER mit `_`-Prefix renamen (eslint-Config erlaubt `_`-prefixed unused).
-
-**Acceptance:** `npm run lint` returnt `0 errors / 0 warnings`.
+**Acceptance:** unused-var subset = 0 warnings; remaining 7 zähle ich nicht mehr unter 1.5 sondern unter 5.6.
 
 ### - [ ] 1.6 — Fresh `.next/` für sauberen tsc-Run [P2, ~2min]
 
@@ -336,6 +334,27 @@ Optional: Sektions-Kommentar erklären welche vars script-only sind (MEISTERTASK
 
 **Acceptance:** Grep `press_release_orphans` matcht nur noch in Migration-Files + Function-Definition.
 
+### - [ ] 5.6 — `react-hooks/set-state-in-effect` warnings (7 components) [P1, ~2-3h]
+
+**Why:** Split off von Task 1.5 nach Reality-Check. Diese 7 sind die im TECH_HANDOVER #1 explizit als „Architektur-Entscheidung pending" geflagte Schuld. Jeder Site hat eigenes Pattern, kein Copy-Paste-Fix möglich.
+
+**Files (current snapshot):**
+- `app/persons/[id]/_components/activity-chart.tsx:24` — theme hydration (`mounted` flag)
+- `app/publications/_components/filters-bar.tsx:45` — `filters.q` sync
+- `app/researchers/_components/beeswarm-view.tsx:82` — derived `maxBuckets` from `points`
+- `app/settings/page.tsx:24` — init effect with `setState`
+- `components/capybara-glitch.tsx:72` — animation play/stop controller
+- `components/changelog-panel.tsx:114` — localStorage-derived `hasUnread` + `everOpened`
+- `components/password-gate.tsx:44` — sessionStorage auth-check
+
+**Steps per category:**
+1. localStorage/sessionStorage-derived (changelog, password-gate, settings) → `useSyncExternalStore` (Vorbild: `lib/client/hooks/use-info-bubbles.ts` commit 7…).
+2. Derived state (filters-bar, beeswarm) → `useMemo` oder controlled-input pattern.
+3. Theme hydration (activity-chart) → `mounted` ist kanonisch; `eslint-disable-next-line` mit Verweis auf next-themes SSR-Pattern.
+4. Animation controller (capybara-glitch) → legitimate side-effect; `eslint-disable-next-line` mit Rationale.
+
+**Acceptance:** `npm run lint` returnt `0 errors / 0 warnings`.
+
 ### - [ ] 5.5 — ARCHITECTURE_PLAN Status-Refresh [P1, ~30min]
 
 **Why:** Status-Header sagt „Cross-cutting offen (Vitest, structured logging)". Vitest ist bootstrapped (60 Tests), structured Logging noch absent. Misleading.
@@ -410,8 +429,8 @@ ultrathink.
 | 2 — Security | ~3h | 6 |
 | 3 — Performance | ~1h | 3 |
 | 4 — Tests | ~5h | 5 |
-| 5 — Structural | ~6h | 5 |
+| 5 — Structural | ~8-9h | 6 (incl. 5.6 split off from 1.5) |
 | 6 — Backlog | unscheduled | 5 |
-| **Total Phases 1-5** | **~16h** | **25 tickable tasks** |
+| **Total Phases 1-5** | **~18-19h** | **26 tickable tasks** |
 
 Realistisch über 3-5 Sittings, je nach Verfügbarkeit. Phase 1+2 in einer Sitzung (4-5h) bringt sofort visible Win + Security-Baseline.

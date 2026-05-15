@@ -22,8 +22,8 @@ const hasRule = await page.evaluate(() => {
           return rule.cssText;
         }
       }
-    } catch (e) {
-      // cross-origin sheet — skip
+    } catch {
+      // cross-origin sheet, skip
     }
   }
   return null;

@@ -140,11 +140,6 @@ async function cmdStatus() {
     log(`  Pubs mit press_score:                      ${r3.rows[0].with_score}`);
     log(`  Davon via Session-Modell:                  ${r3.rows[0].by_session}`);
 
-    const poolA = parseInt(r3.rows[0].pool_a, 10);
-    const poolB = parseInt(r3.rows[0].pool_b, 10);
-    const poolC = parseInt(r3.rows[0].pool_c, 10);
-    const poolBwithDoi = parseInt(r3.rows[0].pool_b_with_doi, 10);
-
     const poolAall   = parseInt(r3.rows[0].pool_a_all, 10);
     const poolBall   = parseInt(r3.rows[0].pool_b_all, 10);
     const poolBdoi   = parseInt(r3.rows[0].pool_b_doi_all, 10);
@@ -591,7 +586,6 @@ async function cmdEnrichAugment(opts) {
 
   let batchN = 0;
   let totalProcessed = 0;
-  let totalSuccessful = 0;
   let totalKwHits = 0;
 
   for (let offset = 0; offset < ids.length && batchN < maxBatches; offset += perBatch) {
@@ -645,7 +639,6 @@ async function cmdEnrichAugment(opts) {
     const dt = ((Date.now() - t0) / 1000).toFixed(1);
     if (lastComplete) {
       totalProcessed += lastComplete.processed || 0;
-      totalSuccessful += lastComplete.successful || 0;
       log(`  ✓ ${lastComplete.processed} processed, ${lastComplete.successful} mit-Abstract-Treffer, ${lastComplete.partial || 0} partial, ${lastComplete.failed || 0} failed (${dt}s)`);
     } else {
       log(`  ✓ batch done (${dt}s, kein complete-event)`);

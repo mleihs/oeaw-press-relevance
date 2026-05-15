@@ -118,6 +118,11 @@ export function VirtualizedMultiSelect({
 
   const useVirt = rows.length > VIRT_THRESHOLD;
   const parentRef = React.useRef<HTMLDivElement>(null);
+  // React Compiler cannot memoize useVirtualizer's return value (TanStack
+  // Virtual ships functions on the returned object that change per render).
+  // Hand-tuned memoization here would also break the library's internal
+  // measurement cache, so we accept the skipped compilation.
+  // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => parentRef.current,

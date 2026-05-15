@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useSyncExternalStore } from 'react';
 
 const KEY = 'oeaw-info-bubbles-enabled';
 const EVT = 'oeaw-info-bubbles-change';
@@ -11,6 +11,15 @@ function read(): boolean {
   return v === null ? true : v === '1';
 }
 
+function subscribe(onChange: () => void): () => void {
+  window.addEventListener('storage', onChange);
+  window.addEventListener(EVT, onChange);
+  return () => {
+    window.removeEventListener('storage', onChange);
+    window.removeEventListener(EVT, onChange);
+  };
+}
+
 /**
  * Global preference: should InfoBubbles render at all?
  *
@@ -18,22 +27,16 @@ function read(): boolean {
  * - Cross-tab synced via the native `storage` event.
  * - Same-tab synced via a custom event so two components in the same tab stay in lockstep.
  *
- * SSR-safe: returns `true` during server render to avoid hydration mismatches; the client
- * effect then reconciles to the persisted value.
+ * SSR-safe via useSyncExternalStore: getServerSnapshot returns `true` so the
+ * server HTML matches the initial client-render default; the store subscription
+ * then reconciles to the persisted value without a setState-in-effect cycle.
  */
 export function useInfoBubblesEnabled(): [boolean, (v: boolean) => void] {
-  const [enabled, setEnabled] = useState<boolean>(true);
-
-  useEffect(() => {
-    setEnabled(read());
-    const sync = () => setEnabled(read());
-    window.addEventListener('storage', sync);
-    window.addEventListener(EVT, sync);
-    return () => {
-      window.removeEventListener('storage', sync);
-      window.removeEventListener(EVT, sync);
-    };
-  }, []);
+  const enabled = useSyncExternalStore<boolean>(
+    subscribe,
+    read,
+    () => true,
+  );
 
   const setPersisted = useCallback((v: boolean) => {
     if (typeof window === 'undefined') return;

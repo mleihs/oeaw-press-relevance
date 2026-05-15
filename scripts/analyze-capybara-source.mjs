@@ -33,7 +33,6 @@ async function analyze(label, fileRel) {
   let inkSum = 0; // sum of (255-luminance) over all pixels — "total ink"
   let nonPaperCount = 0; // pixels with lum < 240 (anything not pure paper)
   let nonPaperInkSum = 0; // ink contribution from those
-  let darkestSum = 0; // sum of luminance for darkest 5% of pixels
 
   for (let i = 0; i < data.length; i += 4) {
     const r = data[i];

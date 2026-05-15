@@ -430,7 +430,6 @@ async function importJunctions() {
   const lectureMap = await fkMap('lectures');
   const publicationMap = await fkMap('publications');
   const oestat6Map = await fkMap('oestat6_categories');
-  const memberTypeMap = await fkMap('member_types');
 
   // person_publications
   {
