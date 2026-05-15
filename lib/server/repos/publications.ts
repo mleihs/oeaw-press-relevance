@@ -127,6 +127,30 @@ export const publicationsRepo = {
     return rows[0]?.c ?? 0;
   },
 
+  // Dashboard top-row counts. These two replaced a listPublications-with-
+  // pageSize-1 detour that wasted one row + a pre-fetch on every call.
+  // Single count query each, semantics match the old path (archived=false).
+
+  async countWithFlags(): Promise<number> {
+    // pub_ids_with_flags() already filters archived=false internally.
+    const rows = await db.execute<{ c: number }>(
+      sql`SELECT count(*)::int AS c FROM pub_ids_with_flags()`,
+    );
+    return rows[0]?.c ?? 0;
+  },
+
+  async countPressReleased(): Promise<number> {
+    const rows = await db
+      .select({ c: count(sql`DISTINCT ${publications.id}`) })
+      .from(publications)
+      .innerJoin(
+        pressReleasesTable,
+        eq(pressReleasesTable.publicationId, publications.id),
+      )
+      .where(eq(publications.archived, false));
+    return rows[0]?.c ?? 0;
+  },
+
   // Returns raw GROUP BY rows; the caller maps to its own bucket shape.
   // Always restricts to `archived=false` because the queue's UI counts
   // exclude archived rows by contract.

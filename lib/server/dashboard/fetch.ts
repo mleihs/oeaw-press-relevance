@@ -4,6 +4,7 @@ import {
   listPublications,
   type PublicationListItem,
 } from '@/lib/server/publications/list';
+import { publicationsRepo } from '@/lib/server/repos/publications';
 import { listPressReleases } from '@/lib/server/press-releases/list';
 import {
   DIMENSION_SORT_MAP,
@@ -147,17 +148,6 @@ async function getTopPubs(
   return { pubs: res.publications, total: res.total };
 }
 
-// Count helper: piggybacks on listPublications with pageSize=1 so the filter
-// translation stays in one place. Fetches a single row but only consumes the
-// `total`. The wasted row is ~1KB; the alternative is duplicating
-// pre-fetch+JOIN logic from list.ts, which is the bigger maintenance hit.
-async function countWith(params: URLSearchParams): Promise<number> {
-  params.set('page', '1');
-  params.set('pageSize', '1');
-  const res = await listPublications(params);
-  return res.total;
-}
-
 export interface DashboardData {
   stats: DashboardStats;
   /** Top press-score pubs in the current period, bounded by `topPubsLimit`. */
@@ -184,8 +174,8 @@ export async function getDashboardData(
   const [stats, topPubsResult, flaggedCount, pressReleasedCount, orphansResult] = await Promise.all([
     getStats(true),
     getTopPubs(period, topPubsLimit, sortBy),
-    countWith(new URLSearchParams({ flagged: 'true' })),
-    countWith(new URLSearchParams({ press_released: 'true' })),
+    publicationsRepo.countWithFlags(),
+    publicationsRepo.countPressReleased(),
     listPressReleases({ orphans: 'true', withPub: false }),
   ]);
   return {

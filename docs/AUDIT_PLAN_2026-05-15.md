@@ -203,7 +203,7 @@ Optional: Sektions-Kommentar erklären welche vars script-only sind (MEISTERTASK
 
 **Acceptance:** Smoke grün; manueller Page-Reload zeigt Cache-Hit nach 1. Render; nach 60s Cache-Miss; ETL-Update sichtbar nach <60s.
 
-### - [ ] 3.3 — Dashboard-Counts collapsen [P1, ~30min]
+### - [x] 3.3 — Dashboard-Counts collapsen [P1, ~30min]
 
 **Why:** `lib/server/dashboard/fetch.ts:150-158` `countWith` fired pro Call eine full main+count Pair. 3 Call-Sites × 2 Queries = 6 Round-Trips. Sollte 3 `SELECT count(*)` sein.
 
