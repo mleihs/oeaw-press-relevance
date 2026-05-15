@@ -150,7 +150,7 @@ Optional: Sektions-Kommentar erklären welche vars script-only sind (MEISTERTASK
 
 **Acceptance:** Forced-Failure-Test zeigt generische Message; Server-Log hat Detail.
 
-### - [ ] 2.5 — GATE_TOKEN + GATE_PASSWORD required im Validator [P1, ~20min]
+### - [x] 2.5 — GATE_TOKEN + GATE_PASSWORD required im Validator [P1, ~20min]
 
 **Why:** Beide aktuell `.optional()`. Wenn auf einem Vercel-Projekt missing → Middleware in Pass-Through-Mode → anonyme API. Genau der gestrige Outage-Mechanismus rebooted für GATE.
 

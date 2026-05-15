@@ -44,11 +44,13 @@ const Schema = z.object({
   // it as required because the app cannot run those flows without it.
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
 
-  // Gate (middleware.ts + app/api/auth/gate). Both empty = dev pass-
-  // through. Setting GATE_TOKEN without GATE_PASSWORD breaks the login
-  // endpoint; checked in `runConditionalChecks`.
-  GATE_TOKEN: z.string().min(1).optional(),
-  GATE_PASSWORD: z.string().min(1).optional(),
+  // Gate (middleware.ts + app/api/auth/gate). Required: leaving either
+  // unset puts the middleware into pass-through mode, which is the
+  // identical failure shape as the 2026-05-14 incident scaled up to
+  // an anonymous-API outage. Both Vercel projects already have these
+  // set as of 2026-05-15 audit.
+  GATE_TOKEN: z.string().min(1),
+  GATE_PASSWORD: z.string().min(1),
 
   // LLM. `lib/server/llm.ts` accepts a per-request `x-openrouter-key`
   // header as a fallback, so the env var is fully optional. Model
@@ -76,9 +78,6 @@ function runConditionalChecks(env: Normalized, errors: string[]): void {
   }
   if (!env.SUPABASE_ANON_KEY && !env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     errors.push('SUPABASE_ANON_KEY — required (or set NEXT_PUBLIC_SUPABASE_ANON_KEY as the legacy fallback)');
-  }
-  if (env.GATE_TOKEN && !env.GATE_PASSWORD) {
-    errors.push('GATE_PASSWORD — required when GATE_TOKEN is set; otherwise the gate login endpoint cannot validate the password');
   }
   if (env.MEISTERTASK_API_TOKEN && !env.MEISTERTASK_DEFAULT_SECTION_ID) {
     errors.push('MEISTERTASK_DEFAULT_SECTION_ID — required when MEISTERTASK_API_TOKEN is set; MeisterTask push has no fallback target section');

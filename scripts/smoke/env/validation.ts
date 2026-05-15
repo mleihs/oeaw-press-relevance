@@ -20,7 +20,8 @@
  *   3  missing SUPABASE_URL pair
  *   4  missing SUPABASE_ANON_KEY pair
  *   5  missing SUPABASE_SERVICE_ROLE_KEY
- *   6  GATE_TOKEN without GATE_PASSWORD
+ *   6  missing GATE_TOKEN
+ *   6b missing GATE_PASSWORD
  *   7  MEISTERTASK_API_TOKEN without DEFAULT_SECTION_ID
  *   8  MEISTERTASK_HIGH_LABEL_ID without MID
  *   9  MEISTERTASK_MID_LABEL_ID without HIGH
@@ -51,6 +52,8 @@ const minimalValid: Record<string, string> = {
   SUPABASE_URL: 'http://localhost:54421',
   SUPABASE_ANON_KEY: 'anon-key-stub',
   SUPABASE_SERVICE_ROLE_KEY: 'service-role-stub',
+  GATE_TOKEN: 'gate-token-stub',
+  GATE_PASSWORD: 'gate-password-stub',
 };
 
 // 1
@@ -93,9 +96,16 @@ const minimalValid: Record<string, string> = {
 
 // 6
 {
-  const r = parseEnv({ ...minimalValid, GATE_TOKEN: 'abc' });
-  ok('6 GATE_TOKEN without GATE_PASSWORD → fail', !r.ok);
-  if (!r.ok) ok('6 error names GATE_PASSWORD', r.errors.some((e) => e.startsWith('GATE_PASSWORD')));
+  const r = parseEnv({ ...minimalValid, GATE_TOKEN: '' });
+  ok('6 missing GATE_TOKEN → fail', !r.ok);
+  if (!r.ok) ok('6 error names GATE_TOKEN', r.errors.some((e) => e.startsWith('GATE_TOKEN')));
+}
+
+// 6b
+{
+  const r = parseEnv({ ...minimalValid, GATE_PASSWORD: '' });
+  ok('6b missing GATE_PASSWORD → fail', !r.ok);
+  if (!r.ok) ok('6b error names GATE_PASSWORD', r.errors.some((e) => e.startsWith('GATE_PASSWORD')));
 }
 
 // 7
@@ -150,14 +160,14 @@ const minimalValid: Record<string, string> = {
   ok('11 NEXT_PUBLIC_* legacy fallback → ok', r.ok, r.ok ? '' : r.errors.join(' | '));
 }
 
-// 12
+// 12 — empty-string disable for OPTIONAL features only; GATE_* are
+// required now and cannot be empty.
 {
   const r = parseEnv({
     ...minimalValid,
     MEISTERTASK_API_TOKEN: '',
     MEISTERTASK_HIGH_LABEL_ID: '',
     MEISTERTASK_MID_LABEL_ID: '',
-    GATE_TOKEN: '',
   });
   ok('12 empty-string disables optional features → ok', r.ok, r.ok ? '' : r.errors.join(' | '));
 }
