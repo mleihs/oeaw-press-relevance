@@ -183,7 +183,7 @@ Optional: Sektions-Kommentar erklären welche vars script-only sind (MEISTERTASK
 
 ## Phase 3 — Performance Polish (~1h)
 
-### - [ ] 3.1 — Leaderboard-Distribution conditional fetch [P1, ~15min]
+### - [x] 3.1 — Leaderboard-Distribution conditional fetch [P1, ~15min]
 
 **Why:** `useLeaderboard()` fetcht IMMER 500 distribution-rows beim Mount, auch wenn User auf Leaderboard-Tab bleibt.
 

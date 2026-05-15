@@ -40,12 +40,13 @@ export function useLeaderboard() {
   };
 }
 
-export function useDistribution() {
+export function useDistribution(enabled = true) {
   const [filters] = useQueryStates(filterParsers, { shallow: false });
   const params = buildResearcherParams(filters, 500);
   const { data, error, isLoading } = useApiQuery<{ points?: DistributionPoint[] }>(
     ['researchers-distribution', params.toString()],
     `/api/researchers/distribution?${params}`,
+    { enabled },
   );
   return {
     points: data?.points ?? [],

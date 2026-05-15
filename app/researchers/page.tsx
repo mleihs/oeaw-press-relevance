@@ -13,7 +13,9 @@ import { useLeaderboard, useDistribution } from './_hooks/use-leaderboard';
 export default function ResearchersPage() {
   const [filters, setFilters] = useQueryStates(filterParsers, { shallow: false });
   const { rows, loading: loadingTop } = useLeaderboard();
-  const { points, loading: loadingDist } = useDistribution();
+  const { points, loading: loadingDist } = useDistribution(
+    filters.view === 'distribution',
+  );
 
   return (
       <div className="space-y-6">
