@@ -220,7 +220,7 @@ Optional: Sektions-Kommentar erklären welche vars script-only sind (MEISTERTASK
 
 ## Phase 4 — Test Scaffolding (~5h)
 
-### - [ ] 4.1 — Vitest für `publications/list.ts` SORTABLE_COLUMNS-Guard [P0, ~1h]
+### - [x] 4.1 — Vitest für `publications/list.ts` SORTABLE_COLUMNS-Guard [P0, ~1h]
 
 **Why:** Genau das File wo 2026-05-14 die 5 Dimension-Columns hinzugefügt wurden ohne Index-Check. Ein typed Test hätte Finding #1.1 verhindert.
 

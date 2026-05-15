@@ -30,7 +30,8 @@ import { publicationToApi } from './to-api';
 // string from `?sort=`, relying on PostgREST identifier escaping. Drizzle
 // has no comparable runtime guard once a string lands inside `sql\`\``,
 // so we explicitly map wire-shape keys to typed columns.
-const SORTABLE_COLUMNS: Record<string, AnyColumn> = {
+// Exported for the SORTABLE_COLUMNS-guard tests in `list.test.ts`.
+export const SORTABLE_COLUMNS: Record<string, AnyColumn> = {
   published_at: publications.publishedAt,
   title: publications.title,
   lead_author: publications.leadAuthor,
