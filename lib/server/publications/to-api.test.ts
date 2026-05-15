@@ -83,8 +83,8 @@ function makeMinimalPub(overrides: Partial<PubRow> = {}): PubRow {
     llmModel: null,
     analysisCost: null,
     importBatch: null,
-    createdAt: new Date(ANCHOR_ISO),
-    updatedAt: new Date(ANCHOR_ISO),
+    createdAt: ANCHOR_ISO,
+    updatedAt: ANCHOR_ISO,
     meistertaskTaskId: null,
     meistertaskTaskToken: null,
     decision: 'undecided',
@@ -113,9 +113,9 @@ describe('publicationToApi', () => {
   it('converts Date columns to ISO strings; preserves null when source is null', () => {
     const dto = publicationToApi(
       makeMinimalPub({
-        webdbTstamp: new Date(ANCHOR_ISO),
+        webdbTstamp: ANCHOR_ISO,
         decidedAt: null,
-        syncedAt: new Date(ANCHOR_ISO),
+        syncedAt: ANCHOR_ISO,
       }),
     );
     expect(dto.webdb_tstamp).toBe(ANCHOR_ISO);
@@ -178,17 +178,23 @@ describe('publicationToApiLite', () => {
   });
 });
 
+// The remaining mappers (publicationTypeToApi, orgunitToApi, personToApi,
+// projectToApi) take Drizzle row types with many internal columns the wire
+// DTO doesn't expose. The test stubs only the columns the mapper reads;
+// `as unknown as XRow` keeps the partial stub compatible with the typed
+// function signature.
+
 describe('publicationTypeToApi', () => {
   it('maps the 4-field shape', () => {
     const dto = publicationTypeToApi({
       id: 'pt-1',
-      webdbUid: 'WD-42',
+      webdbUid: 42,
       nameDe: 'Buchkapitel',
       nameEn: 'Book chapter',
-    } as PubTypeRow);
+    } as unknown as PubTypeRow);
     expect(dto).toEqual({
       id: 'pt-1',
-      webdb_uid: 'WD-42',
+      webdb_uid: 42,
       name_de: 'Buchkapitel',
       name_en: 'Book chapter',
     });
@@ -197,7 +203,7 @@ describe('publicationTypeToApi', () => {
 
 describe('orgunitToApi', () => {
   it('passes parent_id null vs set through correctly', () => {
-    const base: OrgunitRow = {
+    const stub = {
       id: 'ou-1',
       webdbUid: null,
       nameDe: 'IQOQI',
@@ -207,15 +213,17 @@ describe('orgunitToApi', () => {
       urlDe: null,
       urlEn: null,
       parentId: null,
-    } as OrgunitRow;
-    expect(orgunitToApi(base).parent_id).toBeNull();
-    expect(orgunitToApi({ ...base, parentId: 'ou-root' }).parent_id).toBe('ou-root');
+    };
+    expect(orgunitToApi(stub as unknown as OrgunitRow).parent_id).toBeNull();
+    expect(
+      orgunitToApi({ ...stub, parentId: 'ou-root' } as unknown as OrgunitRow).parent_id,
+    ).toBe('ou-root');
   });
 });
 
 describe('personToApi', () => {
-  it('preserves research_fields array verbatim (null vs filled)', () => {
-    const base: PersonRow = {
+  it('preserves research_fields verbatim (null vs filled string)', () => {
+    const stub = {
       id: 'p-1',
       webdbUid: null,
       firstname: 'Anna',
@@ -231,19 +239,18 @@ describe('personToApi', () => {
       deceased: false,
       portrait: null,
       slug: null,
-    } as PersonRow;
-    expect(personToApi(base).research_fields).toBeNull();
-    const withFields = personToApi({
-      ...base,
-      researchFields: ['Quantum', 'Climate'],
-    });
-    expect(withFields.research_fields).toEqual(['Quantum', 'Climate']);
+    };
+    expect(personToApi(stub as unknown as PersonRow).research_fields).toBeNull();
+    const withFields = personToApi(
+      { ...stub, researchFields: 'Quantum, Climate' } as unknown as PersonRow,
+    );
+    expect(withFields.research_fields).toBe('Quantum, Climate');
   });
 });
 
 describe('projectToApi', () => {
   it('maps a representative subset of fields', () => {
-    const row: ProjectRow = {
+    const stub = {
       id: 'pr-1',
       webdbUid: null,
       titleDe: 'Klima-Projekt',
@@ -259,8 +266,8 @@ describe('projectToApi', () => {
       cancelled: false,
       urlDe: null,
       urlEn: null,
-    } as ProjectRow;
-    const dto = projectToApi(row);
+    };
+    const dto = projectToApi(stub as unknown as ProjectRow);
     expect(dto.title_de).toBe('Klima-Projekt');
     expect(dto.starts_on).toBe('2026-01-01');
     expect(dto.ends_on).toBeNull();

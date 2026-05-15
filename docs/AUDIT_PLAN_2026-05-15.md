@@ -264,7 +264,7 @@ Optional: Sektions-Kommentar erklären welche vars script-only sind (MEISTERTASK
 
 **Acceptance:** Beide Smokes grün lokal.
 
-### - [ ] 4.5 — `scripts/test-*.mjs` → `e2e/*.spec.ts` migrieren [P2, ~1h]
+### - [x] 4.5 — `scripts/test-*.mjs` → `e2e/*.spec.ts` migrieren [P2, ~1h]
 
 **Why:** 6 standalone Playwright-Skripte sind drift-anfällig (separat von `playwright.config.ts`).
 
