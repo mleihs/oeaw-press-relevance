@@ -60,7 +60,7 @@ Phases ordered by **risk-adjusted impact**, not raw P0/P1/P2 severity. Phase 1 g
 
 **Acceptance:** Header reflektiert Reality; bei nächstem Resume-Lesen passt's.
 
-### - [ ] 1.4 — `.env.example` mit zod-Schema syncen [P1, ~10min]
+### - [x] 1.4 — `.env.example` mit zod-Schema syncen [P1, ~10min]
 
 **Why:** 4 vars im Validator-Schema (`lib/server/env.ts`) fehlen in `.env.example` — neue Dev-Setups bootstrappen ohne klare Anleitung.
 
