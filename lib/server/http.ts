@@ -9,6 +9,56 @@ export function apiError(message: string, status = 400) {
 }
 
 /**
+ * CSRF guard: rejects state-changing requests whose Origin (or, falling
+ * back, Referer) host does not match the request's Host header. Browsers
+ * always send Origin on cross-origin POST/PUT/PATCH/DELETE, so this stops
+ * a third-party page from triggering an authenticated mutation via the
+ * gate cookie. Returns the 403 Response on mismatch, or `null` to let the
+ * handler proceed.
+ *
+ * Wired into `withApiError` below for every mutating method, so individual
+ * routes don't need to opt in.
+ */
+const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
+export function assertSameOrigin(req: Request): Response | null {
+  const host = req.headers.get('host');
+  if (!host) return apiError('Missing host header', 403);
+
+  const origin = req.headers.get('origin');
+  if (origin) {
+    let originHost: string;
+    try {
+      originHost = new URL(origin).host;
+    } catch {
+      return apiError('Cross-origin request not allowed', 403);
+    }
+    if (originHost !== host) {
+      return apiError('Cross-origin request not allowed', 403);
+    }
+    return null;
+  }
+
+  // Origin missing. Fall back to Referer for older clients / non-CORS POSTs.
+  const referer = req.headers.get('referer');
+  if (referer) {
+    let refererHost: string;
+    try {
+      refererHost = new URL(referer).host;
+    } catch {
+      return apiError('Cross-origin request not allowed', 403);
+    }
+    if (refererHost !== host) {
+      return apiError('Cross-origin request not allowed', 403);
+    }
+    return null;
+  }
+
+  // Strict posture: no Origin and no Referer on a mutating request gets blocked.
+  return apiError('Missing origin/referer header', 403);
+}
+
+/**
  * Creates a ReadableStream + send/close helpers for SSE responses. The
  * `cancel()` handler is critical: when the consumer aborts (client
  * disconnect or fetch timeout) the controller is marked closed so
@@ -92,6 +142,11 @@ export function withApiError<Args extends unknown[]>(
 ): (...args: Args) => Promise<Response> {
   return async (...args: Args) => {
     try {
+      const req = args[0];
+      if (req instanceof Request && MUTATING_METHODS.has(req.method.toUpperCase())) {
+        const csrfFail = assertSameOrigin(req);
+        if (csrfFail) return csrfFail;
+      }
       return await handler(...args);
     } catch (err) {
       return errorToApiResponse(err);

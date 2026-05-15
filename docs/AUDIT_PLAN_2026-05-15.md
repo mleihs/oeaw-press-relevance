@@ -98,7 +98,7 @@ Optional: Sektions-Kommentar erklären welche vars script-only sind (MEISTERTASK
 
 ## Phase 2 — Security Hardening (~3h)
 
-### - [ ] 2.1 — CSRF-Schutz: Origin-Check + SameSite=Strict [P0, ~45min]
+### - [x] 2.1 — CSRF-Schutz: Origin-Check + SameSite=Strict [P0, ~45min]
 
 **Why:** Gate-Cookie ist `SameSite=Lax` — bösartige Seiten können Top-Level-`POST` an `/api/publications/[id]/decision` (triggert MeisterTask-Push), `/api/publications/[id]/flag` etc. mit dem Cookie des Triagers feuern. Kein Origin/Referer-Check existiert.
 

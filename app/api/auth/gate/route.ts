@@ -41,7 +41,10 @@ export const POST = withApiError(async (req: NextRequest) => {
   const res = NextResponse.json({ ok: true });
   res.cookies.set('gate', token, {
     httpOnly: true,
-    sameSite: 'lax',
+    // Strict because every mutating route also enforces same-origin via
+    // assertSameOrigin (lib/server/http.ts). Lax was leaving a CSRF window
+    // open on top-level POST navigations.
+    sameSite: 'strict',
     secure: process.env.NODE_ENV === 'production',
     path: '/',
     maxAge: 60 * 60 * 24 * 30, // 30 days
