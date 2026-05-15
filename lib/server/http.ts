@@ -157,11 +157,20 @@ export function errorToApiResponse(
 }
 
 /**
- * Higher-order wrapper that turns any uncaught throw inside a route
- * handler into a 500 `{ error: <message> }` response via
- * `errorToApiResponse`. Use to drop the try/catch boilerplate from
- * route bodies — the happy path stays linear, validation errors remain
- * explicit `return apiError(...)` early-returns.
+ * Higher-order wrapper around route handlers. Two jobs:
+ *
+ * 1. **CSRF guard on mutating requests.** When the first arg is a
+ *    Request with method POST/PUT/PATCH/DELETE, runs `assertSameOrigin`
+ *    before the handler. A cross-origin request short-circuits with 403
+ *    and never reaches the handler. GET/HEAD/OPTIONS skip the check
+ *    (idempotent reads don't need CSRF protection and would break RSC
+ *    fetches with no Origin header).
+ *
+ * 2. **Throw-to-500 fallthrough.** Any uncaught throw inside the
+ *    handler becomes a 500 `{ error: <message> }` response via
+ *    `errorToApiResponse`. Lets the happy path stay linear without
+ *    try/catch boilerplate; validation errors remain explicit
+ *    `return apiError(...)` early-returns.
  *
  * For sub-steps that need a non-500 status or custom fallback (JSON
  * parse → 400 "Invalid request", payload validation → 400 with a

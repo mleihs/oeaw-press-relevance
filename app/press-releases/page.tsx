@@ -11,12 +11,11 @@ import { PressReleasesStatsRow } from './_components/stats-row';
 import { PressReleasesMainTable } from './_components/main-table';
 import { PressReleasesOrphansList } from './_components/orphans-list';
 
-// Carve-out from ADR 0009's force-dynamic default: this page is the only
-// read-heavy admin page with no per-user state, no decision toolbar, and no
-// query-parameter scope (the `tab` segments are pre-known). 60-second ISR
-// cuts p95 sharply while keeping ETL-imported rows visible within a minute.
-// All other RSC pages (dashboard, publications/[id], persons/[id]) still
-// stay force-dynamic per ADR 0009.
+// Carve-out from ADR 0009's force-dynamic default. This page has no
+// per-user state, no decision toolbar, and a pre-known tab set, so a
+// 60-second ISR window cuts p95 sharply while keeping ETL-imported
+// rows visible within a minute. Pages with mutating toolbars or
+// per-request scope should stay force-dynamic per ADR 0009.
 export const revalidate = 60;
 
 export default async function PressReleasesPage({
