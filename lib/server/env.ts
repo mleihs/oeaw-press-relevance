@@ -68,6 +68,12 @@ const Schema = z.object({
   MEISTERTASK_MID_LABEL_ID: z.string().min(1).optional(),
 
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+
+  // Optional override for the allow-list used by assertAllowedOrigin
+  // (comma-separated). Defaults to the two Vercel project URLs +
+  // localhost dev — set this in env to support preview deploys or a
+  // custom domain.
+  ALLOWED_ORIGINS: z.string().optional(),
 });
 
 type Normalized = Record<string, string | undefined>;

@@ -59,6 +59,37 @@ export function assertSameOrigin(req: Request): Response | null {
 }
 
 /**
+ * Allow-list check for origins used to construct user-visible URLs
+ * (e.g. MeisterTask task descriptions). assertSameOrigin already
+ * blocks cross-origin requests, but an attacker who controls X-Forwarded-Host
+ * could trick `req.nextUrl.origin` into echoing a spoofed host through
+ * both checks if Origin and Host are spoofed together. This second-line
+ * check forces the resulting URL to be one of our known deployments.
+ *
+ * Configurable via `ALLOWED_ORIGINS` env var (comma-separated); defaults
+ * cover the two Vercel projects + localhost dev.
+ */
+const DEFAULT_ALLOWED_ORIGINS = [
+  'https://oeaw-press-relevance.vercel.app',
+  'https://oeaw-press-release.vercel.app',
+  'http://localhost:3000',
+];
+
+export function getAllowedOrigins(): string[] {
+  const env = process.env.ALLOWED_ORIGINS;
+  if (!env) return DEFAULT_ALLOWED_ORIGINS;
+  return env
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+export function assertAllowedOrigin(origin: string): Response | null {
+  if (getAllowedOrigins().includes(origin)) return null;
+  return apiError('Origin not in allow-list', 400);
+}
+
+/**
  * Creates a ReadableStream + send/close helpers for SSE responses. The
  * `cancel()` handler is critical: when the consumer aborts (client
  * disconnect or fetch timeout) the controller is marked closed so

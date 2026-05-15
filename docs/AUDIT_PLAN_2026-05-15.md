@@ -169,7 +169,7 @@ Optional: Sektions-Kommentar erklären welche vars script-only sind (MEISTERTASK
 
 **Acceptance:** Validator boots beide Vercel-Projekte grün; locale Override mit unset → validator exits.
 
-### - [ ] 2.6 — `appBaseUrl` Origin-Whitelisting in applyDecision [P2, ~15min]
+### - [x] 2.6 — `appBaseUrl` Origin-Whitelisting in applyDecision [P2, ~15min]
 
 **Why:** `req.nextUrl.origin` wird unvalidated als `appBaseUrl` an MeisterTask-Description gepasst — `X-Forwarded-Host`-Spoofing schreibt Phishing-URL in Tasks.
 
