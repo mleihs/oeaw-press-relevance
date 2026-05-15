@@ -234,7 +234,7 @@ Optional: Sektions-Kommentar erklären welche vars script-only sind (MEISTERTASK
 
 **Acceptance:** Vitest +5-7 Tests; CI fail'd wenn jemand SORTABLE_COLUMNS erweitert ohne Index oder Whitelist.
 
-### - [ ] 4.2 — Vitest für `publications/to-api.ts` [P1, ~1h]
+### - [x] 4.2 — Vitest für `publications/to-api.ts` [P1, ~1h]
 
 **Why:** Pure Transform-Function (255 LOC, 0 Tests). Highest Test-ROI weil keine Side-Effects.
 
