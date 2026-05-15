@@ -37,7 +37,7 @@ Phases ordered by **risk-adjusted impact**, not raw P0/P1/P2 severity. Phase 1 g
 
 **Acceptance:** EXPLAIN zeigt Index-Nutzung lokal + prod; `scripts/smoke/rsc/dashboard.ts` grün.
 
-### - [ ] 1.2 — `descNullsLast` für `releasedAt` [P1, ~10min]
+### - [x] 1.2 — `descNullsLast` für `releasedAt` [P1, ~10min]
 
 **Why:** nullable Column mit `desc()` floatet Nulls an den Top der Press-Release-Liste — direkter Parallelfall zum `published_at`-Fix der `sort.ts` motiviert hat.
 

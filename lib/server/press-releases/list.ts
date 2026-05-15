@@ -1,5 +1,9 @@
-import { count, desc, gte, isNotNull, isNull, type SQL } from 'drizzle-orm';
-import { db, pressReleases as pressReleasesTable } from '@/lib/server/db';
+import { count, gte, isNotNull, isNull, type SQL } from 'drizzle-orm';
+import {
+  db,
+  descNullsLast,
+  pressReleases as pressReleasesTable,
+} from '@/lib/server/db';
 import type { PressRelease } from '@/lib/shared/types';
 import { pressReleaseToApi } from './to-api';
 import {
@@ -118,7 +122,7 @@ export async function listPressReleases(
   if (filters.withPub) {
     const rows = await db.query.pressReleases.findMany({
       where: filter,
-      orderBy: desc(pressReleasesTable.releasedAt),
+      orderBy: descNullsLast(pressReleasesTable.releasedAt),
       with: {
         publication: {
           columns: PUB_LITE_COLUMNS,
@@ -139,11 +143,11 @@ export async function listPressReleases(
         .select()
         .from(pressReleasesTable)
         .where(filter)
-        .orderBy(desc(pressReleasesTable.releasedAt))
+        .orderBy(descNullsLast(pressReleasesTable.releasedAt))
     : await db
         .select()
         .from(pressReleasesTable)
-        .orderBy(desc(pressReleasesTable.releasedAt));
+        .orderBy(descNullsLast(pressReleasesTable.releasedAt));
 
   return {
     press_releases: rows.map(pressReleaseToApi),
