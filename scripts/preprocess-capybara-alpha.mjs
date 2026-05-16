@@ -37,15 +37,16 @@ const TARGETS = [
   { input: 'public/capybara-gate-cyber.png', output: 'public/capybara-gate-cyber-alpha.png', gain: 1.3, subtract: 0 },
   // Logo subtract is higher than gate's because the 1024→140 downscale
   // creates a chunky anti-aliasing halo.
-  // Cyber gets a principled gain reduction: analysis (analyze-capybara-source.mjs)
-  // showed cyber's source has 1.49x more ink-per-pixel than the old reference,
-  // so gain = 1/1.49 ≈ 0.67 brings cyber's rendered ink density to match the
-  // old. A prior over-correction to 0.40 capped even pure-black pencil at
-  // ~32% opacity (mid-tones ~12%, light strokes invisible) — the washed-out
-  // dashboard capybara. Keep gain at the analysed 0.67. Small subtract for
-  // halo cleanup.
+  // Cyber gain history: 0.40 (over-corrected, washed out, lines invisible)
+  // → 0.67 (the 1/1.49 ink-per-pixel match to the old reference: same
+  // aggregate mass, but per-stroke opacity ~71 vs old's ~92, so individual
+  // lines still read pale) → 0.85 (matches/exceeds the old's per-stroke
+  // darkness; with cyber's 1.49x denser linework this gives the punchy,
+  // un-washed dashboard hero the eye expects). Peak ink at gain 0.85 is
+  // ~197/255, well below the 255 clamp, so it stays pencil, not marker.
+  // subtract stays 20 for the 1254→140 downscale halo trim.
   { input: 'public/capybara-logo.png',       output: 'public/capybara-logo-alpha.png',       gain: 1.0, subtract: 40 },
-  { input: 'public/capybara-logo-cyber.png', output: 'public/capybara-logo-cyber-alpha.png', gain: 0.67, subtract: 20 },
+  { input: 'public/capybara-logo-cyber.png', output: 'public/capybara-logo-cyber-alpha.png', gain: 0.85, subtract: 20 },
 ];
 
 const TRANSPARENT_THRESHOLD = 245;
