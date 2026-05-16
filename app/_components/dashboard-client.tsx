@@ -26,6 +26,7 @@ import { EmptyState } from '@/components/empty-state';
 import { CapybaraEmpty } from '@/components/capybara-logo';
 import { ChangelogPanel } from '@/components/changelog-panel';
 import { CapybaraGlitch } from '@/components/capybara-glitch';
+import { CapybaraLightbox } from '@/components/capybara-lightbox';
 import { PublicationFlag } from '@/components/publication-flag';
 import { AUTH_STORAGE_KEY, AUTH_SUCCESS_EVENT } from '@/lib/client/auth-events';
 import { displayTitle } from '@/lib/shared/html-utils';
@@ -215,16 +216,23 @@ export function DashboardClient({ data, period, sortBy }: DashboardClientProps) 
 
         <div className="relative flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-5">
-            <CapybaraGlitch
-              oldSrc="/capybara-logo-alpha.png"
-              cyberSrc="/capybara-logo-cyber-alpha.png"
-              oldAlt="Story Scout Capybara"
-              cyberAlt="Story Scout Capybara, Cyber-Edition"
-              play={playGlitch}
-              onComplete={handleGlitchComplete}
-              className="h-[140px] w-[140px] shrink-0"
-              priority
-            />
+            <CapybaraLightbox
+              src="/capybara-logo-cyber.png"
+              alt="Story Scout Capybara, Cyber-Edition, in voller Größe"
+              width={1254}
+              height={1254}
+            >
+              <CapybaraGlitch
+                oldSrc="/capybara-logo-alpha.png"
+                cyberSrc="/capybara-logo-cyber-alpha.png"
+                oldAlt="Story Scout Capybara"
+                cyberAlt="Story Scout Capybara, Cyber-Edition"
+                play={playGlitch}
+                onComplete={handleGlitchComplete}
+                className="h-[140px] w-[140px]"
+                priority
+              />
+            </CapybaraLightbox>
 
             <div>
               <div className="flex items-baseline gap-2">
