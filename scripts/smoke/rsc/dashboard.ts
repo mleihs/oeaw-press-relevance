@@ -14,6 +14,9 @@
  *   - top-10 sorted by press_score descending (ORDER BY contract)
  *   - period='all' top-10 count ≥ period='month' top-10 count (monotonic
  *     under widening time window)
+ *   - periodCounts: 4 non-negative numbers, monotonic (week≤month≤year≤
+ *     all), period-independent, and periodCounts[period] === topPubsTotal
+ *     (hard parity check that the SQL predicate mirrors listPublications)
  *
  * Run:
  *   DATABASE_URL='postgresql://postgres:postgres@127.0.0.1:54422/postgres' \
@@ -113,6 +116,31 @@ async function main() {
       + `topPubs=${month.topPubs.length}/${month.topPubsTotal} flagged=${month.flaggedCount} pressed=${month.pressReleasedCount} orphans=${month.orphansCount}`,
   );
 
+  // periodCounts — the SQL fn ignores the requested period and always
+  // returns all four; non-negative; monotonic under widening window; and
+  // the current period's count MUST equal topPubsTotal (the hard parity
+  // check that publication_period_counts mirrors listPublications).
+  const pc = month.periodCounts;
+  assert(
+    typeof pc.week === 'number' && typeof pc.month === 'number'
+      && typeof pc.year === 'number' && typeof pc.all === 'number',
+    `periodCounts not all numbers: ${JSON.stringify(pc)}`,
+  );
+  assert(
+    pc.week >= 0 && pc.month >= 0 && pc.year >= 0 && pc.all >= 0,
+    `periodCounts has negative entries: ${JSON.stringify(pc)}`,
+  );
+  assert(
+    pc.week <= pc.month && pc.month <= pc.year && pc.year <= pc.all,
+    `periodCounts not monotonic (week≤month≤year≤all): ${JSON.stringify(pc)}`,
+  );
+  assert(
+    pc.month === month.topPubsTotal,
+    `periodCounts.month ${pc.month} !== month.topPubsTotal ${month.topPubsTotal} `
+      + `(SQL predicate must mirror listPublications exactly)`,
+  );
+  console.log(`  ok: periodCounts ${JSON.stringify(pc)} (parity month=${month.topPubsTotal})`);
+
   // 2. period='all' — top-N covers the universe (≥ any narrower window)
   const all = await getDashboardData('all', SMOKE_LIMIT);
   assert(
@@ -122,6 +150,15 @@ async function main() {
   assert(
     all.topPubs.length >= month.topPubs.length,
     `'all' top-N count ${all.topPubs.length} < 'month' top-N count ${month.topPubs.length} (widening window must not shrink)`,
+  );
+  assert(
+    all.periodCounts.all === all.topPubsTotal,
+    `periodCounts.all ${all.periodCounts.all} !== all.topPubsTotal ${all.topPubsTotal} (predicate parity)`,
+  );
+  assert(
+    JSON.stringify(all.periodCounts) === JSON.stringify(month.periodCounts),
+    `periodCounts is period-dependent: all=${JSON.stringify(all.periodCounts)} `
+      + `month=${JSON.stringify(month.periodCounts)} (the SQL fn must ignore the requested period)`,
   );
   console.log(`  ok: all topPubs=${all.topPubs.length}/${all.topPubsTotal} (≥ month=${month.topPubs.length})`);
 
@@ -134,6 +171,10 @@ async function main() {
   assert(
     week.topPubs.length <= all.topPubs.length,
     `week top-N ${week.topPubs.length} > all top-N ${all.topPubs.length} (narrower window must not grow)`,
+  );
+  assert(
+    week.periodCounts.week === week.topPubsTotal,
+    `periodCounts.week ${week.periodCounts.week} !== week.topPubsTotal ${week.topPubsTotal} (predicate parity)`,
   );
   console.log(`  ok: week top10=${week.topPubs.length} (≤ all=${all.topPubs.length})`);
 

@@ -11,6 +11,7 @@ import {
   SIMILARITY_RANGE_MAX,
   SIMILARITY_RANGE_MIN,
   type DashboardPeriod,
+  type PeriodCounts,
   type ScoreSimilarityPoint,
   type SortBy,
 } from '@/lib/shared/dashboard';
@@ -143,6 +144,32 @@ async function getStats(defaultEligible: boolean): Promise<DashboardStats> {
   };
 }
 
+// Eligible-pub counts for all four dashboard periods in ONE conditional-
+// aggregation roundtrip (migration 20260516000001). Period-independent:
+// the SQL function always returns all four, so the result is the same
+// regardless of which period the page requested. Feeds the „Mehr laden"
+// cross-period hint. The cutoffs come from the SAME `publishedAfter()` the
+// list path uses, so „month" keeps its deliberate two-month window without
+// re-encoding the interval math in SQL. week/month/year never resolve to
+// null (only 'all' would, and the 'all' bucket needs no cutoff).
+async function getPeriodCounts(): Promise<PeriodCounts> {
+  const rows = await db.execute<{ counts: Partial<PeriodCounts> | null }>(
+    sql`SELECT publication_period_counts(
+      ${publishedAfter('week')}::date,
+      ${publishedAfter('month')}::date,
+      ${publishedAfter('year')}::date,
+      true
+    ) AS counts`,
+  );
+  const c = rows[0]?.counts ?? {};
+  return {
+    week: c.week ?? 0,
+    month: c.month ?? 0,
+    year: c.year ?? 0,
+    all: c.all ?? 0,
+  };
+}
+
 async function getTopPubs(
   period: DashboardPeriod,
   limit: number,
@@ -183,6 +210,10 @@ export interface DashboardData {
   /** The effective page-size that the caller resolved (default 20). Round-
    *  trips back to the client so the "Mehr laden" link knows what to add. */
   topPubsLimit: number;
+  /** Eligible-pub counts per period (week/month/year/all). Drives the
+   *  „Mehr laden" terminal-state hint: when the current period is
+   *  exhausted, the InfoBubble shows how many more a wider period adds. */
+  periodCounts: PeriodCounts;
   flaggedCount: number;
   pressReleasedCount: number;
   orphansCount: number;
@@ -205,6 +236,7 @@ export async function getDashboardData(
     pressReleasedCount,
     orphansResult,
     scoreSimilarityPoints,
+    periodCounts,
   ] = await Promise.all([
     getStats(true),
     getTopPubs(period, topPubsLimit, sortBy),
@@ -212,12 +244,14 @@ export async function getDashboardData(
     publicationsRepo.countPressReleased(),
     listPressReleases({ orphans: 'true', withPub: false }),
     getScoreSimilarityPoints(),
+    getPeriodCounts(),
   ]);
   return {
     stats,
     topPubs: topPubsResult.pubs,
     topPubsTotal: topPubsResult.total,
     topPubsLimit,
+    periodCounts,
     flaggedCount,
     pressReleasedCount,
     orphansCount: orphansResult.total,

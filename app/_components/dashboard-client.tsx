@@ -35,6 +35,7 @@ import {
   buildDashboardHref,
   DASHBOARD_PERIODS,
   DBKEY_TO_SORT_KEY,
+  PERIOD_LABELS,
   SORT_BY_LABELS,
   TOP_PUBS_MAX,
   TOP_PUBS_STEP,
@@ -43,6 +44,7 @@ import {
   type DimensionSortKey,
   type SortBy,
 } from '@/lib/shared/dashboard';
+import { buildPeriodHint } from '@/lib/shared/period-hint';
 import type { PublicationListItem } from '@/lib/server/publications/list';
 // `import type` keeps `lib/server/dashboard/fetch.ts` out of the client bundle
 // — that module transitively imports postgres + drizzle and would fail the
@@ -58,13 +60,6 @@ const DimensionsRadar = dynamic(() => import('./dimensions-radar'), {
   ssr: false,
   loading: () => <div className="h-[280px]" aria-hidden />,
 });
-
-const TIME_TAB_LABELS: Record<DashboardPeriod, string> = {
-  week: 'Woche',
-  month: '2 Monate',
-  year: 'Jahr',
-  all: 'Gesamt',
-};
 
 function getTimeRangeLabel(period: DashboardPeriod): string {
   switch (period) {
@@ -133,6 +128,7 @@ export function DashboardClient({ data, period, sortBy }: DashboardClientProps) 
     topPubs,
     topPubsTotal,
     topPubsLimit,
+    periodCounts,
     flaggedCount,
     pressReleasedCount,
     orphansCount,
@@ -140,11 +136,23 @@ export function DashboardClient({ data, period, sortBy }: DashboardClientProps) 
   } = data;
   const dimensionAvgs = stats.dimension_avgs;
   const topKeywords = stats.top_keywords;
-  // „Mehr laden" only when more pubs exist AND the cap isn't reached yet — at
-  // limit=TOP_PUBS_MAX the URL parser would clamp the next click back to MAX
-  // and the request would no-op, so we hide the button instead.
-  const hasMorePubs = topPubs.length < topPubsTotal && topPubsLimit < TOP_PUBS_MAX;
+  // Three terminal states for the „Mehr laden" affordance. The button never
+  // vanishes: when it can't load more it goes disabled and an InfoBubble
+  // explains why and how many more a wider period would surface.
+  //  - canLoadMore: more rows exist and the 200 cap isn't hit → active link
+  //  - capReached:  at the 200 cap but the pool is larger → disabled + hint
+  //  - else (pool exhausted on screen)                     → disabled + hint
+  const canLoadMore = topPubs.length < topPubsTotal && topPubsLimit < TOP_PUBS_MAX;
+  const capReached = topPubsLimit >= TOP_PUBS_MAX && topPubs.length < topPubsTotal;
   const nextLimit = Math.min(topPubsLimit + TOP_PUBS_STEP, TOP_PUBS_MAX);
+  const periodHint = canLoadMore
+    ? null
+    : buildPeriodHint({
+        period,
+        currentTotal: topPubsTotal,
+        counts: periodCounts,
+        capped: capReached,
+      });
 
   // Capybara boot-sequence: play once per local-calendar-day. Triggered either
   // on mount (returning user already authenticated in this session) or on the
@@ -397,7 +405,7 @@ export function DashboardClient({ data, period, sortBy }: DashboardClientProps) 
                       : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  {TIME_TAB_LABELS[value]}
+                  {PERIOD_LABELS[value]}
                 </a>
               ))}
             </nav>
@@ -479,8 +487,8 @@ export function DashboardClient({ data, period, sortBy }: DashboardClientProps) 
             <EmptyState variant="inline" title="Keine analysierten Publikationen in diesem Zeitraum." />
           )}
 
-          {hasMorePubs && (
-            <div className="mt-4 flex justify-center">
+          <div className="mt-4 flex items-center justify-center gap-1.5">
+            {canLoadMore ? (
               <Button asChild variant="outline" size="sm">
                 {/* Plain <a> rather than <Link> — see Period-Tab comment
                     above. Same Next.js query-only navigation regression. */}
@@ -491,8 +499,34 @@ export function DashboardClient({ data, period, sortBy }: DashboardClientProps) 
                   Mehr laden ({TOP_PUBS_STEP} weitere)
                 </a>
               </Button>
-            </div>
-          )}
+            ) : (
+              periodHint && (
+                <>
+                  <Button variant="outline" size="sm" disabled>
+                    {periodHint.buttonLabel}
+                  </Button>
+                  <InfoBubble
+                    size="sm"
+                    content={{
+                      title: periodHint.title,
+                      body: (
+                        <>
+                          <p className="leading-relaxed">{periodHint.lead}</p>
+                          {periodHint.ladder.length > 0 && (
+                            <ul className="mt-1.5 space-y-0.5 tabular-nums">
+                              {periodHint.ladder.map((line) => (
+                                <li key={line}>{line}</li>
+                              ))}
+                            </ul>
+                          )}
+                        </>
+                      ),
+                    }}
+                  />
+                </>
+              )
+            )}
+          </div>
         </CardContent>
       </Card>
 

@@ -6,8 +6,20 @@
 // — which transitively imports `postgres` and `drizzle-orm` and would
 // otherwise fail the RSC → Client boundary check.
 
+// Breadth order is load-bearing: week (7d) ⊂ month (2 Mon) ⊂ year (1 J) ⊂
+// all. `buildPeriodHint` slices this array to find the periods *wider* than
+// the current one, so the order must stay smallest-to-largest.
 export const DASHBOARD_PERIODS = ['week', 'month', 'year', 'all'] as const;
 export type DashboardPeriod = (typeof DASHBOARD_PERIODS)[number];
+
+// Short German tab labels. Single source for the period <nav> tabs and the
+// „Mehr laden" cross-period hint, so a relabel can't drift between the two.
+export const PERIOD_LABELS: Record<DashboardPeriod, string> = {
+  week: 'Woche',
+  month: '2 Monate',
+  year: 'Jahr',
+  all: 'Gesamt',
+};
 
 export function isDashboardPeriod(value: unknown): value is DashboardPeriod {
   return (
@@ -43,6 +55,16 @@ export const SIMILARITY_RANGE_MAX = 1.00;
  * lib/server (a client import of the server module would pull postgres).
  */
 export type ScoreSimilarityPoint = [number, number];
+
+/**
+ * Eligible-pub counts per dashboard period, all four computed in one
+ * `publication_period_counts(...)` roundtrip. Isomorphic for the same
+ * reason as ScoreSimilarityPoint: the server fetcher produces it and the
+ * client „Mehr laden" hint consumes it, so the type lives here rather
+ * than in lib/server (a client import of the server module would pull
+ * postgres into the client bundle).
+ */
+export type PeriodCounts = Record<DashboardPeriod, number>;
 
 export function parseTopPubsLimit(raw: string | string[] | undefined): number {
   const value = Array.isArray(raw) ? raw[0] : raw;
