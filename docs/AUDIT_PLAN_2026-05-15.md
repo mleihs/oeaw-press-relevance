@@ -311,7 +311,7 @@ Optional: Sektions-Kommentar erklären welche vars script-only sind (MEISTERTASK
 
 **Acceptance:** `vercel logs --json` zeigt strukturierte Felder; grep nach route/error-type funktioniert.
 
-### - [ ] 5.3 — Drizzle Schema Mirror View-Body Refresh [P2, ~30min]
+### - [x] 5.3 — Drizzle Schema Mirror View-Body Refresh [P2, ~30min]
 
 **Why:** `lib/server/db/schema.ts:645` `press_cluster_view` Body reflektiert pre-`DISTINCT ON`-Version (Migration `20260511000002`). Drizzle introspectet View-SQL nicht für Types, funktional egal, aber das File misrepräsentiert Prod.
 
@@ -320,6 +320,8 @@ Optional: Sektions-Kommentar erklären welche vars script-only sind (MEISTERTASK
 **Steps:** View-Definition auf `DISTINCT ON (pe.publication_id)`-Form aktualisieren (matched Prod-DB-State).
 
 **Acceptance:** Schema-Mirror = Prod-DB-State; Smoke unverändert.
+
+**Resolution 2026-05-16 (no-op, verified):** Finding was stale. `schema.ts:645` already carries the `SELECT DISTINCT ON (pe.publication_id) … ORDER BY pe.publication_id, pr.released_at DESC NULLS LAST, pr.id` form, line-for-line equivalent to migration `20260511000002` — the only deltas are Postgres-normalization artifacts of an introspected mirror (`SELECT *` expanded to explicit `matched_distinct.*` column refs; `::text`/`::uuid` cast casing). An interim `drizzle-kit pull` (Phase 3/A2 schema refresh) already regenerated it from the post-migration live DB. No code change; fabricating a no-op diff was explicitly avoided.
 
 ### - [ ] 5.4 — Stale `press_release_orphans`-Mentions entfernen [P2, ~20min]
 
