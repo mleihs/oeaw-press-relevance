@@ -1,9 +1,11 @@
 # Architecture Hardening Plan — Post-Phase-3
 
-**Stand:** 2026-05-14
+**Stand:** 2026-05-16
 **Status:** A7/A2/A1/A4 closed 2026-05-12/13; withApiError + env-validation
-done 2026-05-14; Cross-cutting offen (Vitest, structured logging). A5/A6
-wurden 2026-05-13 in den Produkt-Track verschoben — siehe
+done 2026-05-14; Vitest bootstrapped 2026-05-14 (112 Tests per 2026-05-16,
+Skalierung läuft) + structured logging done 2026-05-16 — Cross-cutting damit
+geschlossen; offene Skalierung/Backlog siehe `docs/AUDIT_PLAN_2026-05-15.md`
+§4-6. A5/A6 wurden 2026-05-13 in den Produkt-Track verschoben — siehe
 [ADR 0015](docs/adr/0015-architecture-plan-scope-ends-at-a4.md) +
 § "Out of scope" unten.
 **Vorgänger:** `OSS_READINESS_PLAN.md` (Phasen 1–3 done; Phase 4 = Vitest noch offen)
@@ -554,7 +556,13 @@ if/when the product initiative starts:
 
 ### Vitest (= Phase 4 aus OSS_READINESS_PLAN.md §8)
 
-A2 + A1 sind geschlossen, Vitest steht aus. Drei konkrete Test-Klassen:
+**Status:** [x] bootstrapped 2026-05-14; 112 Tests / 14 Files per 2026-05-16
+(repos + to-api + list-guard + enrichment/batch + meistertask + scoring +
+shared). Skalierung auf 200+ ist Roadmap — Tasks + Backlog in
+`docs/AUDIT_PLAN_2026-05-15.md` §4-6. DB-coupling-Pattern (pure Vitest +
+smoke-split) dokumentiert in `memory/vitest_db_coupling_pattern.md`.
+
+Ursprüngliche drei Test-Klassen (alle inzwischen abgedeckt):
 
 - **Repo-Tests** via pg-proxy: `lib/server/repos/publications.ts` hat
   15 Methoden ohne Unit-Surface heute.
@@ -614,9 +622,15 @@ sind out-of-scope — eigener Script-Lifecycle. **Aufwand actual:** ~1.5h.
 
 ### Structured logging
 
-Aktuell `console.log/error` durchs ganze server-code. Pino oder ähnliches
-Pino-light. Pro Request eine Korrelations-ID. Aufwand ~3h, optional bis
-nach A4 (RSC-Migration ändert wo geloggt wird).
+**Status:** [x] done 2026-05-16 (AUDIT_PLAN §5.2). `lib/server/log.ts` ist
+ein dependency-freier JSON-Lines-Logger (pino-shaped API: info/warn/error/
+child). Bewusst kein pino: Vercel parst JSON-Zeilen nativ, ein Logger ohne
+Transport vermeidet die Next.js-App-Router-Bundling-Reibung. `withApiError`
+loggt beide Pfade (CSRF-Reject als warn, uncaught throw als error mit Stack +
+{route, method, requestId}). Die fünf relevanten `console.*`-Sites in
+lib/server/ sind migriert; `env.ts` bleibt bewusst human-readable (Fail-Fast-
+Bootstrap-Diagnose). `LOG_LEVEL` ist optionaler Knob (process.env, nicht im
+zod-Validator).
 
 ---
 
@@ -641,9 +655,11 @@ und Vorgaben:
    das ist OK, separate Concern.
 
 3. **Architecture phases A7→A2→A1→A4 sind alle geschlossen** (siehe
-   Phase-Handover-Memories). Was offen ist: Cross-cutting-Punkte unten
-   (Vitest, withApiError, env-validation, structured logging). A5/A6
-   sind aus dem Plan raus — siehe [ADR 0015](docs/adr/0015-architecture-plan-scope-ends-at-a4.md)
+   Phase-Handover-Memories). Cross-cutting ist ebenfalls geschlossen:
+   Vitest (bootstrapped), withApiError, env-validation, structured logging
+   alle done. Offen ist nur noch Skalierung/Backlog in
+   `docs/AUDIT_PLAN_2026-05-15.md` §4-6. A5/A6 sind aus dem Plan raus —
+   siehe [ADR 0015](docs/adr/0015-architecture-plan-scope-ends-at-a4.md)
    und § "Out of scope" unten.
 
 4. Workflow pro Phase:

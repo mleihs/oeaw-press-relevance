@@ -359,7 +359,7 @@ Optional: Sektions-Kommentar erklären welche vars script-only sind (MEISTERTASK
 
 **Acceptance:** `npm run lint` returnt `0 errors / 0 warnings`.
 
-### - [ ] 5.5 — ARCHITECTURE_PLAN Status-Refresh [P1, ~30min]
+### - [x] 5.5 — ARCHITECTURE_PLAN Status-Refresh [P1, ~30min]
 
 **Why:** Status-Header sagt „Cross-cutting offen (Vitest, structured logging)". Vitest ist bootstrapped (60 Tests), structured Logging noch absent. Misleading.
 
