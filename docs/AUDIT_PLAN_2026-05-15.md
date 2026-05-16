@@ -387,14 +387,14 @@ Optional: Sektions-Kommentar erklären welche vars script-only sind (MEISTERTASK
 ## Resume Command (für nach /clear)
 
 ```
-Pick up post-audit Phase 5 auf main (last commit 4d717d2 vom 2026-05-15,
-20 Commits diese Session, in sync mit origin/main).
+Pick up post-audit Phase 5 auf main (last commit 1c22df2, 23 Commits
+Session 2026-05-15 inkl. 2 Review-Polish-Commits, in sync mit origin/main).
 
 Read in order:
 1. memory/MEMORY.md (full index)
 2. docs/AUDIT_PLAN_2026-05-15.md (DIESER Plan — Phase 1-4 alle abgehakt,
    Phase 5 ist offen; Source of Truth)
-3. memory/vitest_db_coupling_pattern.md (NEU — relevant für Task 5.1 enrichment Vitest)
+3. memory/vitest_db_coupling_pattern.md (relevant für Task 5.1 enrichment Vitest)
 4. memory/vercel_cli_workflow.md (CLI-Setup, eingeloggt als mleihs,
    .vercel/ ist auf oeaw-press-relevance gelinkt)
 5. memory/user_preferences.md (Stil-Defaults)
@@ -402,11 +402,14 @@ Read in order:
 
 State nach Session 2026-05-15:
 - Phases 1-4 fertig (19/19 + Task 5.6 als Spillover von 1.5; insgesamt 19 ticks)
+- Post-Review-Polish: rate-limit nach lib/server/rate-limit.ts extrahiert
+  (createRateLimiter Factory + getClientIp), dead dev-passthrough aus
+  gate/route.ts raus, withApiError JSDoc + revalidate-Comment geschärft
 - Phase 5 offen: 5.1 (Vitest enrichment 3-4h), 5.2 (structured logging 2-3h),
   5.3 (View-body refresh), 5.4 (stale press_release_orphans-Strings),
   5.5 (ARCHITECTURE_PLAN refresh), 5.6 (7 setState-in-effect)
 - Baseline: lint 0 errors / 7 warnings (alle 7 sind setState-in-effect = Task 5.6),
-  vitest 83/83 grün, tsc clean, alle Smokes grün
+  vitest 92/92 grün, tsc clean, alle Smokes grün
 - Prod: oeaw-press-relevance.vercel.app deployed nach 2.5+2.6, verified
   homepage 200 + /api/auth/gate 401
 - GATE_TOKEN + GATE_PASSWORD jetzt REQUIRED im Validator; beide Vercel-Projekte
@@ -419,6 +422,8 @@ commit individuell mit Co-Authored-By Trailer, push.
 
 Achtung Task 5.2 (structured logging): touches alle Routes via withApiError —
 vor dem Commit Smoke + Vitest cross-checken weil signature-änderung möglich.
+withApiError macht inzwischen 2 Jobs (CSRF-Guard + throw-to-500) — beim
+Logging-Wrap beide Pfade abdecken, nicht nur den catch.
 
 Style: deutsche Anführungszeichen, keine em-dashes (ESLint gate auf
 lib-client/changelog.ts + MDX; in TS-Files auch konvention),
