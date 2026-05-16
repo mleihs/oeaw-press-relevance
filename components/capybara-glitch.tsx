@@ -25,6 +25,14 @@ interface CapybaraGlitchProps {
   glitchDurationMs?: number;
   /** Sizing/layout classes for the outer container (it sets position+overflow). */
   className?: string;
+  /**
+   * Forwarded to both `next/image` elements. Required: these are `fill`
+   * images over multi-MB pencil PNGs, so without an explicit `sizes` Next
+   * assumes 100vw and ships a ~1000px+ variant — slow to first paint on a
+   * weak connection (the gate/dashboard capybara then renders blank until
+   * the bytes arrive). Pass the real display width, e.g. "140px".
+   */
+  sizes: string;
   /** Forwarded to both Image components. */
   priority?: boolean;
 }
@@ -49,6 +57,7 @@ export function CapybaraGlitch({
   oldHoldMs = 2500,
   glitchDurationMs = 7500,
   className,
+  sizes,
   priority = false,
 }: CapybaraGlitchProps) {
   // Seed initial phase from initial `play` value so the first paint already
@@ -118,6 +127,7 @@ export function CapybaraGlitch({
           src={oldSrc}
           alt={oldAlt}
           fill
+          sizes={sizes}
           className="object-contain"
           style={{ objectFit: 'contain' }}
           priority={priority}
@@ -138,6 +148,7 @@ export function CapybaraGlitch({
           src={cyberSrc}
           alt={cyberAlt}
           fill
+          sizes={sizes}
           className="object-contain"
           style={{ objectFit: 'contain' }}
           priority={priority}

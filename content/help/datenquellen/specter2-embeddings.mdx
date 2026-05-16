@@ -54,11 +54,23 @@ Das Training läuft in drei Schritten:
    Der Anchor und das Positive-Paper zitieren einander; der
    Negative-Vertreter wird zufällig aus dem Korpus gezogen. Die
    Trainings-Loss-Funktion zieht Anchor und Positive im Vektorraum
-   zusammen und schiebt das Negative weg.
+   zusammen und schiebt das Negative weg. Das Basismodell
+   (`allenai/specter2_base`) wurde laut
+   [Model-Card](https://huggingface.co/allenai/specter2_base) auf
+   **über 6 Millionen** solcher Zitations-Triplets trainiert
+   (Quelldaten: der `scirepeval`-Datensatz von Allen AI). Ein Triplet
+   besteht aus drei Texten (je Titel + Abstract); dieselben Paper
+   tauchen in vielen Triplets auf, es sind also über 6 Mio.
+   *Triplets*, nicht 6 Mio. einzelne Paper.
 3. **Multi-Task-Adapter (Version 2):** Statt einer einzigen
    Embedding-Funktion gibt es vier spezialisierte Adapter, die auf der
    Basis dasselbe Backbone-Modell unterschiedlich nutzen, z. B. einen
-   für Suchanfragen, einen für Ähnlichkeitsproximity.
+   für Suchanfragen, einen für Ähnlichkeitsproximity. Diese Adapter
+   werden auf den SciRepEval-Tasks nachtrainiert; dafür kommen rund
+   **600.000** aus den 6 Mio. Basis-Triplets gezogene Beispiele in den
+   Trainingsmix dazu. Die von Story Scout genutzte Proximity-Variante
+   (`allenai/specter2`) sitzt als Adapter auf genau diesem
+   Basismodell.
 
 <Callout type="info">
 **Wir nutzen die Proximity-Variante** (`allenai/specter2` als Adapter

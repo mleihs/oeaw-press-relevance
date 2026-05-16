@@ -130,6 +130,7 @@ function RealGate({ children }: { children: React.ReactNode }) {
             cyberAlt="Capybara-Türsteher, Cyber-Edition"
             play={true}
             className="w-full max-w-md aspect-[16/10] mb-6"
+            sizes="(max-width: 480px) 90vw, 448px"
             priority
           />
 

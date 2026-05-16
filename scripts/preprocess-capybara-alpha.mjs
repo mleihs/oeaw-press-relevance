@@ -4,11 +4,15 @@
 // need for mix-blend-multiply in CSS, which breaks inside filter/transform
 // stacking contexts during the gate glitch animation.
 //
-// Formula: rgb_out = (0, 0, 0), alpha = clamp((255 - luminance) * gain - subtract).
-// Math: alpha-blend with rgb=0 against any backdrop bg gives
+// Formula: alpha = clamp((255 - luminance) * gain - subtract); rgb_out is
+// either (0,0,0) (gate targets) or the original rgb (logo targets, see the
+// `preserveRgb` note on TARGETS below).
+// Math (rgb=0 case): alpha-blend against any backdrop bg gives
 //   out = bg * (1 - alpha/255)
 // At gain=1.0 + subtract=0 this is mathematically identical to mix-blend-multiply
 // of the original pencil pixel; the pencil's full tonal range survives.
+// (rgb-preserved case): the paper still goes transparent via the same alpha
+// matte, but the surviving pixels keep the artwork's real graphite colour.
 // gain>1 boosts opacity of dark/mid-tones, useful when the image sits over a
 // backdrop-blur stack that visually washes out a 1:1 multiply (e.g. the gate
 // overlay). Too high clamps dark pixels at 255 and the pencil starts looking
@@ -38,26 +42,28 @@ const ROOT = path.resolve(__dirname, '..');
 // rendered noticeably darker than the start. gate-cyber gain trimmed to ~1.2
 // so the end frame matches the start (measured target: meanInkAlpha 113->~104,
 // meanAllPx 89->~82, i.e. onto the gate-old reference). Gate-only change.
+// `preserveRgb`: gate targets force rgb=(0,0,0) so the alpha-blend is a
+// mathematically exact mix-blend-multiply of the pencil onto the cream/
+// blurred gate backdrop (the look that was tuned there — do not change).
+// Logo targets keep the ORIGINAL rgb: the dashboard hero now sits on the
+// plain page background, so a true cutout of the actual pencil artwork
+// (warm graphite tone preserved, paper turned transparent) reads better
+// and is theme-/glitch-safe (clip-path/invert still act on a transparent
+// rectangle). Same alpha formula either way — only the colour channels
+// differ. gain/subtract for the logo stay as-is: gain scales the alpha
+// matte, subtract trims the 1024→140 downscale anti-alias halo. They were
+// tuned for the black-ink render; with real rgb the stroke now carries its
+// own tone so it reads as authentic soft pencil rather than flat ink.
 const TARGETS = [
-  { input: 'public/capybara-gate.png',       output: 'public/capybara-gate-alpha.png',       gain: 1.3, subtract: 0 },
-  { input: 'public/capybara-gate-cyber.png', output: 'public/capybara-gate-cyber-alpha.png', gain: 1.2, subtract: 0 },
-  // Logo subtract is higher than gate's because the 1024→140 downscale
-  // creates a chunky anti-aliasing halo.
-  // Cyber gain history: 0.40 (over-corrected, washed out, lines invisible)
-  // → 0.67 (the 1/1.49 ink-per-pixel match to the old reference: same
-  // aggregate mass, but per-stroke opacity ~71 vs old's ~92, so individual
-  // lines still read pale) → 0.85 (matches/exceeds the old's per-stroke
-  // darkness; with cyber's 1.49x denser linework this gives the punchy,
-  // un-washed dashboard hero the eye expects). Peak ink at gain 0.85 is
-  // ~197/255, well below the 255 clamp, so it stays pencil, not marker.
-  // subtract stays 20 for the 1254→140 downscale halo trim.
-  { input: 'public/capybara-logo.png',       output: 'public/capybara-logo-alpha.png',       gain: 1.0, subtract: 40 },
-  { input: 'public/capybara-logo-cyber.png', output: 'public/capybara-logo-cyber-alpha.png', gain: 0.85, subtract: 20 },
+  { input: 'public/capybara-gate.png',       output: 'public/capybara-gate-alpha.png',       gain: 1.3,  subtract: 0,  preserveRgb: false },
+  { input: 'public/capybara-gate-cyber.png', output: 'public/capybara-gate-cyber-alpha.png', gain: 1.2,  subtract: 0,  preserveRgb: false },
+  { input: 'public/capybara-logo.png',       output: 'public/capybara-logo-alpha.png',       gain: 1.0,  subtract: 40, preserveRgb: true  },
+  { input: 'public/capybara-logo-cyber.png', output: 'public/capybara-logo-cyber-alpha.png', gain: 0.85, subtract: 20, preserveRgb: true  },
 ];
 
 const TRANSPARENT_THRESHOLD = 245;
 
-async function preprocess(inputRel, outputRel, gain, subtract) {
+async function preprocess(inputRel, outputRel, gain, subtract, preserveRgb) {
   const input = path.join(ROOT, inputRel);
   const output = path.join(ROOT, outputRel);
 
@@ -89,10 +95,12 @@ async function preprocess(inputRel, outputRel, gain, subtract) {
     // weren't above the luminance threshold.
     if (alpha === 0) transparentCount++;
     else opaqueCount++;
-    // rgb_out = 0 so alpha-blend math matches mix-blend-multiply exactly.
-    out[i] = 0;
-    out[i + 1] = 0;
-    out[i + 2] = 0;
+    // Gate: rgb_out=0 so alpha-blend == mix-blend-multiply exactly.
+    // Logo: keep original rgb so the cutout is the real pencil artwork
+    // (tone/warmth preserved), not a flat-black silhouette.
+    out[i] = preserveRgb ? r : 0;
+    out[i + 1] = preserveRgb ? g : 0;
+    out[i + 2] = preserveRgb ? b : 0;
     out[i + 3] = alpha;
   }
 
@@ -109,8 +117,8 @@ async function preprocess(inputRel, outputRel, gain, subtract) {
   console.log(`  Opaque/translucent: ${opaqueCount.toLocaleString()} (${(100 * opaqueCount / totalPixels).toFixed(1)} %)`);
 }
 
-for (const { input, output, gain, subtract } of TARGETS) {
-  await preprocess(input, output, gain, subtract);
+for (const { input, output, gain, subtract, preserveRgb } of TARGETS) {
+  await preprocess(input, output, gain, subtract, preserveRgb);
 }
 
 console.log('\nDone.');

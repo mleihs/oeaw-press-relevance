@@ -20,7 +20,6 @@ import { Badge } from '@/components/ui/badge';
 import { PressScoreBadge } from '@/components/score-bar';
 import { SimilarityIndicator } from '@/components/similarity-indicator';
 import { StatCard } from '@/components/stat-card';
-import { AtmosphericOrb } from '@/components/atmospheric-orb';
 import { InfoBubble } from '@/components/info-bubble';
 import { EmptyState } from '@/components/empty-state';
 import { CapybaraEmpty } from '@/components/capybara-logo';
@@ -212,35 +211,54 @@ export function DashboardClient({ data, period, sortBy }: DashboardClientProps) 
 
   return (
     <div className="space-y-6">
-      {/* Hero — atmospheric gradient panel with animated live stats */}
+      {/* Hero — sits on the plain page background (no tint) so the original
+          pencil capybara reads cleanly; only a whisper of accent on the
+          right, the left (capybara + title) stays clear. */}
       <motion.section
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-        className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-brand/[0.06] via-purple-500/[0.04] to-amber-500/[0.05] dark:from-brand/[0.12] dark:via-purple-500/[0.08] dark:to-amber-500/[0.06] p-6 md:p-8"
+        className="relative overflow-hidden rounded-2xl border p-6 md:p-8"
       >
-        <AtmosphericOrb position="top-right" size="lg" color="brand" />
-        <AtmosphericOrb position="bottom-left" size="md" color="purple" />
+        {/* Soft accent confined to the right region. `to-l` puts the colour
+            stop at the right edge; via ≈0 by centre, transparent on the
+            left, so the capybara/title area is untinted page background. */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-gradient-to-l from-brand/[0.06] via-brand/[0.015] to-transparent dark:from-brand/[0.12] dark:via-brand/[0.03] dark:to-transparent"
+        />
 
         <div className="relative flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-5">
-            <CapybaraLightbox
-              src="/capybara-logo-cyber.png"
-              alt="Story Scout Capybara, Cyber-Edition, in voller Größe"
-              width={1254}
-              height={1254}
-            >
-              <CapybaraGlitch
-                oldSrc="/capybara-logo-alpha.png"
-                cyberSrc="/capybara-logo-cyber-alpha.png"
-                oldAlt="Story Scout Capybara"
-                cyberAlt="Story Scout Capybara, Cyber-Edition"
-                play={playGlitch}
-                onComplete={handleGlitchComplete}
-                className="h-[140px] w-[140px]"
-                priority
+            <div className="relative shrink-0">
+              {/* Dark-mode reading aid: the pencil art is dark, so on the
+                  near-black page background it would vanish. A soft light
+                  pedestal behind it (dark mode only — light mode already
+                  sits on white) keeps the artwork legible without turning
+                  the whole hero into a bright slab. Decorative. */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute left-1/2 top-1/2 hidden h-48 w-48 -translate-x-1/2 -translate-y-1/2 rounded-full blur-xl bg-[radial-gradient(circle,_rgba(255,255,255,0.5)_0%,_rgba(255,255,255,0.22)_35%,_transparent_70%)] dark:block"
               />
-            </CapybaraLightbox>
+              <CapybaraLightbox
+                src="/capybara-logo-cyber.png"
+                alt="Story Scout Capybara, Cyber-Edition, in voller Größe"
+                width={1254}
+                height={1254}
+              >
+                <CapybaraGlitch
+                  oldSrc="/capybara-logo-alpha.png"
+                  cyberSrc="/capybara-logo-cyber-alpha.png"
+                  oldAlt="Story Scout Capybara"
+                  cyberAlt="Story Scout Capybara, Cyber-Edition"
+                  play={playGlitch}
+                  onComplete={handleGlitchComplete}
+                  className="relative h-[140px] w-[140px]"
+                  sizes="140px"
+                  priority
+                />
+              </CapybaraLightbox>
+            </div>
 
             <div>
               <div className="flex items-baseline gap-2">
