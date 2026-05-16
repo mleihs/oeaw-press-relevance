@@ -32,9 +32,15 @@ const ROOT = path.resolve(__dirname, '..');
 // backdrop-blur, which dampens the multiply effect). Logo images stay at
 // gain=1.0 (clean hero backdrop, natural pencil shading preserved) with a
 // subtract pass to trim the anti-aliased halo from the 1024→140 downscale.
+//
+// Gate old=1.3 stays (the boot "start" frame, looks right). The cyber gate
+// "end" frame is the same scene but a denser source, so at equal gain it
+// rendered noticeably darker than the start. gate-cyber gain trimmed to ~1.2
+// so the end frame matches the start (measured target: meanInkAlpha 113->~104,
+// meanAllPx 89->~82, i.e. onto the gate-old reference). Gate-only change.
 const TARGETS = [
   { input: 'public/capybara-gate.png',       output: 'public/capybara-gate-alpha.png',       gain: 1.3, subtract: 0 },
-  { input: 'public/capybara-gate-cyber.png', output: 'public/capybara-gate-cyber-alpha.png', gain: 1.3, subtract: 0 },
+  { input: 'public/capybara-gate-cyber.png', output: 'public/capybara-gate-cyber-alpha.png', gain: 1.2, subtract: 0 },
   // Logo subtract is higher than gate's because the 1024→140 downscale
   // creates a chunky anti-aliasing halo.
   // Cyber gain history: 0.40 (over-corrected, washed out, lines invisible)
