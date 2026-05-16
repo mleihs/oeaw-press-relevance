@@ -1,0 +1,18 @@
+# Real deploys go through the Vercel<->GitHub integration (builds from the
+# repo, which never contains the paths below). This file only guards the
+# `vercel` CLI / `vercel build`: without it the CLI uploads the whole working
+# dir and dies on the per-file 100 MB limit (data dumps, the torch venv, the
+# dev .next cache). Keep in sync with .gitignore's heavy entries.
+
+.git
+.next
+node_modules
+.vercel
+
+# Multi-hundred-MB local-only artefacts, never needed for the build:
+data
+scripts/embeddings/.venv
+
+# Bulk SQL dumps / backups
+*.sql
+*.sql.gz

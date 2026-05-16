@@ -2,7 +2,7 @@
 
 import { ExternalLink } from 'lucide-react';
 import { motion } from 'motion/react';
-import { AnimateNumber } from 'motion-number';
+import { AnimateNumber } from '@/components/animate-number';
 import { PersonAvatar } from '@/app/researchers/_components/person-avatar';
 import { TrendDelta } from '@/app/researchers/_components/trend-delta';
 import { InfoBubble } from '@/components/info-bubble';

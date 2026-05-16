@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { motion } from 'motion/react';
-import { AnimateNumber } from 'motion-number';
+import { AnimateNumber } from '@/components/animate-number';
 import { Crown, Award, Medal, Sparkles } from 'lucide-react';
 import {
   METRIC_SHORT_LABELS,

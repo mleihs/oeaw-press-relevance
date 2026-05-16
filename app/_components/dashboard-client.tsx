@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { AnimatePresence, motion } from 'motion/react';
-import { AnimateNumber } from 'motion-number';
+import { AnimateNumber } from '@/components/animate-number';
 import {
   BarChart3,
   BookOpen,
