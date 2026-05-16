@@ -152,17 +152,26 @@ export function CapybaraLightbox({
                     className="h-full w-full object-contain"
                     priority
                   />
-                </motion.div>
 
-                <DialogPrimitive.Close asChild>
-                  <button
-                    type="button"
-                    aria-label="Schließen"
-                    className="fixed right-4 top-4 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full bg-background/80 text-foreground shadow ring-1 ring-border outline-none transition hover:bg-background focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </DialogPrimitive.Close>
+                  {/* Close sits inside the image box (top-right), so it
+                      tracks the frame instead of the viewport corner.
+                      pointer-events-auto re-enables it inside the
+                      pointer-events-none box; fades in after the morph so it
+                      isn't oversized on the tiny start frame. */}
+                  <DialogPrimitive.Close asChild>
+                    <motion.button
+                      type="button"
+                      aria-label="Schließen"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.15, delay: reduce ? 0 : 0.18 }}
+                      className="pointer-events-auto absolute right-3 top-3 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full bg-background/80 text-foreground shadow ring-1 ring-border outline-none transition-colors hover:bg-background focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <X className="h-4 w-4" />
+                    </motion.button>
+                  </DialogPrimitive.Close>
+                </motion.div>
               </motion.div>
             </DialogPrimitive.Content>
           </DialogPrimitive.Portal>
