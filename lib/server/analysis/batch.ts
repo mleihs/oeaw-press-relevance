@@ -8,6 +8,7 @@ import {
 import type { PublicationForPrompt } from './prompts';
 import { publicationToApi } from '../publications/to-api';
 import type { AnalysisBatchPayload } from '@/lib/shared/schemas';
+import { log } from '@/lib/server/log';
 
 // Wire shape and internal filter shape match 1:1 (camelCase throughout).
 export type AnalysisBatchFilters = AnalysisBatchPayload;
@@ -188,7 +189,7 @@ export async function runAnalysisBatch(
         (/\b402\b/.test(message) && /credits|afford|max_tokens|Budget/i.test(message)) ||
         (/\b401\b/.test(message) && /unauthorized|invalid/i.test(message));
 
-      console.error(`[Analysis] Batch error at index ${i}:`, message);
+      log.error('analysis_batch_error', { batchStart: i, message, fatal: isFatal });
       emit('error', { message, batch_start: i, fatal: isFatal });
 
       for (const pub of batch) {

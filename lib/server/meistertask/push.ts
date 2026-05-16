@@ -14,6 +14,7 @@ import {
 import { mapPublicationToTask, type TaskPublicationInput } from './mapping';
 import { buildTaskUrl } from '@/lib/shared/meistertask-urls';
 import type { MeistertaskPushResult } from '@/lib/shared/meistertask-types';
+import { log } from '@/lib/server/log';
 
 function parseLabelEnv(v: string | undefined): number | undefined {
   if (!v) return undefined;
@@ -124,7 +125,7 @@ export async function pushPublicationToMeistertask(
     .returning({ id: publications.id });
 
   if (updated.length === 0) {
-    console.warn('[meistertask] orphan task created (concurrent push)', {
+    log.warn('meistertask_orphan_task_concurrent_push', {
       pubId,
       taskId: task.id,
     });

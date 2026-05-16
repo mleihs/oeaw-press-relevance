@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { log, requestLogger } from './log';
 
 /**
  * Uniform JSON error response. Used everywhere route handlers need to
@@ -181,14 +182,19 @@ export function withApiError<Args extends unknown[]>(
   handler: (...args: Args) => Promise<Response> | Response,
 ): (...args: Args) => Promise<Response> {
   return async (...args: Args) => {
+    const req = args[0];
+    const rlog = req instanceof Request ? requestLogger(req) : log;
     try {
-      const req = args[0];
       if (req instanceof Request && MUTATING_METHODS.has(req.method.toUpperCase())) {
         const csrfFail = assertSameOrigin(req);
-        if (csrfFail) return csrfFail;
+        if (csrfFail) {
+          rlog.warn('csrf_rejected', { status: csrfFail.status });
+          return csrfFail;
+        }
       }
       return await handler(...args);
     } catch (err) {
+      rlog.error('route_unhandled_error', { err });
       return errorToApiResponse(err);
     }
   };

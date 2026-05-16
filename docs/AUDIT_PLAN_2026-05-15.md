@@ -296,7 +296,7 @@ Optional: Sektions-Kommentar erklären welche vars script-only sind (MEISTERTASK
 
 **Acceptance:** Vitest +6-8 Tests; Future-Refactor-Safety für die schwerste Code-Pfad in lib/server/.
 
-### - [ ] 5.2 — Structured Logging Setup [P1, ~2-3h]
+### - [x] 5.2 — Structured Logging Setup [P1, ~2-3h]
 
 **Why:** ARCHITECTURE_PLAN flagt's offen. `console.error` everywhere; Vercel-Logs sind unstructured.
 

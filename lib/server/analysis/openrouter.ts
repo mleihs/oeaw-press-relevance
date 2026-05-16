@@ -2,6 +2,7 @@ import { AnalysisResult, LLMResponse } from '@/lib/shared/types';
 import { COST_PER_MILLION_TOKENS } from '@/lib/shared/constants';
 import { SYSTEM_PROMPT, buildEvaluationPrompt, PublicationForPrompt } from './prompts';
 import { calculatePressScore } from './score';
+import { log } from '@/lib/server/log';
 
 // Re-export so existing imports from this module keep working.
 export { calculatePressScore };
@@ -110,7 +111,7 @@ export async function analyzePublications(
         const affordable = parseInt(match[1], 10);
         if (affordable > 150) {
           maxTokens = affordable - 50;
-          console.warn(`[Analysis] 402: retrying with max_tokens=${maxTokens} (attempt ${attempt + 1})`);
+          log.warn('analysis_402_retry', { maxTokens, attempt: attempt + 1 });
           lastError = errorBody;
           continue;
         }
@@ -142,7 +143,10 @@ export async function analyzePublications(
         parsed = JSON.parse(jsonMatch[1]);
       } else {
         // Log truncated response for debugging
-        console.error('[Analysis] Failed to parse JSON. Response length:', content.length, 'First 200 chars:', content.slice(0, 200));
+        log.error('analysis_json_parse_failed', {
+          responseLength: content.length,
+          head: content.slice(0, 200),
+        });
         throw new Error('Failed to parse LLM response as JSON');
       }
     }

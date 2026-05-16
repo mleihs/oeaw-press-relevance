@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { apiError, withApiError } from '@/lib/server/http';
+import { requestLogger } from '@/lib/server/log';
 import { meistertaskPushPayloadSchema } from '@/lib/shared/schemas';
 import { pushPublicationToMeistertask } from '@/lib/server/meistertask/push';
 import type { MeistertaskPushResult } from '@/lib/shared/meistertask-types';
@@ -26,7 +27,7 @@ export const POST = withApiError(async (req: NextRequest) => {
     // Don't echo err.message back: upstream API errors can include tokens,
     // user IDs, or project metadata. Log server-side so operators can still
     // diagnose; response stays generic.
-    console.error('[meistertask/push] uncaught exception', err);
+    requestLogger(req).error('meistertask_push_uncaught', { err });
     return apiError('MeisterTask push failed (see server logs)', 500);
   }
 });
