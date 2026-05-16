@@ -55,6 +55,22 @@ async function main() {
     'dimension_avgs not object',
   );
   assert(Array.isArray(month.stats.top_keywords), 'top_keywords not array');
+  assert(
+    Array.isArray(month.scoreSimilarityPoints),
+    'scoreSimilarityPoints not array',
+  );
+  assert(
+    month.scoreSimilarityPoints.every(
+      (pt) =>
+        Array.isArray(pt) &&
+        pt.length === 2 &&
+        pt[0] >= 0 &&
+        pt[0] <= 1 &&
+        pt[1] >= 0 &&
+        pt[1] <= 1,
+    ),
+    'scoreSimilarityPoints has out-of-range or malformed [s,p] tuples',
+  );
   assert(month.flaggedCount >= 0, 'flaggedCount negative');
   assert(month.pressReleasedCount >= 0, 'pressReleasedCount negative');
   assert(month.orphansCount >= 0, 'orphansCount negative');

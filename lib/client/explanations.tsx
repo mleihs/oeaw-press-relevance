@@ -583,12 +583,18 @@ export const EXPL = {
     body: (
       <>
         <Para>
-          Spiegel-Histogramm mit zwei unabhängigen X-Achsen: oben wachsen die
-          <strong> Story Score</strong>-Balken (0 – 100 %), unten spiegelt die
-          <strong> Press-Similarity</strong>-Verteilung (70 – 100 %, gezoomt,
-          weil SPECTER2-Cosinus naturgemäß in diesem Band sitzt). Beide
-          Distributionen teilen die gleiche Y-Skala, damit Magnituden direkt
-          vergleichbar sind.
+          Streudiagramm: jeder Punkt eine analysierte Publikation,
+          <strong> Story Score</strong> auf der X-Achse (0 – 100 %),
+          <strong> Press-Similarity</strong> auf der Y-Achse (70 – 100 %,
+          gezoomt, weil SPECTER2-Cosinus naturgemäß in diesem Band sitzt).
+          Die beiden sind <em>unabhängige</em> Signale: Story Score ist das
+          LLM-Inhaltsurteil, Press-Similarity die reine Embedding-Nähe zum
+          Cluster früher gepresster Papers. Genau deshalb ein gemeinsames
+          Diagramm statt zweier getrennter Histogramme: nur so wird sichtbar,
+          dass ein Paper niedrig scoren und trotzdem embedding-nah liegen kann.
+          Die schraffierte Zone oben-links (niedriger Score, hohe Similarity)
+          markiert wahrscheinliche LLM-Unterschätzungen für die manuelle
+          Prüfung.
         </Para>
         <Para>
           <strong>Empirische Score-Decke:</strong> Der obere Story Score-Bucket

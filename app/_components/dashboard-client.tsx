@@ -48,7 +48,7 @@ import type { PublicationListItem } from '@/lib/server/publications/list';
 // RSC → Client boundary check if pulled in as a value import.
 import type { DashboardData } from '@/lib/server/dashboard/fetch';
 import { KeywordCloud } from './keyword-cloud';
-import { ScoreDistributionChart } from './score-distribution-chart';
+import { ScoreSimilarityScatter } from './score-similarity-scatter';
 
 // Recharts is ~100kB gz; lazy-load via next/dynamic so it only ships when
 // the dashboard actually has data to show in this card.
@@ -134,8 +134,8 @@ export function DashboardClient({ data, period, sortBy }: DashboardClientProps) 
     flaggedCount,
     pressReleasedCount,
     orphansCount,
+    scoreSimilarityPoints,
   } = data;
-  const scoreDistribution = stats.score_distribution;
   const dimensionAvgs = stats.dimension_avgs;
   const topKeywords = stats.top_keywords;
   // „Mehr laden" only when more pubs exist AND the cap isn't reached yet — at
@@ -482,25 +482,23 @@ export function DashboardClient({ data, period, sortBy }: DashboardClientProps) 
         </CardContent>
       </Card>
 
-      {/* Score + Press-Similarity mirror histogram */}
-      {(scoreDistribution.some((v) => v > 0) || stats.similarity_distribution.some((v) => v > 0)) && (
+      {/* Story Score x Press-Similarity joint scatter */}
+      {scoreSimilarityPoints.length > 0 && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base inline-flex items-center gap-1.5">
-              Verteilungen: Story Score &amp; Press-Similarity
+              Story Score &times; Press-Similarity
               <InfoBubble id="score_distribution_chart" size="md" />
             </CardTitle>
             <p className="text-xs text-muted-foreground mt-1">
-              Inhaltsbewertung (oben, 0–100 %) vs. semantische Nähe zum Press-Cluster
-              (unten, gezoomt auf 70–100 %, weil SPECTER2-Cosinus naturgemäß in
-              diesem Band sitzt)
+              Zwei unabhängige Signale gemeinsam: die LLM-Inhaltsbewertung
+              (X, 0–100 %) gegen die semantische Nähe zum Press-Cluster
+              (Y, gezoomt auf 70–100 %). Oben-links = niedriger Score trotz
+              hoher Similarity (LLM evtl. zu streng).
             </p>
           </CardHeader>
           <CardContent>
-            <ScoreDistributionChart
-              scoreBuckets={scoreDistribution}
-              similarityBuckets={stats.similarity_distribution}
-            />
+            <ScoreSimilarityScatter points={scoreSimilarityPoints} />
           </CardContent>
         </Card>
       )}

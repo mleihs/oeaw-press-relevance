@@ -92,6 +92,30 @@ async function getSimilarityDistribution(): Promise<number[]> {
   return buckets;
 }
 
+/**
+ * One [press_score, press_similarity] pair per analyzed pub that has both
+ * metrics. Feeds the joint scatter that replaced the two marginal
+ * histograms: the marginals could never show that a low Story Score can
+ * coincide with a high Press-Similarity (the LLM-blind-spot cross-check);
+ * only the joint view does. Values rounded server-side (s: 3dp, p: 4dp) to
+ * keep the embedded RSC payload lean; identity is intentionally omitted
+ * (this is a distribution view, not a row list, same as the old chart).
+ */
+export type ScoreSimilarityPoint = [number, number];
+
+async function getScoreSimilarityPoints(): Promise<ScoreSimilarityPoint[]> {
+  const rows = await db.execute<{ s: number; p: number }>(sql`
+    SELECT round(press_score::numeric, 3)::float8 AS s,
+           round(press_similarity::numeric, 4)::float8 AS p
+    FROM publications
+    WHERE analysis_status = 'analyzed'
+      AND press_score IS NOT NULL
+      AND press_similarity IS NOT NULL
+      AND archived = false
+  `);
+  return rows.map((r) => [r.s, r.p]);
+}
+
 async function getStats(defaultEligible: boolean): Promise<DashboardStats> {
   const [statsRows, similarityBuckets] = await Promise.all([
     db.execute<{ stats: StatsPayload | null }>(
@@ -161,6 +185,8 @@ export interface DashboardData {
   flaggedCount: number;
   pressReleasedCount: number;
   orphansCount: number;
+  /** (press_score, press_similarity) pairs for the joint scatter. */
+  scoreSimilarityPoints: ScoreSimilarityPoint[];
 }
 
 // Parallel-fetches all five dashboard data sources. Replaces the legacy
@@ -171,12 +197,20 @@ export async function getDashboardData(
   topPubsLimit: number,
   sortBy: SortBy = 'score',
 ): Promise<DashboardData> {
-  const [stats, topPubsResult, flaggedCount, pressReleasedCount, orphansResult] = await Promise.all([
+  const [
+    stats,
+    topPubsResult,
+    flaggedCount,
+    pressReleasedCount,
+    orphansResult,
+    scoreSimilarityPoints,
+  ] = await Promise.all([
     getStats(true),
     getTopPubs(period, topPubsLimit, sortBy),
     publicationsRepo.countWithFlags(),
     publicationsRepo.countPressReleased(),
     listPressReleases({ orphans: 'true', withPub: false }),
+    getScoreSimilarityPoints(),
   ]);
   return {
     stats,
@@ -186,5 +220,6 @@ export async function getDashboardData(
     flaggedCount,
     pressReleasedCount,
     orphansCount: orphansResult.total,
+    scoreSimilarityPoints,
   };
 }
