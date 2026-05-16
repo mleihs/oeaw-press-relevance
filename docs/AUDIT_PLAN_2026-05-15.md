@@ -323,7 +323,7 @@ Optional: Sektions-Kommentar erklären welche vars script-only sind (MEISTERTASK
 
 **Resolution 2026-05-16 (no-op, verified):** Finding was stale. `schema.ts:645` already carries the `SELECT DISTINCT ON (pe.publication_id) … ORDER BY pe.publication_id, pr.released_at DESC NULLS LAST, pr.id` form, line-for-line equivalent to migration `20260511000002` — the only deltas are Postgres-normalization artifacts of an introspected mirror (`SELECT *` expanded to explicit `matched_distinct.*` column refs; `::text`/`::uuid` cast casing). An interim `drizzle-kit pull` (Phase 3/A2 schema refresh) already regenerated it from the post-migration live DB. No code change; fabricating a no-op diff was explicitly avoided.
 
-### - [ ] 5.4 — Stale `press_release_orphans`-Mentions entfernen [P2, ~20min]
+### - [x] 5.4 — Stale `press_release_orphans`-Mentions entfernen [P2, ~20min]
 
 **Why:** Tabelle seit `20260509000003:150` gedroppt, Function `promote_press_release_orphans()` existiert noch. 3 UI/Doc-Strings reden über die Tabelle (technisch korrekt wäre Function).
 
@@ -335,6 +335,8 @@ Optional: Sektions-Kommentar erklären welche vars script-only sind (MEISTERTASK
 **Steps:** Pro File: Rephrasen → entweder Function nennen oder Live-Table `press_releases.where(publication_id IS NULL)`-Pattern.
 
 **Acceptance:** Grep `press_release_orphans` matcht nur noch in Migration-Files + Function-Definition.
+
+**Resolution 2026-05-16 (no-op, verified):** Audit substring-false-positive. All 3 flagged strings already reference the *function* `promote_press_release_orphans()` (which still exists and is actively called from `webdb-import.mjs:658`, `enrich-orphans.ts:176`, `promote-status/route.ts`), and the prose around each correctly describes the current link-by-`publication_id` model — `orphans-list.tsx:57` ("verknüpft … die Zuordnung automatisch"), `explanations.tsx:1388` ("Match … via promote_press_release_orphans()"), `repos/README.md:75` (explicitly "is a SQL function"). No non-migration file names the dropped *table* as a table. The grep flagged the function identifier (`promote_press_release_orphans` contains the substring `press_release_orphans`); a literal-zero grep is impossible without renaming a correctly-named SQL function. Scrubbing accurate prose to remove the substring was explicitly avoided.
 
 ### - [ ] 5.6 — `react-hooks/set-state-in-effect` warnings (7 components) [P1, ~2-3h]
 
