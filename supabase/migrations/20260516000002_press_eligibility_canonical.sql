@@ -64,9 +64,15 @@ COMMENT ON VIEW press_eligible_publications IS
 -- The default_eligible arg is now dead (the view IS the eligibility), so the
 -- signature changes → DROP + CREATE. Only getPeriodCounts() calls this, and
 -- the matching 3-arg caller ships in the same change set.
+-- DROP the superseded 4-arg overload (20260516000001) so the canonical end
+-- state is 3-arg only. For the live prod cutover this DROP is applied
+-- *after* the deploy flips (expand/contract) so the old code never calls a
+-- missing function; on fresh/local DBs it runs in order and is a no-op when
+-- nothing matches. `CREATE OR REPLACE` below keeps the whole migration
+-- idempotent and safe to replay in either order.
 DROP FUNCTION IF EXISTS publication_period_counts(date, date, date, boolean);
 
-CREATE FUNCTION publication_period_counts(
+CREATE OR REPLACE FUNCTION publication_period_counts(
   p_week  date,
   p_month date,
   p_year  date
@@ -83,7 +89,9 @@ AS $$
   FROM press_eligible_publications;
 $$;
 
-COMMENT ON FUNCTION publication_period_counts IS
+-- Explicit signature: unambiguous even while the 4-arg overload transiently
+-- coexists during the zero-downtime prod expand.
+COMMENT ON FUNCTION publication_period_counts(date, date, date) IS
   'Per-period counts (week/month/year/all) over press_eligible_publications — one conditional-aggregation roundtrip for the dashboard "Mehr laden" hint. Cutoffs come from TS publishedAfter() (single source of the interval semantics incl. the deliberate two-month "month" window).';
 
 -- ---------------------------------------------------------------------------
@@ -146,5 +154,5 @@ AS $$
   FROM counts c, score s, agg a;
 $$;
 
-COMMENT ON FUNCTION publication_dashboard_stats IS
+COMMENT ON FUNCTION publication_dashboard_stats(boolean) IS
   'Consolidated dashboard stats. Sources excluded types from the canonical ineligible_publication_types view. Predicate is archived + default_eligible only and NULL-type-INCLUSIVE — deliberately different from press_eligible_publications.';
