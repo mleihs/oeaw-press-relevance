@@ -8,6 +8,8 @@ import { publicationsRepo } from '@/lib/server/repos/publications';
 import { listPressReleases } from '@/lib/server/press-releases/list';
 import {
   DIMENSION_SORT_MAP,
+  SIMILARITY_RANGE_MAX,
+  SIMILARITY_RANGE_MIN,
   type DashboardPeriod,
   type ScoreSimilarityPoint,
   type SortBy,
@@ -57,18 +59,50 @@ export type DashboardStats = {
   avg_score: number | null;
   high_score_count: number;
   score_distribution: number[];
+  /** Histogram of `press_similarity` in 10 buckets across the meaningful
+   *  SPECTER2 band [SIMILARITY_RANGE_MIN, SIMILARITY_RANGE_MAX]. Feeds the
+   *  mirror histogram, which lives alongside the joint scatter (the
+   *  histogram shows each metric's marginal shape; the scatter shows how
+   *  they relate). */
+  similarity_distribution: number[];
   dimension_avgs: Record<string, number>;
   top_keywords: { word: string; count: number }[];
 };
 
+// Press-similarity histogram. 10 equal-width buckets across the meaningful
+// SPECTER2-cosine band [SIMILARITY_RANGE_MIN, SIMILARITY_RANGE_MAX]; a full
+// [0..1] axis would clump all data against the right edge (live values sit
+// in ~0.80-0.95). Any pub with the metric set, no archive/eligibility filter.
+async function getSimilarityDistribution(): Promise<number[]> {
+  // `width_bucket(value, lo, hi, n)` returns 1..n for in-range, 0 / n+1 for
+  // under/overflow. Clamp both edges with GREATEST/LEAST so a future outlier
+  // outside the [MIN, MAX] band still lands inside the 10-cell histogram
+  // rather than vanishing.
+  const rows = await db.execute<{ bucket: number; count: number }>(sql`
+    SELECT
+      GREATEST(LEAST(width_bucket(press_similarity, ${SIMILARITY_RANGE_MIN}::float8, ${SIMILARITY_RANGE_MAX}::float8, 10), 10), 1) AS bucket,
+      count(*)::int AS count
+    FROM publications
+    WHERE press_similarity IS NOT NULL
+    GROUP BY bucket
+    ORDER BY bucket
+  `);
+  const buckets = new Array(10).fill(0) as number[];
+  for (const r of rows) {
+    const idx = Math.max(0, Math.min(9, r.bucket - 1));
+    buckets[idx] += r.count;
+  }
+  return buckets;
+}
+
 /**
  * One [press_score, press_similarity] pair per analyzed pub that has both
- * metrics. Feeds the joint scatter that replaced the two marginal
- * histograms: the marginals could never show that a low Story Score can
- * coincide with a high Press-Similarity (the LLM-blind-spot cross-check);
- * only the joint view does. Values rounded server-side (s: 3dp, p: 4dp) to
- * keep the embedded RSC payload lean; identity is intentionally omitted
- * (this is a distribution view, not a row list, same as the old chart).
+ * metrics. Feeds the joint scatter that complements the marginal
+ * histograms: the marginals can't show that a low Story Score can coincide
+ * with a high Press-Similarity (the LLM-blind-spot cross-check); only the
+ * joint view does. Values rounded server-side (s: 3dp, p: 4dp) to keep the
+ * embedded RSC payload lean; identity is intentionally omitted (distribution
+ * view, not a row list).
  */
 async function getScoreSimilarityPoints(): Promise<ScoreSimilarityPoint[]> {
   const rows = await db.execute<{ s: number; p: number }>(sql`
@@ -84,9 +118,12 @@ async function getScoreSimilarityPoints(): Promise<ScoreSimilarityPoint[]> {
 }
 
 async function getStats(defaultEligible: boolean): Promise<DashboardStats> {
-  const statsRows = await db.execute<{ stats: StatsPayload | null }>(
-    sql`SELECT publication_dashboard_stats(${defaultEligible}) AS stats`,
-  );
+  const [statsRows, similarityBuckets] = await Promise.all([
+    db.execute<{ stats: StatsPayload | null }>(
+      sql`SELECT publication_dashboard_stats(${defaultEligible}) AS stats`,
+    ),
+    getSimilarityDistribution(),
+  ]);
   const stats = statsRows[0]?.stats ?? {};
   return {
     total: stats.total || 0,
@@ -100,6 +137,7 @@ async function getStats(defaultEligible: boolean): Promise<DashboardStats> {
     avg_score: stats.avg_score ?? null,
     high_score_count: stats.high_score_count || 0,
     score_distribution: stats.score_distribution ?? new Array(10).fill(0),
+    similarity_distribution: similarityBuckets,
     dimension_avgs: stats.dimension_avgs ?? {},
     top_keywords: stats.top_keywords ?? [],
   };

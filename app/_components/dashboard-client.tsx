@@ -49,6 +49,7 @@ import type { PublicationListItem } from '@/lib/server/publications/list';
 import type { DashboardData } from '@/lib/server/dashboard/fetch';
 import { KeywordCloud } from './keyword-cloud';
 import { ScoreSimilarityScatter } from './score-similarity-scatter';
+import { ScoreDistributionChart } from './score-distribution-chart';
 
 // Recharts is ~100kB gz; lazy-load via next/dynamic so it only ships when
 // the dashboard actually has data to show in this card.
@@ -504,6 +505,32 @@ export function DashboardClient({ data, period, sortBy }: DashboardClientProps) 
           </CardHeader>
           <CardContent>
             <ScoreSimilarityScatter points={scoreSimilarityPoints} />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Marginal mirror histogram — kept alongside the scatter: the scatter
+          shows how the two metrics relate, this shows each metric's own
+          distribution shape. */}
+      {(stats.score_distribution.some((v) => v > 0) ||
+        stats.similarity_distribution.some((v) => v > 0)) && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">
+              Randverteilungen: Story Score &amp; Press-Similarity
+            </CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">
+              Jede Kennzahl für sich: Story Score oben (0–100 %),
+              Press-Similarity gespiegelt unten (gezoomt auf 70–100 %, das
+              SPECTER2-Cosinus-Band). Der Scatter darüber zeigt, wie beide
+              zusammenhängen, dieses Diagramm ihre jeweilige Form.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <ScoreDistributionChart
+              scoreBuckets={stats.score_distribution}
+              similarityBuckets={stats.similarity_distribution}
+            />
           </CardContent>
         </Card>
       )}
