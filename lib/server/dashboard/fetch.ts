@@ -145,20 +145,20 @@ async function getStats(defaultEligible: boolean): Promise<DashboardStats> {
 }
 
 // Eligible-pub counts for all four dashboard periods in ONE conditional-
-// aggregation roundtrip (migration 20260516000001). Period-independent:
-// the SQL function always returns all four, so the result is the same
-// regardless of which period the page requested. Feeds the „Mehr laden"
-// cross-period hint. The cutoffs come from the SAME `publishedAfter()` the
-// list path uses, so „month" keeps its deliberate two-month window without
-// re-encoding the interval math in SQL. week/month/year never resolve to
-// null (only 'all' would, and the 'all' bucket needs no cutoff).
+// aggregation roundtrip over the canonical `press_eligible_publications`
+// view (migration 20260516000002). Period-independent: the SQL function
+// always returns all four, so the result is the same regardless of which
+// period the page requested. Feeds the „Mehr laden" cross-period hint. The
+// cutoffs come from the SAME `publishedAfter()` the list path uses, so
+// „month" keeps its deliberate two-month window without re-encoding the
+// interval math in SQL. week/month/year never resolve to null (only 'all'
+// would, and the 'all' bucket needs no cutoff).
 async function getPeriodCounts(): Promise<PeriodCounts> {
   const rows = await db.execute<{ counts: Partial<PeriodCounts> | null }>(
     sql`SELECT publication_period_counts(
       ${publishedAfter('week')}::date,
       ${publishedAfter('month')}::date,
-      ${publishedAfter('year')}::date,
-      true
+      ${publishedAfter('year')}::date
     ) AS counts`,
   );
   const c = rows[0]?.counts ?? {};

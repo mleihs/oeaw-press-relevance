@@ -1,11 +1,15 @@
 /**
  * `publication_type.webdb_uid`s that are press-irrelevant by default and
- * hidden when `showAll=false`. Used by both the client-side filter UI
- * (publications page) and the server-side `/api/publications` route.
+ * hidden when `showAll=false`.
  *
- * Single source of truth — by importing from one file in both places, drift
- * between client and server lists is structurally impossible (no need for a
- * pin test that catches it after the fact).
+ * This is the **client-side mirror**: the publications-page filter UI runs
+ * in the browser and cannot query Postgres, so it needs a TS copy of the
+ * list. The **canonical server/SQL source** is the PG view
+ * `ineligible_publication_types` (migration 20260516000002) — the server
+ * (`fetchBadTypeIds`), `publication_period_counts`, and
+ * `publication_dashboard_stats` all resolve through it, so the UID list is
+ * not re-encoded anywhere else. The browser copy and the PG view are kept
+ * from drifting by `scripts/smoke/eligibility.ts` (parity assertion).
  */
 export const ELIGIBILITY_EXCLUDE_TYPE_UIDS = [
   5,  // Buch- oder Aufsatzbesprechung

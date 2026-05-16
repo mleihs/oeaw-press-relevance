@@ -8,13 +8,13 @@ import {
   lte,
   notInArray,
   or,
+  sql,
   type AnyColumn,
   type SQL,
 } from 'drizzle-orm';
 import {
   db,
   publications,
-  publicationTypes as publicationTypesTable,
   oestat6Categories as oestat6CategoriesTable,
   orgunitPublications as orgunitPublicationsTable,
   descNullsLast,
@@ -22,7 +22,6 @@ import {
 } from '@/lib/server/db';
 import { publicationsRepo } from '@/lib/server/repos/publications';
 import { pressReleaseToApi } from '@/lib/server/press-releases/to-api';
-import { ELIGIBILITY_EXCLUDE_TYPE_UIDS } from '@/lib/shared/eligibility';
 import type { Lang, Publication, PressRelease } from '@/lib/shared/types';
 import { publicationToApi } from './to-api';
 
@@ -68,19 +67,16 @@ function csv(s: string | null): string[] {
     .filter(Boolean);
 }
 
-// Eligibility helper: resolves the "ineligible" publication-type IDs at
-// runtime by joining `webdb_uid` → `publication_types.id`. Stays here
-// because it's not a publications-table query (reads the lookup table)
-// and serves only this feature's `default_eligible` filter.
+// Eligibility helper: the press-ineligible publication-type IDs, resolved
+// from the canonical `ineligible_publication_types` view (the single PG
+// home for the excluded-type UID list; migration 20260516000002). The
+// server defers to PG so the UID list is not re-encoded in TS — the only
+// remaining TS copy is the client filter UI's unavoidable mirror in
+// lib/shared/eligibility.ts, pinned by scripts/smoke/eligibility.ts.
 async function fetchBadTypeIds(): Promise<string[]> {
-  const rows = await db
-    .select({ id: publicationTypesTable.id })
-    .from(publicationTypesTable)
-    .where(
-      inArray(publicationTypesTable.webdbUid, [
-        ...ELIGIBILITY_EXCLUDE_TYPE_UIDS,
-      ]),
-    );
+  const rows = await db.execute<{ id: string }>(
+    sql`SELECT id FROM ineligible_publication_types`,
+  );
   return rows.map((r) => r.id);
 }
 
