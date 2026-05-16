@@ -105,14 +105,6 @@ function make(bindings: LogFields): Logger {
 /** Process-wide root logger. Prefer `requestLogger(req)` inside route code. */
 export const log: Logger = make({});
 
-function randomId(): string {
-  try {
-    return globalThis.crypto.randomUUID();
-  } catch {
-    return Math.random().toString(36).slice(2, 10);
-  }
-}
-
 /**
  * Per-request child logger bound to { route, method, requestId }. requestId
  * prefers Vercel's `x-vercel-id` so a log line can be correlated with the
@@ -128,6 +120,6 @@ export function requestLogger(req: Request): Logger {
   const requestId =
     req.headers.get('x-vercel-id') ??
     req.headers.get('x-request-id') ??
-    randomId();
+    globalThis.crypto.randomUUID();
   return log.child({ route, method: req.method, requestId });
 }

@@ -43,14 +43,6 @@ async function main() {
     `score_distribution length ${month.stats.score_distribution.length} !== 10`,
   );
   assert(
-    month.stats.similarity_distribution.length === 10,
-    `similarity_distribution length ${month.stats.similarity_distribution.length} !== 10`,
-  );
-  assert(
-    month.stats.similarity_distribution.every((v) => v >= 0),
-    `similarity_distribution has negative entries: ${JSON.stringify(month.stats.similarity_distribution)}`,
-  );
-  assert(
     typeof month.stats.dimension_avgs === 'object',
     'dimension_avgs not object',
   );

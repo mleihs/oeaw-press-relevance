@@ -183,18 +183,23 @@ export function withApiError<Args extends unknown[]>(
 ): (...args: Args) => Promise<Response> {
   return async (...args: Args) => {
     const req = args[0];
-    const rlog = req instanceof Request ? requestLogger(req) : log;
+    const isReq = req instanceof Request;
+    // Build the request-scoped logger only on the paths that actually log
+    // (CSRF reject / uncaught throw). The happy path is the overwhelming
+    // majority and never logs, so the URL parse + child allocation stay off
+    // the hot path.
+    const rlog = () => (isReq ? requestLogger(req) : log);
     try {
-      if (req instanceof Request && MUTATING_METHODS.has(req.method.toUpperCase())) {
+      if (isReq && MUTATING_METHODS.has(req.method.toUpperCase())) {
         const csrfFail = assertSameOrigin(req);
         if (csrfFail) {
-          rlog.warn('csrf_rejected', { status: csrfFail.status });
+          rlog().warn('csrf_rejected', { status: csrfFail.status });
           return csrfFail;
         }
       }
       return await handler(...args);
     } catch (err) {
-      rlog.error('route_unhandled_error', { err });
+      rlog().error('route_unhandled_error', { err });
       return errorToApiResponse(err);
     }
   };

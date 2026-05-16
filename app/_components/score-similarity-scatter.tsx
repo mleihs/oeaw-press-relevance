@@ -13,16 +13,14 @@ import {
   ZAxis,
 } from 'recharts';
 import { BRAND_HEX } from '@/lib/shared/constants';
-import { SIMILARITY_RANGE_MIN } from '@/lib/shared/dashboard';
-
-// Structurally identical to the server-side ScoreSimilarityPoint; declared
-// locally so the client bundle never imports lib/server/dashboard/fetch
-// (which pulls postgres/drizzle and would break the RSC -> Client boundary).
-type Point = [number, number];
+import {
+  SIMILARITY_RANGE_MIN,
+  type ScoreSimilarityPoint,
+} from '@/lib/shared/dashboard';
 
 interface Props {
   /** [press_score 0..1, press_similarity 0..1] pairs. */
-  points: Point[];
+  points: ScoreSimilarityPoint[];
 }
 
 // Diagnostic quadrant: the LLM scored it un-pitchable (low Story Score) yet

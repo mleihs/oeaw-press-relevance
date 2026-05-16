@@ -7,7 +7,16 @@ import { AUTH_STORAGE_KEY, AUTH_SUCCESS_EVENT } from '@/lib/client/auth-events';
 // sessionStorage auth marker is an external store: it changes via a
 // successful gate submit (same tab, AUTH_SUCCESS_EVENT) or another tab
 // (native `storage` event). useSyncExternalStore reads it hydration-safely
-// (getServerSnapshot = false) so there is no setState-in-effect cycle.
+// so there is no setState-in-effect cycle.
+//
+// getServerSnapshot returns `true` (optimistic-authenticated): SSR only ever
+// runs for requests the middleware already let through (valid gate cookie),
+// so rendering the app on the server is safe and matches the common case.
+// The client store then reconciles. Returning `false` here instead would
+// flash the password gate for one frame on every hard refresh of an
+// already-authenticated session; `true` is flash-free for that path and
+// only the rare cookie-valid-but-sessionStorage-missing edge briefly shows
+// content before the client re-challenges.
 function subscribeAuth(onChange: () => void): () => void {
   window.addEventListener('storage', onChange);
   window.addEventListener(AUTH_SUCCESS_EVENT, onChange);
@@ -21,7 +30,7 @@ function useGateAuth(): boolean {
   return useSyncExternalStore(
     subscribeAuth,
     () => sessionStorage.getItem(AUTH_STORAGE_KEY) === '1',
-    () => false,
+    () => true,
   );
 }
 

@@ -36,6 +36,14 @@ export const TOP_PUBS_MAX = 200;
 export const SIMILARITY_RANGE_MIN = 0.70;
 export const SIMILARITY_RANGE_MAX = 1.00;
 
+/**
+ * One [press_score, press_similarity] pair (both raw 0..1) for the joint
+ * dashboard scatter. Isomorphic on purpose: the server fetcher produces it
+ * and the client chart consumes it, so it lives here rather than in
+ * lib/server (a client import of the server module would pull postgres).
+ */
+export type ScoreSimilarityPoint = [number, number];
+
 export function parseTopPubsLimit(raw: string | string[] | undefined): number {
   const value = Array.isArray(raw) ? raw[0] : raw;
   const n = value ? Number.parseInt(value, 10) : NaN;
