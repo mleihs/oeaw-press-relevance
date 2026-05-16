@@ -15,12 +15,6 @@ export interface ChangelogEntry {
 export const changelogEntries: ChangelogEntry[] = [
   {
     category: 'neu',
-    title: 'Triage-Sitzung als geführter Workflow',
-    body: 'Strukturierte Sitzung statt freier Liste: Pubs werden eine nach der anderen vorgestellt, das Team entscheidet pro Pub Pitch / Hold / Skip / Snooze, optional mit Flag und Begründungs-Notiz. Pitch-Entscheidungen pushen direkt in MeisterTask, Snooze-Pubs tauchen zum gewählten Datum wieder im Stapel auf.',
-    href: '/help/triage/entscheidungen',
-  },
-  {
-    category: 'neu',
     title: 'SPECTER2-Embeddings als zweite Bewertungs-Achse',
     body: 'Press-Similarity ist die SPECTER2-basierte semantische Nähe einer Pub zum historischen Press-Cluster, ein vom inhaltlichen Story Score unabhängiges Signal. Eigene Hilfe-Section beschreibt Modell, Trainings-Paper (Cohan 2020, Singh 2022), Vergleich zu OpenAI/SBERT/SciNCL und den Press-Cluster-Lernloop ohne Modell-Retraining.',
     href: '/help/datenquellen/specter2-embeddings',
@@ -36,6 +30,12 @@ export const changelogEntries: ChangelogEntry[] = [
     title: 'In-App-Hilfe-Center',
     body: 'Über 40 Artikel zu Scores, Filtern, Triage, Pipeline und Datenquellen. Alle Erklär-Bubbles enden mit einem „Mehr im Hilfe-Center →"-Link auf die Tiefen-Erklärung.',
     href: '/help',
+  },
+  {
+    category: 'neu',
+    title: 'Triage-Sitzung als geführter Workflow',
+    body: 'Strukturierte Sitzung statt freier Liste: Pubs werden eine nach der anderen vorgestellt, das Team entscheidet pro Pub Pitch / Hold / Skip / Snooze, optional mit Flag und Begründungs-Notiz. Pitch-Entscheidungen pushen direkt in MeisterTask, Snooze-Pubs tauchen zum gewählten Datum wieder im Stapel auf.',
+    href: '/help/triage/entscheidungen',
   },
   {
     category: 'hintergrund',
