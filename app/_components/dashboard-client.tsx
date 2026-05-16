@@ -226,11 +226,16 @@ export function DashboardClient({ data, period, sortBy }: DashboardClientProps) 
             />
 
             <div>
-              <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-br from-foreground via-foreground to-foreground/70 bg-clip-text text-transparent">
-                Story Scout 0.2
-              </h1>
+              <div className="flex items-baseline gap-2">
+                <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-br from-foreground via-foreground to-foreground/70 bg-clip-text text-transparent">
+                  Story Scout
+                </h1>
+                <span className="text-xs font-medium tracking-wide text-muted-foreground/70 tabular-nums">
+                  v0.2
+                </span>
+              </div>
               <p className="text-muted-foreground mt-1.5 max-w-md">
-                Press-Triage und Pitch-Pipeline für ÖAW-Publikationen.
+                Finde die besten Storys in ÖAW-Publikationen.
               </p>
               <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
                 <div className="inline-flex items-center gap-1.5">
