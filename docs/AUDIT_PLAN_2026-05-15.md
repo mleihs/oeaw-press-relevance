@@ -278,7 +278,7 @@ Optional: Sektions-Kommentar erklären welche vars script-only sind (MEISTERTASK
 
 ## Phase 5 — Structural Cleanup (~6h)
 
-### - [ ] 5.1 — Vitest für `enrichment/batch.ts` [P0, ~3-4h]
+### - [x] 5.1 — Vitest für `enrichment/batch.ts` [P0, ~3-4h]
 
 **Why:** 565 LOC, 0 Tests, complex side-effect Pathway (OpenAlex API + DB mutations). Highest Risk-Reduction-Test im Codebase.
 
