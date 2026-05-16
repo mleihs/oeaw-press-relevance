@@ -60,16 +60,15 @@ COMMENT ON VIEW press_eligible_publications IS
 -- ---------------------------------------------------------------------------
 -- 3. period counts — thin aggregation over the canonical view
 -- ---------------------------------------------------------------------------
--- Was 4-arg with an inline predicate + hardcoded UID array (20260516000001).
--- The default_eligible arg is now dead (the view IS the eligibility), so the
--- signature changes → DROP + CREATE. Only getPeriodCounts() calls this, and
--- the matching 3-arg caller ships in the same change set.
--- DROP the superseded 4-arg overload (20260516000001) so the canonical end
--- state is 3-arg only. For the live prod cutover this DROP is applied
--- *after* the deploy flips (expand/contract) so the old code never calls a
--- missing function; on fresh/local DBs it runs in order and is a no-op when
--- nothing matches. `CREATE OR REPLACE` below keeps the whole migration
--- idempotent and safe to replay in either order.
+-- 20260516000001 shipped this 4-arg with an inline predicate + hardcoded
+-- UID array. `default_eligible` is now dead (the view IS the eligibility),
+-- so the signature drops to 3-arg; only getPeriodCounts() calls it and the
+-- matching 3-arg caller ships in the same change set. The DROP + CREATE OR
+-- REPLACE pair makes the canonical end state 3-arg-only AND keeps the whole
+-- migration idempotent / replay-safe in either order. For the live prod
+-- cutover the DROP is run *after* the deploy flips (expand/contract) so the
+-- old code never calls a missing function; on fresh/local DBs it runs in
+-- order and the DROP is a no-op when nothing matches.
 DROP FUNCTION IF EXISTS publication_period_counts(date, date, date, boolean);
 
 CREATE OR REPLACE FUNCTION publication_period_counts(
