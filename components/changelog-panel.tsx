@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import {
@@ -85,53 +85,70 @@ type EnterProps = ReturnType<ReturnType<typeof makeEnter>>;
  * Pre-first-click the trigger plays an attention loop (halo + amplified pulse)
  * that calms down after the first open.
  */
-type PostHydrationState = {
-  mounted: boolean;
-  hasUnread: boolean;
-  everOpened: boolean;
-};
+// SEEN_KEY + OPENED_KEY are an external store: mutated by handleOpenChange
+// (same tab, custom event) or another tab (native `storage` event).
+const CHANGELOG_EVENT = 'storyscout-changelog-change';
 
-const INITIAL_STATE: PostHydrationState = {
-  mounted: false,
-  hasUnread: false,
-  // Optimistic-true on the server pass so first paint matches the calm state
-  // and we never flash "attention" for returning users while hydration runs.
-  everOpened: true,
-};
+function subscribeChangelog(onChange: () => void): () => void {
+  window.addEventListener('storage', onChange);
+  window.addEventListener(CHANGELOG_EVENT, onChange);
+  return () => {
+    window.removeEventListener('storage', onChange);
+    window.removeEventListener(CHANGELOG_EVENT, onChange);
+  };
+}
+
+function notifyChangelog(): void {
+  window.dispatchEvent(new Event(CHANGELOG_EVENT));
+}
+
+// Two independent localStorage-derived booleans. getServerSnapshot returns the
+// calm state (everOpened = true, hasUnread = false) so SSR + hydration never
+// flash the attention loop; the store reconciles to the real values after
+// hydration with no setState-in-effect cascade.
+function useEverOpened(): boolean {
+  return useSyncExternalStore(
+    subscribeChangelog,
+    () => localStorage.getItem(OPENED_KEY) === '1',
+    () => true,
+  );
+}
+
+function useHasUnread(): boolean {
+  return useSyncExternalStore(
+    subscribeChangelog,
+    () => {
+      const seen = localStorage.getItem(SEEN_KEY);
+      return seen !== null && seen < changelogLastUpdated;
+    },
+    () => false,
+  );
+}
 
 export function ChangelogPanel({ className }: Props) {
-  const [state, setState] = useState<PostHydrationState>(INITIAL_STATE);
   const reduce = useReducedMotion();
+  const everOpened = useEverOpened();
+  const hasUnread = useHasUnread();
 
+  // First visit: stamp SEEN_KEY so a brand-new user doesn't see historical
+  // entries as "unread". Side-effect only (no setState) — not a cascade.
   useEffect(() => {
-    const seen = localStorage.getItem(SEEN_KEY);
-    let hasUnread = false;
-    if (!seen) {
+    if (!localStorage.getItem(SEEN_KEY)) {
       localStorage.setItem(SEEN_KEY, new Date().toISOString());
-    } else {
-      hasUnread = seen < changelogLastUpdated;
+      notifyChangelog();
     }
-    setState({
-      mounted: true,
-      hasUnread,
-      everOpened: localStorage.getItem(OPENED_KEY) === '1',
-    });
   }, []);
 
   const handleOpenChange = (open: boolean) => {
     if (!open) return;
-    if (!state.everOpened) localStorage.setItem(OPENED_KEY, '1');
-    if (state.hasUnread) localStorage.setItem(SEEN_KEY, new Date().toISOString());
-    if (!state.everOpened || state.hasUnread) {
-      setState((s) => ({ ...s, hasUnread: false, everOpened: true }));
-    }
+    if (!everOpened) localStorage.setItem(OPENED_KEY, '1');
+    if (hasUnread) localStorage.setItem(SEEN_KEY, new Date().toISOString());
+    if (!everOpened || hasUnread) notifyChangelog();
   };
-
-  const { mounted, hasUnread, everOpened } = state;
 
   const [hero, ...rest] = changelogEntries;
   const enter = makeEnter(reduce);
-  const attention = mounted && !everOpened && !reduce;
+  const attention = !everOpened && !reduce;
 
   return (
     <Sheet onOpenChange={handleOpenChange}>
@@ -191,7 +208,7 @@ export function ChangelogPanel({ className }: Props) {
           </motion.span>
           <span className="relative">Was ist neu</span>
           <AnimatePresence>
-            {mounted && hasUnread && (
+            {hasUnread && (
               <motion.span
                 key="unread-dot"
                 initial={{ scale: 0, opacity: 0 }}

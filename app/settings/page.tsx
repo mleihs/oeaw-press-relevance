@@ -1,37 +1,53 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback, useSyncExternalStore } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { AppSettings, DEFAULT_SETTINGS } from '@/lib/shared/types';
-import { loadSettings, saveSettings } from '@/lib/client/stores/settings-store';
+import {
+  loadSettingsSnapshot,
+  saveSettings,
+  subscribeSettings,
+} from '@/lib/client/stores/settings-store';
 import { useInfoBubblesEnabled } from '@/lib/client/hooks/use-info-bubbles';
 import { InfoBubble } from '@/components/info-bubble';
 import { Save, CheckCircle2, Eye, EyeOff, Loader2, XCircle, ShieldCheck, Info, User } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function SettingsPage() {
-  const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
+  // Persisted settings come from a localStorage-backed external store
+  // (hydration-safe via getServerSnapshot = DEFAULT_SETTINGS). `draft` is the
+  // in-memory working copy while the user edits; null means "showing the
+  // persisted value". Save/Reset write through and clear the draft. This
+  // avoids the setState-in-effect hydration shim entirely.
+  const persisted = useSyncExternalStore(
+    subscribeSettings,
+    loadSettingsSnapshot,
+    () => DEFAULT_SETTINGS,
+  );
+  const [draft, setDraft] = useState<AppSettings | null>(null);
+  const settings = draft ?? persisted;
+
   const [showApiKey, setShowApiKey] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [bubblesOn, setBubblesOn] = useInfoBubblesEnabled();
 
-  useEffect(() => {
-    setSettings(loadSettings());
-  }, []);
+  const updateSettings = (patch: Partial<AppSettings>) =>
+    setDraft((d) => ({ ...(d ?? persisted), ...patch }));
 
   const handleSave = () => {
     saveSettings(settings);
+    setDraft(null);
     toast.success('Einstellungen gespeichert');
   };
 
   const handleReset = () => {
-    setSettings(DEFAULT_SETTINGS);
     saveSettings(DEFAULT_SETTINGS);
+    setDraft(null);
     toast.info('Einstellungen auf Standard zurückgesetzt');
   };
 
@@ -79,7 +95,7 @@ export default function SettingsPage() {
             type="text"
             placeholder="z.B. Marie"
             value={settings.reviewerName}
-            onChange={(e) => setSettings(s => ({ ...s, reviewerName: e.target.value }))}
+            onChange={(e) => updateSettings({ reviewerName: e.target.value })}
           />
           <p className="text-xs text-muted-foreground">
             Erscheint bei Flag-Notizen und Triage-Entscheidungen als Urheber. Leer lassen → Eintrag als „team".
@@ -169,7 +185,7 @@ export default function SettingsPage() {
                 type={showApiKey ? 'text' : 'password'}
                 placeholder="sk-or-..."
                 value={settings.openrouterApiKey}
-                onChange={(e) => setSettings(s => ({ ...s, openrouterApiKey: e.target.value }))}
+                onChange={(e) => updateSettings({ openrouterApiKey: e.target.value })}
                 className="pr-10"
               />
               <button
@@ -206,7 +222,7 @@ export default function SettingsPage() {
               min={0}
               max={1000}
               value={settings.minWordCount}
-              onChange={(e) => setSettings(s => ({ ...s, minWordCount: parseInt(e.target.value) || 0 }))}
+              onChange={(e) => updateSettings({ minWordCount: parseInt(e.target.value) || 0 })}
             />
             <p className="text-xs text-muted-foreground">
               Nur Publikationen mit mindestens so vielen Wörtern angereichertem Inhalt analysieren. 0 = alle analysieren.
@@ -223,7 +239,7 @@ export default function SettingsPage() {
               min={1}
               max={5}
               value={settings.batchSize}
-              onChange={(e) => setSettings(s => ({ ...s, batchSize: Math.min(5, Math.max(1, parseInt(e.target.value) || 3)) }))}
+              onChange={(e) => updateSettings({ batchSize: Math.min(5, Math.max(1, parseInt(e.target.value) || 3)) })}
             />
             <p className="text-xs text-muted-foreground">
               Anzahl der Publikationen pro LLM-API-Aufruf (1-5). Niedrigere Werte liefern bessere Ergebnisse, kosten aber mehr.

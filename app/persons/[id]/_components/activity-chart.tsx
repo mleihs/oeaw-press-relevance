@@ -21,6 +21,11 @@ const BAND_COLORS = {
 export function ActivityChart({ data }: ActivityChartProps) {
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  // next-themes is client-only: `resolvedTheme` is undefined on the server and
+  // during hydration. A one-shot post-hydration `mounted` flag is the canonical
+  // next-themes SSR guard — it flips exactly once, so there is no cascading
+  // render the lint rule guards against.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setMounted(true), []);
   const isDark = mounted && resolvedTheme === 'dark';
   const tickColor = isDark ? '#737373' : '#a1a1a1';

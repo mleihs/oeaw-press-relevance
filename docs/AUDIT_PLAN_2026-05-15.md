@@ -338,7 +338,7 @@ Optional: Sektions-Kommentar erklären welche vars script-only sind (MEISTERTASK
 
 **Resolution 2026-05-16 (no-op, verified):** Audit substring-false-positive. All 3 flagged strings already reference the *function* `promote_press_release_orphans()` (which still exists and is actively called from `webdb-import.mjs:658`, `enrich-orphans.ts:176`, `promote-status/route.ts`), and the prose around each correctly describes the current link-by-`publication_id` model — `orphans-list.tsx:57` ("verknüpft … die Zuordnung automatisch"), `explanations.tsx:1388` ("Match … via promote_press_release_orphans()"), `repos/README.md:75` (explicitly "is a SQL function"). No non-migration file names the dropped *table* as a table. The grep flagged the function identifier (`promote_press_release_orphans` contains the substring `press_release_orphans`); a literal-zero grep is impossible without renaming a correctly-named SQL function. Scrubbing accurate prose to remove the substring was explicitly avoided.
 
-### - [ ] 5.6 — `react-hooks/set-state-in-effect` warnings (7 components) [P1, ~2-3h]
+### - [x] 5.6 — `react-hooks/set-state-in-effect` warnings (7 components) [P1, ~2-3h]
 
 **Why:** Split off von Task 1.5 nach Reality-Check. Diese 7 sind die im TECH_HANDOVER #1 explizit als „Architektur-Entscheidung pending" geflagte Schuld. Jeder Site hat eigenes Pattern, kein Copy-Paste-Fix möglich.
 

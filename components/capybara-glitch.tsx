@@ -67,6 +67,13 @@ export function CapybaraGlitch({
     onCompleteRef.current = onComplete;
   }, [onComplete]);
 
+  // Legitimate effect: this is a wall-clock-driven animation state machine
+  // (synchronising React state with an external system — the timer schedule),
+  // exactly the case React's docs carve out for effects. The synchronous
+  // setPhase calls reset the sequence when `play` toggles; the rest fire from
+  // setTimeout. There is no derived-state cascade to refactor away, so the
+  // rule is disabled for the whole controller with this rationale.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!play) {
       setPhase('cyber');
@@ -92,6 +99,7 @@ export function CapybaraGlitch({
       clearTimeout(t2);
     };
   }, [play, oldHoldMs, glitchDurationMs]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   return (
     <div className={cn('relative overflow-hidden', className)}>

@@ -53,7 +53,6 @@ export function BeeswarmView({ points, loading, metric }: BeeswarmViewProps) {
   // simulations on every mid-drag pixel; React only re-runs the layout effect
   // when the deferred value catches up, after higher-priority work is done.
   const deferredWidth = useDeferredValue(width);
-  const [nodes, setNodes] = useState<Node[]>([]);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   // Track container width for responsive layout.
@@ -77,11 +76,12 @@ export function BeeswarmView({ points, loading, metric }: BeeswarmViewProps) {
     return [...map.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
   }, [points]);
 
-  useEffect(() => {
-    if (points.length === 0) {
-      setNodes([]);
-      return;
-    }
+  // Layout is a pure function of (points, deferredWidth): a d3-force
+  // simulation run to a fixed 140 ticks. That makes it derived state, so it
+  // belongs in useMemo, not an effect+setState (which the lint rule flags as
+  // a cascading render). useDeferredValue already throttles width churn.
+  const nodes = useMemo<Node[]>(() => {
+    if (points.length === 0) return [];
     const max = Math.max(1, ...points.map((p) => p.metric_value));
     const min = 0;
     const innerW = deferredWidth - 2 * PAD_X;
@@ -104,7 +104,7 @@ export function BeeswarmView({ points, loading, metric }: BeeswarmViewProps) {
     for (const n of initial) {
       n.y = Math.max(PAD_Y + n.r, Math.min(HEIGHT - PAD_Y - n.r, n.y));
     }
-    setNodes(initial.slice());
+    return initial.slice();
   }, [points, deferredWidth]);
 
   if (loading && points.length === 0) {

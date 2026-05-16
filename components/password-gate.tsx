@@ -1,8 +1,29 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useSyncExternalStore } from 'react';
 import { CapybaraGlitch } from '@/components/capybara-glitch';
 import { AUTH_STORAGE_KEY, AUTH_SUCCESS_EVENT } from '@/lib/client/auth-events';
+
+// sessionStorage auth marker is an external store: it changes via a
+// successful gate submit (same tab, AUTH_SUCCESS_EVENT) or another tab
+// (native `storage` event). useSyncExternalStore reads it hydration-safely
+// (getServerSnapshot = false) so there is no setState-in-effect cycle.
+function subscribeAuth(onChange: () => void): () => void {
+  window.addEventListener('storage', onChange);
+  window.addEventListener(AUTH_SUCCESS_EVENT, onChange);
+  return () => {
+    window.removeEventListener('storage', onChange);
+    window.removeEventListener(AUTH_SUCCESS_EVENT, onChange);
+  };
+}
+
+function useGateAuth(): boolean {
+  return useSyncExternalStore(
+    subscribeAuth,
+    () => sessionStorage.getItem(AUTH_STORAGE_KEY) === '1',
+    () => false,
+  );
+}
 
 // G1: Real auth via /api/auth/gate. The server compares against GATE_PASSWORD
 // (env-side only) and sets an HttpOnly cookie that the middleware checks on
@@ -32,25 +53,17 @@ function DevPassthrough({ children }: { children: React.ReactNode }) {
 }
 
 function RealGate({ children }: { children: React.ReactNode }) {
-  const [authenticated, setAuthenticated] = useState(false);
-  const [checking, setChecking] = useState(true);
+  const authenticated = useGateAuth();
   const [password, setPassword] = useState('');
   const [error, setError] = useState(false);
   const [shaking, setShaking] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (sessionStorage.getItem(AUTH_STORAGE_KEY) === '1') {
-      setAuthenticated(true);
-    }
-    setChecking(false);
-  }, []);
-
-  useEffect(() => {
-    if (!authenticated && !checking && inputRef.current) {
+    if (!authenticated && inputRef.current) {
       inputRef.current.focus();
     }
-  }, [authenticated, checking]);
+  }, [authenticated]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,8 +74,8 @@ function RealGate({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ password }),
       });
       if (res.ok) {
+        // The store subscription (AUTH_SUCCESS_EVENT) flips `authenticated`.
         sessionStorage.setItem(AUTH_STORAGE_KEY, '1');
-        setAuthenticated(true);
         window.dispatchEvent(new CustomEvent(AUTH_SUCCESS_EVENT));
       } else {
         setError(true);
@@ -77,10 +90,6 @@ function RealGate({ children }: { children: React.ReactNode }) {
       setTimeout(() => setError(false), 2000);
     }
   };
-
-  if (checking) {
-    return null;
-  }
 
   if (authenticated) {
     return <>{children}</>;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { RotateCcw, Search } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -40,10 +40,14 @@ export function FiltersBar({ total, hidden }: Props) {
   const searchRef = useRef<HTMLInputElement>(null);
 
   // Keep the visible search input in sync if the URL changes externally
-  // (e.g. preset clicked, chip removed, browser back).
-  useEffect(() => {
+  // (preset clicked, chip removed, browser back). React's "adjust state
+  // during render" pattern: detect the external change by comparing the
+  // previous `filters.q` and reset synchronously — no effect, no cascade.
+  const [prevQ, setPrevQ] = useState(filters.q);
+  if (filters.q !== prevQ) {
+    setPrevQ(filters.q);
     setSearchInput(filters.q);
-  }, [filters.q]);
+  }
 
   const handleSearchChange = useCallback(
     (v: string) => {
