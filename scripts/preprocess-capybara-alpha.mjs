@@ -39,10 +39,13 @@ const TARGETS = [
   // creates a chunky anti-aliasing halo.
   // Cyber gets a principled gain reduction: analysis (analyze-capybara-source.mjs)
   // showed cyber's source has 1.49x more ink-per-pixel than the old reference,
-  // so gain=0.67 brings cyber's rendered ink density to match the old.
-  // Small subtract for halo cleanup.
+  // so gain = 1/1.49 ≈ 0.67 brings cyber's rendered ink density to match the
+  // old. A prior over-correction to 0.40 capped even pure-black pencil at
+  // ~32% opacity (mid-tones ~12%, light strokes invisible) — the washed-out
+  // dashboard capybara. Keep gain at the analysed 0.67. Small subtract for
+  // halo cleanup.
   { input: 'public/capybara-logo.png',       output: 'public/capybara-logo-alpha.png',       gain: 1.0, subtract: 40 },
-  { input: 'public/capybara-logo-cyber.png', output: 'public/capybara-logo-cyber-alpha.png', gain: 0.40, subtract: 20 },
+  { input: 'public/capybara-logo-cyber.png', output: 'public/capybara-logo-cyber-alpha.png', gain: 0.67, subtract: 20 },
 ];
 
 const TRANSPARENT_THRESHOLD = 245;
