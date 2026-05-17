@@ -330,7 +330,7 @@ export function DashboardClient({ data, period, sortBy }: DashboardClientProps) 
           <CardTitle className="text-base">Schnellzugriff</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-3">
-          <Button asChild className="bg-brand text-white hover:bg-brand/90">
+          <Button asChild>
             <Link href="/publications">
               <BookOpen className="mr-2 h-4 w-4" />
               Publikationen durchsuchen

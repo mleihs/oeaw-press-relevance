@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
@@ -177,6 +178,9 @@ export function Nav() {
                 <SheetTitle className="text-white text-lg font-semibold">
                   Story Scout
                 </SheetTitle>
+                <SheetDescription className="sr-only">
+                  Hauptnavigation: Bereiche, Schnellzugriffe und Einstellungen.
+                </SheetDescription>
               </SheetHeader>
               <nav className="flex-1 flex flex-col gap-3 px-2 py-2 overflow-y-auto">
                 {NAV_GROUPS.map((group, gi) => (

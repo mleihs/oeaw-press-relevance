@@ -2,15 +2,15 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 /**
- * Middleware-based gate.
+ * Proxy-based gate (Next 16 `proxy` file convention; was `middleware.ts`).
  *
  * The previous client-only `<PasswordGate>` was cosmetic — `/api/*` was
- * unprotected and anyone with the URL could query the API. This middleware
+ * unprotected and anyone with the URL could query the API. This proxy
  * enforces the gate at the request boundary, before any route or RSC runs.
  *
  * Flow:
  *  1. Request comes in for any non-public path.
- *  2. Middleware checks for the `gate` cookie.
+ *  2. The proxy checks for the `gate` cookie.
  *  3. If absent or invalid → API requests get 401 JSON; page requests get
  *     redirected to `/` (where the gate UI is shown).
  *  4. POST /api/auth/gate validates GATE_PASSWORD server-side and sets
@@ -39,7 +39,7 @@ function isPublic(pathname: string): boolean {
   return PUBLIC_PREFIXES.some((p) => pathname.startsWith(p));
 }
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   if (isPublic(pathname)) return NextResponse.next();
 

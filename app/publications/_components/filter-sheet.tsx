@@ -7,7 +7,7 @@ import { InfoBubble } from '@/components/info-bubble';
 import type { EXPL } from '@/lib/client/explanations';
 
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { Calendar } from '@/components/ui/calendar';
@@ -61,6 +61,9 @@ export function FilterSheet({ filters, setFilters, lookups }: Props) {
       <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto p-0">
         <SheetHeader className="sticky top-0 z-10 bg-background border-b px-5 py-4">
           <SheetTitle>Filter</SheetTitle>
+          <SheetDescription className="sr-only">
+            Publikationen nach Score, Zeitraum, Typ und weiteren Kriterien filtern und sortieren.
+          </SheetDescription>
         </SheetHeader>
         <div className="px-5 py-5 space-y-6">
           <PublicationTypeFacet filters={filters} setFilters={setFilters} lookups={lookups} />

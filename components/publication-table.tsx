@@ -75,11 +75,11 @@ interface PublicationTableProps {
 
 function SortIcon({ column, sortBy, sortOrder }: { column: string; sortBy?: string; sortOrder?: 'asc' | 'desc' }) {
   if (sortBy !== column) {
-    return <ArrowUpDown className="h-3 w-3 text-muted-foreground/50" />;
+    return <ArrowUpDown aria-hidden="true" className="h-3 w-3 text-muted-foreground/50" />;
   }
   return sortOrder === 'asc'
-    ? <ArrowUp className="h-3 w-3 text-foreground" />
-    : <ArrowDown className="h-3 w-3 text-foreground" />;
+    ? <ArrowUp aria-hidden="true" className="h-3 w-3 text-foreground" />
+    : <ArrowDown aria-hidden="true" className="h-3 w-3 text-foreground" />;
 }
 
 // Sortable header cell. Picks between three modes:
@@ -107,6 +107,10 @@ function SortHeader({
 }) {
   const href = sortHrefs?.[column];
   const sortable = href !== undefined || !!onSort;
+  let ariaSort: React.AriaAttributes['aria-sort'];
+  if (!sortable) ariaSort = undefined;
+  else if (sortBy !== column) ariaSort = 'none';
+  else ariaSort = sortOrder === 'asc' ? 'ascending' : 'descending';
   const inner = (
     <span className="inline-flex items-center gap-1">
       {label}
@@ -116,7 +120,7 @@ function SortHeader({
   );
   if (href !== undefined) {
     return (
-      <th className="p-0 text-left font-medium">
+      <th scope="col" aria-sort={ariaSort} className="p-0 text-left font-medium">
         <Link
           href={href}
           replace
@@ -130,15 +134,22 @@ function SortHeader({
   }
   if (onSort) {
     return (
-      <th
-        className="p-3 text-left font-medium cursor-pointer select-none hover:bg-muted transition-colors"
-        onClick={() => onSort(column)}
-      >
-        {inner}
+      <th scope="col" aria-sort={ariaSort} className="p-0 text-left font-medium">
+        <button
+          type="button"
+          onClick={() => onSort(column)}
+          className="block w-full p-3 text-left font-medium cursor-pointer select-none hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset"
+        >
+          {inner}
+        </button>
       </th>
     );
   }
-  return <th className="p-3 text-left font-medium">{inner}</th>;
+  return (
+    <th scope="col" className="p-3 text-left font-medium">
+      {inner}
+    </th>
+  );
 }
 
 export function PublicationTable({
