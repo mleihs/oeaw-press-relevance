@@ -44,8 +44,8 @@ const Schema = z.object({
   // it as required because the app cannot run those flows without it.
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
 
-  // Gate (middleware.ts + app/api/auth/gate). Required: leaving either
-  // unset puts the middleware into pass-through mode, which is the
+  // Gate (proxy.ts + app/api/auth/gate). Required: leaving either
+  // unset puts the proxy into pass-through mode, which is the
   // identical failure shape as the 2026-05-14 incident scaled up to
   // an anonymous-API outage. Both Vercel projects already have these
   // set as of 2026-05-15 audit.

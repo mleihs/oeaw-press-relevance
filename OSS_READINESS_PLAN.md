@@ -78,7 +78,7 @@ Tooling), nicht eliminiert (das ginge nur via Rewrite):
 
 | Symptom | Mitigation in Weg C |
 |---|---|
-| Magic-File-Conventions (`page.tsx`, `layout.tsx`, `route.ts`, `loading.tsx`, `error.tsx`, `not-found.tsx`, `middleware.ts`) | ARCHITECTURE.md dokumentiert pro File-Type was passiert; ESLint-Boundaries-Plugin (Phase 2) macht Server/Client-Confusion früher sichtbar |
+| Magic-File-Conventions (`page.tsx`, `layout.tsx`, `route.ts`, `loading.tsx`, `error.tsx`, `not-found.tsx`, `proxy.ts`) | ARCHITECTURE.md dokumentiert pro File-Type was passiert; ESLint-Boundaries-Plugin (Phase 2) macht Server/Client-Confusion früher sichtbar |
 | `'use client'` ist ein String, Server-only-Code in Client-Component erst zur Runtime sichtbar | Phase 2: striktere Import-Boundaries via ESLint `eslint-plugin-boundaries` — Server-Logic in `lib/server/` darf nicht von Client-Components importiert werden |
 | App-Router war Pages-Router-Replacement, Next.js 17/18 könnten wieder paradigmenwechseln | Mitigation: Pure-Function-Business-Logic in `lib/server/` ist Next.js-agnostisch und überlebt Framework-Pivots |
 | Caching-Mechanismen (`revalidate`, `dynamic`, `force-static`, fetch-cache, ISR) überlappen | ARCHITECTURE.md: explizite Caching-Strategie pro Route dokumentiert |

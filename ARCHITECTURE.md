@@ -429,7 +429,7 @@ statement.
 | `promote_press_release_orphans()` | VOLATILE | Links orphan press_releases to newly imported pubs |
 | `publication_with_relations(pub_id)` | STABLE | Eager-fetch with joins |
 
-### Password Gate (`/api/auth/gate`, `middleware.ts`)
+### Password Gate (`/api/auth/gate`, `proxy.ts`)
 
 `GATE_PASSWORD` (plaintext, env-only) + `GATE_TOKEN` (sha256 of the
 same, env-only) are compared on submit. On success the server sets an

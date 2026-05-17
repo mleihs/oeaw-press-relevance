@@ -98,7 +98,7 @@ this doc gets stale, the code does not.
 | Filter preset behavior, modifier semantics | `app/publications/_filters.ts` + `_constants.ts` |
 | WebDB-title truncation heuristic | `lib/html-utils.ts:displayTitle` (memory: `webdb_title_truncation.md`) |
 | Mahighlight semantics | `lib/explanations.tsx:mahighlight_self` (memory: `mahighlight_semantics.md`) |
-| Auth flow | `middleware.ts` + `app/api/auth/gate/route.ts` |
+| Auth flow | `proxy.ts` + `app/api/auth/gate/route.ts` |
 | Migration rollback strategy | `supabase/ROLLBACK.md` |
 | Test coverage (current scope) | `lib/scoring.test.ts`, `lib/html-utils.test.ts`, `app/publications/_constants.test.ts` |
 | Bayes-smoothing JS port (matches PG `weighted_avg`) | `lib/scoring.ts:bayesSmooth` |
@@ -178,7 +178,7 @@ in `getSupabaseAdmin()`).
 
 ## 4. API surface
 
-All routes are gated by `middleware.ts`; unauthenticated calls get 401 JSON.
+All routes are gated by `proxy.ts`; unauthenticated calls get 401 JSON.
 Server-side uses env-bound credentials exclusively (no client-side Supabase
 header overrides — closed by audit B2 + H1).
 
@@ -318,7 +318,7 @@ logic that can be wrong without a DB.
 
 ## 7. Auth gate
 
-Middleware-based (`middleware.ts`, since G1 / commit `23d27f3`).
+Proxy-based (`proxy.ts`, since G1 / commit `23d27f3`; was `middleware.ts` pre-Next-16).
 
 Login flow:
 1. `POST /api/auth/gate` with `{ password }` validates against `GATE_PASSWORD`
