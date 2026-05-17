@@ -218,7 +218,7 @@ export function DashboardClient({ data, period, sortBy }: DashboardClientProps) 
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-        className="relative overflow-hidden rounded-2xl border p-6 md:p-8"
+        className="relative overflow-hidden rounded-2xl border px-6 py-4 md:px-8 md:py-5"
       >
         {/* Soft accent confined to the right region. `to-l` puts the colour
             stop at the right edge; via ≈0 by centre, transparent on the
@@ -253,8 +253,8 @@ export function DashboardClient({ data, period, sortBy }: DashboardClientProps) 
                   cyberAlt="Story Scout Capybara, Cyber-Edition"
                   play={playGlitch}
                   onComplete={handleGlitchComplete}
-                  className="relative h-[140px] w-[140px]"
-                  sizes="140px"
+                  className="relative h-[161px] w-[161px]"
+                  sizes="161px"
                   priority
                 />
               </CapybaraLightbox>
@@ -330,7 +330,7 @@ export function DashboardClient({ data, period, sortBy }: DashboardClientProps) 
           <CardTitle className="text-base">Schnellzugriff</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-3">
-          <Button asChild>
+          <Button asChild className="bg-brand text-white hover:bg-brand/90">
             <Link href="/publications">
               <BookOpen className="mr-2 h-4 w-4" />
               Publikationen durchsuchen

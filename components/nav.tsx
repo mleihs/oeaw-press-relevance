@@ -70,6 +70,14 @@ const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
+/**
+ * Import + Einstellungen render icon-only in the desktop right cluster
+ * (next to the theme toggle). The mobile sheet still lists them with
+ * labels via NAV_GROUPS, so this stays a single source of truth.
+ */
+const RIGHT_ICON_LINKS: NavLink[] =
+  NAV_GROUPS.find((g) => g.title === 'System')?.links ?? [];
+
 function isActiveLink(href: string, pathname: string): boolean {
   if (href === '/') return pathname === '/';
   if (href === '/researchers') {
@@ -91,7 +99,7 @@ export function Nav() {
 
         {/* Desktop nav: groups separated by thin dividers */}
         <nav className="hidden md:flex items-center gap-0.5">
-          {NAV_GROUPS.map((group, gi) => (
+          {NAV_GROUPS.filter((g) => g.title !== 'System').map((group, gi) => (
             <div key={gi} className="flex items-center gap-0.5">
               {gi > 0 && (
                 <span aria-hidden="true" className="mx-1.5 h-5 w-px bg-white/20" />
@@ -121,9 +129,32 @@ export function Nav() {
 
         <div className="ml-auto flex items-center gap-1">
           <CommandMenuButton />
-          <span className="text-white/85 text-xs font-medium tracking-wider hidden sm:block mr-2">
-            ÖAW
-          </span>
+          {RIGHT_ICON_LINKS.length > 0 && (
+            <span
+              aria-hidden="true"
+              className="mx-1 hidden h-5 w-px bg-white/20 md:block"
+            />
+          )}
+          {RIGHT_ICON_LINKS.map(({ href, label, icon: Icon }) => {
+            const isActive = isActiveLink(href, pathname);
+            return (
+              <Link
+                key={href}
+                href={href}
+                aria-current={isActive ? 'page' : undefined}
+                aria-label={label}
+                title={label}
+                className={cn(
+                  'hidden h-9 w-9 items-center justify-center rounded-md transition-colors md:flex',
+                  isActive
+                    ? 'bg-white/20 text-white'
+                    : 'text-white/70 hover:bg-white/10 hover:text-white',
+                )}
+              >
+                <Icon className="h-4 w-4" />
+              </Link>
+            );
+          })}
           <ThemeToggle />
 
           {/* Mobile hamburger */}
