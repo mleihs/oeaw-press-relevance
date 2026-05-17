@@ -210,6 +210,93 @@ export function EnrichmentModal({
     abortRef.current?.abort();
   }, []);
 
+  const handleSSEEvent = useCallback((eventType: string, data: Record<string, unknown>) => {
+    switch (eventType) {
+      case 'pub_start': {
+        setPubIndex(data.index as number);
+        setPubTotal(data.total as number);
+        setCurrentPub({
+          title: data.title as string,
+          doi: data.doi as string | null,
+          hasCsvAbstract: data.has_csv_abstract === true,
+          sources: emptySourceStates(),
+        });
+        setCapybaraAvatarState('working');
+        break;
+      }
+      case 'source_try': {
+        const src = data.source as EnrichmentSourceName;
+        setCurrentPub(prev => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            sources: { ...prev.sources, [src]: { status: 'loading' as const } },
+          };
+        });
+        break;
+      }
+      case 'source_done': {
+        const src = data.source as EnrichmentSourceName;
+        const srcStatus = data.status as EnrichmentSourceStatus;
+        setCurrentPub(prev => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            sources: {
+              ...prev.sources,
+              [src]: {
+                status: srcStatus,
+                found: data.found as SourceState['found'],
+                error: data.error as string | undefined,
+              },
+            },
+          };
+        });
+        if (srcStatus === 'success') {
+          setCapybaraAvatarState('found');
+          // Reset back to working after a brief moment
+          setTimeout(() => setCapybaraAvatarState(prev => prev === 'found' ? 'working' : prev), 600);
+        }
+        break;
+      }
+      case 'pub_done': {
+        const completedPub: CompletedPub = {
+          title: data.title as string,
+          finalStatus: data.final_status as CompletedPub['finalStatus'],
+          sourcesUsed: data.sources_used as string[],
+          hasAbstract: data.has_abstract as boolean,
+        };
+        setCompleted(prev => [...prev, completedPub]);
+        if (data.sources_used) {
+          const sources = data.sources_used as string[];
+          setSourceCounts(prev => {
+            const next = { ...prev };
+            for (const s of sources) {
+              next[s] = (next[s] || 0) + 1;
+            }
+            return next;
+          });
+        }
+        break;
+      }
+      case 'complete': {
+        setStatus('complete');
+        setCapybaraAvatarState('complete');
+        setCurrentPub(null);
+        setFinalStats({
+          successful: data.successful as number,
+          partial: data.partial as number,
+          failed: data.failed as number,
+          withAbstract: data.with_abstract as number,
+        });
+        setSourceCounts(data.sources as Record<string, number>);
+        onComplete?.();
+        break;
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const startEnrichment = useCallback(async () => {
     setStatus('running');
     setCurrentPub(null);
@@ -297,93 +384,6 @@ export function EnrichmentModal({
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config, reset]);
-
-  const handleSSEEvent = useCallback((eventType: string, data: Record<string, unknown>) => {
-    switch (eventType) {
-      case 'pub_start': {
-        setPubIndex(data.index as number);
-        setPubTotal(data.total as number);
-        setCurrentPub({
-          title: data.title as string,
-          doi: data.doi as string | null,
-          hasCsvAbstract: data.has_csv_abstract === true,
-          sources: emptySourceStates(),
-        });
-        setCapybaraAvatarState('working');
-        break;
-      }
-      case 'source_try': {
-        const src = data.source as EnrichmentSourceName;
-        setCurrentPub(prev => {
-          if (!prev) return prev;
-          return {
-            ...prev,
-            sources: { ...prev.sources, [src]: { status: 'loading' as const } },
-          };
-        });
-        break;
-      }
-      case 'source_done': {
-        const src = data.source as EnrichmentSourceName;
-        const srcStatus = data.status as EnrichmentSourceStatus;
-        setCurrentPub(prev => {
-          if (!prev) return prev;
-          return {
-            ...prev,
-            sources: {
-              ...prev.sources,
-              [src]: {
-                status: srcStatus,
-                found: data.found as SourceState['found'],
-                error: data.error as string | undefined,
-              },
-            },
-          };
-        });
-        if (srcStatus === 'success') {
-          setCapybaraAvatarState('found');
-          // Reset back to working after a brief moment
-          setTimeout(() => setCapybaraAvatarState(prev => prev === 'found' ? 'working' : prev), 600);
-        }
-        break;
-      }
-      case 'pub_done': {
-        const completedPub: CompletedPub = {
-          title: data.title as string,
-          finalStatus: data.final_status as CompletedPub['finalStatus'],
-          sourcesUsed: data.sources_used as string[],
-          hasAbstract: data.has_abstract as boolean,
-        };
-        setCompleted(prev => [...prev, completedPub]);
-        if (data.sources_used) {
-          const sources = data.sources_used as string[];
-          setSourceCounts(prev => {
-            const next = { ...prev };
-            for (const s of sources) {
-              next[s] = (next[s] || 0) + 1;
-            }
-            return next;
-          });
-        }
-        break;
-      }
-      case 'complete': {
-        setStatus('complete');
-        setCapybaraAvatarState('complete');
-        setCurrentPub(null);
-        setFinalStats({
-          successful: data.successful as number,
-          partial: data.partial as number,
-          failed: data.failed as number,
-          withAbstract: data.with_abstract as number,
-        });
-        setSourceCounts(data.sources as Record<string, number>);
-        onComplete?.();
-        break;
-      }
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const pct = pubTotal > 0 ? Math.round(((pubIndex + 1) / pubTotal) * 100) : 0;
   const elapsed = Math.floor(elapsedMs / 1000);
