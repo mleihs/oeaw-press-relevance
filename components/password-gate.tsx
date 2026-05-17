@@ -61,6 +61,18 @@ function DevPassthrough({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// Post-login deep-link target. `proxy.ts` sets `?next=<pathname>` when it
+// redirects an unauthenticated page request to `/`. Only same-site paths
+// are honoured; reject `//` and `/\` to close the open-redirect hole.
+// URLSearchParams already percent-decodes, so do NOT decodeURIComponent
+// again (double-decode bug).
+function safeNextPath(): string | null {
+  const next = new URLSearchParams(window.location.search).get('next');
+  if (!next || !next.startsWith('/')) return null;
+  if (next.startsWith('//') || next.startsWith('/\\')) return null;
+  return next;
+}
+
 function RealGate({ children }: { children: React.ReactNode }) {
   const authenticated = useGateAuth();
   const [password, setPassword] = useState('');
@@ -83,8 +95,17 @@ function RealGate({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ password }),
       });
       if (res.ok) {
-        // The store subscription (AUTH_SUCCESS_EVENT) flips `authenticated`.
         sessionStorage.setItem(AUTH_STORAGE_KEY, '1');
+        const next = safeNextPath();
+        if (next) {
+          // Cookie is set now, so proxy.ts lets the deep link through and
+          // the destination RSC renders fresh. Full nav, not router.push
+          // (no-ops on query-only diffs: nextjs16_client_nav_regression).
+          window.location.assign(next);
+          return;
+        }
+        // No deep link: the store subscription (AUTH_SUCCESS_EVENT) flips
+        // `authenticated` and renders the app in place.
         window.dispatchEvent(new CustomEvent(AUTH_SUCCESS_EVENT));
       } else {
         setError(true);
