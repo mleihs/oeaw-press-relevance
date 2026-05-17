@@ -54,15 +54,29 @@ Plus: `safeParse`+`apiError` boilerplate duplicated per route.
       (`CanonicalPublication`, ADR 0017). Hand-written zod query/param/
       payload schemas added to `lib/shared/schemas.ts` (kernel-clean).
 - [x] Applied: mutations first (`auth/gate`, `publications/[id]/decision`
-      DRY'd, `publications/[id]/flag` DRY'd ×2) then the GET/export
-      routes (`publications`, `publications/[id]`, `…/similar-pressed`,
-      `export/csv|json`, `persons/[id]`, `press-releases`,
-      `review/queue`, `researchers/distribution`, `researchers/top`,
-      `publications/stats`). `press-releases/promote-status` = documented
-      no-op (GET, zero input — verified-no-op discipline, no fabricated
-      diff). Schemas derived from *actual current usage*; valid traffic
-      unchanged, only prior `NaN`-offset / `NaN::int` 500-vectors and
-      malformed UUIDs now return a clean 400.
+      DRY'd, `publications/[id]/flag` DRY'd ×2) then the input-bearing
+      GET/export routes (`publications`, `publications/[id]`,
+      `…/similar-pressed`, `export/csv|json`, `persons/[id]`,
+      `researchers/distribution`, `researchers/top`,
+      `publications/stats`). Verified-no-ops (input fully narrowed
+      downstream → no schema, documented, no fabricated diff):
+      `press-releases/promote-status` (GET, zero input),
+      `press-releases` (exact `=== 'true'` + tri-state `orphans`),
+      `review/queue` (isDecision / `sort==='combined'`). Schemas derived
+      from *actual current usage* (verified against the nuqs parsers +
+      hardcoded client values); valid traffic unchanged, only prior
+      `NaN`-offset / `NaN::int` 500-vectors and malformed UUIDs now
+      return a clean 400.
+- [x] **Post-review cleanup** (self-critique pass): removed the two
+      decorative `.loose()` guards (press-releases/review-queue) that
+      could not reject anything → honest verified-no-ops; folded the
+      CSV-list parse into the schema (`csvParam` `.transform()`) so the
+      `csv()` helper is no longer copy-pasted across both researchers
+      routes (the exact duplication ADR 0018 targeted). Conscious
+      remaining tradeoff: the `publications` route edge-asserts
+      `page`/`pageSize` while `listPublications` keeps its own tested
+      35-param parse (dual-parse) — refactoring that hot path is a
+      higher regression risk than the smell warrants; kept + documented.
 - [x] Vitest: +28 (lib/shared/schemas.test.ts, lib/server/schemas.test.ts,
       lib/server/http.test.ts) — 164 total green.
 - [x] Verify protocol passed (typecheck/lint/em-dashes/test all 0; only

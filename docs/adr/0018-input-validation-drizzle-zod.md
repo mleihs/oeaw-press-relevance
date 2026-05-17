@@ -69,3 +69,16 @@ Helper set is `validateBody` / `validateQuery` / `validateParams`; they
 throw `ApiValidationError`, which `withApiError` maps to a 400 logged at
 warn (not the 500 `route_unhandled_error` path). Status: `accepted`,
 unchanged.
+
+3. **"All input-reading routes" is satisfied by verified-no-ops, not
+   decorative schemas.** `press-releases/promote-status` (zero input),
+   `press-releases` and `review/queue` have no undefined-behaviour vector
+   — their input is fully narrowed downstream. A permissive schema there
+   cannot reject anything and its result is discarded; that is validation
+   theater. The honest application of "standardize across all
+   input-reading routes" is: a schema where it rejects real bad input or
+   yields a typed value the route consumes; an explicit, documented
+   no-op where downstream already guarantees safety. (A first cut added
+   the decorative guards; the self-review pass removed them.) The
+   CSV-list param parse lives once in the schema (`csvParam`
+   `.transform()`), not copy-pasted per route.

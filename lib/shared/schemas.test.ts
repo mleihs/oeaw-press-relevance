@@ -7,8 +7,6 @@ import {
   publicationsListQuerySchema,
   analyzedExportQuerySchema,
   publicationsStatsQuerySchema,
-  pressReleasesQuerySchema,
-  reviewQueueQuerySchema,
 } from './schemas';
 
 describe('gatePayloadSchema', () => {
@@ -84,6 +82,15 @@ describe('researchersLeaderboardQuerySchema', () => {
         .min_value,
     ).toBe(0.5);
   });
+  it('oestat3_ids: CSV string -> array; absent/empty/blank -> null', () => {
+    const s = researchersLeaderboardQuerySchema(50);
+    expect(s.parse(base).oestat3_ids).toBeNull();
+    expect(s.parse({ ...base, oestat3_ids: '' }).oestat3_ids).toBeNull();
+    expect(s.parse({ ...base, oestat3_ids: ' , ,' }).oestat3_ids).toBeNull();
+    expect(
+      s.parse({ ...base, oestat3_ids: '101, 102 ,103' }).oestat3_ids,
+    ).toEqual(['101', '102', '103']);
+  });
 });
 
 describe('similarPressedQuerySchema', () => {
@@ -139,19 +146,5 @@ describe('already-safe routes: schemas never reject current valid traffic', () =
       publicationsStatsQuerySchema.parse({ default_eligible: 'true' })
         .default_eligible,
     ).toBe(true);
-  });
-  it('press-releases / review-queue accept any current param shape', () => {
-    expect(
-      pressReleasesQuerySchema.safeParse({
-        stats: 'true',
-        orphans: 'false',
-        with_pub: 'true',
-      }).success,
-    ).toBe(true);
-    expect(
-      reviewQueueQuerySchema.safeParse({ sort: 'combined', decision: 'pitch' })
-        .success,
-    ).toBe(true);
-    expect(reviewQueueQuerySchema.safeParse({}).success).toBe(true);
   });
 });

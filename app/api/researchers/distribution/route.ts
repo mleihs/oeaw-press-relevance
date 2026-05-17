@@ -5,18 +5,12 @@ import { validateQuery, withApiError } from '@/lib/server/http';
 import { researchersLeaderboardQuerySchema } from '@/lib/shared/schemas';
 import type { DistributionPoint } from '@/lib/shared/researchers';
 
-function csv(s: string | null | undefined): string[] | null {
-  if (!s) return null;
-  const arr = s.split(',').map((x) => x.trim()).filter(Boolean);
-  return arr.length ? arr : null;
-}
-
 export const GET = withApiError(async (req: NextRequest) => {
   const q = validateQuery(
     req.nextUrl.searchParams,
     researchersLeaderboardQuerySchema(500),
   );
-  const oestat3Ids = csv(q.oestat3_ids);
+  const oestat3Ids = q.oestat3_ids;
   // Hard cap stays a clamp (not a reject) exactly as before.
   const limit = Math.min(q.limit, 1000);
 

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { validateQuery, withApiError } from '@/lib/server/http';
-import { pressReleasesQuerySchema } from '@/lib/shared/schemas';
+import { withApiError } from '@/lib/server/http';
 import {
   getPressReleasesStats,
   listPressReleases,
@@ -15,12 +14,11 @@ import {
  *   (none)          all press-releases
  */
 export const GET = withApiError(async (req: NextRequest) => {
+  // No edge schema by design (ADR 0018 verified-no-op): every param is
+  // fully narrowed below — `stats`/`with_pub` via exact `=== 'true'` and
+  // `orphans` as an explicit tri-state — so there is no undefined-behaviour
+  // vector for a schema to guard.
   const sp = req.nextUrl.searchParams;
-  // Routes the input through the shared helper for consistency and to
-  // document the accepted params. Permissive (.loose()) — the tri-state
-  // `orphans` contract is decoded by the exact `=== 'true' / 'false'`
-  // checks below, so this does not narrow what the route accepts.
-  validateQuery(sp, pressReleasesQuerySchema);
 
   if (sp.get('stats') === 'true') {
     const stats = await getPressReleasesStats();

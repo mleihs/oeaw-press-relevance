@@ -115,6 +115,19 @@ const numParam = (def: number) =>
     z.coerce.number().default(def),
   );
 
+/** `?x=a,b,c` → ['a','b','c']; absent / empty / all-blank → null. Single
+ *  home for the CSV-list param parse that was copy-pasted as a local
+ *  `csv()` in both researchers routes (the exact duplication ADR 0018
+ *  set out to remove). */
+const csvParam = z
+  .string()
+  .optional()
+  .transform((s) => {
+    if (!s) return null;
+    const arr = s.split(',').map((x) => x.trim()).filter(Boolean);
+    return arr.length ? arr : null;
+  });
+
 /** POST /api/auth/gate. `password` is required (min 1): a missing/empty
  *  password is a client bug or probe and now gets a deterministic 400
  *  rather than falling through to the 401 "Invalid password" path. The
@@ -149,8 +162,8 @@ const AUTHORSHIP_SCOPES = ['all', 'lead'] as const;
  * this is the single source. `limitDefault` is the only per-route
  * difference (distribution 500, top 50); the hard cap (1000 / 200) stays
  * a `Math.min` in the route, faithful to the prior clamp-don't-reject
- * behaviour. `oestat3_ids` stays a raw string — the route keeps its own
- * `csv()` split.
+ * behaviour. `oestat3_ids` is split here (`csvParam`) so the route no
+ * longer carries a duplicated `csv()`.
  */
 export const researchersLeaderboardQuerySchema = (limitDefault: number) =>
   z.object({
@@ -160,7 +173,7 @@ export const researchersLeaderboardQuerySchema = (limitDefault: number) =>
     authorship_scope: z
       .enum(AUTHORSHIP_SCOPES, { message: 'invalid authorship_scope' })
       .default('all'),
-    oestat3_ids: z.string().optional(),
+    oestat3_ids: csvParam,
     include_external: isTrueBool,
     include_deceased: isTrueBool,
     member_only: isTrueBool,
@@ -210,26 +223,12 @@ export const publicationsStatsQuerySchema = z
   .object({ default_eligible: isTrueBool })
   .loose();
 
-/** GET /api/press-releases. The route keeps its exact `=== 'true'` /
- *  `=== 'false'` discrimination (the wire contract is tri-state for
- *  `orphans`), so these stay raw optional strings — the schema documents
- *  the accepted params and routes the request through the shared helper
- *  for consistency; it does not narrow what the already-safe route
- *  accepts. */
-export const pressReleasesQuerySchema = z
-  .object({
-    stats: z.string().optional(),
-    orphans: z.string().optional(),
-    with_pub: z.string().optional(),
-  })
-  .loose();
-
-/** GET /api/review/queue. `buildReviewQueue` already narrows `decision`
- *  (isDecision guard) and `sort` (only 'combined' is special), so this is
- *  a thin typed contract + consistency guard, not a tightening. */
-export const reviewQueueQuerySchema = z
-  .object({
-    sort: z.string().optional(),
-    decision: z.string().optional(),
-  })
-  .loose();
+// Deliberately NO schema for GET /api/press-releases and
+// GET /api/review/queue: their input is fully narrowed downstream
+// (listPressReleases decodes the tri-state `orphans` via exact
+// `=== 'true' / 'false'`; buildReviewQueue guards `decision` with
+// isDecision and treats only `sort === 'combined'` specially). A
+// permissive `.loose()` schema there could not reject anything and its
+// result would be discarded — that is validation theater, not
+// validation. Documented verified-no-op, same as
+// /api/press-releases/promote-status (verified-no-op discipline).
