@@ -12,13 +12,14 @@ passes. ADRs: [0017](adr/0017-source-adapter-boundary.md) (proposed),
 | Item | State |
 |---|---|
 | Session deploys (live) | `2971f63` capybara/hero/nav · `73c1046` a11y+darkButton+proxy · `a2f68e7` doc-pass |
-| Durable artifacts (this plan + ADR 0017/0018 + index) | committed + pushed this turn (see `git log`) |
-| Deep-link `?next=` bug | quick-fix this turn, own commit (see `git log`) |
-| Pass A (drizzle-zod + edge validation) | **DONE** this turn (see git log) |
-| In-range dep refresh (pre-Pass-A, user-chosen) | committed + pushed this turn (`08a6cf6`) |
-| Pass B (ingest adapter, ADR 0017) | not started |
-| Pass C (virtualize publication-table) | not started |
-| Tracking task IDs | #9 durable · #10–13 Pass A |
+| Durable artifacts (this plan + ADR 0017/0018 + index) | committed + pushed (`e3efb38`) |
+| Deep-link `?next=` bug | fixed (`40316e2`) |
+| In-range dep refresh (pre-Pass-A, user-chosen) | DONE, prod-verified (`08a6cf6`) |
+| Pass A (drizzle-zod + edge validation) | **DONE**, prod-verified (`80a7d3e` + self-review cleanup `2bc5937`); canonical 200 |
+| Pass B (ingest adapter, ADR 0017) | **NOT STARTED** — next; data-sensitive (parity gate first); resume block below |
+| Pass C (virtualize publication-table) | not started (after B; needs Playwright+axe gate) |
+| Deferred deps (deliberate, NOT staleness) | eslint 10 (blocked by next/boundaries plugin), react-day-picker 10 (breaking UI), @types/node 25 (tracks Node runtime) |
+| npm audit | 10 moderate, pre-existing transitive (esbuild via drizzle-kit devdep; postcss via next) — npm's fixes are breaking downgrades, left untouched by design |
 
 ## Resolved premise (was partly wrong, corrected)
 
@@ -142,18 +143,34 @@ if the table is a daily perf pain.
 
 ## RESUME after `/clear`  (paste this)
 
-> Lies `docs/LIBS_CLEANUP_PLAN_2026-05-17.md` +
-> `docs/adr/0018-input-validation-drizzle-zod.md` +
-> `docs/adr/0017-source-adapter-boundary.md`. Durable Plan + ADRs +
-> Deep-Link-Fix sind bereits committed/gepusht (siehe `git log`).
-> Setze **Pass A** um (drizzle-zod + API-Edge-Validierung über die ~12
-> input-lesenden zod=0 Routes; `validateBody`/`validateQuery`-Helper in
-> `lib/server/http.ts`; Schemas in `lib/shared/schemas.ts` via
-> drizzle-zod wo table-shaped, hand-written für action-payloads).
-> Reihenfolge A→B→C. Halte das Verify/commit/push-Protokoll aus dem
-> Plan-File exakt ein. Tasks #10–13.
+> Lies `docs/LIBS_CLEANUP_PLAN_2026-05-17.md` (v.a. Status-Snapshot,
+> Pass B/C-Checklisten, Sequencing-Rationale, Verify/commit/push-
+> Protokoll), `docs/adr/0017-source-adapter-boundary.md` und Memory
+> `libs_cleanup_plan_progress.md`. **Pass A ist FERTIG** (Deps
+> `08a6cf6`, Pass A `80a7d3e`, Self-Review-Cleanup `2bc5937` — alle auf
+> Prod-Canonical 200 verifiziert; nichts daran zu tun). Setze **Pass B**
+> um (Ingest-SourceAdapter, ADR 0017): `SourceAdapter`-Interface
+> (`name`/`fetch()`/`normalize(raw)->CanonicalPublication[]` + orgunit/
+> extunit/person/person_publication/lookups-DTOs); ein gemeinsamer
+> **TS-Loader** (Drizzle, NICHT raw-SQL) mit idempotentem Upsert per
+> `webdb_uid`, DOI-Extract via `scripts/lib/doi-extract.mjs`,
+> Analyse-Feld-Preservation, Orphan-Archival — **getreuer Port** von
+> `scripts/webdb-import.mjs`; WebDB = Adapter #1 (Pure später, out of
+> scope); Scripts -> TS via `tsx` (Präzedenz `scripts/enrich-orphans.ts`).
+> **DATEN-GUARDRAIL (zwingend):** Parity-Gate alt-vs-neu-vs-lokale-DB
+> (Row-Counts + Analyse-Felder diffen) BEVOR irgendein Prod-ETL läuft —
+> lokale DB ist kanonisch (`production_db_safety.md`). Halte das
+> Verify/commit/push-Protokoll aus diesem Plan-File **exakt** ein
+> (dev-server vor `tsc` stoppen; explizite Exit-Codes; nie
+> `tsconfig.json`/`HANDOVER.md` stagen; ASCII-Commit; push origin main;
+> Deploy via `vercel inspect https://oeaw-press-relevance.vercel.app`
+> verifizieren — `vercel ls|grep` hängt unter Last; die `[boundaries]`
+> v5->v6-Warnung ist der einzige erwartete Lint-Output). Danach Pass C
+> (Tabellen-Virtualisierung) als eigener Pass mit Playwright+axe
+> before/after. Reihenfolge B->C.
 
-Memory pointers: `pure_api_migration_planned.md`,
+Memory pointers: `libs_cleanup_plan_progress.md`,
+`pure_api_migration_planned.md`,
 `production_db_safety.md`, `dark_mode_token_conventions.md`,
 `command_palette_built.md`, `wsl2_oom_risk.md`,
 `vercel_cli_workflow.md`.
