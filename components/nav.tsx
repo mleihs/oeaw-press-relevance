@@ -14,6 +14,8 @@ import {
   ClipboardCheck,
   Newspaper,
   HelpCircle,
+  Search,
+  Keyboard,
   type LucideIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -25,6 +27,8 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { CommandMenuButton } from '@/components/command/command-menu-button';
+import { openCommandMenu, openCheatSheet } from '@/lib/client/commands/controller';
 
 type NavLink = { href: string; label: string; icon: LucideIcon };
 type NavGroup = { title: string | null; links: NavLink[] };
@@ -116,6 +120,7 @@ export function Nav() {
         </nav>
 
         <div className="ml-auto flex items-center gap-1">
+          <CommandMenuButton />
           <span className="text-white/85 text-xs font-medium tracking-wider hidden sm:block mr-2">
             ÖAW
           </span>
@@ -172,6 +177,31 @@ export function Nav() {
                     })}
                   </div>
                 ))}
+                {/* Touch users have no ⌘K; surface the palette here too. */}
+                <div className="mt-1 flex flex-col border-t border-white/10 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpen(false);
+                      openCommandMenu();
+                    }}
+                    className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+                  >
+                    <Search className="h-4 w-4" />
+                    Suchen / Befehle
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpen(false);
+                      openCheatSheet();
+                    }}
+                    className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+                  >
+                    <Keyboard className="h-4 w-4" />
+                    Tastenkürzel
+                  </button>
+                </div>
               </nav>
               <div className="px-4 py-4 text-white/40 text-xs font-medium tracking-wider border-t border-white/10">
                 ÖAW

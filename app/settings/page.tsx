@@ -13,8 +13,10 @@ import {
   subscribeSettings,
 } from '@/lib/client/stores/settings-store';
 import { useInfoBubblesEnabled } from '@/lib/client/hooks/use-info-bubbles';
+import { useKeyboardShortcutsEnabled } from '@/lib/client/hooks/use-keyboard-shortcuts-enabled';
+import { openCheatSheet } from '@/lib/client/commands/controller';
 import { InfoBubble } from '@/components/info-bubble';
-import { Save, CheckCircle2, Eye, EyeOff, Loader2, XCircle, ShieldCheck, Info, User } from 'lucide-react';
+import { Save, CheckCircle2, Eye, EyeOff, Loader2, XCircle, ShieldCheck, Info, User, Keyboard } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function SettingsPage() {
@@ -35,6 +37,7 @@ export default function SettingsPage() {
   const [connectionStatus, setConnectionStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [bubblesOn, setBubblesOn] = useInfoBubblesEnabled();
+  const [shortcutsOn, setShortcutsOn] = useKeyboardShortcutsEnabled();
 
   const updateSettings = (patch: Partial<AppSettings>) =>
     setDraft((d) => ({ ...(d ?? persisted), ...patch }));
@@ -125,6 +128,43 @@ export default function SettingsPage() {
               onCheckedChange={setBubblesOn}
               aria-label="Erklärungs-Bubbles umschalten"
             />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Keyboard — WCAG 2.1.4: single-key shortcuts must be switchable off */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Tastatur</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1">
+              <Label htmlFor="shortcuts-toggle" className="flex items-center gap-2">
+                <Keyboard className="h-4 w-4 text-muted-foreground/70" />
+                Tastenkürzel
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Einzeltasten und Sequenzen wie „?" (Übersicht) oder „G P"
+                (Publikationen). Bei AUS bleiben sie inaktiv, das Befehlsmenü
+                (⌘K) funktioniert unabhängig davon weiter.
+              </p>
+            </div>
+            <Switch
+              id="shortcuts-toggle"
+              checked={shortcutsOn}
+              onCheckedChange={setShortcutsOn}
+              aria-label="Tastenkürzel umschalten"
+            />
+          </div>
+          <div className="flex items-center justify-between gap-4 border-t border-border/60 pt-3">
+            <p className="text-xs text-muted-foreground">
+              Alle Kürzel auf einen Blick.
+            </p>
+            <Button variant="outline" size="sm" onClick={() => openCheatSheet()}>
+              <Keyboard className="mr-2 h-4 w-4" />
+              Tastenkürzel anzeigen
+            </Button>
           </div>
         </CardContent>
       </Card>

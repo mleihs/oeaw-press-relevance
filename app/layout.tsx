@@ -4,6 +4,7 @@ import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { RootProvider } from "fumadocs-ui/provider/next";
 import "./globals.css";
 import { Nav } from "@/components/nav";
+import { CommandMenu } from "@/components/command/command-menu";
 import { Toaster } from "@/components/ui/sonner";
 import { PasswordGate } from "@/components/password-gate";
 import { QueryProvider } from "@/components/query-provider";
@@ -42,14 +43,19 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable} antialiased bg-background text-foreground flex flex-col min-h-screen`}
       >
-        {/* Fumadocs RootProvider with theme disabled so next-themes stays in charge.
-            The provider supplies the sidebar/search/framework contexts that DocsLayout requires. */}
-        <RootProvider theme={{ enabled: false }}>
+        {/* Fumadocs RootProvider: theme disabled so next-themes stays in
+            charge; search disabled because Story Scout owns a single global
+            ⌘K palette (components/command) that surfaces Orama help results
+            itself via useDocsSearch. Disabling it here removes Fumadocs's
+            duplicate global ⌘K + its sidebar search trigger; DocsLayout still
+            gets the framework/sidebar contexts it needs. */}
+        <RootProvider theme={{ enabled: false }} search={{ enabled: false }}>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
             <NuqsAdapter>
               <QueryProvider>
                 <PasswordGate>
                   <Nav />
+                  <CommandMenu />
                   <main className="mx-auto max-w-7xl w-full px-4 py-6 flex-1">
                     {children}
                   </main>

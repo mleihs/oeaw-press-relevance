@@ -43,6 +43,7 @@ the *why* without spelunking through commit messages and memory files.
 | 0013 | [Story schema: cluster-centric baseline, editorial fields deferred](0013-story-schema-cluster-first.md) | accepted |
 | 0014 | [Story clustering: SQL pgvector-DBSCAN default](0014-clustering-sql-pgvector-default.md) | accepted |
 | 0015 | [Architecture Plan ends at A4; A5/A6 are product-track](0015-architecture-plan-scope-ends-at-a4.md) | accepted |
+| 0016 | [Command palette + global keyboard layer (cmdk, 0-dep matcher)](0016-command-palette-keyboard-layer.md) | accepted |
 
 ## When to write an ADR
 

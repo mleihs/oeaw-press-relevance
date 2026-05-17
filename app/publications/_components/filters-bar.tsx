@@ -157,7 +157,7 @@ export function FiltersBar({ total, hidden }: Props) {
                 ref={searchRef}
                 value={searchInput}
                 onChange={(e) => handleSearchChange(e.target.value)}
-                placeholder="Titel suchen…  (/ oder ⌘K)"
+                placeholder="Titel suchen…  (/)"
                 className="pl-9 h-9"
               />
             </div>
