@@ -2,9 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   apiError,
   assertAllowedOrigin,
+  validateBody,
+  validateParams,
   withApiError,
 } from '@/lib/server/http';
 import { decisionPayloadSchema } from '@/lib/shared/schemas';
+import { idParamSchema } from '@/lib/server/schemas';
 import { applyDecision } from '@/lib/server/publications/decisions';
 import { PublicationNotFoundError } from '@/lib/server/publications/errors';
 
@@ -12,7 +15,7 @@ export const PATCH = withApiError(async (
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) => {
-  const { id } = await params;
+  const { id } = validateParams(await params, idParamSchema);
 
   // Used downstream as the base URL embedded in MeisterTask task notes.
   // Reject anything outside the allow-list so a spoofed X-Forwarded-Host
@@ -21,20 +24,10 @@ export const PATCH = withApiError(async (
   const originBlock = assertAllowedOrigin(appBaseUrl);
   if (originBlock) return originBlock;
 
-  let raw: unknown;
-  try {
-    raw = await req.json();
-  } catch {
-    return apiError('Invalid request body', 400);
-  }
-
-  const parsed = decisionPayloadSchema.safeParse(raw);
-  if (!parsed.success) {
-    return apiError(parsed.error.issues[0]?.message ?? 'Invalid payload', 400);
-  }
+  const data = await validateBody(req, decisionPayloadSchema);
 
   try {
-    const result = await applyDecision(parsed.data, id, {
+    const result = await applyDecision(data, id, {
       appBaseUrl,
     });
     return NextResponse.json(result);

@@ -5,7 +5,8 @@ import {
   publications as publicationsTable,
   descNullsLast,
 } from '@/lib/server/db';
-import { withApiError } from '@/lib/server/http';
+import { validateQuery, withApiError } from '@/lib/server/http';
+import { analyzedExportQuerySchema } from '@/lib/shared/schemas';
 
 // CSV column whitelist — mirrors the Publication wire-shape names. Listed
 // explicitly so a schema rename surfaces here as a tsc error (the row[h] index
@@ -28,7 +29,10 @@ function escapeCsv(val: unknown): string {
 
 export const GET = withApiError(async (req: NextRequest) => {
   const { searchParams } = new URL(req.url);
-  const onlyAnalyzed = searchParams.get('analyzed') !== 'false';
+  const { analyzed: onlyAnalyzed } = validateQuery(
+    searchParams,
+    analyzedExportQuerySchema,
+  );
 
     // Project only the columns the CSV uses. NULLS LAST so analysed pubs with
     // no score still land at the bottom (vs. PostgREST's nullsFirst:false sort).

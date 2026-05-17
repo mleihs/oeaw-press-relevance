@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from 'drizzle-orm';
 import { db } from '@/lib/server/db';
-import { withApiError } from '@/lib/server/http';
+import { validateQuery, withApiError } from '@/lib/server/http';
+import { publicationsStatsQuerySchema } from '@/lib/shared/schemas';
 
 // Stats-Endpoint für das Dashboard. Aus /api/publications ausgegliedert,
 // damit `revalidate = 60` greift und Vercel die Antwort 60s am Edge cached.
@@ -32,7 +33,10 @@ type StatsPayload = {
 
 export const GET = withApiError(async (req: NextRequest) => {
   const { searchParams } = new URL(req.url);
-  const defaultEligible = searchParams.get('default_eligible') === 'true';
+  const { default_eligible: defaultEligible } = validateQuery(
+    searchParams,
+    publicationsStatsQuerySchema,
+  );
 
   const rows = await db.execute<{ stats: StatsPayload | null }>(
     sql`SELECT publication_dashboard_stats(${defaultEligible}) AS stats`,

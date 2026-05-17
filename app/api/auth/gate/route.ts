@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createHash, timingSafeEqual } from 'crypto';
-import { apiError, withApiError } from '@/lib/server/http';
+import { apiError, validateBody, withApiError } from '@/lib/server/http';
+import { gatePayloadSchema } from '@/lib/shared/schemas';
 import { createRateLimiter, getClientIp } from '@/lib/server/rate-limit';
 
 // Login endpoint for the middleware gate. The browser POSTs the password
@@ -35,14 +36,10 @@ export const POST = withApiError(async (req: NextRequest) => {
     return apiError('Too many login attempts. Try again in 1 minute.', 429);
   }
 
-  let body: { password?: unknown };
-  try {
-    body = await req.json();
-  } catch {
-    return apiError('Invalid request body', 400);
-  }
-
-  const password = typeof body.password === 'string' ? body.password : '';
+  // Rate-limit is checked first (above) so the body validation cannot be
+  // used to sidestep it. validateBody throws -> withApiError returns a
+  // structured 400 (replaces the bespoke try/catch + typeof guard).
+  const { password } = await validateBody(req, gatePayloadSchema);
   // GATE_PASSWORD is required by the env validator (lib/server/env.ts).
   // The Node-runtime boot would have process.exit'd before reaching this
   // handler if it were unset, so the non-null assertion is safe.

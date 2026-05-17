@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withApiError } from '@/lib/server/http';
+import { validateQuery, withApiError } from '@/lib/server/http';
+import { pressReleasesQuerySchema } from '@/lib/shared/schemas';
 import {
   getPressReleasesStats,
   listPressReleases,
@@ -15,6 +16,11 @@ import {
  */
 export const GET = withApiError(async (req: NextRequest) => {
   const sp = req.nextUrl.searchParams;
+  // Routes the input through the shared helper for consistency and to
+  // document the accepted params. Permissive (.loose()) — the tri-state
+  // `orphans` contract is decoded by the exact `=== 'true' / 'false'`
+  // checks below, so this does not narrow what the route accepts.
+  validateQuery(sp, pressReleasesQuerySchema);
 
   if (sp.get('stats') === 'true') {
     const stats = await getPressReleasesStats();

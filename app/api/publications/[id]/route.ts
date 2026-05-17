@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { apiError, withApiError } from '@/lib/server/http';
+import { apiError, validateParams, withApiError } from '@/lib/server/http';
+import { idParamSchema } from '@/lib/server/schemas';
 import {
   getPublicationById,
   deletePublication,
@@ -9,7 +10,7 @@ export const GET = withApiError(async (
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) => {
-  const { id } = await params;
+  const { id } = validateParams(await params, idParamSchema);
   const pub = await getPublicationById(id);
   if (!pub) return apiError('Publication not found', 404);
   return NextResponse.json(pub);
@@ -19,7 +20,7 @@ export const DELETE = withApiError(async (
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) => {
-  const { id } = await params;
+  const { id } = validateParams(await params, idParamSchema);
   await deletePublication(id);
   return NextResponse.json({ success: true });
 });

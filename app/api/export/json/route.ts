@@ -6,11 +6,15 @@ import {
   descNullsLast,
 } from '@/lib/server/db';
 import { publicationToApi } from '@/lib/server/publications/to-api';
-import { withApiError } from '@/lib/server/http';
+import { validateQuery, withApiError } from '@/lib/server/http';
+import { analyzedExportQuerySchema } from '@/lib/shared/schemas';
 
 export const GET = withApiError(async (req: NextRequest) => {
   const { searchParams } = new URL(req.url);
-  const onlyAnalyzed = searchParams.get('analyzed') !== 'false';
+  const { analyzed: onlyAnalyzed } = validateQuery(
+    searchParams,
+    analyzedExportQuerySchema,
+  );
 
   const rows = await db
     .select()

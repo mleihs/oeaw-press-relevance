@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eq, sql } from 'drizzle-orm';
 import { db, publications } from '@/lib/server/db';
-import { withApiError } from '@/lib/server/http';
+import { validateParams, validateQuery, withApiError } from '@/lib/server/http';
+import { idParamSchema } from '@/lib/server/schemas';
+import { similarPressedQuerySchema } from '@/lib/shared/schemas';
 
 /**
  * GET /api/publications/:id/similar-pressed
@@ -33,13 +35,15 @@ export const GET = withApiError(async (
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) => {
-  const { id } = await params;
-  const url = new URL(req.url);
-  const limit = Math.min(
-    20,
-    Math.max(1, parseInt(url.searchParams.get('limit') ?? '3', 10) || 3),
+  const { id } = validateParams(await params, idParamSchema);
+  const q = validateQuery(
+    new URL(req.url).searchParams,
+    similarPressedQuerySchema,
   );
-  const model = url.searchParams.get('model') ?? 'allenai/specter2_base';
+  // 1..20 clamp stays in the route (faithful to the prior min/max), the
+  // schema only guarantees `limit` is a positive int (no NaN reaches SQL).
+  const limit = Math.min(20, Math.max(1, q.limit));
+  const model = q.model;
 
   const [selfRows, similarRows] = await Promise.all([
     db

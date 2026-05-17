@@ -14,7 +14,8 @@ passes. ADRs: [0017](adr/0017-source-adapter-boundary.md) (proposed),
 | Session deploys (live) | `2971f63` capybara/hero/nav · `73c1046` a11y+darkButton+proxy · `a2f68e7` doc-pass |
 | Durable artifacts (this plan + ADR 0017/0018 + index) | committed + pushed this turn (see `git log`) |
 | Deep-link `?next=` bug | quick-fix this turn, own commit (see `git log`) |
-| Pass A (drizzle-zod + edge validation) | **NOT STARTED**, resume below |
+| Pass A (drizzle-zod + edge validation) | **DONE** this turn (see git log) |
+| In-range dep refresh (pre-Pass-A, user-chosen) | committed + pushed this turn (`08a6cf6`) |
 | Pass B (ingest adapter, ADR 0017) | not started |
 | Pass C (virtualize publication-table) | not started |
 | Tracking task IDs | #9 durable · #10–13 Pass A |
@@ -32,21 +33,41 @@ Plus: `safeParse`+`apiError` boilerplate duplicated per route.
 
 ## Pass A: drizzle-zod + API-edge validation  (do FIRST; ADR 0018)
 
-- [ ] Add `drizzle-zod` (verify compat: `drizzle-orm@^0.45.2`,
-      `zod@^4.4.3`. If zod-v4 incompat → keep hand-written zod, defer
-      the derivation; the ADR's core value still holds).
-- [ ] `validateBody(req, schema)` / `validateQuery(searchParams, schema)`
-      in `lib/server/http.ts` → typed data or structured 400 (mirror
-      the existing `flag/route.ts` pattern; uses `apiError`).
-- [ ] Derive table-shaped schemas via `drizzle-zod` in
-      `lib/shared/schemas.ts`; keep action-payload schemas hand-written.
-- [ ] Apply to mutations first (`auth/gate`, `publications/[id]/decision`
-      already zod, DRY via helper; `press-releases/promote-status`),
-      then the ~12 input GET/export routes. Derive query schemas from
-      *actual current client usage* (don't over-tighten).
-- [ ] Vitest per new schema.
-- [ ] Verify protocol (below) → commit → push → flip ADR 0018 stays
-      `accepted`.
+- [x] `drizzle-zod@^0.8.3` added — zod-v4 compatible (peer
+      `zod@^3.25||^4.0`, `drizzle-orm>=0.36`), so the derivation was
+      **not** deferred for compat.
+- [x] `validateBody` / `validateQuery` / **`validateParams`** in
+      `lib/server/http.ts` → typed data or a thrown `ApiValidationError`
+      that `withApiError` maps to a structured 400 at warn-level (not the
+      500 `route_unhandled_error` path). Replaces the per-route
+      `safeParse`+`apiError` block.
+- [x] Table-shaped derivation = `idParamSchema` via `drizzle-zod` from
+      `publications.id`. **Deviation (intentional, documented):** it
+      lives in a new server-only `lib/server/schemas.ts`, NOT
+      `lib/shared/schemas.ts` — the eslint-plugin-boundaries kernel rule
+      forbids `shared → server` and colocating the Drizzle table import
+      in the client-shared file is the Phase-A4 postgres-bundling pitfall
+      (#26). **Finding (verified, not fabricated):** none of Pass A's
+      input-reading routes take a table-shaped *body* (all query-, path-
+      param-, or action-shaped → hand-written, as the plan allows); the
+      first real table-row `drizzle-zod` consumer is Pass B
+      (`CanonicalPublication`, ADR 0017). Hand-written zod query/param/
+      payload schemas added to `lib/shared/schemas.ts` (kernel-clean).
+- [x] Applied: mutations first (`auth/gate`, `publications/[id]/decision`
+      DRY'd, `publications/[id]/flag` DRY'd ×2) then the GET/export
+      routes (`publications`, `publications/[id]`, `…/similar-pressed`,
+      `export/csv|json`, `persons/[id]`, `press-releases`,
+      `review/queue`, `researchers/distribution`, `researchers/top`,
+      `publications/stats`). `press-releases/promote-status` = documented
+      no-op (GET, zero input — verified-no-op discipline, no fabricated
+      diff). Schemas derived from *actual current usage*; valid traffic
+      unchanged, only prior `NaN`-offset / `NaN::int` 500-vectors and
+      malformed UUIDs now return a clean 400.
+- [x] Vitest: +28 (lib/shared/schemas.test.ts, lib/server/schemas.test.ts,
+      lib/server/http.test.ts) — 164 total green.
+- [x] Verify protocol passed (typecheck/lint/em-dashes/test all 0; only
+      the expected `[boundaries]` v5→v6 warning) → commit → push. ADR
+      0018 stays `accepted`.
 
 ## Pass B: Ingest source-adapter  (ADR 0017)
 

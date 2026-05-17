@@ -1,50 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from 'drizzle-orm';
 import { db } from '@/lib/server/db';
-import { apiError, withApiError } from '@/lib/server/http';
-import type {
-  AuthorshipScope,
-  LeaderboardMetric,
-  TopResearcherRow,
-} from '@/lib/shared/researchers';
+import { validateQuery, withApiError } from '@/lib/server/http';
+import { researchersLeaderboardQuerySchema } from '@/lib/shared/schemas';
+import type { TopResearcherRow } from '@/lib/shared/researchers';
 
-const ALLOWED_METRICS: LeaderboardMetric[] = [
-  'count_high', 'sum_score', 'avg_score', 'weighted_avg', 'pubs_total',
-];
-const ALLOWED_SCOPES: AuthorshipScope[] = ['all', 'lead'];
-
-function csv(s: string | null): string[] | null {
+function csv(s: string | null | undefined): string[] | null {
   if (!s) return null;
   const arr = s.split(',').map((x) => x.trim()).filter(Boolean);
   return arr.length ? arr : null;
 }
 
 export const GET = withApiError(async (req: NextRequest) => {
-  const u = req.nextUrl.searchParams;
-
-  const since = u.get('since');
-  if (!since || !/^\d{4}-\d{2}-\d{2}$/.test(since)) {
-    return apiError('since must be YYYY-MM-DD', 400);
-  }
-
-  const metric = (u.get('metric') as LeaderboardMetric) || 'count_high';
-  if (!ALLOWED_METRICS.includes(metric)) {
-    return apiError(`metric must be one of ${ALLOWED_METRICS.join(', ')}`, 400);
-  }
-
-  const scope = (u.get('authorship_scope') as AuthorshipScope) || 'all';
-  if (!ALLOWED_SCOPES.includes(scope)) {
-    return apiError(`authorship_scope must be one of ${ALLOWED_SCOPES.join(', ')}`, 400);
-  }
-
-  const oestat3Ids = csv(u.get('oestat3_ids'));
-  const includeExternal = u.get('include_external') === 'true';
-  const includeDeceased = u.get('include_deceased') === 'true';
-  const memberOnly = u.get('member_only') === 'true';
-  const minValue = Number(u.get('min_value') ?? '1');
-  const limit = Math.min(Number(u.get('limit') ?? '50'), 200);
-  const excludeIta = u.get('exclude_ita') !== 'false';
-  const excludeOutreach = u.get('exclude_outreach') !== 'false';
+  const q = validateQuery(
+    req.nextUrl.searchParams,
+    researchersLeaderboardQuerySchema(50),
+  );
+  const oestat3Ids = csv(q.oestat3_ids);
+  // Hard cap stays a clamp (not a reject) exactly as before.
+  const limit = Math.min(q.limit, 200);
 
   // `sql.param(oestat3Ids)` binds the JS array (or null) as one PG param;
   // plain `${oestat3Ids}` would expand to a comma-separated parenthesised
@@ -53,17 +27,17 @@ export const GET = withApiError(async (req: NextRequest) => {
   // interfaces don't structurally satisfy that without an index signature.
   const rows = (await db.execute(
     sql`SELECT * FROM top_researchers(
-      ${since}::date,
-      ${metric},
-      ${scope},
+      ${q.since}::date,
+      ${q.metric},
+      ${q.authorship_scope},
       ${sql.param(oestat3Ids)}::text[],
-      ${includeExternal},
-      ${includeDeceased},
-      ${memberOnly},
-      ${minValue}::numeric,
+      ${q.include_external},
+      ${q.include_deceased},
+      ${q.member_only},
+      ${q.min_value}::numeric,
       ${limit}::int,
-      ${excludeIta},
-      ${excludeOutreach}
+      ${q.exclude_ita},
+      ${q.exclude_outreach}
     )`,
   )) as unknown as TopResearcherRow[];
   return NextResponse.json({ rows });

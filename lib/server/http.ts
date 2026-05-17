@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { log, requestLogger } from './log';
 
 /**
@@ -158,6 +159,82 @@ export function errorToApiResponse(
 }
 
 /**
+ * Thrown by the validate* helpers when input fails its zod schema.
+ * `withApiError` catches it and returns a deterministic 400 (not the 500
+ * `route_unhandled_error` path). The message is the first zod issue, which
+ * keeps parity with the per-route
+ * `apiError(parsed.error.issues[0]?.message ?? '...', 400)` block these
+ * helpers replace (ADR 0018).
+ */
+export class ApiValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ApiValidationError';
+  }
+}
+
+function parseOrThrow<S extends z.ZodType>(
+  schema: S,
+  input: unknown,
+  fallback: string,
+): z.infer<S> {
+  const parsed = schema.safeParse(input);
+  if (!parsed.success) {
+    throw new ApiValidationError(parsed.error.issues[0]?.message ?? fallback);
+  }
+  return parsed.data;
+}
+
+/**
+ * Validate a JSON request body. A missing/non-JSON body is treated as `{}`
+ * (mirrors the prior flag/route.ts behaviour) so the schema — not a
+ * bespoke try/catch per route — decides what is required. Throws
+ * `ApiValidationError` → 400.
+ */
+export async function validateBody<S extends z.ZodType>(
+  req: Request,
+  schema: S,
+): Promise<z.infer<S>> {
+  let raw: unknown;
+  try {
+    raw = await req.json();
+  } catch {
+    raw = {};
+  }
+  return parseOrThrow(schema, raw, 'Invalid payload');
+}
+
+/**
+ * Validate URL search params. Repeated keys collapse to the last value
+ * (`Object.fromEntries` semantics); every validated route reads CSV-style
+ * params as a single comma-joined string via `.get()`, never `.getAll()`,
+ * so this is faithful to current usage — revisit if a route adopts
+ * `getAll`. Throws `ApiValidationError` → 400.
+ */
+export function validateQuery<S extends z.ZodType>(
+  searchParams: URLSearchParams,
+  schema: S,
+): z.infer<S> {
+  return parseOrThrow(
+    schema,
+    Object.fromEntries(searchParams),
+    'Invalid query',
+  );
+}
+
+/**
+ * Validate already-awaited dynamic route params (Next 16 `await params`).
+ * Throws `ApiValidationError` → 400 (a malformed id becomes a clean 400
+ * instead of an `invalid input syntax for type uuid` 500 downstream).
+ */
+export function validateParams<S extends z.ZodType>(
+  params: unknown,
+  schema: S,
+): z.infer<S> {
+  return parseOrThrow(schema, params, 'Invalid path parameter');
+}
+
+/**
  * Higher-order wrapper around route handlers. Two jobs:
  *
  * 1. **CSRF guard on mutating requests.** When the first arg is a
@@ -199,6 +276,12 @@ export function withApiError<Args extends unknown[]>(
       }
       return await handler(...args);
     } catch (err) {
+      if (err instanceof ApiValidationError) {
+        // Expected client error, not a route fault: warn (not error) and
+        // return the structured 400 instead of the 500 fallthrough.
+        rlog().warn('validation_rejected', { message: err.message });
+        return apiError(err.message, 400);
+      }
       rlog().error('route_unhandled_error', { err });
       return errorToApiResponse(err);
     }
