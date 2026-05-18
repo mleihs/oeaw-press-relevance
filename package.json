@@ -17,6 +17,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "enrich-orphans": "tsx scripts/enrich-orphans.ts",
+    "webdb-import:v2": "tsx scripts/webdb-import-v2.ts",
+    "parity-gate": "tsx scripts/parity-gate.ts",
     "db:introspect": "drizzle-kit introspect && mv drizzle/schema.ts drizzle/relations.ts lib/server/db/ && rm -rf drizzle/"
   },
   "dependencies": {

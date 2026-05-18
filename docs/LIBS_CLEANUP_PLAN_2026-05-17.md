@@ -16,8 +16,8 @@ passes. ADRs: [0017](adr/0017-source-adapter-boundary.md) (proposed),
 | Deep-link `?next=` bug | fixed (`40316e2`) |
 | In-range dep refresh (pre-Pass-A, user-chosen) | DONE, prod-verified (`08a6cf6`) |
 | Pass A (drizzle-zod + edge validation) | **DONE**, prod-verified (`80a7d3e` + self-review cleanup `2bc5937`); canonical 200 |
-| Pass B (ingest adapter, ADR 0017) | **NOT STARTED** — next; data-sensitive (parity gate first); resume block below |
-| Pass C (virtualize publication-table) | not started (after B; needs Playwright+axe gate) |
+| Pass B (ingest adapter, ADR 0017) | **CODE-COMPLETE**, ADR 0017 accepted; `lib/server/ingest/*` + `scripts/webdb-import-v2.ts` + `scripts/parity-gate.ts` + 10 Vitest (174 total green). **Parity RUN pending** — local stacks (Supabase 54422 / MySQL 54499) were down; the gate is the hard precondition before ANY prod ETL; legacy `.mjs` stays operational until it passes |
+| Pass C (virtualize publication-table) | not started (next; needs Playwright+axe gate) |
 | Deferred deps (deliberate, NOT staleness) | eslint 10 (blocked by next/boundaries plugin), react-day-picker 10 (breaking UI), @types/node 25 (tracks Node runtime) |
 | npm audit | 10 moderate, pre-existing transitive (esbuild via drizzle-kit devdep; postcss via next) — npm's fixes are breaking downgrades, left untouched by design |
 
@@ -86,17 +86,30 @@ Plus: `safeParse`+`apiError` boilerplate duplicated per route.
 
 ## Pass B: Ingest source-adapter  (ADR 0017)
 
-- [ ] ADR 0017 → `accepted` once interface is final.
-- [ ] `CanonicalPublication` + related DTOs (orgunit/extunit/person/
-      person_publication/lookups).
-- [ ] `SourceAdapter` iface: `name`, `fetch()`, `normalize(raw)→Canonical[]`.
-- [ ] TS loader (Drizzle, not raw SQL): idempotent upsert by
-      `webdb_uid` + DOI extract (`scripts/lib/doi-extract.mjs`) +
-      analysis preservation + orphan archival, faithful port of
-      `scripts/webdb-import.mjs`.
-- [ ] WebDB = adapter #1. Pure = future, out of scope.
-- [ ] Parity gate: old vs new vs **local DB** (canonical), diff row
-      counts + analysis fields before any prod ETL.
+- [x] ADR 0017 → `accepted` (2026-05-18; interface final, two refinements
+      documented in the ADR Implementation section).
+- [x] `CanonicalPublication` + related DTOs + lookups + 9 junction DTOs +
+      `CanonicalBatch` (`lib/server/ingest/canonical.ts`); analysis cols
+      modelled out; WebDB-owned update-column lists are explicit constants.
+- [x] `SourceAdapter<Raw>` iface (`name` / `fetch()` /
+      `normalize(raw)→CanonicalBatch`); `normalize` is pure/sync.
+- [x] TS loader (Drizzle): `loader.ts` is the .mjs `main()` 1:1 (lookups
+      → entities → publications [pre-clean + dedupe-in-normalize + archive]
+      → junctions [TRUNCATE+upsert, is_ita refresh] → 3 SQL fns → matview).
+      Generic batched `onConflictDoUpdate`/`DoNothing` in `upsert.ts`
+      replaces the hand-rolled `scripts/lib/db.mjs` upsert. DOI extract =
+      the shared `scripts/lib/doi-extract.mjs`, injected at the v2-script
+      seam (no `server→scripts` boundary edge). Analysis preservation =
+      explicit unit-tested disjoint-column contract.
+- [x] WebDB = adapter #1 (`adapters/webdb.ts` fetch / `webdb-normalize.ts`
+      pure). Entry `scripts/webdb-import-v2.ts` (PG_DATABASE_URL contract +
+      hard non-127.0.0.1 refuse-guard). Pure = future, out of scope.
+- [~] Parity gate: `scripts/parity-gate.ts` (`snapshot|diff|preserved|
+      gate`, read-only, local-only) + embedded protocol SHIPPED. **RUN not
+      executed** (local Supabase 54422 / MySQL 54499 were down). The clean
+      `gate baseline old new` exit is the MANDATORY precondition before any
+      prod ETL; until then the legacy `.mjs` stays the operational path.
+      Pass B ran zero prod ETL (consistent with "before any prod ETL").
 
 ## Pass C: Virtualize `publication-table.tsx`  (no new dep)
 
@@ -141,33 +154,50 @@ if the table is a daily perf pain.
    (Supabase intentionally stopped → local DB pages 500 until
    `supabase start`; that is the chosen local state).
 
+## Parity-gate RUN (open precondition before ANY prod ETL)
+
+Pass-B code is shipped but the gate was never executed (stacks down).
+Before webdb-import-v2 may touch prod, run, with local Supabase 54422 +
+the MySQL dump 54499 up (full protocol in `scripts/parity-gate.ts`
+header):
+
+1. `pg_dump` backup → `data/backups/publications-pre-import-<ts>.sql.gz`.
+2. `npm run parity-gate -- snapshot baseline`
+3. `node scripts/webdb-import.mjs` (legacy)
+4. `npm run parity-gate -- snapshot old`
+5. restore the backup (DB == baseline)
+6. `npm run webdb-import:v2` (new)
+7. `npm run parity-gate -- snapshot new`
+8. `npm run parity-gate -- gate baseline old new` → must exit clean.
+
+Only a clean `gate` clears webdb-import-v2 for prod. Until then the
+legacy `.mjs` is canonical.
+
 ## RESUME after `/clear`  (paste this)
 
-> Lies `docs/LIBS_CLEANUP_PLAN_2026-05-17.md` (v.a. Status-Snapshot,
-> Pass B/C-Checklisten, Sequencing-Rationale, Verify/commit/push-
-> Protokoll), `docs/adr/0017-source-adapter-boundary.md` und Memory
-> `libs_cleanup_plan_progress.md`. **Pass A ist FERTIG** (Deps
-> `08a6cf6`, Pass A `80a7d3e`, Self-Review-Cleanup `2bc5937` — alle auf
-> Prod-Canonical 200 verifiziert; nichts daran zu tun). Setze **Pass B**
-> um (Ingest-SourceAdapter, ADR 0017): `SourceAdapter`-Interface
-> (`name`/`fetch()`/`normalize(raw)->CanonicalPublication[]` + orgunit/
-> extunit/person/person_publication/lookups-DTOs); ein gemeinsamer
-> **TS-Loader** (Drizzle, NICHT raw-SQL) mit idempotentem Upsert per
-> `webdb_uid`, DOI-Extract via `scripts/lib/doi-extract.mjs`,
-> Analyse-Feld-Preservation, Orphan-Archival — **getreuer Port** von
-> `scripts/webdb-import.mjs`; WebDB = Adapter #1 (Pure später, out of
-> scope); Scripts -> TS via `tsx` (Präzedenz `scripts/enrich-orphans.ts`).
-> **DATEN-GUARDRAIL (zwingend):** Parity-Gate alt-vs-neu-vs-lokale-DB
-> (Row-Counts + Analyse-Felder diffen) BEVOR irgendein Prod-ETL läuft —
-> lokale DB ist kanonisch (`production_db_safety.md`). Halte das
-> Verify/commit/push-Protokoll aus diesem Plan-File **exakt** ein
-> (dev-server vor `tsc` stoppen; explizite Exit-Codes; nie
-> `tsconfig.json`/`HANDOVER.md` stagen; ASCII-Commit; push origin main;
-> Deploy via `vercel inspect https://oeaw-press-relevance.vercel.app`
-> verifizieren — `vercel ls|grep` hängt unter Last; die `[boundaries]`
-> v5->v6-Warnung ist der einzige erwartete Lint-Output). Danach Pass C
-> (Tabellen-Virtualisierung) als eigener Pass mit Playwright+axe
-> before/after. Reihenfolge B->C.
+> Lies `docs/LIBS_CLEANUP_PLAN_2026-05-17.md` (Status-Snapshot, Pass-C-
+> Checkliste, Parity-gate-RUN-Block, Verify/commit/push-Protokoll) +
+> Memory `libs_cleanup_plan_progress.md`. **Pass A + Pass B sind FERTIG**
+> (A: `08a6cf6`/`80a7d3e`/`2bc5937`; B: Ingest-SourceAdapter ADR 0017,
+> code-complete, ADR accepted — `lib/server/ingest/*` +
+> `scripts/webdb-import-v2.ts` + `scripts/parity-gate.ts` + 10 Vitest
+> (174 total), Prod-Canonical 200). **Offen an B:** nur der Parity-gate-RUN (Stacks
+> waren down) — das ist die zwingende Vorbedingung vor JEDEM Prod-ETL,
+> NICHT Teil von Pass C; bis dahin ist die Legacy-`.mjs` kanonisch
+> (`production_db_safety.md`). Setze **Pass C** um
+> (`publication-table.tsx` virtualisieren, `@tanstack/react-virtual`
+> bereits Dep): dynamic `measureElement` + Spacer-Row-Technik (Table-
+> Semantik + sticky thead + `scope`/`aria-sort` aus `73c1046` erhalten),
+> bounded `max-h` (UX-Change flaggen), Threshold-Gate N>~100 (paginierter
+> Normalfall byte-identisch). **Playwright + `@axe-core/playwright`
+> before/after als A11y-Regressions-Gate** (Fallback: threshold-gated
+> shippen, iterieren). Halte das Verify/commit/push-Protokoll aus diesem
+> Plan-File **exakt** ein (dev-server vor `tsc` stoppen; explizite
+> Exit-Codes; nie `tsconfig.json`/`HANDOVER.md` stagen; ASCII-Commit;
+> push origin main; Deploy via canonical
+> `https://oeaw-press-relevance.vercel.app/` → 200 verifizieren —
+> `vercel ls|grep` hängt unter Last; die `[boundaries]` v5->v6-Warnung
+> ist der einzige erwartete Lint-Output).
 
 Memory pointers: `libs_cleanup_plan_progress.md`,
 `pure_api_migration_planned.md`,
