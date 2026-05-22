@@ -43,6 +43,15 @@ export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   if (isPublic(pathname)) return NextResponse.next();
 
+  // Local-dev bypass. The gate protects the *deployed* app; PasswordGate
+  // (components/password-gate.tsx) already skips its UI in development via
+  // DevPassthrough. But GATE_TOKEN became a required env var (lib/server/
+  // env.ts, 2026-05-15) — so without this, the server gate stays ON in dev
+  // while the password form never renders, locking dev out with no way to
+  // obtain a cookie. NODE_ENV is 'production' under `next build`/`next
+  // start`, so production stays fully gated.
+  if (process.env.NODE_ENV === 'development') return NextResponse.next();
+
   const cookie = req.cookies.get(COOKIE_NAME)?.value;
   const expected = process.env.GATE_TOKEN;
 

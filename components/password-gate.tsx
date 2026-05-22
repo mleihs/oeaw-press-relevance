@@ -40,12 +40,13 @@ function useGateAuth(): boolean {
 // the only client responsibility is collecting it from the input.
 
 export function PasswordGate({ children }: { children: React.ReactNode }) {
-  // Local-dev bypass: skip the gate UI entirely. The server middleware is
-  // already pass-through when GATE_TOKEN isn't set (typical .env.local
-  // omits it). DevPassthrough still seeds the session marker + auth-event
-  // so post-auth consumers (e.g. dashboard's daily glitch) behave as if
-  // the user came through the gate normally. To re-test the gate locally,
-  // comment out this branch temporarily.
+  // Local-dev bypass: skip the gate UI entirely. GATE_TOKEN is a required
+  // env var (lib/server/env.ts), so proxy.ts carries a matching NODE_ENV
+  // 'development' bypass — both halves of the gate are off together in dev.
+  // DevPassthrough still seeds the session marker + auth-event so post-auth
+  // consumers (e.g. dashboard's daily glitch) behave as if the user came
+  // through the gate normally. To re-test the gate locally, comment out
+  // this branch AND the proxy.ts dev bypass temporarily.
   if (process.env.NODE_ENV === 'development') {
     return <DevPassthrough>{children}</DevPassthrough>;
   }
