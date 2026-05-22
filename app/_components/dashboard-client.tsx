@@ -9,6 +9,7 @@ import {
   BarChart3,
   BookOpen,
   ClipboardCheck,
+  Database,
   Newspaper,
   Pin,
   TrendingUp,
@@ -133,6 +134,7 @@ export function DashboardClient({ data, period, sortBy }: DashboardClientProps) 
     pressReleasedCount,
     orphansCount,
     scoreSimilarityPoints,
+    webdbAsOf,
   } = data;
   const dimensionAvgs = stats.dimension_avgs;
   const topKeywords = stats.top_keywords;
@@ -289,6 +291,13 @@ export function DashboardClient({ data, period, sortBy }: DashboardClientProps) 
                   <AnimateNumber className="font-semibold text-brand tabular-nums">{stats.high_score_count}</AnimateNumber>
                   <span>mit hohem Story-Potenzial</span>
                 </div>
+                {webdbAsOf && (
+                  <div className="inline-flex items-center gap-1.5">
+                    <Database className="h-3.5 w-3.5" />
+                    <span className="font-semibold text-foreground tabular-nums">{webdbAsOf}</span>
+                    <span>WebDB-Stand</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>

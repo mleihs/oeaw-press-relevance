@@ -1,5 +1,5 @@
-import { sql } from 'drizzle-orm';
-import { db } from '@/lib/server/db';
+import { desc, isNotNull, sql } from 'drizzle-orm';
+import { db, publications } from '@/lib/server/db';
 import {
   listPublications,
   type PublicationListItem,
@@ -118,6 +118,28 @@ async function getScoreSimilarityPoints(): Promise<ScoreSimilarityPoint[]> {
   return rows.map((r) => [r.s, r.p]);
 }
 
+// Most recent publications.synced_at — webdb-import stamps every upserted
+// row with NOW(), so the latest value is the date the loaded data reflects
+// ("WebDB-Stand"). Formatted server-side in Europe/Vienna so the client
+// renders a plain string with no Date() parse — no SSR/client timezone
+// split near midnight. Same source as app/api/webdb/status.
+async function getWebdbAsOf(): Promise<string | null> {
+  const rows = await db
+    .select({ syncedAt: publications.syncedAt })
+    .from(publications)
+    .where(isNotNull(publications.syncedAt))
+    .orderBy(desc(publications.syncedAt))
+    .limit(1);
+  const raw = rows[0]?.syncedAt;
+  if (!raw) return null;
+  return new Date(raw).toLocaleDateString('de-AT', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    timeZone: 'Europe/Vienna',
+  });
+}
+
 async function getStats(defaultEligible: boolean): Promise<DashboardStats> {
   const [statsRows, similarityBuckets] = await Promise.all([
     db.execute<{ stats: StatsPayload | null }>(
@@ -219,6 +241,9 @@ export interface DashboardData {
   orphansCount: number;
   /** (press_score, press_similarity) pairs for the joint scatter. */
   scoreSimilarityPoints: ScoreSimilarityPoint[];
+  /** Most recent publications.synced_at, formatted (Europe/Vienna) — the
+   *  date the loaded WebDB snapshot reflects. null when nothing is synced. */
+  webdbAsOf: string | null;
 }
 
 // Parallel-fetches all five dashboard data sources. Replaces the legacy
@@ -237,6 +262,7 @@ export async function getDashboardData(
     orphansResult,
     scoreSimilarityPoints,
     periodCounts,
+    webdbAsOf,
   ] = await Promise.all([
     getStats(true),
     getTopPubs(period, topPubsLimit, sortBy),
@@ -245,6 +271,7 @@ export async function getDashboardData(
     listPressReleases({ orphans: 'true', withPub: false }),
     getScoreSimilarityPoints(),
     getPeriodCounts(),
+    getWebdbAsOf(),
   ]);
   return {
     stats,
@@ -256,5 +283,6 @@ export async function getDashboardData(
     pressReleasedCount,
     orphansCount: orphansResult.total,
     scoreSimilarityPoints,
+    webdbAsOf,
   };
 }
