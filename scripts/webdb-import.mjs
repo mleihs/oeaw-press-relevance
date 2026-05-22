@@ -4,10 +4,19 @@
 // Usage (defaults match the local stacks we already have running):
 //   node scripts/webdb-import.mjs
 //
-// Override via env: MYSQL_HOST, MYSQL_PORT, PG_DATABASE_URL, BATCH_SIZE.
+// Override via env: MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD,
+// MYSQL_DATABASE, PG_DATABASE_URL, BATCH_SIZE. Flags: --force.
 //
-// Match strategy for publications: prefer existing row by DOI (preserves
-// analysis); else insert new. Old rows not present in the dump get archived.
+// Upsert by webdb_uid; analysis/enrichment columns are never written, so
+// ON CONFLICT DO UPDATE leaves them intact. Publications absent from the
+// dump get archived=true (never deleted) — UNLESS they carry a press_score,
+// which keeps editorial work visible.
+//
+// Hardened 2026-05: the whole import runs in ONE transaction (any failure
+// rolls back to the exact prior state), every incoming DOI is freed before
+// the upsert (a DOI may move between webdb_uids across exports), an
+// implausibly small dump is rejected (--force overrides), and a scored
+// publication is never archived.
 
 import mysql from 'mysql2/promise';
 import pg from 'pg';
@@ -24,6 +33,12 @@ const MYSQL = {
 const PG_URL = process.env.PG_DATABASE_URL
   || 'postgresql://postgres:postgres@127.0.0.1:54422/postgres';
 const BATCH = Number(process.env.BATCH_SIZE || 1000);
+
+// Hardening (2026-05): refuse a dump smaller than this fraction of the
+// current active corpus — guards against importing an incomplete export and
+// mass-archiving the database. Override with --force.
+const MIN_DUMP_RATIO = 0.8;
+const FORCE = process.argv.includes('--force');
 
 const my = await mysql.createConnection(MYSQL);
 const pgClient = new pg.Client({ connectionString: PG_URL });
@@ -378,23 +393,36 @@ async function importPublications() {
     }
   }
 
-  // Pre-clean: TYPO3 sometimes recreates a publication with a fresh webdb_uid
-  // but the same DOI (e.g. data cleanup, duplicate merge). When that happens,
-  // the old local row would block the new INSERT via the DOI unique constraint.
-  // Archive the orphaned local rows and null their DOI before the upsert so
-  // the dump's authoritative row can take over the DOI.
   const dumpUids = transformed.map((r) => r.webdb_uid);
   const dumpDois = transformed.map((r) => r.doi).filter(Boolean);
-  if (dumpDois.length > 0) {
-    const preCleanResult = await pgClient.query(
-      `UPDATE publications
-          SET archived = true, doi = NULL, synced_at = NOW()
-        WHERE archived = false
-          AND webdb_uid <> ALL($1::int[])
-          AND doi = ANY($2::text[])`,
-      [dumpUids, dumpDois],
+
+  // Safety guard: refuse an implausibly small dump — an incomplete export
+  // would otherwise archive most of the corpus. --force overrides a genuine
+  // shrinkage.
+  const { rows: [active] } = await pgClient.query(
+    `SELECT count(*)::int AS n FROM publications WHERE archived = false`,
+  );
+  const ratio = active.n > 0 ? transformed.length / active.n : 1;
+  log(`  dump ${transformed.length} pubs vs ${active.n} active local (ratio ${ratio.toFixed(3)})`);
+  if (ratio < MIN_DUMP_RATIO && !FORCE) {
+    throw new Error(
+      `Dump has ${transformed.length} publications, only `
+      + `${(ratio * 100).toFixed(1)}% of the ${active.n} active local rows — `
+      + `looks like an incomplete export. Re-export, or pass --force.`,
     );
-    log(`  pre-cleaned ${preCleanResult.rowCount} stale rows whose DOIs collide with the dump`);
+  }
+
+  // DOI-collision fix: a DOI can move between webdb_uids across exports.
+  // Free EVERY incoming DOI on the local side before the upsert so the
+  // upsert (keyed on webdb_uid) can reassign each one without tripping the
+  // publications_doi_unique constraint — no matter which row held it before.
+  if (dumpDois.length > 0) {
+    const freed = await pgClient.query(
+      `UPDATE publications SET doi = NULL, synced_at = NOW()
+         WHERE doi = ANY($1::text[])`,
+      [dumpDois],
+    );
+    log(`  freed ${freed.rowCount} DOIs for collision-free reassignment`);
   }
 
   log(`  upserting ${transformed.length} rows (analysis fields preserved)`);
@@ -406,16 +434,25 @@ async function importPublications() {
     Object.keys(insertable[0]).filter((k) => k !== 'webdb_uid'),
   );
 
-  // Archive remaining publications absent from the new dump (TYPO3 soft-delete
-  // or visibility change). archived=true preserves analysis + downstream FKs.
+  // Archive publications absent from the new dump — EXCEPT those carrying an
+  // LLM press analysis. A scored publication is editorial work: if TYPO3
+  // dropped it we keep it visible (archiving would only hide it). Unscored
+  // absentees are genuine cleanup. Nothing is ever deleted.
   const archResult = await pgClient.query(
     `UPDATE publications
         SET archived = true, synced_at = NOW()
       WHERE archived = false
-        AND webdb_uid <> ALL($1::int[])`,
+        AND webdb_uid <> ALL($1::int[])
+        AND press_score IS NULL`,
     [dumpUids],
   );
-  log(`  archived ${archResult.rowCount} publications absent from dump`);
+  log(`  archived ${archResult.rowCount} unscored publications absent from dump`);
+  const { rows: [kept] } = await pgClient.query(
+    `SELECT count(*)::int AS n FROM publications
+       WHERE archived = false AND webdb_uid <> ALL($1::int[]) AND press_score IS NOT NULL`,
+    [dumpUids],
+  );
+  log(`  kept ${kept.n} scored publications absent from dump (visible, analysis intact)`);
 }
 
 // ============================================================
@@ -631,32 +668,42 @@ async function fkMap(table) {
 
 const t0 = Date.now();
 try {
-  await importLookups();
-  await importOrgunits();
-  await importExtunits();
-  await importPersons();
-  await importProjects();
-  await importLectures();
-  await importPublications();
-  await importJunctions();
-  // WebDB pflegt das skalare lead_author-Feld manuell — bei Buchkapiteln und
-  // Tagungsbeiträgen ist es oft leer, obwohl die Junction person_publications
-  // Autor:innen kennt. Ohne Backfill zeigt UI „Unbekannt". Idempotent.
-  // Migration: 20260505000003.
-  const ladr = await pgClient.query('SELECT backfill_lead_author_from_persons() AS filled');
-  log(`Backfilled lead_author from person_publications: ${ladr.rows[0].filled} pubs`);
-  // published_at-Backfill aus bibtex/citation/ris/endnote — WebDB pflegt
-  // pub_date oft nicht, aber im bibtex steht das Erscheinungsjahr fast
-  // immer. Idempotent. Migration: 20260505000004.
-  const yr = await pgClient.query('SELECT backfill_published_at_from_text() AS filled');
-  log(`Backfilled published_at from bibtex/citation: ${yr.rows[0].filled} pubs`);
-  // Press-release orphans: DOIs aus ÖAW-Hauptseite-news, deren Paper bisher
-  // nicht in publications war. Wenn ein neuer Import das Paper bringt, wird
-  // der Press-Release-Link automatisch zur Pub gemoved + Orphan gelöscht.
-  // Idempotent (überspringt Pubs mit press_release_url IS NOT NULL).
-  // Migration: 20260509000002.
-  const promoted = await pgClient.query("SELECT promote_press_release_orphans_logged('webdb-import') AS n");
-  log(`Promoted press-release-orphans: ${promoted.rows[0].n} pubs`);
+  // Everything except the matview refresh runs in ONE transaction: any
+  // failure rolls the whole import back to the exact prior state. (Before
+  // this, a mid-run crash left entities updated, publications half-upserted
+  // and junctions truncated — an inconsistent mess needing manual cleanup.)
+  try {
+    await pgClient.query('BEGIN');
+    await importLookups();
+    await importOrgunits();
+    await importExtunits();
+    await importPersons();
+    await importProjects();
+    await importLectures();
+    await importPublications();
+    await importJunctions();
+    // lead_author: WebDB pflegt das skalare Feld manuell — bei Buchkapiteln /
+    // Tagungsbeiträgen oft leer, obwohl person_publications die Autor:innen
+    // kennt. Idempotent. Migration 20260505000003.
+    const ladr = await pgClient.query('SELECT backfill_lead_author_from_persons() AS filled');
+    log(`Backfilled lead_author from person_publications: ${ladr.rows[0].filled} pubs`);
+    // published_at: WebDB pflegt pub_date oft nicht; das Jahr steht fast
+    // immer im bibtex/citation. Idempotent. Migration 20260505000004.
+    const yr = await pgClient.query('SELECT backfill_published_at_from_text() AS filled');
+    log(`Backfilled published_at from bibtex/citation: ${yr.rows[0].filled} pubs`);
+    // Press-release-orphans: kommt das Paper per Import nach, wird der
+    // Orphan-Link zur Pub gemoved. Idempotent. Migration 20260509000002.
+    const promoted = await pgClient.query("SELECT promote_press_release_orphans_logged('webdb-import') AS n");
+    log(`Promoted press-release-orphans: ${promoted.rows[0].n} pubs`);
+    await pgClient.query('COMMIT');
+    log('✓ Transaction committed.');
+  } catch (err) {
+    await pgClient.query('ROLLBACK').catch(() => {});
+    log('✗ IMPORT FAILED — transaction rolled back, database unchanged.');
+    throw err;
+  }
+  // REFRESH MATERIALIZED VIEW CONCURRENTLY cannot run inside a transaction —
+  // do it only after a successful commit.
   log('Refreshing publication_oestat6 matview…');
   await pgClient.query('REFRESH MATERIALIZED VIEW CONCURRENTLY publication_oestat6');
   log(`DONE in ${((Date.now() - t0) / 1000).toFixed(1)}s`);
