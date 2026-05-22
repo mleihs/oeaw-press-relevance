@@ -329,8 +329,7 @@ async function importPublications() {
     SELECT uid, original_title, summary_de, summary_en, doi_link, pub_date,
            ris, type, peer_reviewed, popular_science, open_access, lead_author,
            website_link, download_link,
-           citation_apa, citation_cbe, citation_harvard, citation_mla,
-           citation_vancouver, citation_de, citation_en, bibtex, endnote,
+           citation_apa, citation_de, citation_en, bibtex, endnote,
            tstamp, crdate
     FROM tx_hebowebdb_domain_model_publication
     WHERE deleted=0`);
@@ -365,10 +364,6 @@ async function importPublications() {
       website_link: nullIfEmpty(r.website_link),
       download_link: nullIfEmpty(r.download_link),
       citation_apa: nullIfEmpty(r.citation_apa),
-      citation_cbe: nullIfEmpty(r.citation_cbe),
-      citation_harvard: nullIfEmpty(r.citation_harvard),
-      citation_mla: nullIfEmpty(r.citation_mla),
-      citation_vancouver: nullIfEmpty(r.citation_vancouver),
       citation_de: nullIfEmpty(r.citation_de),
       citation_en: nullIfEmpty(r.citation_en),
       bibtex: nullIfEmpty(r.bibtex),

@@ -106,8 +106,7 @@ export class WebdbAdapter implements SourceAdapter<RawWebdb> {
           SELECT uid, original_title, summary_de, summary_en, doi_link,
                  pub_date, ris, type, peer_reviewed, popular_science,
                  open_access, lead_author, website_link, download_link,
-                 citation_apa, citation_cbe, citation_harvard,
-                 citation_mla, citation_vancouver, citation_de,
+                 citation_apa, citation_de,
                  citation_en, bibtex, endnote, tstamp, crdate
           FROM tx_hebowebdb_domain_model_publication WHERE deleted=0`),
 

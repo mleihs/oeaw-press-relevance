@@ -59,9 +59,7 @@ export interface RawPublication {
   type: number | null; peer_reviewed: number; popular_science: number;
   open_access: string | null; lead_author: string | null;
   website_link: string | null; download_link: string | null;
-  citation_apa: string | null; citation_cbe: string | null;
-  citation_harvard: string | null; citation_mla: string | null;
-  citation_vancouver: string | null; citation_de: string | null;
+  citation_apa: string | null; citation_de: string | null;
   citation_en: string | null; bibtex: string | null; endnote: string | null;
   tstamp: number | null; crdate: number | null;
 }
@@ -144,10 +142,6 @@ export function normalizeWebdb(
     websiteLink: nullIfEmpty(r.website_link),
     downloadLink: nullIfEmpty(r.download_link),
     citationApa: nullIfEmpty(r.citation_apa),
-    citationCbe: nullIfEmpty(r.citation_cbe),
-    citationHarvard: nullIfEmpty(r.citation_harvard),
-    citationMla: nullIfEmpty(r.citation_mla),
-    citationVancouver: nullIfEmpty(r.citation_vancouver),
     citationDe: nullIfEmpty(r.citation_de),
     citationEn: nullIfEmpty(r.citation_en),
     bibtex: nullIfEmpty(r.bibtex),

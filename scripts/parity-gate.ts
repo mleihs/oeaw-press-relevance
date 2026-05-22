@@ -78,8 +78,7 @@ const PUB_WEBDB_COLS = [
   'p.doi_link', 'p.published_at', 'p.ris', 'pt.webdb_uid', 'p.peer_reviewed',
   'p.popular_science', 'p.open_access_status', 'p.open_access', 'p.oa_type',
   'p.lead_author', 'p.website_link', 'p.download_link', 'p.citation_apa',
-  'p.citation_cbe', 'p.citation_harvard', 'p.citation_mla',
-  'p.citation_vancouver', 'p.citation_de', 'p.citation_en', 'p.bibtex',
+  'p.citation_de', 'p.citation_en', 'p.bibtex',
   'p.endnote', 'p.citation', 'p.webdb_tstamp', 'p.webdb_crdate',
   'p.archived', 'p.is_ita_subtree',
 ];

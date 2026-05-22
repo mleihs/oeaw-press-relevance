@@ -1019,7 +1019,7 @@ async function cmdDoiBackfill(opts) {
     const r = await c.query(`
       SELECT id, doi_link, bibtex,
              citation_apa, citation_de, citation_en,
-             citation, citation_cbe, citation_harvard, citation_mla, citation_vancouver,
+             citation,
              endnote, ris,
              website_link, download_link, url
       FROM publications

@@ -147,10 +147,6 @@ export interface CanonicalPublication {
   websiteLink: string | null;
   downloadLink: string | null;
   citationApa: string | null;
-  citationCbe: string | null;
-  citationHarvard: string | null;
-  citationMla: string | null;
-  citationVancouver: string | null;
   citationDe: string | null;
   citationEn: string | null;
   bibtex: string | null;
@@ -296,7 +292,7 @@ export const LECTURE_UPDATE = [
 ] as const;
 
 /**
- * The 31 WebDB-owned columns of `publications`, exactly the
+ * The 27 WebDB-owned columns of `publications`, exactly the
  * `Object.keys(insertable[0]).filter(k => k !== 'webdb_uid')` set from the
  * .mjs script (incl. `archived` and `syncedAt`). The loader's
  * `onConflictDoUpdate` set is built from this and nothing else.
@@ -305,8 +301,7 @@ export const PUBLICATION_WEBDB_UPDATE = [
   'title', 'originalTitle', 'summaryDe', 'summaryEn', 'doi', 'doiLink',
   'publishedAt', 'ris', 'publicationTypeId', 'peerReviewed', 'popularScience',
   'openAccessStatus', 'openAccess', 'oaType', 'leadAuthor', 'websiteLink',
-  'downloadLink', 'citationApa', 'citationCbe', 'citationHarvard',
-  'citationMla', 'citationVancouver', 'citationDe', 'citationEn', 'bibtex',
+  'downloadLink', 'citationApa', 'citationDe', 'citationEn', 'bibtex',
   'endnote', 'citation', 'webdbTstamp', 'webdbCrdate', 'archived', 'syncedAt',
 ] as const;
 

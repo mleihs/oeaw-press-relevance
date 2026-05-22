@@ -88,15 +88,14 @@ export function extractDoiFromText(text, { fromUrl = false } = {}) {
 // am Ende Verlags-URLs (URL-Slug-Risiko).
 const TEXT_FIELDS_NORMAL = [
   'citation_apa', 'citation_de', 'citation_en',
-  'citation', 'citation_cbe', 'citation_harvard',
-  'citation_mla', 'citation_vancouver',
+  'citation',
   'endnote', 'ris',
 ];
 const URL_FIELDS = ['website_link', 'download_link', 'url'];
 
 /**
- * Erst-Treffer-Extraktion über alle 13 möglichen Felder eines Pub-Rows.
- * Reihenfolge: doi_link → bibtex → citation_apa/_de/_en/_cbe/... → endnote/ris
+ * Erst-Treffer-Extraktion über alle 9 möglichen Felder eines Pub-Rows.
+ * Reihenfolge: doi_link → bibtex → citation_apa/_de/_en/citation → endnote/ris
  *              → website_link/download_link/url (mit Slug-Stripping).
  */
 export function extractDoiFromRow(row) {
@@ -125,7 +124,7 @@ export function extractDoiFromRow(row) {
 
 /**
  * SQL-WHERE-Klausel-Snippet, das Kandidaten-Pubs vorfiltert (Pubs ohne `doi`,
- * aber mit irgendeinem DOI-Pattern in den 14 möglichen Feldern). Eingebettet
+ * aber mit irgendeinem DOI-Pattern in den 10 möglichen Feldern). Eingebettet
  * in Backfill-Queries, um nicht alle 38k Pubs durchzulesen.
  */
 export const DOI_CANDIDATE_WHERE_CLAUSE = `
@@ -136,10 +135,6 @@ export const DOI_CANDIDATE_WHERE_CLAUSE = `
     citation_de        ~* '10\\.[0-9]{4,9}/' OR
     citation_en        ~* '10\\.[0-9]{4,9}/' OR
     citation           ~* '10\\.[0-9]{4,9}/' OR
-    citation_cbe       ~* '10\\.[0-9]{4,9}/' OR
-    citation_harvard   ~* '10\\.[0-9]{4,9}/' OR
-    citation_mla       ~* '10\\.[0-9]{4,9}/' OR
-    citation_vancouver ~* '10\\.[0-9]{4,9}/' OR
     endnote            ~* '10\\.[0-9]{4,9}/' OR
     ris                ~* '10\\.[0-9]{4,9}/' OR
     website_link       ~* '10\\.[0-9]{4,9}/' OR

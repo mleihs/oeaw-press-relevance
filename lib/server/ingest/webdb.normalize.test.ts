@@ -28,8 +28,7 @@ function pub(over: Partial<RawPublication>): RawPublication {
     doi_link: null, pub_date: null, ris: null, type: null,
     peer_reviewed: 0, popular_science: 0, open_access: null,
     lead_author: null, website_link: null, download_link: null,
-    citation_apa: null, citation_cbe: null, citation_harvard: null,
-    citation_mla: null, citation_vancouver: null, citation_de: null,
+    citation_apa: null, citation_de: null,
     citation_en: null, bibtex: null, endnote: null,
     tstamp: null, crdate: null, ...over,
   };
@@ -142,8 +141,8 @@ describe('data-safety contract (ADR 0017 / production_db_safety)', () => {
     expect(overlap).toEqual([]);
   });
 
-  it('WebDB update set is exactly the 31 .mjs-owned columns', () => {
-    expect(PUBLICATION_WEBDB_UPDATE).toHaveLength(31);
+  it('WebDB update set is exactly the 27 .mjs-owned columns', () => {
+    expect(PUBLICATION_WEBDB_UPDATE).toHaveLength(27);
     // spot-check the invariant both ways
     for (const c of ['title', 'doi', 'archived', 'syncedAt', 'leadAuthor']) {
       expect(PUBLICATION_WEBDB_UPDATE).toContain(c);
