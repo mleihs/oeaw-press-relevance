@@ -15,6 +15,7 @@ import { enrichFromUnpaywall } from './unpaywall';
 import { enrichFromSemanticScholar } from './semantic-scholar';
 import { enrichFromPdf } from './pdf-extract';
 import { enrichFromWebDb, WEBDB_SOURCE_TAG } from './webdb-native';
+import { extractVenue } from './venue-extract';
 import { publicationToApi } from '../publications/to-api';
 import type { EnrichmentBatchPayload } from '@/lib/shared/schemas';
 
@@ -39,6 +40,18 @@ function truncate(text: string | undefined, max: number): string | undefined {
 
 function isPdfUrl(url: string | null): boolean {
   return !!url && /\.pdf$/i.test(url);
+}
+
+/**
+ * First directly-fetchable PDF URL for a publication. WebDB-sourced rows carry
+ * their links in website_link / download_link and leave `url` empty, so all
+ * three columns are checked — not just `url`.
+ */
+function directPdfUrl(pub: Publication): string | null {
+  for (const candidate of [pub.url, pub.download_link, pub.website_link]) {
+    if (isPdfUrl(candidate)) return candidate;
+  }
+  return null;
 }
 
 export interface EnrichmentBatchFilters {
@@ -155,8 +168,13 @@ export async function runEnrichmentBatch(
     }
     const pub = pubs[i];
     const hasDoi = !!pub.doi;
-    const hasDirectPdf = isPdfUrl(pub.url);
+    const directPdf = directPdfUrl(pub);
+    const hasDirectPdf = !!directPdf;
     const hasCsvAbstract = !!pub.abstract;
+    // Venue parsed from the WebDB citation exports (BibTeX/RIS/EndNote) — the
+    // fallback journal source, esp. for the no-DOI path where the APIs
+    // contribute nothing.
+    const webdbVenue = extractVenue(pub)?.venue;
 
     emit('pub_start', {
       index: i,
@@ -200,7 +218,7 @@ export async function runEnrichmentBatch(
       if (hasDirectPdf) {
         emit('source_try', { index: i, source: 'pdf', status: 'loading' });
         try {
-          const pdfResult = await enrichFromPdf(pub.url!);
+          const pdfResult = await enrichFromPdf(directPdf!);
           if (pdfResult) {
             noDoi_sources.push('pdf');
             sourceCounts['pdf'] = (sourceCounts['pdf'] || 0) + 1;
@@ -250,6 +268,7 @@ export async function runEnrichmentBatch(
         .set({
           enrichmentStatus: finalStatus,
           enrichedAbstract: noDoi_abstract || null,
+          enrichedJournal: webdbVenue || null,
           enrichedSource: noDoi_sources.join('+') || null,
           fullTextSnippet: noDoi_snippet || null,
           wordCount: noDoi_wordCount,
@@ -358,7 +377,7 @@ export async function runEnrichmentBatch(
     if (!mergedAbstract && hasDirectPdf) {
       emit('source_try', { index: i, source: 'pdf', status: 'loading' });
       try {
-        const pdfResult = await enrichFromPdf(pub.url!);
+        const pdfResult = await enrichFromPdf(directPdf!);
         if (pdfResult) {
           sourcesUsed.push('pdf');
           sourceCounts['pdf'] = (sourceCounts['pdf'] || 0) + 1;
@@ -445,7 +464,7 @@ export async function runEnrichmentBatch(
 
     // Phase 4: Fallback PDF from API-discovered URL, if still no abstract
     // and the URL differs from the one already tried in Phase 2.
-    if (!mergedAbstract && apiPdfUrl && apiPdfUrl !== pub.url) {
+    if (!mergedAbstract && apiPdfUrl && apiPdfUrl !== directPdf) {
       // Skip event noise if Phase-2 already emitted a 'pdf' cycle.
       if (!hasDirectPdf) {
         emit('source_try', { index: i, source: 'pdf', status: 'loading' });
@@ -512,7 +531,8 @@ export async function runEnrichmentBatch(
       enrichedAbstract: mergedAbstract || null,
       enrichedKeywords:
         mergedKeywords.length > 0 ? mergedKeywords.slice(0, 20) : null,
-      enrichedJournal: mergedJournal || null,
+      // API venue wins (canonical name); parsed WebDB venue is the fallback.
+      enrichedJournal: mergedJournal || webdbVenue || null,
       enrichedSource: sourcesUsed.join('+') || null,
       fullTextSnippet: mergedSnippet || null,
       wordCount: mergedWordCount,

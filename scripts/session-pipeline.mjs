@@ -234,7 +234,11 @@ async function cmdCandidates(opts, positional) {
   const conditions = [
     'p.archived = false',
     "p.analysis_status = 'pending'",
-    "p.enrichment_status IN ('enriched', 'partial')",
+    // 'failed' bewusst inkludiert: eine Pub ohne DOI durchläuft die API-Cascade
+    // erfolglos (→ failed), kann aber eine echte WebDB-summary_de tragen. Der
+    // Inhaltsgate GREATEST(...) >= 120 unten ist der eigentliche Bewertbarkeits-
+    // Test; der Status schließt hier nur noch 'pending' aus (→ erst enrich-all).
+    "p.enrichment_status IN ('enriched', 'partial', 'failed')",
     `GREATEST(
       length(COALESCE(p.summary_de,'')),
       length(COALESCE(p.summary_en,'')),

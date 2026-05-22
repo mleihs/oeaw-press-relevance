@@ -40,14 +40,17 @@ export async function enrichFromPdf(pdfUrl: string): Promise<EnrichmentResult | 
 
     pdf = new PDFParse({ data: new Uint8Array(buffer) });
 
-    // Extract text from first 3 pages only (abstract is always at the start)
-    const textResult = await pdf.getText({ first: 3 });
+    // Opening pages: a journal abstract is on page 1, but reports, monographs
+    // and OA booklets carry their summary or introduction several pages in,
+    // behind cover and front matter — so read 12, not 3.
+    const textResult = await pdf.getText({ first: 12 });
     const fullText = textResult.text;
 
     if (!fullText || fullText.length < 50) return null;
 
-    // Try to extract abstract from the text
-    const abstract = extractAbstract(fullText);
+    // Formal-abstract finder first; fall back to the leading body prose for
+    // documents that have no abstract section (reports, monographs, booklets).
+    const abstract = extractAbstract(fullText) || extractLeadingBody(fullText);
 
     // Build a snippet from the first ~2000 chars of the full text
     const snippet = fullText.slice(0, 2000).trim();
@@ -176,4 +179,68 @@ function extractAbstract(text: string): string | null {
   }
 
   return null;
+}
+
+/**
+ * Fallback for documents with no recognisable abstract section (ministry
+ * reports, monographs, working papers, OA booklets). Returns the first
+ * substantial block of running prose, skipping cover / imprint /
+ * table-of-contents front matter.
+ *
+ * Correct for single-work PDFs. For a *container* PDF — a whole magazine, a
+ * multi-chapter synopsis booklet — it returns the leading item's prose, which
+ * need not match the specific publication record; WebDB PDF links are a mix of
+ * both, so a body-prose result is best-effort, not authoritative.
+ */
+function extractLeadingBody(rawText: string): string | null {
+  const cleaned = rawText
+    .replace(/\r\n/g, '\n')
+    .replace(/-\n(?=\p{Ll})/gu, '')                          // join soft-hyphenated words
+    .replace(/\n\s*--\s*\d+\s*of\s*\d+\s*--\s*\n/gi, '\n');  // PDFParse page markers
+
+  const rawLines = cleaned.split('\n').map((l) => l.trim());
+
+  // Drop running headers / footers — lines that recur across pages once their
+  // digits are masked (e.g. "Report Title 6 von 103" -> "Report Title # von #").
+  const mask = (l: string) => l.replace(/\d+/g, '#');
+  const freq = new Map<string, number>();
+  for (const l of rawLines) {
+    if (l) freq.set(mask(l), (freq.get(mask(l)) ?? 0) + 1);
+  }
+  const lines = rawLines.filter((l) => !l || (freq.get(mask(l)) ?? 0) < 3);
+
+  const IMPRINT =
+    /\b(Impressum|Imprint|Medieninhaber|Herausgeber|Copyright|ISBN|ISSN|Fotonachweis|Bildnachweis|Redaktion|Lektorat|Auflage|Künye|Mentions)\b/i;
+  const isProse = (s: string): boolean => {
+    if (s.length < 60) return false;          // heading / list item / caption
+    if (IMPRINT.test(s)) return false;        // imprint block
+    if (/\.{4,}/.test(s)) return false;       // table-of-contents dot leader
+    if (!/[a-zäöüß]/.test(s)) return false;   // all-caps cover line
+    const letters = (s.match(/\p{L}/gu) ?? []).length;
+    return letters / s.length >= 0.6;         // not mostly digits / symbols
+  };
+
+  // First run of consecutive prose lines worth at least 400 chars.
+  let buf: string[] = [];
+  let chars = 0;
+  for (const line of lines) {
+    if (isProse(line)) {
+      buf.push(line);
+      chars += line.length + 1;
+      if (chars >= 2400) break;
+    } else if (chars >= 400) {
+      break;
+    } else {
+      buf = [];
+      chars = 0;
+    }
+  }
+  if (chars < 400) return null;
+
+  let body = buf.join(' ').replace(/\s+/g, ' ').trim();
+  if (body.length > 2200) {
+    const cut = body.lastIndexOf('. ', 2200);
+    body = cut > 1200 ? body.slice(0, cut + 1) : body.slice(0, 2200);
+  }
+  return body.length >= 200 ? body : null;
 }
