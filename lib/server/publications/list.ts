@@ -149,6 +149,9 @@ export async function listPublications(
   const oestat3Domains = csv(searchParams.get('oestat3_domains'))
     .map(Number)
     .filter((n) => Number.isFinite(n));
+  // Venue exact-match filter (DoS-capped). enriched_journal holds a venue,
+  // not strictly a journal — see components/venue-line.tsx.
+  const journal = (searchParams.get('journal') || '').slice(0, 300);
   // top_level_only is UI-only since 2026-05; backend doesn't use it.
   void searchParams.get('top_level_only');
   const publishedAfter = searchParams.get('published_after') || '';
@@ -244,6 +247,13 @@ export async function listPublications(
     }
     if (pubTypeIds.length) {
       clauses.push(inArray(publications.publicationTypeId, pubTypeIds));
+    }
+    if (journal) {
+      // Case-insensitive exact venue match. lower()=lower() rather than
+      // ILIKE so a literal % or _ in a venue name can't broaden the match.
+      clauses.push(
+        sql`lower(${publications.enrichedJournal}) = lower(${journal})`,
+      );
     }
     if (publishedAfter) {
       clauses.push(gte(publications.publishedAt, publishedAfter));

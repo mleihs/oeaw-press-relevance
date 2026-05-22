@@ -101,6 +101,14 @@ export function ActiveFilters({ filters, setFilters, lookups }: Props) {
     });
   }
 
+  if (filters.journal) {
+    chips.push({
+      key: 'journal',
+      label: `Venue: ${filters.journal}`,
+      remove: () => setFilters({ journal: '', page: 1 }),
+    });
+  }
+
   if (filters.peer !== 'any') {
     chips.push({
       key: 'peer',

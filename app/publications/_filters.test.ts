@@ -71,6 +71,16 @@ describe('buildApiParams', () => {
     expect(buildApiParams(withDefaults({ maHl: true })).get('mahighlight')).toBe('true');
     expect(buildApiParams(withDefaults({ hl: true })).get('highlight')).toBe('true');
   });
+
+  test('journal venue forwarded verbatim, only when set', () => {
+    expect(buildApiParams(withDefaults({ journal: 'Nature' })).get('journal')).toBe('Nature');
+    // Commas survive: venue names contain them, hence a single string param
+    // (not a comma-joined array like types/units).
+    expect(
+      buildApiParams(withDefaults({ journal: 'Monumenta Germaniae Historica, Scriptores' })).get('journal'),
+    ).toBe('Monumenta Germaniae Historica, Scriptores');
+    expect(buildApiParams(FILTER_DEFAULTS).get('journal')).toBeNull();
+  });
 });
 
 describe('hasAnyActiveFilter', () => {
@@ -88,6 +98,7 @@ describe('hasAnyActiveFilter', () => {
     expect(hasAnyActiveFilter(withDefaults({ peer: 'yes' }))).toBe(true);
     expect(hasAnyActiveFilter(withDefaults({ q: 'foo' }))).toBe(true);
     expect(hasAnyActiveFilter(withDefaults({ types: ['a'] }))).toBe(true);
+    expect(hasAnyActiveFilter(withDefaults({ journal: 'Nature' }))).toBe(true);
     expect(hasAnyActiveFilter(withDefaults({ showAll: true }))).toBe(true);
   });
 });

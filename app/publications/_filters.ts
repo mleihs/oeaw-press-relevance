@@ -42,6 +42,7 @@ export const filterParsers = {
   units: parseAsArrayOf(parseAsString).withDefault([]),
   oestat: parseAsArrayOf(parseAsString).withDefault([]),
   oestat3: parseAsArrayOf(parseAsInteger).withDefault([]),
+  journal: parseAsString.withDefault(''),
   topUnitOnly: parseAsBoolean.withDefault(true),
   peer: parseAsStringLiteral(TRI_STATE).withDefault('any'),
   popsci: parseAsStringLiteral(TRI_STATE).withDefault('any'),
@@ -76,6 +77,7 @@ export const FILTER_DEFAULTS: FilterValues = {
   units: [],
   oestat: [],
   oestat3: [],
+  journal: '',
   topUnitOnly: true,
   peer: 'any',
   popsci: 'any',
@@ -147,6 +149,7 @@ export function buildApiParams(filters: FilterValues): URLSearchParams {
   if (filters.oestat3.length) {
     p.set('oestat3_domains', filters.oestat3.join(','));
   }
+  if (filters.journal) p.set('journal', filters.journal);
   if (filters.topUnitOnly) p.set('top_level_only', 'true');
   if (filters.peer === 'yes') p.set('peer_reviewed', 'true');
   if (filters.peer === 'no') p.set('peer_reviewed', 'false');
