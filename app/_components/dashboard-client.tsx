@@ -27,6 +27,7 @@ import { ChangelogPanel } from '@/components/changelog-panel';
 import { CapybaraGlitch } from '@/components/capybara-glitch';
 import { CapybaraLightbox } from '@/components/capybara-lightbox';
 import { PublicationFlag } from '@/components/publication-flag';
+import { VenueLine } from '@/components/venue-line';
 import { AUTH_STORAGE_KEY, AUTH_SUCCESS_EVENT } from '@/lib/client/auth-events';
 import { displayTitle } from '@/lib/shared/html-utils';
 import { displayAuthor, displayInstitute } from '@/lib/shared/publication-display';
@@ -458,6 +459,7 @@ export function DashboardClient({ data, period, sortBy }: DashboardClientProps) 
                           <span className="text-[10px] text-muted-foreground/70">{pub.published_at.slice(0, 4)}</span>
                         )}
                       </div>
+                      <VenueLine journal={pub.enriched_journal} />
                       {pub.pitch_suggestion && (
                         <p className="text-xs text-foreground/80 mt-1 line-clamp-2">
                           {pub.pitch_suggestion}

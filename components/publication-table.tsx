@@ -12,6 +12,7 @@ import { PressScoreBadge, ScoreBar } from './score-bar';
 import { InfoBubble } from './info-bubble';
 import { EXPL } from '@/lib/client/explanations';
 import { HaikuBlock } from './haiku-block';
+import { VenueLine } from './venue-line';
 import { MeistertaskButton } from '@/components/meistertask-button';
 import { EmptyState } from './empty-state';
 import { PublicationFlag } from './publication-flag';
@@ -303,6 +304,7 @@ function MobilePublicationCard({
           <p className="text-xs text-muted-foreground mt-1 truncate">
             {displayAuthor(pub)}
           </p>
+          <VenueLine journal={pub.enriched_journal} />
           {showScores && pub.pitch_suggestion && (
             <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-snug">
               {pub.pitch_suggestion}
@@ -531,6 +533,7 @@ function PublicationRow({
               </TooltipTrigger><TooltipContent>In MeisterTask geöffnet</TooltipContent></Tooltip>
             )}
           </div>
+          <VenueLine journal={pub.enriched_journal} />
           {showScores && pub.pitch_suggestion && (
             <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-snug">
               {pub.pitch_suggestion}
