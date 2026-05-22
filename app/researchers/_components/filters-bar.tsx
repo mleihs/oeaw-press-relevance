@@ -15,11 +15,6 @@ import { InfoBubble } from '@/components/info-bubble';
 import { METRIC_LABELS, SINCE_PRESETS, type LeaderboardMetric } from '@/lib/shared/researchers';
 import type { EXPL } from '@/lib/client/explanations';
 
-const SCOPE_LABELS = {
-  all: 'Alle Beteiligten',
-  lead: 'Nur Hauptautor:innen',
-} as const;
-
 export function FiltersBar() {
   const [filters, setFilters] = useQueryStates(filterParsers, { shallow: false });
 
@@ -54,23 +49,6 @@ export function FiltersBar() {
           <SelectContent>
             {(Object.keys(METRIC_LABELS) as LeaderboardMetric[]).map((m) => (
               <SelectItem key={m} value={m}>{METRIC_LABELS[m]}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="flex flex-col gap-1.5">
-        <Label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          Autorschaft
-          <InfoBubble id="filter_authorship" />
-        </Label>
-        <Select value={filters.scope} onValueChange={(v) => setFilters({ scope: v as 'all' | 'lead' })}>
-          <SelectTrigger className="h-9 w-[200px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {(Object.keys(SCOPE_LABELS) as Array<keyof typeof SCOPE_LABELS>).map((s) => (
-              <SelectItem key={s} value={s}>{SCOPE_LABELS[s]}</SelectItem>
             ))}
           </SelectContent>
         </Select>
