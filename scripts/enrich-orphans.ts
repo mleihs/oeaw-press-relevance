@@ -102,7 +102,10 @@ async function main() {
   const db = await connectDb({ target: args.target });
   console.log(`[enrich-orphans] target=${args.target} reset=${args.reset} onlyPdf=${args.onlyPdf} promote=${args.promote}`);
 
-  let where = "WHERE enrichment_status IS NULL OR enrichment_status = 'failed'";
+  // Parens required: AND binds tighter than OR. The orphan filter below
+  // AND-joins this clause, so without parens `publication_id IS NULL` would
+  // only apply to the 'failed' branch — silently enriching matched rows too.
+  let where = "WHERE (enrichment_status IS NULL OR enrichment_status = 'failed')";
   if (args.reset) where = '';
   else if (args.onlyPdf) where = "WHERE enrichment_status = 'partial'";
 
