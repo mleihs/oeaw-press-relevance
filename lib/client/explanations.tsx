@@ -1369,6 +1369,33 @@ export const EXPL = {
     ),
   },
 
+  // ─── Journal / Venue ─────────────────────────────────────────────────────
+  venue: {
+    title: 'Journal / Venue',
+    body: (
+      <>
+        <Para>
+          Das Publikationsorgan — Fachzeitschrift, Buch, Sammel- oder Tagungsband,
+          Magazin oder Preprint-Server (z.B. bioRxiv, Zenodo). In der
+          Publikationsliste steht es als kursive Zeile mit Buch-Symbol unter dem
+          Titel; ein Klick filtert die Liste auf genau dieses Venue.
+        </Para>
+        <Para>
+          Ermittelt im Feld <Code>enriched_journal</Code> auf zwei Wegen: primär aus
+          den Zitationsdaten der WebDB (BibTeX, RIS, EndNote) geparst; wo dort nichts
+          steht, per DOI über CrossRef und OpenAlex nachgetragen. Abdeckung rund 90 %.
+        </Para>
+      </>
+    ),
+    note: (
+      <Para>
+        Ein <em>Venue</em>, kein reiner Journal-Name — gut die Hälfte sind Bücher,
+        Sammelbände oder Tagungsbände. Die ~10 % ohne ermitteltes Venue zeigen keine
+        Zeile.
+      </Para>
+    ),
+  },
+
   // ─── Press-Releases-Seite ────────────────────────────────────────────────
   pr_stat_total: {
     title: 'Pressemitteilungen gesamt',
@@ -1747,6 +1774,7 @@ export const EXPL_KB_MAP: Partial<Record<keyof typeof EXPL, KbAnchor>> = {
   source_unpaywall:          { path: '/help/datenquellen/quellen-uebersicht', hash: 'source-unpaywall' },
   source_semantic_scholar:   { path: '/help/datenquellen/quellen-uebersicht', hash: 'source-semantic-scholar' },
   source_pdf:                { path: '/help/datenquellen/quellen-uebersicht', hash: 'source-pdf' },
+  venue:                     { path: '/help/datenquellen/venue' },
 
   // ─── press-releases/ ───────────────────────────────────────────────────────
   pr_stat_total:             { path: '/help/press-releases/seiten-tour', hash: 'total' },

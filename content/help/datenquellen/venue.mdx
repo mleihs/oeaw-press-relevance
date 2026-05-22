@@ -1,0 +1,47 @@
+---
+title: Journal / Venue
+description: Wie das Publikationsorgan je Publikation ermittelt wird — aus den WebDB-Zitationsdaten und per DOI über CrossRef und OpenAlex — und wo es in der App auftaucht.
+---
+
+Jede Publikation trägt — sofern ermittelbar — ihr **Publikationsorgan** (Venue): die
+Fachzeitschrift, das Buch, den Sammel- oder Tagungsband, das Magazin oder den
+Preprint-Server, in dem die Arbeit erschienen ist.
+
+## Wo es angezeigt wird {#anzeige}
+
+- **Publikationsliste:** als kursive Zeile mit Buch-Symbol direkt unter dem Titel
+  (auf Mobilgeräten unter den Autor:innen). Ein Klick darauf filtert die Liste auf
+  genau dieses Venue.
+- **Aufgeklappte Zeile:** zusätzlich als klar beschriftetes Feld „Journal".
+- **Filter-Panel:** die Facette „Venue" — eine durchsuchbare Auswahl der häufigsten
+  Venues im Bestand.
+
+Rund **90 %** der Publikationen haben ein ermitteltes Venue. Die übrigen ~10 % zeigen
+gar keine Zeile.
+
+## Wie das Venue ermittelt wird {#ermittlung}
+
+Der Wert liegt im Feld `enriched_journal` und wird auf zwei Wegen befüllt:
+
+1. **Aus den Zitationsdaten der WebDB.** Die WebDB liefert pro Publikation
+   Zitations-Strings in den Formaten BibTeX, RIS und EndNote. Daraus wird der
+   Venue-Name geparst — das ist die primäre Quelle und deckt den Großteil des
+   Bestands ab.
+2. **Per DOI über CrossRef und OpenAlex.** Wo in den Zitationsdaten nichts steht
+   (etwa wenn nur ein DOI vorliegt), wird das Venue über die DOI bei CrossRef und
+   OpenAlex nachgetragen.
+
+Liefern beide Wege einen Wert, hat der API-Wert Vorrang — er trägt den kanonischen,
+einheitlich geschriebenen Venue-Namen.
+
+## „Venue", nicht „Journal" {#venue-nicht-journal}
+
+Der Begriff *Venue* ist bewusst gewählt: nur gut die Hälfte der Einträge sind
+klassische Fachzeitschriften. Der Rest sind Bücher, Sammel- und Tagungsbände,
+Enzyklopädien, Magazine und Preprint-Server wie bioRxiv oder Zenodo. Welcher Typ
+genau vorliegt, sagt das Publikationstyp-Badge der Zeile.
+
+## Verwandte Themen
+
+- [Datenquellen im Detail](/help/datenquellen/quellen-uebersicht): was CrossRef und OpenAlex liefern
+- [Anreicherungs-Pipeline](/help/pipeline/enrichment): wie die Pub-Felder orchestriert befüllt werden

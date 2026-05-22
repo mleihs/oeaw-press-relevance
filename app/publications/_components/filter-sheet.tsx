@@ -339,6 +339,7 @@ function VenueFacet({ filters, setFilters, lookups }: Props) {
   return (
     <FacetSection
       title="Venue"
+      explId="venue"
       hint={
         lookups
           ? `Top ${venues.length.toLocaleString('de-AT')} nach Häufigkeit`

@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { BookOpen } from 'lucide-react';
+import { InfoBubble } from '@/components/info-bubble';
 import { cn } from '@/lib/shared/utils';
 
 /**
@@ -33,7 +34,7 @@ export function VenueLine({
   return (
     <p
       className={cn(
-        'mt-0.5 flex text-xs italic text-muted-foreground',
+        'mt-0.5 flex items-center gap-1 text-xs italic text-muted-foreground',
         className,
       )}
     >
@@ -51,6 +52,7 @@ export function VenueLine({
         <BookOpen aria-hidden className="h-3 w-3 shrink-0 opacity-70" />
         <span className="min-w-0 truncate group-hover:underline">{venue}</span>
       </button>
+      <InfoBubble id="venue" size="sm" />
     </p>
   );
 }
