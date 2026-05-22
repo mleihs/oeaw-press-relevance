@@ -1375,7 +1375,7 @@ export const EXPL = {
     body: (
       <>
         <Para>
-          Das Publikationsorgan — Fachzeitschrift, Buch, Sammel- oder Tagungsband,
+          Das Publikationsorgan: Fachzeitschrift, Buch, Sammel- oder Tagungsband,
           Magazin oder Preprint-Server (z.B. bioRxiv, Zenodo). In der
           Publikationsliste steht es als kursive Zeile mit Buch-Symbol unter dem
           Titel; ein Klick filtert die Liste auf genau dieses Venue.
@@ -1389,7 +1389,7 @@ export const EXPL = {
     ),
     note: (
       <Para>
-        Ein <em>Venue</em>, kein reiner Journal-Name — gut die Hälfte sind Bücher,
+        Ein <em>Venue</em>, kein reiner Journal-Name: gut die Hälfte sind Bücher,
         Sammelbände oder Tagungsbände. Die ~10 % ohne ermitteltes Venue zeigen keine
         Zeile.
       </Para>
