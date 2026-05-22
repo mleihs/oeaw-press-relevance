@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
-  apiError,
   createSSEStream,
+  sseResponse,
+  validateBody,
   withApiError,
 } from '@/lib/server/http';
 import {
@@ -14,18 +15,9 @@ import { enrichmentBatchPayloadSchema } from '@/lib/shared/schemas';
 export const maxDuration = 300;
 
 export const POST = withApiError(async (req: NextRequest) => {
-  let raw: unknown;
-  try {
-    raw = await req.json();
-  } catch {
-    raw = {};
-  }
-
-  const parsed = enrichmentBatchPayloadSchema.safeParse(raw);
-  if (!parsed.success) {
-    return apiError(parsed.error.issues[0]?.message ?? 'Invalid payload', 400);
-  }
-  const filters = enrichmentPayloadToFilters(parsed.data);
+  const filters = enrichmentPayloadToFilters(
+    await validateBody(req, enrichmentBatchPayloadSchema),
+  );
 
   // Uncaught throws bubble to withApiError → 500.
   const pubs = await fetchPublicationsForEnrichment(filters);
@@ -41,11 +33,5 @@ export const POST = withApiError(async (req: NextRequest) => {
     emit: send,
   }).finally(() => close());
 
-  return new Response(stream, {
-    headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      Connection: 'keep-alive',
-    },
-  });
+  return sseResponse(stream);
 });

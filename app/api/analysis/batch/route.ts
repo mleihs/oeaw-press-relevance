@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
-  apiError,
   createSSEStream,
   errorToApiResponse,
+  sseResponse,
+  validateBody,
   withApiError,
 } from '@/lib/server/http';
 import { getLLMModel, getOpenRouterKey } from '@/lib/server/llm';
@@ -23,18 +24,7 @@ export const POST = withApiError(async (req: NextRequest) => {
     return errorToApiResponse(err, 400, 'Configuration error');
   }
 
-  let raw: unknown;
-  try {
-    raw = await req.json();
-  } catch {
-    raw = {};
-  }
-
-  const parsed = analysisBatchPayloadSchema.safeParse(raw);
-  if (!parsed.success) {
-    return apiError(parsed.error.issues[0]?.message ?? 'Invalid payload', 400);
-  }
-  const filters = parsed.data;
+  const filters = await validateBody(req, analysisBatchPayloadSchema);
 
   // Uncaught throws bubble to withApiError → 500.
   const pubs = await fetchPublicationsForAnalysis(filters);
@@ -55,11 +45,5 @@ export const POST = withApiError(async (req: NextRequest) => {
     emit: send,
   }).finally(() => close());
 
-  return new Response(stream, {
-    headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      Connection: 'keep-alive',
-    },
-  });
+  return sseResponse(stream);
 });

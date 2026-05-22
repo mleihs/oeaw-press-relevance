@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { apiError, withApiError } from '@/lib/server/http';
+import { apiError, validateBody, withApiError } from '@/lib/server/http';
 import { sessionFinishPayloadSchema } from '@/lib/shared/schemas';
 import {
   finishSession,
@@ -11,18 +11,9 @@ export const POST = withApiError(async (
   { params }: { params: Promise<{ id: string }> },
 ) => {
   const { id } = await params;
-  let raw: unknown;
+  const data = await validateBody(req, sessionFinishPayloadSchema);
   try {
-    raw = await req.json();
-  } catch {
-    raw = {};
-  }
-  const parsed = sessionFinishPayloadSchema.safeParse(raw);
-  if (!parsed.success) {
-    return apiError(parsed.error.issues[0]?.message ?? 'Invalid payload', 400);
-  }
-  try {
-    const session = await finishSession(id, parsed.data);
+    const session = await finishSession(id, data);
     return NextResponse.json({ session });
   } catch (err) {
     if (err instanceof SessionNotFoundError) {

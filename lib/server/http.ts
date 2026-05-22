@@ -143,6 +143,21 @@ export function createSSEStream() {
 }
 
 /**
+ * Wraps an SSE `ReadableStream` in a `Response` with the standard
+ * `text/event-stream` headers. Pairs with `createSSEStream()` — the batch
+ * routes (analysis, enrichment) build a stream and return it through this.
+ */
+export function sseResponse(stream: ReadableStream): Response {
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      Connection: 'keep-alive',
+    },
+  });
+}
+
+/**
  * Maps a thrown value to an `apiError` payload. Use in route catch blocks
  * to keep handlers focused on the happy path. Status defaults to 500;
  * pass another for validation/billing/auth/etc. Optional `fallback`

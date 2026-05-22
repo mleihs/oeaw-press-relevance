@@ -9,41 +9,6 @@
  */
 export const BRAND_HEX = '#0047bb';
 
-export const PUBLICATION_TYPE_MAP: Record<string, string> = {
-  '0': 'Other',
-  '1': 'Journal Article',
-  '3': 'Book Chapter',
-  '4': 'Book',
-  '5': 'Edited Volume',
-  '6': 'Conference Paper',
-  '7': 'Report',
-  '8': 'Dissertation',
-  '10': 'Book Anthology',
-  '12': 'Working Paper',
-  '13': 'Thesis',
-  '14': 'Dataset',
-  '15': 'Conference Contribution',
-  '16': 'Other',
-  '17': 'Book Section',
-  '18': 'Popular Science',
-  '19': 'Miscellaneous',
-  '20': 'Other Contribution',
-  '21': 'Working Paper (Preprint)',
-  '22': 'Non-Textual Output',
-  '23': 'Scholarly Edition',
-  '24': 'Editorial/Review',
-  '25': 'Research Data',
-  '26': 'Creative Output',
-};
-
-export const OA_TRUE_VALUES = new Set([
-  'oa_gold', 'oa_postprint', 'oa_preprint', 'Open', '1', 'oacc',
-]);
-
-export const OA_FALSE_VALUES = new Set([
-  'nicht_oacc', 'Restricted', 'Unknown', '', '0',
-]);
-
 // Single source of truth for all consumers (UI + session-pipeline.mjs script).
 // JSON file because mjs scripts can't `import` from .ts at runtime; both can
 // import the same JSON cleanly. Dimension order = display order in the radar.

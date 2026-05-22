@@ -139,6 +139,103 @@ export interface EnrichmentBatchRunOptions {
 }
 
 /**
+ * Mutable per-publication accumulator for the DOI enrichment cascade. Every
+ * source folds its result in via `mergeEnrichmentResult`; the final values
+ * become the row's single DB update payload.
+ */
+interface EnrichmentAccumulator {
+  abstract: string | undefined;
+  keywords: string[];
+  journal: string | undefined;
+  snippet: string | undefined;
+  wordCount: number;
+  publishedAt: string | undefined;
+  apiPdfUrl: string | undefined;
+  sourcesUsed: string[];
+}
+
+/**
+ * Folds one source's `EnrichmentResult` into the accumulator. Field policy:
+ * abstract / journal / publishedAt / apiPdfUrl — first non-empty wins;
+ * keywords — union (dedup, insertion order); snippet — longest wins;
+ * wordCount — max. Appends the source name to `sourcesUsed`. Shared verbatim
+ * by the PRE_PDF and POST_PDF cascade loops, which used to copy-paste it.
+ */
+function mergeEnrichmentResult(
+  acc: EnrichmentAccumulator,
+  result: EnrichmentResult,
+  sourceName: string,
+): void {
+  acc.sourcesUsed.push(sourceName);
+  if (!acc.abstract && result.abstract) acc.abstract = result.abstract;
+  if (result.keywords) {
+    for (const kw of result.keywords) {
+      if (!acc.keywords.includes(kw)) acc.keywords.push(kw);
+    }
+  }
+  if (!acc.journal && result.journal) acc.journal = result.journal;
+  if (
+    result.full_text_snippet &&
+    (!acc.snippet || result.full_text_snippet.length > acc.snippet.length)
+  ) {
+    acc.snippet = result.full_text_snippet;
+  }
+  if (!acc.apiPdfUrl && result.pdf_url) acc.apiPdfUrl = result.pdf_url;
+  if (result.word_count && result.word_count > acc.wordCount) {
+    acc.wordCount = result.word_count;
+  }
+  if (!acc.publishedAt && result.published_at) {
+    acc.publishedAt = result.published_at;
+  }
+}
+
+/**
+ * Runs the PDF-extract source for one publication: emits the source_try /
+ * source_done SSE cycle and returns the result (or `null` on no-data / error
+ * / throw). The merge of the result stays at the call site — the three
+ * callers diverge (the DOI-less path straight-assigns snippet + word_count,
+ * the DOI phases use longest-wins snippet + max word_count). Pass
+ * `emitEvents = false` to suppress the SSE frames for the Phase-4 fallback,
+ * where Phase 2 already emitted a 'pdf' cycle for the same publication.
+ */
+async function tryPdf(
+  url: string,
+  index: number,
+  emit: (type: string, data: unknown) => void,
+  emitEvents = true,
+): Promise<EnrichmentResult | null> {
+  if (emitEvents) {
+    emit('source_try', { index, source: 'pdf', status: 'loading' });
+  }
+  try {
+    const pdfResult = await enrichFromPdf(url);
+    if (emitEvents) {
+      if (pdfResult) {
+        emit('source_done', {
+          index,
+          source: 'pdf',
+          status: 'success',
+          found: { abstract: truncate(pdfResult.abstract, 120) },
+        });
+      } else {
+        emit('source_done', { index, source: 'pdf', status: 'no_data' });
+      }
+    }
+    return pdfResult;
+  } catch (err) {
+    if (emitEvents) {
+      emit('source_done', {
+        index,
+        source: 'pdf',
+        status: 'error',
+        error: err instanceof Error ? err.message : 'Unknown error',
+      });
+    }
+    return null;
+  }
+}
+
+/**
  * Drives the per-pub enrichment cascade. Two paths:
  *   - DOI-less: WebDB summary -> CSV abstract -> direct PDF (if pub.url
  *     ends in .pdf). 4 API sources emit 'skipped'.
@@ -216,33 +313,15 @@ export async function runEnrichmentBatch(
       }
 
       if (hasDirectPdf) {
-        emit('source_try', { index: i, source: 'pdf', status: 'loading' });
-        try {
-          const pdfResult = await enrichFromPdf(directPdf!);
-          if (pdfResult) {
-            noDoi_sources.push('pdf');
-            sourceCounts['pdf'] = (sourceCounts['pdf'] || 0) + 1;
-            if (!noDoi_abstract && pdfResult.abstract) {
-              noDoi_abstract = pdfResult.abstract;
-            }
-            noDoi_snippet = pdfResult.full_text_snippet || undefined;
-            noDoi_wordCount = pdfResult.word_count || 0;
-            emit('source_done', {
-              index: i,
-              source: 'pdf',
-              status: 'success',
-              found: { abstract: truncate(pdfResult.abstract, 120) },
-            });
-          } else {
-            emit('source_done', { index: i, source: 'pdf', status: 'no_data' });
+        const pdfResult = await tryPdf(directPdf!, i, emit);
+        if (pdfResult) {
+          noDoi_sources.push('pdf');
+          sourceCounts['pdf'] = (sourceCounts['pdf'] || 0) + 1;
+          if (!noDoi_abstract && pdfResult.abstract) {
+            noDoi_abstract = pdfResult.abstract;
           }
-        } catch (err) {
-          emit('source_done', {
-            index: i,
-            source: 'pdf',
-            status: 'error',
-            error: err instanceof Error ? err.message : 'Unknown error',
-          });
+          noDoi_snippet = pdfResult.full_text_snippet || undefined;
+          noDoi_wordCount = pdfResult.word_count || 0;
         }
       } else {
         emit('source_done', { index: i, source: 'pdf', status: 'skipped' });
@@ -294,29 +373,31 @@ export async function runEnrichmentBatch(
     // Scholar. Pre-seed abstract from CSV if available (APIs still run for
     // keywords/journal).
     // -------------------------------------------------------------------
-    let mergedAbstract: string | undefined = pub.abstract || undefined;
-    const mergedKeywords: string[] = [];
-    let mergedJournal: string | undefined;
-    let mergedSnippet: string | undefined;
-    let mergedWordCount = 0;
-    let mergedPublishedAt: string | undefined;
-    const sourcesUsed: string[] = [];
-    let apiPdfUrl: string | undefined;
+    const acc: EnrichmentAccumulator = {
+      abstract: pub.abstract || undefined,
+      keywords: [],
+      journal: undefined,
+      snippet: undefined,
+      wordCount: 0,
+      publishedAt: undefined,
+      apiPdfUrl: undefined,
+      sourcesUsed: [],
+    };
 
     const webdbHit = enrichFromWebDb(pub);
     if (webdbHit) {
-      if (!mergedAbstract && webdbHit.abstract) {
-        mergedAbstract = webdbHit.abstract;
+      if (!acc.abstract && webdbHit.abstract) {
+        acc.abstract = webdbHit.abstract;
       }
-      if (webdbHit.word_count && webdbHit.word_count > mergedWordCount) {
-        mergedWordCount = webdbHit.word_count;
+      if (webdbHit.word_count && webdbHit.word_count > acc.wordCount) {
+        acc.wordCount = webdbHit.word_count;
       }
-      sourcesUsed.push(WEBDB_SOURCE_TAG);
+      acc.sourcesUsed.push(WEBDB_SOURCE_TAG);
       sourceCounts[WEBDB_SOURCE_TAG] = (sourceCounts[WEBDB_SOURCE_TAG] || 0) + 1;
     }
 
     if (hasCsvAbstract) {
-      sourcesUsed.push('csv');
+      acc.sourcesUsed.push('csv');
       sourceCounts['csv'] = (sourceCounts['csv'] || 0) + 1;
     }
 
@@ -326,28 +407,8 @@ export async function runEnrichmentBatch(
       try {
         const result = await SOURCE_FETCHERS[sourceName](pub.doi!);
         if (result) {
-          sourcesUsed.push(sourceName);
           sourceCounts[sourceName] = (sourceCounts[sourceName] || 0) + 1;
-          if (!mergedAbstract && result.abstract) mergedAbstract = result.abstract;
-          if (result.keywords) {
-            for (const kw of result.keywords) {
-              if (!mergedKeywords.includes(kw)) mergedKeywords.push(kw);
-            }
-          }
-          if (!mergedJournal && result.journal) mergedJournal = result.journal;
-          if (
-            result.full_text_snippet &&
-            (!mergedSnippet || result.full_text_snippet.length > mergedSnippet.length)
-          ) {
-            mergedSnippet = result.full_text_snippet;
-          }
-          if (!apiPdfUrl && result.pdf_url) apiPdfUrl = result.pdf_url;
-          if (result.word_count && result.word_count > mergedWordCount) {
-            mergedWordCount = result.word_count;
-          }
-          if (!mergedPublishedAt && result.published_at) {
-            mergedPublishedAt = result.published_at;
-          }
+          mergeEnrichmentResult(acc, result, sourceName);
           emit('source_done', {
             index: i,
             source: sourceName,
@@ -374,39 +435,21 @@ export async function runEnrichmentBatch(
 
     // Phase 2: Direct PDF from pub.url, before Semantic Scholar. Only if we
     // don't have an abstract yet; direct ÖAW PDFs are fast and reliable.
-    if (!mergedAbstract && hasDirectPdf) {
-      emit('source_try', { index: i, source: 'pdf', status: 'loading' });
-      try {
-        const pdfResult = await enrichFromPdf(directPdf!);
-        if (pdfResult) {
-          sourcesUsed.push('pdf');
-          sourceCounts['pdf'] = (sourceCounts['pdf'] || 0) + 1;
-          if (pdfResult.abstract) mergedAbstract = pdfResult.abstract;
-          if (
-            pdfResult.full_text_snippet &&
-            (!mergedSnippet || pdfResult.full_text_snippet.length > mergedSnippet.length)
-          ) {
-            mergedSnippet = pdfResult.full_text_snippet;
-          }
-          if (pdfResult.word_count && pdfResult.word_count > mergedWordCount) {
-            mergedWordCount = pdfResult.word_count;
-          }
-          emit('source_done', {
-            index: i,
-            source: 'pdf',
-            status: 'success',
-            found: { abstract: truncate(pdfResult.abstract, 120) },
-          });
-        } else {
-          emit('source_done', { index: i, source: 'pdf', status: 'no_data' });
+    if (!acc.abstract && hasDirectPdf) {
+      const pdfResult = await tryPdf(directPdf!, i, emit);
+      if (pdfResult) {
+        acc.sourcesUsed.push('pdf');
+        sourceCounts['pdf'] = (sourceCounts['pdf'] || 0) + 1;
+        if (pdfResult.abstract) acc.abstract = pdfResult.abstract;
+        if (
+          pdfResult.full_text_snippet &&
+          (!acc.snippet || pdfResult.full_text_snippet.length > acc.snippet.length)
+        ) {
+          acc.snippet = pdfResult.full_text_snippet;
         }
-      } catch (err) {
-        emit('source_done', {
-          index: i,
-          source: 'pdf',
-          status: 'error',
-          error: err instanceof Error ? err.message : 'Unknown error',
-        });
+        if (pdfResult.word_count && pdfResult.word_count > acc.wordCount) {
+          acc.wordCount = pdfResult.word_count;
+        }
       }
     }
 
@@ -416,28 +459,8 @@ export async function runEnrichmentBatch(
       try {
         const result = await SOURCE_FETCHERS[sourceName](pub.doi!);
         if (result) {
-          sourcesUsed.push(sourceName);
           sourceCounts[sourceName] = (sourceCounts[sourceName] || 0) + 1;
-          if (!mergedAbstract && result.abstract) mergedAbstract = result.abstract;
-          if (result.keywords) {
-            for (const kw of result.keywords) {
-              if (!mergedKeywords.includes(kw)) mergedKeywords.push(kw);
-            }
-          }
-          if (!mergedJournal && result.journal) mergedJournal = result.journal;
-          if (
-            result.full_text_snippet &&
-            (!mergedSnippet || result.full_text_snippet.length > mergedSnippet.length)
-          ) {
-            mergedSnippet = result.full_text_snippet;
-          }
-          if (!apiPdfUrl && result.pdf_url) apiPdfUrl = result.pdf_url;
-          if (result.word_count && result.word_count > mergedWordCount) {
-            mergedWordCount = result.word_count;
-          }
-          if (!mergedPublishedAt && result.published_at) {
-            mergedPublishedAt = result.published_at;
-          }
+          mergeEnrichmentResult(acc, result, sourceName);
           emit('source_done', {
             index: i,
             source: sourceName,
@@ -464,53 +487,30 @@ export async function runEnrichmentBatch(
 
     // Phase 4: Fallback PDF from API-discovered URL, if still no abstract
     // and the URL differs from the one already tried in Phase 2.
-    if (!mergedAbstract && apiPdfUrl && apiPdfUrl !== directPdf) {
-      // Skip event noise if Phase-2 already emitted a 'pdf' cycle.
-      if (!hasDirectPdf) {
-        emit('source_try', { index: i, source: 'pdf', status: 'loading' });
-      }
-      try {
-        const pdfResult = await enrichFromPdf(apiPdfUrl);
-        if (pdfResult) {
-          if (!sourcesUsed.includes('pdf')) {
-            sourcesUsed.push('pdf');
-            sourceCounts['pdf'] = (sourceCounts['pdf'] || 0) + 1;
-          }
-          if (pdfResult.abstract) mergedAbstract = pdfResult.abstract;
-          if (
-            pdfResult.full_text_snippet &&
-            (!mergedSnippet || pdfResult.full_text_snippet.length > mergedSnippet.length)
-          ) {
-            mergedSnippet = pdfResult.full_text_snippet;
-          }
-          if (pdfResult.word_count && pdfResult.word_count > mergedWordCount) {
-            mergedWordCount = pdfResult.word_count;
-          }
-          if (!hasDirectPdf) {
-            emit('source_done', {
-              index: i,
-              source: 'pdf',
-              status: 'success',
-              found: { abstract: truncate(pdfResult.abstract, 120) },
-            });
-          }
-        } else if (!hasDirectPdf) {
-          emit('source_done', { index: i, source: 'pdf', status: 'no_data' });
+    if (!acc.abstract && acc.apiPdfUrl && acc.apiPdfUrl !== directPdf) {
+      // emitEvents is gated on !hasDirectPdf: when Phase 2 already ran a
+      // 'pdf' cycle for this pub, suppress the duplicate SSE frames here.
+      const pdfResult = await tryPdf(acc.apiPdfUrl, i, emit, !hasDirectPdf);
+      if (pdfResult) {
+        if (!acc.sourcesUsed.includes('pdf')) {
+          acc.sourcesUsed.push('pdf');
+          sourceCounts['pdf'] = (sourceCounts['pdf'] || 0) + 1;
         }
-      } catch (err) {
-        if (!hasDirectPdf) {
-          emit('source_done', {
-            index: i,
-            source: 'pdf',
-            status: 'error',
-            error: err instanceof Error ? err.message : 'Unknown error',
-          });
+        if (pdfResult.abstract) acc.abstract = pdfResult.abstract;
+        if (
+          pdfResult.full_text_snippet &&
+          (!acc.snippet || pdfResult.full_text_snippet.length > acc.snippet.length)
+        ) {
+          acc.snippet = pdfResult.full_text_snippet;
+        }
+        if (pdfResult.word_count && pdfResult.word_count > acc.wordCount) {
+          acc.wordCount = pdfResult.word_count;
         }
       }
     }
 
-    const hasAbstract = !!mergedAbstract;
-    const hasAnyData = sourcesUsed.length > 0;
+    const hasAbstract = !!acc.abstract;
+    const hasAnyData = acc.sourcesUsed.length > 0;
     let finalStatus: 'enriched' | 'partial' | 'failed';
     if (hasAbstract) {
       finalStatus = 'enriched';
@@ -528,18 +528,18 @@ export async function runEnrichmentBatch(
     // when the row is currently empty and a fresh date was discovered.
     const setObj: Partial<typeof publications.$inferInsert> = {
       enrichmentStatus: finalStatus,
-      enrichedAbstract: mergedAbstract || null,
+      enrichedAbstract: acc.abstract || null,
       enrichedKeywords:
-        mergedKeywords.length > 0 ? mergedKeywords.slice(0, 20) : null,
+        acc.keywords.length > 0 ? acc.keywords.slice(0, 20) : null,
       // API venue wins (canonical name); parsed WebDB venue is the fallback.
-      enrichedJournal: mergedJournal || webdbVenue || null,
-      enrichedSource: sourcesUsed.join('+') || null,
-      fullTextSnippet: mergedSnippet || null,
-      wordCount: mergedWordCount,
+      enrichedJournal: acc.journal || webdbVenue || null,
+      enrichedSource: acc.sourcesUsed.join('+') || null,
+      fullTextSnippet: acc.snippet || null,
+      wordCount: acc.wordCount,
       updatedAt: new Date().toISOString(),
     };
-    if (!pub.published_at && mergedPublishedAt) {
-      setObj.publishedAt = mergedPublishedAt;
+    if (!pub.published_at && acc.publishedAt) {
+      setObj.publishedAt = acc.publishedAt;
     }
 
     await db.update(publications).set(setObj).where(eq(publications.id, pub.id));
@@ -548,9 +548,9 @@ export async function runEnrichmentBatch(
       index: i,
       title: pub.title,
       final_status: finalStatus,
-      sources_used: sourcesUsed,
+      sources_used: acc.sourcesUsed,
       has_abstract: hasAbstract,
-      date_filled: !pub.published_at && !!mergedPublishedAt,
+      date_filled: !pub.published_at && !!acc.publishedAt,
     });
 
     await new Promise((r) => setTimeout(r, 100));
