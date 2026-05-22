@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { de } from 'date-fns/locale';
-import { CalendarIcon, SlidersHorizontal } from 'lucide-react';
+import { CalendarIcon, Check, ChevronsUpDown, SlidersHorizontal } from 'lucide-react';
 import { InfoBubble } from '@/components/info-bubble';
 import type { EXPL } from '@/lib/client/explanations';
 
@@ -21,6 +21,14 @@ import {
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
 
 import {
   VirtualizedMultiSelect,
@@ -72,6 +80,8 @@ export function FilterSheet({ filters, setFilters, lookups }: Props) {
           <Separator />
           <Oestat6Facet filters={filters} setFilters={setFilters} lookups={lookups} />
           <Separator />
+          <VenueFacet filters={filters} setFilters={setFilters} lookups={lookups} />
+          <Separator />
           <BooleansFacet filters={filters} setFilters={setFilters} />
           <Separator />
           <QualityFacet filters={filters} setFilters={setFilters} />
@@ -94,6 +104,7 @@ function countDimensionalFilters(f: FilterValues): number {
   if (f.types.length) n++;
   if (f.units.length || f.topUnitOnly) n++;
   if (f.oestat.length || f.oestat3.length) n++;
+  if (f.journal) n++;
   if (f.peer !== 'any') n++;
   if (f.popsci !== 'any') n++;
   if (f.oa !== 'any') n++;
@@ -312,6 +323,89 @@ function Oestat6Facet({ filters, setFilters, lookups }: Props) {
         placeholder="Forschungsgebiet wählen…"
         searchPlaceholder="Code oder Name suchen…"
       />
+    </FacetSection>
+  );
+}
+
+// Venue facet: searchable single-select over the top-N venues (use-lookups →
+// /api/venues). Single-select because `journal` is one exact venue string —
+// venue names contain commas, so an array param with a separator is fragile.
+// A venue outside the top N is still reachable via its VenueLine in a row.
+function VenueFacet({ filters, setFilters, lookups }: Props) {
+  const [open, setOpen] = React.useState(false);
+  const venues = lookups?.venues ?? [];
+  const selected = filters.journal;
+
+  return (
+    <FacetSection
+      title="Venue"
+      hint={
+        lookups
+          ? `Top ${venues.length.toLocaleString('de-AT')} nach Häufigkeit`
+          : undefined
+      }
+    >
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="w-full justify-between font-normal h-9"
+          >
+            <span className={cn('truncate', !selected && 'text-muted-foreground')}>
+              {selected || 'Venue wählen…'}
+            </span>
+            <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent
+          align="start"
+          className="w-[var(--radix-popover-trigger-width)] p-0"
+        >
+          <Command>
+            <CommandInput placeholder="Venue suchen…" />
+            <CommandList>
+              <CommandEmpty>Keine Venue gefunden.</CommandEmpty>
+              <CommandGroup>
+                {venues.map((v) => (
+                  <CommandItem
+                    key={v.venue}
+                    value={v.venue}
+                    onSelect={() => {
+                      setFilters({
+                        journal: v.venue === selected ? '' : v.venue,
+                        page: 1,
+                      });
+                      setOpen(false);
+                    }}
+                  >
+                    <Check
+                      className={cn(
+                        'h-4 w-4 shrink-0',
+                        v.venue === selected ? 'opacity-100' : 'opacity-0',
+                      )}
+                    />
+                    <span className="min-w-0 truncate">{v.venue}</span>
+                    <span className="ml-auto tabular-nums text-xs text-muted-foreground">
+                      {v.count.toLocaleString('de-AT')}
+                    </span>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+      {selected && (
+        <button
+          type="button"
+          onClick={() => setFilters({ journal: '', page: 1 })}
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+        >
+          Venue entfernen
+        </button>
+      )}
     </FacetSection>
   );
 }
