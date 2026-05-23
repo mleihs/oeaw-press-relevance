@@ -31,6 +31,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Em-dash check (MDX)
+        run: npm run check-em-dashes
+
       - name: Test
         run: npm test
 

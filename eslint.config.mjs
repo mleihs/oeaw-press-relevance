@@ -51,21 +51,22 @@ const eslintConfig = defineConfig([
       ],
     },
   },
-  // Em-Dash-Gate für deutsche UI-Strings (KB-writing-style: keine em-dashes).
-  // Triggert auf "—" in String-Literals, JSX-Text und Template-Literals.
-  // Scope: UI-Code mit deutschen Strings (app/, components/, lib/client/,
-  // lib/shared/changelog.ts). NICHT lib/server/** (englische Server-Comments
-  // dürfen em-dashes haben) und NICHT scripts/** (Operations-Logs).
+  // Em-Dash-Gate für user-sichtbare UI-Strings. Standard: docs/writing-style.md.
+  // Triggert auf U+2014 (—) in String-Literals, JSX-Text und Template-Literals.
+  // Scope: UI-Code (app/, components/, lib/client/**, lib/shared/**).
+  // NICHT lib/server/** (Log-Strings und Error-Messages dürfen em-dashes
+  // haben) und NICHT scripts/** (Operations).
   // Comments (JSDoc, //) sind im AST kein Literal/JSXText/TemplateElement und
   // werden vom Selector korrekt nicht erfasst.
   // MDX-Content (content/help/**) wird separat über `npm run check-em-dashes`
   // geprüft (grep-basiert; MDX braucht eslint-plugin-mdx, das wir nicht haben).
+  // Beide Gates laufen in CI nach „Lint".
   {
     files: [
       "app/**/*.{ts,tsx}",
       "components/**/*.{ts,tsx}",
       "lib/client/**/*.{ts,tsx}",
-      "lib/shared/changelog.ts",
+      "lib/shared/**/*.{ts,tsx}",
     ],
     // Test-Files raus: Vitest/Jest-Test-Beschreibungen sind konventionell
     // englisch, und englische Texte dürfen em-dashes haben.
@@ -76,17 +77,17 @@ const eslintConfig = defineConfig([
         {
           selector: "Literal[value=/\\u2014/]",
           message:
-            "Em-Dash (—, U+2014) in deutschem UI-String nicht erlaubt. Bitte Komma, Doppelpunkt oder Punkt+Neusatz nutzen (siehe memory/kb_writing_style.md).",
+            "Em-Dash (—, U+2014) im String-Literal. Satz umformulieren, nicht mechanisch durch Komma ersetzen. Beispiele: docs/writing-style.md.",
         },
         {
           selector: "JSXText[value=/\\u2014/]",
           message:
-            "Em-Dash (—, U+2014) in deutschem JSX-Text nicht erlaubt. Bitte Komma, Doppelpunkt oder Punkt+Neusatz nutzen (siehe memory/kb_writing_style.md).",
+            "Em-Dash (—, U+2014) im JSX-Text. Satz umformulieren, nicht mechanisch durch Komma ersetzen. Beispiele: docs/writing-style.md.",
         },
         {
           selector: "TemplateElement[value.raw=/\\u2014/]",
           message:
-            "Em-Dash (—, U+2014) in deutschem Template-Literal nicht erlaubt. Bitte Komma, Doppelpunkt oder Punkt+Neusatz nutzen (siehe memory/kb_writing_style.md).",
+            "Em-Dash (—, U+2014) im Template-Literal. Satz umformulieren, nicht mechanisch durch Komma ersetzen. Beispiele: docs/writing-style.md.",
         },
       ],
     },

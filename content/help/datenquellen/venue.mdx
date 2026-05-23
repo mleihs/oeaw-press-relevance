@@ -1,9 +1,9 @@
 ---
 title: Journal / Venue
-description: Wie das Publikationsorgan je Publikation ermittelt wird — aus den WebDB-Zitationsdaten und per DOI über CrossRef und OpenAlex — und wo es in der App auftaucht.
+description: Wie das Publikationsorgan je Publikation aus WebDB-Zitationsdaten und per DOI über CrossRef und OpenAlex ermittelt wird, und wo es in der App auftaucht.
 ---
 
-Jede Publikation trägt — sofern ermittelbar — ihr **Publikationsorgan** (Venue): die
+Sofern ermittelbar, trägt jede Publikation ihr **Publikationsorgan** (Venue): die
 Fachzeitschrift, das Buch, den Sammel- oder Tagungsband, das Magazin oder den
 Preprint-Server, in dem die Arbeit erschienen ist.
 
@@ -13,8 +13,8 @@ Preprint-Server, in dem die Arbeit erschienen ist.
   (auf Mobilgeräten unter den Autor:innen). Ein Klick darauf filtert die Liste auf
   genau dieses Venue.
 - **Aufgeklappte Zeile:** zusätzlich als klar beschriftetes Feld „Journal".
-- **Filter-Panel:** die Facette „Venue" — eine durchsuchbare Auswahl der häufigsten
-  Venues im Bestand.
+- **Filter-Panel:** die durchsuchbare Facette „Venue" mit den häufigsten Venues
+  im Bestand.
 
 Rund **90 %** der Publikationen haben ein ermitteltes Venue. Die übrigen ~10 % zeigen
 gar keine Zeile.
@@ -25,13 +25,13 @@ Der Wert liegt im Feld `enriched_journal` und wird auf zwei Wegen befüllt:
 
 1. **Aus den Zitationsdaten der WebDB.** Die WebDB liefert pro Publikation
    Zitations-Strings in den Formaten BibTeX, RIS und EndNote. Daraus wird der
-   Venue-Name geparst — das ist die primäre Quelle und deckt den Großteil des
+   Venue-Name geparst. Das ist die primäre Quelle und deckt den Großteil des
    Bestands ab.
 2. **Per DOI über CrossRef und OpenAlex.** Wo in den Zitationsdaten nichts steht
    (etwa wenn nur ein DOI vorliegt), wird das Venue über die DOI bei CrossRef und
    OpenAlex nachgetragen.
 
-Liefern beide Wege einen Wert, hat der API-Wert Vorrang — er trägt den kanonischen,
+Liefern beide Wege einen Wert, hat der API-Wert Vorrang. Er trägt den kanonischen,
 einheitlich geschriebenen Venue-Namen.
 
 ## „Venue", nicht „Journal" {#venue-nicht-journal}

@@ -108,7 +108,7 @@ export const SOURCE_DESCRIPTIONS: Record<string, string> = {
   openalex: 'Offene Forschungsdatenbank: Abstract, Zitationen, Themen-Tags und Open-Access-Status.',
   unpaywall: 'Findet frei zugängliche PDF-Volltext-Links zu Publikationen.',
   semantic_scholar: 'KI-gestützte Datenbank: Abstract, Zitationszahlen und Einfluss-Score.',
-  pdf: 'Direkter PDF-Download von der Publikations-URL — extrahiert den Volltext.',
+  pdf: 'Direkter PDF-Download von der Publikations-URL. Extrahiert den Volltext.',
   csv: 'Abstract aus der ursprünglich importierten CSV-Datei übernommen.',
   webdb_summary: 'Vom Institut kuratierte Pressezusammenfassung (DE/EN) aus der WebDB.',
 };
