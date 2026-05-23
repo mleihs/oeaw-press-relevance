@@ -421,6 +421,10 @@ export const publications = pgTable("publications", {
 	unique("publications_csv_uid_unique").on(table.csvUid),
 	pgPolicy("anon_select", { as: "permissive", for: "select", to: ["anon"], using: sql`true` }),
 	check("publications_decision_check", sql`decision = ANY (ARRAY['undecided'::text, 'pitch'::text, 'hold'::text, 'skip'::text])`),
+	check("publications_enrichment_status_check", sql`(enrichment_status IS NULL) OR (enrichment_status = ANY (ARRAY['pending'::text, 'enriched'::text, 'partial'::text, 'failed'::text]))`),
+	check("publications_analysis_status_check", sql`(analysis_status IS NULL) OR (analysis_status = ANY (ARRAY['pending'::text, 'analyzed'::text, 'failed'::text]))`),
+	check("publications_press_score_range", sql`(press_score IS NULL) OR (press_score >= 0 AND press_score <= 1)`),
+	check("publications_dimensions_range", sql`(public_accessibility IS NULL OR (public_accessibility >= 0 AND public_accessibility <= 1)) AND (societal_relevance IS NULL OR (societal_relevance >= 0 AND societal_relevance <= 1)) AND (novelty_factor IS NULL OR (novelty_factor >= 0 AND novelty_factor <= 1)) AND (storytelling_potential IS NULL OR (storytelling_potential >= 0 AND storytelling_potential <= 1)) AND (media_timeliness IS NULL OR (media_timeliness >= 0 AND media_timeliness <= 1))`),
 ]);
 
 export const pressReleaseEmbeddings = pgTable("press_release_embeddings", {

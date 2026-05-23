@@ -177,7 +177,7 @@ export async function runAnalysisBatch(
             haiku: result.haiku ?? null,
             llmModel: model,
             analysisCost: cost / results.length,
-            updatedAt: new Date().toISOString(),
+            // updated_at is set by the publications_set_updated_at trigger.
           })
           .where(eq(publications.id, pub.id));
 
@@ -197,7 +197,6 @@ export async function runAnalysisBatch(
           .update(publications)
           .set({
             analysisStatus: 'failed',
-            updatedAt: new Date().toISOString(),
           })
           .where(eq(publications.id, pub.id));
       }

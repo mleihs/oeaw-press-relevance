@@ -409,7 +409,7 @@ export async function runEnrichmentBatch(
           enrichedSource: noDoi_sources.join('+') || null,
           fullTextSnippet: noDoi_snippet || null,
           wordCount: noDoi_wordCount,
-          updatedAt: new Date().toISOString(),
+          // updated_at is set by the publications_set_updated_at trigger.
         })
         .where(eq(publications.id, pub.id));
 
@@ -553,7 +553,7 @@ export async function runEnrichmentBatch(
       enrichedSource: acc.sourcesUsed.join('+') || null,
       fullTextSnippet: acc.snippet || null,
       wordCount: acc.wordCount,
-      updatedAt: new Date().toISOString(),
+      // updated_at is set by the publications_set_updated_at trigger.
     };
     if (!pub.published_at && acc.publishedAt) {
       setObj.publishedAt = acc.publishedAt;
