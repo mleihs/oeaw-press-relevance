@@ -1378,7 +1378,9 @@ export const EXPL = {
           Das Publikationsorgan: Fachzeitschrift, Buch, Sammel- oder Tagungsband,
           Magazin oder Preprint-Server (z.B. bioRxiv, Zenodo). In der
           Publikationsliste steht es als kursive Zeile mit Buch-Symbol unter dem
-          Titel; ein Klick filtert die Liste auf genau dieses Venue.
+          Titel; ein Klick filtert die Liste auf das Outlet (bei bekannten Outlets
+          werden alle Schreibvarianten im Korpus zusammengefasst, z.B. „Der Standard"
+          + „DerStandard.at" + „Der Standard [Blog]").
         </Para>
         <Para>
           Ermittelt im Feld <Code>enriched_journal</Code> auf zwei Wegen: primär aus

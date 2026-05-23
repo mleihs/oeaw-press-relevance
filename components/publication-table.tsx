@@ -31,6 +31,8 @@ import {
   SheetFooter,
 } from '@/components/ui/sheet';
 import { SectionLabel } from '@/components/section-label';
+import { VenueDisplay } from '@/components/venue-display';
+import { venueDisplayLabel } from '@/lib/shared/venue-registry';
 import { StatusBanner } from '@/components/status-banner';
 import {
   LLM_MODELS,
@@ -737,8 +739,10 @@ function ExpandedDetail({ pub, showScores }: { pub: Publication; showScores?: bo
         )}
         {pub.enriched_journal && (
           <div>
-            <SectionLabel>Journal</SectionLabel>
-            <p className="text-sm">{pub.enriched_journal}</p>
+            <SectionLabel>{venueDisplayLabel(pub.enriched_journal)}</SectionLabel>
+            <p className="text-sm">
+              <VenueDisplay raw={pub.enriched_journal} />
+            </p>
           </div>
         )}
         {pub.enriched_keywords && pub.enriched_keywords.length > 0 && (
