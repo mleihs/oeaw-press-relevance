@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { BookOpen } from 'lucide-react';
 import { InfoBubble } from '@/components/info-bubble';
 import { cn } from '@/lib/shared/utils';
+import { lookupVenue } from '@/lib/shared/venue-registry';
 
 /**
  * Venue (journal / book / proceedings / magazine) as a conditional, italic,
@@ -31,6 +32,11 @@ export function VenueLine({
   const router = useRouter();
   const venue = journal?.trim();
   if (!venue) return null;
+  // Resolve to the registry's canonical name when this venue is a known
+  // outlet — collapses corpus spellings ("DerStandard.at" → "Der Standard")
+  // so the displayed text and the filter URL match the detail page and the
+  // facette. Unknown venues fall through to the raw string.
+  const canonical = lookupVenue(venue)?.canonicalName ?? venue;
   return (
     <p
       className={cn(
@@ -40,17 +46,17 @@ export function VenueLine({
     >
       <button
         type="button"
-        title={venue}
-        aria-label={`Publikationen aus ${venue} anzeigen`}
+        title={canonical}
+        aria-label={`Publikationen aus ${canonical} anzeigen`}
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          router.push(`/publications?journal=${encodeURIComponent(venue)}`);
+          router.push(`/publications?journal=${encodeURIComponent(canonical)}`);
         }}
         className="group flex min-w-0 items-center gap-1 text-left hover:text-brand transition-colors"
       >
         <BookOpen aria-hidden className="h-3 w-3 shrink-0 opacity-70" />
-        <span className="min-w-0 truncate group-hover:underline">{venue}</span>
+        <span className="min-w-0 truncate group-hover:underline">{canonical}</span>
       </button>
       <InfoBubble id="venue" size="sm" />
     </p>

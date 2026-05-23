@@ -22,6 +22,7 @@ import {
 } from '@/lib/server/db';
 import { publicationsRepo } from '@/lib/server/repos/publications';
 import { pressReleaseToApi } from '@/lib/server/press-releases/to-api';
+import { venueGroupSpellings } from '@/lib/shared/venue-registry';
 import type { Lang, Publication, PressRelease } from '@/lib/shared/types';
 import { publicationToApi } from './to-api';
 
@@ -249,11 +250,22 @@ export async function listPublications(
       clauses.push(inArray(publications.publicationTypeId, pubTypeIds));
     }
     if (journal) {
-      // Case-insensitive exact venue match. lower()=lower() rather than
-      // ILIKE so a literal % or _ in a venue name can't broaden the match.
-      clauses.push(
-        sql`lower(${publications.enrichedJournal}) = lower(${journal})`,
-      );
+      // When the input maps to a registry entry (e.g. "Der Standard" or any
+      // of its aliases like "DerStandard.at"), expand to all known corpus
+      // spellings of that canonical group so the filter URL acts on intent
+      // (the outlet) rather than one storage variant. The registry's
+      // aliases are curated from the corpus, so case-sensitive `IN (...)`
+      // is enough for known venues. Unknown venues keep the original
+      // case-insensitive exact-match fallback (lower()=lower() rather than
+      // ILIKE, so a literal % or _ can't broaden the match).
+      const spellings = venueGroupSpellings(journal);
+      if (spellings) {
+        clauses.push(inArray(publications.enrichedJournal, spellings));
+      } else {
+        clauses.push(
+          sql`lower(${publications.enrichedJournal}) = lower(${journal})`,
+        );
+      }
     }
     if (publishedAfter) {
       clauses.push(gte(publications.publishedAt, publishedAfter));
