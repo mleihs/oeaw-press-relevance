@@ -18,6 +18,7 @@ import {
 } from '@/lib/shared/constants';
 import { EXPL } from '@/lib/client/explanations';
 import { getScoreBandClass, getScoreBandStoryLabel } from '@/lib/shared/score-utils';
+import { venueDisplayLabel } from '@/lib/shared/venue-registry';
 import { ScoreBar } from '@/components/score-bar';
 import { HaikuBlock } from '@/components/haiku-block';
 import { PublicationFlag } from '@/components/publication-flag';
@@ -28,6 +29,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { TintBadge } from '@/components/tint-badge';
 import { SectionLabel } from '@/components/section-label';
+import { VenueDisplay } from '@/components/venue-display';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { PressReferenceCard } from './press-reference-card';
 
@@ -545,8 +547,10 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
           )}
           {pub.enriched_journal && (
             <div>
-              <SectionLabel>Journal</SectionLabel>
-              <p className="text-sm">{pub.enriched_journal}</p>
+              <SectionLabel>{venueDisplayLabel(pub.enriched_journal)}</SectionLabel>
+              <p className="text-sm">
+                <VenueDisplay raw={pub.enriched_journal} />
+              </p>
             </div>
           )}
           {pub.enriched_keywords && pub.enriched_keywords.length > 0 && (
