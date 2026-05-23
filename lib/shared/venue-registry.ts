@@ -59,7 +59,7 @@ const KNOWN_VENUES: VenueMetadata[] = [
   { canonicalName: 'Heute',                  kind: 'newspaper', domain: 'heute.at',          country: 'AT' },
 
   // Austrian Wochen / Magazine
-  { canonicalName: 'Falter',                 kind: 'newspaper', domain: 'falter.at',         country: 'AT' },
+  { canonicalName: 'Falter',                 kind: 'magazine',  domain: 'falter.at',         country: 'AT' },
   { canonicalName: 'profil',                 kind: 'magazine',  domain: 'profil.at',         country: 'AT' },
   { canonicalName: 'News',                   kind: 'magazine',  domain: 'news.at',           country: 'AT' },
   { canonicalName: 'trend',                  kind: 'magazine',  domain: 'trend.at',          country: 'AT' },
@@ -93,6 +93,21 @@ function normalize(s: string): string {
   return s.trim().replace(/\s+/g, ' ').toLowerCase();
 }
 
+// Precomputed normalized → metadata index. Built once at module load so
+// lookupVenue is O(1) and does a single normalize() per call. Without this
+// the venues facette route (which iterates ~14k corpus venues per request)
+// would do ~80 normalize() calls per row.
+const NORMALIZED_INDEX: Map<string, VenueMetadata> = (() => {
+  const m = new Map<string, VenueMetadata>();
+  for (const v of KNOWN_VENUES) {
+    m.set(normalize(v.canonicalName), v);
+    for (const a of v.aliases ?? []) {
+      m.set(normalize(a), v);
+    }
+  }
+  return m;
+})();
+
 /**
  * Look up a venue by its canonical name or any known alias. Whitespace and
  * case are normalized on both sides. Returns null for unknown venues — the
@@ -103,11 +118,7 @@ export function lookupVenue(name: string | null | undefined): VenueMetadata | nu
   if (!name) return null;
   const n = normalize(name);
   if (!n) return null;
-  for (const v of KNOWN_VENUES) {
-    if (normalize(v.canonicalName) === n) return v;
-    if (v.aliases?.some((a) => normalize(a) === n)) return v;
-  }
-  return null;
+  return NORMALIZED_INDEX.get(n) ?? null;
 }
 
 /**
