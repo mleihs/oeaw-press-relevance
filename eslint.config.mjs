@@ -60,7 +60,7 @@ const eslintConfig = defineConfig([
   // werden vom Selector korrekt nicht erfasst.
   // MDX-Content (content/help/**) wird separat über `npm run check-em-dashes`
   // geprüft (grep-basiert; MDX braucht eslint-plugin-mdx, das wir nicht haben).
-  // Beide Gates laufen in CI nach „Lint".
+  // Beide Gates laufen in CI als eigene Steps (siehe .github/workflows/ci.yml).
   {
     files: [
       "app/**/*.{ts,tsx}",
@@ -75,19 +75,14 @@ const eslintConfig = defineConfig([
       "no-restricted-syntax": [
         "error",
         {
-          selector: "Literal[value=/\\u2014/]",
+          // Ein :matches()-Selector statt drei nahezu identischer Einträge.
+          // Die AST-Knoten-Info (Literal/JSXText/TemplateElement) ist für den
+          // Entwickler aus Zeile + Kontext sichtbar; eine gemeinsame Message
+          // reicht und reduziert Duplikation.
+          selector:
+            ":matches(Literal[value=/\\u2014/], JSXText[value=/\\u2014/], TemplateElement[value.raw=/\\u2014/])",
           message:
-            "Em-Dash (—, U+2014) im String-Literal. Satz umformulieren, nicht mechanisch durch Komma ersetzen. Beispiele: docs/writing-style.md.",
-        },
-        {
-          selector: "JSXText[value=/\\u2014/]",
-          message:
-            "Em-Dash (—, U+2014) im JSX-Text. Satz umformulieren, nicht mechanisch durch Komma ersetzen. Beispiele: docs/writing-style.md.",
-        },
-        {
-          selector: "TemplateElement[value.raw=/\\u2014/]",
-          message:
-            "Em-Dash (—, U+2014) im Template-Literal. Satz umformulieren, nicht mechanisch durch Komma ersetzen. Beispiele: docs/writing-style.md.",
+            "Em-Dash (—, U+2014) in UI-Text. Satz umformulieren, nicht mechanisch durch Komma ersetzen. Beispiele: docs/writing-style.md.",
         },
       ],
     },

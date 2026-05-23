@@ -166,6 +166,13 @@ naming and structure.
   message
 - Status markers (`// TODO: someday`) — open an issue instead
 
+### Writing Style (German UI/KB Text)
+
+See [docs/writing-style.md](docs/writing-style.md). Em-dashes (`—`, U+2014)
+are forbidden in user-visible text; rewrite the sentence instead of swapping
+in a comma. Both the ESLint rule and `npm run check-em-dashes` enforce this
+in CI.
+
 ### Styling
 
 Tailwind v4 with semantic tokens. The repo went through a
