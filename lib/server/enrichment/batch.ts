@@ -236,6 +236,64 @@ async function tryPdf(
 }
 
 /**
+ * Mutable per-publication context for the DOI cascade. Built once per pub at
+ * the top of the with-DOI path; passed to `runApiSource` for every source so
+ * it can fold the result into the accumulator and emit SSE frames against the
+ * right index.
+ */
+interface DoiCascadeCtx {
+  acc: EnrichmentAccumulator;
+  sourceCounts: Record<string, number>;
+  index: number;
+  emit: (type: string, data: unknown) => void;
+  doi: string;
+}
+
+/**
+ * One source-fetch cycle in the DOI cascade: emits the source_try /
+ * source_done SSE pair, folds a successful result into the accumulator via
+ * `mergeEnrichmentResult`, paces by `pacingMs` at the end. Shared between the
+ * PRE_PDF and POST_PDF loops; the only difference between phases was the
+ * pacing (100 ms for the fast trio, 200 ms for Semantic Scholar's tighter
+ * rate limit).
+ */
+async function runApiSource(
+  ctx: DoiCascadeCtx,
+  sourceName: SourceName,
+  pacingMs: number,
+): Promise<void> {
+  const { acc, sourceCounts, index, emit, doi } = ctx;
+  emit('source_try', { index, source: sourceName, status: 'loading' });
+  try {
+    const result = await SOURCE_FETCHERS[sourceName](doi);
+    if (result) {
+      sourceCounts[sourceName] = (sourceCounts[sourceName] || 0) + 1;
+      mergeEnrichmentResult(acc, result, sourceName);
+      emit('source_done', {
+        index,
+        source: sourceName,
+        status: 'success',
+        found: {
+          abstract: truncate(result.abstract, 120),
+          journal: result.journal,
+          keywords: result.keywords?.slice(0, 5),
+        },
+      });
+    } else {
+      emit('source_done', { index, source: sourceName, status: 'no_data' });
+    }
+  } catch (err) {
+    emit('source_done', {
+      index,
+      source: sourceName,
+      status: 'error',
+      error: err instanceof Error ? err.message : 'Unknown error',
+    });
+  }
+  await new Promise((r) => setTimeout(r, pacingMs));
+}
+
+/**
  * Drives the per-pub enrichment cascade. Two paths:
  *   - DOI-less: WebDB summary -> CSV abstract -> direct PDF (if pub.url
  *     ends in .pdf). 4 API sources emit 'skipped'.
@@ -401,36 +459,20 @@ export async function runEnrichmentBatch(
       sourceCounts['csv'] = (sourceCounts['csv'] || 0) + 1;
     }
 
-    // Phase 1: CrossRef, OpenAlex, Unpaywall
+    // The ctx bundles the per-pub mutable state that every API source call
+    // needs: acc + sourceCounts get folded into, emit + index identify the
+    // pub for SSE frames, doi is the lookup key for SOURCE_FETCHERS.
+    const ctx: DoiCascadeCtx = {
+      acc,
+      sourceCounts,
+      index: i,
+      emit,
+      doi: pub.doi!,
+    };
+
+    // Phase 1: CrossRef, OpenAlex, Unpaywall (100 ms inter-call pacing).
     for (const sourceName of PRE_PDF_SOURCES) {
-      emit('source_try', { index: i, source: sourceName, status: 'loading' });
-      try {
-        const result = await SOURCE_FETCHERS[sourceName](pub.doi!);
-        if (result) {
-          sourceCounts[sourceName] = (sourceCounts[sourceName] || 0) + 1;
-          mergeEnrichmentResult(acc, result, sourceName);
-          emit('source_done', {
-            index: i,
-            source: sourceName,
-            status: 'success',
-            found: {
-              abstract: truncate(result.abstract, 120),
-              journal: result.journal,
-              keywords: result.keywords?.slice(0, 5),
-            },
-          });
-        } else {
-          emit('source_done', { index: i, source: sourceName, status: 'no_data' });
-        }
-      } catch (err) {
-        emit('source_done', {
-          index: i,
-          source: sourceName,
-          status: 'error',
-          error: err instanceof Error ? err.message : 'Unknown error',
-        });
-      }
-      await new Promise((r) => setTimeout(r, 100));
+      await runApiSource(ctx, sourceName, 100);
     }
 
     // Phase 2: Direct PDF from pub.url, before Semantic Scholar. Only if we
@@ -454,35 +496,10 @@ export async function runEnrichmentBatch(
     }
 
     // Phase 3: Semantic Scholar (slowest — only if still missing data).
+    // 200 ms pacing because Semantic Scholar's rate limit is tighter than
+    // the Phase-1 trio's.
     for (const sourceName of POST_PDF_SOURCES) {
-      emit('source_try', { index: i, source: sourceName, status: 'loading' });
-      try {
-        const result = await SOURCE_FETCHERS[sourceName](pub.doi!);
-        if (result) {
-          sourceCounts[sourceName] = (sourceCounts[sourceName] || 0) + 1;
-          mergeEnrichmentResult(acc, result, sourceName);
-          emit('source_done', {
-            index: i,
-            source: sourceName,
-            status: 'success',
-            found: {
-              abstract: truncate(result.abstract, 120),
-              journal: result.journal,
-              keywords: result.keywords?.slice(0, 5),
-            },
-          });
-        } else {
-          emit('source_done', { index: i, source: sourceName, status: 'no_data' });
-        }
-      } catch (err) {
-        emit('source_done', {
-          index: i,
-          source: sourceName,
-          status: 'error',
-          error: err instanceof Error ? err.message : 'Unknown error',
-        });
-      }
-      await new Promise((r) => setTimeout(r, 200));
+      await runApiSource(ctx, sourceName, 200);
     }
 
     // Phase 4: Fallback PDF from API-discovered URL, if still no abstract
