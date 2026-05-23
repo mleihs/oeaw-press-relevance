@@ -12,6 +12,7 @@
  * from drifting by `scripts/smoke/eligibility.ts` (parity assertion).
  */
 export const ELIGIBILITY_EXCLUDE_TYPE_UIDS = [
+  3,  // Beitrag in Magazin/Zeitung
   5,  // Buch- oder Aufsatzbesprechung
   7,  // Diplomarbeit / Bakkalaureatsarbeit
   8,  // Dissertation
