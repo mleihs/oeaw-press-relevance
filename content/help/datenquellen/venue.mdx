@@ -1,6 +1,6 @@
 ---
 title: Journal / Venue
-description: Wie das Publikationsorgan je Publikation aus WebDB-Zitationsdaten und per DOI über CrossRef und OpenAlex ermittelt wird, und wo es in der App auftaucht.
+description: Wie das Publikationsorgan je Publikation aus WebDB-Zitationsdaten und per DOI über CrossRef und OpenAlex ermittelt wird, wie bekannte Outlets erkannt und ihre Schreibvarianten zusammengefasst werden, und wo all das in der App auftaucht.
 ---
 
 Sofern ermittelbar, trägt jede Publikation ihr **Publikationsorgan** (Venue): die
@@ -11,13 +11,20 @@ Preprint-Server, in dem die Arbeit erschienen ist.
 
 - **Publikationsliste:** als kursive Zeile mit Buch-Symbol direkt unter dem Titel
   (auf Mobilgeräten unter den Autor:innen). Ein Klick darauf filtert die Liste auf
-  genau dieses Venue.
-- **Aufgeklappte Zeile:** zusätzlich als klar beschriftetes Feld „Journal".
+  dieses Outlet (bei bekannten Outlets siehe „Outlet-Registry" weiter unten:
+  alle Schreibvarianten werden zusammengefasst).
+- **Aufgeklappte Zeile und Detail-Seite:** als typabhängig beschriftetes Feld.
+  Für bekannte Outlets erscheint die Art präzise („Tageszeitung: Die Presse",
+  „Magazin: profil"); für unbekannte Venues steht ein neutrales „Erschienen in:
+  …" davor, statt fälschlich „Journal" zu suggerieren. Bei einem registrierten
+  Outlet folgt rechts ein kleines Link-Symbol mit der Domain
+  (z.B. „↗ diepresse.com"), das die Outlet-Website in einem neuen Tab öffnet.
 - **Filter-Panel:** die durchsuchbare Facette „Venue" mit den häufigsten Venues
-  im Bestand.
+  im Bestand. Bekannte Outlets erscheinen als einzelner Eintrag mit
+  aufsummierter Anzahl über alle Schreibvarianten hinweg.
 
-Rund **90 %** der Publikationen haben ein ermitteltes Venue. Die übrigen ~10 % zeigen
-gar keine Zeile.
+Rund **90 %** der Publikationen haben ein ermitteltes Venue. Die übrigen ~10 %
+zeigen gar keine Zeile.
 
 ## Wie das Venue ermittelt wird {#ermittlung}
 
@@ -28,8 +35,8 @@ Der Wert liegt im Feld `enriched_journal` und wird auf zwei Wegen befüllt:
    Venue-Name geparst. Das ist die primäre Quelle und deckt den Großteil des
    Bestands ab.
 2. **Per DOI über CrossRef und OpenAlex.** Wo in den Zitationsdaten nichts steht
-   (etwa wenn nur ein DOI vorliegt), wird das Venue über die DOI bei CrossRef und
-   OpenAlex nachgetragen.
+   (etwa wenn nur ein DOI vorliegt), wird das Venue über die DOI bei CrossRef
+   und OpenAlex nachgetragen.
 
 Liefern beide Wege einen Wert, hat der API-Wert Vorrang. Er trägt den kanonischen,
 einheitlich geschriebenen Venue-Namen.
@@ -38,8 +45,55 @@ einheitlich geschriebenen Venue-Namen.
 
 Der Begriff *Venue* ist bewusst gewählt: nur gut die Hälfte der Einträge sind
 klassische Fachzeitschriften. Der Rest sind Bücher, Sammel- und Tagungsbände,
-Enzyklopädien, Magazine und Preprint-Server wie bioRxiv oder Zenodo. Welcher Typ
-genau vorliegt, sagt das Publikationstyp-Badge der Zeile.
+Enzyklopädien, Magazine, Tageszeitungen und Preprint-Server wie bioRxiv oder
+Zenodo. Welche Art genau vorliegt, sagt entweder das Publikationstyp-Badge der
+Zeile oder, bei einem registrierten Outlet, das typgenaue Section-Label auf der
+Detail-Seite („Tageszeitung", „Magazin", „Proceedings", „Sammelwerk").
+
+## Outlet-Registry: bekannte Outlets, Schreibvarianten und Domain-Links {#registry}
+
+Eine kuratierte Liste von ca. 20 gut bekannten Outlets bekommt drei zusätzliche
+Eigenschaften:
+
+- **Eine kanonische Schreibweise.** Der Korpus enthält oft mehrere Varianten
+  desselben Outlets, etwa „Der Standard", „DerStandard.at" und
+  „Der Standard [Blog]" für ein und dieselbe Tageszeitung. Die Registry ordnet
+  diese Varianten der kanonischen Schreibweise zu. In der Anzeige steht dann
+  überall „Der Standard", egal welche Variante im Datensatz tatsächlich
+  gespeichert ist.
+- **Eine Outlet-Art.** Tageszeitung, Magazin, Journal, Proceedings,
+  Sammelwerk, Verlag oder Institution. Das steuert die Beschriftung auf der
+  Detail-Seite („Tageszeitung: Die Presse" statt „Journal: Die Presse"). Für
+  unbekannte Venues steht stattdessen „Erschienen in: …", ehrlich statt falsch
+  beschriftet.
+- **Eine Outlet-Domain.** Bei registrierten Outlets erscheint auf der
+  Detail-Seite ein kleines Link-Symbol mit der Domain, z.B. „↗ diepresse.com"
+  oder „↗ derstandard.at", das die Outlet-Website in einem neuen Tab öffnet.
+
+Aktuell registriert sind unter anderem österreichische Tageszeitungen (Die
+Presse, Der Standard, Kronen Zeitung, Kleine Zeitung, Wiener Zeitung, Tiroler
+Tageszeitung, Salzburger Nachrichten, Kurier, Heute, OÖ Nachrichten), Magazine
+(Falter, profil, News, trend, das ÖAW-Forschungsmagazin „Thema"), ORF.at, sowie
+ausgewählte deutsche (SZ, FAZ, Die Zeit, Der Spiegel) und Schweizer Outlets
+(NZZ). Die Liste wächst nach Bedarf, wenn neue Outlets im Korpus relevant
+werden.
+
+### Filter-Klick und Facette folgen der Registry {#filter}
+
+Klickt man die Venue-Zeile eines bekannten Outlets in der Publikationsliste an,
+filtert die Liste auf **alle Schreibvarianten** des Outlets, nicht nur auf die
+eine im Datensatz gespeicherte. Beispiel: ein Klick auf eine „Der Standard"-Zeile
+zeigt heute 87 Treffer, weil er die 44 „Der Standard", 38 „DerStandard.at",
+3 „Der Standard [Blog]" und 2 „Der Standard, Blog: Geschichte Österreichs"
+zusammenfasst. Vor der Registry wären es nur die 38 oder 44 der exakt geklickten
+Variante gewesen.
+
+Die Filter-Facette im Filter-Panel zeigt aus demselben Grund nur einen einzigen
+„Der Standard"-Eintrag (87) statt vier separate Einträge (44/38/3/2).
+
+Für nicht-registrierte Venues bleibt der Klick eine exakte Filterung auf den
+gespeicherten String, der Default für alles, was nicht (noch) in der Registry
+steht.
 
 ## Verwandte Themen
 
