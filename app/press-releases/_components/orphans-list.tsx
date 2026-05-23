@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { SectionLabel } from '@/components/section-label';
 import { VenueDisplay } from '@/components/venue-display';
-import { lookupVenue, venueDisplayLabel } from '@/lib/shared/venue-registry';
+import { canonicalName, venueDisplayLabel } from '@/lib/shared/venue-registry';
 import { InfoBubble } from '@/components/info-bubble';
 import { cn } from '@/lib/shared/utils';
 import type { PressReleaseWithPub } from '@/lib/server/press-releases/list';
@@ -195,7 +195,7 @@ function OrphanRow({
         )}
         {pr.journal && (
           <span className="block text-muted-foreground italic line-clamp-1 mt-0.5">
-            {lookupVenue(pr.journal)?.canonicalName ?? pr.journal}
+            {canonicalName(pr.journal)}
           </span>
         )}
         {!pr.authors?.length && !pr.journal && (

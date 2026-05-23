@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { BookOpen } from 'lucide-react';
 import { InfoBubble } from '@/components/info-bubble';
 import { cn } from '@/lib/shared/utils';
-import { lookupVenue } from '@/lib/shared/venue-registry';
+import { canonicalName } from '@/lib/shared/venue-registry';
 
 /**
  * Venue (journal / book / proceedings / magazine) as a conditional, italic,
@@ -36,7 +36,7 @@ export function VenueLine({
   // outlet — collapses corpus spellings ("DerStandard.at" → "Der Standard")
   // so the displayed text and the filter URL match the detail page and the
   // facette. Unknown venues fall through to the raw string.
-  const canonical = lookupVenue(venue)?.canonicalName ?? venue;
+  const canonical = canonicalName(venue);
   return (
     <p
       className={cn(

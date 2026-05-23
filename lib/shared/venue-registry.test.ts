@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  canonicalName,
   lookupVenue,
   venueDisplayLabel,
   venueGroupSpellings,
@@ -62,6 +63,27 @@ describe('venueDisplayLabel', () => {
   it('returns "Erschienen in" for empty input', () => {
     expect(venueDisplayLabel(null)).toBe('Erschienen in');
     expect(venueDisplayLabel('')).toBe('Erschienen in');
+  });
+});
+
+describe('canonicalName', () => {
+  it('returns the canonical name when given the canonical name itself', () => {
+    expect(canonicalName('Die Presse')).toBe('Die Presse');
+  });
+
+  it('resolves an alias to the canonical name', () => {
+    expect(canonicalName('DerStandard.at')).toBe('Der Standard');
+    expect(canonicalName('FAZ')).toBe('Frankfurter Allgemeine Zeitung');
+  });
+
+  it('returns the raw input verbatim for unknown venues', () => {
+    expect(canonicalName('Some Unknown Conference Proceedings')).toBe(
+      'Some Unknown Conference Proceedings',
+    );
+  });
+
+  it('is case-insensitive on the input', () => {
+    expect(canonicalName('die presse')).toBe('Die Presse');
   });
 });
 

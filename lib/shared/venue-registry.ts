@@ -133,6 +133,16 @@ export function venueGroupSpellings(name: string | null | undefined): string[] |
   return [meta.canonicalName, ...(meta.aliases ?? [])];
 }
 
+/**
+ * Resolve a venue name to its registry-canonical form, with raw fallback.
+ * Convenience for call sites that only need the name string (display in a
+ * row, click-URL canonicalization) — equivalent to `lookupVenue(name)?
+ * .canonicalName ?? name` but reads as one named operation.
+ */
+export function canonicalName(name: string): string {
+  return lookupVenue(name)?.canonicalName ?? name;
+}
+
 const KIND_LABEL_DE: Record<VenueKind, string> = {
   newspaper: 'Tageszeitung',
   magazine: 'Magazin',
