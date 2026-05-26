@@ -1,0 +1,10 @@
+{
+  "title": "Veranstaltungen",
+  "pages": [
+    "seiten-tour",
+    "event-detail",
+    "decision-workflow",
+    "webdb-sync",
+    "event-flag"
+  ]
+}

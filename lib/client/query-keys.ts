@@ -17,4 +17,6 @@ export const QK = {
   publication: (id: string) => ['publication', id] as const,
   reviewQueue: ['review-queue'] as const,
   recentSession: ['review-recent-session'] as const,
+  events: ['events'] as const,
+  event: (id: string) => ['event', id] as const,
 } as const;

@@ -1,0 +1,55 @@
+---
+title: Status-Workflow für Events
+description: Was Pitch, Hold und Skip im Kontext der Event-Liste bedeuten, und wie sie sich von Publication-Triage unterscheiden.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+Jedes Event hat einen Status, Default ist „Offen". Der Maintainer
+setzt einen der drei Endzustände, sobald klar ist, wie das Event im
+zentralen Kalender behandelt wird.
+
+<Callout type="info">
+Die Status-Buttons sind im Flag-Popover integriert (Klick aufs Pin-Icon
+einer Zeile). Anders als bei Publications gibt es keine separate
+Decision-Toolbar, kein Snooze und keinen MeisterTask-Push. Der
+Event-Workflow ist bewusst schlanker.
+</Callout>
+
+## Pitch / Übernommen {#pitch}
+
+Das Event ist im zentralen Kalender eingetragen. Verschwindet aus dem
+Default-Tab „Offen" und taucht im Tab „Übernommen" auf.
+
+Sinnvoll erst, sobald der Kalender-Eintrag tatsächlich existiert, nicht
+schon, sobald die Entscheidung „passt rein" gefallen ist (sonst geht
+der Eintrag-Schritt verloren).
+
+## Hold / Warten {#hold}
+
+Etwas ist unklar: Doppel-Eintrag im WEBDB? Veranstalter-Klärung
+ausständig? Fehlende Pflichtangaben (Ort, Beschreibung)? Hold parkt das
+Event sichtbar im Tab „Warten", bis die Klärung erfolgt ist.
+
+Im Gegensatz zur Publication-Triage gibt es **kein Snooze-Datum** für
+Events. Die Datums-Logik kommt vom Event selbst, es ist ja sowieso
+zeitlich verankert. Hold heißt schlicht: nicht jetzt entscheiden.
+
+## Skip / Verworfen {#skip}
+
+Das Event gehört nicht in den zentralen Kalender: interne
+Sitzung, geschlossene Veranstaltung, Doppel-Eintrag, falsche
+`is_event`-Markierung im WEBDB. Skip nimmt es aus der Default-Liste,
+hält es aber im Tab „Verworfen" zugänglich für Audits und für den
+Fall, dass jemand die Entscheidung später revidieren will.
+
+## Zurücksetzen
+
+Der „Reset"-Button im Popover (nur sichtbar, wenn ein Status gesetzt
+ist) bringt das Event zurück auf „Offen". `decided_at` wird vom
+DB-Trigger automatisch auf NULL gesetzt.
+
+## Verwandte Themen
+
+- [Veranstaltungen-Seite](/help/events/seiten-tour): Tab-Übersicht und Listenstruktur
+- [Event-Flag](/help/events/event-flag): Notizen pro Event hinterlegen

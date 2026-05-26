@@ -84,3 +84,16 @@ Shipped in Pass B of `LIBS_CLEANUP_PLAN_2026-05-17.md`.
   before webdb-import-v2 may touch prod. Not yet executed — local stacks
   (Supabase 54422 / MySQL 54499) were down this session; Pass B ships the
   code + gate + protocol and runs zero prod ETL.
+
+## Single-table variant (2026-05-26)
+
+The events feature (`/events`) added a second adapter shape that
+deliberately skips the `CanonicalBatch` / `loader.ts` / `upsert.ts`
+apparatus: see [ADR 0019](./0019-events-feature-pattern-variants.md).
+The valuable half — pure synchronous `normalize(raw)` — is preserved
+verbatim; the DB write moves into the feature layer because there is
+no junction-table graph to keep transactionally consistent.
+
+Decision rule for future adapters: graph-shaped sources (multi-table,
+junctions) follow the full pipeline; single-table sources follow
+`adapters/typo3-events.ts`.

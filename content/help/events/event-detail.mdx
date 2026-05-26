@@ -1,0 +1,86 @@
+---
+title: Event-Detail-Seite
+description: Was die Detail-Seite unter /events/[id] zeigt und wofür sie gut ist.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+Klick auf einen Event-Titel in der Liste öffnet die Detail-Seite
+`/events/[id]`. Sie zeigt alles, was zur Pflege-Entscheidung relevant
+ist, ohne Zeilen-Kürzungen oder Tooltip-Drumherum.
+
+## Aufbau {#aufbau}
+
+### Header
+
+- **Institut-Badge** (z. B. `GMI`, `IWF`, `ACDH`). Wird beim Sync aus
+  dem TYPO3-Seitenbaum abgeleitet (Site-Root-Page über dem News-Ordner).
+- **Sprache-Badge** (`DE`/`EN`/`MUL`).
+- **Decision-Badge** (Pitch/Hold/Skip, sonst nichts).
+- Großer **Titel** und der volle **Teaser** ohne Kürzung.
+
+### Datum-Karte
+
+Datum mit Wochentag und vollem Monatsnamen, Start-Uhrzeit und optional
+Endzeit (oder ein „mehrtägig bis"-Hinweis). Dazu Ort und Veranstalter,
+soweit im WEBDB gepflegt.
+
+Rechts daneben das Flag-Icon mit Popover (Notizen + Status-Buttons,
+identisch zur Listen-Ansicht) sowie der „Auf oeaw.ac.at"-Button, der
+direkt zur kanonischen Event-Seite im TYPO3-Frontend springt.
+
+### Beschreibung
+
+Volltext aus `tx_news_domain_model_news.bodytext`. TYPO3 liefert hier
+oft Rich-Text mit HTML-Tags; die Seite rendert das als Plain-Text mit
+erhaltenen Absatz- und Zeilenumbrüchen. Kein HTML im DOM und kein
+`dangerouslySetInnerHTML`, also XSS-frei.
+
+### Informationen (Sidebar)
+
+Rechts neben der Beschreibung erscheint der TYPO3-Sidebar-Block aus
+`tx_news_domain_model_news.event_information`. Hier steht typischerweise
+die Anschrift, der Zoom-Link mit Meeting-ID und Kenncode, der
+Veranstalter und die Kontakt-E-Mail. Wird vor dem Rendern serverseitig
+sanitisiert (Safelist `a/p/br/h3-6/ul/ol/li/strong/em`, Links auf
+`target=_blank rel=noopener` gezwungen). Implementiert in
+`lib/server/events/sanitize-event-info.ts`.
+
+### Externe Seite oder Suche
+
+Oben rechts:
+
+- **Externe Seite**: wenn die WEBDB einen direkten Link kennt
+  (externalurl, RSS-Quelle, oder TYPO3-internalurl). ~41 % der
+  zukünftigen Events.
+- **Auf oeaw.ac.at suchen**: Fallback für die anderen ~59 %.
+  Öffnet eine Google-Suche `site:oeaw.ac.at "{Titel}"`. Ehrlicher als
+  ein zusammengeschummelter oeaw.ac.at-Link, der ins Leere führt: TYPO3
+  routet Detail-URLs pro Institut-Site unterschiedlich, und die
+  Routing-Config liegt außerhalb der DB.
+
+### Notizen
+
+Alle Flag-Notes aller Reviewer:innen mit voller Länge,
+Reviewer-Namen und ISO-Zeitstempel. Anders als das kompakte
+Popover-Listing in der Tabelle werden hier keine Notes weggekürzt.
+
+### Footer
+
+`WEBDB-UID • Synchronisiert: TT.MM.JJJJ HH:MM • Entschieden: ...`
+als kleine Audit-Zeile, falls man wissen will, wie alt die
+Maintainer-Daten sind oder wann der Status zuletzt gesetzt wurde.
+
+## Wann lohnt die Detail-Seite {#wann}
+
+- **Bodytext lesen**: in der Liste ist nur der Teaser zu sehen.
+- **Alle Notes auf einmal**: Popover kann eng werden, sobald 3+
+  Reviewer:innen kommentiert haben.
+- **Deeplink an Kolleg:innen schicken**: die URL ist stabil
+  (`/events/{uuid}`), Refresh und Sync ändern die ID nicht.
+
+## Verwandte Themen
+
+- [Veranstaltungen-Seite](/help/events/seiten-tour): die Listen-Ansicht
+- [Decision-Workflow](/help/events/decision-workflow): Was Pitch/Hold/Skip bedeuten
+- [WEBDB-Sync](/help/events/webdb-sync): wo bodytext und institute herkommen

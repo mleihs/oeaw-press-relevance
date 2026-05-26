@@ -1,0 +1,58 @@
+---
+title: Event-Flag
+description: Wofür das Pin-Icon pro Event-Zeile da ist. Notizen, Status und Stack mehrerer Reviewer:innen.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+Das Flag-Icon rechts in jeder Event-Zeile öffnet ein Popover mit
+**Notiz** und **Status-Buttons**. Es ersetzt die separate
+Decision-Toolbar, wie sie bei Publications zum Einsatz kommt. Beim
+Event-Workflow reicht die kompakte Variante, weil weniger Felder zu
+setzen sind.
+
+## Was das Icon zeigt {#icon}
+
+- **Pin** (grau): noch kein Flag, noch keine Entscheidung.
+- **Pin** (amber): du selbst hast das Event geflaggt.
+- **Status-Icon** (grün/blau/grau): die Entscheidung ist gefallen, das
+  Icon zeigt den aktuellen Status (Pitch/Hold/Skip).
+- **Badge mit Zahl**: mehrere Reviewer:innen haben das Event geflaggt
+  (Stack-Counter).
+
+## Notiz schreiben {#notiz}
+
+Im Popover unten der Textbereich. Inhalt = kurze Begründung („Termin
+mit Kanzler abklären", „doppelt gelistet?", „Eintrag prüfen ob Public
+oder intern"). Wird zusammen mit dem Reviewer-Namen aus den
+Einstellungen gespeichert.
+
+Ein zweiter Klick „Notiz aktualisieren" überschreibt die eigene Notiz,
+sodass **kein** Stapel pro Person entsteht. Andere Reviewer:innen
+haben eigene Einträge, die unter „Andere" sichtbar bleiben.
+
+<Callout type="info">
+Der Name kommt aus `Einstellungen → Reviewer-Name`. Ohne Name landet
+der Eintrag als „team". Funktional, aber weniger nachvollziehbar im
+Audit.
+</Callout>
+
+## Status setzen {#status}
+
+Die drei Buttons **Pitch / Hold / Skip** im Popover wechseln den Event-
+Status. Details zu den Bedeutungen unter
+[Decision-Workflow](/help/events/decision-workflow). Beim Setzen erscheint
+ein Toast, die Zeile aktualisiert sich, und das Pin-Icon wechselt auf
+das jeweilige Status-Icon.
+
+## Notiz entfernen {#entfernen}
+
+„Mein Flag entfernen" löscht den eigenen Eintrag (nicht die anderer
+Reviewer:innen). Der Status bleibt davon unberührt; Flag und Status
+sind unabhängige Felder.
+
+## Verwandte Themen
+
+- [Decision-Workflow](/help/events/decision-workflow): Status-Buttons im Detail
+- [Veranstaltungen-Seite](/help/events/seiten-tour): Tab-Struktur und Listenansicht
+- [Publikations-Flag](/help/badges/publication-flag): Gleicher UI-Mechanismus für Pubs

@@ -1680,6 +1680,54 @@ export const EXPL = {
       </Para>
     ),
   },
+
+  // ─── Veranstaltungen ─────────────────────────────────────────────────────
+  event_flag: {
+    title: 'Flag für die Kalender-Pflege',
+    body: (
+      <>
+        <Para>
+          Markiert ein Event mit einer Pin-Nadel, damit es beim nächsten Durchgang
+          garantiert auf den Tisch kommt. Mehrere Teammitglieder können dasselbe
+          Event flaggen; jede Notiz behält ihren Urheber.
+        </Para>
+        <Para>
+          Sinnvoll als kurze Begründung („Termin mit Kanzler abklären", „doppelt
+          gelistet?"), sichtbar im Tooltip und im aufgeklappten Flag-Panel.
+        </Para>
+      </>
+    ),
+  },
+  event_decision_pitch: {
+    title: 'Status: Übernommen',
+    body: (
+      <Para>
+        Das Event ist im zentralen Kalender eingetragen, keine weitere
+        Maintainer-Aktion nötig. Aus der Default-Liste „Offen" verschwindet es
+        und taucht im Tab „Übernommen" auf.
+      </Para>
+    ),
+  },
+  event_decision_hold: {
+    title: 'Status: Warten',
+    body: (
+      <Para>
+        Das Event ist unklar: Rückfrage an die Veranstalter:innen, fehlende
+        Infos oder Doppel-Eintrag im WEBDB. Hold parkt es sichtbar im Tab
+        „Warten", ohne dass es aus den anderen Ansichten verschwindet.
+      </Para>
+    ),
+  },
+  event_decision_skip: {
+    title: 'Status: Verworfen',
+    body: (
+      <Para>
+        Das Event ist für den zentralen Kalender nicht relevant (intern,
+        eingeladen, falsch markiert). Verschwindet aus der Default-Liste,
+        bleibt im Tab „Verworfen" auffindbar und in der DB für Audits.
+      </Para>
+    ),
+  },
 } satisfies Record<string, Explanation>;
 
 // ─── KB-Anchor-Map ──────────────────────────────────────────────────────────
@@ -1727,6 +1775,7 @@ export const EXPL_KB_MAP: Partial<Record<keyof typeof EXPL, KbAnchor>> = {
   highlight_unit:            { path: '/help/badges/highlight-unit' },
   external_person:           { path: '/help/badges/externe-personen' },
   publication_flag:          { path: '/help/badges/publication-flag' },
+  event_flag:                { path: '/help/events/event-flag' },
   oestat3:                   { path: '/help/badges/oestat3' },
 
   // ─── filter/ ───────────────────────────────────────────────────────────────
@@ -1755,6 +1804,9 @@ export const EXPL_KB_MAP: Partial<Record<keyof typeof EXPL, KbAnchor>> = {
   decision_skip:             { path: '/help/triage/entscheidungen', hash: 'skip' },
   decision_snooze:           { path: '/help/triage/entscheidungen', hash: 'snooze' },
   decision_rationale:        { path: '/help/triage/entscheidungen', hash: 'rationale' },
+  event_decision_pitch:      { path: '/help/events/decision-workflow', hash: 'pitch' },
+  event_decision_hold:       { path: '/help/events/decision-workflow', hash: 'hold' },
+  event_decision_skip:       { path: '/help/events/decision-workflow', hash: 'skip' },
   triage_flagged:            { path: '/help/triage/triage-sitzung', hash: 'flagged' },
   triage_fresh:              { path: '/help/triage/triage-sitzung', hash: 'fresh' },
   triage_mahl:               { path: '/help/triage/triage-sitzung', hash: 'mahl' },

@@ -74,6 +74,28 @@ const Schema = z.object({
   // localhost dev — set this in env to support preview deploys or a
   // custom domain.
   ALLOWED_ORIGINS: z.string().optional(),
+
+  // WEBDB MySQL — read by the /api/events/sync route to pull upcoming
+  // TYPO3 events into the local Postgres mirror. Optional as a group:
+  // if HOST is unset the sync endpoint refuses with a clear message and
+  // /events still serves the last mirrored data. If HOST is set, the
+  // conditional check below requires USER + DATABASE too.
+  WEBDB_MYSQL_HOST: z.string().min(1).optional(),
+  WEBDB_MYSQL_PORT: z.coerce.number().int().positive().default(54499),
+  WEBDB_MYSQL_USER: z.string().min(1).optional(),
+  WEBDB_MYSQL_PASSWORD: z.string().optional(),
+  WEBDB_MYSQL_DATABASE: z.string().min(1).optional(),
+
+  // Phase-2 LLM fallback for the events location extractor. Default off;
+  // when enabled, the events sync sends the ~12% events the cheerio
+  // walker can't parse to an LLM via OpenRouter (model defaults to
+  // deepseek/deepseek-chat for cost; override via EVENTS_LLM_FALLBACK_MODEL).
+  // Requires OPENROUTER_API_KEY.
+  EVENTS_LLM_FALLBACK_ENABLED: z
+    .union([z.literal('true'), z.literal('false'), z.literal('')])
+    .default('false')
+    .transform((v) => v === 'true'),
+  EVENTS_LLM_FALLBACK_MODEL: z.string().min(1).optional(),
 });
 
 type Normalized = Record<string, string | undefined>;
@@ -91,6 +113,14 @@ function runConditionalChecks(env: Normalized, errors: string[]): void {
   if (Boolean(env.MEISTERTASK_HIGH_LABEL_ID) !== Boolean(env.MEISTERTASK_MID_LABEL_ID)) {
     const missing = env.MEISTERTASK_HIGH_LABEL_ID ? 'MEISTERTASK_MID_LABEL_ID' : 'MEISTERTASK_HIGH_LABEL_ID';
     errors.push(`${missing} — set both MEISTERTASK_HIGH_LABEL_ID and MEISTERTASK_MID_LABEL_ID, or neither (per .env.example contract)`);
+  }
+  if (env.WEBDB_MYSQL_HOST) {
+    if (!env.WEBDB_MYSQL_USER) {
+      errors.push('WEBDB_MYSQL_USER — required when WEBDB_MYSQL_HOST is set (events/sync cannot connect without a user)');
+    }
+    if (!env.WEBDB_MYSQL_DATABASE) {
+      errors.push('WEBDB_MYSQL_DATABASE — required when WEBDB_MYSQL_HOST is set');
+    }
   }
 }
 

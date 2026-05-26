@@ -44,6 +44,35 @@ jede Pub einen 768-dimensionalen Vektor aus Titel + Abstract, der für
 ETL-Pipeline: Daten aus MySQL extrahieren, transformieren (Encoding,
 Datumstypen), in Postgres laden.
 
+**Event / Veranstaltung:** Eintrag in `tx_news_domain_model_news`
+mit `is_event = 1`. Wird über die
+[Veranstaltungen-Seite](/help/events/seiten-tour) für die zentrale
+Kalender-Pflege aufbereitet, separat vom Publikations-Triage.
+
+**EXT:news_eventnews:** TYPO3-Erweiterung, die
+`tx_news_domain_model_news` um Event-Felder ergänzt: `is_event`,
+`event_end`, sowie FK-Verweise auf
+`tx_eventnews_domain_model_location` / `_organizer`. Quelle der
+Veranstaltungen-Liste.
+
+**Institut (in /events):** Bezeichnung des hostenden Instituts (z. B.
+`GMI`, `IHB`, `IWF`, `ACDH`, `ÖAI`). Wird beim Sync via rekursivem
+Page-Tree-Walk ermittelt: Bei eigenständigen Institut-Sites
+(`is_siteroot=1`) ist das der Root-Title; Institute, die als Sub-Page
+der ÖAW-Hauptseite leben (IHB, IKGA, IMAFO, ISA, KIS, ARZ ...),
+werden über den direkten Sub-Knoten unter dem ÖAW-Siteroot
+identifiziert.
+
+**event_information:** TYPO3-RTE-Feld in `tx_news_domain_model_news`,
+das die rechte Sidebar einer Event-Detail-Seite mit Adresse, Zoom-Link,
+Veranstalter und Kontakt enthält. Wird auf
+`/events/[id]` als sanitisiertes HTML im
+„Informationen"-Block gerendert.
+
+**is_event:** Boolean-Spalte auf `tx_news_domain_model_news` aus
+EXT:news_eventnews, die einen News-Eintrag als Veranstaltung
+markiert. Filter-Kriterium für `/events`.
+
 **ITA:** Institut für Technikfolgen-Abschätzung. Eigene
 Outreach-Formate mit hohen AI-Scores, per Default ausgeblendet, siehe
 [ITA-Filter](/help/filter/filter-ita).

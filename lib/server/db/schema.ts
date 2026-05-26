@@ -643,3 +643,38 @@ export const pressClusterView = pgView("press_cluster_view", {	embedding: vector
 	releasedAt: date("released_at"),
 	pressUrl: text("press_url"),
 }).as(sql`SELECT matched_distinct.embedding, matched_distinct.model, matched_distinct.kind, matched_distinct.publication_id, matched_distinct.exclude_pub_id, matched_distinct.press_release_id, matched_distinct.title, matched_distinct.released_at, matched_distinct.press_url FROM ( SELECT DISTINCT ON (pe.publication_id) pe.embedding, pe.model, 'publication'::text AS kind, pe.publication_id, pe.publication_id AS exclude_pub_id, pr.id AS press_release_id, p.title, pr.released_at, pr.url AS press_url FROM publication_embeddings pe JOIN press_releases pr ON pr.publication_id = pe.publication_id JOIN publications p ON p.id = pe.publication_id ORDER BY pe.publication_id, pr.released_at DESC NULLS LAST, pr.id) matched_distinct UNION ALL SELECT pre.embedding, pre.model, 'orphan'::text AS kind, NULL::uuid AS publication_id, NULL::uuid AS exclude_pub_id, pre.press_release_id, COALESCE(NULLIF(pr.paper_title, ''::text), NULLIF(pr.news_title, ''::text), '(ohne Titel)'::text) AS title, pr.released_at, pr.url AS press_url FROM press_release_embeddings pre JOIN press_releases pr ON pr.id = pre.press_release_id WHERE pr.publication_id IS NULL`);
+
+// Local mirror of upcoming TYPO3 events. Populated from MySQL via
+// POST /api/events/sync; maintainer columns (decision, decided_at,
+// flag_notes) preserved across re-syncs by construction (UPSERT SET list
+// excludes them). See supabase/migrations/20260526000001_events.sql for
+// the canonical schema definition + the trg_events_decided_at_sync
+// trigger that auto-stamps decided_at on decision transitions.
+export const events = pgTable("events", {
+	id: uuid().defaultRandom().primaryKey().notNull(),
+	webdbUid: integer("webdb_uid").notNull(),
+	title: text().notNull(),
+	teaser: text(),
+	bodytext: text(),
+	eventInformation: text("event_information"),
+	eventAt: timestamp("event_at", { withTimezone: true, mode: 'string' }).notNull(),
+	eventEndAt: timestamp("event_end_at", { withTimezone: true, mode: 'string' }),
+	locationTitle: text("location_title"),
+	organizerTitle: text("organizer_title"),
+	institute: text(),
+	url: text(),
+	lang: text(),
+	availableLangs: text("available_langs").array().notNull().default([]),
+	decision: text().default('undecided').notNull(),
+	decidedAt: timestamp("decided_at", { withTimezone: true, mode: 'string' }),
+	flagNotes: jsonb("flag_notes").default([]).notNull(),
+	syncedAt: timestamp("synced_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+	index("idx_events_decision").using("btree", table.decision.asc().nullsLast().op("text_ops")),
+	index("idx_events_event_at").using("btree", table.eventAt.asc().nullsLast().op("timestamptz_ops")),
+	index("idx_events_institute").using("btree", table.institute.asc().nullsLast().op("text_ops")).where(sql`institute IS NOT NULL`),
+	unique("events_webdb_uid_key").on(table.webdbUid),
+	check("events_decision_check", sql`decision = ANY (ARRAY['undecided'::text, 'pitch'::text, 'hold'::text, 'skip'::text])`),
+	check("events_lang_check", sql`(lang IS NULL) OR (lang = ANY (ARRAY['de'::text, 'en'::text, 'mul'::text]))`),
+]);

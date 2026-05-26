@@ -1,0 +1,126 @@
+---
+title: WEBDB-Sync für Events
+description: Was der „Aus WEBDB aktualisieren"-Button macht. Übersicht zu Quelle, Filter, Upsert-Verhalten und Idempotenz.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+Der Sync zieht alle zukünftigen Events aus der lokalen WEBDB-MySQL in
+die Postgres-`events`-Tabelle. Bewusst als manuelle Aktion ausgelegt:
+es läuft kein Cron, der Maintainer entscheidet, wann frisch geladen wird.
+
+## Quelle {#source}
+
+Eine einzige Abfrage gegen den lokalen MySQL-Container
+`oeaw-webdb-mysql` (Port 54499, DB `webdb`) holt:
+
+- Stammdaten: `title`, `teaser`, `bodytext`, `event_information`,
+  `datetime`, `event_end`, `sys_language_uid`.
+- URL-Quellen: `externalurl`, `internalurl`,
+  `tx_heborssnewsimporter_externalid` (Cascade siehe
+  [Event-Detail](/help/events/event-detail#externe-seite-oder-suche)).
+- Ort und Veranstalter via dreistufiger Kaskade: zuerst
+  `n.location_simple` (Plain-Text-Feld), dann die legacy
+  `tx_eventnews_domain_model_location.title` (FK-Tabelle). Für den Ort
+  greift zusätzlich ein dritter Fallback: `extractLocationFromEventInfo`
+  parsiert den `<h5>Ort</h5><p>…</p>`-Block aus dem
+  `event_information`-HTML per Regex, decodet die fünf gängigen
+  Entities und behandelt `<br>` als Komma. Hebt die Ortsabdeckung von
+  0 % auf ~60 %.
+- Institut via rekursiver `WITH RECURSIVE`-CTE über `pages.pid`,
+  hochgewandert bis zur `is_siteroot=1`-Page; deren `title` ist die
+  Institutsbezeichnung (mit Sonder-Heuristik für Institute, die als
+  Sub-Pages der ÖAW-Hauptseite leben).
+- `available_langs` per `GROUP_CONCAT` über die Übersetzungen
+  (`l10n_parent = n.uid`). Der Sync zieht nur Originale
+  (`l10n_parent = 0`) und faltet die Übersetzungs-Sprachen in ein
+  Postgres-Array, statt Duplikate als separate Rows zu mirroren.
+
+Die `is_event`/`event_end`/`location`/`organizer`-Spalten kommen aus
+**EXT:news_eventnews**, das `tx_news_domain_model_news` erweitert.
+`datetime` ist hier der Event-Start (nicht das
+News-Veröffentlichungsdatum).
+
+## Upsert-Verhalten {#upsert}
+
+Ein einziger Postgres-Round-Trip mit
+`INSERT … ON CONFLICT (webdb_uid) DO UPDATE … RETURNING (xmax = 0)`.
+Das ist:
+
+- **Idempotent**: zweiter Klick auf „Aktualisieren" zeigt
+  `imported: 0, updated: N, pruned: 0`.
+- **Atomar**: bricht der Round-Trip ab, ist nichts halb importiert.
+- **Schnell**: ~100 ms für die ~216 aktuell upcoming Events.
+
+Nach dem Upsert läuft ein zweiter Round-Trip:
+`DELETE FROM events WHERE event_at >= NOW() AND webdb_uid NOT IN (incoming)`.
+Damit verschwinden zukünftige Events, die im WEBDB entfernt wurden
+oder die früher als Übersetzungs-Duplikate gemirrort waren. Vergangene
+Events sind aus dem Filter heraus und behalten ihre Triage-Historie.
+
+## Ortsextraktion mit LLM-Fallback {#llm-fallback}
+
+Der Sync extrahiert den Veranstaltungsort in drei Stufen:
+
+1. **Strukturierte Felder** `n.location_simple` (häufig leer) und die
+   FK-Tabelle `tx_eventnews_domain_model_location` (im aktuellen OEAW-
+   Datenbestand komplett leer).
+2. **Cheerio-Parser** auf `event_information`: findet `<h*>Ort</h*>`
+   oder `<p><strong>Ort:</strong>`-Labels und nimmt den benachbarten
+   Text. Erfasst ~87 % der zukünftigen Events.
+3. **Optional: LLM-Fallback (Phase 2)** für die übrigen ~12 %:
+   schickt den Sidebar-Text plus Titel an ein günstiges Modell (Default
+   `deepseek/deepseek-chat` über OpenRouter) und bittet um eine
+   strukturierte JSON-Antwort.
+
+Phase 3 ist Default off (`EVENTS_LLM_FALLBACK_ENABLED=false`) und kostet
+bei aktivierter Variante etwa 0,7 Cent pro vollem Sync (bei aktuell
+~27 Events ohne Parser-Treffer). Aktivieren in `.env.local`:
+
+```
+EVENTS_LLM_FALLBACK_ENABLED=true
+# EVENTS_LLM_FALLBACK_MODEL=deepseek/deepseek-chat  # default; override z. B. anthropic/claude-haiku-4.5
+```
+
+Voraussetzung: `OPENROUTER_API_KEY` ist gesetzt (steht schon in der App
+für die Publication-Pipeline). Bei jeder Sync-Antwort siehst du im Toast
+zusätzlich `N× Ort via LLM`, wenn die Fallback-Strecke Treffer geliefert
+hat.
+
+<Callout type="warn">
+**Was der Sync NICHT überschreibt:** `decision`, `decided_at`,
+`flag_notes`, `created_at`. Diese Maintainer-Felder sind nicht in der
+`ON CONFLICT SET`-Liste; ein Refresh kann die Triage-Arbeit also nie
+versehentlich auslöschen.
+</Callout>
+
+## Was nicht synchronisiert wird {#out-of-scope}
+
+- **Vergangene Events** filtert die WHERE-Bedingung
+  (`datetime >= UNIX_TIMESTAMP()`) bereits in der MySQL aus.
+- **Gelöschte Events** (`deleted = 1` in TYPO3) werden ignoriert. Wenn
+  ein Event aus dem WEBDB verschwindet, bleibt der lokale Mirror
+  bestehen. Das ist absichtlich, damit Triage-Notizen nicht durch
+  redaktionelle Löschungen verschwinden. Der `event_at >= NOW()`-Filter
+  in der Liste blendet sie ab, sobald die Zeit verstrichen ist.
+
+## Was bei Fehlern passiert {#errors}
+
+- **`WEBDB_MYSQL_HOST` nicht gesetzt**: Toast „WEBDB ist nicht
+  konfiguriert", HTTP 503. Die Seite bleibt mit dem zuletzt gemirrorten
+  Stand bedienbar.
+- **MySQL-Container down** (ECONNREFUSED / Timeout): Toast mit der
+  Fehlermeldung, HTTP 500. Im Server-Log steckt der Stack-Trace.
+- **Sync teilweise erfolgreich**: nicht möglich. Entweder commit'd der
+  Bulk-Upsert komplett, oder gar nichts (Postgres-Transaktion).
+
+## Setup-Tipps {#setup}
+
+Der MySQL-Container wird vom selben Setup wie der `webdb-import:v2`-Job
+der Pubs-Pipeline gespeist. Das Docker-`run`-Kommando und den
+Adminer-Export aus dem TYPO3-Backend beschreibt `docs/WEBDB_IMPORT.md`.
+
+Wer einen dedizierten read-only-MySQL-User für die App anlegen will
+(produktiver Pfad): die minimalen `GRANT SELECT`-Statements für genau
+die ~24 Tabellen, die App und Skripte tatsächlich lesen, stehen in
+`docs/TYPO3_MYSQL_PERMISSIONS.md`.

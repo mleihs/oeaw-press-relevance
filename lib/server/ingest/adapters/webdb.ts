@@ -27,14 +27,26 @@ export interface WebdbMysqlConfig {
   database: string;
 }
 
-/** Defaults are byte-identical to scripts/webdb-import.mjs. */
+/** Reads WEBDB_MYSQL_* with a fallback to the legacy unprefixed MYSQL_*
+ *  names. Both naming schemes refer to the SAME oeaw-webdb-mysql docker
+ *  container — the dual lookup just lets the script and the app share one
+ *  helper without forcing a migration of either side's env file.
+ *
+ *  Precedence is `WEBDB_MYSQL_*` → `MYSQL_*` → built-in default. So if a
+ *  caller sets only `MYSQL_HOST=foo` (legacy script style), behaviour is
+ *  identical to before. If they additionally set `WEBDB_MYSQL_HOST=bar`
+ *  (new canonical name, validated in lib/server/env.ts), `bar` wins —
+ *  matches the .env.example contract. Defaults are byte-identical to
+ *  scripts/webdb-import.mjs, so existing scripts keep working unchanged. */
 export function webdbMysqlConfigFromEnv(): WebdbMysqlConfig {
+  const env = process.env;
   return {
-    host: process.env.MYSQL_HOST || '127.0.0.1',
-    port: Number(process.env.MYSQL_PORT || 54499),
-    user: process.env.MYSQL_USER || 'root',
-    password: process.env.MYSQL_PASSWORD || 'root',
-    database: process.env.MYSQL_DATABASE || 'webdb',
+    host: env.WEBDB_MYSQL_HOST || env.MYSQL_HOST || '127.0.0.1',
+    port: Number(env.WEBDB_MYSQL_PORT || env.MYSQL_PORT || 54499),
+    user: env.WEBDB_MYSQL_USER || env.MYSQL_USER || 'root',
+    password:
+      env.WEBDB_MYSQL_PASSWORD ?? env.MYSQL_PASSWORD ?? 'root',
+    database: env.WEBDB_MYSQL_DATABASE || env.MYSQL_DATABASE || 'webdb',
   };
 }
 

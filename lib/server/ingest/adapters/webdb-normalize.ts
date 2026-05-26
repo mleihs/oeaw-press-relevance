@@ -94,12 +94,15 @@ export interface RawWebdb {
 export type ExtractDoiFromRow = (row: RawPublication) => string | null;
 
 // --- helpers: byte-identical to the .mjs ----------------------------------
+// Exported so other TYPO3 ingest adapters (e.g. typo3-events) can share the
+// exact same unix-epoch / null-empty semantics instead of re-implementing
+// them and drifting.
 
-const tsDate = (n: number | null | undefined): string | null =>
+export const tsDate = (n: number | null | undefined): string | null =>
   n && n > 0 ? new Date(n * 1000).toISOString().slice(0, 10) : null;
-const tsTimestamp = (n: number | null | undefined): string | null =>
+export const tsTimestamp = (n: number | null | undefined): string | null =>
   n && n > 0 ? new Date(n * 1000).toISOString() : null;
-const nullIfEmpty = (s: string | null | undefined): string | null =>
+export const nullIfEmpty = (s: string | null | undefined): string | null =>
   s === '' || s == null ? null : s;
 const truthy = (n: number | null | undefined): boolean => Number(n) === 1;
 

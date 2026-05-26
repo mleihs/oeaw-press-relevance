@@ -13,6 +13,7 @@ import {
   Users,
   ClipboardCheck,
   Newspaper,
+  CalendarDays,
   HelpCircle,
   Search,
   Keyboard,
@@ -51,6 +52,7 @@ const NAV_GROUPS: NavGroup[] = [
     links: [
       { href: '/publications', label: 'Publikationen', icon: BookOpen },
       { href: '/press-releases', label: 'Pressemitteilungen', icon: Newspaper },
+      { href: '/events', label: 'Veranstaltungen', icon: CalendarDays },
       { href: '/researchers', label: 'Forscher:innen', icon: Users },
     ],
   },
