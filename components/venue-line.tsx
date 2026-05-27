@@ -5,6 +5,7 @@ import { BookOpen } from 'lucide-react';
 import { InfoBubble } from '@/components/info-bubble';
 import { cn } from '@/lib/shared/utils';
 import { canonicalName } from '@/lib/shared/venue-registry';
+import { journalTier } from '@/lib/shared/journal-tier';
 
 /**
  * Venue (journal / book / proceedings / magazine) as a conditional, italic,
@@ -37,10 +38,15 @@ export function VenueLine({
   // so the displayed text and the filter URL match the detail page and the
   // facette. Unknown venues fall through to the raw string.
   const canonical = canonicalName(venue);
+  // Flagship Nature/Science-family pubs get a non-italic, bold, brand-blue
+  // line so the eye catches them in long lists (Dashboard top-pubs + the
+  // /publications table both render via this one component).
+  const isTop = journalTier(canonical) === 'top';
   return (
     <p
       className={cn(
-        'mt-0.5 flex items-center gap-1 text-xs italic text-muted-foreground',
+        'mt-0.5 flex items-center gap-1 text-xs',
+        isTop ? 'font-semibold text-brand' : 'italic text-muted-foreground',
         className,
       )}
     >
@@ -53,9 +59,15 @@ export function VenueLine({
           e.stopPropagation();
           router.push(`/publications?journal=${encodeURIComponent(canonical)}`);
         }}
-        className="group flex min-w-0 items-center gap-1 text-left hover:text-brand transition-colors"
+        className={cn(
+          'group flex min-w-0 items-center gap-1 text-left transition-colors',
+          isTop ? 'hover:underline' : 'hover:text-brand',
+        )}
       >
-        <BookOpen aria-hidden className="h-3 w-3 shrink-0 opacity-70" />
+        <BookOpen
+          aria-hidden
+          className={cn('h-3 w-3 shrink-0', isTop ? 'opacity-100' : 'opacity-70')}
+        />
         <span className="min-w-0 truncate group-hover:underline">{canonical}</span>
       </button>
       <InfoBubble id="venue" size="sm" />
