@@ -71,7 +71,7 @@ describe('normalizeTypo3Event', () => {
     ).toBe('Saal A');
   });
 
-  it('availableLangs combines original + translations, deduped, ordered de→en→mul', () => {
+  it('availableLangs combines original + translations, deduped, ordered de→en, expands -1 to [de,en]', () => {
     // No translations → just the original.
     expect(
       normalizeTypo3Event(raw({ sys_language_uid: 0, translation_langs: null }))
@@ -82,11 +82,17 @@ describe('normalizeTypo3Event', () => {
       normalizeTypo3Event(raw({ sys_language_uid: 0, translation_langs: '1' }))
         ?.availableLangs,
     ).toEqual(['de', 'en']);
-    // mul original + EN translation.
+    // mul original (no translations) — expanded to ['de','en'] because
+    // sys_language_uid=-1 is a language-agnostic marker, not a language.
+    expect(
+      normalizeTypo3Event(raw({ sys_language_uid: -1, translation_langs: null }))
+        ?.availableLangs,
+    ).toEqual(['de', 'en']);
+    // mul + EN translation → still just [de,en] (mul already covers both).
     expect(
       normalizeTypo3Event(raw({ sys_language_uid: -1, translation_langs: '1' }))
         ?.availableLangs,
-    ).toEqual(['en', 'mul']);
+    ).toEqual(['de', 'en']);
     // Unknown translation uids (e.g. 2 = italian) get dropped silently.
     expect(
       normalizeTypo3Event(raw({ sys_language_uid: 0, translation_langs: '1,2' }))

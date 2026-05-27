@@ -177,17 +177,28 @@ function mapLang(uid: number): EventLang | null {
 
 /** Combines the original row's language with the languages of every
  *  translation pointing at it (the GROUP_CONCAT'd uids from the LEFT JOIN
- *  on l10n_parent). Result is deduped and stable-ordered de → en → mul so
- *  the list-view badge renders consistently. */
+ *  on l10n_parent). Result is deduped and stable-ordered de → en so the
+ *  list-view badge renders consistently.
+ *
+ *  sys_language_uid = -1 ('mul') is the TYPO3 marker for a
+ *  language-agnostic record (no DE/EN split, one row applies to all
+ *  languages) — it's not itself a language. We expand it to [de, en] so
+ *  the available-langs badge stays honest about what a viewer can
+ *  actually read, and so 'mul' never leaks into the UI as a literal
+ *  badge value. The `lang` column on the event still records the source
+ *  marker for traceability. */
 function collectAvailableLangs(
   originalUid: number,
   translationUids: string | null,
 ): EventLang[] {
-  const all: (EventLang | null)[] = [mapLang(originalUid)];
-  if (translationUids) {
-    for (const part of translationUids.split(',')) {
-      const n = Number(part.trim());
-      if (Number.isFinite(n)) all.push(mapLang(n));
+  const all: (EventLang | null)[] = [];
+  for (const uid of [originalUid, ...(translationUids?.split(',') ?? [])]) {
+    const n = Number(typeof uid === 'string' ? uid.trim() : uid);
+    if (!Number.isFinite(n)) continue;
+    if (n === -1) {
+      all.push('de', 'en');
+    } else {
+      all.push(mapLang(n));
     }
   }
   const order: Record<EventLang, number> = { de: 0, en: 1, mul: 2 };
