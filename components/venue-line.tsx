@@ -45,10 +45,10 @@ export function VenueLine({
   return (
     <p
       className={cn(
-        'mt-0.5 flex items-center gap-1',
+        'mt-0.5 flex items-center gap-1 text-xs',
         isTop
-          ? 'text-sm font-extrabold tracking-tight text-brand'
-          : 'text-xs italic text-muted-foreground',
+          ? 'font-medium text-brand motion-safe:animate-pulse'
+          : 'italic text-muted-foreground',
         className,
       )}
     >
@@ -62,13 +62,13 @@ export function VenueLine({
           router.push(`/publications?journal=${encodeURIComponent(canonical)}`);
         }}
         className={cn(
-          'group flex min-w-0 items-center gap-1.5 text-left transition-colors',
+          'group flex min-w-0 items-center gap-1 text-left transition-colors',
           isTop ? 'hover:underline' : 'hover:text-brand',
         )}
       >
         <BookOpen
           aria-hidden
-          className={cn('shrink-0', isTop ? 'h-4 w-4' : 'h-3 w-3 opacity-70')}
+          className={cn('h-3 w-3 shrink-0', isTop ? '' : 'opacity-70')}
         />
         <span className="min-w-0 truncate group-hover:underline">{canonical}</span>
       </button>
