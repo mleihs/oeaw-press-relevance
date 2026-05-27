@@ -94,13 +94,20 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
           )}
         </div>
 
-        {/* Lead author + date */}
+        {/* Lead author + date. When the lead-author string matches an OEAW
+            person (external=false), name renders in brand-blue as a stronger
+            link affordance for press triage; external matches stay neutral. */}
         <div className="flex flex-wrap items-center gap-2 text-sm text-foreground/80">
           {pub.lead_author && (
             leadAuthorPerson ? (
               <Link
                 href={`/persons/${leadAuthorPerson.id}`}
-                className="font-medium text-foreground hover:text-brand transition-colors"
+                className={cn(
+                  'font-medium hover:underline transition-colors',
+                  leadAuthorPerson.external
+                    ? 'text-foreground hover:text-brand'
+                    : 'text-brand',
+                )}
               >
                 {pub.lead_author}
               </Link>
@@ -356,79 +363,130 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
         </Card>
       )}
 
-      {/* Authors */}
-      {pub.authors_resolved && pub.authors_resolved.length > 0 && (
+      {/* Authors. OEAW-linked persons (external=false) render in brand-blue
+          as the press-triage signal: these are the realistic contact points.
+          External co-authors stay neutral and carry an "Ext" badge so the
+          distinction is visible without hover. The citation is shown as a
+          footer so the full author string from the original publication is
+          available even when WebDB's person_publications is sparse (the
+          ~4% cohort the author-affiliation orgunit derivation also covers). */}
+      {((pub.authors_resolved && pub.authors_resolved.length > 0) || pub.citation) && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <Users className="h-4 w-4 text-brand" />
-              Autor:innen ({pub.authors_resolved.length})
+              Autor:innen
+              {pub.authors_resolved && pub.authors_resolved.length > 0 && (() => {
+                const total = pub.authors_resolved.length;
+                const oeaw = pub.authors_resolved.filter((a) => !a.external).length;
+                const ext = total - oeaw;
+                let breakdown = '';
+                if (oeaw && ext) breakdown = ` · ${oeaw} ÖAW, ${ext} extern`;
+                else if (oeaw) breakdown = ` · alle ÖAW`;
+                else if (ext) breakdown = ` · alle extern`;
+                return (
+                  <span className="text-sm font-normal text-muted-foreground">
+                    ({total}){breakdown}
+                  </span>
+                );
+              })()}
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <ul className="divide-y divide-border/60">
-              {pub.authors_resolved.map((a) => (
-                <li key={a.id} className="py-2.5 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2 min-w-0">
-                    {a.mahighlight && (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Crown className="h-3.5 w-3.5 text-amber-500 shrink-0" />
-                        </TooltipTrigger>
-                        <TooltipContent side="top">Eigen-Highlight (Person hat diese Pub im WebDB selbst markiert)</TooltipContent>
-                      </Tooltip>
-                    )}
-                    {!a.mahighlight && a.highlight && (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Award className="h-3.5 w-3.5 text-orange-500 shrink-0" />
-                        </TooltipTrigger>
-                        <TooltipContent side="top">Highlight</TooltipContent>
-                      </Tooltip>
-                    )}
-                    <div className="min-w-0">
-                      <Link
-                        href={`/persons/${a.id}`}
-                        className="text-sm font-medium truncate hover:text-brand block"
-                      >
-                        {a.degree_before && <span className="text-muted-foreground font-normal mr-1">{a.degree_before}</span>}
-                        {a.firstname} {a.lastname}
-                        {a.degree_after && <span className="text-muted-foreground font-normal ml-1">{a.degree_after}</span>}
-                        {a.deceased && <span className="text-muted-foreground/70 ml-2 text-xs">†</span>}
-                      </Link>
-                      {a.oestat3_name_de && (
-                        <p className="text-xs text-muted-foreground truncate">{a.oestat3_name_de}</p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {a.email && (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <a href={`mailto:${a.email}`} className="text-muted-foreground/70 hover:text-brand">
-                            <Mail className="h-3.5 w-3.5" />
+          <CardContent className="space-y-3">
+            {pub.authors_resolved && pub.authors_resolved.length > 0 && (
+              <ul className="divide-y divide-border/60">
+                {pub.authors_resolved.map((a) => {
+                  const isOeaw = !a.external;
+                  return (
+                    <li key={a.id} className="py-2.5 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 min-w-0">
+                        {a.mahighlight && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Crown className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                            </TooltipTrigger>
+                            <TooltipContent side="top">Eigen-Highlight (Person hat diese Pub im WebDB selbst markiert)</TooltipContent>
+                          </Tooltip>
+                        )}
+                        {!a.mahighlight && a.highlight && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Award className="h-3.5 w-3.5 text-orange-500 shrink-0" />
+                            </TooltipTrigger>
+                            <TooltipContent side="top">Highlight</TooltipContent>
+                          </Tooltip>
+                        )}
+                        <div className="min-w-0">
+                          <Link
+                            href={`/persons/${a.id}`}
+                            className={cn(
+                              'text-sm font-medium truncate hover:underline block transition-colors',
+                              isOeaw ? 'text-brand' : 'text-foreground hover:text-brand',
+                            )}
+                          >
+                            {a.degree_before && <span className="text-muted-foreground font-normal mr-1">{a.degree_before}</span>}
+                            {a.firstname} {a.lastname}
+                            {a.degree_after && <span className="text-muted-foreground font-normal ml-1">{a.degree_after}</span>}
+                            {a.deceased && <span className="text-muted-foreground/70 ml-2 text-xs">†</span>}
+                          </Link>
+                          {a.oestat3_name_de && (
+                            <p className="text-xs text-muted-foreground truncate">{a.oestat3_name_de}</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {!isOeaw && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                                Ext
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent side="top">Externe Person (kein OEAW-Personal)</TooltipContent>
+                          </Tooltip>
+                        )}
+                        {a.email && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <a href={`mailto:${a.email}`} className="text-muted-foreground/70 hover:text-brand">
+                                <Mail className="h-3.5 w-3.5" />
+                              </a>
+                            </TooltipTrigger>
+                            <TooltipContent side="top">{a.email}</TooltipContent>
+                          </Tooltip>
+                        )}
+                        {a.orcid && (
+                          <a
+                            href={`https://orcid.org/${a.orcid}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs font-mono text-muted-foreground/70 hover:text-[#a6ce39]"
+                          >
+                            ORCID
                           </a>
-                        </TooltipTrigger>
-                        <TooltipContent side="top">{a.email}</TooltipContent>
-                      </Tooltip>
-                    )}
-                    {a.orcid && (
-                      <a
-                        href={`https://orcid.org/${a.orcid}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs font-mono text-muted-foreground/70 hover:text-[#a6ce39]"
-                      >
-                        ORCID
-                      </a>
-                    )}
-                    {a.authorship && (
-                      <Badge variant="outline" className="text-[10px]">{a.authorship}</Badge>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ul>
+                        )}
+                        {a.authorship && (
+                          <Badge variant="outline" className="text-[10px]">{a.authorship}</Badge>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            {pub.citation && (
+              <div
+                className={cn(
+                  'text-xs text-muted-foreground leading-relaxed',
+                  pub.authors_resolved && pub.authors_resolved.length > 0
+                    ? 'border-t border-border/60 pt-3'
+                    : '',
+                )}
+              >
+                <SectionLabel>Vollständige Autor:innen-Angabe (laut Zitation)</SectionLabel>
+                <p className="mt-1 whitespace-pre-wrap">{pub.citation}</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
