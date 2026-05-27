@@ -8,6 +8,7 @@ import {
   Mail, Crown, Newspaper,
 } from 'lucide-react';
 import type { PublicationWithRelations } from '@/lib/shared/types';
+import { cn } from '@/lib/shared/utils';
 import { doiToUrl } from '@/lib/shared/doi-utils';
 import {
   SOURCE_LABELS,
@@ -159,31 +160,44 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
           )}
         </div>
 
-        {/* Institutes inline */}
+        {/* Institutes inline. Derived chips (author-affiliation fallback for
+            the ~4% of pubs WebDB didn't claim) render dashed + italic to
+            flag the difference; tooltip notes "(via Co-Autor:in)". Mirrors
+            the OrgunitChips treatment in components/publication-table.tsx so
+            list and detail stay visually consistent. */}
         {pub.orgunits && pub.orgunits.length > 0 && (
           <div className="flex flex-wrap items-center gap-1.5 text-sm">
             <Building2 className="h-3.5 w-3.5 text-muted-foreground/70" />
-            {pub.orgunits.map((o) => (
-              <Tooltip key={o.id}>
-                <TooltipTrigger asChild>
-                  {o.url_de ? (
-                    <a
-                      href={o.url_de}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="rounded-md bg-muted hover:bg-muted/80 px-2 py-0.5 text-xs font-medium text-foreground transition-colors"
-                    >
-                      {o.akronym_de || o.name_de}
-                    </a>
-                  ) : (
-                    <span className="rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-foreground">
-                      {o.akronym_de || o.name_de}
-                    </span>
-                  )}
-                </TooltipTrigger>
-                <TooltipContent side="top" className="max-w-xs">{o.name_de}</TooltipContent>
-              </Tooltip>
-            ))}
+            {pub.orgunits.map((o) => {
+              const derived = o.source === 'author_affiliation';
+              const chipClass = derived
+                ? 'rounded-md border border-dashed border-muted-foreground/40 italic text-muted-foreground/80 px-2 py-0.5 text-xs font-medium transition-colors'
+                : 'rounded-md bg-muted hover:bg-muted/80 px-2 py-0.5 text-xs font-medium text-foreground transition-colors';
+              const label = o.akronym_de || o.name_de;
+              return (
+                <Tooltip key={o.id}>
+                  <TooltipTrigger asChild>
+                    {o.url_de ? (
+                      <a
+                        href={o.url_de}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={chipClass}
+                      >
+                        {label}
+                      </a>
+                    ) : (
+                      <span className={chipClass}>{label}</span>
+                    )}
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-xs">
+                    {o.name_de}
+                    {derived ? ' (via Co-Autor:in)' : ''}
+                  </TooltipContent>
+                </Tooltip>
+              );
+            })}
+            <InfoBubble id="orgunit_chip" size="sm" />
           </div>
         )}
 

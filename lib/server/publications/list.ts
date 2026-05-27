@@ -103,6 +103,9 @@ async function fetchOestat6IdsByDomain(
 // `orgunits[].source` distinguishes WebDB attribution (`attributed`) from
 // the press-triage derivation that fills in when an OEAW author co-authored
 // but WebDB didn't claim the paper for any unit (`author_affiliation`).
+// `orgunits[].url_de` is shipped because the same chip-fetch (the
+// `publication_orgunit_context` view) feeds the detail page, which renders
+// each chip as a link. List view ignores it.
 // See lib/server/db/migrations/.../publication_orgunit_context_view.sql.
 export type PublicationListItem = Publication & {
   publication_type_lookup: { name_de: string; name_en: string } | null;
@@ -110,6 +113,7 @@ export type PublicationListItem = Publication & {
     id: string;
     akronym_de: string | null;
     name_de: string;
+    url_de: string | null;
     source: 'attributed' | 'author_affiliation';
   }>;
   press_release: PressRelease | null;

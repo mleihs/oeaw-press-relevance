@@ -256,11 +256,23 @@ export interface OrgunitPublication {
   highlight: boolean;
 }
 
-/** A publication with all related entities joined in. Used by the detail view. */
+/** A publication with all related entities joined in. Used by the detail view.
+ *
+ *  `orgunits` carries the press-triage chip shape from
+ *  `publication_orgunit_context`: direct WebDB attribution
+ *  (`source: 'attributed'`) plus the author-affiliation fallback for the ~4 %
+ *  of pubs WebDB didn't claim for any unit. Narrow on purpose — the UI only
+ *  reads id/akronym/name/url, so we don't ship the full Orgunit DTO. */
 export interface PublicationWithRelations extends Publication {
   publication_type_lookup?: PublicationType | null;
   authors_resolved?: Array<Person & { authorship: string | null; highlight: boolean; mahighlight: boolean }>;
-  orgunits?: Orgunit[];
+  orgunits?: Array<{
+    id: string;
+    akronym_de: string | null;
+    name_de: string;
+    url_de: string | null;
+    source: 'attributed' | 'author_affiliation';
+  }>;
   projects?: Project[];
 }
 

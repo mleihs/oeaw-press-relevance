@@ -20,12 +20,15 @@ export type PublicationRow = typeof publications.$inferSelect;
 
 // Detail-page join graph. Consumed by `fetch.ts` (single-row read for
 // `/api/publications/[id]`). Wide on purpose: detail page needs authors,
-// orgunits, projects, press_releases, and the publication_types lookup row.
+// projects, press_releases, and the publication_types lookup row. Orgunit
+// chips come from the publication_orgunit_context view via
+// `findOrgunitContextByPubIds` — that's the single read-path for orgunit
+// context across list and detail, so derived (author-affiliation) chips
+// stay consistent between the two surfaces.
 const DETAIL_WITH = {
   publicationTypeRef: true,
   pressReleases: true,
   personPublications: { with: { person: true } },
-  orgunitPublications: { with: { orgunit: true } },
   publicationProjects: { with: { project: true } },
 } as const;
 
@@ -230,6 +233,10 @@ export const publicationsRepo = {
    * user has filtered to specific orgunits, the chip list per row is
    * narrowed to that filter — keeps the chip and the filter telling the
    * same story without re-coupling the JOIN graph at the Drizzle layer.
+   *
+   * `url_de` is included so the detail page can render each chip as a link
+   * to the institute homepage without a second join. List view ignores it
+   * (current chips are non-link); ~50 bytes per chip on the wire.
    */
   async findOrgunitContextByPubIds(
     pubIds: string[],
@@ -241,6 +248,7 @@ export const publicationsRepo = {
         id: string;
         akronym_de: string | null;
         name_de: string;
+        url_de: string | null;
         source: 'attributed' | 'author_affiliation';
       }>
     >
@@ -251,6 +259,7 @@ export const publicationsRepo = {
         id: string;
         akronym_de: string | null;
         name_de: string;
+        url_de: string | null;
         source: 'attributed' | 'author_affiliation';
       }>
     >();
@@ -266,10 +275,11 @@ export const publicationsRepo = {
       id: string;
       akronym_de: string | null;
       name_de: string;
+      url_de: string | null;
       source: 'attributed' | 'author_affiliation';
     }>(
       sql`
-        SELECT poc.publication_id, o.id, o.akronym_de, o.name_de, poc.source
+        SELECT poc.publication_id, o.id, o.akronym_de, o.name_de, o.url_de, poc.source
         FROM publication_orgunit_context poc
         JOIN orgunits o ON o.id = poc.orgunit_id
         WHERE poc.publication_id = ANY(${pubIds})
@@ -286,6 +296,7 @@ export const publicationsRepo = {
         id: r.id,
         akronym_de: r.akronym_de,
         name_de: r.name_de,
+        url_de: r.url_de,
         source: r.source,
       });
       map.set(r.publication_id, list);

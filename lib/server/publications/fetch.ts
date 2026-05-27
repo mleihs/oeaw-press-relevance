@@ -6,7 +6,6 @@ import type {
   PublicationWithRelations,
 } from '@/lib/shared/types';
 import {
-  orgunitToApi,
   personToApi,
   projectToApi,
   publicationToApi,
@@ -15,11 +14,13 @@ import {
 
 /**
  * Fetches a publication with the full relation graph for the detail page:
- * publication_type lookup, authors with highlight flags, orgunits with
- * highlight flag, projects, and the press_releases collection. The result
- * is flattened into `PublicationWithRelations` (`authors_resolved`,
- * `orgunits`, `projects`, `press_release`) so the UI doesn't have to repeat
- * the join traversal.
+ * publication_type lookup, authors, projects, and the press_releases
+ * collection. Orgunit chips come from the `publication_orgunit_context` view
+ * (same read-path as the list, so direct WebDB attribution + the
+ * author-affiliation fallback stay consistent between list and detail).
+ * The result is flattened into `PublicationWithRelations`
+ * (`authors_resolved`, `orgunits`, `projects`, `press_release`) so the UI
+ * doesn't have to repeat the join traversal.
  *
  * Repo returns the raw Drizzle row with embedded relations; this function
  * owns the per-feature flattening + DTO mapping. Missing row → `null` so
@@ -31,7 +32,13 @@ import {
 export async function getPublicationById(
   pubId: string,
 ): Promise<PublicationWithRelations | null> {
-  const row = await publicationsRepo.findByIdDetail(pubId);
+  // Parallel: the main relation graph and the view-backed orgunit chips.
+  // Without the parallel call the orgunit lookup would block on the
+  // findByIdDetail result even though it only needs the pubId.
+  const [row, orgunitContextByPub] = await Promise.all([
+    publicationsRepo.findByIdDetail(pubId),
+    publicationsRepo.findOrgunitContextByPubIds([pubId]),
+  ]);
 
   if (!row) return null;
 
@@ -56,14 +63,8 @@ export async function getPublicationById(
       mahighlight: pp.mahighlight,
     }));
 
-  const orgunits: PublicationWithRelations['orgunits'] = (
-    row.orgunitPublications ?? []
-  )
-    .filter(
-      (op): op is typeof op & { orgunit: NonNullable<typeof op.orgunit> } =>
-        op.orgunit !== null,
-    )
-    .map((op) => orgunitToApi(op.orgunit));
+  const orgunits: PublicationWithRelations['orgunits'] =
+    orgunitContextByPub.get(pubId) ?? [];
 
   const projects: PublicationWithRelations['projects'] = (
     row.publicationProjects ?? []
