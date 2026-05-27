@@ -265,9 +265,15 @@ export const publicationsRepo = {
     >();
     if (pubIds.length === 0) return map;
 
+    // `sql.param(arr)::uuid[]` binds the whole array as one PG parameter so
+    // `ANY(...)` sees an array on the right side. Without `sql.param`, the
+    // Drizzle sql tag expands JS arrays into `($1, $2, …)` (IN-clause shape),
+    // which Postgres rejects with "op ANY/ALL (array) requires array on
+    // right side". Same workaround as findIdsByOestat6 (see the comment
+    // around that helper for the Phase-3 latent-bug background).
     const filterSql =
       orgunitFilterIds.length > 0
-        ? sql`AND poc.orgunit_id = ANY(${orgunitFilterIds})`
+        ? sql`AND poc.orgunit_id = ANY(${sql.param(orgunitFilterIds)}::uuid[])`
         : sql``;
 
     const rows = await db.execute<{
@@ -282,7 +288,7 @@ export const publicationsRepo = {
         SELECT poc.publication_id, o.id, o.akronym_de, o.name_de, o.url_de, poc.source
         FROM publication_orgunit_context poc
         JOIN orgunits o ON o.id = poc.orgunit_id
-        WHERE poc.publication_id = ANY(${pubIds})
+        WHERE poc.publication_id = ANY(${sql.param(pubIds)}::uuid[])
         ${filterSql}
         ORDER BY poc.publication_id,
                  CASE poc.source WHEN 'attributed' THEN 0 ELSE 1 END,
