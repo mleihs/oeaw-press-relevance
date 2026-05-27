@@ -1,10 +1,15 @@
 import { NextResponse } from 'next/server';
 import { apiError, withApiError } from '@/lib/server/http';
 import { syncUpcomingEvents, EventsSyncConfigError } from '@/lib/server/events/sync';
+import { getEnv } from '@/lib/server/env';
 
 export const POST = withApiError(async () => {
   try {
-    const result = await syncUpcomingEvents();
+    const env = getEnv();
+    const result = await syncUpcomingEvents({
+      mysqlHost: env.WEBDB_MYSQL_HOST,
+      llmFallbackEnabled: env.EVENTS_LLM_FALLBACK_ENABLED,
+    });
     return NextResponse.json(result);
   } catch (err) {
     if (err instanceof EventsSyncConfigError) {

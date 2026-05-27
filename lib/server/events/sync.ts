@@ -11,7 +11,6 @@
 
 import { and, gte, notInArray, sql } from 'drizzle-orm';
 import { db, events as eventsTable } from '@/lib/server/db';
-import { getEnv } from '@/lib/server/env';
 import {
   fetchTypo3Events,
   normalizeTypo3Event,
@@ -29,7 +28,21 @@ export interface EventsSyncResult {
   ms: number;
 }
 
-/** Thrown when WEBDB_MYSQL_HOST is unset. The API route maps this to a 503
+/** Caller-supplied config — the function itself no longer reads getEnv()
+ *  so the same code path serves both the HTTP route (which resolves these
+ *  from getEnv) and the CLI script (scripts/sync-events.ts, which loads
+ *  values from .env.local + ~/.config/oeaw-press-release/prod-credentials
+ *  depending on --target). Decoupling at the function boundary keeps the
+ *  CLI from triggering the app's full env validator. */
+export interface SyncOptions {
+  /** WEBDB_MYSQL_HOST. Falsy → early-exit with EventsSyncConfigError. */
+  mysqlHost: string | undefined;
+  /** EVENTS_LLM_FALLBACK_ENABLED. When true, sync calls the LLM cascade
+   *  for events with no extracted location (~12% of rows). */
+  llmFallbackEnabled: boolean;
+}
+
+/** Thrown when mysqlHost is missing. The API route maps this to a 503
  *  with a friendly message; any other MySQL error (connection refused,
  *  timeout) escapes as a 500 via withApiError so logs catch it. */
 export class EventsSyncConfigError extends Error {
@@ -39,13 +52,15 @@ export class EventsSyncConfigError extends Error {
   }
 }
 
-export async function syncUpcomingEvents(): Promise<EventsSyncResult> {
+export async function syncUpcomingEvents(
+  options: SyncOptions,
+): Promise<EventsSyncResult> {
   const startedAt = Date.now();
 
-  // Boot-time env validator allows WEBDB_MYSQL_HOST to be empty (the sync
-  // is opt-in); validate at the request boundary instead so /events still
-  // works in read-only mode without it.
-  if (!getEnv().WEBDB_MYSQL_HOST) {
+  // mysqlHost is opt-in at the env level (boot validator allows it empty
+  // because /events stays bedienbar without sync); enforce here at the
+  // boundary instead so the read path doesn't carry this dependency.
+  if (!options.mysqlHost) {
     throw new EventsSyncConfigError(
       'WEBDB_MYSQL_HOST ist nicht gesetzt — der MySQL-Sync ist deaktiviert. Setze die Variable in .env.local, um Events aus der WEBDB zu ziehen.',
     );
@@ -75,9 +90,9 @@ export async function syncUpcomingEvents(): Promise<EventsSyncResult> {
 
   // Phase-2 fallback: ask DeepSeek (via OpenRouter) for the ~12% events
   // whose location the cheerio walker couldn't extract. Off by default;
-  // enable via EVENTS_LLM_FALLBACK_ENABLED. Mutates `normalized` in place
-  // so the UPSERT below picks up the filled-in locationTitle.
-  const llmLocationsFilled = getEnv().EVENTS_LLM_FALLBACK_ENABLED
+  // caller decides via SyncOptions.llmFallbackEnabled. Mutates `normalized`
+  // in place so the UPSERT below picks up the filled-in locationTitle.
+  const llmLocationsFilled = options.llmFallbackEnabled
     ? await fillMissingLocationsViaLlm(normalized)
     : 0;
 

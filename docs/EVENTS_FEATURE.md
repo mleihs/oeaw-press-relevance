@@ -190,6 +190,40 @@ predicate from the same single scan.
   `WEBDB_MYSQL_*` first, falls back to legacy unprefixed `MYSQL_*` —
   both the script and the app land at the same container.
 
+### Re-syncing prod
+
+Prod-Vercel cannot reach the TYPO3 MySQL container (it lives on the
+developer machine), so the `/api/events/sync` HTTP path is unusable in
+production. The canonical write path for prod is the CLI wrapper
+`scripts/sync-events.ts`, run from the dev machine where TYPO3 is
+reachable:
+
+```bash
+npm run sync-events                          # → local Supabase
+npm run sync-events -- --target=prod         # → prod Supabase (asks y/N)
+npm run sync-events -- --target=prod --yes   # CI / unattended
+```
+
+Prod credentials are sourced from `~/.config/oeaw-press-release/
+prod-credentials` via `scripts/lib/db.mjs` — the same convention used
+by `backfill-venue`, `enrich-orphans`, `recompute-press-scores`. The
+script overrides `DATABASE_URL` at process level so a shell-level
+shadow value cannot misdirect a prod-targeted run; `.env.local`
+provides the rest (WEBDB_MYSQL_*, GATE_*, OPENROUTER_API_KEY).
+
+`syncUpcomingEvents()` takes its env as a `SyncOptions` parameter
+rather than reading `getEnv()` internally, so the CLI doesn't drag the
+HTTP-route's full env-validator (GATE_TOKEN, SERVICE_ROLE, …) into a
+context where it has nothing to validate. The HTTP route resolves
+`SyncOptions` from `getEnv()`; the CLI resolves it from `process.env`
+after the target switch.
+
+The sync UPSERT only updates TYPO3-sourced columns (see `sync.ts`
+`onConflictDoUpdate.set`), so maintainer state (`decision`,
+`decided_at`, `flag_notes`, `created_at`) is per-environment by
+construction — re-running against prod never overwrites press-team
+triage progress.
+
 ## Related docs
 
 - `docs/WEBDB_IMPORT.md` — broader WebDB pipeline (publications side)
