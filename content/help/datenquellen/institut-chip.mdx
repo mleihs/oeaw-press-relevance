@@ -1,0 +1,74 @@
+---
+title: Institut-Chip
+description: Wie die OEAW-Institut-Zuordnung an einer Publikation entsteht — direkte WebDB-Attribution plus Ableitung aus dem Anstellungsverhältnis einer Co-Autor:in, wenn WebDB nichts hergibt.
+---
+
+An jeder Publikation kann eine **Liste von OEAW-Instituten** angezeigt werden:
+kleine graue Kürzel-Chips wie `ÖAI`, `IMP`, `ACDH`. Sie sind der primäre Anker
+für die Press-Triage — das Institut ist die Stelle, an der man eine Story
+ankündigen, eine Pressemitteilung schreiben oder eine Pressekonferenz
+verabreden kann.
+
+## Wo es angezeigt wird {#anzeige}
+
+- **Dashboard, Top-Publikationen:** als Klartext-Suffix nach der Autor:in
+  („Wilken, Dennis | ÖAI").
+- **Publikationsliste:** als Chip-Reihe in der Meta-Zeile der jeweiligen
+  Publikation. Auf Mobilgeräten bis zu 3, auf Desktop bis zu 2 Chips; der Rest
+  als `+N`-Indikator.
+- **Detail-Seite:** als vollständige Liste mit Klartext-Namen.
+
+## Zwei Quellen, ein Chip {#quellen}
+
+Press-Triage interessiert sich für **jede plausible OEAW-Verbindung**, nicht
+nur die formale Zuschreibung. Die App vereinigt deshalb zwei Datenquellen in
+einem Chip — visuell unterscheidbar:
+
+### Vollflächiger Chip: direkte WebDB-Zuordnung {#attributed}
+
+In der WebDB können Institute Publikationen **editorial beanspruchen**: das
+Paper landet in `orgunit_publications`. Die meisten Pubs (~96&nbsp;%) haben
+mindestens eine solche Zuordnung. Das ist die offizielle institutionelle
+Eigentümerschaft.
+
+### Gestrichelter, kursiver Chip: aus Co-Autor:innen abgeleitet {#author-affiliation}
+
+Für rund 4&nbsp;% der Pubs ist `orgunit_publications` leer — typisch:
+externe:r Lead-Autor:in, eine OEAW-Person als Co-Autor:in. Diese Pubs
+würden ohne Chip dastehen, obwohl ein realer OEAW-Ansprechpartner
+existiert.
+
+In diesen Fällen leitet die App das Institut über die Anstellung der
+Co-Autor:innen ab (Person → `orgunit_persons` → Orgunit) und zeigt es als
+gestrichelten, kursiven Chip an. Tooltip: „… (via Co-Autor:in)".
+
+### Warum nicht *immer* die Ableitung dazu? {#warum-nicht-immer}
+
+Wenn WebDB ein Paper expressis verbis dem IMP zugeordnet hat und ein
+Co-Autor:in von dort gerade ans ÖAI gewechselt ist, dann ist das ÖAI nicht
+„der Kontakt" für dieses Paper — das IMP ist es. Die WebDB-Zuordnung ist
+eine bewusste editoriale Entscheidung; sie zu „erweitern" wäre Lärm.
+Deshalb: Ableitung schlägt nur dann zu, wenn `orgunit_publications` für
+diese Publikation **leer** ist.
+
+## Datenmodell {#datenmodell}
+
+Die Ableitungs-Logik lebt zentral in der SQL-View
+`publication_orgunit_context`:
+
+```sql
+SELECT publication_id, orgunit_id, 'attributed' AS source
+FROM orgunit_publications
+UNION ALL
+SELECT DISTINCT pp.publication_id, op.orgunit_id, 'author_affiliation' AS source
+FROM person_publications pp
+JOIN orgunit_persons op ON op.person_id = pp.person_id
+WHERE NOT EXISTS (
+  SELECT 1 FROM orgunit_publications opub
+  WHERE opub.publication_id = pp.publication_id
+);
+```
+
+Die `source`-Spalte wird durch die ganze Read-Pipeline gereicht und steuert
+das Chip-Styling im UI. Schreibender Zugriff geht weiterhin direkt gegen
+`orgunit_publications` (ETL/WebDB-Import); die View ist read-only.

@@ -99,9 +99,19 @@ async function fetchOestat6IdsByDomain(
 // flattened shape: full Publication + mini publication-type lookup + mini
 // orgunit chips + a single (DE-preferred) press_release. The orgunit/type
 // projections are deliberately narrower than the full DTOs (payload size).
+//
+// `orgunits[].source` distinguishes WebDB attribution (`attributed`) from
+// the press-triage derivation that fills in when an OEAW author co-authored
+// but WebDB didn't claim the paper for any unit (`author_affiliation`).
+// See lib/server/db/migrations/.../publication_orgunit_context_view.sql.
 export type PublicationListItem = Publication & {
   publication_type_lookup: { name_de: string; name_en: string } | null;
-  orgunits: Array<{ id: string; akronym_de: string | null; name_de: string }>;
+  orgunits: Array<{
+    id: string;
+    akronym_de: string | null;
+    name_de: string;
+    source: 'attributed' | 'author_affiliation';
+  }>;
   press_release: PressRelease | null;
 };
 
@@ -379,16 +389,21 @@ export async function listPublications(
       : Promise.resolve(0),
   ]);
 
+  // Press-triage orgunit chips come from publication_orgunit_context (the
+  // SQL view that unions direct attribution + transitive author-affiliation
+  // as fallback). One batched fetch by pub-id keeps it to a single extra
+  // round-trip even on a 50-row page. The embed-orgunit filter (active
+  // when the user filtered by orgunit_id) is passed through so the chip
+  // list and the active filter keep telling the same story.
+  const pubIds = mainRows.map((r) => r.id);
+  const orgunitContextByPub = await publicationsRepo.findOrgunitContextByPubIds(
+    pubIds,
+    orgunitFilterIds,
+  );
+
   // ---------- flatten ----------
   const flattened: PublicationListItem[] = mainRows.map((row) => {
-    const orgunitsMini = (row.orgunitPublications ?? [])
-      .map((op) => op.orgunit)
-      .filter((o): o is NonNullable<typeof o> => o !== null)
-      .map((o) => ({
-        id: o.id,
-        akronym_de: o.akronymDe,
-        name_de: o.nameDe,
-      }));
+    const orgunitsMini = orgunitContextByPub.get(row.id) ?? [];
 
     const prs = (row.pressReleases ?? []).map(pressReleaseToApi);
     const press_release: PressRelease | null =

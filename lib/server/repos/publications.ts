@@ -222,6 +222,77 @@ export const publicationsRepo = {
     return ids;
   },
 
+  /**
+   * Press-triage orgunit chips for a batch of publication IDs, reading from
+   * the publication_orgunit_context view: direct attribution + transitive
+   * author-affiliation as fallback (see the view migration for the why).
+   * `orgunitFilterIds` mirrors the existing list-page semantic: when the
+   * user has filtered to specific orgunits, the chip list per row is
+   * narrowed to that filter — keeps the chip and the filter telling the
+   * same story without re-coupling the JOIN graph at the Drizzle layer.
+   */
+  async findOrgunitContextByPubIds(
+    pubIds: string[],
+    orgunitFilterIds: string[] = [],
+  ): Promise<
+    Map<
+      string,
+      Array<{
+        id: string;
+        akronym_de: string | null;
+        name_de: string;
+        source: 'attributed' | 'author_affiliation';
+      }>
+    >
+  > {
+    const map = new Map<
+      string,
+      Array<{
+        id: string;
+        akronym_de: string | null;
+        name_de: string;
+        source: 'attributed' | 'author_affiliation';
+      }>
+    >();
+    if (pubIds.length === 0) return map;
+
+    const filterSql =
+      orgunitFilterIds.length > 0
+        ? sql`AND poc.orgunit_id = ANY(${orgunitFilterIds})`
+        : sql``;
+
+    const rows = await db.execute<{
+      publication_id: string;
+      id: string;
+      akronym_de: string | null;
+      name_de: string;
+      source: 'attributed' | 'author_affiliation';
+    }>(
+      sql`
+        SELECT poc.publication_id, o.id, o.akronym_de, o.name_de, poc.source
+        FROM publication_orgunit_context poc
+        JOIN orgunits o ON o.id = poc.orgunit_id
+        WHERE poc.publication_id = ANY(${pubIds})
+        ${filterSql}
+        ORDER BY poc.publication_id,
+                 CASE poc.source WHEN 'attributed' THEN 0 ELSE 1 END,
+                 o.akronym_de NULLS LAST
+      `,
+    );
+
+    for (const r of rows) {
+      const list = map.get(r.publication_id) ?? [];
+      list.push({
+        id: r.id,
+        akronym_de: r.akronym_de,
+        name_de: r.name_de,
+        source: r.source,
+      });
+      map.set(r.publication_id, list);
+    }
+    return map;
+  },
+
   async findPressReleasedIds(): Promise<Set<string>> {
     const rows = await db
       .select({ publicationId: pressReleasesTable.publicationId })

@@ -370,7 +370,10 @@ function MobilePublicationCard({
           <span className="text-[10px] text-muted-foreground/70">{pub.published_at.slice(0, 4)}</span>
         )}
         {pub.orgunits && pub.orgunits.length > 0 && (
-          <OrgunitChips orgunits={pub.orgunits} max={2} />
+          <span className="inline-flex items-center gap-1">
+            <OrgunitChips orgunits={pub.orgunits} max={2} />
+            <InfoBubble id="orgunit_chip" size="sm" />
+          </span>
         )}
         {showEnrichment && (
           <>
@@ -542,8 +545,9 @@ function PublicationRow({
             </p>
           )}
           {pub.orgunits && pub.orgunits.length > 0 && (
-            <div className="mt-1">
+            <div className="mt-1 inline-flex items-center gap-1">
               <OrgunitChips orgunits={pub.orgunits} max={3} />
+              <InfoBubble id="orgunit_chip" size="sm" />
             </div>
           )}
         </td>
@@ -674,23 +678,46 @@ function OrgunitChips({
   orgunits,
   max = 3,
 }: {
-  orgunits: Array<{ id: string; akronym_de: string | null; name_de: string }>;
+  orgunits: Array<{
+    id: string;
+    akronym_de: string | null;
+    name_de: string;
+    source?: 'attributed' | 'author_affiliation';
+  }>;
   max?: number;
 }) {
   const visible = orgunits.slice(0, max);
   const overflow = orgunits.length - visible.length;
   return (
     <span className="inline-flex flex-wrap items-center gap-1">
-      {visible.map((o) => (
-        <Tooltip key={o.id}>
-          <TooltipTrigger asChild>
-            <span className="inline-flex items-center rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-              {o.akronym_de || o.name_de.slice(0, 12)}
-            </span>
-          </TooltipTrigger>
-          <TooltipContent side="top" className="max-w-xs">{o.name_de}</TooltipContent>
-        </Tooltip>
-      ))}
+      {visible.map((o) => {
+        const derived = o.source === 'author_affiliation';
+        return (
+          <Tooltip key={o.id}>
+            <TooltipTrigger asChild>
+              <span
+                className={cn(
+                  'inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium',
+                  // Derived (author-affiliation): dashed border + italic +
+                  // muted background. Visually flags that this isn't a direct
+                  // WebDB attribution — see the orgunit_chip InfoBubble for
+                  // the full explanation. Direct (attributed) keeps the
+                  // existing solid-muted chip styling.
+                  derived
+                    ? 'border border-dashed border-muted-foreground/40 italic text-muted-foreground/80'
+                    : 'bg-muted text-muted-foreground',
+                )}
+              >
+                {o.akronym_de || o.name_de.slice(0, 12)}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-xs">
+              {o.name_de}
+              {derived ? ' (via Co-Autor:in)' : ''}
+            </TooltipContent>
+          </Tooltip>
+        );
+      })}
       {overflow > 0 && (
         <span className="inline-flex items-center rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
           +{overflow}

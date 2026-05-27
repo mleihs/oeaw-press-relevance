@@ -1369,6 +1369,45 @@ export const EXPL = {
     ),
   },
 
+  // ─── Institut-Chip (orgunit_publications + Co-Autor-Ableitung) ────────────
+  orgunit_chip: {
+    title: 'Institut-Chip',
+    body: (
+      <>
+        <Para>
+          Die kleinen grauen Kürzel an einer Publikation sind die zugeordneten
+          OEAW-Institute (Akronym <Code>akronym_de</Code> aus <Code>orgunits</Code>).
+          Eine Publikation kann mehrere Institute haben — z.B. wenn Forschende
+          aus unterschiedlichen Häusern gemeinsam publizieren.
+        </Para>
+        <Para>
+          Zwei Quellen, gleicher Chip — aber visuell unterschieden:
+        </Para>
+        <Para>
+          <strong>Vollflächiger Chip</strong> = direkte WebDB-Zuordnung
+          (<Code>orgunit_publications</Code>). Ein Institut hat das Paper
+          editorial in seinem Output beansprucht.
+        </Para>
+        <Para>
+          <strong>Gestrichelter, kursiver Chip</strong> = abgeleitet aus dem
+          Anstellungsverhältnis einer Co-Autor:in. Das passiert bei rund 4&nbsp;%
+          der Pubs: Paper steht in WebDB ohne Institutszuordnung, aber eine
+          Co-Autor:in arbeitet aktuell an einem OEAW-Institut. Für die
+          Press-Triage ist diese Verbindung relevant — ein realer
+          OEAW-Ansprechpartner für die Story.
+        </Para>
+      </>
+    ),
+    note: (
+      <Para>
+        Quelle der Logik: SQL-View <Code>publication_orgunit_context</Code>.
+        Direkte Zuordnung gewinnt; die Ableitung greift nur, wenn das Paper
+        in WebDB <em>keinem</em> Institut zugeordnet ist (kein Übermalen
+        editorischer Entscheidungen).
+      </Para>
+    ),
+  },
+
   // ─── Journal / Venue ─────────────────────────────────────────────────────
   venue: {
     title: 'Journal / Venue',
@@ -1829,6 +1868,7 @@ export const EXPL_KB_MAP: Partial<Record<keyof typeof EXPL, KbAnchor>> = {
   source_semantic_scholar:   { path: '/help/datenquellen/quellen-uebersicht', hash: 'source-semantic-scholar' },
   source_pdf:                { path: '/help/datenquellen/quellen-uebersicht', hash: 'source-pdf' },
   venue:                     { path: '/help/datenquellen/venue' },
+  orgunit_chip:              { path: '/help/datenquellen/institut-chip' },
 
   // ─── press-releases/ ───────────────────────────────────────────────────────
   pr_stat_total:             { path: '/help/press-releases/seiten-tour', hash: 'total' },
