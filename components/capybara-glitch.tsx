@@ -39,14 +39,21 @@ interface CapybaraGlitchProps {
   /** Sizing/layout classes for the outer container (it sets position+overflow). */
   className?: string;
   /**
-   * Forwarded to both `next/image` elements. Required: these are `fill`
-   * images over multi-MB pencil PNGs, so without an explicit `sizes` Next
-   * assumes 100vw and ships a ~1000px+ variant — slow to first paint on a
-   * weak connection (the gate/dashboard capybara then renders blank until
-   * the bytes arrive). Pass the real display width, e.g. "140px".
+   * Forwarded to every rendered `next/image` (2 or 3, depending on
+   * `restCyberSrc`). Required: these are `fill` images over multi-MB
+   * pencil PNGs, so without an explicit `sizes` Next assumes 100vw and
+   * ships a ~1000px+ variant — slow to first paint on a weak connection
+   * (the gate/dashboard capybara then renders blank until the bytes
+   * arrive). Pass the real display width, e.g. "140px".
    */
   sizes: string;
-  /** Forwarded to both Image components. */
+  /**
+   * `priority` is forwarded to the LCP candidates only: the `old` image
+   * (LCP on the once-per-day boot-sequence run) and `restCyberSrc` when
+   * provided (LCP on every other load). The intermediate alpha cyber
+   * never paints before user input — it lives behind the boot animation
+   * — so flagging it `priority` would dilute the browser's fetch hint.
+   */
   priority?: boolean;
 }
 
@@ -55,10 +62,18 @@ interface CapybaraGlitchProps {
  * 10-second analog-CRT meltdown (chromatic split, slice tears, two VHS
  * collapses, invert/contrast flashes, scanline + scan-sweep overlay).
  *
- * The PNGs are expected to be alpha-channel preprocessed (paper transparent,
- * pencil-darkness as alpha) so the glitch animation's filter/transform/clip-path
- * chain cannot break a mix-blend-mode (which would isolate inside the new
- * stacking context and flash white). See scripts/preprocess-capybara-alpha.mjs.
+ * The animated layers (`oldSrc`, `cyberSrc`) MUST be alpha-channel
+ * preprocessed PNGs (paper transparent, pencil-darkness as alpha) so the
+ * glitch animation's filter/transform/clip-path chain cannot break a
+ * mix-blend-mode (which would isolate inside the new stacking context and
+ * flash white). See scripts/preprocess-capybara-alpha.mjs.
+ *
+ * Optional `restCyberSrc` is the *non-alpha* parchment-baked PNG that
+ * replaces the alpha cyber image in the resting state, where the alpha
+ * version's variable-transparency strokes would otherwise mix with the
+ * page background and read washed-out. The rest layer is hidden during
+ * 'old' and 'glitch', so the animated filter chain still runs on the
+ * alpha PNGs above it. See dashboard-client.tsx for the canonical use.
  */
 export function CapybaraGlitch({
   oldSrc,
@@ -128,7 +143,8 @@ export function CapybaraGlitch({
     <div className={cn('relative overflow-hidden', className)}>
       {/* OLD image. Visible in 'old' phase, animates out during 'glitch',
           fades to opacity 0 in 'cyber'. The transition-opacity smooths the
-          'cyber' ↔ 'old' direct switch (used when daily-trigger flips). */}
+          'cyber' ↔ 'old' direct switch (used when daily-trigger flips).
+          LCP candidate on the once-per-day boot-sequence load → priority. */}
       <div
         className={cn(
           'absolute inset-0 transition-opacity duration-200',
@@ -148,10 +164,11 @@ export function CapybaraGlitch({
         />
       </div>
 
-      {/* CYBER image. Hidden in 'old', animates in during 'glitch'. In the
-          resting cyber phase we either keep this (no restCyberSrc) or fade
-          it out below the richer non-alpha rest image (the parchment
-          version that matches the lightbox). */}
+      {/* CYBER (alpha) image. Hidden in 'old', animates in during 'glitch'.
+          In the resting cyber phase: either stays visible (no restCyberSrc)
+          OR fades out behind the richer non-alpha rest image below. Never a
+          LCP candidate — never first-paint visible — so `priority` is
+          intentionally NOT forwarded here. */}
       <div
         className={cn(
           'absolute inset-0 transition-opacity duration-200',
@@ -167,14 +184,14 @@ export function CapybaraGlitch({
           sizes={sizes}
           className="object-contain"
           style={{ objectFit: 'contain' }}
-          priority={priority}
         />
       </div>
 
       {/* Resting cyber image (non-alpha, parchment-baked). Mounted only when
           the consumer opted in via `restCyberSrc`. Hidden during 'old' and
           'glitch' phases so the filter/transform animation runs on the
-          alpha PNGs above. Fades in at the cyber phase. */}
+          alpha PNGs above it. Fades in at the cyber phase. LCP candidate on
+          every load after the once-per-day glitch is done → priority. */}
       {restCyberSrc && (
         <div
           className={cn(
