@@ -11,16 +11,14 @@ import type { PublicationWithRelations } from '@/lib/shared/types';
 import { cn } from '@/lib/shared/utils';
 import { decodeHtmlBlock } from '@/lib/shared/html-utils';
 import { matchAuthorByName } from '@/lib/shared/publication-display';
+import { EnrichmentSourceBadge } from '@/components/enrichment-source-badge';
 import { CitationCard } from './citation-card';
 import { doiToUrl } from '@/lib/shared/doi-utils';
 import {
-  SOURCE_LABELS,
-  SOURCE_BADGE_CLASSES as SOURCE_COLORS,
   STATUS_LABELS,
   STATUS_COLORS,
   OA_LABELS,
 } from '@/lib/shared/constants';
-import { EXPL } from '@/lib/client/explanations';
 import { getScoreBandClass, getScoreBandStoryLabel } from '@/lib/shared/score-utils';
 import { venueDisplayLabel } from '@/lib/shared/venue-registry';
 import { ScoreBar } from '@/components/score-bar';
@@ -36,15 +34,6 @@ import { SectionLabel } from '@/components/section-label';
 import { VenueDisplay } from '@/components/venue-display';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { PressReferenceCard } from './press-reference-card';
-
-// Dynamic-key lookup for source bubbles: maps an enrichment-source slug
-// (`crossref`, `openalex`, …) to the matching EXPL entry. Returns null if
-// no atomar entry exists — keeps the component silent for unknown sources.
-function SourceInfoBubble({ source }: { source: string }) {
-  const explId = `source_${source}` as keyof typeof EXPL;
-  if (!(explId in EXPL)) return null;
-  return <InfoBubble id={explId} size="sm" />;
-}
 
 interface Props {
   pub: PublicationWithRelations;
@@ -612,13 +601,7 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
               <SectionLabel className="mb-2">Quellen</SectionLabel>
               <div className="flex flex-wrap gap-1.5">
                 {pub.enriched_source.split('+').map((src) => (
-                  <span
-                    key={src}
-                    className={`inline-flex items-center rounded-md px-2.5 py-1 text-xs font-medium ${SOURCE_COLORS[src] || 'bg-muted text-muted-foreground'}`}
-                  >
-                    {SOURCE_LABELS[src] || src}
-                    <SourceInfoBubble source={src} />
-                  </span>
+                  <EnrichmentSourceBadge key={src} source={src} />
                 ))}
               </div>
             </div>

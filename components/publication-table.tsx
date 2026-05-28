@@ -15,6 +15,7 @@ import { HaikuBlock } from './haiku-block';
 import { VenueLine } from './venue-line';
 import { MeistertaskButton } from '@/components/meistertask-button';
 import { EmptyState } from './empty-state';
+import { EnrichmentSourceBadge } from '@/components/enrichment-source-badge';
 import { PublicationFlag } from './publication-flag';
 import { DecisionToolbar } from './decision-toolbar';
 import { DecisionBadge, decisionAccentClass } from './decision-badge';
@@ -38,7 +39,6 @@ import {
   LLM_MODELS,
   STATUS_LABELS,
   STATUS_COLORS,
-  SOURCE_LABELS,
   SOURCE_BADGE_CLASSES as SOURCE_COLOR,
 } from '@/lib/shared/constants';
 import {
@@ -757,13 +757,7 @@ function ExpandedDetail({ pub, showScores }: { pub: Publication; showScores?: bo
             <SectionLabel>Enrichment-Quellen</SectionLabel>
             <div className="flex flex-wrap gap-1.5">
               {pub.enriched_source.split('+').map((src) => (
-                <span
-                  key={src}
-                  className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${SOURCE_COLOR[src] || 'bg-muted text-muted-foreground'}`}
-                >
-                  {SOURCE_LABELS[src] || src}
-                  <SourceInfoBubble source={src} />
-                </span>
+                <EnrichmentSourceBadge key={src} source={src} />
               ))}
             </div>
           </div>
@@ -848,11 +842,6 @@ function ExpandedDetail({ pub, showScores }: { pub: Publication; showScores?: bo
   );
 }
 
-function SourceInfoBubble({ source }: { source: string }) {
-  const explId = `source_${source}` as keyof typeof EXPL;
-  if (!(explId in EXPL)) return null;
-  return <InfoBubble id={explId} size="sm" />;
-}
 
 function SnippetDisplay({ text }: { text: string }) {
   const [expanded, setExpanded] = useState(false);
