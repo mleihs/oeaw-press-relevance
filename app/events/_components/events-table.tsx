@@ -7,6 +7,7 @@ import { EventFlag } from './event-flag';
 import { buildOeawSearchUrl } from '../_lib/build-search-url';
 import { eventDateFmt, eventTimeFmt, isSameLocalDay } from '../_lib/event-format';
 import { cn } from '@/lib/shared/utils';
+import { decodeHtmlBlock } from '@/lib/shared/html-utils';
 import type { Event } from '@/lib/server/events/to-api';
 
 interface Props {
@@ -90,8 +91,8 @@ function EventRowView({ event }: { event: Event }) {
           </div>
         )}
         {event.teaser && (
-          <p className="mt-1 ml-5 text-xs text-muted-foreground line-clamp-2 leading-snug">
-            {event.teaser}
+          <p className="mt-1 ml-5 text-xs text-muted-foreground line-clamp-2 leading-snug whitespace-pre-wrap">
+            {decodeHtmlBlock(event.teaser)}
           </p>
         )}
       </td>

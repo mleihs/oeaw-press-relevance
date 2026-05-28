@@ -27,6 +27,7 @@ import {
   sanitizeEventInformation,
   stripHtmlToText,
 } from '@/lib/server/events/html-utils';
+import { decodeHtmlBlock } from '@/lib/shared/html-utils';
 import type { Event } from '@/lib/server/events/to-api';
 
 export function EventDetail({ event }: { event: Event }) {
@@ -62,8 +63,8 @@ export function EventDetail({ event }: { event: Event }) {
         </div>
         <h1 className="text-2xl font-bold leading-tight">{event.title}</h1>
         {event.teaser && (
-          <p className="text-muted-foreground text-sm leading-relaxed">
-            {event.teaser}
+          <p className="text-muted-foreground text-sm leading-relaxed whitespace-pre-wrap">
+            {decodeHtmlBlock(event.teaser)}
           </p>
         )}
       </header>

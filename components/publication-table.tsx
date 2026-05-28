@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Publication } from '@/lib/shared/types';
 import { doiToUrl } from '@/lib/shared/doi-utils';
-import { displayTitle } from '@/lib/shared/html-utils';
+import { decodeHtmlBlock, displayTitle } from '@/lib/shared/html-utils';
 import { displayAuthor } from '@/lib/shared/publication-display';
 import { buildTaskUrl } from '@/lib/shared/meistertask-urls';
 import { cn } from '@/lib/shared/utils';
@@ -733,7 +733,11 @@ function ExpandedDetail({ pub, showScores }: { pub: Publication; showScores?: bo
       <div className="space-y-3">
         <div>
           <SectionLabel>Zusammenfassung</SectionLabel>
-          <p className="text-sm">{pub.enriched_abstract || pub.abstract || 'Keine Zusammenfassung verfügbar'}</p>
+          <p className="text-sm whitespace-pre-wrap">
+            {pub.enriched_abstract || pub.abstract
+              ? decodeHtmlBlock(pub.enriched_abstract || pub.abstract || '')
+              : 'Keine Zusammenfassung verfügbar'}
+          </p>
         </div>
         {pub.doi && (
           <div>

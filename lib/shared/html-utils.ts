@@ -1,54 +1,97 @@
 /**
- * Decode HTML entities and convert common markup to Unicode.
+ * HTML decoding helpers for fields ingested from WebDB, Pure (Elsevier)
+ * and enrichment APIs (CrossRef / OpenAlex). All output is plain text —
+ * no `dangerouslySetInnerHTML` required; XSS-safe by construction.
  *
- * Publication titles from the ÖAW database often contain escaped HTML like:
+ * Two shapes:
+ *   - `decodeHtmlTitle`: inline, collapses ALL whitespace to single spaces.
+ *     Use for titles and single-line strings.
+ *   - `decodeHtmlBlock`: preserves document line structure by mapping `<br>`
+ *     and block-element close tags to newlines BEFORE the tag-strip pass,
+ *     then collapses horizontal whitespace per line. Use for citation,
+ *     summary, abstract — anything rendered with `whitespace-pre-wrap`.
+ *
+ * Both share a preprocessing step that decodes HTML entities and converts
+ * `<sub>` / `<sup>` markup to Unicode subscript / superscript characters,
+ * so scientific notation in enrichment data (`Cu<sub>54</sub>Zr<sub>46</sub>`,
+ * `e<sup>+</sup>e<sup>-</sup>`) survives the strip.
+ *
+ * Pure (Elsevier) HTML — the dominant pattern in the citation column —
+ * follows the documented `<div class="rendering rendering_<contentType>
+ * rendering_<contentType>_<style>">` wrapper, with `<span><strong>$TITLE
+ * </strong></span> / $AUTHORS <br/>in: <span>$JOURNAL</span>, …`. The
+ * generic strip handles it cleanly because the structural information
+ * (slash separator, "in:", commas) is text, not markup.
+ * https://adk.elsevierpure.com/ws/api/documentation/user-guide/working-with-types.html
+ *
+ * Publication titles from the WebDB sometimes ship escaped HTML like
  *   e&lt;SUP&gt;+&lt;/SUP&gt;e&lt;SUP&gt;-&lt;/SUP&gt;
- * which should display as: e⁺e⁻
+ * which becomes e⁺e⁻ after entity-decode + sub/sup→Unicode.
  */
 
 const SUPERSCRIPT_MAP: Record<string, string> = {
-  '0': '\u2070', '1': '\u00B9', '2': '\u00B2', '3': '\u00B3',
-  '4': '\u2074', '5': '\u2075', '6': '\u2076', '7': '\u2077',
-  '8': '\u2078', '9': '\u2079', '+': '\u207A', '-': '\u207B',
-  '=': '\u207C', '(': '\u207D', ')': '\u207E', 'n': '\u207F',
-  'i': '\u2071',
+  '0': '⁰', '1': '¹', '2': '²', '3': '³',
+  '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷',
+  '8': '⁸', '9': '⁹', '+': '⁺', '-': '⁻',
+  '=': '⁼', '(': '⁽', ')': '⁾', 'n': 'ⁿ',
+  'i': 'ⁱ',
 };
 
 const SUBSCRIPT_MAP: Record<string, string> = {
-  '0': '\u2080', '1': '\u2081', '2': '\u2082', '3': '\u2083',
-  '4': '\u2084', '5': '\u2085', '6': '\u2086', '7': '\u2087',
-  '8': '\u2088', '9': '\u2089', '+': '\u208A', '-': '\u208B',
-  '=': '\u208C', '(': '\u208D', ')': '\u208E',
+  '0': '₀', '1': '₁', '2': '₂', '3': '₃',
+  '4': '₄', '5': '₅', '6': '₆', '7': '₇',
+  '8': '₈', '9': '₉', '+': '₊', '-': '₋',
+  '=': '₌', '(': '₍', ')': '₎',
 };
 
 function toUnicode(text: string, map: Record<string, string>): string {
   return text.split('').map(ch => map[ch] ?? ch).join('');
 }
 
-export function decodeHtmlTitle(raw: string): string {
-  let s = raw;
-
-  // Step 1: Decode HTML entities → real HTML tags
-  s = s.replace(/&lt;/gi, '<')
-       .replace(/&gt;/gi, '>')
-       .replace(/&amp;/gi, '&')
-       .replace(/&quot;/gi, '"')
-       .replace(/&#39;/gi, "'")
-       .replace(/&apos;/gi, "'");
-
-  // Step 2: Convert <SUP>...</SUP> → Unicode superscript
+/** Shared preprocessing — common to inline and block decoders. */
+function decodeEntitiesAndScripts(raw: string): string {
+  let s = raw
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&amp;/gi, '&')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&apos;/gi, "'")
+    .replace(/&nbsp;/gi, ' ');
   s = s.replace(/<sup>(.*?)<\/sup>/gi, (_, inner) => toUnicode(inner, SUPERSCRIPT_MAP));
-
-  // Step 3: Convert <SUB>...</SUB> → Unicode subscript
   s = s.replace(/<sub>(.*?)<\/sub>/gi, (_, inner) => toUnicode(inner, SUBSCRIPT_MAP));
-
-  // Step 4: Strip any remaining HTML tags
-  s = s.replace(/<[^>]+>/g, '');
-
-  // Step 5: Collapse whitespace
-  s = s.replace(/\s+/g, ' ').trim();
-
   return s;
+}
+
+export function decodeHtmlTitle(raw: string): string {
+  let s = decodeEntitiesAndScripts(raw);
+  s = s.replace(/<[^>]+>/g, '');
+  s = s.replace(/\s+/g, ' ').trim();
+  return s;
+}
+
+/**
+ * Block-text variant of `decodeHtmlTitle`. Preserves the document's line
+ * structure: `<br>` becomes `\n`, `</p>` becomes `\n\n`, `</li>` becomes
+ * `\n`. Horizontal whitespace within a line gets collapsed; newlines do
+ * not. Runs of more than two consecutive blank lines are capped at one.
+ *
+ * Use for citation, summary, abstract — fields rendered with
+ * `whitespace-pre-wrap`. Returns plain text — safe to interpolate into
+ * JSX without `dangerouslySetInnerHTML`.
+ */
+export function decodeHtmlBlock(raw: string): string {
+  let s = decodeEntitiesAndScripts(raw);
+  s = s.replace(/<br\s*\/?>/gi, '\n');
+  s = s.replace(/<\/p\s*>/gi, '\n\n');
+  s = s.replace(/<\/li\s*>/gi, '\n');
+  s = s.replace(/<[^>]+>/g, '');
+  s = s
+    .split('\n')
+    .map((line) => line.replace(/[ \t]+/g, ' ').trim())
+    .join('\n');
+  s = s.replace(/\n{3,}/g, '\n\n');
+  return s.trim();
 }
 
 /**

@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import type { PublicationWithRelations } from '@/lib/shared/types';
 import { cn } from '@/lib/shared/utils';
+import { decodeHtmlBlock } from '@/lib/shared/html-utils';
 import { doiToUrl } from '@/lib/shared/doi-utils';
 import {
   SOURCE_LABELS,
@@ -341,13 +342,13 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
             {pub.summary_de && (
               <div>
                 <SectionLabel>Deutsch</SectionLabel>
-                <p className="text-sm leading-relaxed whitespace-pre-wrap">{pub.summary_de}</p>
+                <p className="text-sm leading-relaxed whitespace-pre-wrap">{decodeHtmlBlock(pub.summary_de)}</p>
               </div>
             )}
             {pub.summary_en && pub.summary_en !== pub.summary_de && (
               <div>
                 <SectionLabel>English</SectionLabel>
-                <p className="text-sm leading-relaxed whitespace-pre-wrap">{pub.summary_en}</p>
+                <p className="text-sm leading-relaxed whitespace-pre-wrap">{decodeHtmlBlock(pub.summary_en)}</p>
               </div>
             )}
           </CardContent>
@@ -484,7 +485,7 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
                 )}
               >
                 <SectionLabel>Vollständige Autor:innen-Angabe (laut Zitation)</SectionLabel>
-                <p className="mt-1 whitespace-pre-wrap">{pub.citation}</p>
+                <p className="mt-1 whitespace-pre-wrap">{decodeHtmlBlock(pub.citation)}</p>
               </div>
             )}
           </CardContent>
@@ -612,8 +613,8 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
           {(pub.enriched_abstract || pub.abstract) && (
             <div>
               <SectionLabel>Abstract</SectionLabel>
-              <p className="text-sm leading-relaxed">
-                {pub.enriched_abstract || pub.abstract}
+              <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                {decodeHtmlBlock(pub.enriched_abstract || pub.abstract || '')}
               </p>
             </div>
           )}
