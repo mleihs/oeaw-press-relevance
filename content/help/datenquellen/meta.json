@@ -3,7 +3,6 @@
   "pages": [
     "quellen-uebersicht",
     "venue",
-    "institut-chip",
-    "specter2-embeddings"
+    "institut-chip"
   ]
 }

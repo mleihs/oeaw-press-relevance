@@ -4,7 +4,9 @@
     "storyscore",
     "dimensionen",
     "score-baender",
-    "score-fehlt",
-    "pitch-felder"
+    "press-similarity",
+    "specter2-embeddings",
+    "pitch-felder",
+    "score-fehlt"
   ]
 }

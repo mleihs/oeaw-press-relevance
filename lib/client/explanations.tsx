@@ -1377,11 +1377,11 @@ export const EXPL = {
         <Para>
           Die kleinen grauen Kürzel an einer Publikation sind die zugeordneten
           OEAW-Institute (Akronym <Code>akronym_de</Code> aus <Code>orgunits</Code>).
-          Eine Publikation kann mehrere Institute haben — z.B. wenn Forschende
+          Eine Publikation kann mehrere Institute haben, etwa wenn Forschende
           aus unterschiedlichen Häusern gemeinsam publizieren.
         </Para>
         <Para>
-          Zwei Quellen, gleicher Chip — aber visuell unterschieden:
+          Zwei Quellen für denselben Chip, visuell unterschieden:
         </Para>
         <Para>
           <strong>Vollflächiger Chip</strong> = direkte WebDB-Zuordnung
@@ -1393,7 +1393,7 @@ export const EXPL = {
           Anstellungsverhältnis einer Co-Autor:in. Das passiert bei rund 4&nbsp;%
           der Pubs: Paper steht in WebDB ohne Institutszuordnung, aber eine
           Co-Autor:in arbeitet aktuell an einem OEAW-Institut. Für die
-          Press-Triage ist diese Verbindung relevant — ein realer
+          Press-Triage ist diese Verbindung relevant: ein realer
           OEAW-Ansprechpartner für die Story.
         </Para>
       </>
@@ -1879,7 +1879,7 @@ export const EXPL_KB_MAP: Partial<Record<keyof typeof EXPL, KbAnchor>> = {
   pr_tab_orphans:            { path: '/help/press-releases/seiten-tour', hash: 'tab-orphans' },
   pub_score_column:          { path: '/help/scores/storyscore' },
   orphan_press_release:      { path: '/help/press-releases/orphans' },
-  press_similarity:          { path: '/help/press-releases/press-similarity' },
+  press_similarity:          { path: '/help/scores/press-similarity' },
 
   // ─── forscher-metriken/ ────────────────────────────────────────────────────
   count_high:                { path: '/help/forscher-metriken/metriken', hash: 'count-high' },

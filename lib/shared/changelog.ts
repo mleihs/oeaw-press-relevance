@@ -17,7 +17,7 @@ export const changelogEntries: ChangelogEntry[] = [
     category: 'neu',
     title: 'SPECTER2-Embeddings als zweite Bewertungs-Achse',
     body: 'Press-Similarity ist die SPECTER2-basierte semantische Nähe einer Pub zum historischen Press-Cluster, ein vom inhaltlichen Story Score unabhängiges Signal. Eigene Hilfe-Section beschreibt Modell, Trainings-Paper (Cohan 2020, Singh 2022), Vergleich zu OpenAI/SBERT/SciNCL und den Press-Cluster-Lernloop ohne Modell-Retraining.',
-    href: '/help/datenquellen/specter2-embeddings',
+    href: '/help/scores/specter2-embeddings',
   },
   {
     category: 'verbesserung',
