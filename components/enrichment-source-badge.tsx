@@ -1,5 +1,8 @@
-'use client';
-
+// No `'use client'` directive: this component uses no hooks of its own.
+// It renders InfoBubble (which is `'use client'`), so any importer that's a
+// server component would get this branch bundled to the client tree by
+// Next.js automatically — matching the codebase convention for
+// hook-less presentational components (cf. decision-badge.tsx).
 import { InfoBubble } from '@/components/info-bubble';
 import { EXPL } from '@/lib/client/explanations';
 import { SOURCE_LABELS, SOURCE_BADGE_CLASSES as SOURCE_COLORS } from '@/lib/shared/constants';

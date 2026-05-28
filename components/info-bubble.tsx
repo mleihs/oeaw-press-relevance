@@ -65,6 +65,33 @@ function useCanHover(): boolean {
  *
  * The whole component renders nothing when the user has globally disabled bubbles
  * via the nav toggle (useInfoBubblesEnabled).
+ *
+ * ## Spacing convention (callers, please honour)
+ *
+ * InfoBubble is intentionally margin-free. When it sits next to text or an
+ * icon, the parent container is responsible for the gap. The codebase
+ * standardises on `gap-1` on an `inline-flex` (or `flex`) `items-center`
+ * wrapper:
+ *
+ *     <span className="inline-flex items-center gap-1">
+ *       Label
+ *       <InfoBubble id="…" />
+ *     </span>
+ *
+ * Reason for the parent-owns-spacing rule: InfoBubble also gets used as a
+ * standalone child (table column headers, last cell in a row) where any
+ * built-in `ml-*` would push it off the grid. Modern Flexbox `gap` doesn't
+ * compound on standalone use, so it stays the safer default than baking
+ * a margin into the component.
+ *
+ * Composites that already bundle a label + colour + InfoBubble in the
+ * right layout — prefer these over rolling the wrapper yourself when the
+ * same visual pattern repeats across more than one file:
+ *
+ *   - `components/enrichment-source-badge.tsx` (CrossRef / OpenAlex /
+ *     Unpaywall / SemanticScholar / PDF source pills)
+ *   - `StatusBadge` (local in `components/publication-table.tsx`) for
+ *     enrichment status pills
  */
 export function InfoBubble({
   id,
