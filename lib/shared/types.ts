@@ -262,7 +262,14 @@ export interface OrgunitPublication {
  *  `publication_orgunit_context`: direct WebDB attribution
  *  (`source: 'attributed'`) plus the author-affiliation fallback for the ~4 %
  *  of pubs WebDB didn't claim for any unit. Narrow on purpose — the UI only
- *  reads id/akronym/name/url, so we don't ship the full Orgunit DTO. */
+ *  reads id/akronym/name/url, so we don't ship the full Orgunit DTO.
+ *
+ *  `parsed_citation` is set when `publications.citation` matched the Pure
+ *  (Elsevier) renderingHtml wrapper and the server-side parser was able to
+ *  lift structured fields out — null otherwise. The detail page uses it for
+ *  a richer citation block (bold title, italic venue, author list with
+ *  ÖAW authors linked); plain-text fallback via `decodeHtmlBlock(citation)`
+ *  applies when null. */
 export interface PublicationWithRelations extends Publication {
   publication_type_lookup?: PublicationType | null;
   authors_resolved?: Array<Person & { authorship: string | null; highlight: boolean; mahighlight: boolean }>;
@@ -274,6 +281,33 @@ export interface PublicationWithRelations extends Publication {
     source: 'attributed' | 'author_affiliation';
   }>;
   projects?: Project[];
+  parsed_citation?: ParsedCitation | null;
+}
+
+/** Pure renderingHtml content type, lifted from the outer `<div>` class list. */
+export type ParsedCitationType = 'researchoutput' | 'dataset' | 'unknown';
+
+/** One author entry from a parsed Pure citation, with the optional role
+ *  annotation ("Herausgeber:in", "Redakteur:in", …) lifted out of the
+ *  parens. `name` is plain text, already entity-decoded. */
+export interface ParsedCitationAuthor {
+  name: string;
+  role: string | null;
+}
+
+/** Structured projection of a Pure (Elsevier) renderingHtml citation.
+ *  Produced by `lib/server/publications/citation-parser.ts`. See that
+ *  module's header comment for the field-by-field semantics and the
+ *  fallback contract (null result → use `decodeHtmlBlock(citation)`). */
+export interface ParsedCitation {
+  type: ParsedCitationType;
+  subtype: string | null;
+  title: string;
+  authors: ParsedCitationAuthor[];
+  etAl: boolean;
+  venue: string | null;
+  venueKind: 'journal' | 'book-host' | null;
+  trailer: string | null;
 }
 
 export interface EnrichmentResult {

@@ -5,6 +5,7 @@ import type {
   PressRelease,
   PublicationWithRelations,
 } from '@/lib/shared/types';
+import { parseCitation } from './citation-parser';
 import {
   personToApi,
   projectToApi,
@@ -75,6 +76,12 @@ export async function getPublicationById(
     )
     .map((pp) => projectToApi(pp.project));
 
+  // Structured Pure-citation projection — null when the citation is plain
+  // text or any other format. The detail page uses it for the richer
+  // citation block; plain-text fallback (`decodeHtmlBlock`) covers the
+  // null case. Lift on detail fetch (one row) not list fetch (50 rows × ~3 KB).
+  const parsed_citation = parseCitation(row.citation);
+
   return {
     ...publicationToApi(row),
     press_release,
@@ -84,6 +91,7 @@ export async function getPublicationById(
     authors_resolved,
     orgunits,
     projects,
+    parsed_citation,
   };
 }
 

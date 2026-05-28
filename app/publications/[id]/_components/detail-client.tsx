@@ -10,6 +10,7 @@ import {
 import type { PublicationWithRelations } from '@/lib/shared/types';
 import { cn } from '@/lib/shared/utils';
 import { decodeHtmlBlock } from '@/lib/shared/html-utils';
+import { CitationCard } from './citation-card';
 import { doiToUrl } from '@/lib/shared/doi-utils';
 import {
   SOURCE_LABELS,
@@ -478,14 +479,28 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
             {pub.citation && (
               <div
                 className={cn(
-                  'text-xs text-muted-foreground leading-relaxed',
                   pub.authors_resolved && pub.authors_resolved.length > 0
                     ? 'border-t border-border/60 pt-3'
                     : '',
                 )}
               >
-                <SectionLabel>Vollständige Autor:innen-Angabe (laut Zitation)</SectionLabel>
-                <p className="mt-1 whitespace-pre-wrap">{decodeHtmlBlock(pub.citation)}</p>
+                {pub.parsed_citation ? (
+                  // Structured rendering for Pure (Elsevier) renderingHtml:
+                  // bold title, author list with ÖAW authors linked in
+                  // brand-blue, italic journal/host-book. ~45% of the corpus
+                  // hits this path.
+                  <CitationCard
+                    parsed={pub.parsed_citation}
+                    oeawAuthors={pub.authors_resolved ?? []}
+                  />
+                ) : (
+                  // Fallback: raw citation isn't Pure HTML, just decode the
+                  // entities + strip tags and dump as plain text.
+                  <div className="text-xs text-muted-foreground leading-relaxed">
+                    <SectionLabel>Vollständige Autor:innen-Angabe (laut Zitation)</SectionLabel>
+                    <p className="mt-1 whitespace-pre-wrap">{decodeHtmlBlock(pub.citation)}</p>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
