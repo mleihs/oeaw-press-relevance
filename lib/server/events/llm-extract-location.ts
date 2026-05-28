@@ -12,7 +12,7 @@
 import { z } from 'zod';
 import { log } from '@/lib/server/log';
 import { getEnv } from '@/lib/server/env';
-import { stripHtmlToText } from './html-utils';
+import { decodeHtmlBlock } from '@/lib/shared/html-utils';
 
 const ResponseSchema = z.object({
   location: z.string().nullable(),
@@ -57,7 +57,7 @@ export const extractLocationViaLlm: LlmLocationExtractor = async ({
     return null;
   }
   const model = env.EVENTS_LLM_FALLBACK_MODEL ?? 'deepseek/deepseek-chat';
-  const text = stripHtmlToText(eventInformation);
+  const text = decodeHtmlBlock(eventInformation);
   if (text.length < 10) return null;
 
   try {

@@ -15,7 +15,7 @@ import { TrendDelta } from './trend-delta';
 import { InfoBubble } from '@/components/info-bubble';
 import { LoadingState } from '@/components/loading-state';
 import { EmptyState } from '@/components/empty-state';
-import { displayTitle } from '@/lib/shared/html-utils';
+import { displayTitle } from '@/lib/shared/publication-display';
 import { Crown, Award, Medal, BookOpen } from 'lucide-react';
 
 interface LeaderboardTableProps {

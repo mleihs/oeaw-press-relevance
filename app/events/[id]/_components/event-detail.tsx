@@ -23,10 +23,7 @@ import {
   formatEventEndTail,
   isSameLocalDay,
 } from '@/app/events/_lib/event-format';
-import {
-  sanitizeEventInformation,
-  stripHtmlToText,
-} from '@/lib/server/events/html-utils';
+import { sanitizeEventInformation } from '@/lib/server/events/html-utils';
 import { decodeHtmlBlock } from '@/lib/shared/html-utils';
 import type { Event } from '@/lib/server/events/to-api';
 
@@ -132,7 +129,7 @@ export function EventDetail({ event }: { event: Event }) {
                 Beschreibung
               </h2>
               <div className="whitespace-pre-wrap text-sm leading-relaxed">
-                {stripHtmlToText(event.bodytext)}
+                {decodeHtmlBlock(event.bodytext)}
               </div>
             </CardContent>
           </Card>

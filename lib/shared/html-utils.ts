@@ -1,33 +1,64 @@
 /**
- * HTML decoding helpers for fields ingested from WebDB, Pure (Elsevier)
- * and enrichment APIs (CrossRef / OpenAlex). All output is plain text —
- * no `dangerouslySetInnerHTML` required; XSS-safe by construction.
+ * Plain-text decoders for HTML-bearing fields ingested from heterogeneous
+ * upstream sources (WebDB → Pure/Elsevier renderingHtml, TYPO3 RTE,
+ * CrossRef/OpenAlex JATS-style abstracts).
  *
- * Two shapes:
- *   - `decodeHtmlTitle`: inline, collapses ALL whitespace to single spaces.
- *     Use for titles and single-line strings.
- *   - `decodeHtmlBlock`: preserves document line structure by mapping `<br>`
- *     and block-element close tags to newlines BEFORE the tag-strip pass,
- *     then collapses horizontal whitespace per line. Use for citation,
- *     summary, abstract — anything rendered with `whitespace-pre-wrap`.
+ * ---------- Architecture Decision Record ----------
  *
- * Both share a preprocessing step that decodes HTML entities and converts
- * `<sub>` / `<sup>` markup to Unicode subscript / superscript characters,
- * so scientific notation in enrichment data (`Cu<sub>54</sub>Zr<sub>46</sub>`,
- * `e<sup>+</sup>e<sup>-</sup>`) survives the strip.
+ * Why hand-rolled regex (not `sanitize-html`, `html-to-text`, `cheerio`)?
  *
- * Pure (Elsevier) HTML — the dominant pattern in the citation column —
- * follows the documented `<div class="rendering rendering_<contentType>
- * rendering_<contentType>_<style>">` wrapper, with `<span><strong>$TITLE
- * </strong></span> / $AUTHORS <br/>in: <span>$JOURNAL</span>, …`. The
- * generic strip handles it cleanly because the structural information
- * (slash separator, "in:", commas) is text, not markup.
- * https://adk.elsevierpure.com/ws/api/documentation/user-guide/working-with-types.html
+ * Our inputs are *narrow and well-formed*:
+ *   • Pure renderingHtml — a documented `<div class="rendering_…">` wrapper
+ *     with predictable `<span>/<strong>/<br>` content.
+ *     https://adk.elsevierpure.com/ws/api/documentation/user-guide/working-with-types.html
+ *   • TYPO3 RTE — a curated allow-list of tags (covered by sanitize-html
+ *     for the one surface that renders structured HTML).
+ *   • Enrichment APIs — only sub/sup/italic markup for science notation.
  *
- * Publication titles from the WebDB sometimes ship escaped HTML like
- *   e&lt;SUP&gt;+&lt;/SUP&gt;e&lt;SUP&gt;-&lt;/SUP&gt;
- * which becomes e⁺e⁻ after entity-decode + sub/sup→Unicode.
+ * We only need: entity-decode, sub/sup → Unicode, drop-all-tags, preserve
+ * paragraph/line structure for block contexts. No DOM walking, no attribute
+ * parsing, no allow-listing. Regex is the right tool — small, client-safe,
+ * intent-clear.
+ *
+ * The pieces we DO delegate:
+ *   • Entity decoding → `html-entities`. Named entities (250+), decimal and
+ *     hex numeric, surrogate pairs — getting this right by hand is brittle;
+ *     the library is 3 KB gzip.
+ *   • HTML sanitization for `<dangerouslySetInnerHTML>` → `sanitize-html`
+ *     (separate module: `lib/server/events/html-utils.ts`). That is the
+ *     allow-list path, not a stripper. The two responsibilities stay split.
+ *   • Structural DOM extraction (event-info label-proximity walker) →
+ *     `cheerio` (in `lib/server/ingest/adapters/typo3-events.ts`).
+ *
+ * When a future use case needs DOM-level work (e.g. structured Pure-citation
+ * parsing for `{ title, authors, journal, …}` extraction), introduce
+ * `htmlparser2` or `cheerio` *for that consumer*; don't broaden these
+ * decoders.
+ *
+ * ---------- API ----------
+ *
+ *   • `decodeHtmlInline(s)`   — single-line output. Entities decoded,
+ *                                sub/sup → Unicode, tags stripped, all
+ *                                whitespace collapsed to single spaces.
+ *                                Use for: titles, names, single-cell text.
+ *
+ *   • `decodeHtmlBlock(s)`    — multi-line output. Same preprocessing as
+ *                                inline, but `<br>` → "\n", `</p>` → "\n\n",
+ *                                `</li>` → "\n" BEFORE tag-strip, and only
+ *                                horizontal whitespace gets collapsed per
+ *                                line. Pair with `whitespace-pre-wrap`.
+ *                                Use for: citation, summary, abstract,
+ *                                teaser, bodytext.
+ *
+ * Both accept `string | null | undefined` and return `''` for nullish input
+ * so call sites stay declarative (`decodeHtmlBlock(pub.citation)` instead
+ * of `pub.citation ? decode(pub.citation) : ''`).
+ *
+ * Output is plain text — safe to interpolate into JSX, never reaches
+ * `dangerouslySetInnerHTML`, XSS-clean by construction.
  */
+
+import { decode as decodeEntities } from 'html-entities';
 
 const SUPERSCRIPT_MAP: Record<string, string> = {
   '0': '⁰', '1': '¹', '2': '²', '3': '³',
@@ -45,25 +76,50 @@ const SUBSCRIPT_MAP: Record<string, string> = {
 };
 
 function toUnicode(text: string, map: Record<string, string>): string {
-  return text.split('').map(ch => map[ch] ?? ch).join('');
+  // Preserves any character not in the map (e.g., letters inside `<sup>exp</sup>`)
+  // as plain text. Partial conversion is honest: digits/+/- become Unicode,
+  // the rest remains readable.
+  return text.split('').map((ch) => map[ch] ?? ch).join('');
 }
 
-/** Shared preprocessing — common to inline and block decoders. */
+/**
+ * Common preprocessing pipeline:
+ *   1. Decode HTML entities (named + numeric, via `html-entities`).
+ *   2. Convert `<sub>…</sub>` / `<sup>…</sup>` to Unicode subscript /
+ *      superscript characters so chemical formulae (`Cu<sub>54</sub>Zr<sub>46</sub>`),
+ *      mathematical notation (`x<sup>2</sup>`) and particle annotations
+ *      (`e<sup>+</sup>e<sup>-</sup>`) survive the strip pass.
+ *
+ * Returns a string with all entities decoded and sub/sup wrappers
+ * converted; other tags remain in place for the caller's strip pass to
+ * remove.
+ */
 function decodeEntitiesAndScripts(raw: string): string {
-  let s = raw
-    .replace(/&lt;/gi, '<')
-    .replace(/&gt;/gi, '>')
-    .replace(/&amp;/gi, '&')
-    .replace(/&quot;/gi, '"')
-    .replace(/&#39;/gi, "'")
-    .replace(/&apos;/gi, "'")
-    .replace(/&nbsp;/gi, ' ');
-  s = s.replace(/<sup>(.*?)<\/sup>/gi, (_, inner) => toUnicode(inner, SUPERSCRIPT_MAP));
-  s = s.replace(/<sub>(.*?)<\/sub>/gi, (_, inner) => toUnicode(inner, SUBSCRIPT_MAP));
+  let s = decodeEntities(raw);
+  // Normalise non-breaking space (`&nbsp;` → U+00A0) to a regular space.
+  // Our output is plain text rendered with `whitespace-pre-wrap`; preserving
+  // NBSP would invisibly change line-wrap behaviour vs the source HTML and
+  // also makes string equality surprising for tests/consumers ("1010 Wien"
+  // looks identical but isn't). Same principle for zero-width space.
+  s = s.replace(/[ ​]/g, ' ');
+  s = s.replace(/<sup>(.*?)<\/sup>/gi, (_, inner: string) =>
+    toUnicode(inner, SUPERSCRIPT_MAP),
+  );
+  s = s.replace(/<sub>(.*?)<\/sub>/gi, (_, inner: string) =>
+    toUnicode(inner, SUBSCRIPT_MAP),
+  );
   return s;
 }
 
-export function decodeHtmlTitle(raw: string): string {
+/**
+ * Inline decoder: HTML → single-line plain text. All whitespace runs
+ * (including newlines) collapse to single spaces. Tags are dropped; their
+ * text content survives.
+ *
+ * Use for titles, names, anything that goes on one line.
+ */
+export function decodeHtmlInline(raw: string | null | undefined): string {
+  if (!raw) return '';
   let s = decodeEntitiesAndScripts(raw);
   s = s.replace(/<[^>]+>/g, '');
   s = s.replace(/\s+/g, ' ').trim();
@@ -71,16 +127,16 @@ export function decodeHtmlTitle(raw: string): string {
 }
 
 /**
- * Block-text variant of `decodeHtmlTitle`. Preserves the document's line
- * structure: `<br>` becomes `\n`, `</p>` becomes `\n\n`, `</li>` becomes
- * `\n`. Horizontal whitespace within a line gets collapsed; newlines do
- * not. Runs of more than two consecutive blank lines are capped at one.
+ * Block decoder: HTML → multi-line plain text. `<br>` / `</p>` / `</li>`
+ * become newlines BEFORE tag-strip so the document's line structure
+ * survives. Horizontal whitespace within each line collapses; newlines do
+ * not. More than two consecutive blank lines cap at one paragraph break.
  *
- * Use for citation, summary, abstract — fields rendered with
- * `whitespace-pre-wrap`. Returns plain text — safe to interpolate into
- * JSX without `dangerouslySetInnerHTML`.
+ * Use for citation, summary, abstract, teaser, bodytext — anything
+ * rendered with `whitespace-pre-wrap`.
  */
-export function decodeHtmlBlock(raw: string): string {
+export function decodeHtmlBlock(raw: string | null | undefined): string {
+  if (!raw) return '';
   let s = decodeEntitiesAndScripts(raw);
   s = s.replace(/<br\s*\/?>/gi, '\n');
   s = s.replace(/<\/p\s*>/gi, '\n\n');
@@ -92,43 +148,4 @@ export function decodeHtmlBlock(raw: string): string {
     .join('\n');
   s = s.replace(/\n{3,}/g, '\n\n');
   return s.trim();
-}
-
-/**
- * Returns the best display title for a publication.
- *
- * The WebDB import sometimes truncates titles at the first colon, leaving
- * generic stubs like "Wissenschaftliche Zusammenfassung" while the full title
- * including the subtitle lives only in the citation field. This heuristic
- * extends the title with the subtitle from the citation when that pattern is
- * confidently detected.
- *
- * Conservative match: only extends when the citation's title-segment starts
- * with exactly "<dbTitle>:" (case-insensitive). Anything else falls back to
- * the original — this avoids gluing author names or journal info onto the
- * title when the citation doesn't follow the expected format.
- */
-export function displayTitle(primary: string, citation: string | null | undefined): string {
-  const decoded = decodeHtmlTitle(primary);
-  if (!citation) return decoded;
-
-  const plain = decodeHtmlTitle(citation);
-
-  // Citation typically ends the title-segment at " / " before authors.
-  const titleSegment = plain.split(/\s+\/\s+/)[0].trim();
-
-  const expectedPrefix = decoded + ':';
-  if (
-    titleSegment.length > expectedPrefix.length &&
-    titleSegment.toLowerCase().startsWith(expectedPrefix.toLowerCase())
-  ) {
-    const extended = titleSegment.replace(/\.\s*$/, '');
-    // Sanity guard: extension > 260 chars probably means the citation didn't
-    // separate cleanly and we'd be appending bibliographic noise.
-    if (extended.length - decoded.length < 260) {
-      return extended;
-    }
-  }
-
-  return decoded;
 }

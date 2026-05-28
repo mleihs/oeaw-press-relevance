@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { getPublicationById } from '@/lib/server/publications/fetch';
-import { displayTitle } from '@/lib/shared/html-utils';
+import { displayTitle } from '@/lib/shared/publication-display';
 import { PublicationBreadcrumb } from './_components/breadcrumb';
 import { PublicationDetailClient } from './_components/detail-client';
 

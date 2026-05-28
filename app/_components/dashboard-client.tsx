@@ -30,8 +30,7 @@ import { CapybaraLightbox } from '@/components/capybara-lightbox';
 import { PublicationFlag } from '@/components/publication-flag';
 import { VenueLine } from '@/components/venue-line';
 import { AUTH_STORAGE_KEY, AUTH_SUCCESS_EVENT } from '@/lib/client/auth-events';
-import { displayTitle } from '@/lib/shared/html-utils';
-import { displayAuthor, displayInstitute } from '@/lib/shared/publication-display';
+import { displayAuthor, displayInstitute, displayTitle } from '@/lib/shared/publication-display';
 import {
   buildDashboardHref,
   DASHBOARD_PERIODS,

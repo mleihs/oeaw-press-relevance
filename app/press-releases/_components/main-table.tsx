@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { PressScoreBadge } from '@/components/score-bar';
 import { SimilarityIndicator } from '@/components/similarity-indicator';
 import { DecisionBadge } from '@/components/decision-badge';
-import { displayTitle } from '@/lib/shared/html-utils';
+import { displayTitle } from '@/lib/shared/publication-display';
 import { cn } from '@/lib/shared/utils';
 import type { PressReleaseWithPub } from '@/lib/server/press-releases/list';
 

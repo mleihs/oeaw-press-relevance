@@ -1,38 +1,12 @@
 import sanitizeHtml from 'sanitize-html';
 
-// Server-side HTML helpers for the events feature. Two complementary
-// operations on TYPO3 RTE output:
-//
-//   - `stripHtmlToText` returns plain text with paragraph + line-break
-//     structure preserved. Used for the bodytext column on the detail
-//     page, where we deliberately do NOT render structured HTML.
-//   - `sanitizeEventInformation` returns sanitised HTML (whitelist of
-//     a/p/br/h3-h6/ul/ol/li/strong/em/b/i/span) for the sidebar block,
-//     where we DO want the editor's link / list / heading structure.
-//
-// Both are server-only — keeps sanitize-html out of the client bundle.
-// The detail page consumes both through this single module so future
-// HTML-handling logic for events lands here, not scattered across UI
-// components.
-
-/** Best-effort HTML → plain text. Preserves paragraph and line-break
- *  structure via `\n` markers, decodes the five common entities, drops
- *  everything else. Pipe into a `whitespace-pre-wrap` div without
- *  `dangerouslySetInnerHTML`; XSS-free by construction. */
-export function stripHtmlToText(html: string): string {
-  return html
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<\/p>/gi, '\n\n')
-    .replace(/<[^>]+>/g, '')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
-}
+// Server-side HTML helpers for the events feature. The strip-to-text path
+// (formerly `stripHtmlToText`) lives in `lib/shared/html-utils.ts` as
+// `decodeHtmlBlock` — same intent, broader entity support, sub/sup→Unicode,
+// client-safe. This module keeps the sanitize path: the allow-list-based
+// transform used to render TYPO3 RTE output via dangerouslySetInnerHTML on
+// the event detail page. Stays server-only because `sanitize-html` is too
+// heavy for the client bundle and the only consumer is an RSC.
 
 /** Server-side HTML safelist for `tx_news_domain_model_news.event_information`.
  *  Editors at OEAW author this field in the TYPO3 RTE; the allow-list

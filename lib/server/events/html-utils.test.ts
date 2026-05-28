@@ -1,31 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { sanitizeEventInformation, stripHtmlToText } from './html-utils';
+import { sanitizeEventInformation } from './html-utils';
 
-describe('stripHtmlToText', () => {
-  it('preserves paragraph + line break structure as newlines', () => {
-    expect(stripHtmlToText('<p>A<br/>B</p><p>C</p>')).toBe('A\nB\n\nC');
-  });
-  it('decodes the five common entities', () => {
-    // Trailing &nbsp; → trailing space → trimmed off.
-    expect(stripHtmlToText('&amp; &lt; &gt; &quot; &#39; &nbsp;')).toBe(
-      '& < > " \'',
-    );
-  });
-  it('strips all tags but keeps script text content (it is not a sanitiser)', () => {
-    const out = stripHtmlToText(
-      '<p>safe</p><script>alert(1)</script><p>more</p>',
-    );
-    expect(out).not.toContain('script');
-    expect(out).toContain('safe');
-    expect(out).toContain('more');
-  });
-  it('collapses 3+ consecutive newlines to 2', () => {
-    expect(stripHtmlToText('<p>A</p><p></p><p></p><p>B</p>')).toBe('A\n\nB');
-  });
-  it('trims surrounding whitespace', () => {
-    expect(stripHtmlToText('   <p>x</p>   ')).toBe('x');
-  });
-});
+// `stripHtmlToText` was consolidated into `decodeHtmlBlock`
+// (lib/shared/html-utils.ts) — see that module's test file for its
+// coverage. This file keeps only the sanitize path because
+// `sanitize-html` stays server-only.
 
 describe('sanitizeEventInformation — XSS hardening', () => {
   it('strips <script> entirely (content included)', () => {
