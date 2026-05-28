@@ -534,7 +534,7 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
             <p className="font-medium">{errors.length} Batch-Fehler</p>
             <div className="max-h-[120px] overflow-y-auto">
               {errors.map((err, i) => (
-                <p key={i} className="text-amber-800 dark:text-amber-300">{err}</p>
+                <p key={i} className="opacity-80">{err}</p>
               ))}
             </div>
           </StatusBanner>
@@ -569,7 +569,7 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
           <StatusBanner variant="neutral" className="text-sm space-y-2 px-3 py-3">
             <p className="font-medium">Analyse abgebrochen</p>
             <div className="flex flex-wrap gap-2">
-              <Badge className="bg-muted text-muted-foreground hover:bg-muted">
+              <Badge variant="secondary">
                 {progress.processed} / {progress.total} verarbeitet
               </Badge>
               {progress.tokensUsed > 0 && (
@@ -603,10 +603,10 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
             <p className="font-medium">Fehler</p>
             <p>{errorMessage}</p>
             {apiKeyHint && (
-              <p className="text-xs text-red-700/80 dark:text-red-300/70 pt-1">Verwendeter Key: <span className="font-mono">{apiKeyHint}</span></p>
+              <p className="text-xs opacity-75 pt-1">Verwendeter Key: <span className="font-mono">{apiKeyHint}</span></p>
             )}
             {keyBalance && keyBalance.effectiveBudget !== null && (
-              <p className="text-xs text-red-700/80 dark:text-red-300/70">
+              <p className="text-xs opacity-75">
                 Budget: ${keyBalance.effectiveBudget.toFixed(4)} verfügbar
                 {keyBalance.accountBalance !== null && ` (Account: $${keyBalance.accountBalance.toFixed(2)}`}
                 {keyBalance.accountBalance !== null && keyBalance.limitRemaining !== null && `, Key-Limit: $${keyBalance.limitRemaining.toFixed(2)}`}
