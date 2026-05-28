@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { PressScoreBadge } from '@/components/score-bar';
 import { SimilarityIndicator } from '@/components/similarity-indicator';
 import { DecisionBadge } from '@/components/decision-badge';
+import { InfoBubble } from '@/components/info-bubble';
 import { displayTitle } from '@/lib/shared/publication-display';
 import { cn } from '@/lib/shared/utils';
 import type { PressReleaseWithPub } from '@/lib/server/press-releases/list';
@@ -102,8 +103,15 @@ function PressReleaseRow({
               {titleText ?? 'Kein Pub-Match'}
             </span>
             <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300 px-1.5 py-0.5 text-[10px] font-medium ring-1 ring-inset ring-amber-200 dark:ring-amber-500/30">
-              <AlertCircle className="h-2.5 w-2.5" />
+              {/* AlertCircle is decorative (status flag); the trailing
+                  InfoBubble carries the actual "why is this Pub missing
+                  from WebDB?" explanation — same dual-icon pattern as
+                  the orphans-list description card so callers across the
+                  page get a consistent rest-state alert + interactive
+                  help affordance. */}
+              <AlertCircle aria-hidden className="h-2.5 w-2.5" />
               Pub noch nicht in WebDB
+              <InfoBubble id="orphan_press_release" size="sm" />
             </span>
           </div>
         )}
