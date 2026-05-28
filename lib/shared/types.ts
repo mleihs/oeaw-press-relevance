@@ -295,6 +295,20 @@ export interface ParsedCitationAuthor {
   role: string | null;
 }
 
+/** A person name (editor, contributor, mentioned colleague) found in the
+ *  citation's trailer text that matched a row in the `persons` table.
+ *  Server-side enriched in `getPublicationById` after `parseCitation`. The
+ *  CitationCard turns these substrings into links so a press-team
+ *  reviewer can navigate to the person page in one click — same value
+ *  proposition as linking the OEAW authors in the main author list. */
+export interface ParsedCitationTrailerPerson {
+  /** Exact substring from the trailer text — case preserved so the
+   *  client-side replace can find it. */
+  name: string;
+  person_id: string;
+  external: boolean;
+}
+
 /** Structured projection of a Pure (Elsevier) renderingHtml citation.
  *  Produced by `lib/server/publications/citation-parser.ts`. See that
  *  module's header comment for the field-by-field semantics and the
@@ -312,6 +326,11 @@ export interface ParsedCitation {
   venue: string | null;
   venue_kind: 'journal' | 'book-host' | null;
   trailer: string | null;
+  /** Person names found INSIDE the trailer text (editors, contributors,
+   *  mentioned colleagues) that match a row in the `persons` table. The
+   *  CitationCard renders these substrings as links to /persons/{id}.
+   *  Always present (empty array when no matches). */
+  trailer_persons: ParsedCitationTrailerPerson[];
 }
 
 export interface EnrichmentResult {

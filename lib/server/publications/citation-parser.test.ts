@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseCitation } from './citation-parser';
+import { extractCandidateNames, parseCitation } from './citation-parser';
 
 describe('parseCitation', () => {
   it('returns null for null / undefined / empty / non-Pure input', () => {
@@ -28,6 +28,7 @@ describe('parseCitation', () => {
       venue: 'PLoS ONE',
       venue_kind: 'journal',
       trailer: 'Jahrgang 21, Nr. 4, e0346830, 17.04.2026, S. e0346830.',
+      trailer_persons: [],
     });
   });
 
@@ -96,5 +97,50 @@ describe('parseCitation', () => {
   it('returns null on malformed / partial Pure HTML (no <strong>)', () => {
     const html = '<div class="rendering rendering_researchoutput">no title here</div>';
     expect(parseCitation(html)).toBeNull();
+  });
+});
+
+describe('extractCandidateNames', () => {
+  it('returns empty for null / undefined / empty input', () => {
+    expect(extractCandidateNames(null)).toEqual([]);
+    expect(extractCandidateNames(undefined)).toEqual([]);
+    expect(extractCandidateNames('')).toEqual([]);
+  });
+
+  it('extracts capitalized name pairs from an editor-style trailer', () => {
+    const trailer = 'Ein Anderes Griechenland. Hrsg. / Birgitta Eder; Walter Gauß; Christoph Baier. 2023.';
+    const names = extractCandidateNames(trailer);
+    expect(names).toContain('Birgitta Eder');
+    expect(names).toContain('Walter Gauß');
+    expect(names).toContain('Christoph Baier');
+  });
+
+  it('deduplicates repeated names', () => {
+    const trailer = 'Hrsg. / Birgitta Eder; Walter Gauß. ... Birgitta Eder again.';
+    const names = extractCandidateNames(trailer);
+    expect(names.filter((n) => n === 'Birgitta Eder').length).toBe(1);
+  });
+
+  it('over-collects (false positives like book titles) — the DB lookup is the filter', () => {
+    // "Ein Anderes Griechenland" looks like a name to the regex; downstream
+    // SQL won't find a matching `persons` row, so this candidate gets
+    // dropped at the wire boundary. Documenting the intentional design.
+    expect(extractCandidateNames('Ein Anderes Griechenland.')).toContain('Ein Anderes Griechenland');
+  });
+
+  it('does not match single capitalized words', () => {
+    expect(extractCandidateNames('Athen . Hrsg.')).not.toContain('Athen');
+    expect(extractCandidateNames('Eder.')).not.toContain('Eder');
+  });
+
+  it('preserves the source-case of each match for downstream string-replace', () => {
+    const trailer = 'Foo. / BIRGITTA EDER; Walter gauss. ...';
+    const names = extractCandidateNames(trailer);
+    // Lower-case word like "gauss" doesn't match the capital-prefix pattern,
+    // ALL-CAPS like "BIRGITTA EDER" doesn't match either (lowercase chars
+    // after the initial cap are required). Honest documentation of the
+    // pattern's scope.
+    expect(names).not.toContain('BIRGITTA EDER');
+    expect(names).not.toContain('Walter gauss');
   });
 });

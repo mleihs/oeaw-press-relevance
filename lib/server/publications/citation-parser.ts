@@ -299,5 +299,42 @@ export function parseCitation(
     venue,
     venue_kind,
     trailer,
+    // Populated server-side in `getPublicationById` after the trailer is
+    // scanned for person-name candidates that match the `persons` table.
+    // The parser itself is pure / DB-less, so it leaves the slot empty.
+    trailer_persons: [],
   };
+}
+
+/**
+ * Capitalized-word-sequence pattern. Matches 2–4 consecutive German-name
+ * tokens (each starting with an upper-case letter, followed by 2+ lower-
+ * case, optionally with umlauts / ß). Used to extract person-name
+ * candidates from the citation trailer (editors after "Hrsg. /",
+ * contributors after "ed. by", co-authors, et al.).
+ *
+ * Boundary anchors use `\p{L}` lookarounds (with the `/u` flag) instead
+ * of `\b` because JS's ASCII word-boundary doesn't recognise `ß` /
+ * umlauts: "Walter Gauß" would otherwise drop because the post-ß
+ * boundary never matches. Unicode-letter lookarounds treat the German
+ * letter set as part of the word, so "Gauß;" terminates correctly.
+ *
+ * False positives ("Ein Anderes Griechenland", "Österreichisches
+ * Archäologisches Institut") are harmless: the downstream DB lookup
+ * filters them out — only candidates that match a real `persons` row
+ * survive into the wire shape.
+ */
+const NAME_CANDIDATE_RE =
+  /(?<![\p{L}])[A-ZÄÖÜ][a-zäöüß]{2,}(?:\s+[A-ZÄÖÜ][a-zäöüß]{2,}){1,3}(?![\p{L}])/gu;
+
+/**
+ * Extract person-name candidates from freeform text (typically the
+ * citation trailer). Returns a deduplicated list, case preserved from the
+ * source so the client-side replace can find each occurrence.
+ */
+export function extractCandidateNames(text: string | null | undefined): string[] {
+  if (!text) return [];
+  const matches = text.match(NAME_CANDIDATE_RE);
+  if (!matches) return [];
+  return [...new Set(matches)];
 }
