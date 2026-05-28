@@ -233,11 +233,23 @@ export function DashboardClient({ data, period, sortBy }: DashboardClientProps) 
         <div className="relative flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-5">
             <div className="relative shrink-0">
-              {/* Dark-mode reading aid: the pencil art is dark, so on the
-                  near-black page background it would vanish. A soft light
-                  pedestal behind it (dark mode only — light mode already
-                  sits on white) keeps the artwork legible without turning
-                  the whole hero into a bright slab. Decorative. */}
+              {/* Reading aid in both modes for the *alpha-channel* PNG.
+                  The dashboard renders the alpha-processed pencil sketch
+                  (lines as alpha) so the boot-sequence glitch's
+                  filter/transform/clip-path can animate without breaking
+                  mix-blend-modes. The trade-off: lighter strokes are
+                  near-transparent and blend straight into whatever
+                  page background sits behind them — dark-mode → dark
+                  → invisible; light-mode → white → washed out. The
+                  non-alpha PNG used by the lightbox has its parchment
+                  background baked in, hence no equivalent issue there.
+                  Two radial halos restore that backdrop here: white in
+                  dark mode, paper-cream (matching the lightbox PNG's
+                  baked tone) in light mode. */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute left-1/2 top-1/2 block h-48 w-48 -translate-x-1/2 -translate-y-1/2 rounded-full blur-xl bg-[radial-gradient(circle,_rgba(245,243,239,0.95)_0%,_rgba(245,243,239,0.55)_35%,_transparent_70%)] dark:hidden"
+              />
               <div
                 aria-hidden="true"
                 className="pointer-events-none absolute left-1/2 top-1/2 hidden h-48 w-48 -translate-x-1/2 -translate-y-1/2 rounded-full blur-xl bg-[radial-gradient(circle,_rgba(255,255,255,0.5)_0%,_rgba(255,255,255,0.22)_35%,_transparent_70%)] dark:block"
