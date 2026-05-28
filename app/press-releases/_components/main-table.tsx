@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowRight, AlertCircle, ExternalLink } from 'lucide-react';
+import { ArrowRight, ExternalLink } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { PressScoreBadge } from '@/components/score-bar';
@@ -103,13 +103,12 @@ function PressReleaseRow({
               {titleText ?? 'Kein Pub-Match'}
             </span>
             <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300 px-1.5 py-0.5 text-[10px] font-medium ring-1 ring-inset ring-amber-200 dark:ring-amber-500/30">
-              {/* AlertCircle is decorative (status flag); the trailing
-                  InfoBubble carries the actual "why is this Pub missing
-                  from WebDB?" explanation — same dual-icon pattern as
-                  the orphans-list description card so callers across the
-                  page get a consistent rest-state alert + interactive
-                  help affordance. */}
-              <AlertCircle aria-hidden className="h-2.5 w-2.5" />
+              {/* The amber chip carries the visual "alert" affordance
+                  on its own; a leading AlertCircle icon plus a trailing
+                  InfoBubble both rendered as small circular shapes in
+                  the same pill confused users (two icons → which one
+                  do I hover?). InfoBubble alone, dropped the alert
+                  icon. */}
               Pub noch nicht in WebDB
               <InfoBubble id="orphan_press_release" size="sm" />
             </span>
