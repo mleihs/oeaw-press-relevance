@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { TintBadge } from '@/components/tint-badge';
+import { StatusBanner } from '@/components/status-banner';
 import { CapybaraModalAvatar } from '@/components/capybara-modal-avatar';
 import { getApiHeaders, loadSettings } from '@/lib/client/stores/settings-store';
 import { LLM_MODELS } from '@/lib/shared/constants';
@@ -389,10 +390,13 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
                 </div>
               )}
               {keyBalance && keyBalance.effectiveBudget !== null && keyBalance.effectiveBudget < 0.50 && keyBalance.effectiveBudget >= 0.01 && (
-                <div className="flex items-center gap-1.5 text-xs text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-500/15 rounded px-2 py-1">
-                  <AlertCircle className="h-3 w-3 shrink-0" />
-                  <span>Niedriges Guthaben, bald Credits aufladen auf openrouter.ai/settings/credits</span>
-                </div>
+                <StatusBanner
+                  variant="warning"
+                  icon={<AlertCircle className="h-3 w-3 mt-0.5 shrink-0" />}
+                  className="gap-1.5"
+                >
+                  Niedriges Guthaben, bald Credits aufladen auf openrouter.ai/settings/credits
+                </StatusBanner>
               )}
             </div>
 
@@ -522,23 +526,24 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
 
         {/* Batch errors — show during running AND after complete/error */}
         {errors.length > 0 && (status === 'running' || status === 'complete' || status === 'cancelled' || status === 'error') && (
-          <div className="rounded-lg border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/[0.08] p-2 space-y-1">
-            <p className="text-xs font-medium text-amber-900 dark:text-amber-200 flex items-center gap-1">
-              <AlertCircle className="h-3 w-3" />
-              {errors.length} Batch-Fehler
-            </p>
+          <StatusBanner
+            variant="warning"
+            icon={<AlertCircle className="h-3 w-3 mt-0.5 shrink-0" />}
+            className="space-y-1"
+          >
+            <p className="font-medium">{errors.length} Batch-Fehler</p>
             <div className="max-h-[120px] overflow-y-auto">
               {errors.map((err, i) => (
-                <p key={i} className="text-xs text-amber-800 dark:text-amber-300">{err}</p>
+                <p key={i} className="text-amber-800 dark:text-amber-300">{err}</p>
               ))}
             </div>
-          </div>
+          </StatusBanner>
         )}
 
         {/* Complete summary */}
         {status === 'complete' && completeData && completeData.total > 0 && (
-          <div className="rounded-lg border border-green-200 dark:border-green-500/30 bg-green-50 dark:bg-green-500/[0.08] p-3 space-y-2">
-            <p className="text-sm font-medium text-green-800 dark:text-green-200">Analyse abgeschlossen</p>
+          <StatusBanner variant="success" className="text-sm space-y-2 px-3 py-3">
+            <p className="font-medium">Analyse abgeschlossen</p>
             <div className="flex flex-wrap gap-2">
               <TintBadge color="green">
                 {completeData.successful} analysiert
@@ -556,13 +561,13 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
                 <span>Kosten gesamt: ${completeData.cost.toFixed(4)}</span>
               </div>
             )}
-          </div>
+          </StatusBanner>
         )}
 
         {/* Cancelled summary */}
         {status === 'cancelled' && (
-          <div className="rounded-lg border bg-muted/50 p-3 space-y-2">
-            <p className="text-sm font-medium text-foreground">Analyse abgebrochen</p>
+          <StatusBanner variant="neutral" className="text-sm space-y-2 px-3 py-3">
+            <p className="font-medium">Analyse abgebrochen</p>
             <div className="flex flex-wrap gap-2">
               <Badge className="bg-muted text-muted-foreground hover:bg-muted">
                 {progress.processed} / {progress.total} verarbeitet
@@ -578,36 +583,37 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
                 </Badge>
               )}
             </div>
-          </div>
+          </StatusBanner>
         )}
 
         {/* Complete but nothing to analyze */}
         {status === 'complete' && completeData && completeData.total === 0 && errorMessage && (
-          <div className="rounded-lg border bg-muted/50 p-3">
-            <p className="text-sm text-foreground/80">{errorMessage}</p>
-          </div>
+          <StatusBanner variant="neutral" className="text-sm px-3 py-3">
+            <p className="text-foreground/80">{errorMessage}</p>
+          </StatusBanner>
         )}
 
         {/* Error display */}
         {status === 'error' && errorMessage && (
-          <div className="rounded-lg border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/[0.08] p-3 space-y-1">
-            <p className="text-sm font-medium text-red-700 dark:text-red-300 flex items-center gap-1">
-              <AlertCircle className="h-4 w-4" />
-              Fehler
-            </p>
-            <p className="text-sm text-red-600 dark:text-red-400">{errorMessage}</p>
+          <StatusBanner
+            variant="error"
+            icon={<AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />}
+            className="text-sm space-y-1 px-3 py-3"
+          >
+            <p className="font-medium">Fehler</p>
+            <p>{errorMessage}</p>
             {apiKeyHint && (
-              <p className="text-xs text-red-400 dark:text-red-300/70 pt-1">Verwendeter Key: <span className="font-mono">{apiKeyHint}</span></p>
+              <p className="text-xs text-red-700/80 dark:text-red-300/70 pt-1">Verwendeter Key: <span className="font-mono">{apiKeyHint}</span></p>
             )}
             {keyBalance && keyBalance.effectiveBudget !== null && (
-              <p className="text-xs text-red-400 dark:text-red-300/70">
+              <p className="text-xs text-red-700/80 dark:text-red-300/70">
                 Budget: ${keyBalance.effectiveBudget.toFixed(4)} verfügbar
                 {keyBalance.accountBalance !== null && ` (Account: $${keyBalance.accountBalance.toFixed(2)}`}
                 {keyBalance.accountBalance !== null && keyBalance.limitRemaining !== null && `, Key-Limit: $${keyBalance.limitRemaining.toFixed(2)}`}
                 {keyBalance.accountBalance !== null && ')'}
               </p>
             )}
-          </div>
+          </StatusBanner>
         )}
 
         <DialogFooter>
