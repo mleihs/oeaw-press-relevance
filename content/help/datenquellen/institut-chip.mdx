@@ -1,11 +1,11 @@
 ---
 title: Institut-Chip
-description: Wie die OEAW-Institut-Zuordnung an einer Publikation entsteht — direkte WebDB-Attribution plus Ableitung aus dem Anstellungsverhältnis einer Co-Autor:in, wenn WebDB nichts hergibt.
+description: 'Wie die OEAW-Institut-Zuordnung an einer Publikation entsteht: direkte WebDB-Attribution plus Ableitung aus dem Anstellungsverhältnis einer Co-Autor:in, wenn WebDB nichts hergibt.'
 ---
 
 An jeder Publikation kann eine **Liste von OEAW-Instituten** angezeigt werden:
 kleine graue Kürzel-Chips wie `ÖAI`, `IMP`, `ACDH`. Sie sind der primäre Anker
-für die Press-Triage — das Institut ist die Stelle, an der man eine Story
+für die Press-Triage. Das Institut ist die Stelle, an der man eine Story
 ankündigen, eine Pressemitteilung schreiben oder eine Pressekonferenz
 verabreden kann.
 
@@ -22,7 +22,7 @@ verabreden kann.
 
 Press-Triage interessiert sich für **jede plausible OEAW-Verbindung**, nicht
 nur die formale Zuschreibung. Die App vereinigt deshalb zwei Datenquellen in
-einem Chip — visuell unterscheidbar:
+einem Chip, visuell unterscheidbar.
 
 ### Vollflächiger Chip: direkte WebDB-Zuordnung {#attributed}
 
@@ -33,10 +33,10 @@ Eigentümerschaft.
 
 ### Gestrichelter, kursiver Chip: aus Co-Autor:innen abgeleitet {#author-affiliation}
 
-Für rund 4&nbsp;% der Pubs ist `orgunit_publications` leer — typisch:
-externe:r Lead-Autor:in, eine OEAW-Person als Co-Autor:in. Diese Pubs
-würden ohne Chip dastehen, obwohl ein realer OEAW-Ansprechpartner
-existiert.
+Für rund 4&nbsp;% der Pubs ist `orgunit_publications` leer. Typisch sind
+solche Fälle: externe:r Lead-Autor:in, eine OEAW-Person als Co-Autor:in.
+Diese Pubs würden ohne Chip dastehen, obwohl ein realer
+OEAW-Ansprechpartner existiert.
 
 In diesen Fällen leitet die App das Institut über die Anstellung der
 Co-Autor:innen ab (Person → `orgunit_persons` → Orgunit) und zeigt es als
@@ -46,7 +46,7 @@ gestrichelten, kursiven Chip an. Tooltip: „… (via Co-Autor:in)".
 
 Wenn WebDB ein Paper expressis verbis dem IMP zugeordnet hat und ein
 Co-Autor:in von dort gerade ans ÖAI gewechselt ist, dann ist das ÖAI nicht
-„der Kontakt" für dieses Paper — das IMP ist es. Die WebDB-Zuordnung ist
+„der Kontakt" für dieses Paper. Das IMP ist es. Die WebDB-Zuordnung ist
 eine bewusste editoriale Entscheidung; sie zu „erweitern" wäre Lärm.
 Deshalb: Ableitung schlägt nur dann zu, wenn `orgunit_publications` für
 diese Publikation **leer** ist.

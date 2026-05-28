@@ -17,6 +17,47 @@ export function displayInstitute(pub: WithOrgunits): string | null {
 }
 
 /**
+ * Normalises an author name for fuzzy matching: lower-case + drop common
+ * separators (whitespace, comma, dot, hyphen). Symmetric: applied to both
+ * sides of the comparison.
+ *
+ * Pulled out so the lead-author meta-link, the citation-card linker, and
+ * any future "is this name an OEAW author?" probe all use the same rule.
+ * Drift between two normalisers would silently break linking on edge-case
+ * names ("van der Berg" vs "Vanderberg"); one helper makes the contract
+ * explicit.
+ */
+export function normalizeAuthorName(name: string): string {
+  return name.toLowerCase().replace(/[\s,.\-]/g, '');
+}
+
+/** Minimal author shape needed for name matching. Both `firstname` and
+ *  `lastname` are required because we match in both orderings. */
+type AuthorNameSource = { firstname: string; lastname: string };
+
+/**
+ * Find the first OEAW author whose `Firstname Lastname` (or the reversed
+ * order) matches the given name after normalisation. Returns null when no
+ * match exists.
+ *
+ * The caller passes the full resolved-person row so the caller can keep
+ * additional fields (id, orcid, …) for downstream rendering — this helper
+ * only needs name fields and so its generic accepts any superset.
+ */
+export function matchAuthorByName<T extends AuthorNameSource>(
+  name: string,
+  candidates: readonly T[],
+): T | null {
+  const target = normalizeAuthorName(name);
+  for (const c of candidates) {
+    const a = normalizeAuthorName(`${c.lastname}${c.firstname}`);
+    const b = normalizeAuthorName(`${c.firstname}${c.lastname}`);
+    if (a === target || b === target) return c;
+  }
+  return null;
+}
+
+/**
  * Returns the best display title for a publication.
  *
  * The WebDB import sometimes truncates titles at the first colon, leaving

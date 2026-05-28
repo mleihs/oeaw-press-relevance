@@ -298,15 +298,19 @@ export interface ParsedCitationAuthor {
 /** Structured projection of a Pure (Elsevier) renderingHtml citation.
  *  Produced by `lib/server/publications/citation-parser.ts`. See that
  *  module's header comment for the field-by-field semantics and the
- *  fallback contract (null result → use `decodeHtmlBlock(citation)`). */
+ *  fallback contract (null result → use `decodeHtmlBlock(citation)`).
+ *
+ *  Field keys are snake_case per ADR 0004 (wire shape). The discriminator
+ *  values `'book-host'` etc. are values, not keys, and stay as the most
+ *  readable form for that domain. */
 export interface ParsedCitation {
   type: ParsedCitationType;
   subtype: string | null;
   title: string;
   authors: ParsedCitationAuthor[];
-  etAl: boolean;
+  et_al: boolean;
   venue: string | null;
-  venueKind: 'journal' | 'book-host' | null;
+  venue_kind: 'journal' | 'book-host' | null;
   trailer: string | null;
 }
 

@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { displayAuthor, displayInstitute, displayTitle } from './publication-display';
+import {
+  displayAuthor,
+  displayInstitute,
+  displayTitle,
+  matchAuthorByName,
+  normalizeAuthorName,
+} from './publication-display';
 
 describe('displayAuthor', () => {
   it('returns the trimmed lead_author', () => {
@@ -25,6 +31,43 @@ describe('displayInstitute', () => {
   it('returns null when no orgunits are attached', () => {
     expect(displayInstitute({})).toBe(null);
     expect(displayInstitute({ orgunits: [] })).toBe(null);
+  });
+});
+
+describe('normalizeAuthorName', () => {
+  it('lower-cases and strips whitespace, comma, dot, hyphen', () => {
+    expect(normalizeAuthorName('Wilken, Dennis')).toBe('wilkendennis');
+    expect(normalizeAuthorName('Van der Berg, Peter J.')).toBe('vanderbergpeterj');
+    expect(normalizeAuthorName('Mader-Kratky, Anna')).toBe('maderkratkyanna');
+  });
+});
+
+describe('matchAuthorByName', () => {
+  const oeaw = [
+    { id: 'a', firstname: 'Dennis', lastname: 'Wilken' },
+    { id: 'b', firstname: 'Sara', lastname: 'Hagmann' },
+  ];
+
+  it('matches "Lastname, Firstname" against the Firstname Lastname canonical', () => {
+    expect(matchAuthorByName('Wilken, Dennis', oeaw)?.id).toBe('a');
+  });
+
+  it('matches "Firstname Lastname" identically', () => {
+    expect(matchAuthorByName('Dennis Wilken', oeaw)?.id).toBe('a');
+  });
+
+  it('is case- and separator-insensitive', () => {
+    expect(matchAuthorByName('wilken,dennis', oeaw)?.id).toBe('a');
+    expect(matchAuthorByName('WILKEN  DENNIS', oeaw)?.id).toBe('a');
+  });
+
+  it('returns null when no candidate matches', () => {
+    expect(matchAuthorByName('Schmid, Klaus', oeaw)).toBeNull();
+    expect(matchAuthorByName('', oeaw)).toBeNull();
+  });
+
+  it('accepts an empty candidate list', () => {
+    expect(matchAuthorByName('Anyone', [])).toBeNull();
   });
 });
 

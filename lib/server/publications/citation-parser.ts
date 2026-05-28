@@ -88,22 +88,22 @@ function splitAuthorRole(raw: string): ParsedCitationAuthor {
  */
 function parseAuthorBlock(decoded: string): {
   authors: ParsedCitationAuthor[];
-  etAl: boolean;
+  et_al: boolean;
 } {
   let s = decoded.trim();
   // Strip trailing punctuation that Pure leaves between the author list and
   // the <br>: ".", ",", or just whitespace.
   s = s.replace(/[\s.,]+$/, '');
-  const etAl = / et al\.?$/i.test(s);
-  if (etAl) s = s.replace(/ et al\.?$/i, '').trim();
+  const hasEtAl = / et al\.?$/i.test(s);
+  if (hasEtAl) s = s.replace(/ et al\.?$/i, '').trim();
 
-  if (!s) return { authors: [], etAl };
+  if (!s) return { authors: [], et_al: hasEtAl };
 
   const parts = s
     .split(/\s*;\s*/)
     .map((p) => p.trim())
     .filter(Boolean);
-  return { authors: parts.map(splitAuthorRole), etAl };
+  return { authors: parts.map(splitAuthorRole), et_al: hasEtAl };
 }
 
 /**
@@ -222,11 +222,11 @@ function extractTitle($: cheerio.CheerioAPI): string | null {
  */
 function parseTail(tailRaw: string): {
   venue: string | null;
-  venueKind: 'journal' | 'book-host' | null;
+  venue_kind: 'journal' | 'book-host' | null;
   trailer: string | null;
 } {
   const cleaned = tailRaw.trim();
-  if (!cleaned) return { venue: null, venueKind: null, trailer: null };
+  if (!cleaned) return { venue: null, venue_kind: null, trailer: null };
 
   const inMatch = cleaned.match(/^in:\s*(.+)$/i);
   if (inMatch) {
@@ -237,13 +237,13 @@ function parseTail(tailRaw: string): {
     if (commaAt === -1) {
       return {
         venue: rest.replace(/[.\s]+$/, '').trim() || null,
-        venueKind: 'journal',
+        venue_kind: 'journal',
         trailer: null,
       };
     }
     const venue = rest.slice(0, commaAt).trim() || null;
     const trailer = rest.slice(commaAt + 1).trim() || null;
-    return { venue, venueKind: 'journal', trailer };
+    return { venue, venue_kind: 'journal', trailer };
   }
 
   // Chapter-style tail: first sentence-ending period or first ". ed. by"
@@ -252,11 +252,11 @@ function parseTail(tailRaw: string): {
   if (periodAt > 0) {
     const venue = cleaned.slice(0, periodAt).trim() || null;
     const trailer = cleaned.slice(periodAt + 1).trim() || null;
-    return { venue, venueKind: 'book-host', trailer };
+    return { venue, venue_kind: 'book-host', trailer };
   }
   return {
     venue: cleaned.replace(/[.\s]+$/, '').trim() || null,
-    venueKind: 'book-host',
+    venue_kind: 'book-host',
     trailer: null,
   };
 }
@@ -287,17 +287,17 @@ export function parseCitation(
   if (!title) return null;
 
   const { authorRaw, tailRaw } = extractTextBetweenStrongAndBr($);
-  const { authors, etAl } = parseAuthorBlock(decodeHtmlInline(authorRaw));
-  const { venue, venueKind, trailer } = parseTail(decodeHtmlInline(tailRaw));
+  const { authors, et_al } = parseAuthorBlock(decodeHtmlInline(authorRaw));
+  const { venue, venue_kind, trailer } = parseTail(decodeHtmlInline(tailRaw));
 
   return {
     type,
     subtype,
     title,
     authors,
-    etAl,
+    et_al,
     venue,
-    venueKind,
+    venue_kind,
     trailer,
   };
 }

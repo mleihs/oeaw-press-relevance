@@ -24,9 +24,9 @@ describe('parseCitation', () => {
         { name: 'Groiss, Viktoria', role: null },
         { name: 'Hoeschele, Marisa', role: null },
       ],
-      etAl: true,
+      et_al: true,
       venue: 'PLoS ONE',
-      venueKind: 'journal',
+      venue_kind: 'journal',
       trailer: 'Jahrgang 21, Nr. 4, e0346830, 17.04.2026, S. e0346830.',
     });
   });
@@ -44,9 +44,9 @@ describe('parseCitation', () => {
       { name: 'Keller, Katrin', role: 'Herausgeber:in' },
       { name: 'a, Petr', role: 'Herausgeber:in' },
     ]);
-    expect(parsed?.etAl).toBe(true);
+    expect(parsed?.et_al).toBe(true);
     expect(parsed?.venue).toBe('Adaptive Reuse: Aspects of Creativity');
-    expect(parsed?.venueKind).toBe('book-host');
+    expect(parsed?.venue_kind).toBe('book-host');
   });
 
   it('parses a bookanthology_standard with no <br> tail', () => {
@@ -61,9 +61,9 @@ describe('parseCitation', () => {
       { name: 'Gazsó, André', role: null },
       { name: 'Simko, Myrtill', role: null },
     ]);
-    expect(parsed?.etAl).toBe(false);
+    expect(parsed?.et_al).toBe(false);
     expect(parsed?.venue).toBeNull();
-    expect(parsed?.venueKind).toBeNull();
+    expect(parsed?.venue_kind).toBeNull();
   });
 
   it('preserves titles containing " / " by anchoring on <strong>, not the slash', () => {

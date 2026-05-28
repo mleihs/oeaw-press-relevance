@@ -10,6 +10,7 @@ import {
 import type { PublicationWithRelations } from '@/lib/shared/types';
 import { cn } from '@/lib/shared/utils';
 import { decodeHtmlBlock } from '@/lib/shared/html-utils';
+import { matchAuthorByName } from '@/lib/shared/publication-display';
 import { CitationCard } from './citation-card';
 import { doiToUrl } from '@/lib/shared/doi-utils';
 import {
@@ -59,15 +60,12 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
   const isHighlighted = pub.authors_resolved?.some((a) => a.highlight);
   // Match the lead_author string (typically "Lastname, Firstname") against
   // the resolved authors so the meta line can link to the person profile.
-  const leadAuthorPerson = (() => {
-    if (!pub.lead_author || !pub.authors_resolved?.length) return null;
-    const norm = (s: string) => s.toLowerCase().replace(/[\s,.\-]/g, '');
-    const target = norm(pub.lead_author);
-    return pub.authors_resolved.find(
-      (a) => norm(`${a.lastname}${a.firstname}`) === target ||
-             norm(`${a.firstname}${a.lastname}`) === target,
-    ) ?? null;
-  })();
+  // Same normalisation as the CitationCard's per-author linker so both
+  // surfaces resolve the same names identically.
+  const leadAuthorPerson =
+    pub.lead_author && pub.authors_resolved?.length
+      ? matchAuthorByName(pub.lead_author, pub.authors_resolved)
+      : null;
 
   return (
     <div className="space-y-6">

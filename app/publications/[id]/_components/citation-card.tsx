@@ -2,34 +2,10 @@ import Link from 'next/link';
 import { Fragment } from 'react';
 import type { ParsedCitation, PublicationWithRelations } from '@/lib/shared/types';
 import { cn } from '@/lib/shared/utils';
+import { matchAuthorByName } from '@/lib/shared/publication-display';
 import { SectionLabel } from '@/components/section-label';
 
 type AuthorResolved = NonNullable<PublicationWithRelations['authors_resolved']>[number];
-
-/** Normalise a name string for fuzzy matching against ÖAW persons.
- *  Lower-case, strip whitespace + common separators. Mirrors the
- *  leadAuthorPerson lookup in detail-client.tsx so a name appears as a
- *  link if and only if the same person already exists in
- *  person_publications. */
-function normName(s: string): string {
-  return s.toLowerCase().replace(/[\s,.\-]/g, '');
-}
-
-function matchAuthor(
-  name: string,
-  oeawAuthors: AuthorResolved[],
-): AuthorResolved | null {
-  const target = normName(name);
-  for (const a of oeawAuthors) {
-    if (
-      normName(`${a.lastname}${a.firstname}`) === target ||
-      normName(`${a.firstname}${a.lastname}`) === target
-    ) {
-      return a;
-    }
-  }
-  return null;
-}
 
 /**
  * Structured citation rendering for Pure-format input. Bold title, author
@@ -59,7 +35,7 @@ export function CitationCard({
       {parsed.authors.length > 0 && (
         <p className="mt-1 text-xs text-muted-foreground">
           {parsed.authors.map((a, i) => {
-            const matched = matchAuthor(a.name, oeawAuthors);
+            const matched = matchAuthorByName(a.name, oeawAuthors);
             const isLast = i === parsed.authors.length - 1;
             const sep = isLast ? '' : '; ';
             const display = (
@@ -86,12 +62,12 @@ export function CitationCard({
               </Fragment>
             );
           })}
-          {parsed.etAl && <span className="italic"> et al.</span>}
+          {parsed.et_al && <span className="italic"> et al.</span>}
         </p>
       )}
       {parsed.venue && (
         <p className="mt-1 text-xs text-muted-foreground">
-          {parsed.venueKind === 'journal' ? 'in: ' : ''}
+          {parsed.venue_kind === 'journal' ? 'in: ' : ''}
           <span className="italic text-foreground/80">{parsed.venue}</span>
           {parsed.trailer && <span>, {parsed.trailer}</span>}
         </p>
