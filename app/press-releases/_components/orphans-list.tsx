@@ -199,7 +199,7 @@ function OrphanRow({
           </span>
         )}
         {!pr.authors?.length && !pr.journal && (
-          <span className="text-muted-foreground/60">–</span>
+          <span className="text-muted-foreground/70">–</span>
         )}
       </span>
       <span className="text-right whitespace-nowrap inline-flex items-center gap-3">

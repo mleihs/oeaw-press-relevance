@@ -309,7 +309,7 @@ export function ChangelogPanel({ className }: Props) {
               <p className="text-xs leading-relaxed text-muted-foreground">
                 {changelogBackground}
               </p>
-              <p className="mt-2 text-xs italic leading-relaxed text-muted-foreground/85">
+              <p className="mt-2 text-xs italic leading-relaxed text-muted-foreground/70">
                 {changelogClosing}
               </p>
             </motion.section>

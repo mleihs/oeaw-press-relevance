@@ -478,10 +478,11 @@ function FinishSessionDialog({
 
         <div className="space-y-3">
           <div>
-            <label className="text-xs font-medium text-muted-foreground">
+            <label htmlFor="session-attendees" className="text-xs font-medium text-muted-foreground">
               Anwesende (komma-separiert)
             </label>
             <Input
+              id="session-attendees"
               value={attendees}
               onChange={(e) => setAttendees(e.target.value)}
               placeholder="Marie, Stefan, Anna"
@@ -489,10 +490,11 @@ function FinishSessionDialog({
             />
           </div>
           <div>
-            <label className="text-xs font-medium text-muted-foreground">
+            <label htmlFor="session-facilitator" className="text-xs font-medium text-muted-foreground">
               Moderation
             </label>
             <Input
+              id="session-facilitator"
               value={facilitator}
               onChange={(e) => setFacilitator(e.target.value)}
               placeholder="Marie"
@@ -500,8 +502,9 @@ function FinishSessionDialog({
             />
           </div>
           <div>
-            <label className="text-xs font-medium text-muted-foreground">Notizen</label>
+            <label htmlFor="session-notes" className="text-xs font-medium text-muted-foreground">Notizen</label>
             <Textarea
+              id="session-notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Allgemeine Beobachtungen aus der Sitzung …"

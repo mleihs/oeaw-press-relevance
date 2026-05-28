@@ -162,6 +162,7 @@ function RealGate({ children }: { children: React.ReactNode }) {
               <input
                 ref={inputRef}
                 type="password"
+                aria-label="Passwort"
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); setError(false); }}
                 placeholder="Passwort eingeben..."

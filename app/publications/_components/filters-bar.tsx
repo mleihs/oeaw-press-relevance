@@ -152,9 +152,13 @@ export function FiltersBar({ total, hidden }: Props) {
         <div className="flex flex-col lg:flex-row lg:items-center gap-3">
           <div className="relative w-full lg:max-w-xs inline-flex items-center gap-1">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/70" />
+              <Search aria-hidden className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/70" />
+              <label htmlFor="publications-search" className="sr-only">
+                Publikationen suchen
+              </label>
               <Input
                 ref={searchRef}
+                id="publications-search"
                 value={searchInput}
                 onChange={(e) => handleSearchChange(e.target.value)}
                 placeholder="Titel suchen…  (/)"
