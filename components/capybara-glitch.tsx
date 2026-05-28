@@ -9,6 +9,19 @@ type Phase = 'old' | 'glitch' | 'cyber';
 interface CapybaraGlitchProps {
   oldSrc: string;
   cyberSrc: string;
+  /**
+   * Optional richer non-alpha cyber image shown ONLY in the resting
+   * (post-glitch) state. The boot-sequence animation needs the
+   * alpha-channel pencil sketch (so the filter/transform/clip-path
+   * chain can run without breaking mix-blend-modes), but in the static
+   * "cyber" phase that same alpha PNG looks washed-out on a light page
+   * because lighter strokes are near-transparent. When this prop is
+   * supplied, the resting cyber phase cross-fades to this non-alpha
+   * PNG instead — gives the dashboard the same parchment-rich read
+   * the lightbox already has. Falsy → fall back to `cyberSrc` resting,
+   * unchanged behaviour for callers that don't pass it (gate overlay).
+   */
+  restCyberSrc?: string;
   oldAlt: string;
   cyberAlt: string;
   /**
@@ -50,6 +63,7 @@ interface CapybaraGlitchProps {
 export function CapybaraGlitch({
   oldSrc,
   cyberSrc,
+  restCyberSrc,
   oldAlt,
   cyberAlt,
   play,
@@ -134,14 +148,16 @@ export function CapybaraGlitch({
         />
       </div>
 
-      {/* CYBER image. Hidden in 'old', animates in during 'glitch', visible
-          in 'cyber'. */}
+      {/* CYBER image. Hidden in 'old', animates in during 'glitch'. In the
+          resting cyber phase we either keep this (no restCyberSrc) or fade
+          it out below the richer non-alpha rest image (the parchment
+          version that matches the lightbox). */}
       <div
         className={cn(
           'absolute inset-0 transition-opacity duration-200',
           phase === 'old' && 'opacity-0',
           phase === 'glitch' && 'animate-cb-glitch-new',
-          phase === 'cyber' && 'opacity-100',
+          phase === 'cyber' && (restCyberSrc ? 'opacity-0' : 'opacity-100'),
         )}
       >
         <Image
@@ -154,6 +170,29 @@ export function CapybaraGlitch({
           priority={priority}
         />
       </div>
+
+      {/* Resting cyber image (non-alpha, parchment-baked). Mounted only when
+          the consumer opted in via `restCyberSrc`. Hidden during 'old' and
+          'glitch' phases so the filter/transform animation runs on the
+          alpha PNGs above. Fades in at the cyber phase. */}
+      {restCyberSrc && (
+        <div
+          className={cn(
+            'absolute inset-0 transition-opacity duration-300',
+            phase === 'cyber' ? 'opacity-100' : 'opacity-0',
+          )}
+        >
+          <Image
+            src={restCyberSrc}
+            alt={cyberAlt}
+            fill
+            sizes={sizes}
+            className="object-contain"
+            style={{ objectFit: 'contain' }}
+            priority={priority}
+          />
+        </div>
+      )}
 
       {/* Glitch overlay: scanlines + flicker noise + CRT scan-sweep. Only
           mounted during the glitch phase so the rest of the time we don't
