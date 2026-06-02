@@ -375,9 +375,10 @@ export const EXPL = {
           jeder Pub gespeichert.
         </Para>
         <Para>
-          <Code>anthropic/claude-opus-4.7-session</Code> bedeutet: Bewertung erfolgte
-          interaktiv in einer Claude-Code-Session, ohne API-Kosten. OpenRouter-Modelle
-          haben echte Token-Kosten in USD.
+          Ein Tag wie <Code>anthropic/claude-opus-4.8-session</Code> (bzw. ältere
+          <Code>…-4.7-session</Code>) bedeutet: Bewertung erfolgte interaktiv in einer
+          Claude-Code-Session, ohne API-Kosten. Die Versionsnummer benennt die
+          Modellgeneration. OpenRouter-Modelle haben echte Token-Kosten in USD.
         </Para>
       </>
     ),

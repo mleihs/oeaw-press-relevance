@@ -11,7 +11,7 @@
 //                       validate, optionally UPDATE. DRY-RUN by default.
 //
 // Default model tag written to publications.llm_model when scored via this
-// path: 'anthropic/claude-opus-4.7-session'. Cost = 0 (no external API call).
+// path: 'anthropic/claude-opus-4.8-session'. Cost = 0 (no external API call).
 //
 // Env: PG_DATABASE_URL (default postgresql://postgres:postgres@127.0.0.1:54422/postgres)
 
@@ -26,7 +26,14 @@ const PG_URL = process.env.PG_DATABASE_URL
 // lib/constants.ts import it, so drift is impossible by construction.
 import SCORE_WEIGHTS from '../lib/shared/score-weights.json' with { type: 'json' };
 
-const SESSION_MODEL_TAG = 'anthropic/claude-opus-4.7-session';
+// Tag WRITTEN to publications.llm_model for scores produced by the current
+// Claude Code session model (Opus 4.8). Historical session scores carry the
+// 4.7 tag — see SESSION_MODEL_LIKE for the generation-agnostic detector.
+const SESSION_MODEL_TAG = 'anthropic/claude-opus-4.8-session';
+// DETECTOR (LIKE pattern) for "scored interactively in a Claude Code session",
+// across model generations (…4.7-session, …4.8-session, …). Used for stats so
+// changing the writer tag never under-counts the existing corpus.
+const SESSION_MODEL_LIKE = 'anthropic/claude-opus-%-session';
 const WEBDB_SOURCE_TAG = 'webdb_summary';
 
 // ITA-Subtree-Exclusion: Pubs die zu ITA oder einer Sub-Unit gehören werden
@@ -118,7 +125,7 @@ async function cmdStatus() {
         count(*) FILTER (WHERE p.summary_de IS NOT NULL)                         AS with_de,
         count(*) FILTER (WHERE p.summary_en IS NOT NULL)                         AS with_en,
         count(*) FILTER (WHERE p.press_score IS NOT NULL)                        AS with_score,
-        count(*) FILTER (WHERE p.llm_model = $1)                                 AS by_session,
+        count(*) FILTER (WHERE p.llm_model LIKE $1)                              AS by_session,
         -- WITH ITA (volle Pools)
         count(*) FILTER (WHERE p.enrichment_status IN ('enriched', 'partial') AND p.analysis_status = 'pending') AS pool_a_all,
         count(*) FILTER (WHERE p.enrichment_status = 'pending')                                                  AS pool_b_all,
@@ -128,7 +135,7 @@ async function cmdStatus() {
         count(*) FILTER (WHERE p.enrichment_status = 'pending' AND ${ITA_EXCLUDE_CLAUSE})                                                  AS pool_b_no_ita,
         count(*) FILTER (WHERE p.enrichment_status = 'pending' AND p.doi IS NOT NULL AND ${ITA_EXCLUDE_CLAUSE})                            AS pool_b_doi_no_ita
       FROM publications p WHERE p.archived = false
-    `, [SESSION_MODEL_TAG]);
+    `, [SESSION_MODEL_LIKE]);
 
     log('=== Enrichment status ===');
     for (const row of r1.rows) log(`  ${row.enrichment_status.padEnd(10)} ${row.count}`);
@@ -234,6 +241,9 @@ async function cmdCandidates(opts, positional) {
   const conditions = [
     'p.archived = false',
     "p.analysis_status = 'pending'",
+    // Hard guard: never surface an already-scored publication as a candidate,
+    // even if the analysis_status<->press_score invariant were ever violated.
+    'p.press_score IS NULL',
     // 'failed' bewusst inkludiert: eine Pub ohne DOI durchläuft die API-Cascade
     // erfolglos (→ failed), kann aber eine echte WebDB-summary_de tragen. Der
     // Inhaltsgate GREATEST(...) >= 120 unten ist der eigentliche Bewertbarkeits-
@@ -784,6 +794,13 @@ async function cmdApply(opts, positional) {
       if (status === 'analyzed' && !force) { skipped++; continue; }
 
       const score = calculatePressScore(e);
+      // Belt-and-suspenders: never overwrite an existing score unless --force.
+      // The in-memory skip above already guards `analyzed` rows; this SQL-level
+      // guard makes the protection atomic and independent of both the
+      // analysis_status<->press_score invariant and any race between the
+      // pre-check SELECT and this UPDATE. A guarded UPDATE that matches nothing
+      // returns rowCount 0 and is counted as skipped.
+      const scoreGuard = force ? '' : ' AND press_score IS NULL';
       const r = await c.query(`
         UPDATE publications SET
           analysis_status = 'analyzed',
@@ -801,7 +818,7 @@ async function cmdApply(opts, positional) {
           llm_model = $12,
           analysis_cost = 0,
           updated_at = NOW()
-        WHERE id = $13
+        WHERE id = $13${scoreGuard}
       `, [
         score,
         e.public_accessibility,

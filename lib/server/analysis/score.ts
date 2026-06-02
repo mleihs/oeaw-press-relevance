@@ -27,5 +27,7 @@ export function calculatePressScore(dims: DimensionScores): number {
 }
 
 // Tag written to publications.llm_model when this Claude Code session
-// (claude-opus-4.7) is the scoring engine — distinguishes from OpenRouter runs.
-export const SESSION_MODEL_TAG = 'anthropic/claude-opus-4.7-session';
+// (Opus 4.8) is the scoring engine — distinguishes from OpenRouter runs.
+// Historical session scores carry the 4.7-generation tag; to detect a
+// session score across model generations match `anthropic/claude-opus-%-session`.
+export const SESSION_MODEL_TAG = 'anthropic/claude-opus-4.8-session';
