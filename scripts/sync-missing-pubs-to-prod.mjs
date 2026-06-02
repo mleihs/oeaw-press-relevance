@@ -81,16 +81,33 @@ if (missOrg.length || missPer.length || missPrj.length) {
 }
 
 // 3. Generic local→prod row copier (ON CONFLICT DO NOTHING).
+//
+// JSONB CAVEAT: node-postgres serializes a JS array/object parameter as a
+// Postgres ARRAY literal ({...}), not JSON. Feeding a value read from a jsonb
+// column straight back therefore corrupts it — e.g. an empty array []
+// becomes the jsonb object {}, which later breaks jsonb_array_length() with
+// "cannot get array length of a non-array". So jsonb columns must be
+// JSON.stringify'd and cast `::jsonb` explicitly. (text[]/ARRAY columns are
+// fine — node-pg's array literal IS the correct wire format for those.)
 async function copyRows(table, filterCol, ids) {
+  const typeRows = (await L.query(
+    `SELECT column_name, data_type FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = $1`, [table]
+  )).rows;
+  const jsonbCols = new Set(typeRows.filter((r) => r.data_type === 'jsonb').map((r) => r.column_name));
   let attempted = 0, inserted = 0;
   for (const c of chunk(ids, CHUNK)) {
     const res = await L.query(`SELECT * FROM ${table} WHERE ${filterCol} = ANY($1::uuid[])`, [c]);
     const cols = res.fields.map((f) => f.name);
     const colList = cols.map((x) => `"${x}"`).join(', ');
+    const placeholders = cols.map((x, i) => (jsonbCols.has(x) ? `$${i + 1}::jsonb` : `$${i + 1}`)).join(', ');
     for (const row of res.rows) {
       attempted++;
-      const placeholders = cols.map((_, i) => `$${i + 1}`).join(', ');
-      const values = cols.map((x) => row[x]);
+      const values = cols.map((x) => {
+        const v = row[x];
+        if (jsonbCols.has(x) && v !== null && v !== undefined) return JSON.stringify(v);
+        return v;
+      });
       const r = await P.query(
         `INSERT INTO ${table} (${colList}) VALUES (${placeholders}) ON CONFLICT DO NOTHING`,
         values
