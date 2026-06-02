@@ -5,7 +5,7 @@ import Link from 'next/link';
 import {
   ExternalLink, FileText, Brain,
   Award, ShieldCheck, Megaphone, Users, Building2, FolderOpen, BookText,
-  Mail, Crown, Newspaper,
+  Mail, Crown, Newspaper, Info, AlertTriangle,
 } from 'lucide-react';
 import type { PublicationWithRelations } from '@/lib/shared/types';
 import { cn } from '@/lib/shared/utils';
@@ -26,6 +26,8 @@ import { HaikuBlock } from '@/components/haiku-block';
 import { PublicationFlag } from '@/components/publication-flag';
 import { DecisionToolbar } from '@/components/decision-toolbar';
 import { InfoBubble } from '@/components/info-bubble';
+import { StatusBanner } from '@/components/status-banner';
+import { publicationCompleteness } from '@/lib/shared/completeness';
 import { MeistertaskButton } from '@/components/meistertask-button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -44,6 +46,9 @@ interface Props {
 export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGerman }: Props) {
   const doiUrl = doiToUrl(pub.doi);
   const hasAnalysis = pub.analysis_status === 'analyzed' && pub.press_score !== null;
+  // Per-publication verdict on why this pub does/doesn't carry a score, shown
+  // as a banner below when there is no analysis (lib/shared/completeness.ts).
+  const completeness = publicationCompleteness(pub);
   const pressScorePct = pub.press_score !== null ? Math.round(pub.press_score * 100) : null;
   const isMaHighlighted = pub.authors_resolved?.some((a) => a.mahighlight);
   const isHighlighted = pub.authors_resolved?.some((a) => a.highlight);
@@ -155,6 +160,26 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
             <Badge className={STATUS_COLORS.analyzed}>{STATUS_LABELS.analyzed}</Badge>
           )}
         </div>
+
+        {/* Why this publication carries no score yet — an individual,
+            per-pub explanation derived from its actual state (content length,
+            DOI, enrichment status). Only shown when there is no analysis;
+            analyzed pubs render their Story Score / Pitch / Begründung below. */}
+        {!hasAnalysis && (
+          <StatusBanner
+            variant={completeness.variant}
+            icon={
+              completeness.variant === 'warning' ? (
+                <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+              ) : (
+                <Info className="h-4 w-4 mt-0.5 shrink-0" />
+              )
+            }
+          >
+            <p className="font-medium">{completeness.headline}</p>
+            <p className="mt-0.5 leading-relaxed opacity-90">{completeness.detail}</p>
+          </StatusBanner>
+        )}
 
         {/* Institutes inline. Derived chips (author-affiliation fallback for
             the ~4% of pubs WebDB didn't claim) render dashed + italic to
