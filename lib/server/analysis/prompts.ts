@@ -96,6 +96,8 @@ Liefere für JEDE Publikation:
 
 10. haiku: Ein deutsches Haiku zum Inhalt der Publikation. Drei Zeilen mit der klassischen Silbenfolge 5-7-5. Verfasst aus dem Inhalt, ohne Eigennamen oder technische Begriffe, die nur im Fachpublikum verständlich sind. Keine Reime erzwingen. Das Haiku soll den Kerngedanken des Beitrags in einem Bild verdichten und der Pressestelle als merkbarer Lesezeichen-Text dienen. Verwende echte deutsche Umlaute (ä, ö, ü, ß), niemals die Ersatzschreibweise „ae/oe/ue/ss" — moderne deutsche Typografie, keine Schreibmaschinen-Optik.
 
+11. Typografie (gilt für alle Textfelder oben): Verwende keine Geviertstriche bzw. Gedankenstriche (das Zeichen —). Formuliere stattdessen mit Komma, Doppelpunkt oder zwei Sätzen aus. Solche Striche wirken maschinell und sind projektweit unerwünscht (siehe docs/writing-style.md).
+
 ${pubDescriptions}
 
 Antworte AUSSCHLIESSLICH mit gültigem JSON in diesem exakten Format:

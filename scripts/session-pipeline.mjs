@@ -688,7 +688,14 @@ async function cmdApply(opts, positional) {
       .replace(/&amp;/g, '&')
       .replace(/&lt;/g, '<')
       .replace(/&gt;/g, '>')
+      // Em-dashes (U+2014) read as machine-generated; the project forbids them
+      // in UI copy (docs/writing-style.md + the ESLint/MDX gates). A static
+      // linter can't reach generated DB content, so normalize on ingest here:
+      // an em-dash becomes a comma. Mirrors scripts/cleanup-emdash-prod.mjs.
+      .replace(/\s*—\s*/g, ', ')
       .replace(/\s+/g, ' ')
+      .replace(/\s+,/g, ',')
+      .replace(/,\s*([,.;:!?])/g, '$1')
       .trim();
     return t;
   }
