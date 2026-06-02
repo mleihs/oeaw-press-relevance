@@ -38,17 +38,18 @@ export function VenueLine({
   // so the displayed text and the filter URL match the detail page and the
   // facette. Unknown venues fall through to the raw string.
   const canonical = canonicalName(venue);
-  // Flagship Nature/Science-family pubs get a non-italic, brand-blue line
-  // with a motion-safe pulse so the eye catches them in long lists (Dashboard
-  // top-pubs + the /publications table both render via this one component).
-  // `motion-safe:` skips the pulse when prefers-reduced-motion is set.
+  // Flagship Nature/Science-family pubs get a non-italic, brand-blue line with a
+  // prominent motion-safe pulse (scale + brand glow — see --animate-flagship-pulse
+  // in globals.css) so the eye catches them in long lists (Dashboard top-pubs +
+  // the /publications table both render via this one component). `origin-left`
+  // pulses it in place; `motion-safe:` skips it under prefers-reduced-motion.
   const isTop = journalTier(canonical) === 'top';
   return (
     <p
       className={cn(
         'mt-0.5 flex items-center gap-1 text-xs',
         isTop
-          ? 'font-medium text-brand motion-safe:animate-pulse'
+          ? 'origin-left font-semibold text-brand motion-safe:animate-flagship-pulse'
           : 'italic text-muted-foreground',
         className,
       )}
