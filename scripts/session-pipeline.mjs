@@ -25,15 +25,16 @@ const PG_URL = process.env.PG_DATABASE_URL
 // Single source of truth: lib/shared/score-weights.json. Both this script and
 // lib/constants.ts import it, so drift is impossible by construction.
 import SCORE_WEIGHTS from '../lib/shared/score-weights.json' with { type: 'json' };
+// Same single-source-of-truth pattern for the session model tag — shared
+// verbatim with lib/server/analysis/score.ts so the writer tag (.tag) and the
+// generation-agnostic stats detector (.likePattern) can never drift.
+import SESSION_MODEL from '../lib/shared/session-model.json' with { type: 'json' };
 
 // Tag WRITTEN to publications.llm_model for scores produced by the current
-// Claude Code session model (Opus 4.8). Historical session scores carry the
-// 4.7 tag — see SESSION_MODEL_LIKE for the generation-agnostic detector.
-const SESSION_MODEL_TAG = 'anthropic/claude-opus-4.8-session';
-// DETECTOR (LIKE pattern) for "scored interactively in a Claude Code session",
-// across model generations (…4.7-session, …4.8-session, …). Used for stats so
-// changing the writer tag never under-counts the existing corpus.
-const SESSION_MODEL_LIKE = 'anthropic/claude-opus-%-session';
+// Claude Code session model. Historical session scores carry the 4.7 tag —
+// SESSION_MODEL_LIKE is the generation-agnostic detector used for stats.
+const SESSION_MODEL_TAG = SESSION_MODEL.tag;
+const SESSION_MODEL_LIKE = SESSION_MODEL.likePattern;
 const WEBDB_SOURCE_TAG = 'webdb_summary';
 
 // ITA-Subtree-Exclusion: Pubs die zu ITA oder einer Sub-Unit gehören werden

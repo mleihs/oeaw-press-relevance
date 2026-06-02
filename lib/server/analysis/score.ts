@@ -4,6 +4,7 @@
 // computation regardless of which model produced the dimension values.
 
 import { SCORE_WEIGHTS } from '@/lib/shared/constants';
+import sessionModel from '@/lib/shared/session-model.json';
 import type { AnalysisResult } from '@/lib/shared/types';
 
 export type DimensionScores = Pick<
@@ -26,8 +27,11 @@ export function calculatePressScore(dims: DimensionScores): number {
   return Math.round(score * 10000) / 10000;
 }
 
-// Tag written to publications.llm_model when this Claude Code session
-// (Opus 4.8) is the scoring engine — distinguishes from OpenRouter runs.
-// Historical session scores carry the 4.7-generation tag; to detect a
-// session score across model generations match `anthropic/claude-opus-%-session`.
-export const SESSION_MODEL_TAG = 'anthropic/claude-opus-4.8-session';
+// Tag written to publications.llm_model when this Claude Code session is the
+// scoring engine (distinguishes from OpenRouter runs). Single source of truth:
+// lib/shared/session-model.json — shared verbatim with scripts/session-pipeline.mjs
+// so the writer tag can never drift between the two scoring entry points (the
+// drift that once mislabeled 4.8 output as 4.7). Historical scores carry the
+// 4.7-generation tag; match `anthropic/claude-opus-%-session` to detect a
+// session score across model generations.
+export const SESSION_MODEL_TAG = sessionModel.tag;
