@@ -320,6 +320,14 @@ Confirm prod matches local and is internally consistent:
   absent from prod** (chunk local ids and probe prod with `= ANY($1::uuid[])`).
 - **Invariant** — on prod, zero rows with `analysis_status='analyzed' AND
   press_score IS NULL` (and zero of the reverse).
+- **JSONB integrity** — every `jsonb` column on the synced rows must keep its
+  JSON shape. node-postgres serializes a JS array/object param as a Postgres
+  array literal (`{...}`), not JSON, so a naive copy turns `flag_notes`'s `[]`
+  into the object `{}` — which then crashes `jsonb_array_length(flag_notes)`
+  inside `pub_ids_with_flags()` and 500s the dashboard. `sync-missing-pubs-to-prod.mjs`
+  guards against this (JSON-casts jsonb columns); verify with
+  `SELECT jsonb_typeof(flag_notes), count(*) FROM publications GROUP BY 1`
+  → only `array`, never `object`. (Hit 2026-06-02; root-caused + fixed.)
 - **Metadata drift** — for rows present in both DBs, `published_at` /
   `lead_author` / `title` should agree. A re-import refreshes these locally; the
   row-sync does not touch existing rows, so a few may drift (observed
