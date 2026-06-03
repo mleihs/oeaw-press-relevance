@@ -274,6 +274,7 @@ export function DashboardClient({ data, period, sortBy }: DashboardClientProps) 
               </div>
               <p className="text-muted-foreground mt-1.5 max-w-md">
                 Finde die besten Storys in ÖAW-Publikationen.
+                <br />
                 Finde ÖAW-weit upcoming Events.
               </p>
               <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">

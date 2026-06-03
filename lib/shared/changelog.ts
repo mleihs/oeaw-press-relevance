@@ -15,6 +15,24 @@ export interface ChangelogEntry {
 export const changelogEntries: ChangelogEntry[] = [
   {
     category: 'neu',
+    title: 'Veranstaltungen: ÖAW-weite Events im Blick',
+    body: 'Neben Publikationen erfasst Story Scout jetzt auch kommende ÖAW-Veranstaltungen. Die Events-Seite listet anstehende Termine aus der WebDB, mit Detailansicht, Flag und derselben Triage-Logik wie bei Pubs. Das Dashboard verlinkt direkt darauf.',
+    href: '/help/events/seiten-tour',
+  },
+  {
+    category: 'verbesserung',
+    title: 'Nature- und Science-Pubs hervorgehoben',
+    body: 'Publikationen aus der Nature-Familie und aus Science fallen in den Listen sofort auf: eine brand-blaue, nicht kursive Venue-Zeile mit auffälliger Pulsanimation hebt diese Flaggschiff-Journale aus dem langen Stapel hervor.',
+    href: '/help/datenquellen/venue#flagship',
+  },
+  {
+    category: 'neu',
+    title: 'Autor:innen-Verlinkung in der Zitation',
+    body: 'Namen im Zitations-Trailer einer Publikation werden automatisch erkannt und verlinkt: ein Klick führt zur Personenseite. ÖAW-Personen erscheinen brand-blau, externe Co-Autor:innen neutral. Bei mehreren Treffern greift der längste passende Name zuerst.',
+    href: '/help/datenquellen/autor-verlinkung',
+  },
+  {
+    category: 'neu',
     title: 'SPECTER2-Embeddings als zweite Bewertungs-Achse',
     body: 'Press-Similarity ist die SPECTER2-basierte semantische Nähe einer Pub zum historischen Press-Cluster, ein vom inhaltlichen Story Score unabhängiges Signal. Eigene Hilfe-Section beschreibt Modell, Trainings-Paper (Cohan 2020, Singh 2022), Vergleich zu OpenAI/SBERT/SciNCL und den Press-Cluster-Lernloop ohne Modell-Retraining.',
     href: '/help/scores/specter2-embeddings',
@@ -74,7 +92,7 @@ export const changelogClosing =
  * Bump this whenever a new entry is added on top so that returning users
  * see the brand-colored dot until they open the panel.
  */
-export const changelogLastUpdated = '2026-05-14T16:00:00.000Z';
+export const changelogLastUpdated = '2026-06-03T12:00:00.000Z';
 
 /** Auto-derived from changelogLastUpdated: single source of truth for the
  *  panel's soft date anchor ("Stand Mai 2026"). */
