@@ -1,0 +1,40 @@
+# Build context excludes — keep secrets, deps, and heavy artefacts out of the
+# image. The build regenerates node_modules (npm ci) and .source (fumadocs-mdx).
+
+# Secrets — NEVER ship into the image (runtime env comes from Coolify)
+.env
+.env.*
+
+# Deps + build outputs (rebuilt in-image)
+node_modules
+.next
+.source
+out
+build
+
+# VCS / CI / editor / agent state
+.git
+.github
+.vercel
+.claude
+.mcp.json
+
+# Tests + reports + coverage
+e2e
+test-results
+playwright-report
+coverage
+
+# Local-only heavy artefacts
+data
+backups
+*.sql
+*.sql.gz
+scripts/embeddings/.venv
+
+# TS build info
+*.tsbuildinfo
+
+# Docker meta
+Dockerfile
+.dockerignore
