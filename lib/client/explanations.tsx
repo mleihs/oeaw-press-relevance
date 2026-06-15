@@ -1970,4 +1970,12 @@ export const EXPL_KB_MAP: Partial<Record<keyof typeof EXPL, KbAnchor>> = {
   settings_openrouter:       { path: '/help/einstellungen/einstellungen', hash: 'openrouter' },
   settings_min_words:        { path: '/help/einstellungen/einstellungen', hash: 'min-words' },
   settings_batch_size:       { path: '/help/einstellungen/einstellungen', hash: 'batch-size' },
+
+  // ─── social/ ─────────────────────────────────────────────────────────────
+  social_kpi_posts:          { path: '/help/social/seiten-tour', hash: 'aufbau' },
+  social_kpi_themes:         { path: '/help/social/seiten-tour', hash: 'aufbau' },
+  social_briefing:           { path: '/help/social/seiten-tour', hash: 'aufbau' },
+  social_kpi_channels:       { path: '/help/social/kanaele-verwalten', hash: 'crud' },
+  social_window:             { path: '/help/social/kanaele-verwalten', hash: 'zeitraum' },
+  social_cost:               { path: '/help/social/kanaele-verwalten', hash: 'datenquelle' },
 };
