@@ -12,10 +12,11 @@ import { useLeaderboard, useDistribution } from './_hooks/use-leaderboard';
 
 export default function ResearchersPage() {
   const [filters, setFilters] = useQueryStates(filterParsers, { shallow: false });
-  const { rows, loading: loadingTop } = useLeaderboard();
-  const { points, loading: loadingDist } = useDistribution(
+  const { rows, loading: loadingTop, error: errorTop } = useLeaderboard();
+  const { points, loading: loadingDist, error: errorDist } = useDistribution(
     filters.view === 'distribution',
   );
+  const loadError = filters.view === 'distribution' ? errorDist : errorTop;
 
   return (
       <div className="space-y-6">
@@ -32,6 +33,17 @@ export default function ResearchersPage() {
         </header>
 
         <FiltersBar />
+
+        {/* Surface fetch failures instead of silently rendering the empty state
+            (which reads as "no researchers" rather than "load failed"). */}
+        {loadError && (
+          <div
+            role="alert"
+            className="rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+          >
+            Die Forscher:innen-Daten konnten nicht geladen werden: {loadError}
+          </div>
+        )}
 
         <SpotlightPodium rows={rows} metric={filters.metric} />
 

@@ -27,7 +27,7 @@ type Props = {
 export function PresetBar({ active, onSelect }: Props) {
   return (
     <div
-      role="tablist"
+      role="group"
       aria-label="Filter-Presets"
       className="flex flex-wrap items-center gap-1.5"
     >
@@ -35,10 +35,12 @@ export function PresetBar({ active, onSelect }: Props) {
         const isActive = active === key;
         return (
           <span key={key} className="inline-flex items-center gap-1">
+            {/* Toggle buttons, not tabs: there are no tabpanels and selecting a
+                preset just applies a filter set, so aria-pressed is the correct
+                state (a tablist would promise arrow-key nav + panels). */}
             <button
               type="button"
-              role="tab"
-              aria-selected={isActive}
+              aria-pressed={isActive}
               onClick={() => onSelect(key)}
               className={cn(
                 'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors',

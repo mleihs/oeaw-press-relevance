@@ -26,24 +26,30 @@ export async function consumeSSE(
   let buffer = '';
   let eventType = '';
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
 
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split('\n');
-    buffer = lines.pop() ?? '';
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? '';
 
-    for (const line of lines) {
-      if (line.startsWith('event: ')) {
-        eventType = line.slice(7).trim();
-      } else if (line.startsWith('data: ')) {
-        try {
-          onEvent(eventType, JSON.parse(line.slice(6)));
-        } catch {
-          // skip a malformed / partial frame
+      for (const line of lines) {
+        if (line.startsWith('event: ')) {
+          eventType = line.slice(7).trim();
+        } else if (line.startsWith('data: ')) {
+          try {
+            onEvent(eventType, JSON.parse(line.slice(6)));
+          } catch {
+            // skip a malformed / partial frame
+          }
         }
       }
     }
+  } finally {
+    // Release the lock so an aborted fetch (consumer closed the dialog /
+    // unmounted) doesn't leave the stream reader dangling.
+    reader.releaseLock();
   }
 }

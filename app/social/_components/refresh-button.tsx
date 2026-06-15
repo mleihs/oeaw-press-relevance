@@ -56,6 +56,7 @@ export function RefreshButton({ disabled }: { disabled?: boolean }) {
   const [skippedMsg, setSkippedMsg] = useState<string | null>(null);
   const [elapsed, setElapsed] = useState(0);
   const startRef = useRef(0);
+  const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     if (phase !== 'running') return;
@@ -63,6 +64,9 @@ export function RefreshButton({ disabled }: { disabled?: boolean }) {
     const t = setInterval(() => setElapsed(Math.floor((Date.now() - startRef.current) / 1000)), 250);
     return () => clearInterval(t);
   }, [phase]);
+
+  // Abort any in-flight refresh if the component unmounts mid-run.
+  useEffect(() => () => abortRef.current?.abort(), []);
 
   const reset = useCallback(() => {
     setPhase('idle');
@@ -135,11 +139,15 @@ export function RefreshButton({ disabled }: { disabled?: boolean }) {
     const headers = getApiHeaders();
     headers['x-llm-model'] = model;
 
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     try {
       const res = await fetch('/api/social/refresh', {
         method: 'POST',
         headers,
         body: JSON.stringify({ force }),
+        signal: controller.signal,
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -149,6 +157,8 @@ export function RefreshButton({ disabled }: { disabled?: boolean }) {
       }
       await consumeSSE(res, handleEvent);
     } catch (err) {
+      // Intentional abort (dialog closed / unmounted) — not an error to show.
+      if (controller.signal.aborted) return;
       setPhase('error');
       setErrorMsg(err instanceof Error ? err.message : 'Verbindung fehlgeschlagen');
     }
@@ -164,7 +174,13 @@ export function RefreshButton({ disabled }: { disabled?: boolean }) {
       open={open}
       onOpenChange={(o) => {
         setOpen(o);
-        if (!o && phase !== 'running') reset();
+        // Closing aborts an in-flight run (the server honors request-abort and
+        // skips the snapshot) and clears state, so no setState/router.refresh
+        // fires against a closed dialog.
+        if (!o) {
+          abortRef.current?.abort();
+          reset();
+        }
       }}
     >
       <Button size="sm" disabled={disabled} onClick={() => setOpen(true)} title={disabled ? 'APIFY_TOKEN nicht konfiguriert' : undefined}>

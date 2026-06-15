@@ -1,6 +1,23 @@
+import { cache } from 'react';
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getEventById } from '@/lib/server/events/fetch';
 import { EventDetail } from './_components/event-detail';
+
+// React.cache dedupes the fetch across generateMetadata + the page render.
+const getEvent = cache(getEventById);
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  if (!UUID_RE.test(id)) return { title: 'Event | Story Scout' };
+  const event = await getEvent(id);
+  if (!event) return { title: 'Event | Story Scout' };
+  return { title: `${event.title} | Story Scout` };
+}
 
 // Per ADR 0009: decision-state-mutable surfaces stay force-dynamic so the
 // reviewer always sees the live state after a flag / decision change.
@@ -16,7 +33,7 @@ export default async function EventDetailPage({
   const { id } = await params;
   if (!UUID_RE.test(id)) notFound();
 
-  const event = await getEventById(id);
+  const event = await getEvent(id);
   if (!event) notFound();
 
   return <EventDetail event={event} />;

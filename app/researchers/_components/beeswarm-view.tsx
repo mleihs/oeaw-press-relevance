@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { forceSimulation, forceX, forceY, forceCollide } from 'd3-force';
 import { motion } from 'motion/react';
@@ -47,6 +48,7 @@ const PAD_X = 40;
 const PAD_Y = 24;
 
 export function BeeswarmView({ points, loading, metric }: BeeswarmViewProps) {
+  const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(960);
   // P8: defer the width signal so resize-bursts don't trigger 140-tick force
@@ -189,7 +191,7 @@ export function BeeswarmView({ points, loading, metric }: BeeswarmViewProps) {
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault();
-                      window.location.href = `/persons/${n.person_id}`;
+                      router.push(`/persons/${n.person_id}`);
                     }
                   }}
                   className="focus:outline-none focus-visible:[&_circle]:stroke-brand focus-visible:[&_circle]:stroke-[2px]"

@@ -146,9 +146,12 @@ function FacetSection({
 function TriStateTabs({
   value,
   onChange,
+  label,
 }: {
   value: TriState;
   onChange: (next: TriState) => void;
+  /** Accessible name for the segmented group (the visible Row label). */
+  label?: string;
 }) {
   const opts: Array<{ key: TriState; label: string }> = [
     { key: 'any', label: 'Egal' },
@@ -156,11 +159,12 @@ function TriStateTabs({
     { key: 'no', label: 'Nein' },
   ];
   return (
-    <div className="inline-flex rounded-md border bg-muted/50 p-0.5">
+    <div role="group" aria-label={label} className="inline-flex rounded-md border bg-muted/50 p-0.5">
       {opts.map((o) => (
         <button
           key={o.key}
           type="button"
+          aria-pressed={value === o.key}
           onClick={() => onChange(o.key)}
           className={cn(
             'px-3 py-1 text-xs rounded-sm font-medium transition-colors',
@@ -188,6 +192,7 @@ function ToggleChip({
   return (
     <button
       type="button"
+      aria-pressed={active}
       onClick={() => onChange(!active)}
       className={cn(
         'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
@@ -423,18 +428,21 @@ function BooleansFacet({
       <div className="space-y-2">
         <Row label="Peer-reviewed">
           <TriStateTabs
+            label="Peer-reviewed"
             value={filters.peer}
             onChange={(peer) => setFilters({ peer, page: 1 })}
           />
         </Row>
         <Row label="Popular Science">
           <TriStateTabs
+            label="Popular Science"
             value={filters.popsci}
             onChange={(popsci) => setFilters({ popsci, page: 1 })}
           />
         </Row>
         <Row label="Open Access">
           <TriStateTabs
+            label="Open Access"
             value={filters.oa}
             onChange={(oa) => setFilters({ oa, page: 1 })}
           />

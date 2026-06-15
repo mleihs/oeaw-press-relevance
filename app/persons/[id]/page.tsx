@@ -1,8 +1,28 @@
+import { cache } from 'react';
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getResearcherDetail } from '@/lib/server/researchers/detail';
 import { sincePresetToDate } from '@/lib/shared/researchers';
 import { BackLink } from './_components/back-link';
 import { PersonDetailClient } from './_components/detail-client';
+
+// React.cache dedupes the fetch across generateMetadata + the page render.
+const getDetail = cache((id: string) =>
+  getResearcherDetail({ id, since: sincePresetToDate(WINDOW) }),
+);
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  if (!UUID_RE.test(id)) return { title: 'Forscher:in | Story Scout' };
+  const detail = await getDetail(id);
+  const p = detail?.person;
+  if (!p) return { title: 'Forscher:in | Story Scout' };
+  return { title: `${p.firstname} ${p.lastname} | Story Scout` };
+}
 
 // Per ADR 0009: read-heavy, auth-gated, `since`-parametrised pages opt out
 // of ISR for the pilot. Revisit when one of these RSCs sees enough traffic
@@ -22,7 +42,7 @@ export default async function PersonDetailPage({
   const { id } = await params;
   if (!UUID_RE.test(id)) notFound();
 
-  const detail = await getResearcherDetail({ id, since: sincePresetToDate(WINDOW) });
+  const detail = await getDetail(id);
   if (!detail) notFound();
 
   return (

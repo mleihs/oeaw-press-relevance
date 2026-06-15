@@ -35,13 +35,14 @@ export function PressReleasesMainTable({ rows, highlightOrphans }: Props) {
     <Card className="overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
+          <caption className="sr-only">Presseaussendungen</caption>
           <thead className="bg-muted/50">
             <tr>
-              <th className="p-3 text-left font-medium whitespace-nowrap">Datum</th>
-              <th className="p-3 text-left font-medium">News-Titel</th>
-              <th className="p-3 text-left font-medium">Publikation</th>
-              <th className="p-3 text-left font-medium whitespace-nowrap">Score</th>
-              <th className="p-3 text-right font-medium whitespace-nowrap">Links</th>
+              <th scope="col" className="p-3 text-left font-medium whitespace-nowrap">Datum</th>
+              <th scope="col" className="p-3 text-left font-medium">News-Titel</th>
+              <th scope="col" className="p-3 text-left font-medium">Publikation</th>
+              <th scope="col" className="p-3 text-left font-medium whitespace-nowrap">Score</th>
+              <th scope="col" className="p-3 text-right font-medium whitespace-nowrap">Links</th>
             </tr>
           </thead>
           <tbody>

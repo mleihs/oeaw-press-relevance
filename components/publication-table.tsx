@@ -473,7 +473,20 @@ function PublicationRow({
         onClick={onToggle}
       >
         <td className={cn('p-3', accentClass)}>
-          <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+          {/* The chevron is the real, keyboard-operable toggle (the row's
+              onClick is a mouse-only convenience). aria-expanded announces the
+              state; stopPropagation avoids a double-toggle when clicked. */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 p-0"
+            aria-expanded={isExpanded}
+            aria-label={isExpanded ? 'Details einklappen' : 'Details ausklappen'}
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggle();
+            }}
+          >
             {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </Button>
         </td>
