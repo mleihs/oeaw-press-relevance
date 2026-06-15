@@ -523,6 +523,17 @@ export interface SocialChannelWithPosts extends SocialChannel {
   posts: SocialPost[];
 }
 
+/** Global team-wide social-monitor settings (singleton). */
+export interface SocialSettings {
+  /** Posts newer than this show by default; older sit behind a control. */
+  fresh_window_days: number;
+  /** Window of posts fed to the LLM theme snapshot on refresh. */
+  theme_window_days: number;
+  /** null = keep everything; else prune posts older than this on refresh. */
+  retention_days: number | null;
+  updated_at: string;
+}
+
 /** Accumulated feature cost, from social_refresh_runs. */
 export interface SocialCostSummary {
   total_usd: number;

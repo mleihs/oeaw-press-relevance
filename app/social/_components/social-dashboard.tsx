@@ -64,11 +64,13 @@ export function SocialDashboard({
   const resetKey = `${query}|${selectedChannels.join(',')}|${sort}`;
 
   const themeDisclosure = useMemo<DisclosureItem[]>(() => {
+    // Key by the ORIGINAL snapshot index (stable across filtering) so surviving
+    // themes keep their component identity — no remount, no lost child state.
     return themeItems
-      .map((t) => ({ theme: t.theme, posts: sortPosts(t.posts.filter(pred), sort) }))
+      .map((t, i) => ({ key: `theme-${i}`, theme: t.theme, posts: sortPosts(t.posts.filter(pred), sort) }))
       .filter((t) => !filtering || t.posts.length > 0)
-      .map((t, i) => ({
-        key: `theme-${i}-${t.theme.theme}`,
+      .map((t) => ({
+        key: t.key,
         title: t.theme.theme,
         count: t.posts.length,
         meta: t.theme.channels.join(' · ') || undefined,

@@ -8,6 +8,7 @@ import { db, socialRefreshRuns } from '@/lib/server/db';
 import { syncSocialPosts } from './sync';
 import { analyzeSocialPosts, regenerateThemeSnapshot } from './analyze';
 import { getLastCompletedRefreshAt } from './list';
+import { getSocialSettings } from './settings';
 import { log } from '@/lib/server/log';
 
 type Emit = (type: string, data: unknown) => void;
@@ -118,6 +119,9 @@ export async function runSocialRefresh(
   }
 
   // Fetch — a failure here (no token, Apify down/out-of-credit) is fatal.
+  // Team-wide settings: theme window (snapshot horizon) + retention (prune).
+  const settings = await getSocialSettings();
+
   let fetched = 0;
   let created = 0;
   try {
@@ -127,6 +131,7 @@ export async function runSocialRefresh(
       actor: opts.actor,
       resultsLimit: opts.resultsLimit,
       windowDays: opts.windowDays,
+      retentionDays: settings.retention_days,
     });
     fetched = sync.fetched;
     created = sync.created;
@@ -162,7 +167,7 @@ export async function runSocialRefresh(
     const snap = await regenerateThemeSnapshot({
       apiKey: opts.apiKey,
       model: opts.model,
-      windowDays: opts.windowDays,
+      themeWindowDays: settings.theme_window_days,
     });
     if (snap) {
       themes = snap.themes;
