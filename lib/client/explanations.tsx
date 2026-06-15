@@ -1768,6 +1768,67 @@ export const EXPL = {
       </Para>
     ),
   },
+
+  // ─── Social Media ───────────────────────────────────────────────────────────
+  social_kpi_posts: {
+    title: 'Posts im Fenster',
+    body: (
+      <Para>
+        Anzahl der geladenen Posts aller aktiven Kanäle innerhalb des aktuellen
+        Beobachtungszeitraums. Beim Seitenaufruf entstehen keine Kosten, geladen
+        wird nur beim Aktualisieren.
+      </Para>
+    ),
+  },
+  social_kpi_channels: {
+    title: 'Beobachtete Kanäle',
+    body: (
+      <Para>
+        Aktive Instagram-Kanäle, die ausgewertet werden. Klick öffnet die
+        Kanal-Ansicht (Liste, pro Kanal ausklappbar). Verwaltung in den
+        Einstellungen.
+      </Para>
+    ),
+  },
+  social_kpi_themes: {
+    title: 'Erkannte Themen',
+    body: (
+      <Para>
+        Vom Sprachmodell aus den Posts gebündelte Themencluster. Klick öffnet die
+        Themen-Ansicht, dort lässt sich jedes Thema aufklappen, um die
+        zugehörigen Posts zu sehen.
+      </Para>
+    ),
+  },
+  social_window: {
+    title: 'Beobachtungszeitraum',
+    body: (
+      <Para>
+        Globaler Standard (in Tagen), wie weit zurück Posts berücksichtigt
+        werden, sowohl beim Laden als auch in Anzeige und Lagebild. Pro Kanal in
+        den Einstellungen überschreibbar.
+      </Para>
+    ),
+  },
+  social_briefing: {
+    title: 'Lagebild',
+    body: (
+      <Para>
+        Vom Sprachmodell erzeugte Kurz-Zusammenfassung der aktuellen Themenlage
+        über alle beobachteten Kanäle, als schneller Überblick auf einen Blick.
+      </Para>
+    ),
+  },
+  social_cost: {
+    title: 'Feature-Kosten',
+    body: (
+      <Para>
+        Aufsummierte Kosten aller Aktualisierungen: Apify (Abruf der Posts,
+        geschätzt nach Ergebnissen) plus LLM (Themen-Analyse, exakt abgerechnet).
+        Der Seitenaufruf selbst ist kostenlos, geladen wird nur auf Klick.
+      </Para>
+    ),
+  },
 } satisfies Record<string, Explanation>;
 
 // ─── KB-Anchor-Map ──────────────────────────────────────────────────────────

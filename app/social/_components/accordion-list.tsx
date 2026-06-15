@@ -1,36 +1,62 @@
 'use client';
 
-import { useId, useState } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { ChevronRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import type { SocialPost, SocialTheme } from '@/lib/shared/types';
+import type { SocialPost } from '@/lib/shared/types';
 import { PostCard, type PostCardChannel } from './post-card';
 
-export interface ThemeItem {
-  theme: SocialTheme;
+export interface DisclosureItem {
+  key: string;
+  title: string;
+  count: number;
+  /** Right-aligned header content (e.g. channels for themes, stats for channels). */
+  meta?: ReactNode;
+  /** Shown at the top of the expanded panel. */
+  description?: ReactNode;
   posts: SocialPost[];
 }
 
+export type OpenMode = 'first' | 'none' | 'all';
+
+function seed(items: DisclosureItem[], mode: OpenMode): Set<number> {
+  if (mode === 'all') return new Set(items.map((_, i) => i));
+  if (mode === 'first' && items.length) return new Set([0]);
+  return new Set();
+}
+
 /**
- * Topic clusters as an accessible accordion (W3C APG): each theme header is a
- * real button with aria-expanded + aria-controls; the panel reveals its member
- * posts on demand (progressive disclosure, max 2 levels). Multiple panels may
- * be open. Gentle motion (chevron, height, staggered cards) is gated by
- * prefers-reduced-motion. Toggling only happens on click/Enter/Space, never on
- * hover.
+ * Accessible accordion (W3C APG): each header is a real <button> with
+ * aria-expanded + aria-controls; the panel reveals its posts on demand.
+ * Generic over themes / channels. `resetKey` re-seeds the open set when the
+ * active filter changes (so a search auto-opens matching groups). Motion is
+ * gated by prefers-reduced-motion; toggling never happens on hover.
  */
-export function ThemeAccordion({
+export function AccordionList({
   items,
   channelById,
+  openMode = 'first',
+  resetKey = '',
 }: {
-  items: ThemeItem[];
+  items: DisclosureItem[];
   channelById: Record<string, PostCardChannel>;
+  openMode?: OpenMode;
+  resetKey?: string;
 }) {
-  // First theme open by default: demonstrates the interaction without flooding.
-  const [open, setOpen] = useState<Set<number>>(() => new Set(items.length ? [0] : []));
+  const [open, setOpen] = useState<Set<number>>(() => seed(items, openMode));
   const reduce = useReducedMotion();
   const baseId = useId();
+
+  // Re-seed the open set when the filter/view context changes (so matches
+  // become visible). React's "adjust state during render" pattern — preferred
+  // over an effect, and remounts no DOM.
+  const [prevKey, setPrevKey] = useState(`${resetKey}|${openMode}`);
+  const key = `${resetKey}|${openMode}`;
+  if (key !== prevKey) {
+    setPrevKey(key);
+    setOpen(seed(items, openMode));
+  }
 
   const toggle = (i: number) =>
     setOpen((prev) => {
@@ -42,14 +68,22 @@ export function ThemeAccordion({
 
   const ease = [0.22, 1, 0.36, 1] as const;
 
+  if (items.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        Keine Treffer. Suche oder Filter anpassen.
+      </p>
+    );
+  }
+
   return (
     <div className="space-y-2">
-      {items.map(({ theme, posts }, i) => {
+      {items.map((item, i) => {
         const isOpen = open.has(i);
         const headerId = `${baseId}-h-${i}`;
         const panelId = `${baseId}-p-${i}`;
         return (
-          <div key={i} className="overflow-hidden rounded-lg border bg-card">
+          <div key={item.key} className="overflow-hidden rounded-lg border bg-card">
             <h3 className="m-0">
               <button
                 type="button"
@@ -68,14 +102,14 @@ export function ThemeAccordion({
                   <ChevronRight className="h-4 w-4" />
                 </motion.span>
 
-                <span className="font-medium text-foreground">{theme.theme}</span>
+                <span className="truncate font-medium text-foreground">{item.title}</span>
                 <Badge variant="secondary" className="shrink-0 text-[10px]">
-                  {posts.length} {posts.length === 1 ? 'Post' : 'Posts'}
+                  {item.count} {item.count === 1 ? 'Post' : 'Posts'}
                 </Badge>
 
-                {theme.channels.length > 0 && (
-                  <span className="ml-auto hidden truncate text-xs text-muted-foreground md:inline">
-                    {theme.channels.join(' · ')}
+                {item.meta && (
+                  <span className="ml-auto hidden min-w-0 truncate text-xs text-muted-foreground md:inline">
+                    {item.meta}
                   </span>
                 )}
               </button>
@@ -94,10 +128,10 @@ export function ThemeAccordion({
                   className="overflow-hidden"
                 >
                   <div className="px-4 pb-4 pt-1">
-                    {theme.description && (
-                      <p className="mb-3 text-sm text-muted-foreground">{theme.description}</p>
+                    {item.description && (
+                      <p className="mb-3 text-sm text-muted-foreground">{item.description}</p>
                     )}
-                    {posts.length === 0 ? (
+                    {item.posts.length === 0 ? (
                       <p className="text-sm text-muted-foreground">
                         Keine zugeordneten Posts im Zeitfenster.
                       </p>
@@ -106,17 +140,14 @@ export function ThemeAccordion({
                         className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4"
                         initial={reduce ? false : 'hidden'}
                         animate={reduce ? undefined : 'show'}
-                        variants={{
-                          hidden: {},
-                          show: { transition: { staggerChildren: 0.04 } },
-                        }}
+                        variants={{ hidden: {}, show: { transition: { staggerChildren: 0.035 } } }}
                       >
-                        {posts.map((p) => (
+                        {item.posts.map((p) => (
                           <motion.div
                             key={p.id}
                             variants={{
                               hidden: { opacity: 0, y: 6 },
-                              show: { opacity: 1, y: 0, transition: { duration: 0.25, ease } },
+                              show: { opacity: 1, y: 0, transition: { duration: 0.22, ease } },
                             }}
                           >
                             <PostCard post={p} channel={channelById[p.channel_id]} />
