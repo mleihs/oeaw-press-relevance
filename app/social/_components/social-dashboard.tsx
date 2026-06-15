@@ -14,6 +14,7 @@ import type { DisclosureItem } from './accordion-list';
 import type { PostCardChannel } from './post-card';
 import { SocialFilterProvider } from './social-filter-context';
 import { TopTags } from './top-tags';
+import { ThemeChips } from './theme-chips';
 
 const compact = new Intl.NumberFormat('de-AT', { notation: 'compact', maximumFractionDigits: 1 });
 
@@ -54,6 +55,8 @@ export function SocialDashboard({
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [sort, setSort] = useState<SocialSort>('recent');
   const [range, setRange] = useState<number | null>(null); // time-range quick-filter (days); null = Alle
+  const [focusedThemeKey, setFocusedThemeKey] = useState<string | null>(null);
+  const [focusNonce, setFocusNonce] = useState(0); // bumps so re-clicking the same theme re-opens it
 
   // Tags are a disjunctive (OR) facet: a post matches if it carries ANY active
   // tag. Toggle is case-insensitive; the displayed casing is preserved.
@@ -129,9 +132,28 @@ export function SocialDashboard({
     [channels],
   );
 
+  // Theme fields (stable keys match themeDisclosure) for the clickable overview row.
+  const themeChips = useMemo(
+    () => themeItems.map((t, i) => ({ key: `theme-${i}`, title: t.theme.theme, count: t.posts.length })),
+    [themeItems],
+  );
+
   const goto = useCallback(
     (v: SocialView) => {
       setView(v);
+      requestAnimationFrame(() =>
+        viewsRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }),
+      );
+    },
+    [reduce],
+  );
+
+  // Theme chip → switch to the Themen view, open that theme's panel, scroll up.
+  const gotoTheme = useCallback(
+    (key: string) => {
+      setView('themen');
+      setFocusedThemeKey(key);
+      setFocusNonce((n) => n + 1);
       requestAnimationFrame(() =>
         viewsRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }),
       );
@@ -151,6 +173,10 @@ export function SocialDashboard({
       />
 
       {briefing}
+
+      {allPosts.length > 0 && (
+        <ThemeChips themes={themeChips} activeKey={focusedThemeKey} onSelect={gotoTheme} />
+      )}
 
       {allPosts.length === 0 ? (
         <StatusBanner variant="neutral">
@@ -184,6 +210,7 @@ export function SocialDashboard({
               resetKey={resetKey}
               freshWindowDays={freshWindowDays}
               splitOlder={!filtering}
+              themeFocusKey={focusedThemeKey ? `${focusedThemeKey}#${focusNonce}` : ''}
             />
           </div>
         </SocialFilterProvider>

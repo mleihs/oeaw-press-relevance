@@ -20,6 +20,7 @@ export function SocialViews({
   resetKey,
   freshWindowDays,
   splitOlder,
+  themeFocusKey,
 }: {
   view: SocialView;
   onView: (v: SocialView) => void;
@@ -31,6 +32,7 @@ export function SocialViews({
   resetKey: string;
   freshWindowDays: number;
   splitOlder: boolean;
+  themeFocusKey: string;
 }) {
   return (
     <Tabs value={view} onValueChange={(v) => onView(v as SocialView)} className="space-y-4">
@@ -47,6 +49,7 @@ export function SocialViews({
           resetKey={resetKey}
           freshWindowDays={freshWindowDays}
           splitOlder={splitOlder}
+          focusKey={themeFocusKey}
         />
       </TabsContent>
 
