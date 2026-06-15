@@ -79,6 +79,7 @@ export function AccordionList({
   resetKey = '',
   freshWindowDays = 7,
   splitOlder = false,
+  focusKey = '',
 }: {
   items: DisclosureItem[];
   channelById: Record<string, PostCardChannel>;
@@ -86,6 +87,8 @@ export function AccordionList({
   resetKey?: string;
   freshWindowDays?: number;
   splitOlder?: boolean;
+  /** `${itemKey}#${nonce}` — ensures that item is open (set from a theme chip). */
+  focusKey?: string;
 }) {
   const [open, setOpen] = useState<Set<number>>(() => seed(items, openMode));
   const [openOlder, setOpenOlder] = useState<Set<number>>(new Set());
@@ -100,6 +103,15 @@ export function AccordionList({
     setPrevKey(sig);
     setOpen(seed(items, openMode));
     setOpenOlder(new Set());
+  }
+
+  // External focus (theme chip click): ensure the targeted item is open.
+  const [prevFocus, setPrevFocus] = useState(focusKey);
+  if (focusKey !== prevFocus) {
+    setPrevFocus(focusKey);
+    const k = focusKey.split('#')[0];
+    const idx = items.findIndex((it) => it.key === k);
+    if (idx >= 0) setOpen((prev) => new Set(prev).add(idx));
   }
 
   const toggle = (i: number) =>
