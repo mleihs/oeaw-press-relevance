@@ -1,5 +1,16 @@
 import { relations } from "drizzle-orm/relations";
-import { users, userSettings, orgunitTypes, orgunits, memberTypes, persons, projects, lectureTypes, lectures, publications, pressReleases, publicationEmbeddings, publicationTypes, reviewSessions, pressReleaseEmbeddings, personOestat6, oestat6Categories, lecturePersons, lectureOrgunits, publicationProjects, projectLectures, extunits, extunitPersons, orgunitPublications, personPublications, orgunitPersons } from "./schema";
+import { users, userSettings, orgunitTypes, orgunits, memberTypes, persons, projects, lectureTypes, lectures, publications, pressReleases, publicationEmbeddings, publicationTypes, reviewSessions, pressReleaseEmbeddings, personOestat6, oestat6Categories, lecturePersons, lectureOrgunits, publicationProjects, projectLectures, extunits, extunitPersons, orgunitPublications, personPublications, orgunitPersons, socialChannels, socialPosts } from "./schema";
+
+export const socialChannelsRelations = relations(socialChannels, ({many}) => ({
+	socialPosts: many(socialPosts),
+}));
+
+export const socialPostsRelations = relations(socialPosts, ({one}) => ({
+	socialChannel: one(socialChannels, {
+		fields: [socialPosts.channelId],
+		references: [socialChannels.id],
+	}),
+}));
 
 export const userSettingsRelations = relations(userSettings, ({one}) => ({
 	user: one(users, {

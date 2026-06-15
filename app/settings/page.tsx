@@ -16,6 +16,7 @@ import { useInfoBubblesEnabled } from '@/lib/client/hooks/use-info-bubbles';
 import { useKeyboardShortcutsEnabled } from '@/lib/client/hooks/use-keyboard-shortcuts-enabled';
 import { openCheatSheet } from '@/lib/client/commands/controller';
 import { InfoBubble } from '@/components/info-bubble';
+import { SocialChannelsCard } from './_components/social-channels-card';
 import { Save, CheckCircle2, Eye, EyeOff, Loader2, XCircle, ShieldCheck, Info, User, Keyboard } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -244,6 +245,9 @@ export default function SettingsPage() {
           </p>
         </CardContent>
       </Card>
+
+      {/* Social-media channels */}
+      <SocialChannelsCard />
 
       {/* Analysis params */}
       <Card>

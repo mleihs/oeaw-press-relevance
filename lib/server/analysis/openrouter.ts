@@ -1,67 +1,16 @@
 import { AnalysisResult, LLMResponse } from '@/lib/shared/types';
-import { COST_PER_MILLION_TOKENS } from '@/lib/shared/constants';
 import { SYSTEM_PROMPT, buildEvaluationPrompt, PublicationForPrompt } from './prompts';
 import { calculatePressScore } from './score';
-import { log } from '@/lib/server/log';
+import {
+  chatCompletionJson,
+  parseJsonContent,
+  checkKeyBalance,
+  estimateCost,
+} from '@/lib/server/openrouter';
 
-// Re-export so existing imports from this module keep working.
-export { calculatePressScore };
-
-export async function checkKeyBalance(apiKey: string): Promise<{
-  limitRemaining: number | null;
-  usage: number;
-  limit: number | null;
-  accountBalance: number | null;
-  effectiveBudget: number | null;
-}> {
-  const fallback = { limitRemaining: null, usage: 0, limit: null, accountBalance: null, effectiveBudget: null };
-  try {
-    const headers = { 'Authorization': `Bearer ${apiKey}` };
-    const opts = { headers, signal: AbortSignal.timeout(10000) };
-
-    const [keyRes, creditsRes] = await Promise.all([
-      fetch('https://openrouter.ai/api/v1/auth/key', opts),
-      fetch('https://openrouter.ai/api/v1/credits', opts).catch(() => null),
-    ]);
-
-    if (!keyRes.ok) return fallback;
-    const keyData = await keyRes.json();
-
-    const limitRemaining: number | null = keyData.data?.limit_remaining ?? null;
-    const usage: number = keyData.data?.usage ?? 0;
-    const limit: number | null = keyData.data?.limit ?? null;
-
-    // Account-level balance from /api/v1/credits
-    let accountBalance: number | null = null;
-    if (creditsRes && creditsRes.ok) {
-      const creditsData = await creditsRes.json();
-      const totalCredits = creditsData.data?.total_credits ?? null;
-      const totalUsage = creditsData.data?.total_usage ?? null;
-      if (totalCredits !== null && totalUsage !== null) {
-        accountBalance = totalCredits - totalUsage;
-      }
-    }
-
-    // Effective budget = the lower of key remaining and account balance
-    let effectiveBudget: number | null = null;
-    if (limitRemaining !== null && accountBalance !== null) {
-      effectiveBudget = Math.min(limitRemaining, accountBalance);
-    } else if (accountBalance !== null) {
-      effectiveBudget = accountBalance;
-    } else if (limitRemaining !== null) {
-      effectiveBudget = limitRemaining;
-    }
-
-    return { limitRemaining, usage, limit, accountBalance, effectiveBudget };
-  } catch {
-    return fallback;
-  }
-}
-
-export function estimateCost(tokenCount: number, model: string): number {
-  const costPerMillion = COST_PER_MILLION_TOKENS[model] ?? 5.0;
-  return (tokenCount / 1_000_000) * costPerMillion;
-}
+// Back-compat re-exports: batch.ts imports these from this module, and the
+// HTTP/cost/balance primitives now live in the shared client.
+export { calculatePressScore, checkKeyBalance, estimateCost };
 
 export async function analyzePublications(
   publications: PublicationForPrompt[],
@@ -70,93 +19,21 @@ export async function analyzePublications(
 ): Promise<{ results: AnalysisResult[]; tokensUsed: number; cost: number }> {
   const prompt = buildEvaluationPrompt(publications);
 
-  // Real output is ~300-400 tokens per publication. Use 500/pub for headroom.
-  // Don't cap too low — truncated JSON is worse than a 402 retry.
-  let maxTokens = 500 * publications.length;
+  // Real output is ~300-400 tokens per publication. Use 500/pub for headroom —
+  // the shared client's 402 back-off lowers it if the budget can't cover it.
+  const { content, tokensUsed, cost } = await chatCompletionJson({
+    system: SYSTEM_PROMPT,
+    user: prompt,
+    apiKey,
+    model,
+    maxTokens: 500 * publications.length,
+    temperature: 0.4,
+  });
 
-  let lastError = '';
-  for (let attempt = 0; attempt < 3; attempt++) {
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://oeaw-press-relevance.vercel.app',
-        'X-Title': 'Story Scout',
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: prompt },
-        ],
-        temperature: 0.4,
-        max_tokens: maxTokens,
-        response_format: { type: 'json_object' },
-      }),
-      signal: AbortSignal.timeout(60000),
-    });
-
-    if (response.status === 402) {
-      const errorBody = await response.text();
-
-      // "Prompt tokens limit exceeded" → account credits too low even for the prompt, no retry possible
-      if (errorBody.includes('Prompt tokens limit exceeded')) {
-        throw new Error(`OpenRouter: Guthaben aufgebraucht — nicht genug Credits für den Prompt. Bitte Credits aufladen auf openrouter.ai/settings/credits. (${errorBody})`);
-      }
-
-      // "can only afford N" → retry with lower max_tokens
-      const match = errorBody.match(/can only afford (\d+)/);
-      if (match) {
-        const affordable = parseInt(match[1], 10);
-        if (affordable > 150) {
-          maxTokens = affordable - 50;
-          log.warn('analysis_402_retry', { maxTokens, attempt: attempt + 1 });
-          lastError = errorBody;
-          continue;
-        }
-      }
-
-      throw new Error(`OpenRouter API error 402: ${errorBody}`);
-    }
-
-    if (!response.ok) {
-      const errorBody = await response.text();
-      throw new Error(`OpenRouter API error ${response.status}: ${errorBody}`);
-    }
-
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
-    if (!content) {
-      throw new Error('No content in LLM response');
-    }
-
-    const tokensUsed = data.usage?.total_tokens || 0;
-    const cost = estimateCost(tokensUsed, model);
-
-    let parsed: LLMResponse;
-    try {
-      parsed = JSON.parse(content);
-    } catch {
-      const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
-      if (jsonMatch) {
-        parsed = JSON.parse(jsonMatch[1]);
-      } else {
-        // Log truncated response for debugging
-        log.error('analysis_json_parse_failed', {
-          responseLength: content.length,
-          head: content.slice(0, 200),
-        });
-        throw new Error('Failed to parse LLM response as JSON');
-      }
-    }
-
-    if (!parsed.evaluations || !Array.isArray(parsed.evaluations)) {
-      throw new Error('LLM response missing evaluations array');
-    }
-
-    return { results: parsed.evaluations, tokensUsed, cost };
+  const parsed = parseJsonContent<LLMResponse>(content);
+  if (!parsed.evaluations || !Array.isArray(parsed.evaluations)) {
+    throw new Error('LLM response missing evaluations array');
   }
 
-  throw new Error(`OpenRouter API error 402 (nach 3 Versuchen): ${lastError}`);
+  return { results: parsed.evaluations, tokensUsed, cost };
 }

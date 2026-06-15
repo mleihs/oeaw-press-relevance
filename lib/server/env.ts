@@ -96,6 +96,24 @@ const Schema = z.object({
     .default('false')
     .transform((v) => v === 'true'),
   EVENTS_LLM_FALLBACK_MODEL: z.string().min(1).optional(),
+
+  // Social-media monitor (/social). All optional with defaults: the page and
+  // settings stay usable without a token; only the refresh action needs
+  // APIFY_TOKEN (the route returns a friendly 503 when it's unset).
+  APIFY_TOKEN: z.string().min(1).optional(),
+  APIFY_INSTAGRAM_ACTOR: z.string().min(1).default('apify~instagram-scraper'),
+  // Apify "Instagram Scraper" is pay-per-event (~$0.0027/result, FREE tier).
+  // Used to estimate per-refresh Apify cost for the in-app cost display.
+  APIFY_COST_PER_RESULT: z.coerce.number().nonnegative().default(0.0027),
+  // LLM model for post topic-extraction + theme overview. Falls back to the
+  // request header / LLM_DEFAULT_MODEL when unset. DeepSeek V3 is the
+  // price/performance pick for this German extraction task.
+  SOCIAL_LLM_MODEL: z.string().min(1).default('deepseek/deepseek-chat'),
+  SOCIAL_WINDOW_DAYS: z.coerce.number().int().positive().default(14),
+  SOCIAL_RESULTS_LIMIT: z.coerce.number().int().positive().default(12),
+  // Refresh throttle: skip the Apify fetch if a successful refresh ran within
+  // this many minutes (unless forced). Guards against token-burning re-clicks.
+  SOCIAL_MIN_REFRESH_MINUTES: z.coerce.number().int().nonnegative().default(30),
 });
 
 type Normalized = Record<string, string | undefined>;
