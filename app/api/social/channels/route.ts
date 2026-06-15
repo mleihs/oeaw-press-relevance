@@ -6,7 +6,11 @@ import {
 } from '@/lib/server/http';
 import { getEnv } from '@/lib/server/env';
 import { listChannels } from '@/lib/server/social/list';
-import { createChannel, SocialChannelConflictError } from '@/lib/server/social/channels';
+import { createChannel } from '@/lib/server/social/channels';
+import {
+  SocialChannelConflictError,
+  InvalidInstagramHandleError,
+} from '@/lib/server/social/errors';
 import { socialChannelCreateSchema } from '@/lib/shared/schemas';
 
 export const GET = withApiError(async () => {
@@ -27,8 +31,7 @@ export const POST = withApiError(async (req: NextRequest) => {
     if (err instanceof SocialChannelConflictError) {
       return errorToApiResponse(err, 409);
     }
-    // parseInstagramHandle rejects non-handle input with a plain Error.
-    if (err instanceof Error && /Ungültiger Instagram-Handle/.test(err.message)) {
+    if (err instanceof InvalidInstagramHandleError) {
       return errorToApiResponse(err, 400);
     }
     throw err;

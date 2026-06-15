@@ -501,6 +501,10 @@ export interface SocialTheme {
   channels: string[];
   post_count: number;
   keywords: string[];
+  /** IDs of the posts the LLM assigned to this theme. Optional: snapshots
+   *  created before this field shipped won't have it (UI falls back to
+   *  keyword matching). */
+  post_ids?: string[];
 }
 
 export interface SocialThemeSnapshot {

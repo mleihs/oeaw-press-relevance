@@ -9,6 +9,8 @@
 // (scripts/sync-social.ts) can call it without dragging in the app's env
 // validator — token/actor are passed explicitly, mirroring events/sync.ts.
 
+import { InvalidInstagramHandleError } from './errors';
+
 const APIFY_BASE = 'https://api.apify.com/v2/acts';
 
 /** IG path segments that are not profile handles. */
@@ -27,7 +29,7 @@ export function parseInstagramHandle(input: string): string {
   if (urlMatch) s = urlMatch[1];
   s = s.replace(/^@/, '').replace(/\/+$/, '').trim().toLowerCase();
   if (!/^[a-z0-9._]+$/.test(s) || RESERVED_HANDLES.has(s)) {
-    throw new Error(`Ungültiger Instagram-Handle: "${input}"`);
+    throw new InvalidInstagramHandleError(input);
   }
   return s;
 }

@@ -17,6 +17,7 @@ import { CapybaraModalAvatar, type CapybaraAvatarState } from '@/components/capy
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { getApiHeaders } from '@/lib/client/stores/settings-store';
+import { consumeSSE } from '@/lib/client/sse';
 import { Play, Square, RotateCcw } from 'lucide-react';
 import type {
   EnrichmentSourceName,
@@ -343,34 +344,7 @@ export function EnrichmentModal({
       }
 
       // SSE stream
-      const reader = response.body?.getReader();
-      if (!reader) return;
-
-      const decoder = new TextDecoder();
-      let buffer = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        let eventType = '';
-        for (const line of lines) {
-          if (line.startsWith('event: ')) {
-            eventType = line.slice(7).trim();
-          } else if (line.startsWith('data: ')) {
-            try {
-              const data = JSON.parse(line.slice(6));
-              handleSSEEvent(eventType, data);
-            } catch {
-              // ignore malformed
-            }
-          }
-        }
-      }
+      await consumeSSE(response, handleSSEEvent);
     } catch (err) {
       if ((err as Error).name === 'AbortError') {
         setStatus('cancelled');

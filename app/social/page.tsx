@@ -6,15 +6,17 @@ import {
   getLatestThemeSnapshot,
   getRefreshCostSummary,
 } from '@/lib/server/social/list';
+import { resolveThemePosts } from '@/lib/server/social/resolve';
 import { StatusBanner } from '@/components/status-banner';
-import { ThemeOverview } from './_components/theme-overview';
-import { ChannelSection } from './_components/channel-section';
+import type { PostCardChannel } from './_components/post-card';
+import { StatStrip } from './_components/stat-strip';
+import { Briefing } from './_components/briefing';
+import { SocialViews } from './_components/social-views';
 import { CostSummary } from './_components/cost-summary';
 import { RefreshButton } from './_components/refresh-button';
 
-// Always render fresh — a refresh writes new posts/snapshot and calls
-// router.refresh(); the page itself does no fetching or LLM work, so this is a
-// pure DB read (no Apify/LLM cost on view).
+// Pure DB read; a refresh writes new rows and calls router.refresh(). No Apify
+// or LLM work happens on view, so the page itself is free.
 export const dynamic = 'force-dynamic';
 
 export default async function SocialPage() {
@@ -26,6 +28,16 @@ export default async function SocialPage() {
     listChannelsWithRecentPosts(env.SOCIAL_WINDOW_DAYS),
     getRefreshCostSummary(),
   ]);
+
+  // Flatten posts (within window) for theme resolution + a channel lookup so
+  // theme-grouped cards still show their source channel.
+  const allPosts = channels.flatMap((c) => c.posts);
+  const channelById: Record<string, PostCardChannel> = {};
+  for (const c of channels) {
+    channelById[c.id] = { handle: c.handle, display_name: c.display_name };
+  }
+
+  const themeItems = snapshot ? resolveThemePosts(snapshot.themes, allPosts) : [];
 
   return (
     <div className="space-y-6">
@@ -49,16 +61,14 @@ export default async function SocialPage() {
         </StatusBanner>
       )}
 
-      {snapshot ? (
-        <ThemeOverview snapshot={snapshot} />
-      ) : (
-        <StatusBanner variant="neutral">
-          Noch kein Lagebild vorhanden.{' '}
-          {apifyConfigured
-            ? 'Klicke auf „Aktualisieren", um Posts zu laden und Themen zu extrahieren.'
-            : 'Sobald APIFY_TOKEN gesetzt ist, kann aktualisiert werden.'}
-        </StatusBanner>
-      )}
+      <StatStrip
+        posts={allPosts.length}
+        channels={channels.length}
+        themes={snapshot?.themes.length ?? 0}
+        windowDays={env.SOCIAL_WINDOW_DAYS}
+      />
+
+      {snapshot?.narrative_de && <Briefing narrative={snapshot.narrative_de} />}
 
       {channels.length === 0 ? (
         <StatusBanner variant="neutral">
@@ -68,12 +78,15 @@ export default async function SocialPage() {
           </Link>{' '}
           hinzu.
         </StatusBanner>
+      ) : allPosts.length === 0 && !snapshot ? (
+        <StatusBanner variant="neutral">
+          Noch keine Posts geladen.{' '}
+          {apifyConfigured
+            ? 'Klicke auf „Aktualisieren", um Posts zu laden und das Lagebild zu erzeugen.'
+            : 'Sobald APIFY_TOKEN gesetzt ist, kann aktualisiert werden.'}
+        </StatusBanner>
       ) : (
-        <div className="space-y-8">
-          {channels.map((c) => (
-            <ChannelSection key={c.id} channel={c} />
-          ))}
-        </div>
+        <SocialViews themeItems={themeItems} channels={channels} channelById={channelById} />
       )}
     </div>
   );

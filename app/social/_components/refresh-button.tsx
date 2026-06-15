@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { StatusBanner } from '@/components/status-banner';
 import { getApiHeaders } from '@/lib/client/stores/settings-store';
+import { consumeSSE } from '@/lib/client/sse';
 import { LLM_MODELS } from '@/lib/shared/constants';
 import { RefreshCw, Play, AlertCircle, Check, Loader2 } from 'lucide-react';
 
@@ -125,33 +126,7 @@ export function RefreshButton({ disabled }: { disabled?: boolean }) {
         return;
       }
 
-      const reader = res.body?.getReader();
-      if (!reader) return;
-      const decoder = new TextDecoder();
-      let buffer = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        let eventType = '';
-        for (const line of lines) {
-          if (line.startsWith('event: ')) {
-            eventType = line.slice(7).trim();
-          } else if (line.startsWith('data: ')) {
-            let data: Record<string, unknown> = {};
-            try {
-              data = JSON.parse(line.slice(6));
-            } catch {
-              continue;
-            }
-            handleEvent(eventType, data);
-          }
-        }
-      }
+      await consumeSSE(res, handleEvent);
     } catch (err) {
       if ((err as Error).name === 'AbortError') {
         reset();

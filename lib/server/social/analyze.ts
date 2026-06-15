@@ -10,7 +10,7 @@ import {
   socialThemeSnapshots,
   descNullsLast,
 } from '@/lib/server/db';
-import { chatCompletionJson, parseJsonContent } from '@/lib/server/openrouter';
+import { chatCompletionJson, parseJsonContent, isFatalLlmError } from '@/lib/server/openrouter';
 import {
   SYSTEM_PROMPT,
   buildPostPrompt,
@@ -45,13 +45,6 @@ interface PostResult {
   topic?: string;
   keywords?: string[];
   summary_de?: string;
-}
-
-function isFatalLlmError(message: string): boolean {
-  return (
-    (/\b402\b/.test(message) && /credits|afford|max_tokens|Budget|Guthaben/i.test(message)) ||
-    (/\b401\b/.test(message) && /unauthorized|invalid/i.test(message))
-  );
 }
 
 function cleanKeywords(v: unknown): string[] {
@@ -217,19 +210,25 @@ export async function regenerateThemeSnapshot(
   const usable = inWindow.filter((r) => (r.topic && r.topic.trim()) || (r.caption && r.caption.trim()));
   if (usable.length === 0) return null;
 
-  const overviewPosts: PostForOverview[] = usable.map((r) => ({
+  // 1-based index → post id, so themes can reference their member posts.
+  const overviewPosts: PostForOverview[] = usable.map((r, i) => ({
+    index: i + 1,
     channel: r.socialChannel?.handle ?? '?',
     topic: r.topic,
     keywords: r.keywords ?? [],
     caption: r.caption ?? '',
   }));
+  const idByIndex = (idx: unknown): string | null => {
+    const n = Number(idx);
+    return Number.isInteger(n) && n >= 1 && n <= usable.length ? usable[n - 1].id : null;
+  };
 
   const { content, tokensUsed, cost } = await chatCompletionJson({
     system: SYSTEM_PROMPT,
     user: buildOverviewPrompt(overviewPosts, opts.windowDays),
     apiKey: opts.apiKey,
     model: opts.model,
-    maxTokens: 1400,
+    maxTokens: 1800,
     temperature: 0.4,
   });
 
@@ -240,12 +239,16 @@ export async function regenerateThemeSnapshot(
       const o = t as Record<string, unknown>;
       const theme = typeof o.theme === 'string' ? o.theme.trim() : '';
       if (!theme) return null;
+      const postIds = (Array.isArray(o.post_indices) ? o.post_indices : [])
+        .map(idByIndex)
+        .filter((id): id is string => id !== null);
       return {
         theme,
         description: typeof o.description === 'string' ? o.description.trim() : '',
         channels: Array.isArray(o.channels) ? o.channels.map((c) => String(c)) : [],
-        post_count: Number(o.post_count) || 0,
+        post_count: postIds.length || Number(o.post_count) || 0,
         keywords: cleanKeywords(o.keywords),
+        post_ids: postIds,
       };
     })
     .filter((t): t is SocialTheme => t !== null);

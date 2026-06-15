@@ -5,6 +5,7 @@ import {
   calculatePressScore,
   checkKeyBalance,
 } from './openrouter';
+import { isFatalLlmError } from '@/lib/server/openrouter';
 import type { PublicationForPrompt } from './prompts';
 import { publicationToApi } from '../publications/to-api';
 import type { AnalysisBatchPayload } from '@/lib/shared/schemas';
@@ -185,9 +186,7 @@ export async function runAnalysisBatch(
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
-      const isFatal =
-        (/\b402\b/.test(message) && /credits|afford|max_tokens|Budget/i.test(message)) ||
-        (/\b401\b/.test(message) && /unauthorized|invalid/i.test(message));
+      const isFatal = isFatalLlmError(message);
 
       log.error('analysis_batch_error', { batchStart: i, message, fatal: isFatal });
       emit('error', { message, batch_start: i, fatal: isFatal });

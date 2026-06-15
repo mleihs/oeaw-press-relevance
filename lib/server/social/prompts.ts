@@ -43,15 +43,19 @@ ${items}`;
 }
 
 export interface PostForOverview {
+  /** Stable 1-based index the LLM echoes back in post_indices. */
+  index: number;
   channel: string;
   topic: string | null;
   keywords: string[];
   caption: string;
 }
 
-/** Aggregate recent posts into themes + a narrative overview. Returns a prompt
- *  expecting `{ "themes": [{theme, description, channels[], post_count,
- *  keywords[]}], "narrative_de": "..." }`. */
+/** Aggregate recent posts into themes + a narrative overview. Each theme also
+ *  reports which posts belong to it (`post_indices`, echoing the numbers below)
+ *  so the UI can expand a theme to its member posts. Returns a prompt expecting
+ *  `{ "themes": [{theme, description, channels[], post_count, keywords[],
+ *  post_indices[]}], "narrative_de": "..." }`. */
 export function buildOverviewPrompt(
   posts: PostForOverview[],
   windowDays: number,
@@ -59,23 +63,24 @@ export function buildOverviewPrompt(
   const items = posts
     .map(
       (p) =>
-        `- [${p.channel}] ${p.topic ?? '?'}${p.keywords.length ? ` (${p.keywords.join(', ')})` : ''}: ${clip(p.caption, 200) || '(kein Text)'}`,
+        `[#${p.index}] [${p.channel}] ${p.topic ?? '?'}${p.keywords.length ? ` (${p.keywords.join(', ')})` : ''}: ${clip(p.caption, 200) || '(kein Text)'}`,
     )
     .join('\n');
 
-  return `Hier sind ${posts.length} Instagram-Posts der letzten ${windowDays} Tage von mehreren beobachteten Kanälen. Erstelle ein "Lagebild": Welche Themen werden gerade behandelt?
+  return `Hier sind ${posts.length} Instagram-Posts der letzten ${windowDays} Tage von mehreren beobachteten Kanälen, jeweils mit einer Nummer [#N]. Erstelle ein "Lagebild": Welche Themen werden gerade behandelt?
 
-Fasse zu 3–8 übergeordneten Themen zusammen (nicht pro Post — bündele Verwandtes). Für jedes Thema:
+Fasse zu 3–8 übergeordneten Themen zusammen (nicht pro Post, sondern bündele Verwandtes). Jeder Post gehört zu genau einem Thema. Für jedes Thema:
 - "theme": kurzer Titel (2–5 Wörter)
 - "description": 1 Satz, was darunter fällt
 - "channels": Liste der Kanäle (Handles), die dieses Thema behandeln
-- "post_count": Anzahl der zugehörigen Posts
+- "post_indices": die Nummern [#N] der Posts, die zu diesem Thema gehören
+- "post_count": Anzahl der zugehörigen Posts (Länge von post_indices)
 - "keywords": 3–6 Schlagworte
 
-Schreibe außerdem "narrative_de": 2–4 Sätze Fließtext, der die aktuelle Lage zusammenfasst — was dominiert, was ist auffällig, welche Themen könnten für die ÖAW-Pressearbeit relevant sein.
+Schreibe außerdem "narrative_de": 2–4 Sätze Fließtext, der die aktuelle Lage zusammenfasst: was dominiert, was ist auffällig, welche Themen könnten für die ÖAW-Pressearbeit relevant sein.
 
 Gib NUR dieses JSON zurück:
-{"themes":[{"theme":"...","description":"...","channels":["..."],"post_count":<zahl>,"keywords":["..."]}],"narrative_de":"..."}
+{"themes":[{"theme":"...","description":"...","channels":["..."],"post_indices":[<zahl>],"post_count":<zahl>,"keywords":["..."]}],"narrative_de":"..."}
 
 Posts:
 ${items}`;

@@ -15,6 +15,12 @@ export interface ChangelogEntry {
 export const changelogEntries: ChangelogEntry[] = [
   {
     category: 'neu',
+    title: 'Social Media: Themen-Lagebild beobachteter Kanäle',
+    body: 'Der neue Bereich Social Media zeigt, welche Themen auf beobachteten Instagram-Kanälen gerade behandelt werden. Posts werden geladen, das LLM extrahiert Thema und Schlagworte und bündelt sie zu einem aggregierten Lagebild. Kanäle und Beobachtungszeitraum lassen sich in den Einstellungen pflegen.',
+    href: '/help/social/seiten-tour',
+  },
+  {
+    category: 'neu',
     title: 'Veranstaltungen: ÖAW-weite Events im Blick',
     body: 'Neben Publikationen erfasst Story Scout jetzt auch kommende ÖAW-Veranstaltungen. Die Events-Seite listet anstehende Termine aus der WebDB, mit Detailansicht, Flag und derselben Triage-Logik wie bei Pubs. Das Dashboard verlinkt direkt darauf.',
     href: '/help/events/seiten-tour',

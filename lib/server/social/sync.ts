@@ -11,13 +11,7 @@ import { eq, sql } from 'drizzle-orm';
 import { db, socialChannels, socialPosts } from '@/lib/server/db';
 import { fetchInstagramPosts, type NormalizedSocialPost } from './apify';
 import { effectiveLookbackDays, withinLookback } from './window';
-
-export class SocialSyncConfigError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'SocialSyncConfigError';
-  }
-}
+import { SocialSyncConfigError } from './errors';
 
 export interface SocialSyncOptions {
   /** APIFY_TOKEN. Falsy → SocialSyncConfigError (route maps to 503). */
