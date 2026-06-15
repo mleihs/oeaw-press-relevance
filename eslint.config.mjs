@@ -20,6 +20,8 @@ const eslintConfig = defineConfig([
     // The generated server.ts/browser.ts/dynamic.ts carry `// @ts-nocheck`
     // and use webpack-loader query syntax that ESLint can't parse.
     ".source/**",
+    // Generated coverage report (vitest --coverage); not source.
+    "coverage/**",
   ]),
   {
     rules: {

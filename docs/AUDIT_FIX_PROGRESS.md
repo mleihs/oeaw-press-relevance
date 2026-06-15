@@ -68,19 +68,29 @@ before deploy). Migrations: apply to LOCAL first, then PROD via psql to `PROD_DB
 - [x] error.tsx `reset()` wired (publications, press-releases, researchers) via ApiErrorCard action
 - [~] (lower) remaining contrast/index-key/title-only nits — left; cosmetic, not WCAG-blocking
 
-## Batch 5 — testing
-- [ ] `lib/server/openrouter.test.ts` — isFatalLlmError, estimateCost, 402 back-off, checkKeyBalance
-- [ ] gate auth tests — extract+test `timingSafePasswordMatch` + proxy `isPublic` decision matrix
-- [ ] batch orchestrator + `upsertBatch` tests (export `cleanKeywords` etc.)
-- [ ] add `@vitest/coverage-v8` + coverage script; run Playwright e2e in CI
+## Batch 5 — testing ✅ DONE (365 tests pass; +31 new)
+- [x] `lib/server/openrouter.test.ts` (21 tests) — estimateCost, isFatalLlmError, parseJsonContent,
+      chatCompletionJson 402 back-off + error paths, checkKeyBalance budget precedence
+- [x] gate auth: extracted crypto → `lib/server/gate.ts`, paths → `lib/shared/gate.ts` (Edge-safe);
+      `gate.test.ts` (10 tests) covers tokenize, timingSafePasswordMatch, isPublicGatePath matrix
+- [x] `@vitest/coverage-v8` + `test:coverage` script + vitest coverage config; CI test step now
+      runs coverage (baseline ~19% stmts, measurement-only, no threshold)
+- [~] batch orchestrator + `upsertBatch` tests — DEFERRED (MED): need DB-seam mock scaffolding;
+      the two HIGH money/auth gaps are closed. Good follow-up.
+- [~] Playwright e2e in CI — DEFERRED: needs DB + GATE_* secrets + browser install in CI;
+      high flake risk. Run locally (`npx playwright test`); wire as a nightly later.
 
-## Batch 6 — architecture / docs / help
-- [ ] fix `ARCHITECTURE.md` Folder Structure + Key Abstractions (stale lib/* paths)
-- [ ] add ADR-0019 row to `docs/adr/README.md` index
-- [ ] schema-drift CI check (every migration table/column appears in schema.ts)
-- [ ] move completed root/`docs/` plan files to `docs/archive/`
-- [ ] **update help content** (`content/help/**`) + dashboard "Was ist neu" changelog for any
-      user-visible changes from these fixes; verify help meta.json + em-dash gate
+## Batch 6 — architecture / docs / help ✅ DONE (full gate green incl. build)
+- [x] `ARCHITECTURE.md`: rewrote the `lib/` tree to the real server/shared/client layout +
+      replaced the "Phase 2 future" note with the ESLint-boundary reality (ADR 0006); fixed all
+      stale inline `lib/*.ts` path refs (meistertask/push, types, explanations, use-api-query, query-keys)
+- [x] ADR-0019 row added to `docs/adr/README.md` index
+- [x] schema-drift CI check: `scripts/check-schema-drift.mjs` + `npm run check-schema-drift` +
+      CI step (passes: 34/34 live migration tables in schema.ts)
+- [x] **help/changelog**: added "Barrierefreiheit, Sicherheit & Tempo" entry to the in-app
+      "Was ist neu" + bumped `changelogLastUpdated`. Help articles describe workflows/features
+      unchanged by these fixes, so verified-current (em-dash gate green)
+- [~] move completed plan files to `docs/archive/` — SKIPPED (cosmetic; risks breaking doc links)
 
 ---
 

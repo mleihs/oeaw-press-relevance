@@ -34,8 +34,11 @@ jobs:
       - name: Em-dash check (MDX)
         run: npm run check-em-dashes
 
-      - name: Test
-        run: npm test
+      - name: Schema-drift check (migrations vs schema.ts)
+        run: npm run check-schema-drift
+
+      - name: Test (with coverage summary)
+        run: npm run test:coverage
 
       # postcss-via-next is moderate and blocked upstream (no fix available);
       # gate fails only on high+ vulnerabilities so that local moderate-blockers

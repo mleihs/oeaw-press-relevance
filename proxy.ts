@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { GATE_COOKIE_NAME, isPublicGatePath } from '@/lib/shared/gate';
 
 /**
  * Proxy-based gate (Next 16 `proxy` file convention; was `middleware.ts`).
@@ -21,27 +22,9 @@ import type { NextRequest } from 'next/server';
  * /favicon.ico, /_next/static/*, /capybara*.png (gate background images).
  */
 
-const COOKIE_NAME = 'gate';
-
-const PUBLIC_PATHS = [
-  '/api/auth/gate',
-  '/robots.txt',
-  '/favicon.ico',
-];
-
-const PUBLIC_PREFIXES = [
-  '/_next/',
-  '/capybara',  // logo + gate background
-];
-
-function isPublic(pathname: string): boolean {
-  if (PUBLIC_PATHS.includes(pathname)) return true;
-  return PUBLIC_PREFIXES.some((p) => pathname.startsWith(p));
-}
-
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  if (isPublic(pathname)) return NextResponse.next();
+  if (isPublicGatePath(pathname)) return NextResponse.next();
 
   // Local-dev bypass. The gate protects the *deployed* app; PasswordGate
   // (components/password-gate.tsx) already skips its UI in development via
@@ -52,7 +35,7 @@ export async function proxy(req: NextRequest) {
   // start`, so production stays fully gated.
   if (process.env.NODE_ENV === 'development') return NextResponse.next();
 
-  const cookie = req.cookies.get(COOKIE_NAME)?.value;
+  const cookie = req.cookies.get(GATE_COOKIE_NAME)?.value;
   const expected = process.env.GATE_TOKEN;
 
   // Defensive pass-through if GATE_TOKEN is somehow unset in the Edge
