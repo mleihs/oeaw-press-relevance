@@ -50,6 +50,7 @@ export function ImageQuickview({
 
   useEffect(() => {
     if (!open) return;
+    const restoreTo = document.activeElement as HTMLElement | null; // the quickview trigger
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') close();
     };
@@ -60,6 +61,7 @@ export function ImageQuickview({
     return () => {
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = prevOverflow;
+      restoreTo?.focus?.(); // return focus to the trigger, not document start
     };
   }, [open, close]);
 

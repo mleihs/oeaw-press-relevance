@@ -71,7 +71,8 @@ export function SocialToolbar({
   }, [text]);
 
   const { activeTags, toggleTag, clearTags } = useSocialFilter();
-  const hasFilters = query.trim() !== '' || selectedChannels.length > 0 || activeTags.length > 0;
+  const hasFilters =
+    query.trim() !== '' || selectedChannels.length > 0 || activeTags.length > 0 || range !== null;
   const labelFor = (v: string) => channelOptions.find((o) => o.value === v)?.label ?? v;
 
   const clearAll = () => {
@@ -79,6 +80,7 @@ export function SocialToolbar({
     onQuery('');
     onSelectedChannels([]);
     clearTags?.();
+    onRange(null);
   };
 
   return (
@@ -125,21 +127,38 @@ export function SocialToolbar({
           </SelectContent>
         </Select>
 
-        <div className="inline-flex items-center rounded-md border p-0.5" role="group" aria-label="Zeitraum">
-          {RANGES.map((r) => (
-            <button
-              key={r.label}
-              type="button"
-              onClick={() => onRange(r.val)}
-              aria-pressed={range === r.val}
-              className={cn(
-                'rounded px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                range === r.val ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground',
-              )}
-            >
-              {r.label}
-            </button>
-          ))}
+        {/* Single-select → radiogroup semantics (not aria-pressed toggles). */}
+        <div className="inline-flex items-center rounded-md border p-0.5" role="radiogroup" aria-label="Zeitraum">
+          {RANGES.map((r) => {
+            const checked = range === r.val;
+            return (
+              <button
+                key={r.label}
+                type="button"
+                role="radio"
+                aria-checked={checked}
+                tabIndex={checked ? 0 : -1}
+                onClick={() => onRange(r.val)}
+                onKeyDown={(e) => {
+                  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    const i = RANGES.findIndex((x) => x.val === range);
+                    onRange(RANGES[(i + 1) % RANGES.length].val);
+                  } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    const i = RANGES.findIndex((x) => x.val === range);
+                    onRange(RANGES[(i - 1 + RANGES.length) % RANGES.length].val);
+                  }
+                }}
+                className={cn(
+                  'rounded px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                  checked ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                {r.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -171,6 +190,19 @@ export function SocialToolbar({
             </button>
           </Badge>
         ))}
+        {range !== null && (
+          <Badge variant="default" className="gap-1 font-normal">
+            letzte {range} Tage
+            <button
+              type="button"
+              onClick={() => onRange(null)}
+              aria-label="Zeitraumfilter entfernen"
+              className="rounded hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </Badge>
+        )}
         {hasFilters && (
           <Button variant="ghost" size="sm" onClick={clearAll} className="h-6 px-2 text-xs">
             Alle zurücksetzen

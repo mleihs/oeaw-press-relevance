@@ -5,6 +5,7 @@ import {
   listChannelsWithRecentPosts,
   getLatestThemeSnapshot,
   getRefreshCostSummary,
+  getPostsByIds,
 } from '@/lib/server/social/list';
 import { resolveThemePosts } from '@/lib/server/social/resolve';
 import { getSocialSettings } from '@/lib/server/social/settings';
@@ -35,7 +36,18 @@ export default async function SocialPage() {
   for (const c of channels) {
     channelById[c.id] = { handle: c.handle, display_name: c.display_name };
   }
-  const themeItems = snapshot ? resolveThemePosts(snapshot.themes, allPosts) : [];
+  // Resolve themes against a pool that also includes snapshot-referenced posts
+  // missing from the channel-capped list (theme window may exceed the display
+  // window, or a busy channel exceeds the per-channel cap).
+  let themeItems: ReturnType<typeof resolveThemePosts> = [];
+  if (snapshot) {
+    const have = new Set(allPosts.map((p) => p.id));
+    const missing = [...new Set(snapshot.themes.flatMap((t) => t.post_ids ?? []))].filter(
+      (id) => !have.has(id),
+    );
+    const pool = missing.length ? [...allPosts, ...(await getPostsByIds(missing))] : allPosts;
+    themeItems = resolveThemePosts(snapshot.themes, pool);
+  }
 
   return (
     <div className="space-y-6">

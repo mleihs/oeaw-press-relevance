@@ -148,7 +148,7 @@ export async function fetchInstagramPosts(
   });
 
   if (!res.ok) {
-    const body = await res.text().catch(() => '');
+    const errBody = await res.text().catch(() => '');
     if (res.status === 401 || res.status === 403) {
       throw new Error('Apify-Token ungültig oder ohne Berechtigung. Bitte APIFY_TOKEN prüfen.');
     }
@@ -158,7 +158,7 @@ export async function fetchInstagramPosts(
     if (res.status === 408 || res.status === 504) {
       throw new Error('Apify-Lauf hat das Zeitlimit überschritten. Bitte erneut versuchen.');
     }
-    throw new Error(`Apify-Fehler ${res.status}: ${body.slice(0, 300)}`);
+    throw new Error(`Apify-Fehler ${res.status}: ${errBody.slice(0, 300)}`);
   }
 
   const data = await res.json();

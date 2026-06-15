@@ -1,7 +1,7 @@
 // Read layer for the social monitor. Pure SELECTs — the /social page and the
 // settings channel card read through here; no external calls, no cost.
 
-import { asc, eq, ne, sql } from 'drizzle-orm';
+import { asc, eq, inArray, ne, sql } from 'drizzle-orm';
 import {
   db,
   socialChannels,
@@ -14,6 +14,7 @@ import type {
   SocialChannel,
   SocialChannelWithPosts,
   SocialCostSummary,
+  SocialPost,
   SocialThemeSnapshot,
 } from '@/lib/shared/types';
 import {
@@ -52,6 +53,17 @@ export async function listChannelsWithRecentPosts(
       .map(socialPostToApi);
     return { ...socialChannelToApi(row), posts };
   });
+}
+
+/** Fetch posts by id — used to resolve theme `post_ids` that fall outside the
+ *  per-channel display window/cap, so a theme never renders empty just because
+ *  its members aren't in the channel-capped list. */
+export async function getPostsByIds(ids: string[]): Promise<SocialPost[]> {
+  if (ids.length === 0) return [];
+  const rows = await db.query.socialPosts.findMany({
+    where: inArray(socialPosts.id, ids),
+  });
+  return rows.map(socialPostToApi);
 }
 
 /** All channels (active + inactive), for the settings management card. */
