@@ -56,12 +56,14 @@ export function StatStrip({
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
       <StatCard label="Posts im Fenster" value={posts} icon={<FileText className="h-5 w-5" />} accent="brand" explId="social_kpi_posts" />
 
+      {/* No explId/InfoBubble inside the clickable tiles: a role=button must not
+          contain another interactive control. The aria-label names the action. */}
       <ClickableTile label="Zur Kanal-Ansicht" onClick={onKanaele}>
-        <StatCard label="Kanäle" value={channels} icon={<Radio className="h-5 w-5" />} explId="social_kpi_channels" />
+        <StatCard label="Kanäle" value={channels} icon={<Radio className="h-5 w-5" />} />
       </ClickableTile>
 
       <ClickableTile label="Zur Themen-Ansicht" onClick={onThemen}>
-        <StatCard label="Themen" value={themes} icon={<Layers className="h-5 w-5" />} accent="purple" explId="social_kpi_themes" />
+        <StatCard label="Themen" value={themes} icon={<Layers className="h-5 w-5" />} accent="purple" />
       </ClickableTile>
 
       <StatCard label="Beobachtung" value={windowDays} subtitle="Tage (Standard)" icon={<CalendarRange className="h-5 w-5" />} accent="amber" explId="social_window" />

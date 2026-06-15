@@ -55,9 +55,14 @@ function PostGrid({
   reduce: boolean | null;
   autoFocus?: boolean;
 }) {
+  const ref = useRef<HTMLDivElement>(null);
+  // Focus once when revealed (not on every re-render, which would steal focus).
+  useEffect(() => {
+    if (autoFocus) ref.current?.focus();
+  }, [autoFocus]);
   return (
     <motion.div
-      ref={autoFocus ? (el) => el?.focus() : undefined}
+      ref={ref}
       tabIndex={autoFocus ? -1 : undefined}
       className="grid grid-cols-2 gap-3 outline-none sm:grid-cols-3 lg:grid-cols-4"
       initial={reduce ? false : 'hidden'}

@@ -7,7 +7,7 @@
 // analyzed_at) are preserved on re-sync, so a post is analyzed exactly once
 // and re-fetching never re-spends LLM tokens.
 
-import { eq, lt, sql } from 'drizzle-orm';
+import { and, eq, isNull, lt, or, sql } from 'drizzle-orm';
 import { db, socialChannels, socialPosts } from '@/lib/server/db';
 import { fetchInstagramPosts, type NormalizedSocialPost } from './apify';
 import { effectiveLookbackDays, withinLookback } from './window';
@@ -140,9 +140,16 @@ export async function syncSocialPosts(
   let pruned = 0;
   if (opts.retentionDays && opts.retentionDays > 0) {
     const cutoff = new Date(Date.now() - opts.retentionDays * 24 * 60 * 60 * 1000).toISOString();
+    // `posted_at < cutoff` skips NULLs (NULL < x is NULL), so prune undated
+    // posts by fetched_at instead — otherwise they'd accumulate forever.
     const deleted = await db
       .delete(socialPosts)
-      .where(lt(socialPosts.postedAt, cutoff))
+      .where(
+        or(
+          lt(socialPosts.postedAt, cutoff),
+          and(isNull(socialPosts.postedAt), lt(socialPosts.fetchedAt, cutoff)),
+        ),
+      )
       .returning({ id: socialPosts.id });
     pruned = deleted.length;
   }

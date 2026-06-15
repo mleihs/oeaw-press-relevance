@@ -160,25 +160,29 @@ export async function runSocialRefresh(
 
   // Snapshot — a failure here is non-fatal: the fetched posts are saved and the
   // previous snapshot still shows. Log it but finish the run as complete.
+  // Skip entirely if analysis was aborted, so a half-analyzed set never
+  // overwrites the previous good snapshot.
   let themes: number | null = null;
   let snapTokens = 0;
   let snapCost = 0;
-  try {
-    const snap = await regenerateThemeSnapshot({
-      apiKey: opts.apiKey,
-      model: opts.model,
-      themeWindowDays: settings.theme_window_days,
-    });
-    if (snap) {
-      themes = snap.themes;
-      snapTokens = snap.tokensUsed;
-      snapCost = snap.cost;
-      emit('snapshot', { themes: snap.themes, posts: snap.postCount });
+  if (!opts.abortSignal?.aborted) {
+    try {
+      const snap = await regenerateThemeSnapshot({
+        apiKey: opts.apiKey,
+        model: opts.model,
+        themeWindowDays: settings.theme_window_days,
+      });
+      if (snap) {
+        themes = snap.themes;
+        snapTokens = snap.tokensUsed;
+        snapCost = snap.cost;
+        emit('snapshot', { themes: snap.themes, posts: snap.postCount });
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      log.error('social_refresh_snapshot_error', { message });
+      emit('error', { message, fatal: false });
     }
-  } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    log.error('social_refresh_snapshot_error', { message });
-    emit('error', { message, fatal: false });
   }
 
   const apifyCost = fetched * opts.apifyCostPerResult;
