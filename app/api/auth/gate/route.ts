@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createHash, timingSafeEqual } from 'crypto';
 import { apiError, validateBody, withApiError } from '@/lib/server/http';
 import { gatePayloadSchema } from '@/lib/shared/schemas';
 import { createRateLimiter, getClientIp } from '@/lib/server/rate-limit';
+import { tokenize, timingSafePasswordMatch } from '@/lib/server/gate';
 
 // Login endpoint for the middleware gate. The browser POSTs the password
 // here; we compare against GATE_PASSWORD server-side and, on match, set
@@ -15,17 +15,8 @@ import { createRateLimiter, getClientIp } from '@/lib/server/rate-limit';
 // - Pre-computing the token in env (`GATE_TOKEN=sha256(GATE_PASSWORD)`)
 //   means the middleware never needs to hash on every request.
 
-function tokenize(password: string): string {
-  return createHash('sha256').update(password, 'utf8').digest('hex');
-}
-
-// timingSafeEqual on equal-length 32-byte SHA-256 hashes. Hashing first
-// also avoids leaking the password length via the comparison itself.
-function timingSafePasswordMatch(input: string, expected: string): boolean {
-  const inputHash = createHash('sha256').update(input, 'utf8').digest();
-  const expectedHash = createHash('sha256').update(expected, 'utf8').digest();
-  return timingSafeEqual(inputHash, expectedHash);
-}
+// tokenize + timingSafePasswordMatch now live in lib/server/gate.ts (shared
+// with the proxy, and unit-tested there).
 
 // Module-scoped limiter persists for the lifetime of the Lambda instance.
 const limiter = createRateLimiter({ maxAttempts: 5, windowMs: 60_000 });

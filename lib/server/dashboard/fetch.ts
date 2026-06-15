@@ -1,3 +1,4 @@
+import { unstable_cache } from 'next/cache';
 import { desc, isNotNull, sql } from 'drizzle-orm';
 import { db, publications } from '@/lib/server/db';
 import {
@@ -5,7 +6,7 @@ import {
   type PublicationListItem,
 } from '@/lib/server/publications/list';
 import { publicationsRepo } from '@/lib/server/repos/publications';
-import { listPressReleases } from '@/lib/server/press-releases/list';
+import { countOrphans } from '@/lib/server/press-releases/list';
 import {
   DIMENSION_SORT_MAP,
   SIMILARITY_RANGE_MAX,
@@ -106,6 +107,9 @@ async function getSimilarityDistribution(): Promise<number[]> {
  * view, not a row list).
  */
 async function getScoreSimilarityPoints(): Promise<ScoreSimilarityPoint[]> {
+  // Bound both the result payload and the SVG render: a distribution scatter
+  // needs shape, not every point. Random-sample to at most 4000 so the chart
+  // (and the embedded RSC payload) stays cheap as the analyzed corpus grows.
   const rows = await db.execute<{ s: number; p: number }>(sql`
     SELECT round(press_score::numeric, 3)::float8 AS s,
            round(press_similarity::numeric, 4)::float8 AS p
@@ -114,6 +118,8 @@ async function getScoreSimilarityPoints(): Promise<ScoreSimilarityPoint[]> {
       AND press_score IS NOT NULL
       AND press_similarity IS NOT NULL
       AND archived = false
+    ORDER BY random()
+    LIMIT 4000
   `);
   return rows.map((r) => [r.s, r.p]);
 }
@@ -246,9 +252,28 @@ export interface DashboardData {
   webdbAsOf: string | null;
 }
 
-// Parallel-fetches all five dashboard data sources. Replaces the legacy
-// five separate `useApiQuery` calls in `app/page.tsx` — one server-side
-// roundtrip (single Promise.all) embedded in the initial HTML.
+// The global, slow-changing aggregates are full-table scans / heavy
+// aggregations that don't depend on the request params, so cache them for 60s:
+// repeated dashboard renders under traffic no longer re-run them every hit.
+// (Replaces the inaccurate "60s-cached in PostgreSQL" assumption — a STABLE SQL
+// function is per-statement memoization, NOT a cross-request cache.) Per-request
+// data (top pubs for the selected period, the live flag/orphan counts) stays
+// uncached so it reflects the latest decisions immediately.
+const getStatsCached = unstable_cache(getStats, ['dashboard-stats'], { revalidate: 60 });
+const getScoreSimilarityPointsCached = unstable_cache(
+  getScoreSimilarityPoints,
+  ['dashboard-scatter'],
+  { revalidate: 60 },
+);
+const getPeriodCountsCached = unstable_cache(getPeriodCounts, ['dashboard-period-counts'], {
+  revalidate: 60,
+});
+const getWebdbAsOfCached = unstable_cache(getWebdbAsOf, ['dashboard-webdb-asof'], {
+  revalidate: 60,
+});
+
+// Parallel-fetches all dashboard data sources in one server-side roundtrip
+// (single Promise.all) embedded in the initial HTML.
 export async function getDashboardData(
   period: DashboardPeriod,
   topPubsLimit: number,
@@ -259,19 +284,19 @@ export async function getDashboardData(
     topPubsResult,
     flaggedCount,
     pressReleasedCount,
-    orphansResult,
+    orphansCount,
     scoreSimilarityPoints,
     periodCounts,
     webdbAsOf,
   ] = await Promise.all([
-    getStats(true),
+    getStatsCached(true),
     getTopPubs(period, topPubsLimit, sortBy),
     publicationsRepo.countWithFlags(),
     publicationsRepo.countPressReleased(),
-    listPressReleases({ orphans: 'true', withPub: false }),
-    getScoreSimilarityPoints(),
-    getPeriodCounts(),
-    getWebdbAsOf(),
+    countOrphans(),
+    getScoreSimilarityPointsCached(),
+    getPeriodCountsCached(),
+    getWebdbAsOfCached(),
   ]);
   return {
     stats,
@@ -281,7 +306,7 @@ export async function getDashboardData(
     periodCounts,
     flaggedCount,
     pressReleasedCount,
-    orphansCount: orphansResult.total,
+    orphansCount,
     scoreSimilarityPoints,
     webdbAsOf,
   };

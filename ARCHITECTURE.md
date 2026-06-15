@@ -113,7 +113,7 @@ undecided ──pitch──► pitch ──► (immutable until reset)
 Transitions are wired in
 `app/api/publications/[id]/decision/route.ts`. Side effects: pitching
 triggers a one-way MeisterTask push
-(`lib/meistertask/push.ts`). `decided_at` is managed by the
+(`lib/server/meistertask/push.ts`). `decided_at` is managed by the
 `trg_publications_decided_at_sync` trigger.
 
 ### Embedding-Cluster Membership
@@ -250,7 +250,7 @@ property.
 
 Cache invalidation patterns are built in, DevTools support is solid,
 and contributors with React experience will recognize it. Wrapped in
-`useApiQuery` (`lib/use-api-query.ts`) which injects auth headers — use
+`useApiQuery` (`lib/client/hooks/use-api-query.ts`) which injects auth headers — use
 that, not raw `fetch`.
 
 ## Folder Structure
@@ -297,19 +297,32 @@ oeaw-press-relevance/
 │   ├── empty-state.tsx, loading-state.tsx, skeletons.tsx
 │   ├── changelog-panel.tsx, password-gate.tsx
 │   └── haiku-block.tsx, stat-card.tsx, atmospheric-orb.tsx
-├── lib/                       # Shared helpers (server + client)
-│   ├── api-helpers.ts         # Supabase client factory
-│   ├── constants.ts           # SCORE_LABELS, LLM_MODELS, brand colors
-│   ├── types.ts               # Domain types
-│   ├── score-utils.ts, html-utils.ts, publication-display.ts
-│   ├── settings-store.ts, session-store.ts
-│   ├── use-api-query.ts       # TanStack Query wrapper
-│   ├── use-keyboard-shortcuts.ts, use-info-bubbles.ts
-│   ├── explanations.tsx       # EXPL map
-│   ├── query-keys.ts
-│   ├── meistertask/, enrichment/
-│   ├── researchers.ts, changelog.ts
-│   └── utils.ts
+├── lib/                       # ESLint-boundary-enforced layers (ADR 0006)
+│   ├── server/                # Server-only (DB, external APIs, secrets)
+│   │   ├── db/                # Drizzle schema, relations, client
+│   │   ├── analysis/, enrichment/, ingest/  # LLM + ETL pipelines
+│   │   ├── publications/, press-releases/, events/, dashboard/, orgunits/
+│   │   ├── meistertask/       # MeisterTask one-way push
+│   │   ├── repos/             # Repository pattern (only where ≥2 call sites)
+│   │   ├── openrouter.ts      # Shared OpenRouter HTTP client
+│   │   ├── http.ts            # withApiError, validateBody, assertSameOrigin
+│   │   ├── gate.ts            # Gate crypto (tokenize, timing-safe compare)
+│   │   ├── env.ts, log.ts, llm.ts, rate-limit.ts
+│   │   └── social/            # Social-media monitor server layer
+│   ├── shared/                # Isomorphic, zero internal deps (the kernel)
+│   │   ├── types.ts, schemas.ts, constants.ts
+│   │   ├── scoring.ts, eligibility.ts, completeness.ts, journal-tier.ts
+│   │   ├── gate.ts            # Gate paths + cookie name (Edge-safe)
+│   │   ├── json.ts            # Hardened LLM-JSON parser (jsonrepair)
+│   │   ├── changelog.ts, dashboard.ts, researchers.ts, social-filter.ts
+│   │   └── utils.ts, html-utils.ts, publication-display.ts
+│   ├── client/                # Client-only ('use client' helpers)
+│   │   ├── hooks/             # use-api-query (TanStack Query wrapper), etc.
+│   │   ├── stores/            # settings-store, session-store
+│   │   ├── commands/          # ⌘K command palette
+│   │   ├── explanations.tsx   # EXPL map
+│   │   ├── query-keys.ts, sse.ts, auth-events.ts
+│   └── mdx-plugins/           # Fumadocs MDX build plugins
 ├── scripts/                   # Offline scripts
 │   ├── embeddings/            # Python SPECTER2 batch
 │   ├── webdb-import.mjs       # TYPO3 MySQL → Postgres
@@ -324,9 +337,11 @@ oeaw-press-relevance/
 └── README.md, ARCHITECTURE.md, CONTRIBUTING.md, LICENSE
 ```
 
-Phase 2 of [OSS_READINESS_PLAN.md](OSS_READINESS_PLAN.md) splits
-`lib/` into `lib/server/`, `lib/shared/`, `lib/client/` with
-ESLint-enforced import boundaries.
+The `lib/server` / `lib/shared` / `lib/client` split (ADR 0006) is
+ESLint-enforced via `boundaries/dependencies` (`default: "disallow"`):
+`lib/shared` may import nothing internal, `lib/client` never imports
+`lib/server` (only `import type`), and RSC pages cross the boundary with
+type-only imports. See [docs/adr/0006-lib-server-shared-client-boundaries.md].
 
 ## Key Abstractions
 
@@ -340,7 +355,7 @@ button) from this object.
 To add a new decision state:
 
 1. Add an entry to `DECISION_VARIANTS`
-2. Update the `Decision` type in `lib/types.ts`
+2. Update the `Decision` type in `lib/shared/types.ts`
 3. Update the DB enum in a new migration
 
 Every surface picks the new state up automatically — no Tailwind
@@ -383,19 +398,19 @@ arbitrary-value classes (`bg-[var(--chart-bucket-3)]`) work.
 [CONTRIBUTING.md#styling](CONTRIBUTING.md#styling) for the full
 mapping table.
 
-### EXPL Map (lib/explanations.tsx:28)
+### EXPL Map (lib/client/explanations.tsx:28)
 
 ID-keyed dictionary of `Explanation` objects with shape
 `{ title, body, formula?, example?, note? }`. `<InfoBubble id="...">`
 components reference entries by ID. Adding a new metric or term:
 add an entry to `EXPL`, then reference it via the ID.
 
-### `useApiQuery` (lib/use-api-query.ts:28)
+### `useApiQuery` (lib/client/hooks/use-api-query.ts:28)
 
 Wrapper around TanStack Query that injects auth headers. Use this —
 never raw `fetch` — for any DB-backed query in components.
 
-### Query Keys (lib/query-keys.ts:14)
+### Query Keys (lib/client/query-keys.ts:14)
 
 Centralized cache-key constants (`QK.publications`,
 `QK.publication(id)`, `QK.reviewQueue`, etc.). Invalidate after

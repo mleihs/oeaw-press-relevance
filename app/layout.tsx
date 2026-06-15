@@ -9,6 +9,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { PasswordGate } from "@/components/password-gate";
 import { QueryProvider } from "@/components/query-provider";
 import { ThemeProvider } from "next-themes";
+import { MotionConfig } from "motion/react";
 import Link from "next/link";
 
 const geistSans = Geist({
@@ -51,6 +52,10 @@ export default function RootLayout({
             gets the framework/sidebar contexts it needs. */}
         <RootProvider theme={{ enabled: false }} search={{ enabled: false }}>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+            {/* App-wide reduced-motion: any Framer Motion component that doesn't
+                self-gate inherits `reducedMotion="user"`, so OS "reduce motion"
+                disables transform/layout animations everywhere at once. */}
+            <MotionConfig reducedMotion="user">
             <NuqsAdapter>
               <QueryProvider>
                 <PasswordGate>
@@ -74,6 +79,7 @@ export default function RootLayout({
                 </PasswordGate>
               </QueryProvider>
             </NuqsAdapter>
+            </MotionConfig>
           </ThemeProvider>
         </RootProvider>
       </body>

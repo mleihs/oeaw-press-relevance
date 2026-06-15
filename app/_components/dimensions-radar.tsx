@@ -59,9 +59,10 @@ export default function DimensionsRadar({
   if (data.every((d) => d.value === 0)) return null;
 
   return (
-    <ResponsiveContainer width="100%" height={320}>
+    <div>
+      <ResponsiveContainer width="100%" height={320}>
       <RadarChart data={data} margin={{ top: 24, right: 32, bottom: 24, left: 32 }}>
-        <PolarGrid stroke="#e5e5e5" />
+        <PolarGrid stroke="var(--border)" />
         <PolarAngleAxis
           dataKey="dimension"
           tick={(tickProps: PolarAxisTickProps) => (
@@ -86,7 +87,28 @@ export default function DimensionsRadar({
           contentStyle={{ fontSize: 12 }}
         />
       </RadarChart>
-    </ResponsiveContainer>
+      </ResponsiveContainer>
+      {/* Accessible data alternative — the SVG radar conveys the per-dimension
+          corpus averages visually; this table exposes the same numbers to
+          screen readers (WCAG 1.1.1). */}
+      <table className="sr-only">
+        <caption>Durchschnittliche Bewertung je Dimension (Korpus)</caption>
+        <thead>
+          <tr>
+            <th scope="col">Dimension</th>
+            <th scope="col">Durchschnitt</th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((d) => (
+            <tr key={d.dimKey}>
+              <th scope="row">{d.dimension}</th>
+              <td>{d.value}%</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
@@ -125,7 +147,7 @@ function InteractiveAxisTick({
     ? BRAND_HEX
     : hover && isInteractive
       ? BRAND_HEX
-      : '#737373';
+      : 'var(--muted-foreground)';
   const fontWeight = isActive ? 700 : hover && isInteractive ? 600 : 400;
   // Glow only on hover/active so the chart doesn't permanently halo every
   // label (which would muddy the polygon).
@@ -133,11 +155,30 @@ function InteractiveAxisTick({
 
   return (
     <g
-      style={{ cursor: isInteractive ? 'pointer' : 'default' }}
+      style={{ cursor: isInteractive ? 'pointer' : 'default', outline: 'none' }}
+      // Keyboard-operable when interactive: focusable + Enter/Space activates,
+      // and focus reuses the hover glow/weight for a visible focus indicator.
+      tabIndex={isInteractive ? 0 : undefined}
+      role={isInteractive ? 'button' : undefined}
+      aria-label={
+        isInteractive
+          ? isActive
+            ? `Sortierung nach ${label} aufheben`
+            : `Top-Publikationen nach ${label} sortieren`
+          : undefined
+      }
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
+      onFocus={() => setHover(true)}
+      onBlur={() => setHover(false)}
       onClick={() => {
         if (isInteractive && dbKey) onAxisClick(dbKey);
+      }}
+      onKeyDown={(e) => {
+        if (isInteractive && dbKey && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
+          onAxisClick(dbKey);
+        }
       }}
     >
       {/* SVG <title> is mounted unconditionally on interactive ticks so the

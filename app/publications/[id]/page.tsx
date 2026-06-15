@@ -1,8 +1,26 @@
+import { cache } from 'react';
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getPublicationById } from '@/lib/server/publications/fetch';
 import { displayTitle } from '@/lib/shared/publication-display';
 import { PublicationBreadcrumb } from './_components/breadcrumb';
 import { PublicationDetailClient } from './_components/detail-client';
+
+// React.cache dedupes the fetch across generateMetadata + the page render in
+// the same request, so the title metadata costs no extra query.
+const getPub = cache(getPublicationById);
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  if (!UUID_RE.test(id)) return { title: 'Publikation | Story Scout' };
+  const pub = await getPub(id);
+  if (!pub) return { title: 'Publikation | Story Scout' };
+  return { title: `${displayTitle(pub.original_title || pub.title, pub.citation)} | Story Scout` };
+}
 
 // Per ADR 0009: read-heavy admin pages opt out of ISR. The publication
 // detail row is decision-state-mutable (Pitch/Hold/Skip via the toolbar)
@@ -20,7 +38,7 @@ export default async function PublicationDetailPage({
   const { id } = await params;
   if (!UUID_RE.test(id)) notFound();
 
-  const pub = await getPublicationById(id);
+  const pub = await getPub(id);
   if (!pub) notFound();
 
   const titleForDisplay = displayTitle(pub.original_title || pub.title, pub.citation);

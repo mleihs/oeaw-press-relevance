@@ -31,13 +31,14 @@ export function EventsTable({ rows }: Props) {
     <Card className="overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
+          <caption className="sr-only">Kommende Veranstaltungen</caption>
           <thead className="bg-muted/50">
             <tr>
-              <th className="p-3 text-left font-medium whitespace-nowrap">Datum</th>
-              <th className="p-3 text-left font-medium">Titel</th>
-              <th className="p-3 text-left font-medium">Ort / Veranstalter</th>
-              <th className="p-3 text-left font-medium whitespace-nowrap">Status</th>
-              <th className="p-3 text-right font-medium whitespace-nowrap">Aktionen</th>
+              <th scope="col" className="p-3 text-left font-medium whitespace-nowrap">Datum</th>
+              <th scope="col" className="p-3 text-left font-medium">Titel</th>
+              <th scope="col" className="p-3 text-left font-medium">Ort / Veranstalter</th>
+              <th scope="col" className="p-3 text-left font-medium whitespace-nowrap">Status</th>
+              <th scope="col" className="p-3 text-right font-medium whitespace-nowrap">Aktionen</th>
             </tr>
           </thead>
           <tbody>

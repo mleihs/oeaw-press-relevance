@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { apiError, withApiError } from '@/lib/server/http';
+import { apiError, assertAllowedOrigin, withApiError } from '@/lib/server/http';
 import { requestLogger } from '@/lib/server/log';
 import { meistertaskPushPayloadSchema } from '@/lib/shared/schemas';
 import { pushPublicationToMeistertask } from '@/lib/server/meistertask/push';
@@ -16,6 +16,13 @@ export const POST = withApiError(async (req: NextRequest) => {
   if (!parsed.success) {
     return apiError(parsed.error.issues[0]?.message ?? 'Invalid payload', 400);
   }
+
+  // The origin is embedded verbatim into the MeisterTask task ("open in tool"
+  // link). A spoofed Host/Origin (which still passes assertSameOrigin) would
+  // otherwise poison that external link, so gate it against the allow-list —
+  // same guard the decision route already applies before embedding the origin.
+  const originCheck = assertAllowedOrigin(req.nextUrl.origin);
+  if (originCheck) return originCheck;
 
   try {
     const result = await pushPublicationToMeistertask(

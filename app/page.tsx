@@ -7,11 +7,12 @@ import {
 } from '@/lib/shared/dashboard';
 import { DashboardClient } from './_components/dashboard-client';
 
-// Per ADR 0009: read-heavy admin pages opt out of ISR. The dashboard
-// aggregates 5 data sources; the underlying queries are 60s-cached in
-// PostgreSQL's `publication_dashboard_stats(...)` function, so a per-render
-// fetch is still cheap. Revisit if traffic ever justifies a tuned
-// `revalidate=N` window.
+// Per ADR 0009: read-heavy admin pages opt out of ISR so per-request data (the
+// Top-N panel for the selected period, live flag/orphan counts) is always
+// current. The expensive, param-independent aggregates (stats, scatter, period
+// counts, WebDB-as-of) are wrapped in `unstable_cache(…, { revalidate: 60 })`
+// inside `getDashboardData`, so their full-table scans run at most once per 60s
+// under traffic rather than on every render.
 export const dynamic = 'force-dynamic';
 
 interface PageProps {

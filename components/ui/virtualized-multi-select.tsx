@@ -287,18 +287,24 @@ function RowItem({
   checked: boolean;
   onToggle: () => void;
 }) {
+  // A real <button> with aria-pressed: keyboard-focusable with native
+  // Enter/Space activation, and announced as a toggle button with its checked
+  // state. (Previously a div[role=option] with onClick only — mouse-only, and
+  // an orphaned `option` with no `listbox` ancestor to boot.)
   return (
-    <div
-      role="option"
-      aria-selected={checked}
+    <button
+      type="button"
+      aria-pressed={checked}
       onClick={onToggle}
       className={cn(
-        'flex items-center gap-2 px-3 py-2 cursor-pointer text-sm hover:bg-neutral-100',
+        'flex w-full items-center gap-2 px-3 py-2 cursor-pointer text-left text-sm hover:bg-neutral-100',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset',
         checked && 'bg-neutral-50',
       )}
       style={{ height: ITEM_HEIGHT }}
     >
       <span
+        aria-hidden="true"
         className={cn(
           'flex items-center justify-center h-4 w-4 rounded border shrink-0',
           checked ? 'bg-brand border-brand text-white' : 'border-neutral-300 bg-white',
@@ -312,6 +318,6 @@ function RowItem({
           <span className="block text-xs text-neutral-500 truncate">{item.sublabel}</span>
         )}
       </span>
-    </div>
+    </button>
   );
 }

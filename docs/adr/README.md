@@ -46,6 +46,7 @@ the *why* without spelunking through commit messages and memory files.
 | 0016 | [Command palette + global keyboard layer (cmdk, 0-dep matcher)](0016-command-palette-keyboard-layer.md) | accepted |
 | 0017 | [Ingest source-adapter boundary](0017-source-adapter-boundary.md) | proposed |
 | 0018 | [Input validation at the API edge](0018-input-validation-drizzle-zod.md) | accepted |
+| 0019 | [Events feature pattern variants](0019-events-feature-pattern-variants.md) | accepted |
 
 ## When to write an ADR
 

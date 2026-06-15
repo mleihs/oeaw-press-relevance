@@ -100,6 +100,17 @@ export async function getPressReleasesStats(): Promise<PressReleasesStats> {
   };
 }
 
+/** Count of orphan press-releases (publication_id IS NULL). The dashboard needs
+ *  only this number — a `count(*)` avoids `listPressReleases({orphans:'true'})`
+ *  fetching every orphan row over the wire just to read `.length`. */
+export async function countOrphans(): Promise<number> {
+  const [row] = await db
+    .select({ c: count() })
+    .from(pressReleasesTable)
+    .where(isNull(pressReleasesTable.publicationId));
+  return row?.c ?? 0;
+}
+
 /**
  * List press-releases ordered by released_at desc.
  *   - orphans: 'true'  -> only publication_id IS NULL

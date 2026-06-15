@@ -3,11 +3,9 @@
 import { ApiErrorCard } from '@/components/api-error-card';
 import { Button } from '@/components/ui/button';
 
-// error.tsx must be a Client Component (it receives an error prop + a reset
-// callback). The pilot pattern (persons/publications detail pages) wraps a
-// breadcrumb plus ApiErrorCard. List pages have no parent to navigate back
-// to, so the card alone — with a retry wired to Next's `reset()`.
-export default function PressReleasesError({
+// Route error boundary for /researchers. The page renders client-side, so an
+// in-render throw lands here with a retry wired to Next's `reset()`.
+export default function ResearchersError({
   error,
   reset,
 }: {
