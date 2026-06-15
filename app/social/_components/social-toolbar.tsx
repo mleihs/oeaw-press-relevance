@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/select';
 import { VirtualizedMultiSelect } from '@/components/ui/virtualized-multi-select';
 import type { SocialSort } from '@/lib/shared/social-filter';
+import { useSocialFilter } from './social-filter-context';
 
 export interface ChannelOption {
   value: string;
@@ -55,13 +56,15 @@ export function SocialToolbar({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [text]);
 
-  const hasFilters = query.trim() !== '' || selectedChannels.length > 0;
+  const { activeTags, toggleTag, clearTags } = useSocialFilter();
+  const hasFilters = query.trim() !== '' || selectedChannels.length > 0 || activeTags.length > 0;
   const labelFor = (v: string) => channelOptions.find((o) => o.value === v)?.label ?? v;
 
   const clearAll = () => {
     setText('');
     onQuery('');
     onSelectedChannels([]);
+    clearTags?.();
   };
 
   return (
@@ -119,6 +122,19 @@ export function SocialToolbar({
               onClick={() => onSelectedChannels(selectedChannels.filter((x) => x !== v))}
               aria-label={`Filter ${labelFor(v)} entfernen`}
               className="rounded hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </Badge>
+        ))}
+        {activeTags.map((t) => (
+          <Badge key={`tag-${t}`} variant="default" className="gap-1 font-normal">
+            #{t}
+            <button
+              type="button"
+              onClick={() => toggleTag?.(t)}
+              aria-label={`Tag ${t} entfernen`}
+              className="rounded hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <X className="h-3 w-3" />
             </button>
