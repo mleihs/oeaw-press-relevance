@@ -79,15 +79,21 @@ export function PostCard({
         {/* Engagement: display-only (monitoring view, not actionable). */}
         <div className="flex shrink-0 items-center gap-2">
           {post.like_count != null && (
-            <span className="inline-flex items-center gap-0.5" title="Likes">
+            <span
+              className="inline-flex items-center gap-0.5"
+              aria-label={`${post.like_count} Likes`}
+            >
               <Heart className="h-3 w-3" aria-hidden />
-              {compact.format(post.like_count)}
+              <span aria-hidden>{compact.format(post.like_count)}</span>
             </span>
           )}
           {post.comment_count != null && (
-            <span className="inline-flex items-center gap-0.5" title="Kommentare">
+            <span
+              className="inline-flex items-center gap-0.5"
+              aria-label={`${post.comment_count} Kommentare`}
+            >
               <MessageCircle className="h-3 w-3" aria-hidden />
-              {compact.format(post.comment_count)}
+              <span aria-hidden>{compact.format(post.comment_count)}</span>
             </span>
           )}
         </div>

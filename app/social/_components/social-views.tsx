@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { AccordionList, type DisclosureItem, type OpenMode } from './accordion-list';
 import type { PostCardChannel } from './post-card';
@@ -21,6 +22,7 @@ export function SocialViews({
   freshWindowDays,
   splitOlder,
   themeFocusKey,
+  emptyState,
 }: {
   view: SocialView;
   onView: (v: SocialView) => void;
@@ -33,6 +35,9 @@ export function SocialViews({
   freshWindowDays: number;
   splitOlder: boolean;
   themeFocusKey: string;
+  /** Shown in place of the default "no results" text when a lens is empty
+   *  (used for the filtered-empty recovery state). */
+  emptyState?: ReactNode;
 }) {
   return (
     <Tabs value={view} onValueChange={(v) => onView(v as SocialView)} className="space-y-4">
@@ -50,6 +55,7 @@ export function SocialViews({
           freshWindowDays={freshWindowDays}
           splitOlder={splitOlder}
           focusKey={themeFocusKey}
+          emptyState={emptyState}
         />
       </TabsContent>
 
@@ -61,6 +67,7 @@ export function SocialViews({
           resetKey={resetKey}
           freshWindowDays={freshWindowDays}
           splitOlder={splitOlder}
+          emptyState={emptyState}
         />
       </TabsContent>
     </Tabs>

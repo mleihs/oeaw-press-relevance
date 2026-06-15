@@ -48,6 +48,7 @@ export function SocialToolbar({
   range,
   onRange,
   resultCount,
+  onClearAll,
 }: {
   query: string;
   onQuery: (q: string) => void;
@@ -59,10 +60,10 @@ export function SocialToolbar({
   range: number | null;
   onRange: (r: number | null) => void;
   resultCount: number;
+  /** Owner-level reset of every facet (shared with the filtered-empty state). */
+  onClearAll: () => void;
 }) {
   // Local input + debounce so each keystroke doesn't re-filter the whole tree.
-  // The only external clear path (clearAll, below) resets `text` itself, so no
-  // separate sync-from-prop effect is needed.
   const [text, setText] = useState(query);
   useEffect(() => {
     const t = setTimeout(() => onQuery(text), 220);
@@ -70,18 +71,20 @@ export function SocialToolbar({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [text]);
 
-  const { activeTags, toggleTag, clearTags } = useSocialFilter();
+  // Sync the local input when `query` is cleared/changed from outside (the
+  // shared Clear-All path lives in the parent now). Adjust-state-during-render:
+  // fires only when the prop actually changed, and typing keeps text===query so
+  // it never loops.
+  const [prevQuery, setPrevQuery] = useState(query);
+  if (query !== prevQuery) {
+    setPrevQuery(query);
+    if (query !== text) setText(query);
+  }
+
+  const { activeTags, toggleTag } = useSocialFilter();
   const hasFilters =
     query.trim() !== '' || selectedChannels.length > 0 || activeTags.length > 0 || range !== null;
   const labelFor = (v: string) => channelOptions.find((o) => o.value === v)?.label ?? v;
-
-  const clearAll = () => {
-    setText('');
-    onQuery('');
-    onSelectedChannels([]);
-    clearTags?.();
-    onRange(null);
-  };
 
   return (
     <div className="space-y-2">
@@ -204,7 +207,7 @@ export function SocialToolbar({
           </Badge>
         )}
         {hasFilters && (
-          <Button variant="ghost" size="sm" onClick={clearAll} className="h-6 px-2 text-xs">
+          <Button variant="ghost" size="sm" onClick={onClearAll} className="h-6 px-2 text-xs">
             Alle zurücksetzen
           </Button>
         )}
