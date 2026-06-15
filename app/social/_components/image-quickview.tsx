@@ -80,8 +80,11 @@ export function ImageQuickview({
           aria-modal="true"
           aria-label={alt}
         >
+          {/* No bg/shadow on the box: object-contain letterboxes the image, and
+              any box background would show as a darker frame beside it. The
+              image sits directly on the backdrop. */}
           <motion.div
-            className="absolute overflow-hidden rounded-lg bg-black/40 shadow-2xl"
+            className="absolute"
             initial={reduce ? false : origin}
             animate={target}
             exit={reduce ? undefined : origin}
