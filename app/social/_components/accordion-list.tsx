@@ -99,6 +99,7 @@ export function AccordionList({
   freshWindowDays = 7,
   splitOlder = false,
   focusKey = '',
+  emptyState,
 }: {
   items: DisclosureItem[];
   channelById: Record<string, PostCardChannel>;
@@ -108,6 +109,9 @@ export function AccordionList({
   splitOlder?: boolean;
   /** `${itemKey}#${nonce}` — ensures that item is open (set from a theme chip). */
   focusKey?: string;
+  /** Custom node for the zero-items case (e.g. a filtered-empty recovery
+   *  state). Falls back to a neutral message when omitted. */
+  emptyState?: ReactNode;
 }) {
   const [open, setOpen] = useState<Set<number>>(() => seed(items, openMode, focusItemOf(focusKey)));
   const [openOlder, setOpenOlder] = useState<Set<number>>(new Set());
@@ -152,7 +156,11 @@ export function AccordionList({
   const revealOlder = (i: number) => setOpenOlder((prev) => new Set(prev).add(i));
 
   if (items.length === 0) {
-    return <p className="text-sm text-muted-foreground">Keine Treffer. Suche oder Filter anpassen.</p>;
+    return (
+      emptyState ?? (
+        <p className="text-sm text-muted-foreground">Keine Treffer. Suche oder Filter anpassen.</p>
+      )
+    );
   }
 
   return (

@@ -15,6 +15,9 @@ import type { PostCardChannel } from './post-card';
 import { SocialFilterProvider } from './social-filter-context';
 import { TopTags } from './top-tags';
 import { ThemeChips } from './theme-chips';
+import { EmptyState } from '@/components/empty-state';
+import { Button } from '@/components/ui/button';
+import { SearchX } from 'lucide-react';
 
 const compact = new Intl.NumberFormat('de-AT', { notation: 'compact', maximumFractionDigits: 1 });
 
@@ -68,6 +71,16 @@ export function SocialDashboard({
   }, []);
   const clearTags = useCallback(() => setSelectedTags([]), []);
 
+  // One escape hatch that resets EVERY facet — shared by the toolbar's reset
+  // button and the filtered-empty recovery action (filter-UX best practice:
+  // a single Clear-All alongside per-chip removal).
+  const clearAll = useCallback(() => {
+    setQuery('');
+    setSelectedChannels([]);
+    setSelectedTags([]);
+    setRange(null);
+  }, []);
+
   const allPosts = useMemo(() => channels.flatMap((c) => c.posts), [channels]);
   const selectedSet = useMemo(() => new Set(selectedChannels), [selectedChannels]);
   const tagSet = useMemo(() => new Set(selectedTags.map((t) => t.toLowerCase())), [selectedTags]);
@@ -85,6 +98,42 @@ export function SocialDashboard({
   const filtering =
     query.trim() !== '' || selectedChannels.length > 0 || selectedTags.length > 0 || range !== null;
   const resetKey = `${query}|${selectedChannels.join(',')}|${selectedTags.join(',')}|${range ?? 'all'}|${sort}`;
+
+  // Human-readable echo of what's currently narrowing the feed — shown inside
+  // the empty state so "no results" is never a dead-end (the user sees WHY and
+  // can recover). Channel ids → handles via channelById.
+  const activeFilterSummary = useMemo(() => {
+    const parts: string[] = [];
+    if (query.trim()) parts.push(`Suche „${query.trim()}“`);
+    for (const id of selectedChannels) parts.push(`@${channelById[id]?.handle ?? id}`);
+    for (const t of selectedTags) parts.push(`#${t}`);
+    if (range !== null) parts.push(`letzte ${range} Tage`);
+    return parts;
+  }, [query, selectedChannels, selectedTags, range, channelById]);
+
+  // Recovery empty state (filter-UX best practice: name the active filters +
+  // offer a one-click reset). Rendered only while filtering — a genuinely empty
+  // lens (e.g. no snapshot yet) keeps the accordion's own neutral message.
+  const filteredEmpty = (
+    <EmptyState
+      icon={<SearchX className="h-5 w-5" />}
+      title="Keine Posts für die aktuellen Filter"
+      body={
+        activeFilterSummary.length > 0 ? (
+          <>
+            Aktiv: {activeFilterSummary.join(' · ')}. Lockere einen Filter oder setze alle zurück.
+          </>
+        ) : (
+          'Passe Suche oder Filter an.'
+        )
+      }
+      action={
+        <Button variant="outline" size="sm" onClick={clearAll}>
+          Alle Filter zurücksetzen
+        </Button>
+      }
+    />
+  );
 
   const themeDisclosure = useMemo<DisclosureItem[]>(() => {
     // Key by the ORIGINAL snapshot index (stable across filtering) so surviving
@@ -192,6 +241,7 @@ export function SocialDashboard({
               range={range}
               onRange={setRange}
               resultCount={resultCount}
+              onClearAll={clearAll}
             />
             <TopTags posts={allPosts} />
             <SocialViews
@@ -206,6 +256,7 @@ export function SocialDashboard({
               freshWindowDays={freshWindowDays}
               splitOlder={!filtering}
               themeFocusKey={focusedThemeKey ? `${focusedThemeKey}#${focusNonce}` : ''}
+              emptyState={filtering ? filteredEmpty : undefined}
             />
           </div>
         </SocialFilterProvider>
