@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { postHaystack, matchesQuery, sortPosts } from './social-filter';
+import { postHaystack, matchesQuery, sortPosts, isWithinDays } from './social-filter';
 import type { SocialPost } from './types';
 
 function p(over: Partial<SocialPost>): SocialPost {
@@ -31,6 +31,13 @@ describe('matchesQuery', () => {
     expect(matchesQuery(hay, 'klima co2')).toBe(true);
     expect(matchesQuery(hay, 'klima hexen')).toBe(false);
   });
+});
+
+describe('isWithinDays', () => {
+  const daysAgo = (n: number) => new Date(Date.now() - n * 86400000).toISOString();
+  it('true for recent', () => expect(isWithinDays(daysAgo(2), 7)).toBe(true));
+  it('false for older', () => expect(isWithinDays(daysAgo(10), 7)).toBe(false));
+  it('undated counts as recent', () => expect(isWithinDays(null, 7)).toBe(true));
 });
 
 describe('sortPosts', () => {

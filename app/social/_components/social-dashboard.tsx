@@ -5,7 +5,7 @@ import { useReducedMotion } from 'motion/react';
 import { formatDistanceToNow } from 'date-fns';
 import { de } from 'date-fns/locale';
 import type { SocialChannelWithPosts, SocialPost, SocialTheme } from '@/lib/shared/types';
-import { postHaystack, matchesQuery, sortPosts, type SocialSort } from '@/lib/shared/social-filter';
+import { postHaystack, matchesQuery, sortPosts, isWithinDays, type SocialSort } from '@/lib/shared/social-filter';
 import { StatusBanner } from '@/components/status-banner';
 import { StatStrip } from './stat-strip';
 import { SocialToolbar } from './social-toolbar';
@@ -35,12 +35,14 @@ export function SocialDashboard({
   channels,
   channelById,
   windowDays,
+  freshWindowDays,
   briefing,
 }: {
   themeItems: ThemeWithPosts[];
   channels: SocialChannelWithPosts[];
   channelById: Record<string, PostCardChannel>;
   windowDays: number;
+  freshWindowDays: number;
   briefing: ReactNode;
 }) {
   const reduce = useReducedMotion();
@@ -51,6 +53,7 @@ export function SocialDashboard({
   const [selectedChannels, setSelectedChannels] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [sort, setSort] = useState<SocialSort>('recent');
+  const [range, setRange] = useState<number | null>(null); // time-range quick-filter (days); null = Alle
 
   // Tags are a disjunctive (OR) facet: a post matches if it carries ANY active
   // tag. Toggle is case-insensitive; the displayed casing is preserved.
@@ -70,13 +73,15 @@ export function SocialDashboard({
     (p: SocialPost) => {
       if (selectedSet.size && !selectedSet.has(p.channel_id)) return false;
       if (tagSet.size && !(p.keywords ?? []).some((k) => tagSet.has(k.toLowerCase()))) return false;
+      if (range !== null && !isWithinDays(p.posted_at, range)) return false;
       return matchesQuery(postHaystack(p, channelById[p.channel_id]?.handle), query);
     },
-    [selectedSet, tagSet, query, channelById],
+    [selectedSet, tagSet, range, query, channelById],
   );
 
-  const filtering = query.trim() !== '' || selectedChannels.length > 0 || selectedTags.length > 0;
-  const resetKey = `${query}|${selectedChannels.join(',')}|${selectedTags.join(',')}|${sort}`;
+  const filtering =
+    query.trim() !== '' || selectedChannels.length > 0 || selectedTags.length > 0 || range !== null;
+  const resetKey = `${query}|${selectedChannels.join(',')}|${selectedTags.join(',')}|${range ?? 'all'}|${sort}`;
 
   const themeDisclosure = useMemo<DisclosureItem[]>(() => {
     // Key by the ORIGINAL snapshot index (stable across filtering) so surviving
@@ -163,6 +168,8 @@ export function SocialDashboard({
               onSelectedChannels={setSelectedChannels}
               sort={sort}
               onSort={setSort}
+              range={range}
+              onRange={setRange}
               resultCount={resultCount}
             />
             <TopTags posts={allPosts} />
@@ -175,6 +182,8 @@ export function SocialDashboard({
               themeOpenMode={filtering ? 'all' : 'first'}
               channelOpenMode={filtering ? 'all' : 'none'}
               resetKey={resetKey}
+              freshWindowDays={freshWindowDays}
+              splitOlder={!filtering}
             />
           </div>
         </SocialFilterProvider>

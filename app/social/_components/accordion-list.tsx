@@ -2,8 +2,9 @@
 
 import { useId, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, ChevronDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { isWithinDays } from '@/lib/shared/social-filter';
 import type { SocialPost } from '@/lib/shared/types';
 import { PostCard, type PostCardChannel } from './post-card';
 
@@ -11,14 +12,14 @@ export interface DisclosureItem {
   key: string;
   title: string;
   count: number;
-  /** Right-aligned header content (e.g. channels for themes, stats for channels). */
   meta?: ReactNode;
-  /** Shown at the top of the expanded panel. */
   description?: ReactNode;
   posts: SocialPost[];
 }
 
 export type OpenMode = 'first' | 'none' | 'all';
+
+const EASE = [0.22, 1, 0.36, 1] as const;
 
 function seed(items: DisclosureItem[], mode: OpenMode): Set<number> {
   if (mode === 'all') return new Set(items.map((_, i) => i));
@@ -26,36 +27,79 @@ function seed(items: DisclosureItem[], mode: OpenMode): Set<number> {
   return new Set();
 }
 
+/** Staggered grid of post cards. `autoFocus` (used when the user reveals older
+ *  posts) moves focus to the grid so keyboard/SR users land on the new content
+ *  (Load-More focus-management best practice). */
+function PostGrid({
+  posts,
+  channelById,
+  reduce,
+  autoFocus,
+}: {
+  posts: SocialPost[];
+  channelById: Record<string, PostCardChannel>;
+  reduce: boolean | null;
+  autoFocus?: boolean;
+}) {
+  return (
+    <motion.div
+      ref={autoFocus ? (el) => el?.focus() : undefined}
+      tabIndex={autoFocus ? -1 : undefined}
+      className="grid grid-cols-2 gap-3 outline-none sm:grid-cols-3 lg:grid-cols-4"
+      initial={reduce ? false : 'hidden'}
+      animate={reduce ? undefined : 'show'}
+      variants={{ hidden: {}, show: { transition: { staggerChildren: 0.035 } } }}
+    >
+      {posts.map((p) => (
+        <motion.div
+          key={p.id}
+          variants={{
+            hidden: { opacity: 0, y: 6 },
+            show: { opacity: 1, y: 0, transition: { duration: 0.22, ease: EASE } },
+          }}
+        >
+          <PostCard post={p} channel={channelById[p.channel_id]} />
+        </motion.div>
+      ))}
+    </motion.div>
+  );
+}
+
 /**
- * Accessible accordion (W3C APG): each header is a real <button> with
- * aria-expanded + aria-controls; the panel reveals its posts on demand.
- * Generic over themes / channels. `resetKey` re-seeds the open set when the
- * active filter changes (so a search auto-opens matching groups). Motion is
- * gated by prefers-reduced-motion; toggling never happens on hover.
+ * Accessible accordion (W3C APG) of theme/channel groups. Each panel reveals its
+ * posts; when `splitOlder` is on (i.e. not actively filtering), posts older than
+ * `freshWindowDays` sit behind a "Load More" button ("Ältere anzeigen") rather
+ * than infinite scroll (Baymard/NN/g/BBC GEL). Motion is reduced-motion-gated;
+ * `resetKey` re-seeds open state when the filter context changes.
  */
 export function AccordionList({
   items,
   channelById,
   openMode = 'first',
   resetKey = '',
+  freshWindowDays = 7,
+  splitOlder = false,
 }: {
   items: DisclosureItem[];
   channelById: Record<string, PostCardChannel>;
   openMode?: OpenMode;
   resetKey?: string;
+  freshWindowDays?: number;
+  splitOlder?: boolean;
 }) {
   const [open, setOpen] = useState<Set<number>>(() => seed(items, openMode));
+  const [openOlder, setOpenOlder] = useState<Set<number>>(new Set());
   const reduce = useReducedMotion();
   const baseId = useId();
 
-  // Re-seed the open set when the filter/view context changes (so matches
-  // become visible). React's "adjust state during render" pattern — preferred
-  // over an effect, and remounts no DOM.
+  // Re-seed open state when the filter/view context changes (React's "adjust
+  // state during render" pattern — no effect, fires once per change).
   const [prevKey, setPrevKey] = useState(`${resetKey}|${openMode}`);
-  const key = `${resetKey}|${openMode}`;
-  if (key !== prevKey) {
-    setPrevKey(key);
+  const sig = `${resetKey}|${openMode}`;
+  if (sig !== prevKey) {
+    setPrevKey(sig);
     setOpen(seed(items, openMode));
+    setOpenOlder(new Set());
   }
 
   const toggle = (i: number) =>
@@ -65,15 +109,10 @@ export function AccordionList({
       else next.add(i);
       return next;
     });
-
-  const ease = [0.22, 1, 0.36, 1] as const;
+  const revealOlder = (i: number) => setOpenOlder((prev) => new Set(prev).add(i));
 
   if (items.length === 0) {
-    return (
-      <p className="text-sm text-muted-foreground">
-        Keine Treffer. Suche oder Filter anpassen.
-      </p>
-    );
+    return <p className="text-sm text-muted-foreground">Keine Treffer. Suche oder Filter anpassen.</p>;
   }
 
   return (
@@ -82,6 +121,12 @@ export function AccordionList({
         const isOpen = open.has(i);
         const headerId = `${baseId}-h-${i}`;
         const panelId = `${baseId}-p-${i}`;
+
+        const fresh = splitOlder ? item.posts.filter((p) => isWithinDays(p.posted_at, freshWindowDays)) : item.posts;
+        const older = splitOlder ? item.posts.filter((p) => !isWithinDays(p.posted_at, freshWindowDays)) : [];
+        // Auto-reveal older if there is nothing fresh (avoid an empty-looking panel).
+        const olderRevealed = openOlder.has(i) || fresh.length === 0;
+
         return (
           <div key={item.key} className="overflow-hidden rounded-lg border bg-card">
             <h3 className="m-0">
@@ -95,18 +140,16 @@ export function AccordionList({
               >
                 <motion.span
                   animate={{ rotate: isOpen ? 90 : 0 }}
-                  transition={{ duration: reduce ? 0 : 0.2, ease }}
+                  transition={{ duration: reduce ? 0 : 0.2, ease: EASE }}
                   className="shrink-0 text-muted-foreground"
                   aria-hidden
                 >
                   <ChevronRight className="h-4 w-4" />
                 </motion.span>
-
                 <span className="truncate font-medium text-foreground">{item.title}</span>
                 <Badge variant="secondary" className="shrink-0 text-[10px]">
                   {item.count} {item.count === 1 ? 'Post' : 'Posts'}
                 </Badge>
-
                 {item.meta && (
                   <span className="ml-auto hidden min-w-0 truncate text-xs text-muted-foreground md:inline">
                     {item.meta}
@@ -124,36 +167,35 @@ export function AccordionList({
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: 'auto', opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: reduce ? 0 : 0.28, ease }}
+                  transition={{ duration: reduce ? 0 : 0.28, ease: EASE }}
                   className="overflow-hidden"
                 >
-                  <div className="px-4 pb-4 pt-1">
-                    {item.description && (
-                      <p className="mb-3 text-sm text-muted-foreground">{item.description}</p>
-                    )}
+                  <div className="space-y-3 px-4 pb-4 pt-1">
+                    {item.description && <p className="text-sm text-muted-foreground">{item.description}</p>}
+
                     {item.posts.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">
-                        Keine zugeordneten Posts im Zeitfenster.
-                      </p>
+                      <p className="text-sm text-muted-foreground">Keine zugeordneten Posts im Zeitfenster.</p>
                     ) : (
-                      <motion.div
-                        className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4"
-                        initial={reduce ? false : 'hidden'}
-                        animate={reduce ? undefined : 'show'}
-                        variants={{ hidden: {}, show: { transition: { staggerChildren: 0.035 } } }}
-                      >
-                        {item.posts.map((p) => (
-                          <motion.div
-                            key={p.id}
-                            variants={{
-                              hidden: { opacity: 0, y: 6 },
-                              show: { opacity: 1, y: 0, transition: { duration: 0.22, ease } },
-                            }}
+                      <>
+                        {fresh.length > 0 && (
+                          <PostGrid posts={fresh} channelById={channelById} reduce={reduce} />
+                        )}
+
+                        {older.length > 0 && !olderRevealed && (
+                          <button
+                            type="button"
+                            onClick={() => revealOlder(i)}
+                            className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                           >
-                            <PostCard post={p} channel={channelById[p.channel_id]} />
-                          </motion.div>
-                        ))}
-                      </motion.div>
+                            <ChevronDown className="h-3.5 w-3.5" />
+                            {older.length} ältere {older.length === 1 ? 'Post' : 'Posts'} anzeigen
+                          </button>
+                        )}
+
+                        {older.length > 0 && olderRevealed && (
+                          <PostGrid posts={older} channelById={channelById} reduce={reduce} autoFocus={openOlder.has(i)} />
+                        )}
+                      </>
                     )}
                   </div>
                 </motion.div>

@@ -7,6 +7,7 @@ import {
   getRefreshCostSummary,
 } from '@/lib/server/social/list';
 import { resolveThemePosts } from '@/lib/server/social/resolve';
+import { getSocialSettings } from '@/lib/server/social/settings';
 import { StatusBanner } from '@/components/status-banner';
 import type { PostCardChannel } from './_components/post-card';
 import { Briefing } from './_components/briefing';
@@ -22,10 +23,11 @@ export default async function SocialPage() {
   const env = getEnv();
   const apifyConfigured = Boolean(env.APIFY_TOKEN);
 
-  const [snapshot, channels, cost] = await Promise.all([
+  const [snapshot, channels, cost, settings] = await Promise.all([
     getLatestThemeSnapshot(),
     listChannelsWithRecentPosts(env.SOCIAL_WINDOW_DAYS),
     getRefreshCostSummary(),
+    getSocialSettings(),
   ]);
 
   const allPosts = channels.flatMap((c) => c.posts);
@@ -71,6 +73,7 @@ export default async function SocialPage() {
           channels={channels}
           channelById={channelById}
           windowDays={env.SOCIAL_WINDOW_DAYS}
+          freshWindowDays={settings.fresh_window_days}
           briefing={snapshot?.narrative_de ? <Briefing narrative={snapshot.narrative_de} /> : null}
         />
       )}

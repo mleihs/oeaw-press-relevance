@@ -18,6 +18,8 @@ export function SocialViews({
   themeOpenMode,
   channelOpenMode,
   resetKey,
+  freshWindowDays,
+  splitOlder,
 }: {
   view: SocialView;
   onView: (v: SocialView) => void;
@@ -27,6 +29,8 @@ export function SocialViews({
   themeOpenMode: OpenMode;
   channelOpenMode: OpenMode;
   resetKey: string;
+  freshWindowDays: number;
+  splitOlder: boolean;
 }) {
   return (
     <Tabs value={view} onValueChange={(v) => onView(v as SocialView)} className="space-y-4">
@@ -41,6 +45,8 @@ export function SocialViews({
           channelById={channelById}
           openMode={themeOpenMode}
           resetKey={resetKey}
+          freshWindowDays={freshWindowDays}
+          splitOlder={splitOlder}
         />
       </TabsContent>
 
@@ -50,6 +56,8 @@ export function SocialViews({
           channelById={channelById}
           openMode={channelOpenMode}
           resetKey={resetKey}
+          freshWindowDays={freshWindowDays}
+          splitOlder={splitOlder}
         />
       </TabsContent>
     </Tabs>
