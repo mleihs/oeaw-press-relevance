@@ -8,14 +8,7 @@ import type { SocialChannel } from '@/lib/shared/types';
 import type { SocialChannelUpdate } from '@/lib/shared/schemas';
 import { parseInstagramHandle, instagramUrl } from './apify';
 import { socialChannelToApi } from './to-api';
-
-/** Thrown when a handle already exists; route maps to 409. */
-export class SocialChannelConflictError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'SocialChannelConflictError';
-  }
-}
+import { SocialChannelConflictError } from './errors';
 
 export async function createChannel(input: {
   handle: string;

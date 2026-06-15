@@ -156,6 +156,16 @@ export async function chatCompletionJson(
   throw new Error(`OpenRouter API error 402 (nach 3 Versuchen): ${lastError}`);
 }
 
+/** Classify an OpenRouter error message: fatal (stop the batch to save credits)
+ *  vs. transient (skip the item, keep going). Shared by the publication-scoring
+ *  and social-analysis pipelines so the rule lives in one place. */
+export function isFatalLlmError(message: string): boolean {
+  return (
+    (/\b402\b/.test(message) && /credits|afford|max_tokens|Budget|Guthaben/i.test(message)) ||
+    (/\b401\b/.test(message) && /unauthorized|invalid/i.test(message))
+  );
+}
+
 /** Parse a JSON object out of an assistant message via the hardened shared
  *  parser (fences, surrounding prose, trailing commas, truncation). Logs +
  *  rethrows a generic error so the batch loop surfaces it like any other. */

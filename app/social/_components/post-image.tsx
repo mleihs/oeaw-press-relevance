@@ -1,33 +1,64 @@
 'use client';
 
 import { useState } from 'react';
-import { ImageOff } from 'lucide-react';
+import { Camera } from 'lucide-react';
+import { cn } from '@/lib/shared/utils';
 
 /**
- * Instagram CDN thumbnail. The fbcdn URLs occasionally hotlink-block or expire,
- * so this falls back to a neutral placeholder on error instead of a broken
- * image. Client component purely for the onError handler.
+ * Square post thumbnail, served through our same-origin proxy
+ * (/api/social/image/[id]) so Instagram CDN hotlink/Referer rules and expiring
+ * signed URLs never surface as a broken <img>. While loading: a soft shimmer.
+ * On error (expired/removed): a branded gradient placeholder with the topic, so
+ * a missing image still looks designed (accessible: decorative, labelled by the
+ * surrounding card text).
  */
-export function PostImage({ src, alt }: { src: string | null; alt: string }) {
+export function PostImage({
+  postId,
+  hasImage,
+  label,
+}: {
+  postId: string;
+  hasImage: boolean;
+  label: string | null;
+}) {
+  const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
-
-  if (!src || failed) {
-    return (
-      <div className="flex aspect-square w-full items-center justify-center rounded-md bg-muted text-muted-foreground/40">
-        <ImageOff className="h-6 w-6" />
-      </div>
-    );
-  }
+  const showFallback = !hasImage || failed;
 
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={src}
-      alt={alt}
-      loading="lazy"
-      referrerPolicy="no-referrer"
-      onError={() => setFailed(true)}
-      className="aspect-square w-full rounded-md object-cover"
-    />
+    <div className="relative aspect-square w-full overflow-hidden rounded-md bg-muted">
+      {!showFallback && (
+        <>
+          {!loaded && <div className="absolute inset-0 animate-pulse bg-muted" aria-hidden />}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={`/api/social/image/${postId}`}
+            alt={label ?? 'Instagram-Post'}
+            loading="lazy"
+            decoding="async"
+            onLoad={() => setLoaded(true)}
+            onError={() => setFailed(true)}
+            className={cn(
+              'h-full w-full object-cover transition-opacity duration-500',
+              loaded ? 'opacity-100' : 'opacity-0',
+            )}
+          />
+        </>
+      )}
+
+      {showFallback && (
+        <div
+          className="flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-brand/15 via-brand/5 to-transparent p-3 text-center"
+          aria-hidden
+        >
+          <Camera className="h-5 w-5 text-brand/50" />
+          {label && (
+            <span className="line-clamp-3 text-xs font-medium text-muted-foreground">
+              {label}
+            </span>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

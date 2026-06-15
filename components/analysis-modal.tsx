@@ -18,6 +18,7 @@ import { TintBadge } from '@/components/tint-badge';
 import { StatusBanner } from '@/components/status-banner';
 import { CapybaraModalAvatar } from '@/components/capybara-modal-avatar';
 import { getApiHeaders, loadSettings } from '@/lib/client/stores/settings-store';
+import { consumeSSE } from '@/lib/client/sse';
 import { LLM_MODELS } from '@/lib/shared/constants';
 import type { ModalStatus } from '@/lib/shared/types';
 import { Play, Square, RotateCcw, AlertCircle, Check } from 'lucide-react';
@@ -180,75 +181,49 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
       }
 
       // SSE stream
-      const reader = response.body?.getReader();
-      if (!reader) return;
-
-      const decoder = new TextDecoder();
-      let buffer = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        let eventType = '';
-        for (const line of lines) {
-          if (line.startsWith('event: ')) {
-            eventType = line.slice(7).trim();
-          } else if (line.startsWith('data: ')) {
-            try {
-              const data = JSON.parse(line.slice(6));
-
-              if (eventType === 'init') {
-                setApiKeyHint(data.api_key_hint ?? null);
-                if (data.key_balance) setKeyBalance(data.key_balance);
-              } else if (eventType === 'progress') {
-                setProgress({
-                  processed: data.processed ?? 0,
-                  total: data.total ?? 0,
-                  currentTitle: data.current_title ?? '',
-                  batchIndex: data.batch_index ?? 0,
-                  totalBatches: data.total_batches ?? 0,
-                  tokensUsed: data.tokens_used ?? 0,
-                  cost: data.cost ?? 0,
-                });
-              } else if (eventType === 'complete') {
-                setStatus('complete');
-                setCompleteData({
-                  processed: data.processed ?? data.total,
-                  total: data.total,
-                  successful: data.successful,
-                  failed: data.failed,
-                  tokensUsed: data.tokens_used ?? 0,
-                  cost: data.cost ?? 0,
-                });
-                onComplete?.();
-              } else if (eventType === 'error') {
-                const rawMsg = data.message || 'Unknown error';
-                console.error('[Analysis Modal] SSE error event:', rawMsg);
-                // Show the actual error message — only override for specific known codes
-                let friendlyMsg = rawMsg;
-                if (/\b402\b/.test(rawMsg) && /credits|afford|max_tokens|Budget|Guthaben/i.test(rawMsg)) {
-                  friendlyMsg = 'OpenRouter-Guthaben aufgebraucht. Bitte Credits aufladen auf openrouter.ai/settings/credits.';
-                } else if (/\b401\b/.test(rawMsg) && /unauthorized|invalid.{0,10}key/i.test(rawMsg)) {
-                  friendlyMsg = 'OpenRouter API-Key ungültig. Bitte in den Einstellungen prüfen.';
-                }
-                setErrors(prev => [...prev, friendlyMsg]);
-                // Stop UI on fatal errors
-                if (data.fatal) {
-                  setStatus('error');
-                  setErrorMessage(friendlyMsg);
-                }
-              }
-            } catch {
-              // ignore malformed
-            }
+      await consumeSSE(response, (eventType, data) => {
+        if (eventType === 'init') {
+          setApiKeyHint(data.api_key_hint ?? null);
+          if (data.key_balance) setKeyBalance(data.key_balance);
+        } else if (eventType === 'progress') {
+          setProgress({
+            processed: data.processed ?? 0,
+            total: data.total ?? 0,
+            currentTitle: data.current_title ?? '',
+            batchIndex: data.batch_index ?? 0,
+            totalBatches: data.total_batches ?? 0,
+            tokensUsed: data.tokens_used ?? 0,
+            cost: data.cost ?? 0,
+          });
+        } else if (eventType === 'complete') {
+          setStatus('complete');
+          setCompleteData({
+            processed: data.processed ?? data.total,
+            total: data.total,
+            successful: data.successful,
+            failed: data.failed,
+            tokensUsed: data.tokens_used ?? 0,
+            cost: data.cost ?? 0,
+          });
+          onComplete?.();
+        } else if (eventType === 'error') {
+          const rawMsg = data.message || 'Unknown error';
+          console.error('[Analysis Modal] SSE error event:', rawMsg);
+          // Show the actual error message, override only for specific known codes
+          let friendlyMsg = rawMsg;
+          if (/\b402\b/.test(rawMsg) && /credits|afford|max_tokens|Budget|Guthaben/i.test(rawMsg)) {
+            friendlyMsg = 'OpenRouter-Guthaben aufgebraucht. Bitte Credits aufladen auf openrouter.ai/settings/credits.';
+          } else if (/\b401\b/.test(rawMsg) && /unauthorized|invalid.{0,10}key/i.test(rawMsg)) {
+            friendlyMsg = 'OpenRouter API-Key ungültig. Bitte in den Einstellungen prüfen.';
+          }
+          setErrors(prev => [...prev, friendlyMsg]);
+          // Stop UI on fatal errors
+          if (data.fatal) {
+            setStatus('error');
+            setErrorMessage(friendlyMsg);
           }
         }
-      }
+      });
     } catch (err) {
       if ((err as Error).name === 'AbortError') {
         setStatus('cancelled');

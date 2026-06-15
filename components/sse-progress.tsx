@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Loader2, CheckCircle2, XCircle, Play } from 'lucide-react';
 import { getApiHeaders } from '@/lib/client/stores/settings-store';
+import { consumeSSE } from '@/lib/client/sse';
 
 interface SSEProgressProps {
   title: string;
@@ -66,60 +67,35 @@ export function SSEProgress({ title, description, endpoint, requestBody, onCompl
       }
 
       // SSE stream
-      const reader = response.body?.getReader();
-      if (!reader) return;
-
-      const decoder = new TextDecoder();
-      let buffer = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        let eventType = '';
-        for (const line of lines) {
-          if (line.startsWith('event: ')) {
-            eventType = line.slice(7);
-          } else if (line.startsWith('data: ')) {
-            try {
-              const data = JSON.parse(line.slice(6));
-              if (eventType === 'progress') {
-                setState(s => ({
-                  ...s,
-                  status: 'running',
-                  processed: data.processed ?? s.processed,
-                  total: data.total ?? s.total,
-                  currentTitle: data.current_title,
-                  tokensUsed: data.tokens_used,
-                  cost: data.cost,
-                }));
-              } else if (eventType === 'complete') {
-                setState({
-                  status: 'complete',
-                  processed: data.processed ?? data.total,
-                  total: data.total,
-                  successful: data.successful,
-                  failed: data.failed,
-                  tokensUsed: data.tokens_used,
-                  cost: data.cost,
-                });
-                onComplete?.();
-              } else if (eventType === 'error') {
-                setState(s => ({
-                  ...s,
-                  errorMessage: data.message,
-                }));
-              }
-            } catch {
-              // ignore malformed data
-            }
-          }
+      await consumeSSE(response, (eventType, data) => {
+        if (eventType === 'progress') {
+          setState(s => ({
+            ...s,
+            status: 'running',
+            processed: data.processed ?? s.processed,
+            total: data.total ?? s.total,
+            currentTitle: data.current_title,
+            tokensUsed: data.tokens_used,
+            cost: data.cost,
+          }));
+        } else if (eventType === 'complete') {
+          setState({
+            status: 'complete',
+            processed: data.processed ?? data.total,
+            total: data.total,
+            successful: data.successful,
+            failed: data.failed,
+            tokensUsed: data.tokens_used,
+            cost: data.cost,
+          });
+          onComplete?.();
+        } else if (eventType === 'error') {
+          setState(s => ({
+            ...s,
+            errorMessage: data.message,
+          }));
         }
-      }
+      });
     } catch (err) {
       setState(s => ({
         ...s,
