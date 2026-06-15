@@ -148,18 +148,13 @@ export function SocialDashboard({
     [reduce],
   );
 
-  // Theme chip → switch to the Themen view, open that theme's panel, scroll up.
-  const gotoTheme = useCallback(
-    (key: string) => {
-      setView('themen');
-      setFocusedThemeKey(key);
-      setFocusNonce((n) => n + 1);
-      requestAnimationFrame(() =>
-        viewsRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }),
-      );
-    },
-    [reduce],
-  );
+  // Theme chip → switch to the Themen view + open that theme; the accordion
+  // scrolls the opened theme into view itself.
+  const gotoTheme = useCallback((key: string) => {
+    setView('themen');
+    setFocusedThemeKey(key);
+    setFocusNonce((n) => n + 1);
+  }, []);
 
   return (
     <div className="space-y-6">
