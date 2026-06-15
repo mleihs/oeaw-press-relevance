@@ -70,6 +70,38 @@ export const analysisBatchPayloadSchema = z.object({
 
 export type AnalysisBatchPayload = z.infer<typeof analysisBatchPayloadSchema>;
 
+// ---------------------------------------------------------------------------
+// Social-media monitoring (/social).
+// ---------------------------------------------------------------------------
+
+export const socialRefreshPayloadSchema = z.object({
+  // Force bypasses the SOCIAL_MIN_REFRESH_MINUTES throttle.
+  force: z.boolean().default(false),
+});
+
+export type SocialRefreshPayload = z.infer<typeof socialRefreshPayloadSchema>;
+
+// lookback_days: 1–365, or null to inherit the global default.
+const lookbackDays = z.coerce.number().int().min(1).max(365).nullable();
+
+export const socialChannelCreateSchema = z.object({
+  // Accepts a bare handle ("quarks.de") or a full profile URL — the server
+  // normalizes both via parseInstagramHandle().
+  handle: z.string().trim().min(1, 'Handle oder Instagram-URL erforderlich'),
+  display_name: z.string().trim().nullish(),
+  lookback_days: lookbackDays.optional(),
+});
+
+export type SocialChannelCreate = z.infer<typeof socialChannelCreateSchema>;
+
+export const socialChannelUpdateSchema = z.object({
+  active: z.boolean().optional(),
+  display_name: z.string().trim().nullish(),
+  lookback_days: lookbackDays.optional(),
+});
+
+export type SocialChannelUpdate = z.infer<typeof socialChannelUpdateSchema>;
+
 // ===========================================================================
 // API-edge query / param / payload schemas (Pass A, ADR 0018)
 //

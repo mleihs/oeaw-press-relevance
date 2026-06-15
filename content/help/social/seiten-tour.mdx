@@ -1,0 +1,60 @@
+---
+title: Social-Media-Seite
+description: Die /social-Seite mit Themen-Lagebild, Posts pro Kanal, Kostenanzeige und Aktualisieren-Aktion.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+Der Bereich **Social Media** gibt einen schnellen Überblick, welche Themen auf
+beobachteten Social-Media-Kanälen gerade behandelt werden. Ziel ist ein reines
+Lagebild für die Pressearbeit, kein Triage-Workflow. Aktuell werden öffentliche
+Instagram-Profile ausgewertet (z. B. Wissenschafts- und Geschichtskanäle).
+
+<Callout type="info">
+  Die Seite ist ein reiner Datenbank-Read. Das Öffnen oder Navigieren kostet
+  nichts. Posts werden von Instagram nur dann geladen und per LLM analysiert,
+  wenn du explizit auf **Aktualisieren** klickst.
+</Callout>
+
+## Was die Seite zeigt {#aufbau}
+
+- **Themen-Lagebild** (oben): eine aggregierte Übersicht, die das LLM aus den
+  jüngsten Posts erstellt. Ein kurzer Fließtext fasst die Lage zusammen, darunter
+  stehen die erkannten Themen mit Anzahl der Posts, Schlagworten und den
+  beteiligten Kanälen.
+- **Posts pro Kanal**: je Kanal die neuesten Beiträge im Beobachtungszeitraum,
+  als Karten mit Vorschaubild, extrahiertem Thema, Kurz-Zusammenfassung,
+  Schlagworten, Likes/Kommentaren und Link zum Originalpost.
+- **Kostenanzeige** (im Kopf): die bisher angefallenen Kosten des Features,
+  aufgeschlüsselt nach Apify (geschätzt) und LLM (exakt), plus Anzahl der
+  Aktualisierungen und Zeitpunkt der letzten.
+
+## Aktualisieren {#aktualisieren}
+
+Der Button **Aktualisieren** öffnet einen Dialog, in dem du das LLM-Modell
+wählen kannst (Standard: DeepSeek V3, das beste Preis-Leistungs-Verhältnis für
+diese Aufgabe). Der Ablauf:
+
+1. Posts der aktiven Kanäle von Instagram laden (über den Dienst Apify).
+2. Neue Posts einmalig per LLM analysieren (Thema, Schlagworte, Zusammenfassung).
+   Bereits analysierte Posts werden nicht erneut verarbeitet.
+3. Ein neues Themen-Lagebild erstellen.
+
+Der Fortschritt wird live angezeigt; danach lädt die Seite die neuen Daten
+automatisch nach.
+
+<Callout type="warn">
+  Ein **Throttle** verhindert, dass kurz aufeinanderfolgende Klicks unnötig
+  Kosten verursachen: Lief vor Kurzem schon eine Aktualisierung, wird die neue
+  übersprungen. Mit der Option **Trotzdem aktualisieren** lässt sich das
+  erzwingen.
+</Callout>
+
+## Beobachtungszeitraum und Kanäle {#zeitraum}
+
+Wie weit zurück geschaut wird, ist konfigurierbar: ein globaler Standard gilt
+für alle Kanäle, einzelne Kanäle können ihn überschreiben. Kanäle selbst werden
+unter [Einstellungen](/help/social/kanaele-verwalten) verwaltet.
+
+Ist kein Apify-Token konfiguriert, bleibt die Seite nutzbar und zeigt bereits
+geladene Daten; die Aktualisieren-Aktion ist dann deaktiviert.

@@ -14,6 +14,7 @@ import {
   ClipboardCheck,
   Newspaper,
   CalendarDays,
+  Radar,
   HelpCircle,
   Search,
   Keyboard,
@@ -78,6 +79,12 @@ const SECONDARY: NavLink[] = [
     label: 'Forscher:innen',
     icon: Users,
     desc: 'Personen-Ranking, Coauthorship, Aktivitätsprofile.',
+  },
+  {
+    href: '/social',
+    label: 'Social Media',
+    icon: Radar,
+    desc: 'Themen-Lagebild aus beobachteten Social-Media-Kanälen.',
   },
 ];
 

@@ -1,0 +1,63 @@
+---
+title: Kanäle verwalten
+description: Beobachtete Instagram-Kanäle in den Einstellungen pflegen, Beobachtungszeitraum setzen, Datenquelle und Kosten.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+Die beobachteten Kanäle werden unter **Einstellungen** im Abschnitt
+*Social-Media-Kanäle* gepflegt. Dort lässt sich pro Kanal steuern, ob er aktiv
+ist, wie er angezeigt wird und wie weit zurück seine Posts berücksichtigt werden.
+
+## Kanäle hinzufügen und entfernen {#crud}
+
+- **Hinzufügen**: einen Handle (`quarks.de`) oder eine vollständige Profil-URL
+  (`https://www.instagram.com/quarks.de/`) eingeben. Beides wird automatisch zum
+  Handle normalisiert. Optional kann ein Anzeigename gesetzt werden.
+- **Aktiv-Schalter**: nur aktive Kanäle werden beim Aktualisieren geladen und auf
+  der Seite gezeigt. Inaktive Kanäle bleiben samt Daten erhalten, ruhen aber.
+- **Entfernen**: löscht den Kanal und seine gespeicherten Posts.
+
+## Beobachtungszeitraum {#zeitraum}
+
+Es gibt einen **globalen Standard** (Voreinstellung: 14 Tage), der für alle
+Kanäle gilt. Pro Kanal kann er im Feld *Tage* überschrieben werden. Bleibt das
+Feld leer, gilt der globale Standard.
+
+Der Zeitraum bestimmt sowohl, wie weit zurück Posts geladen werden, als auch
+welche Posts in Anzeige und Lagebild einfließen. Ein Geschichtskanal mit
+seltenen, langlebigen Beiträgen kann so ein weiteres Fenster bekommen als ein
+täglich postender Newskanal.
+
+<Callout type="info">
+  Der globale Standard wird über die Umgebungsvariable `SOCIAL_WINDOW_DAYS`
+  gesetzt. Per-Kanal-Overrides werden in der Datenbank gespeichert.
+</Callout>
+
+## Datenquelle und Kosten {#datenquelle}
+
+Posts werden über den Dienst **Apify** geladen (öffentlicher Store-Actor
+`apify~instagram-scraper`). Dafür ist ein Token in der Umgebungsvariable
+`APIFY_TOKEN` nötig. Die Kosten sind gering: Apify rechnet pro Ergebnis ab (etwa
+0,003 USD), das LLM verarbeitet nur kurze Texte. Eine Aktualisierung mehrerer
+Kanäle kostet typischerweise wenige Cent. Die laufenden Kosten zeigt der Kopf der
+[Social-Media-Seite](/help/social/seiten-tour) an.
+
+Jeder Post wird **genau einmal** analysiert; das Ergebnis wird am Post
+gespeichert. Eine fehlgeschlagene Analyse (etwa abgeschnittene Antwort) wird bei
+der nächsten Aktualisierung automatisch erneut versucht.
+
+## Headless aktualisieren {#cli}
+
+Für geplante Läufe (Cron) gibt es ein CLI:
+
+```bash
+npm run sync-social                 # gegen die lokale Datenbank
+npm run sync-social -- --force      # Throttle ignorieren
+npm run sync-social -- --target=prod --yes
+```
+
+<Callout type="warn">
+  Der Apify-Token ist ein Geheimnis. Er gehört in `.env.local` (lokal) bzw. in
+  die Deployment-Secrets und darf nicht eingecheckt werden.
+</Callout>
