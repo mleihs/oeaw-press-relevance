@@ -3,7 +3,6 @@
 import { formatDistanceToNow, format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { Heart, MessageCircle, ExternalLink } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import {
   HoverCard,
   HoverCardContent,
@@ -11,6 +10,7 @@ import {
 } from '@/components/ui/hover-card';
 import type { SocialPost } from '@/lib/shared/types';
 import { PostImage } from './post-image';
+import { TagChip } from './social-filter-context';
 
 const compact = new Intl.NumberFormat('de-AT', { notation: 'compact', maximumFractionDigits: 1 });
 
@@ -46,9 +46,7 @@ export function PostCard({
       {post.keywords.length > 0 && (
         <div className="flex flex-wrap gap-1">
           {post.keywords.slice(0, 4).map((k) => (
-            <Badge key={k} variant="secondary" className="text-[10px] font-normal">
-              {k}
-            </Badge>
+            <TagChip key={k} tag={k} />
           ))}
         </div>
       )}

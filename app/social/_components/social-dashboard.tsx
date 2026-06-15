@@ -12,6 +12,8 @@ import { SocialToolbar } from './social-toolbar';
 import { SocialViews, type SocialView } from './social-views';
 import type { DisclosureItem } from './accordion-list';
 import type { PostCardChannel } from './post-card';
+import { SocialFilterProvider } from './social-filter-context';
+import { TopTags } from './top-tags';
 
 const compact = new Intl.NumberFormat('de-AT', { notation: 'compact', maximumFractionDigits: 1 });
 
@@ -47,21 +49,34 @@ export function SocialDashboard({
   const [view, setView] = useState<SocialView>('themen');
   const [query, setQuery] = useState('');
   const [selectedChannels, setSelectedChannels] = useState<string[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [sort, setSort] = useState<SocialSort>('recent');
+
+  // Tags are a disjunctive (OR) facet: a post matches if it carries ANY active
+  // tag. Toggle is case-insensitive; the displayed casing is preserved.
+  const toggleTag = useCallback((tag: string) => {
+    const lc = tag.toLowerCase();
+    setSelectedTags((prev) =>
+      prev.some((t) => t.toLowerCase() === lc) ? prev.filter((t) => t.toLowerCase() !== lc) : [...prev, tag],
+    );
+  }, []);
+  const clearTags = useCallback(() => setSelectedTags([]), []);
 
   const allPosts = useMemo(() => channels.flatMap((c) => c.posts), [channels]);
   const selectedSet = useMemo(() => new Set(selectedChannels), [selectedChannels]);
+  const tagSet = useMemo(() => new Set(selectedTags.map((t) => t.toLowerCase())), [selectedTags]);
 
   const pred = useCallback(
     (p: SocialPost) => {
       if (selectedSet.size && !selectedSet.has(p.channel_id)) return false;
+      if (tagSet.size && !(p.keywords ?? []).some((k) => tagSet.has(k.toLowerCase()))) return false;
       return matchesQuery(postHaystack(p, channelById[p.channel_id]?.handle), query);
     },
-    [selectedSet, query, channelById],
+    [selectedSet, tagSet, query, channelById],
   );
 
-  const filtering = query.trim() !== '' || selectedChannels.length > 0;
-  const resetKey = `${query}|${selectedChannels.join(',')}|${sort}`;
+  const filtering = query.trim() !== '' || selectedChannels.length > 0 || selectedTags.length > 0;
+  const resetKey = `${query}|${selectedChannels.join(',')}|${selectedTags.join(',')}|${sort}`;
 
   const themeDisclosure = useMemo<DisclosureItem[]>(() => {
     // Key by the ORIGINAL snapshot index (stable across filtering) so surviving
@@ -138,28 +153,31 @@ export function SocialDashboard({
           Lagebild zu erzeugen.
         </StatusBanner>
       ) : (
-        <div ref={viewsRef} className="scroll-mt-4 space-y-4">
-          <SocialToolbar
-            query={query}
-            onQuery={setQuery}
-            channelOptions={channelOptions}
-            selectedChannels={selectedChannels}
-            onSelectedChannels={setSelectedChannels}
-            sort={sort}
-            onSort={setSort}
-            resultCount={resultCount}
-          />
-          <SocialViews
-            view={view}
-            onView={setView}
-            themeItems={themeDisclosure}
-            channelItems={channelDisclosure}
-            channelById={channelById}
-            themeOpenMode={filtering ? 'all' : 'first'}
-            channelOpenMode={filtering ? 'all' : 'none'}
-            resetKey={resetKey}
-          />
-        </div>
+        <SocialFilterProvider value={{ activeTags: selectedTags, toggleTag, clearTags }}>
+          <div ref={viewsRef} className="scroll-mt-4 space-y-4">
+            <SocialToolbar
+              query={query}
+              onQuery={setQuery}
+              channelOptions={channelOptions}
+              selectedChannels={selectedChannels}
+              onSelectedChannels={setSelectedChannels}
+              sort={sort}
+              onSort={setSort}
+              resultCount={resultCount}
+            />
+            <TopTags posts={allPosts} />
+            <SocialViews
+              view={view}
+              onView={setView}
+              themeItems={themeDisclosure}
+              channelItems={channelDisclosure}
+              channelById={channelById}
+              themeOpenMode={filtering ? 'all' : 'first'}
+              channelOpenMode={filtering ? 'all' : 'none'}
+              resetKey={resetKey}
+            />
+          </div>
+        </SocialFilterProvider>
       )}
     </div>
   );
