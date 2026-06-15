@@ -27,6 +27,13 @@ export function matchesQuery(haystack: string, query: string): boolean {
   return q.split(/\s+/).every((term) => haystack.includes(term));
 }
 
+/** Is a post within the last `days`? Undated posts count as recent (kept).
+ *  Used for the fresh-window split and the time-range quick-filter. */
+export function isWithinDays(postedAt: string | null, days: number): boolean {
+  if (!postedAt) return true;
+  return new Date(postedAt).getTime() >= Date.now() - days * 24 * 60 * 60 * 1000;
+}
+
 export function sortPosts(posts: SocialPost[], sort: SocialSort): SocialPost[] {
   const arr = [...posts];
   if (sort === 'engaged') {

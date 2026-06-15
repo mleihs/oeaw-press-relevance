@@ -14,7 +14,17 @@ import {
 } from '@/components/ui/select';
 import { VirtualizedMultiSelect } from '@/components/ui/virtualized-multi-select';
 import type { SocialSort } from '@/lib/shared/social-filter';
+import { cn } from '@/lib/shared/utils';
 import { useSocialFilter } from './social-filter-context';
+
+// Time-range presets as a segmented control (4 options → segmented is ideal;
+// all choices visible, one tap). null = Alle (whole lookback window).
+const RANGES: { label: string; val: number | null }[] = [
+  { label: '7T', val: 7 },
+  { label: '14T', val: 14 },
+  { label: '30T', val: 30 },
+  { label: 'Alle', val: null },
+];
 
 export interface ChannelOption {
   value: string;
@@ -35,6 +45,8 @@ export function SocialToolbar({
   onSelectedChannels,
   sort,
   onSort,
+  range,
+  onRange,
   resultCount,
 }: {
   query: string;
@@ -44,6 +56,8 @@ export function SocialToolbar({
   onSelectedChannels: (next: string[]) => void;
   sort: SocialSort;
   onSort: (s: SocialSort) => void;
+  range: number | null;
+  onRange: (r: number | null) => void;
   resultCount: number;
 }) {
   // Local input + debounce so each keystroke doesn't re-filter the whole tree.
@@ -110,6 +124,23 @@ export function SocialToolbar({
             <SelectItem value="engaged">Meiste Interaktion</SelectItem>
           </SelectContent>
         </Select>
+
+        <div className="inline-flex items-center rounded-md border p-0.5" role="group" aria-label="Zeitraum">
+          {RANGES.map((r) => (
+            <button
+              key={r.label}
+              type="button"
+              onClick={() => onRange(r.val)}
+              aria-pressed={range === r.val}
+              className={cn(
+                'rounded px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                range === r.val ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground',
+              )}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
