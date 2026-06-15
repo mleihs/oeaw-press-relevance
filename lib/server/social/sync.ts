@@ -7,7 +7,7 @@
 // analyzed_at) are preserved on re-sync, so a post is analyzed exactly once
 // and re-fetching never re-spends LLM tokens.
 
-import { eq, sql } from 'drizzle-orm';
+import { eq, lt, sql } from 'drizzle-orm';
 import { db, socialChannels, socialPosts } from '@/lib/server/db';
 import { fetchInstagramPosts, type NormalizedSocialPost } from './apify';
 import { effectiveLookbackDays, withinLookback } from './window';
@@ -22,6 +22,9 @@ export interface SocialSyncOptions {
   resultsLimit?: number;
   /** Global default look-back (days) for channels with no per-channel override. */
   windowDays: number;
+  /** If set, prune posts older than this many days after the upsert (bounds DB
+   *  growth). null/undefined = keep everything. */
+  retentionDays?: number | null;
 }
 
 export interface SocialSyncResult {
@@ -30,6 +33,7 @@ export interface SocialSyncResult {
   created: number;
   updated: number;
   unmatched: number;
+  pruned: number;
   ms: number;
 }
 
@@ -54,7 +58,7 @@ export async function syncSocialPosts(
     .where(eq(socialChannels.active, true));
 
   if (channels.length === 0) {
-    return { channels: 0, fetched: 0, created: 0, updated: 0, unmatched: 0, ms: Date.now() - startedAt };
+    return { channels: 0, fetched: 0, created: 0, updated: 0, unmatched: 0, pruned: 0, ms: Date.now() - startedAt };
   }
 
   // Resolve each channel's effective window; fetch up to the widest one (one
@@ -105,7 +109,7 @@ export async function syncSocialPosts(
     .filter((v): v is NonNullable<typeof v> => v !== null);
 
   if (values.length === 0) {
-    return { channels: channels.length, fetched: posts.length, created: 0, updated: 0, unmatched, ms: Date.now() - startedAt };
+    return { channels: channels.length, fetched: posts.length, created: 0, updated: 0, unmatched, pruned: 0, ms: Date.now() - startedAt };
   }
 
   // Single bulk UPSERT. The SET list deliberately omits the LLM analysis
@@ -132,12 +136,24 @@ export async function syncSocialPosts(
 
   const created = upserted.reduce((n, r) => n + (r.inserted ? 1 : 0), 0);
 
+  // Retention: prune posts older than the horizon (bounds DB growth).
+  let pruned = 0;
+  if (opts.retentionDays && opts.retentionDays > 0) {
+    const cutoff = new Date(Date.now() - opts.retentionDays * 24 * 60 * 60 * 1000).toISOString();
+    const deleted = await db
+      .delete(socialPosts)
+      .where(lt(socialPosts.postedAt, cutoff))
+      .returning({ id: socialPosts.id });
+    pruned = deleted.length;
+  }
+
   return {
     channels: channels.length,
     fetched: posts.length,
     created,
     updated: upserted.length - created,
     unmatched,
+    pruned,
     ms: Date.now() - startedAt,
   };
 }

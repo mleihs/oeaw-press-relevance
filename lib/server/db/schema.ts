@@ -769,3 +769,18 @@ export const socialRefreshRuns = pgTable("social_refresh_runs", {
 	index("idx_social_refresh_runs_created_at").using("btree", table.createdAt.desc().nullsLast().op("timestamptz_ops")),
 	check("social_refresh_runs_status_check", sql`status = ANY (ARRAY['complete'::text, 'error'::text, 'skipped'::text])`),
 ]);
+
+// Global, team-wide social-monitor settings (singleton row id=1). Migration:
+// supabase/migrations/20260615000002_social_settings.sql.
+export const socialSettings = pgTable("social_settings", {
+	id: smallint().default(1).primaryKey().notNull(),
+	freshWindowDays: integer("fresh_window_days").default(7).notNull(),
+	themeWindowDays: integer("theme_window_days").default(14).notNull(),
+	retentionDays: integer("retention_days"),
+	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+	check("social_settings_singleton", sql`id = 1`),
+	check("social_settings_fresh_check", sql`fresh_window_days >= 1 AND fresh_window_days <= 365`),
+	check("social_settings_theme_check", sql`theme_window_days >= 1 AND theme_window_days <= 365`),
+	check("social_settings_retention_check", sql`retention_days IS NULL OR (retention_days >= 1 AND retention_days <= 3650)`),
+]);

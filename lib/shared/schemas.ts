@@ -102,6 +102,15 @@ export const socialChannelUpdateSchema = z.object({
 
 export type SocialChannelUpdate = z.infer<typeof socialChannelUpdateSchema>;
 
+export const socialSettingsUpdateSchema = z.object({
+  fresh_window_days: z.coerce.number().int().min(1).max(365).optional(),
+  theme_window_days: z.coerce.number().int().min(1).max(365).optional(),
+  // null clears retention (keep everything); a number sets the prune horizon.
+  retention_days: z.coerce.number().int().min(1).max(3650).nullable().optional(),
+});
+
+export type SocialSettingsUpdate = z.infer<typeof socialSettingsUpdateSchema>;
+
 // ===========================================================================
 // API-edge query / param / payload schemas (Pass A, ADR 0018)
 //

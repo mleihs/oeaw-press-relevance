@@ -19,7 +19,7 @@ import {
   type PostForOverview,
 } from './prompts';
 import type { SocialTheme } from '@/lib/shared/types';
-import { effectiveLookbackDays, withinLookback } from './window';
+import { withinLookback } from './window';
 import { log } from '@/lib/server/log';
 
 export interface SocialAnalyzeOptions {
@@ -176,8 +176,9 @@ export async function analyzeSocialPosts(
 export interface ThemeSnapshotOptions {
   apiKey: string;
   model: string;
-  /** Global default look-back (days); per-channel overrides still apply. */
-  windowDays: number;
+  /** Single global window (days) of posts fed to the snapshot — decoupled from
+   *  per-channel display lookback (social_settings.theme_window_days). */
+  themeWindowDays: number;
 }
 
 export interface ThemeSnapshotResult {
@@ -200,13 +201,12 @@ export async function regenerateThemeSnapshot(
     where: eq(socialPosts.analysisStatus, 'analyzed'),
     orderBy: descNullsLast(socialPosts.postedAt),
     limit: 200,
-    with: { socialChannel: { columns: { handle: true, lookbackDays: true } } },
+    with: { socialChannel: { columns: { handle: true } } },
   });
 
-  // Keep only posts inside their own channel's effective window.
-  const inWindow = rows.filter((r) =>
-    withinLookback(r.postedAt, effectiveLookbackDays(r.socialChannel?.lookbackDays, opts.windowDays)),
-  );
+  // Single global theme window (not per-channel) — the snapshot reflects "what's
+  // being discussed lately" over a consistent horizon.
+  const inWindow = rows.filter((r) => withinLookback(r.postedAt, opts.themeWindowDays));
   const usable = inWindow.filter((r) => (r.topic && r.topic.trim()) || (r.caption && r.caption.trim()));
   if (usable.length === 0) return null;
 
@@ -225,7 +225,7 @@ export async function regenerateThemeSnapshot(
 
   const { content, tokensUsed, cost } = await chatCompletionJson({
     system: SYSTEM_PROMPT,
-    user: buildOverviewPrompt(overviewPosts, opts.windowDays),
+    user: buildOverviewPrompt(overviewPosts, opts.themeWindowDays),
     apiKey: opts.apiKey,
     model: opts.model,
     maxTokens: 1800,
@@ -260,7 +260,7 @@ export async function regenerateThemeSnapshot(
   const [snap] = await db
     .insert(socialThemeSnapshots)
     .values({
-      windowDays: opts.windowDays,
+      windowDays: opts.themeWindowDays,
       postCount: usable.length,
       channelCount,
       themes,

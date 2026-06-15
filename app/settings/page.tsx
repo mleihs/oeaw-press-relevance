@@ -17,6 +17,7 @@ import { useKeyboardShortcutsEnabled } from '@/lib/client/hooks/use-keyboard-sho
 import { openCheatSheet } from '@/lib/client/commands/controller';
 import { InfoBubble } from '@/components/info-bubble';
 import { SocialChannelsCard } from './_components/social-channels-card';
+import { SocialSettingsCard } from './_components/social-settings-card';
 import { Save, CheckCircle2, Eye, EyeOff, Loader2, XCircle, ShieldCheck, Info, User, Keyboard } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -248,6 +249,9 @@ export default function SettingsPage() {
 
       {/* Social-media channels */}
       <SocialChannelsCard />
+
+      {/* Social-media time windows */}
+      <SocialSettingsCard />
 
       {/* Analysis params */}
       <Card>
