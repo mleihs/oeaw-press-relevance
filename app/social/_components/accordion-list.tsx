@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { ChevronRight, ChevronDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -21,10 +21,24 @@ export type OpenMode = 'first' | 'none' | 'all';
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
-function seed(items: DisclosureItem[], mode: OpenMode): Set<number> {
-  if (mode === 'all') return new Set(items.map((_, i) => i));
-  if (mode === 'first' && items.length) return new Set([0]);
-  return new Set();
+function seed(items: DisclosureItem[], mode: OpenMode, focusItemKey?: string): Set<number> {
+  const s =
+    mode === 'all'
+      ? new Set(items.map((_, i) => i))
+      : mode === 'first' && items.length
+        ? new Set([0])
+        : new Set<number>();
+  // Ensure the externally-focused item (theme chip click) is open even on a
+  // fresh mount (e.g. after switching from the Kanal tab).
+  if (focusItemKey) {
+    const idx = items.findIndex((it) => it.key === focusItemKey);
+    if (idx >= 0) s.add(idx);
+  }
+  return s;
+}
+
+function focusItemOf(focusKey: string): string | undefined {
+  return focusKey ? focusKey.split('#')[0] : undefined;
 }
 
 /** Staggered grid of post cards. `autoFocus` (used when the user reveals older
@@ -90,10 +104,19 @@ export function AccordionList({
   /** `${itemKey}#${nonce}` — ensures that item is open (set from a theme chip). */
   focusKey?: string;
 }) {
-  const [open, setOpen] = useState<Set<number>>(() => seed(items, openMode));
+  const [open, setOpen] = useState<Set<number>>(() => seed(items, openMode, focusItemOf(focusKey)));
   const [openOlder, setOpenOlder] = useState<Set<number>>(new Set());
   const reduce = useReducedMotion();
   const baseId = useId();
+  const itemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+
+  // Scroll the focused theme into view (on chip click / fresh mount). DOM-only
+  // side-effect — no setState, so no cascading-render lint concern.
+  useEffect(() => {
+    const k = focusItemOf(focusKey);
+    if (!k) return;
+    itemRefs.current.get(k)?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+  }, [focusKey, reduce]);
 
   // Re-seed open state when the filter/view context changes (React's "adjust
   // state during render" pattern — no effect, fires once per change).
@@ -101,16 +124,16 @@ export function AccordionList({
   const sig = `${resetKey}|${openMode}`;
   if (sig !== prevKey) {
     setPrevKey(sig);
-    setOpen(seed(items, openMode));
+    setOpen(seed(items, openMode, focusItemOf(focusKey)));
     setOpenOlder(new Set());
   }
 
-  // External focus (theme chip click): ensure the targeted item is open.
+  // External focus (theme chip click while already mounted): open the target.
   const [prevFocus, setPrevFocus] = useState(focusKey);
   if (focusKey !== prevFocus) {
     setPrevFocus(focusKey);
-    const k = focusKey.split('#')[0];
-    const idx = items.findIndex((it) => it.key === k);
+    const k = focusItemOf(focusKey);
+    const idx = k ? items.findIndex((it) => it.key === k) : -1;
     if (idx >= 0) setOpen((prev) => new Set(prev).add(idx));
   }
 
@@ -140,7 +163,15 @@ export function AccordionList({
         const olderRevealed = openOlder.has(i) || fresh.length === 0;
 
         return (
-          <div key={item.key} className="overflow-hidden rounded-lg border bg-card">
+          <div
+            key={item.key}
+            ref={(el) => {
+              const m = itemRefs.current;
+              if (el) m.set(item.key, el);
+              else m.delete(item.key);
+            }}
+            className="scroll-mt-4 overflow-hidden rounded-lg border bg-card"
+          >
             <h3 className="m-0">
               <button
                 type="button"
