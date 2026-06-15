@@ -1,41 +1,56 @@
 'use client';
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import type { SocialChannelWithPosts } from '@/lib/shared/types';
-import { ThemeAccordion, type ThemeItem } from './theme-accordion';
-import { ChannelView } from './channel-view';
+import { AccordionList, type DisclosureItem, type OpenMode } from './accordion-list';
 import type { PostCardChannel } from './post-card';
 
-/** Two lenses on the same data: topic clusters (the value-add, default) and the
- *  raw by-channel feed. Tabs are a recommended progressive-disclosure pattern. */
+export type SocialView = 'themen' | 'kanaele';
+
+/** Two lenses on the same (filtered) data: topic clusters and the by-channel
+ *  list, both rendered as the accessible accordion. Controlled tabs so the KPI
+ *  tiles can switch the active lens. */
 export function SocialViews({
+  view,
+  onView,
   themeItems,
-  channels,
+  channelItems,
   channelById,
+  themeOpenMode,
+  channelOpenMode,
+  resetKey,
 }: {
-  themeItems: ThemeItem[];
-  channels: SocialChannelWithPosts[];
+  view: SocialView;
+  onView: (v: SocialView) => void;
+  themeItems: DisclosureItem[];
+  channelItems: DisclosureItem[];
   channelById: Record<string, PostCardChannel>;
+  themeOpenMode: OpenMode;
+  channelOpenMode: OpenMode;
+  resetKey: string;
 }) {
   return (
-    <Tabs defaultValue="themen" className="space-y-4">
+    <Tabs value={view} onValueChange={(v) => onView(v as SocialView)} className="space-y-4">
       <TabsList>
         <TabsTrigger value="themen">Themen</TabsTrigger>
         <TabsTrigger value="kanaele">Nach Kanal</TabsTrigger>
       </TabsList>
 
       <TabsContent value="themen">
-        {themeItems.length > 0 ? (
-          <ThemeAccordion items={themeItems} channelById={channelById} />
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            Noch keine Themen. „Aktualisieren", um das Lagebild zu erzeugen.
-          </p>
-        )}
+        <AccordionList
+          items={themeItems}
+          channelById={channelById}
+          openMode={themeOpenMode}
+          resetKey={resetKey}
+        />
       </TabsContent>
 
       <TabsContent value="kanaele">
-        <ChannelView channels={channels} />
+        <AccordionList
+          items={channelItems}
+          channelById={channelById}
+          openMode={channelOpenMode}
+          resetKey={resetKey}
+        />
       </TabsContent>
     </Tabs>
   );

@@ -9,11 +9,10 @@ import {
 import { resolveThemePosts } from '@/lib/server/social/resolve';
 import { StatusBanner } from '@/components/status-banner';
 import type { PostCardChannel } from './_components/post-card';
-import { StatStrip } from './_components/stat-strip';
 import { Briefing } from './_components/briefing';
-import { SocialViews } from './_components/social-views';
 import { CostSummary } from './_components/cost-summary';
 import { RefreshButton } from './_components/refresh-button';
+import { SocialDashboard } from './_components/social-dashboard';
 
 // Pure DB read; a refresh writes new rows and calls router.refresh(). No Apify
 // or LLM work happens on view, so the page itself is free.
@@ -29,14 +28,11 @@ export default async function SocialPage() {
     getRefreshCostSummary(),
   ]);
 
-  // Flatten posts (within window) for theme resolution + a channel lookup so
-  // theme-grouped cards still show their source channel.
   const allPosts = channels.flatMap((c) => c.posts);
   const channelById: Record<string, PostCardChannel> = {};
   for (const c of channels) {
     channelById[c.id] = { handle: c.handle, display_name: c.display_name };
   }
-
   const themeItems = snapshot ? resolveThemePosts(snapshot.themes, allPosts) : [];
 
   return (
@@ -61,15 +57,6 @@ export default async function SocialPage() {
         </StatusBanner>
       )}
 
-      <StatStrip
-        posts={allPosts.length}
-        channels={channels.length}
-        themes={snapshot?.themes.length ?? 0}
-        windowDays={env.SOCIAL_WINDOW_DAYS}
-      />
-
-      {snapshot?.narrative_de && <Briefing narrative={snapshot.narrative_de} />}
-
       {channels.length === 0 ? (
         <StatusBanner variant="neutral">
           Keine aktiven Kanäle. Füge welche unter{' '}
@@ -78,15 +65,14 @@ export default async function SocialPage() {
           </Link>{' '}
           hinzu.
         </StatusBanner>
-      ) : allPosts.length === 0 && !snapshot ? (
-        <StatusBanner variant="neutral">
-          Noch keine Posts geladen.{' '}
-          {apifyConfigured
-            ? 'Klicke auf „Aktualisieren", um Posts zu laden und das Lagebild zu erzeugen.'
-            : 'Sobald APIFY_TOKEN gesetzt ist, kann aktualisiert werden.'}
-        </StatusBanner>
       ) : (
-        <SocialViews themeItems={themeItems} channels={channels} channelById={channelById} />
+        <SocialDashboard
+          themeItems={themeItems}
+          channels={channels}
+          channelById={channelById}
+          windowDays={env.SOCIAL_WINDOW_DAYS}
+          briefing={snapshot?.narrative_de ? <Briefing narrative={snapshot.narrative_de} /> : null}
+        />
       )}
     </div>
   );
