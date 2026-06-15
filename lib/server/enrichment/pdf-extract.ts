@@ -1,5 +1,24 @@
 import { EnrichmentResult } from '@/lib/shared/types';
 
+// Block obvious SSRF targets. `pdfUrl` comes from third-party metadata APIs
+// (OpenAlex/Unpaywall/Semantic Scholar) keyed off a DOI, so it's semi-trusted;
+// this guards against a poisoned response pointing the server-side fetch at a
+// non-http scheme or a literal private/loopback/link-local address. (Hostnames
+// that *resolve* to private IPs would need a resolving fetch wrapper — out of
+// scope; this stops the literal-address cases.)
+const PRIVATE_HOST =
+  /^(?:localhost|0\.0\.0\.0|127\.|10\.|169\.254\.|192\.168\.|172\.(?:1[6-9]|2\d|3[01])\.|\[?(?:::1|fc|fd|fe80))/i;
+function isSafeFetchUrl(raw: string): boolean {
+  let u: URL;
+  try {
+    u = new URL(raw);
+  } catch {
+    return false;
+  }
+  if (u.protocol !== 'https:' && u.protocol !== 'http:') return false;
+  return !PRIVATE_HOST.test(u.hostname);
+}
+
 /**
  * Downloads a PDF from `pdfUrl`, extracts text from the first few pages,
  * and attempts to locate the abstract section.
@@ -9,6 +28,7 @@ import { EnrichmentResult } from '@/lib/shared/types';
  */
 export async function enrichFromPdf(pdfUrl: string): Promise<EnrichmentResult | null> {
   if (!pdfUrl) return null;
+  if (!isSafeFetchUrl(pdfUrl)) return null;
 
   // Dynamic import — pdf-parse depends on pdfjs-dist which is heavy;
   // only load it when we actually need to parse a PDF.

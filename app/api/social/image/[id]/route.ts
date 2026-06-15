@@ -11,6 +11,21 @@ import { idParamSchema } from '@/lib/server/schemas';
 // avoids an open image proxy (no arbitrary ?url= SSRF). Expired signed URLs
 // return 502 → the client shows its designed fallback.
 
+// Defense-in-depth: the stored URL still originates from the Apify scraper's
+// `displayUrl`, so constrain it to https on the known Instagram CDN hosts before
+// fetching. Stops a poisoned `raw.displayUrl` from turning the proxy into an
+// SSRF vector against internal/arbitrary hosts.
+const ALLOWED_IMAGE_HOST = /(?:^|\.)(?:cdninstagram\.com|fbcdn\.net)$/i;
+function isAllowedImageUrl(raw: string): boolean {
+  let u: URL;
+  try {
+    u = new URL(raw);
+  } catch {
+    return false;
+  }
+  return u.protocol === 'https:' && ALLOWED_IMAGE_HOST.test(u.hostname);
+}
+
 export const GET = withApiError(async (
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -22,6 +37,7 @@ export const GET = withApiError(async (
     columns: { imageUrl: true },
   });
   if (!row?.imageUrl) return new Response(null, { status: 404 });
+  if (!isAllowedImageUrl(row.imageUrl)) return new Response(null, { status: 502 });
 
   let upstream: Response;
   try {

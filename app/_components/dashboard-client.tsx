@@ -51,15 +51,23 @@ import type { PublicationListItem } from '@/lib/server/publications/list';
 // RSC → Client boundary check if pulled in as a value import.
 import type { DashboardData } from '@/lib/server/dashboard/fetch';
 import { KeywordCloud } from './keyword-cloud';
-import { ScoreSimilarityScatter } from './score-similarity-scatter';
-import { ScoreDistributionChart } from './score-distribution-chart';
 
-// Recharts is ~100kB gz; lazy-load via next/dynamic so it only ships when
-// the dashboard actually has data to show in this card.
+// Recharts is ~100kB gz. Lazy-load EVERY recharts chart via next/dynamic so it
+// only ships when a card actually renders — a static import of any one of them
+// would pull recharts into the initial dashboard bundle and negate the others'
+// lazy-loading.
 const DimensionsRadar = dynamic(() => import('./dimensions-radar'), {
   ssr: false,
   loading: () => <div className="h-[280px]" aria-hidden />,
 });
+const ScoreSimilarityScatter = dynamic(
+  () => import('./score-similarity-scatter').then((m) => m.ScoreSimilarityScatter),
+  { ssr: false, loading: () => <div className="h-[280px]" aria-hidden /> },
+);
+const ScoreDistributionChart = dynamic(
+  () => import('./score-distribution-chart').then((m) => m.ScoreDistributionChart),
+  { ssr: false, loading: () => <div className="h-[280px]" aria-hidden /> },
+);
 
 function getTimeRangeLabel(period: DashboardPeriod): string {
   switch (period) {

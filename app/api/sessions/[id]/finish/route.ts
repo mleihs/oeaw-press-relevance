@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { apiError, validateBody, withApiError } from '@/lib/server/http';
+import { apiError, validateBody, validateParams, withApiError } from '@/lib/server/http';
+import { idParamSchema } from '@/lib/server/schemas';
 import { sessionFinishPayloadSchema } from '@/lib/shared/schemas';
 import {
   finishSession,
@@ -10,7 +11,7 @@ export const POST = withApiError(async (
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) => {
-  const { id } = await params;
+  const { id } = validateParams(await params, idParamSchema);
   const data = await validateBody(req, sessionFinishPayloadSchema);
   try {
     const session = await finishSession(id, data);

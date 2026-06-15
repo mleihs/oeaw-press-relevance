@@ -290,4 +290,19 @@
   ::view-transition-new(root) {
     animation: none;
   }
+
+  /* Global reduced-motion reset. tw-animate-css (the source of the
+     `animate-in`/`zoom`/`slide` utilities on every Radix dialog, sheet, select,
+     dropdown, popover, tooltip, hover-card) ships NO reduced-motion rules, so
+     without this every overlay animates regardless of the OS setting. Near-zero
+     durations keep the final state (overlays still appear) while removing the
+     motion itself — the canonical accessible approach. */
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
