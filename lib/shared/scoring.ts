@@ -1,4 +1,9 @@
-import { SCORE_WEIGHTS, SCORE_DIMENSIONS, type ScoreDimension } from '@/lib/shared/constants';
+import {
+  SCORE_WEIGHTS,
+  type ScoreDimension,
+  EVENT_SCORE_WEIGHTS,
+  type EventScoreDimension,
+} from '@/lib/shared/constants';
 
 /**
  * Bayesian smoothing matching the PG function `weighted_avg` in
@@ -13,15 +18,34 @@ export function bayesSmooth(n: number, avg: number, prior: number, k = 3): numbe
 }
 
 /**
- * Compute press_score from 5 dimension values via SCORE_WEIGHTS.
- * Mirrors the SQL aggregation in the analysis batch route — useful for
- * client-side preview, tests, and verifying that the JS and PG paths
- * stay in lockstep when SCORE_WEIGHTS changes.
+ * Generic weighted sum: Σ dimensions[k]·weights[k] over the weight keys.
+ * Single source of truth for every "dimensions → score" computation
+ * (publication press_score, event relevance score). Missing dims count as 0.
  */
-export function computePressScore(dimensions: Record<ScoreDimension, number>): number {
+export function weightedScore<K extends string>(
+  dimensions: Partial<Record<K, number>>,
+  weights: Record<K, number>,
+): number {
   let sum = 0;
-  for (const dim of SCORE_DIMENSIONS) {
-    sum += dimensions[dim] * SCORE_WEIGHTS[dim];
+  for (const k of Object.keys(weights) as K[]) {
+    sum += (dimensions[k] ?? 0) * weights[k];
   }
   return sum;
+}
+
+/**
+ * Compute press_score from the 5 publication dimensions via SCORE_WEIGHTS.
+ * Useful for client-side preview, tests, and keeping the JS + PG paths in
+ * lockstep when SCORE_WEIGHTS changes.
+ */
+export function computePressScore(dimensions: Record<ScoreDimension, number>): number {
+  return weightedScore(dimensions, SCORE_WEIGHTS);
+}
+
+/**
+ * Compute the event relevance score from the 4 event dimensions via
+ * EVENT_SCORE_WEIGHTS (Veranstaltungsbetrieb-Eignung, not press potential).
+ */
+export function computeEventScore(dimensions: Record<EventScoreDimension, number>): number {
+  return weightedScore(dimensions, EVENT_SCORE_WEIGHTS);
 }

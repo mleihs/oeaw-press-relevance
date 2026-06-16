@@ -13,6 +13,7 @@ export const BRAND_HEX = '#0047bb';
 // JSON file because mjs scripts can't `import` from .ts at runtime; both can
 // import the same JSON cleanly. Dimension order = display order in the radar.
 import scoreWeightsJson from './score-weights.json';
+import eventScoreWeightsJson from './event-score-weights.json';
 
 export const SCORE_DIMENSIONS = [
   'public_accessibility',
@@ -41,6 +42,33 @@ export const SCORE_LABELS: Record<string, string> = {
   novelty_factor: 'Neuheit',
   storytelling_potential: 'Erzählpotenzial',
   media_timeliness: 'Aktualität',
+};
+
+// ─── Event-Relevanz (Veranstaltungsbetrieb) ────────────────────────────────
+// Eigenes Dimensions-Set für Events: misst die Eignung fürs zentrale
+// Veranstaltungsprogramm/-seite, NICHT Presse-Story-Potenzial wie bei Pubs.
+export const EVENT_SCORE_DIMENSIONS = [
+  'public_appeal',
+  'scientific_significance',
+  'reach',
+  'timeliness',
+] as const;
+export type EventScoreDimension = (typeof EVENT_SCORE_DIMENSIONS)[number];
+
+export const EVENT_SCORE_WEIGHTS = eventScoreWeightsJson satisfies Record<EventScoreDimension, number>;
+
+export const EVENT_SCORE_COLORS: Record<string, string> = {
+  public_appeal: '#0ea5e9',
+  scientific_significance: '#8b5cf6',
+  reach: '#10b981',
+  timeliness: '#ef4444',
+};
+
+export const EVENT_SCORE_LABELS: Record<string, string> = {
+  public_appeal: 'Öffentlichkeitswirkung',
+  scientific_significance: 'Wissenschaftl. Bedeutung',
+  reach: 'Reichweite',
+  timeliness: 'Aktualität',
 };
 
 /**

@@ -20,6 +20,7 @@
     "test:coverage": "vitest run --coverage",
     "enrich-orphans": "tsx scripts/enrich-orphans.ts",
     "sync-events": "tsx scripts/sync-events.ts",
+    "analyze-events": "tsx scripts/analyze-events.ts",
     "sync-social": "tsx scripts/sync-social.ts",
     "webdb-import:v2": "tsx scripts/webdb-import-v2.ts",
     "backfill-venue": "tsx scripts/backfill-venue.ts",

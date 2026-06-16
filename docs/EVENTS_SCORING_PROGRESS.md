@@ -6,45 +6,33 @@ from the first unchecked box. Verify each batch: `npm run typecheck && npm run l
 npm test`; before deploy also `check-em-dashes`, `check-schema-drift`, `build`.
 
 Decisions: event-specific 4 dims (public_appeal 0.35 · scientific_significance 0.30 ·
-reach 0.20 · timeliness 0.15); shared `runLLMBatch` + migrate all 3 (with tests).
-Runner uses NEUTRAL lifecycle hooks (callers keep their own SSE event names).
+reach 0.20 · timeliness 0.15); shared `runLLMBatch` + all 3 migrated; **model = deepseek**
+(user pref). Research verdict: LLM-only is right for v1 (no SPECTER2-equivalent for events;
+cold-start blocks a similarity signal) — embeddings deferred.
 
-## Teil 1 — shared runLLMBatch + migrate pubs & social ✅ DONE (372 tests, commit pending)
-- [x] `lib/server/llm-batch.ts` (generic runner; neutral hooks onBatchStart/onError/onCancelled; pre-flight + complete stay caller-side)
-- [x] `lib/server/llm-batch.test.ts` (7 tests: tally, partial-results→failed, non-fatal continue, fatal break, pre-abort, mid-run abort, hook counters)
-- [x] migrated `analysis/batch.ts` (pre-flight init/budget kept; hooks → identical progress/error/complete/cancelled payloads)
-- [x] migrated `social/analyze.ts` (empties pre-step kept; batchDelayMs:400; hooks → analyzing/progress/error/cancelled)
-- [x] verify: 372 pass (was 365 +7); scoring + social tests green = behavior-neutral
+## Teil 1 — shared runLLMBatch + migrate pubs & social ✅ DONE (commit e5a9a54)
+## Teil 2 — generic scoring ✅ DONE
+- weightedScore + computePressScore delegate; event-score-weights.json; computeEventScore + tests (8 pass)
+## Teil 3 — data model ✅ DONE (migration applied to PROD; schema-drift OK)
+- migration 20260616000001; schema.ts mirror; to-api Event+mapper; sync.ts unchanged
+## Teil 4 — server analyze ✅ DONE
+- events/prompts.ts (4-dim rubric, DE, html-stripped content); events/analyze.ts (fetch/analyze/runEventsAnalysisBatch on runLLMBatch, clamp01)
+## Teil 5 — API + CLI ✅ DONE (smoke: 3 prod events via deepseek = $0.002, sensible scores)
+- app/api/events/analyze/route.ts (SSE); eventsAnalyzeBatchPayloadSchema; scripts/analyze-events.ts + npm analyze-events
 
-## Teil 2 — generic scoring
-- [ ] `lib/shared/scoring.ts`: `weightedScore(dims, weights)`; computePressScore delegates
-- [ ] `lib/shared/event-score-weights.json` + `computeEventScore` + test
-
-## Teil 3 — data model
-- [ ] migration `…_events_analysis.sql` (analysis_status, event_score, 4 dims, pitch fields, llm_model, analysis_cost, analyzed_at, 2 indexes)
-- [ ] mirror in `schema.ts` (manual); `to-api.ts` Event + eventRowToApi; sync.ts unchanged (verify)
-- [ ] apply local + prod; check-schema-drift
-
-## Teil 4 — server analyze
-- [ ] `lib/server/events/prompts.ts` (system + buildEventEvaluationPrompt + JSON)
-- [ ] `lib/server/events/analyze.ts` (fetchEventsForAnalysis, analyzeEvents, runEventsAnalysisBatch)
-
-## Teil 5 — API + CLI
-- [ ] `app/api/events/analyze/route.ts` (SSE)
-- [ ] `lib/shared/schemas.ts`: eventsAnalyzeBatchPayloadSchema
-- [ ] `scripts/analyze-events.ts` + npm `analyze-events`
-
-## Teil 6 — UI
-- [ ] generalize `components/score-bar.tsx` (ScoreBar{label,value,color} + ScoreBadge; pub adapters)
+## Teil 6 — UI ⬜ NEXT
+- [ ] generalize `components/score-bar.tsx` → `ScoreBar({label,value,color})` + `ScoreBadge`; keep pub adapters
 - [ ] `event-detail.tsx`: analyse-card (score hero + 4 dim bars + reasoning + provenance) + pitch-card
-- [ ] `events-table.tsx`: Score column
-- [ ] `event-analyze-modal.tsx` + trigger button on events page
+- [ ] `events-table.tsx`: Score column (ScoreBadge when analyzed)
+- [ ] `event-analyze-modal.tsx` (model picker default **deepseek**, SSE via sse-progress) + trigger button on events page
+- [ ] (optional) "nach Relevanz sortieren" toggle
 
-## Teil 7 — bubbles / help / changelog
-- [ ] EXPL entries + EXPL_KB_MAP deeplinks (event_*)
-- [ ] `content/help/events/relevanz-score.mdx` + meta.json
+## Teil 7 — bubbles / help / changelog ⬜
+- [ ] EXPL entries + EXPL_KB_MAP deeplinks (event_score, event_public_appeal, event_significance, event_reach, event_timeliness, event_pitch, event_angle, event_audience, event_reasoning, event_ai_provenance)
+- [ ] content/help/events/relevanz-score.mdx + meta.json
 - [ ] changelog entry + bump
 
-## Deploy
-- [ ] commit main → Vercel --prod; merge → chore/coolify-dockerfile → Coolify (:8088, uuid cbt2tdcwf10ia0prqk8r45bm); prod migration FIRST via psql
+## Deploy ⬜
+- [ ] commit; Vercel --prod; merge → chore/coolify-dockerfile → Coolify (:8088, uuid cbt2tdcwf10ia0prqk8r45bm). Prod migration ALREADY applied.
+- [ ] (optional) full prod scoring run via `npm run analyze-events -- --target=prod --yes` once UI is live
 </content>

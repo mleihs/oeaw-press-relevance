@@ -1,6 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { bayesSmooth, computePressScore } from './scoring';
-import { SCORE_WEIGHTS, SCORE_DIMENSIONS, type ScoreDimension } from '@/lib/shared/constants';
+import { bayesSmooth, computePressScore, computeEventScore } from './scoring';
+import {
+  SCORE_WEIGHTS,
+  SCORE_DIMENSIONS,
+  type ScoreDimension,
+  EVENT_SCORE_WEIGHTS,
+  EVENT_SCORE_DIMENSIONS,
+  type EventScoreDimension,
+} from '@/lib/shared/constants';
 
 describe('SCORE_WEIGHTS', () => {
   it('weights sum to 1.0', () => {
@@ -39,6 +46,37 @@ describe('computePressScore', () => {
       0.10 * 0.4 +
       0.05 * 0.8;
     expect(computePressScore(mixed)).toBeCloseTo(expected, 10);
+  });
+});
+
+describe('EVENT_SCORE_WEIGHTS', () => {
+  it('weights sum to 1.0', () => {
+    const total = EVENT_SCORE_DIMENSIONS.reduce((s, d) => s + EVENT_SCORE_WEIGHTS[d], 0);
+    expect(total).toBeCloseTo(1.0, 10);
+  });
+});
+
+describe('computeEventScore', () => {
+  it('returns 1.0 when every dimension is 1.0', () => {
+    const all1: Record<EventScoreDimension, number> = {
+      public_appeal: 1,
+      scientific_significance: 1,
+      reach: 1,
+      timeliness: 1,
+    };
+    expect(computeEventScore(all1)).toBeCloseTo(1.0, 10);
+  });
+
+  it('matches the weighted formula for a mixed input', () => {
+    const mixed: Record<EventScoreDimension, number> = {
+      public_appeal: 0.8,
+      scientific_significance: 0.6,
+      reach: 0.4,
+      timeliness: 0.2,
+    };
+    // public_appeal 0.35, scientific_significance 0.30, reach 0.20, timeliness 0.15
+    const expected = 0.35 * 0.8 + 0.3 * 0.6 + 0.2 * 0.4 + 0.15 * 0.2;
+    expect(computeEventScore(mixed)).toBeCloseTo(expected, 10);
   });
 });
 
