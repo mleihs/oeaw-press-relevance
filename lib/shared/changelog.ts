@@ -15,6 +15,11 @@ export interface ChangelogEntry {
 export const changelogEntries: ChangelogEntry[] = [
   {
     category: 'verbesserung',
+    title: 'Veranstaltungen: ÖAW-Hauptseite ausblenden',
+    body: 'Die Events-Liste blendet die Beiträge aus dem News-Ordner der ÖAW-Hauptseite jetzt standardmäßig aus, damit die Institutsveranstaltungen im Vordergrund stehen. Ein Schalter „ÖAW-Hauptseite einblenden" holt sie bei Bedarf zurück; die Tab-Zähler passen sich mit an.',
+  },
+  {
+    category: 'verbesserung',
     title: 'Barrierefreiheit, Sicherheit & Tempo',
     body: 'Eine breite Überarbeitung im Hintergrund: Tabellen und Listen sind jetzt vollständig per Tastatur bedienbar, Animationen respektieren die Systemeinstellung „Bewegung reduzieren", Detailseiten tragen sprechende Tab-Titel, und fehlgeschlagene Ladevorgänge bieten einen „Nochmal versuchen"-Knopf statt einer leeren Ansicht. Das Dashboard lädt spürbar schneller, und zusätzliche Schutzmaßnahmen (Security-Header, strengere Datenbank-Zugriffsregeln) härten die Anwendung ab.',
   },
@@ -103,7 +108,7 @@ export const changelogClosing =
  * Bump this whenever a new entry is added on top so that returning users
  * see the brand-colored dot until they open the panel.
  */
-export const changelogLastUpdated = '2026-06-15T12:00:00.000Z';
+export const changelogLastUpdated = '2026-06-16T12:00:00.000Z';
 
 /** Auto-derived from changelogLastUpdated: single source of truth for the
  *  panel's soft date anchor ("Stand Mai 2026"). */
