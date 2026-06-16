@@ -668,15 +668,33 @@ export const events = pgTable("events", {
 	decision: text().default('undecided').notNull(),
 	decidedAt: timestamp("decided_at", { withTimezone: true, mode: 'string' }),
 	flagNotes: jsonb("flag_notes").default([]).notNull(),
+	// LLM relevance analysis (Veranstaltungsbetrieb). Migration
+	// 20260616000001_events_analysis.sql; NOT in the sync UPSERT SET → survives re-sync.
+	analysisStatus: text("analysis_status").default('pending'),
+	eventScore: doublePrecision("event_score"),
+	publicAppeal: doublePrecision("public_appeal"),
+	scientificSignificance: doublePrecision("scientific_significance"),
+	reach: doublePrecision(),
+	timeliness: doublePrecision(),
+	pitchSuggestion: text("pitch_suggestion"),
+	suggestedAngle: text("suggested_angle"),
+	targetAudience: text("target_audience"),
+	reasoning: text(),
+	llmModel: text("llm_model"),
+	analysisCost: doublePrecision("analysis_cost"),
+	analyzedAt: timestamp("analyzed_at", { withTimezone: true, mode: 'string' }),
 	syncedAt: timestamp("synced_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 }, (table) => [
 	index("idx_events_decision").using("btree", table.decision.asc().nullsLast().op("text_ops")),
 	index("idx_events_event_at").using("btree", table.eventAt.asc().nullsLast().op("timestamptz_ops")),
 	index("idx_events_institute").using("btree", table.institute.asc().nullsLast().op("text_ops")).where(sql`institute IS NOT NULL`),
+	index("idx_events_analysis").using("btree", table.analysisStatus.asc().nullsLast().op("text_ops")),
+	index("idx_events_analysis_score").using("btree", table.analysisStatus.asc().nullsLast().op("text_ops"), table.eventScore.desc().nullsLast().op("float8_ops")),
 	unique("events_webdb_uid_key").on(table.webdbUid),
 	check("events_decision_check", sql`decision = ANY (ARRAY['undecided'::text, 'pitch'::text, 'hold'::text, 'skip'::text])`),
 	check("events_lang_check", sql`(lang IS NULL) OR (lang = ANY (ARRAY['de'::text, 'en'::text, 'mul'::text]))`),
+	check("events_analysis_status_check", sql`analysis_status IS NULL OR analysis_status = ANY (ARRAY['pending'::text, 'analyzed'::text, 'failed'::text])`),
 ]);
 
 // ===========================================================================

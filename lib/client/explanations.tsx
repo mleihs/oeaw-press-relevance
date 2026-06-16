@@ -1829,6 +1829,88 @@ export const EXPL = {
       </Para>
     ),
   },
+
+  // ─── Events: Relevanz-Score (Veranstaltungsbetrieb) ───────────────────────
+  event_score: {
+    title: 'Relevanz-Score',
+    body: (
+      <Para>
+        Gewichtete Einschätzung des Sprachmodells, wie relevant eine Veranstaltung
+        für die zentrale Bewerbung auf der ÖAW-Veranstaltungsseite ist. Setzt sich
+        aus vier Dimensionen zusammen: Öffentlichkeitswirkung (35%), Wissenschaftl.
+        Bedeutung (30%), Reichweite (20%), Aktualität (15%).
+      </Para>
+    ),
+  },
+  event_public_appeal: {
+    title: 'Öffentlichkeitswirkung',
+    body: (
+      <Para>
+        Eignung und Interesse für ein breites, fachfremdes Publikum. Hoch bei
+        öffentlichen Vorträgen, Ausstellungen, Lesungen, Podien; niedrig bei
+        internen Fachseminaren, Workshops oder Arbeitstreffen.
+      </Para>
+    ),
+  },
+  event_significance: {
+    title: 'Wissenschaftliche Bedeutung',
+    body: (
+      <Para>
+        Bedeutung von Thema und Vortragenden, Flaggschiff- oder Leuchtturm-Charakter,
+        gesellschaftliche Tragweite des behandelten Themas.
+      </Para>
+    ),
+  },
+  event_reach: {
+    title: 'Reichweite',
+    body: (
+      <Para>
+        Breite der Zielgruppe: hoch bei überregional anschlussfähigem Interesse,
+        niedrig bei sehr spezialisiertem Nischenpublikum.
+      </Para>
+    ),
+  },
+  event_timeliness: {
+    title: 'Aktualität',
+    body: (
+      <Para>
+        Aktueller Anlass: Bezug zu laufendem Diskurs, Jahrestagen, Saison oder
+        aktuellen Ereignissen und Trends.
+      </Para>
+    ),
+  },
+  event_pitch: {
+    title: 'Vorschlag für die Veranstaltungsseite',
+    body: (
+      <Para>
+        Vom Sprachmodell formulierter Teaser, wie er auf der Veranstaltungsseite
+        stehen könnte: Aufhänger, worum es geht und warum ein Besuch lohnt.
+        Redaktioneller Entwurf, vor Verwendung prüfen.
+      </Para>
+    ),
+  },
+  event_angle: {
+    title: 'Blickwinkel',
+    body: <Para>Ein-Satz-Aufhänger bzw. Bewerbungs-Stoßrichtung für die Veranstaltung.</Para>,
+  },
+  event_audience: {
+    title: 'Zielpublikum',
+    body: <Para>Vom Sprachmodell vorgeschlagenes Zielpublikum (z.B. breite Öffentlichkeit, Familien, Fachpublikum).</Para>,
+  },
+  event_reasoning: {
+    title: 'Begründung',
+    body: <Para>Kurze Begründung des Sprachmodells für die Relevanz-Einstufung dieser Veranstaltung.</Para>,
+  },
+  event_ai_provenance: {
+    title: 'KI-Analyse',
+    body: (
+      <Para>
+        Modell und Kosten dieser Einstufung. Die Relevanz-Bewertung stammt von einem
+        Sprachmodell und ist eine Entscheidungshilfe, kein Ersatz für die redaktionelle
+        Einschätzung.
+      </Para>
+    ),
+  },
 } satisfies Record<string, Explanation>;
 
 // ─── KB-Anchor-Map ──────────────────────────────────────────────────────────
@@ -1978,4 +2060,16 @@ export const EXPL_KB_MAP: Partial<Record<keyof typeof EXPL, KbAnchor>> = {
   social_kpi_channels:       { path: '/help/social/kanaele-verwalten', hash: 'crud' },
   social_window:             { path: '/help/social/kanaele-verwalten', hash: 'zeitraum' },
   social_cost:               { path: '/help/social/kanaele-verwalten', hash: 'datenquelle' },
+
+  // ─── events: relevanz-score ──────────────────────────────────────────────
+  event_score:               { path: '/help/events/relevanz-score', hash: 'score' },
+  event_public_appeal:       { path: '/help/events/relevanz-score', hash: 'dimensionen' },
+  event_significance:        { path: '/help/events/relevanz-score', hash: 'dimensionen' },
+  event_reach:               { path: '/help/events/relevanz-score', hash: 'dimensionen' },
+  event_timeliness:          { path: '/help/events/relevanz-score', hash: 'dimensionen' },
+  event_pitch:               { path: '/help/events/relevanz-score', hash: 'pitch' },
+  event_angle:               { path: '/help/events/relevanz-score', hash: 'pitch' },
+  event_audience:            { path: '/help/events/relevanz-score', hash: 'pitch' },
+  event_reasoning:           { path: '/help/events/relevanz-score', hash: 'score' },
+  event_ai_provenance:       { path: '/help/events/relevanz-score', hash: 'score' },
 };

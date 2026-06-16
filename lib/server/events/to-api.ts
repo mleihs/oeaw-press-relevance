@@ -28,9 +28,25 @@ export interface Event {
   decision: Decision;
   decided_at: string | null;
   flag_notes: FlagNote[];
+  // LLM relevance analysis (Veranstaltungsbetrieb). Null until analyzed.
+  analysis_status: 'pending' | 'analyzed' | 'failed' | null;
+  event_score: number | null;
+  public_appeal: number | null;
+  scientific_significance: number | null;
+  reach: number | null;
+  timeliness: number | null;
+  pitch_suggestion: string | null;
+  suggested_angle: string | null;
+  target_audience: string | null;
+  reasoning: string | null;
+  llm_model: string | null;
+  analysis_cost: number | null;
+  analyzed_at: string | null;
   synced_at: string;
   created_at: string;
 }
+
+const VALID_ANALYSIS_STATUS = new Set(['pending', 'analyzed', 'failed']);
 
 const VALID_LANGS = new Set<EventLang>(['de', 'en', 'mul']);
 
@@ -63,6 +79,22 @@ export function eventRowToApi(row: EventRow): Event {
     decision: isDecision(row.decision) ? row.decision : 'undecided',
     decided_at: row.decidedAt,
     flag_notes: Array.isArray(row.flagNotes) ? (row.flagNotes as FlagNote[]) : [],
+    analysis_status:
+      row.analysisStatus && VALID_ANALYSIS_STATUS.has(row.analysisStatus)
+        ? (row.analysisStatus as 'pending' | 'analyzed' | 'failed')
+        : null,
+    event_score: row.eventScore,
+    public_appeal: row.publicAppeal,
+    scientific_significance: row.scientificSignificance,
+    reach: row.reach,
+    timeliness: row.timeliness,
+    pitch_suggestion: row.pitchSuggestion,
+    suggested_angle: row.suggestedAngle,
+    target_audience: row.targetAudience,
+    reasoning: row.reasoning,
+    llm_model: row.llmModel,
+    analysis_cost: row.analysisCost,
+    analyzed_at: row.analyzedAt,
     synced_at: row.syncedAt,
     created_at: row.createdAt,
   };

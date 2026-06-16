@@ -5,11 +5,11 @@ import {
   calculatePressScore,
   checkKeyBalance,
 } from './openrouter';
-import { isFatalLlmError } from '@/lib/server/openrouter';
+import { runLLMBatch } from '@/lib/server/llm-batch';
+import type { AnalysisResult } from '@/lib/shared/types';
 import type { PublicationForPrompt } from './prompts';
 import { publicationToApi } from '../publications/to-api';
 import type { AnalysisBatchPayload } from '@/lib/shared/schemas';
-import { log } from '@/lib/server/log';
 
 // Wire shape and internal filter shape match 1:1 (camelCase throughout).
 export type AnalysisBatchFilters = AnalysisBatchPayload;
@@ -86,12 +86,9 @@ export async function runAnalysisBatch(
 ): Promise<void> {
   const { pubs, apiKey, model, batchSize, abortSignal, emit } = opts;
 
-  let processed = 0;
-  let successful = 0;
-  let totalTokens = 0;
-  let totalCost = 0;
-
-  // Masked key for client display (last 8 chars only).
+  // Pre-flight (publication-specific): masked-key + balance 'init', and an
+  // early abort if the budget can't cover a single call. Kept here, not in the
+  // shared runner, because the message + the 'init' payload are pub-specific.
   const maskedKey = apiKey.length > 8 ? '...' + apiKey.slice(-8) : '***';
   const keyInfo = await checkKeyBalance(apiKey);
 
@@ -102,8 +99,6 @@ export async function runAnalysisBatch(
     key_balance: keyInfo,
   });
 
-  // Abort early if the effective budget (min of key limit and account
-  // balance) won't cover even a single analysis call.
   if (keyInfo.effectiveBudget !== null && keyInfo.effectiveBudget < 0.01) {
     const parts: string[] = [];
     if (keyInfo.limitRemaining !== null) {
@@ -128,97 +123,75 @@ export async function runAnalysisBatch(
     return;
   }
 
-  for (let i = 0; i < pubs.length; i += batchSize) {
-    if (abortSignal.aborted) {
-      emit('cancelled', { processed, successful, total: pubs.length });
-      return;
-    }
-    const batch = pubs.slice(i, i + batchSize);
-    const batchIndex = Math.floor(i / batchSize) + 1;
-    const totalBatches = Math.ceil(pubs.length / batchSize);
-
-    emit('progress', {
-      processed,
-      total: pubs.length,
-      current_title: batch[0].title,
-      batch_index: batchIndex,
-      total_batches: totalBatches,
-      tokens_used: totalTokens,
-      cost: totalCost,
-    });
-
-    try {
-      const { results, tokensUsed, cost } = await analyzePublications(
-        batch,
-        apiKey,
-        model,
-      );
-      totalTokens += tokensUsed;
-      totalCost += cost;
-
+  // The batch loop, abort/fatal/delay/tally machinery lives in runLLMBatch; the
+  // hooks below reproduce the exact SSE payloads the analysis modal expects.
+  const result = await runLLMBatch<PublicationForPrompt, AnalysisResult>({
+    items: pubs,
+    apiKey,
+    model,
+    batchSize,
+    abortSignal,
+    analyze: analyzePublications,
+    applyResults: async (batch, results, ctx) => {
+      let ok = 0;
       for (let j = 0; j < results.length && j < batch.length; j++) {
-        const result = results[j];
-        const pub = batch[j];
-        const pressScore = calculatePressScore(result);
-
+        const r = results[j];
         await db
           .update(publications)
           .set({
             analysisStatus: 'analyzed',
-            pressScore,
-            publicAccessibility: result.public_accessibility,
-            societalRelevance: result.societal_relevance,
-            noveltyFactor: result.novelty_factor,
-            storytellingPotential: result.storytelling_potential,
-            mediaTimeliness: result.media_timeliness,
-            pitchSuggestion: result.pitch_suggestion,
-            targetAudience: result.target_audience,
-            suggestedAngle: result.suggested_angle,
-            reasoning: result.reasoning,
-            haiku: result.haiku ?? null,
-            llmModel: model,
-            analysisCost: cost / results.length,
+            pressScore: calculatePressScore(r),
+            publicAccessibility: r.public_accessibility,
+            societalRelevance: r.societal_relevance,
+            noveltyFactor: r.novelty_factor,
+            storytellingPotential: r.storytelling_potential,
+            mediaTimeliness: r.media_timeliness,
+            pitchSuggestion: r.pitch_suggestion,
+            targetAudience: r.target_audience,
+            suggestedAngle: r.suggested_angle,
+            reasoning: r.reasoning,
+            haiku: r.haiku ?? null,
+            llmModel: ctx.model,
+            analysisCost: ctx.cost / results.length,
             // updated_at is set by the publications_set_updated_at trigger.
           })
-          .where(eq(publications.id, pub.id));
-
-        successful++;
+          .where(eq(publications.id, batch[j].id));
+        ok++;
       }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      const isFatal = isFatalLlmError(message);
-
-      log.error('analysis_batch_error', { batchStart: i, message, fatal: isFatal });
-      emit('error', { message, batch_start: i, fatal: isFatal });
-
-      for (const pub of batch) {
-        await db
-          .update(publications)
-          .set({
-            analysisStatus: 'failed',
-          })
-          .where(eq(publications.id, pub.id));
-      }
-
-      if (isFatal) {
-        processed += batch.length;
-        break;
-      }
-    }
-
-    processed += batch.length;
-
-    if (i + batchSize < pubs.length) {
-      await new Promise((r) => setTimeout(r, 1000));
-    }
-  }
-
-  emit('complete', {
-    processed,
-    total: pubs.length,
-    successful,
-    failed: processed - successful,
-    tokens_used: totalTokens,
-    cost: totalCost,
+      return ok;
+    },
+    markFailed: async (batch) => {
+      await db
+        .update(publications)
+        .set({ analysisStatus: 'failed' })
+        .where(inArray(publications.id, batch.map((p) => p.id)));
+    },
+    hooks: {
+      onBatchStart: (p) =>
+        emit('progress', {
+          processed: p.processed,
+          total: p.total,
+          current_title: p.batch[0].title,
+          batch_index: p.batchIndex,
+          total_batches: p.totalBatches,
+          tokens_used: p.tokensUsed,
+          cost: p.cost,
+        }),
+      onError: (e) => emit('error', { message: e.message, batch_start: e.batchStartIndex, fatal: e.fatal }),
+      onCancelled: (p) => emit('cancelled', { processed: p.processed, successful: p.successful, total: p.total }),
+    },
   });
+
+  // Original behaviour: emit 'complete' on normal/fatal end, but NOT on abort
+  // (the 'cancelled' event already fired from the hook).
+  if (!result.cancelled) {
+    emit('complete', {
+      processed: result.processed,
+      total: result.total,
+      successful: result.successful,
+      failed: result.failed,
+      tokens_used: result.tokensUsed,
+      cost: result.cost,
+    });
+  }
 }

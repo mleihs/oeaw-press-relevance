@@ -1,0 +1,46 @@
+---
+title: Relevanz-Score für Veranstaltungen
+description: Wie das Sprachmodell Veranstaltungen nach Eignung für die zentrale Veranstaltungsseite einstuft, plus Pitch-Vorschlag.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+Analog zu den Publikationen kann Story Scout auch Veranstaltungen vom Sprachmodell
+einstufen lassen: Wie relevant ist eine Veranstaltung für die zentrale Bewerbung auf
+der ÖAW-Veranstaltungsseite? Zusätzlich entsteht ein Pitch-Vorschlag als Textentwurf.
+
+<Callout type="info">
+  Die Bewertung kostet nur auf Klick: Über „Analysieren" auf der Veranstaltungsseite
+  werden noch nicht bewertete Events einmalig per Sprachmodell eingestuft. Bereits
+  bewertete bleiben unverändert (außer man wählt ausdrücklich „neu analysieren").
+</Callout>
+
+## Der Relevanz-Score {#score}
+
+Der Relevanz-Score (0 bis 100 Prozent) ist eine gewichtete Einschätzung, wie gut sich
+eine Veranstaltung für die zentrale Veranstaltungsseite eignet. Er ist eine
+Entscheidungshilfe, kein Automatismus: die redaktionelle Einschätzung bleibt
+maßgeblich. Eine kurze Begründung erläutert je Veranstaltung, warum das Modell so
+eingestuft hat. Modell und Kosten der Analyse werden zur Nachvollziehbarkeit mit
+ausgewiesen.
+
+## Die vier Dimensionen {#dimensionen}
+
+Der Gesamtscore setzt sich aus vier gewichteten Dimensionen zusammen:
+
+- **Öffentlichkeitswirkung (35%)**: Eignung und Interesse für ein breites, fachfremdes
+  Publikum. Hoch bei öffentlichen Vorträgen, Ausstellungen, Lesungen und Podien; niedrig
+  bei internen Fachseminaren, Workshops oder Arbeitstreffen.
+- **Wissenschaftliche Bedeutung (30%)**: Bedeutung von Thema und Vortragenden,
+  Flaggschiff-Charakter, gesellschaftliche Tragweite des Themas.
+- **Reichweite (20%)**: Breite der Zielgruppe, von überregional anschlussfähig bis
+  spezialisiertes Nischenpublikum.
+- **Aktualität (15%)**: Bezug zu laufendem Diskurs, Jahrestagen, Saison oder aktuellen
+  Ereignissen.
+
+## Pitch-Vorschlag {#pitch}
+
+Zu jeder bewerteten Veranstaltung schlägt das Modell einen kurzen Teaser vor, wie er auf
+der Veranstaltungsseite stehen könnte, dazu einen **Blickwinkel** (Aufhänger) und ein
+**Zielpublikum**. Das sind redaktionelle Entwürfe und sollten vor Verwendung geprüft und
+angepasst werden.

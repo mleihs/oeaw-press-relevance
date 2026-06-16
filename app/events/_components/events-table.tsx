@@ -3,6 +3,7 @@ import { ExternalLink, MapPin, Building2, Building, ArrowRight, Search } from 'l
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { DecisionBadge } from '@/components/decision-badge';
+import { ScoreBadge } from '@/components/score-bar';
 import { EventFlag } from './event-flag';
 import { buildOeawSearchUrl } from '../_lib/build-search-url';
 import { eventDateFmt, eventTimeFmt, isSameLocalDay } from '../_lib/event-format';
@@ -38,6 +39,7 @@ export function EventsTable({ rows }: Props) {
               <th scope="col" className="p-3 text-left font-medium">Titel</th>
               <th scope="col" className="p-3 text-left font-medium">Ort / Veranstalter</th>
               <th scope="col" className="p-3 text-left font-medium whitespace-nowrap">Status</th>
+              <th scope="col" className="p-3 text-center font-medium whitespace-nowrap">Relevanz</th>
               <th scope="col" className="p-3 text-right font-medium whitespace-nowrap">Aktionen</th>
             </tr>
           </thead>
@@ -118,6 +120,13 @@ function EventRowView({ event }: { event: Event }) {
       </td>
       <td className="p-3 align-top">
         <DecisionBadge decision={event.decision} />
+      </td>
+      <td className="p-3 text-center align-top">
+        {event.analysis_status === 'analyzed' && event.event_score !== null ? (
+          <ScoreBadge score={event.event_score} ariaLabel="Relevanz-Score" />
+        ) : (
+          <span className="text-xs text-muted-foreground/50" title="Noch nicht analysiert">–</span>
+        )}
       </td>
       <td className="p-3 text-right whitespace-nowrap align-top">
         <div className="inline-flex items-center gap-2">

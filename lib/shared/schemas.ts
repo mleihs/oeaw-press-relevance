@@ -70,6 +70,15 @@ export const analysisBatchPayloadSchema = z.object({
 
 export type AnalysisBatchPayload = z.infer<typeof analysisBatchPayloadSchema>;
 
+// Event relevance scoring (/events „Analysieren"). Mirrors the analysis batch
+// payload, minus the enrichment-specific filters (events have no enrichment).
+export const eventsAnalyzeBatchPayloadSchema = z.object({
+  limit: z.coerce.number().int().min(1).max(1000).default(50),
+  batchSize: z.coerce.number().int().min(1).max(5).default(3),
+  forceReanalyze: z.boolean().default(false),
+});
+export type EventsAnalyzeBatchPayload = z.infer<typeof eventsAnalyzeBatchPayloadSchema>;
+
 // ---------------------------------------------------------------------------
 // Social-media monitoring (/social).
 // ---------------------------------------------------------------------------

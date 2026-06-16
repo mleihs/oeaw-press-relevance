@@ -10,6 +10,7 @@ import { EventsTabsNav } from './_components/events-tabs-nav';
 import { EventsTable } from './_components/events-table';
 import { RefreshButton } from './_components/refresh-button';
 import { MainNewsToggle } from './_components/main-news-toggle';
+import { EventAnalyzeModal } from './_components/event-analyze-modal';
 
 // Force-dynamic per ADR 0009: the page has per-row maintainer state
 // (decision badges, flag-popovers) that mutates and must reflect immediately,
@@ -49,6 +50,7 @@ export default async function EventsPage({
         <EventsTabsNav activeTab={activeTab} stats={overview.stats} />
         <div className="flex items-center gap-4">
           <MainNewsToggle showMainNews={includeMainNews} />
+          <EventAnalyzeModal />
           <RefreshButton lastSync={overview.last_synced} />
         </div>
       </div>
