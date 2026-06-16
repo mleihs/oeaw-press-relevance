@@ -18,6 +18,18 @@ export function isEventsTab(v: unknown): v is EventsTab {
   );
 }
 
+/** Derived institute label for events that live in the news folder of the
+ *  ÖAW main site (vs. an institute / cluster / project folder). The typo3-events
+ *  adapter resolves this from the TYPO3 page tree; these are the central-site
+ *  announcements the press team usually wants out of the institute view. */
+export const MAIN_OEAW_NEWS_INSTITUTE = 'OEAW - Home';
+
+export interface EventsFilterOptions {
+  /** Include the main-site news folder (institute = MAIN_OEAW_NEWS_INSTITUTE).
+   *  Default false → those events are hidden (the UI toggle opts back in). */
+  includeMainNews?: boolean;
+}
+
 /** Baseline: only upcoming events. Every tab and every stat counter is
  *  scoped through this so a row with `event_at` in the past is invisible
  *  everywhere (and won't show up in the badge total). */
@@ -25,10 +37,21 @@ function upcomingFilter(): SQL {
   return gte(eventsTable.eventAt, sql`NOW()`);
 }
 
-export function filtersForEventsTab(tab: EventsTab): SQL {
-  const base = upcomingFilter();
-  if (tab === 'upcoming') return base;
-  return and(base, eq(eventsTable.decision, tab))!;
+/** Excludes the ÖAW-main-site news folder. `IS DISTINCT FROM` keeps
+ *  NULL-institute events (NULL is distinct from the label), so only the
+ *  main-homepage folder is filtered out. */
+function mainNewsExclusion(): SQL {
+  return sql`${eventsTable.institute} IS DISTINCT FROM ${MAIN_OEAW_NEWS_INSTITUTE}`;
+}
+
+export function filtersForEventsTab(
+  tab: EventsTab,
+  opts: EventsFilterOptions = {},
+): SQL {
+  const parts: SQL[] = [upcomingFilter()];
+  if (tab !== 'upcoming') parts.push(eq(eventsTable.decision, tab));
+  if (!opts.includeMainNews) parts.push(mainNewsExclusion());
+  return and(...parts)!;
 }
 
 export interface EventsStats {
@@ -53,12 +76,19 @@ export interface EventsOverview {
   last_synced: string | null;
 }
 
-export async function getEventsOverview(): Promise<EventsOverview> {
-  const upcomingExpr = sql`event_at >= NOW()`;
+export async function getEventsOverview(
+  opts: EventsFilterOptions = {},
+): Promise<EventsOverview> {
+  // The tab counts must match the rows the list actually shows, so they share
+  // the same main-news exclusion. `last_synced` (below) deliberately spans the
+  // whole table — it reports sync liveness, not the filtered view.
+  const scope = opts.includeMainNews
+    ? sql`event_at >= NOW()`
+    : sql`event_at >= NOW() AND ${mainNewsExclusion()}`;
   const filterUpcoming = (extra?: ReturnType<typeof sql>) =>
     extra
-      ? sql<number>`COUNT(*) FILTER (WHERE ${upcomingExpr} AND ${extra})::int`
-      : sql<number>`COUNT(*) FILTER (WHERE ${upcomingExpr})::int`;
+      ? sql<number>`COUNT(*) FILTER (WHERE ${scope} AND ${extra})::int`
+      : sql<number>`COUNT(*) FILTER (WHERE ${scope})::int`;
 
   const [row] = await db
     .select({

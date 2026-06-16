@@ -9,6 +9,7 @@ import {
 import { EventsTabsNav } from './_components/events-tabs-nav';
 import { EventsTable } from './_components/events-table';
 import { RefreshButton } from './_components/refresh-button';
+import { MainNewsToggle } from './_components/main-news-toggle';
 
 // Force-dynamic per ADR 0009: the page has per-row maintainer state
 // (decision badges, flag-popovers) that mutates and must reflect immediately,
@@ -18,15 +19,17 @@ export const dynamic = 'force-dynamic';
 export default async function EventsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string | string[] }>;
+  searchParams: Promise<{ tab?: string | string[]; main?: string | string[] }>;
 }) {
   const sp = await searchParams;
   const raw = Array.isArray(sp.tab) ? sp.tab[0] : sp.tab;
   const activeTab: EventsTab = isEventsTab(raw) ? raw : 'upcoming';
+  // Main-site news folder hidden by default; `?main=1` opts it back in.
+  const includeMainNews = (Array.isArray(sp.main) ? sp.main[0] : sp.main) === '1';
 
   const [overview, list] = await Promise.all([
-    getEventsOverview(),
-    listEvents(filtersForEventsTab(activeTab)),
+    getEventsOverview({ includeMainNews }),
+    listEvents(filtersForEventsTab(activeTab, { includeMainNews })),
   ]);
 
   return (
@@ -44,7 +47,10 @@ export default async function EventsPage({
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <EventsTabsNav activeTab={activeTab} stats={overview.stats} />
-        <RefreshButton lastSync={overview.last_synced} />
+        <div className="flex items-center gap-4">
+          <MainNewsToggle showMainNews={includeMainNews} />
+          <RefreshButton lastSync={overview.last_synced} />
+        </div>
       </div>
 
       <EventsTable rows={list.events} />
