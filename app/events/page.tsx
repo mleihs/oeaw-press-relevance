@@ -1,9 +1,14 @@
 import { CalendarDays } from 'lucide-react';
 import {
+  DEFAULT_EVENTS_SORT,
+  EVENTS_SORT_VALUES,
   filtersForEventsTab,
   getEventsOverview,
+  isEventsSort,
   isEventsTab,
   listEvents,
+  type EventsSort,
+  type EventsSortOrder,
   type EventsTab,
 } from '@/lib/server/events/list';
 import { EventsTabsNav } from './_components/events-tabs-nav';
@@ -17,10 +22,38 @@ import { EventAnalyzeModal } from './_components/event-analyze-modal';
 // not after a 60-second ISR window.
 export const dynamic = 'force-dynamic';
 
+// Pre-computes the toggle href for each sortable column (functions can't cross
+// the RSC → Client boundary). Same column → flip order; new column → asc.
+// `tab` and `main` are preserved so a sort never resets the active view.
+function buildSortHrefs(
+  activeTab: EventsTab,
+  includeMainNews: boolean,
+  sort: EventsSort,
+  order: EventsSortOrder,
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const col of EVENTS_SORT_VALUES) {
+    const next: EventsSortOrder =
+      sort === col ? (order === 'asc' ? 'desc' : 'asc') : 'asc';
+    const params = new URLSearchParams();
+    if (activeTab !== 'upcoming') params.set('tab', activeTab);
+    if (includeMainNews) params.set('main', '1');
+    params.set('sort', col);
+    params.set('order', next);
+    out[col] = `/events?${params.toString()}`;
+  }
+  return out;
+}
+
 export default async function EventsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string | string[]; main?: string | string[] }>;
+  searchParams: Promise<{
+    tab?: string | string[];
+    main?: string | string[];
+    sort?: string | string[];
+    order?: string | string[];
+  }>;
 }) {
   const sp = await searchParams;
   const raw = Array.isArray(sp.tab) ? sp.tab[0] : sp.tab;
@@ -28,10 +61,20 @@ export default async function EventsPage({
   // Main-site news folder hidden by default; `?main=1` opts it back in.
   const includeMainNews = (Array.isArray(sp.main) ? sp.main[0] : sp.main) === '1';
 
+  const sortRaw = Array.isArray(sp.sort) ? sp.sort[0] : sp.sort;
+  const orderRaw = Array.isArray(sp.order) ? sp.order[0] : sp.order;
+  const sortBy: EventsSort = isEventsSort(sortRaw) ? sortRaw : DEFAULT_EVENTS_SORT.by;
+  const sortOrder: EventsSortOrder = orderRaw === 'desc' ? 'desc' : 'asc';
+
   const [overview, list] = await Promise.all([
     getEventsOverview({ includeMainNews }),
-    listEvents(filtersForEventsTab(activeTab, { includeMainNews })),
+    listEvents(filtersForEventsTab(activeTab, { includeMainNews }), {
+      by: sortBy,
+      order: sortOrder,
+    }),
   ]);
+
+  const sortHrefs = buildSortHrefs(activeTab, includeMainNews, sortBy, sortOrder);
 
   return (
     <div className="space-y-6">
@@ -55,7 +98,12 @@ export default async function EventsPage({
         </div>
       </div>
 
-      <EventsTable rows={list.events} />
+      <EventsTable
+        rows={list.events}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        sortHrefs={sortHrefs}
+      />
     </div>
   );
 }
