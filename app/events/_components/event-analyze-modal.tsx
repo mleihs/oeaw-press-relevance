@@ -106,7 +106,11 @@ export function EventAnalyzeModal() {
       const res = await fetch('/api/events/analyze', {
         method: 'POST',
         headers,
-        body: JSON.stringify({ forceReanalyze: force, limit: 200, batchSize: 3 }),
+        // deepseek is slow (~tens of seconds per batch), and the route caps at
+        // 300s; keep a run to a chunk that finishes cleanly. Re-run (or use
+        // `npm run analyze-events`) to continue — each click scores the next
+        // pending chunk, the empty response says when nothing is left.
+        body: JSON.stringify({ forceReanalyze: force, limit: 30, batchSize: 3 }),
         signal: controller.signal,
       });
       if (!res.ok) {
