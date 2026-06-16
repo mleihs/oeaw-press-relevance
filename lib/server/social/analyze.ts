@@ -10,7 +10,8 @@ import {
   socialThemeSnapshots,
   descNullsLast,
 } from '@/lib/server/db';
-import { chatCompletionJson, parseJsonContent, isFatalLlmError } from '@/lib/server/openrouter';
+import { chatCompletionJson, parseJsonContent } from '@/lib/server/openrouter';
+import { runLLMBatch } from '@/lib/server/llm-batch';
 import {
   SYSTEM_PROMPT,
   buildPostPrompt,
@@ -20,7 +21,6 @@ import {
 } from './prompts';
 import type { SocialTheme } from '@/lib/shared/types';
 import { withinLookback } from './window';
-import { log } from '@/lib/server/log';
 
 export interface SocialAnalyzeOptions {
   apiKey: string;
@@ -86,57 +86,42 @@ export async function analyzeSocialPosts(
   const total = posts.length;
   emit('analyzing', { total });
 
-  let analyzed = 0;
-  let failed = 0;
-  let tokensUsed = 0;
-  let cost = 0;
+  type PostRow = (typeof posts)[number];
 
-  const totalBatches = Math.ceil(total / batchSize);
-
-  for (let i = 0; i < posts.length; i += batchSize) {
-    if (opts.abortSignal?.aborted) {
-      emit('cancelled', { processed: analyzed + failed, total });
-      break;
-    }
-
-    const batch = posts.slice(i, i + batchSize);
-    const batchIndex = Math.floor(i / batchSize) + 1;
-    emit('progress', {
-      processed: analyzed + failed,
-      total,
-      batch_index: batchIndex,
-      total_batches: totalBatches,
-    });
-
-    const promptPosts: PostForPrompt[] = batch.map((p, j) => ({
-      index: j + 1,
-      channel: p.socialChannel?.handle ?? '?',
-      mediaType: p.mediaType,
-      caption: p.caption ?? '',
-    }));
-
-    try {
-      const { content, tokensUsed: t, cost: c } = await chatCompletionJson({
+  // Loop/abort/fatal/delay/tally now live in runLLMBatch; the hooks reproduce
+  // the social refresh-button's SSE payloads (analyzing/progress/error/cancelled).
+  const result = await runLLMBatch<PostRow, PostResult>({
+    items: posts,
+    apiKey: opts.apiKey,
+    model: opts.model,
+    batchSize,
+    abortSignal: opts.abortSignal,
+    batchDelayMs: 400,
+    analyze: async (batch, apiKey, model) => {
+      const promptPosts: PostForPrompt[] = batch.map((p, j) => ({
+        index: j + 1,
+        channel: p.socialChannel?.handle ?? '?',
+        mediaType: p.mediaType,
+        caption: p.caption ?? '',
+      }));
+      // Posts (esp. history channels) can yield long summaries; budget
+      // generously. Truncation is still recovered by parseLooseJson.
+      const { content, tokensUsed, cost } = await chatCompletionJson({
         system: SYSTEM_PROMPT,
         user: buildPostPrompt(promptPosts),
-        apiKey: opts.apiKey,
-        model: opts.model,
-        // Posts (esp. history channels) can yield long summaries; budget
-        // generously. Truncation is still recovered by parseLooseJson.
+        apiKey,
+        model,
         maxTokens: 240 * batch.length + 200,
         temperature: 0.3,
       });
-      tokensUsed += t;
-      cost += c;
-
       const parsed = parseJsonContent<{ results?: PostResult[] }>(content);
-      const results = Array.isArray(parsed.results) ? parsed.results : [];
-
+      return { results: Array.isArray(parsed.results) ? parsed.results : [], tokensUsed, cost };
+    },
+    applyResults: async (batch, results, ctx) => {
       for (let j = 0; j < batch.length; j++) {
         const post = batch[j];
         // Prefer index-matched result; fall back to positional.
-        const r =
-          results.find((x) => x.index === j + 1) ?? results[j] ?? null;
+        const r = results.find((x) => x.index === j + 1) ?? results[j] ?? null;
         await db
           .update(socialPosts)
           .set({
@@ -144,33 +129,41 @@ export async function analyzeSocialPosts(
             keywords: cleanKeywords(r?.keywords),
             summaryDe: r?.summary_de?.trim() || null,
             analysisStatus: 'analyzed',
-            llmModel: opts.model,
+            llmModel: ctx.model,
             analyzedAt: sql`NOW()`,
           })
           .where(eq(socialPosts.id, post.id));
-        analyzed++;
       }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      const fatal = isFatalLlmError(message);
-      log.error('social_analyze_batch_error', { batchStart: i, message, fatal });
-      emit('error', { message, fatal });
-
+      // Social writes every post in the batch (null result → empty topic), so
+      // the whole batch counts as analyzed.
+      return batch.length;
+    },
+    markFailed: async (batch) => {
       await db
         .update(socialPosts)
         .set({ analysisStatus: 'failed' })
         .where(inArray(socialPosts.id, batch.map((p) => p.id)));
-      failed += batch.length;
+    },
+    hooks: {
+      onBatchStart: (p) =>
+        emit('progress', {
+          processed: p.processed,
+          total: p.total,
+          batch_index: p.batchIndex,
+          total_batches: p.totalBatches,
+        }),
+      onError: (e) => emit('error', { message: e.message, fatal: e.fatal }),
+      onCancelled: (p) => emit('cancelled', { processed: p.processed, total: p.total }),
+    },
+  });
 
-      if (fatal) break;
-    }
-
-    if (i + batchSize < posts.length) {
-      await new Promise((r) => setTimeout(r, 400));
-    }
-  }
-
-  return { total, analyzed, failed, tokensUsed, cost };
+  return {
+    total,
+    analyzed: result.successful,
+    failed: result.failed,
+    tokensUsed: result.tokensUsed,
+    cost: result.cost,
+  };
 }
 
 export interface ThemeSnapshotOptions {
