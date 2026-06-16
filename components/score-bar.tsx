@@ -9,6 +9,11 @@ interface ScoreBarProps {
   dimension: string;
   value: number | null;
   compact?: boolean;
+  /** Overrides for non-publication dimension sets (e.g. events). When omitted,
+   *  the publication SCORE_COLORS/SCORE_LABELS/DIM_TO_EXPL lookups apply. */
+  label?: string;
+  color?: string;
+  explId?: keyof typeof EXPL;
 }
 
 const DIM_TO_EXPL: Record<string, keyof typeof EXPL> = {
@@ -19,11 +24,11 @@ const DIM_TO_EXPL: Record<string, keyof typeof EXPL> = {
   media_timeliness: 'dim_media_timeliness',
 };
 
-export function ScoreBar({ dimension, value, compact }: ScoreBarProps) {
-  const color = SCORE_COLORS[dimension] || '#6b7280';
-  const label = SCORE_LABELS[dimension] || dimension;
+export function ScoreBar({ dimension, value, compact, label: labelProp, color: colorProp, explId: explIdProp }: ScoreBarProps) {
+  const color = colorProp || SCORE_COLORS[dimension] || '#6b7280';
+  const label = labelProp || SCORE_LABELS[dimension] || dimension;
   const pct = value !== null ? Math.round(value * 100) : 0;
-  const explId = DIM_TO_EXPL[dimension];
+  const explId = explIdProp ?? DIM_TO_EXPL[dimension];
 
   if (compact) {
     return (
@@ -78,6 +83,8 @@ interface PressScoreBadgeProps {
   /** Optional state context — picks the matching score_na_* explanation. */
   analysisStatus?: string | null;
   enrichmentStatus?: string | null;
+  /** Accessible-name prefix; defaults to "Story Score" (events pass "Relevanz-Score"). */
+  ariaLabel?: string;
 }
 
 function pickScoreNaExpl(
@@ -92,7 +99,7 @@ function pickScoreNaExpl(
   return 'score_na';
 }
 
-export function PressScoreBadge({ score, variant = 'badge', analysisStatus, enrichmentStatus }: PressScoreBadgeProps) {
+export function PressScoreBadge({ score, variant = 'badge', analysisStatus, enrichmentStatus, ariaLabel = 'Story Score' }: PressScoreBadgeProps) {
   if (score === null) return (
     <span className="inline-flex items-center gap-1">
       <span className="text-muted-foreground/70 text-sm">N/A</span>
@@ -106,9 +113,13 @@ export function PressScoreBadge({ score, variant = 'badge', analysisStatus, enri
   return (
     <span
       className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold ${bgColor}`}
-      aria-label={`Story Score: ${pct}%`}
+      aria-label={`${ariaLabel}: ${pct}%`}
     >
       {pct}%
     </span>
   );
 }
+
+/** Generic score-band badge (score → % with band color). Same component as
+ *  PressScoreBadge; aliased so event code reads cleanly. Pass ariaLabel. */
+export { PressScoreBadge as ScoreBadge };

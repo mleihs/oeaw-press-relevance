@@ -14,6 +14,12 @@ export interface ChangelogEntry {
 // auf das heutige Datum heben, sonst zeigt der Unread-Dot keinen neuen Stand an.
 export const changelogEntries: ChangelogEntry[] = [
   {
+    category: 'neu',
+    title: 'Veranstaltungen: Relevanz-Score & Pitch',
+    body: 'Veranstaltungen werden jetzt, analog zu Publikationen, vom Sprachmodell nach Relevanz für die zentrale Veranstaltungsseite eingestuft, mit vier Dimensionen (Öffentlichkeitswirkung, Wissenschaftliche Bedeutung, Reichweite, Aktualität) und einem Pitch-Vorschlag. Über „Analysieren" auf der Events-Seite werden offene Events einmalig bewertet; die Liste zeigt den Score je Zeile, die Detailseite die Aufschlüsselung samt Begründung.',
+    href: '/help/events/relevanz-score',
+  },
+  {
     category: 'verbesserung',
     title: 'Veranstaltungen: ÖAW-Hauptseite ausblenden',
     body: 'Die Events-Liste blendet die Beiträge aus dem News-Ordner der ÖAW-Hauptseite jetzt standardmäßig aus, damit die Institutsveranstaltungen im Vordergrund stehen. Ein Schalter „ÖAW-Hauptseite einblenden" holt sie bei Bedarf zurück; die Tab-Zähler passen sich mit an.',

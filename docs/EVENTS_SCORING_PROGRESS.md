@@ -20,19 +20,19 @@ cold-start blocks a similarity signal) — embeddings deferred.
 ## Teil 5 — API + CLI ✅ DONE (smoke: 3 prod events via deepseek = $0.002, sensible scores)
 - app/api/events/analyze/route.ts (SSE); eventsAnalyzeBatchPayloadSchema; scripts/analyze-events.ts + npm analyze-events
 
-## Teil 6 — UI ⬜ NEXT
+## Teil 6 — UI ✅ DONE
 - [ ] generalize `components/score-bar.tsx` → `ScoreBar({label,value,color})` + `ScoreBadge`; keep pub adapters
 - [ ] `event-detail.tsx`: analyse-card (score hero + 4 dim bars + reasoning + provenance) + pitch-card
 - [ ] `events-table.tsx`: Score column (ScoreBadge when analyzed)
 - [ ] `event-analyze-modal.tsx` (model picker default **deepseek**, SSE via sse-progress) + trigger button on events page
 - [ ] (optional) "nach Relevanz sortieren" toggle
 
-## Teil 7 — bubbles / help / changelog ⬜
+## Teil 7 — bubbles / help / changelog ✅ DONE
 - [ ] EXPL entries + EXPL_KB_MAP deeplinks (event_score, event_public_appeal, event_significance, event_reach, event_timeliness, event_pitch, event_angle, event_audience, event_reasoning, event_ai_provenance)
 - [ ] content/help/events/relevanz-score.mdx + meta.json
 - [ ] changelog entry + bump
 
-## Deploy ⬜
+## Deploy ⬜ NEXT
 - [ ] commit; Vercel --prod; merge → chore/coolify-dockerfile → Coolify (:8088, uuid cbt2tdcwf10ia0prqk8r45bm). Prod migration ALREADY applied.
 - [ ] (optional) full prod scoring run via `npm run analyze-events -- --target=prod --yes` once UI is live
 </content>

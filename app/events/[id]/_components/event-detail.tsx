@@ -25,6 +25,7 @@ import {
 } from '@/app/events/_lib/event-format';
 import { sanitizeEventInformation } from '@/lib/server/events/html-utils';
 import { decodeHtmlBlock } from '@/lib/shared/html-utils';
+import { EventAnalysisCard } from './event-analysis-card';
 import type { Event } from '@/lib/server/events/to-api';
 
 export function EventDetail({ event }: { event: Event }) {
@@ -120,6 +121,8 @@ export function EventDetail({ event }: { event: Event }) {
           </div>
         </CardContent>
       </Card>
+
+      <EventAnalysisCard event={event} />
 
       <div className="grid gap-6 md:grid-cols-[1fr_320px]">
         {event.bodytext && (
