@@ -71,13 +71,32 @@ const missOrg = await missingParents('orgunits', refOrg);
 const missPer = await missingParents('persons', refPer);
 const missPrj = await missingParents('projects', refPrj);
 console.log(`Parent pre-flight — orgunits missing:${missOrg.length} persons missing:${missPer.length} projects missing:${missPrj.length}`);
-if (missOrg.length || missPer.length || missPrj.length) {
-  console.error('ABORT: referenced parent rows are missing in prod. They must be synced first.');
+
+// orgunits & projects are expected stable across imports (institutes/grants are
+// rarely brand-new) — abort and surface them if any are missing. PERSONS are
+// NOT stable: every re-import can bring new external co-authors, so auto-copy
+// the missing ones (in the same tx, before publications). Their only FK is the
+// small member_types lookup, which is never import-specific — assert it exists
+// in prod first (in practice 0 missing; abort loudly if that ever breaks).
+if (missOrg.length || missPrj.length) {
+  console.error('ABORT: referenced orgunits/projects missing in prod (expected stable). Sync them first.');
   console.error('  orgunits:', missOrg.slice(0, 10));
-  console.error('  persons :', missPer.slice(0, 10));
   console.error('  projects:', missPrj.slice(0, 10));
   await L.end(); await P.end();
   process.exit(1);
+}
+if (missPer.length) {
+  const refMt = (await L.query(
+    `SELECT DISTINCT member_type_id AS id FROM persons WHERE id = ANY($1::uuid[]) AND member_type_id IS NOT NULL`,
+    [missPer]
+  )).rows.map((r) => r.id);
+  const missMt = await missingParents('member_types', refMt);
+  if (missMt.length) {
+    console.error(`ABORT: ${missMt.length} member_types referenced by new persons are missing in prod:`, missMt.slice(0, 10));
+    await L.end(); await P.end();
+    process.exit(1);
+  }
+  console.log(`  → will copy ${missPer.length} missing parent person(s) into prod before publications.`);
 }
 
 // 3. Generic local→prod row copier (ON CONFLICT DO NOTHING).
@@ -121,12 +140,17 @@ async function copyRows(table, filterCol, ids) {
 // 4. Single transaction: parent (publications) first, then join tables.
 await P.query('BEGIN');
 try {
+  // Parent persons FIRST (FK target of person_publications); orgunits/projects
+  // were asserted present above. ON CONFLICT DO NOTHING → never touches an
+  // existing prod person.
+  const persons = missPer.length ? await copyRows('persons', 'id', missPer) : { attempted: 0, inserted: 0 };
   const pubs = await copyRows('publications', 'id', missing);
   const ou = await copyRows('orgunit_publications', 'publication_id', missing);
   const pp = await copyRows('person_publications', 'publication_id', missing);
   const prj = await copyRows('publication_projects', 'publication_id', missing);
 
   console.log('\nInsert results (attempted → inserted, ON CONFLICT DO NOTHING):');
+  console.log(`  persons (parent)    : ${persons.attempted} → ${persons.inserted}`);
   console.log(`  publications        : ${pubs.attempted} → ${pubs.inserted}`);
   console.log(`  orgunit_publications: ${ou.attempted} → ${ou.inserted}`);
   console.log(`  person_publications : ${pp.attempted} → ${pp.inserted}`);

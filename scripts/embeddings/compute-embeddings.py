@@ -166,7 +166,7 @@ def _rows_to_targets(rows) -> list[EmbedTarget]:
 # Fetchers — one per source kind, both returning the same EmbedTarget shape
 # ---------------------------------------------------------------------------
 
-def fetch_publication_targets(cur, *, limit: int | None, all_: bool, scope: str) -> list[EmbedTarget]:
+def fetch_publication_targets(cur, *, limit: int | None, all_: bool, scope: str, since: str | None = None) -> list[EmbedTarget]:
     """Publications that should be embedded.
 
     Filter:
@@ -182,6 +182,12 @@ def fetch_publication_targets(cur, *, limit: int | None, all_: bool, scope: str)
     if scope == "analyzed":
         where.append("(p.press_score IS NOT NULL "
                      "OR EXISTS (SELECT 1 FROM press_releases pr WHERE pr.publication_id = p.id))")
+    # MODEL_TAG (in the LEFT JOIN) is the first %s; a WHERE %s must follow it in
+    # appearance order and LIMIT must be last — keep params[] in that order.
+    params: list = [MODEL_TAG]
+    if since:
+        where.append("p.published_at >= %s")
+        params.append(since)
     q = f"""
       SELECT
         p.id::text,
@@ -195,7 +201,6 @@ def fetch_publication_targets(cur, *, limit: int | None, all_: bool, scope: str)
         ON pe.publication_id = p.id AND pe.model = %s
       WHERE {' AND '.join(where)}
     """
-    params: list = [MODEL_TAG]
     if limit and not all_:
         q += " LIMIT %s"
         params.append(limit)
@@ -338,6 +343,9 @@ def main() -> int:
                     help="recompute even if hash unchanged")
     ap.add_argument("--scope", default="analyzed", choices=["analyzed", "all"],
                     help="publications-pass scope. analyzed (default): only press_score-having + pressed pubs; all: every pub with title")
+    ap.add_argument("--since", default=None,
+                    help="only embed publications with published_at >= this date (YYYY-MM-DD) — "
+                         "scope a SPECTER2 backfill to one import window (orphans pass is unaffected)")
     ap.add_argument("--no-refresh", action="store_true",
                     help="skip refresh_embedding_pipeline at the end")
     ap.add_argument("--skip-orphans", action="store_true",
@@ -380,7 +388,7 @@ def main() -> int:
 
     # ─── Pass 1: publications ───────────────────────────────────────────────
     pub_targets = fetch_publication_targets(
-        cur, limit=args.limit, all_=args.all, scope=args.scope,
+        cur, limit=args.limit, all_=args.all, scope=args.scope, since=args.since,
     )
     n_pub_done = process_pass(
         pass_name="pubs", targets=pub_targets,
