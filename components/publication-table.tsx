@@ -10,7 +10,8 @@ import { buildTaskUrl } from '@/lib/shared/meistertask-urls';
 import { cn } from '@/lib/shared/utils';
 import { PressScoreBadge, ScoreBar } from './score-bar';
 import { InfoBubble } from './info-bubble';
-import { EXPL } from '@/lib/client/explanations';
+import { EXPL, leadWithReason } from '@/lib/client/explanations';
+import { enrichmentReason } from '@/lib/shared/enrichment-reason';
 import { HaikuBlock } from './haiku-block';
 import { VenueLine } from './venue-line';
 import { MeistertaskButton } from '@/components/meistertask-button';
@@ -53,6 +54,24 @@ type PublicationRow = Publication & {
   orgunits?: Array<{ id: string; akronym_de: string | null; name_de: string }>;
   publication_type_lookup?: { name_de: string; name_en: string } | null;
 };
+
+// The per-row "why is there no score / why did enrichment fail" reason, woven
+// from the row's own DOI, type and date (see lib/shared/enrichment-reason).
+// Computed once per row and handed to BOTH the always-visible score badge and
+// the (optional) enrichment StatusBadge, so the two never tell different
+// stories. The `publication_type` string is empty on every failed row, so the
+// type lookup's label stands in.
+function rowEnrichmentReason(pub: PublicationRow): string | null {
+  return enrichmentReason(
+    {
+      enrichment_status: pub.enrichment_status,
+      doi: pub.doi,
+      publication_type: pub.publication_type || pub.publication_type_lookup?.name_de || null,
+      published_at: pub.published_at,
+    },
+    new Date(),
+  );
+}
 
 interface PublicationTableProps {
   publications: PublicationRow[];
@@ -262,6 +281,7 @@ function MobilePublicationCard({
   onDecided?: (pubId: string) => void;
 }) {
   const [sheetOpen, setSheetOpen] = useState(false);
+  const naReason = rowEnrichmentReason(pub);
   return (
     <>
     <Link
@@ -320,7 +340,7 @@ function MobilePublicationCard({
         </div>
         {showScores && (
           <div className="shrink-0 flex flex-col items-end gap-1">
-            <PressScoreBadge score={pub.press_score} analysisStatus={pub.analysis_status} enrichmentStatus={pub.enrichment_status} />
+            <PressScoreBadge score={pub.press_score} analysisStatus={pub.analysis_status} enrichmentStatus={pub.enrichment_status} naReason={naReason} />
             <SimilarityIndicator similarity={pub.press_similarity} />
           </div>
         )}
@@ -377,7 +397,7 @@ function MobilePublicationCard({
         )}
         {showEnrichment && (
           <>
-            <StatusBadge status={pub.enrichment_status} />
+            <StatusBadge status={pub.enrichment_status} naReason={naReason} />
             {pub.enriched_source && <SourceBadges sources={pub.enriched_source} />}
           </>
         )}
@@ -463,6 +483,7 @@ function PublicationRow({
   const colCount = 6 + (showEnrichment ? 1 : 0) + (showScores ? 1 : 0);
 
   const accentClass = decisionAccentClass(pub.decision);
+  const naReason = rowEnrichmentReason(pub);
   return (
     <>
       <tr
@@ -574,7 +595,7 @@ function PublicationRow({
         {showEnrichment && (
           <td className="p-3">
             <div className="flex items-center gap-1.5 flex-wrap">
-              <StatusBadge status={pub.enrichment_status} />
+              <StatusBadge status={pub.enrichment_status} naReason={naReason} />
               {pub.enriched_source && (
                 <SourceBadges sources={pub.enriched_source} />
               )}
@@ -584,7 +605,7 @@ function PublicationRow({
         {showScores && (
           <td className="p-3">
             <div className="flex items-center gap-1.5 flex-wrap">
-              <PressScoreBadge score={pub.press_score} analysisStatus={pub.analysis_status} enrichmentStatus={pub.enrichment_status} />
+              <PressScoreBadge score={pub.press_score} analysisStatus={pub.analysis_status} enrichmentStatus={pub.enrichment_status} naReason={naReason} />
               <SimilarityIndicator similarity={pub.press_similarity} />
               {pub.analysis_status === 'analyzed' && pub.llm_model && (
                 <ModelBadge model={pub.llm_model} />
@@ -627,15 +648,18 @@ function PublicationRow({
   );
 }
 
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status, naReason }: { status: string; naReason?: string | null }) {
+  // The enrichment-column pill (hidden by default). The same per-row reason that
+  // leads the score bubble leads here too; `leadWithReason` keeps the generic
+  // status_* body + Hilfe-Center link. Unknown status → pill only, no bubble.
   const explId = `status_${status}`;
-  const hasExpl = explId in EXPL;
+  const key = explId in EXPL ? (explId as keyof typeof EXPL) : null;
   return (
     <span className="inline-flex items-center gap-1">
       <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[status] || STATUS_COLORS.pending}`}>
         {STATUS_LABELS[status] || status}
       </span>
-      {hasExpl && <InfoBubble id={explId as keyof typeof EXPL} />}
+      {key && <InfoBubble id={key} content={leadWithReason(EXPL[key], naReason)} />}
     </span>
   );
 }

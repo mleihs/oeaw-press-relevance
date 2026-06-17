@@ -14,6 +14,12 @@ export interface ChangelogEntry {
 // auf das heutige Datum heben, sonst zeigt der Unread-Dot keinen neuen Stand an.
 export const changelogEntries: ChangelogEntry[] = [
   {
+    category: 'verbesserung',
+    title: 'Fehlender Score: jetzt mit konkretem Grund',
+    body: 'Publikationen ohne Story Score zeigen in der „N/A"-Bubble jetzt einen pro Eintrag verfassten Grund statt eines allgemeinen Hinweises. Je nach Fall: keine DOI hinterlegt (bei Zeitschriften-Beiträgen oft nachtragbar), ein Publikationstyp wie Sammelwerks- oder Zeitungsbeitrag, der in CrossRef/OpenAlex gar nicht geführt wird, eine vergebene DOI ohne frei abrufbaren Abstract, ein Buch- bzw. Sammelband-DOI, oder ein noch nicht erschienenes Paper (Pre-Publication-Window). Der spezifische Grund steht voran, die allgemeine Erklärung folgt als Kontext.',
+    href: '/help/scores/score-fehlt',
+  },
+  {
     category: 'neu',
     title: 'Veranstaltungen: Relevanz-Score & Pitch',
     body: 'Veranstaltungen werden jetzt, analog zu Publikationen, vom Sprachmodell nach Relevanz für die zentrale Veranstaltungsseite eingestuft, mit vier Dimensionen (Öffentlichkeitswirkung, Wissenschaftliche Bedeutung, Reichweite, Aktualität) und einem Pitch-Vorschlag. Über „Analysieren" auf der Events-Seite werden offene Events einmalig bewertet; die Liste zeigt den Score je Zeile, die Detailseite die Aufschlüsselung samt Begründung.',
@@ -114,7 +120,7 @@ export const changelogClosing =
  * Bump this whenever a new entry is added on top so that returning users
  * see the brand-colored dot until they open the panel.
  */
-export const changelogLastUpdated = '2026-06-16T12:00:00.000Z';
+export const changelogLastUpdated = '2026-06-17T12:00:00.000Z';
 
 /** Auto-derived from changelogLastUpdated: single source of truth for the
  *  panel's soft date anchor ("Stand Mai 2026"). */

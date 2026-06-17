@@ -25,6 +25,32 @@ const Code = ({ children }: { children: ReactNode }) => (
   <code className="rounded bg-muted px-1 py-0.5 font-mono text-[10px] text-foreground/90">{children}</code>
 );
 
+/**
+ * Compose a per-row explanation: lead with the specific, derived reason, then
+ * the generic EXPL body as context — so EXPL stays the single home for the
+ * generic copy (no duplication). Returns `undefined` when there is no specific
+ * reason, so callers fall straight back to the plain EXPL entry.
+ *
+ * Pass the result as InfoBubble's `content` alongside the original `id`:
+ * InfoBubble resolves the body from `content` but the "Mehr im Hilfe-Center →"
+ * deep-link from `id`, so the link survives the override.
+ */
+export function leadWithReason(
+  base: Explanation,
+  reason: string | null | undefined,
+): Explanation | undefined {
+  if (!reason) return undefined;
+  return {
+    ...base,
+    body: (
+      <>
+        <p className="font-medium text-foreground">{reason}</p>
+        {base.body}
+      </>
+    ),
+  };
+}
+
 export const EXPL = {
   // ─── Per-publication press_score ─────────────────────────────────────────
   press_score: {

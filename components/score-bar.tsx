@@ -3,7 +3,7 @@
 import { SCORE_COLORS, SCORE_LABELS } from '@/lib/shared/constants';
 import { getScoreBandClass, type ScoreBandVariant } from '@/lib/shared/score-utils';
 import { InfoBubble } from '@/components/info-bubble';
-import { EXPL } from '@/lib/client/explanations';
+import { EXPL, leadWithReason } from '@/lib/client/explanations';
 
 interface ScoreBarProps {
   dimension: string;
@@ -85,6 +85,11 @@ interface PressScoreBadgeProps {
   enrichmentStatus?: string | null;
   /** Accessible-name prefix; defaults to "Story Score" (events pass "Relevanz-Score"). */
   ariaLabel?: string;
+  /** Per-row, derived reason WHY there is no score (publications list). When set
+   *  and `score` is null, it leads the N/A bubble ahead of the generic
+   *  score_na_* copy. Optional, so events / dashboard / press-releases callers
+   *  stay unaffected. See lib/shared/enrichment-reason.ts. */
+  naReason?: string | null;
 }
 
 function pickScoreNaExpl(
@@ -99,13 +104,20 @@ function pickScoreNaExpl(
   return 'score_na';
 }
 
-export function PressScoreBadge({ score, variant = 'badge', analysisStatus, enrichmentStatus, ariaLabel = 'Story Score' }: PressScoreBadgeProps) {
-  if (score === null) return (
-    <span className="inline-flex items-center gap-1">
-      <span className="text-muted-foreground/70 text-sm">N/A</span>
-      <InfoBubble id={pickScoreNaExpl(analysisStatus, enrichmentStatus)} />
-    </span>
-  );
+export function PressScoreBadge({ score, variant = 'badge', analysisStatus, enrichmentStatus, naReason, ariaLabel = 'Story Score' }: PressScoreBadgeProps) {
+  if (score === null) {
+    // The always-visible "N/A" bubble. Lead with the per-row reason (when the
+    // caller derived one), then the generic score_na_* body as context. Passing
+    // the resolved `id` keeps the Hilfe-Center deep-link; `content` overrides
+    // only the body (undefined → plain generic entry).
+    const explId = pickScoreNaExpl(analysisStatus, enrichmentStatus);
+    return (
+      <span className="inline-flex items-center gap-1">
+        <span className="text-muted-foreground/70 text-sm">N/A</span>
+        <InfoBubble id={explId} content={leadWithReason(EXPL[explId], naReason)} />
+      </span>
+    );
+  }
 
   const pct = Math.round(score * 100);
   const bgColor = getScoreBandClass(score, variant);
