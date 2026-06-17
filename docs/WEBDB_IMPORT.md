@@ -74,10 +74,24 @@ npm run enrich-all
 #    order: analysis first (scores onto existing rows), then the row sync
 #    (INSERTs brand-new rows, which already carry their local scores).
 node scripts/push-analysis-to-prod.mjs --apply        # fill scores on existing prod rows
-node scripts/sync-missing-pubs-to-prod.mjs --apply    # INSERT new rows + relations
+node scripts/sync-missing-pubs-to-prod.mjs --apply    # INSERT new rows + relations (auto-copies new authors)
 npm run sync-events:prod                               # new events, if any
 
-# 8. Cleanup
+# 8. Press-news DOI match — pull current OeAW Pressemeldungen from TYPO3 into
+#    press_releases (orphans) + promote DOI matches to publications ("schon
+#    released" signal). Repeatable + idempotent (ON CONFLICT DO NOTHING). Run
+#    local AND prod (dry-run by default; --apply writes; runs promote in-tx).
+node scripts/import-press-news.mjs --apply              # local
+node scripts/import-press-news.mjs --target=prod --apply
+
+# 9. SPECTER2 press-similarity embeddings for the new pubs. Runs AFTER step 8 so
+#    the orphan set is final before the centroid / press_similarity refresh.
+#    Idempotent (hash-skip); embeddings live only in prod; --since scopes the
+#    publications pass to this import's window (orphans pass always runs).
+scripts/embeddings/.venv/bin/python scripts/embeddings/compute-embeddings.py \
+  --target=prod --since=<import-year>-01-01
+
+# 10. Cleanup
 docker stop oeaw-webdb-mysql && docker rm oeaw-webdb-mysql
 ```
 
@@ -341,6 +355,60 @@ Confirm prod matches local and is internally consistent:
 > row-sync then INSERTed 36 brand-new rows + 65/50/15 join rows (prod pubs
 > 38,624→38,660, scored 7,785→7,797). Prod invariant clean, drift ≤2 rows —
 > the re-import is **fully live and retrievable on prod**.
+
+## Press-news DOI matching (`press_releases`)
+
+OeAW main-site press releases (TYPO3 EXT:news, `sys_category` 64
+"ÖAW-Pressemeldungen") that cite a paper DOI are the "schon released" signal.
+`scripts/import-press-news.mjs` is the **repeatable** importer — the 2026-05-06
+set was a one-time seed with no refresh path until this script, so press news
+after ~mid-May 2026 never matched.
+
+```bash
+node scripts/import-press-news.mjs                      # dry-run → local
+node scripts/import-press-news.mjs --apply              # write local
+node scripts/import-press-news.mjs --target=prod --apply
+```
+
+- **Source**: `tx_news_domain_model_news` in `sys_category` 64 (DE originals,
+  `sys_language_uid=0 l10n_parent=0`) + their EN l10n translations
+  (`sys_language_uid=1`; cat 1748 "OeAW press release" carries no direct
+  `sys_category_record_mm` links, so EN is reached via `l10n_parent`).
+- **DOI** lives in the `event_information` editor block ("Auf einen Blick" —
+  citation + `DOI: 10...`), NOT in `bodytext` (8 rows) or `teaser` (0). HTML
+  entities (esp. `&nbsp;`) wrap the DOI and are decoded before extraction
+  (reuses `scripts/lib/doi-extract.mjs`), else the pattern captures `...&nbsp`
+  onto the DOI. EN rows without their own DOI inherit the parent DE row's DOI.
+- **URL** `/news/<path_segment>` (de) | `/en/news/<path_segment>` (en);
+  `released_at` = `DATE(FROM_UNIXTIME(datetime))`.
+- **Write**: orphan `press_releases` (`publication_id` NULL), ON CONFLICT
+  `(LOWER(doi), COALESCE(lang,''))` DO NOTHING (never touches an existing row),
+  then `promote_press_release_orphans()` links any orphan whose DOI now matches
+  a publication — one transaction, dry-run rolls back.
+- Run **prod after the pub push** so the new pubs are present to match against.
+  Promoting an orphan fires a trigger that deletes its now-stale orphan
+  embedding, so the press-cluster stays consistent automatically.
+
+## Press-similarity embeddings (SPECTER2)
+
+`publication_embeddings` / `press_release_embeddings` feed the press-cluster
+k-NN that materialises `publications.press_similarity`. They live **only in
+prod** (local is the scoring workspace), and `sync-missing-pubs-to-prod.mjs`
+does NOT copy them — so newly-scored pubs carry no embedding until the SPECTER2
+pass runs against prod:
+
+```bash
+scripts/embeddings/.venv/bin/python scripts/embeddings/compute-embeddings.py \
+  --target=prod --since=2026-01-01
+```
+
+- `--scope=analyzed` (default) embeds pubs that have a `press_score` or a
+  `press_release` — exactly the cluster reference set. Do **not** widen to
+  `--scope=all`; that pulls unscored pubs into the reference cluster.
+- `--since=YYYY-MM-DD` scopes the publications pass to one import window; the
+  orphan-press-release pass always runs. Hash-idempotent — safe to re-run.
+- Run it **after** the press-news match (step 8) so the centroid +
+  `press_similarity` refresh at the end reflects the final orphan set.
 
 ## Adapting for Other CMSs
 

@@ -1,5 +1,6 @@
 import { and, asc, eq, gte, sql, type SQL } from 'drizzle-orm';
 import { db, events as eventsTable } from '@/lib/server/db';
+import { ascNullsLast, descNullsLast } from '@/lib/server/db/sort';
 import { eventRowToApi, type Event } from './to-api';
 
 export const EVENTS_TAB_VALUES = [
@@ -120,11 +121,41 @@ export interface EventsListResult {
   total: number;
 }
 
-export async function listEvents(filter: SQL): Promise<EventsListResult> {
+/** Sortable list columns. `date` is the default (chronological agenda); `score`
+ *  lets the press team surface the most relevant events first. Whitelisted so a
+ *  bad `?sort=` query param can't reach the order-by. */
+export const EVENTS_SORT_VALUES = ['date', 'score'] as const;
+export type EventsSort = (typeof EVENTS_SORT_VALUES)[number];
+export type EventsSortOrder = 'asc' | 'desc';
+
+export function isEventsSort(v: unknown): v is EventsSort {
+  return (
+    typeof v === 'string' &&
+    (EVENTS_SORT_VALUES as readonly string[]).includes(v)
+  );
+}
+
+export interface EventsSortSpec {
+  by: EventsSort;
+  order: EventsSortOrder;
+}
+
+export const DEFAULT_EVENTS_SORT: EventsSortSpec = { by: 'date', order: 'asc' };
+
+export async function listEvents(
+  filter: SQL,
+  sort: EventsSortSpec = DEFAULT_EVENTS_SORT,
+): Promise<EventsListResult> {
+  // `event_score` is NULL for not-yet-analyzed events; NULLS LAST keeps those
+  // out of the way in both directions. eventAt is a stable secondary key so a
+  // score sort doesn't shuffle the many same-score internal seminars randomly.
+  const col = sort.by === 'score' ? eventsTable.eventScore : eventsTable.eventAt;
+  const primary =
+    sort.order === 'asc' ? ascNullsLast(col) : descNullsLast(col);
   const rows = await db
     .select()
     .from(eventsTable)
     .where(filter)
-    .orderBy(asc(eventsTable.eventAt));
+    .orderBy(primary, asc(eventsTable.eventAt));
   return { events: rows.map(eventRowToApi), total: rows.length };
 }

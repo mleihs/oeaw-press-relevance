@@ -74,7 +74,7 @@ export default async function SocialPage() {
       {channels.length === 0 ? (
         <StatusBanner variant="neutral">
           Keine aktiven Kanäle. Füge welche unter{' '}
-          <Link href="/settings" className="underline">
+          <Link href="/settings#social-channels" className="underline">
             Einstellungen
           </Link>{' '}
           hinzu.

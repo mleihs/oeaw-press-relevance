@@ -1,5 +1,14 @@
 import Link from 'next/link';
-import { ExternalLink, MapPin, Building2, Building, ArrowRight, Search } from 'lucide-react';
+import {
+  ExternalLink,
+  MapPin,
+  Building2,
+  Building,
+  Search,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+} from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { DecisionBadge } from '@/components/decision-badge';
@@ -9,16 +18,77 @@ import { buildOeawSearchUrl } from '../_lib/build-search-url';
 import { eventDateFmt, eventTimeFmt, isSameLocalDay } from '../_lib/event-format';
 import { cn } from '@/lib/shared/utils';
 import { decodeHtmlBlock } from '@/lib/shared/html-utils';
+import type { EventsSort, EventsSortOrder } from '@/lib/server/events/list';
 import type { Event } from '@/lib/server/events/to-api';
 
 interface Props {
   rows: Event[];
+  sortBy?: EventsSort;
+  sortOrder?: EventsSortOrder;
+  sortHrefs?: Partial<Record<string, string>>;
+}
+
+/** Zero-JS sortable header cell. The events page is always RSC (force-dynamic),
+ *  so sorting is a plain <Link> that flips the `?sort=&order=` query — no client
+ *  state, mirroring the publications table's SortHeader. */
+function SortHeader({
+  column,
+  label,
+  align = 'left',
+  sortBy,
+  sortOrder,
+  href,
+}: {
+  column: EventsSort;
+  label: string;
+  align?: 'left' | 'center';
+  sortBy?: EventsSort;
+  sortOrder?: EventsSortOrder;
+  href?: string;
+}) {
+  const active = sortBy === column;
+  const ariaSort: React.AriaAttributes['aria-sort'] = !active
+    ? 'none'
+    : sortOrder === 'asc'
+      ? 'ascending'
+      : 'descending';
+  const icon = !active ? (
+    <ArrowUpDown aria-hidden="true" className="h-3 w-3 text-muted-foreground/50" />
+  ) : sortOrder === 'asc' ? (
+    <ArrowUp aria-hidden="true" className="h-3 w-3 text-foreground" />
+  ) : (
+    <ArrowDown aria-hidden="true" className="h-3 w-3 text-foreground" />
+  );
+  return (
+    <th
+      scope="col"
+      aria-sort={href ? ariaSort : undefined}
+      className={cn('p-0 font-medium whitespace-nowrap', align === 'center' ? 'text-center' : 'text-left')}
+    >
+      {href ? (
+        <Link
+          href={href}
+          replace
+          scroll={false}
+          className={cn(
+            'flex items-center gap-1 p-3 cursor-pointer select-none hover:bg-muted transition-colors',
+            align === 'center' && 'justify-center',
+          )}
+        >
+          {label}
+          {icon}
+        </Link>
+      ) : (
+        <span className="block p-3">{label}</span>
+      )}
+    </th>
+  );
 }
 
 /** Server-rendered table — same HTML-table convention as
  *  press-releases/_components/main-table.tsx. EventFlag (decision + notes)
  *  hydrates as a small client island per row. */
-export function EventsTable({ rows }: Props) {
+export function EventsTable({ rows, sortBy, sortOrder, sortHrefs }: Props) {
   if (rows.length === 0) {
     return (
       <Card className="border-dashed">
@@ -35,11 +105,24 @@ export function EventsTable({ rows }: Props) {
           <caption className="sr-only">Kommende Veranstaltungen</caption>
           <thead className="bg-muted/50">
             <tr>
-              <th scope="col" className="p-3 text-left font-medium whitespace-nowrap">Datum</th>
+              <SortHeader
+                column="date"
+                label="Datum"
+                sortBy={sortBy}
+                sortOrder={sortOrder}
+                href={sortHrefs?.date}
+              />
               <th scope="col" className="p-3 text-left font-medium">Titel</th>
               <th scope="col" className="p-3 text-left font-medium">Ort / Veranstalter</th>
               <th scope="col" className="p-3 text-left font-medium whitespace-nowrap">Status</th>
-              <th scope="col" className="p-3 text-center font-medium whitespace-nowrap">Relevanz</th>
+              <SortHeader
+                column="score"
+                label="Relevanz"
+                align="center"
+                sortBy={sortBy}
+                sortOrder={sortOrder}
+                href={sortHrefs?.score}
+              />
               <th scope="col" className="p-3 text-right font-medium whitespace-nowrap">Aktionen</th>
             </tr>
           </thead>
@@ -78,15 +161,14 @@ function EventRowView({ event }: { event: Event }) {
       <td className="p-3 max-w-md align-top">
         <Link
           href={`/events/${event.id}`}
-          className="group inline-flex items-start gap-1.5 hover:text-brand"
+          className="group hover:text-brand"
         >
-          <ArrowRight className="h-3.5 w-3.5 shrink-0 mt-1 text-muted-foreground group-hover:text-brand transition-transform group-hover:translate-x-0.5" />
           <span className="font-medium leading-snug line-clamp-2 group-hover:underline">
             {event.title}
           </span>
         </Link>
         {event.institute && (
-          <div className="mt-1 ml-5">
+          <div className="mt-1">
             <Badge variant="secondary" className="gap-1 text-[10px] py-0">
               <Building className="h-2.5 w-2.5" />
               {event.institute}
@@ -94,7 +176,7 @@ function EventRowView({ event }: { event: Event }) {
           </div>
         )}
         {event.teaser && (
-          <p className="mt-1 ml-5 text-xs text-muted-foreground line-clamp-2 leading-snug whitespace-pre-wrap">
+          <p className="mt-1 text-xs text-muted-foreground line-clamp-2 leading-snug whitespace-pre-wrap">
             {decodeHtmlBlock(event.teaser)}
           </p>
         )}

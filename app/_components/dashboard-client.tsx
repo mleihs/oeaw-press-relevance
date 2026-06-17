@@ -29,8 +29,10 @@ import { CapybaraGlitch } from '@/components/capybara-glitch';
 import { CapybaraLightbox } from '@/components/capybara-lightbox';
 import { PublicationFlag } from '@/components/publication-flag';
 import { VenueLine } from '@/components/venue-line';
+import { FlagshipBadge } from '@/components/flagship-badge';
 import { AUTH_STORAGE_KEY, AUTH_SUCCESS_EVENT } from '@/lib/client/auth-events';
 import { displayAuthor, displayInstitute, displayTitle } from '@/lib/shared/publication-display';
+import { formatPubDate, pubDateTitle } from '@/lib/shared/format-pub-date';
 import {
   buildDashboardHref,
   DASHBOARD_PERIODS,
@@ -471,11 +473,17 @@ export function DashboardClient({ data, period, sortBy }: DashboardClientProps) 
                         <p className="text-xs text-muted-foreground truncate">
                           {displayAuthor(pub)}{institute ? ` | ${institute}` : ''}
                         </p>
+                        <FlagshipBadge journal={pub.enriched_journal} />
                         {pub.publication_type && (
                           <Badge variant="outline" className="text-[10px] px-1.5 py-0">{pub.publication_type}</Badge>
                         )}
                         {pub.published_at && (
-                          <span className="text-[10px] text-muted-foreground/70">{pub.published_at.slice(0, 4)}</span>
+                          <span
+                            className="text-[10px] text-muted-foreground/70"
+                            title={pubDateTitle(pub.published_at)}
+                          >
+                            {formatPubDate(pub.published_at)}
+                          </span>
                         )}
                       </div>
                       <VenueLine journal={pub.enriched_journal} />

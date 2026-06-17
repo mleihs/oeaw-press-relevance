@@ -80,7 +80,7 @@ export function SocialChannelsCard() {
   const defaultDays = data?.default_lookback_days ?? 14;
 
   return (
-    <Card>
+    <Card id="social-channels" className="scroll-mt-20">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
           <Radar className="h-4 w-4 text-muted-foreground/70" />
