@@ -23,10 +23,12 @@
  *   - failed, no DOI, other type (chapter, newspaper/magazine, report, review,
  *     thesis, …) → such outputs are usually not indexed in CrossRef/OpenAlex at
  *     all, so there is nothing to fetch.
- *   - partial → a source returned metadata (journal/date) but no abstract.
  *
  * Returns null when there is nothing row-specific to add (enriched / pending /
- * analyzed) — the caller then falls back to the plain generic explanation.
+ * analyzed / partial) — the caller then falls back to the plain generic
+ * explanation. `partial` is deliberately left generic: its only honest line
+ * ("metadata but no abstract") would just restate score_na_pending_partial /
+ * status_partial, and it carries no row-specific detail.
  *
  * `now` is injected (not read from the clock) so the function stays pure and the
  * future-date branch is testable; the client component passes `new Date()`.
@@ -50,7 +52,9 @@ function monthYearLabel(isoDate: string): string {
  *  volume rather than an article — those rarely expose an abstract via the APIs.
  *  e.g. 10.3828/9781805966791 (Liverpool University Press). */
 function looksLikeBookDoi(doi: string): boolean {
-  return /\/(?:978|979)\d{9,}/.test(doi);
+  // 978/979 + 10 digits is a full ISBN-13 in the suffix; the trailing (?:\D|$)
+  // pins it to exactly 13 so a longer numeric article suffix isn't misread.
+  return /\/(?:978|979)\d{10}(?:\D|$)/.test(doi);
 }
 
 /** Publication types that normally DO carry a DOI (journal articles, indexed
@@ -81,10 +85,9 @@ export function enrichmentReason(
   },
   now: Date,
 ): string | null {
-  if (pub.enrichment_status === 'partial') {
-    return 'Eine Quelle lieferte Metadaten (z. B. Journal oder Erscheinungsdatum), aber keinen Abstract. Für eine inhaltliche Bewertung fehlt damit die Substanz.';
-  }
-
+  // Only the `failed` case yields a specific, row-derived line; everything else
+  // (enriched / pending / analyzed / partial) has none, so the caller falls back
+  // to the generic explanation.
   if (pub.enrichment_status !== 'failed') return null;
 
   const doi = pub.doi?.trim() || '';

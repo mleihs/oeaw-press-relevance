@@ -74,11 +74,8 @@ describe('enrichmentReason', () => {
     expect(r?.startsWith('Aufwändige Multimedia-Publikation')).toBe(true);
   });
 
-  it('names the missing abstract for the partial case', () => {
-    expect(enrichmentReason({ enrichment_status: 'partial', doi: null }, NOW)).toMatch(/Abstract/);
-  });
-
-  it('returns null when there is nothing row-specific to add', () => {
+  it('returns null when there is nothing row-specific to add (incl. partial, which keeps the generic copy)', () => {
+    expect(enrichmentReason({ enrichment_status: 'partial', doi: null }, NOW)).toBeNull();
     expect(enrichmentReason({ enrichment_status: 'enriched', doi: '10.1/x' }, NOW)).toBeNull();
     expect(enrichmentReason({ enrichment_status: 'pending', doi: null }, NOW)).toBeNull();
     expect(enrichmentReason({ enrichment_status: 'analyzed', doi: null }, NOW)).toBeNull();
