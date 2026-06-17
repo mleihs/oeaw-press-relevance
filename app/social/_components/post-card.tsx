@@ -51,67 +51,71 @@ export function PostCard({
         </div>
       )}
 
-      <footer className="mt-auto flex items-center justify-between gap-2 pt-1 text-[11px] text-muted-foreground">
-        {channel ? (
-          <HoverCard openDelay={120} closeDelay={80}>
-            <HoverCardTrigger asChild>
-              <span className="cursor-default truncate font-medium text-foreground/80 hover:text-brand">
-                @{channel.handle}
-              </span>
-            </HoverCardTrigger>
-            <HoverCardContent className="w-60 text-sm" side="top" align="start">
-              <p className="font-medium">{channel.display_name || channel.handle}</p>
-              <a
-                href={`https://www.instagram.com/${channel.handle}/`}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-0.5 inline-flex items-center gap-1 text-xs text-brand hover:underline"
-              >
-                @{channel.handle} <ExternalLink className="h-3 w-3" />
-              </a>
-              {abs && <p className="mt-2 text-xs text-muted-foreground">Gepostet: {abs}</p>}
-            </HoverCardContent>
-          </HoverCard>
-        ) : (
-          <span />
-        )}
-
-        {/* Engagement: display-only (monitoring view, not actionable). */}
-        <div className="flex shrink-0 items-center gap-2">
-          {post.like_count != null && (
-            <span
-              className="inline-flex items-center gap-0.5"
-              aria-label={`${post.like_count} Likes`}
-            >
-              <Heart className="h-3 w-3" aria-hidden />
-              <span aria-hidden>{compact.format(post.like_count)}</span>
-            </span>
+      {/* All post meta in one semantic <footer>: row 1 = channel + engagement,
+          row 2 = timestamp + link to the original. */}
+      <footer className="mt-auto flex flex-col gap-2 pt-1 text-[11px] text-muted-foreground">
+        <div className="flex items-center justify-between gap-2">
+          {channel ? (
+            <HoverCard openDelay={120} closeDelay={80}>
+              <HoverCardTrigger asChild>
+                <span className="cursor-default truncate font-medium text-foreground/80 hover:text-brand">
+                  @{channel.handle}
+                </span>
+              </HoverCardTrigger>
+              <HoverCardContent className="w-60 text-sm" side="top" align="start">
+                <p className="font-medium">{channel.display_name || channel.handle}</p>
+                <a
+                  href={`https://www.instagram.com/${channel.handle}/`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-0.5 inline-flex items-center gap-1 text-xs text-brand hover:underline"
+                >
+                  @{channel.handle} <ExternalLink className="h-3 w-3" />
+                </a>
+                {abs && <p className="mt-2 text-xs text-muted-foreground">Gepostet: {abs}</p>}
+              </HoverCardContent>
+            </HoverCard>
+          ) : (
+            <span />
           )}
-          {post.comment_count != null && (
-            <span
-              className="inline-flex items-center gap-0.5"
-              aria-label={`${post.comment_count} Kommentare`}
+
+          {/* Engagement: display-only (monitoring view, not actionable). */}
+          <div className="flex shrink-0 items-center gap-2">
+            {post.like_count != null && (
+              <span
+                className="inline-flex items-center gap-0.5"
+                aria-label={`${post.like_count} Likes`}
+              >
+                <Heart className="h-3 w-3" aria-hidden />
+                <span aria-hidden>{compact.format(post.like_count)}</span>
+              </span>
+            )}
+            {post.comment_count != null && (
+              <span
+                className="inline-flex items-center gap-0.5"
+                aria-label={`${post.comment_count} Kommentare`}
+              >
+                <MessageCircle className="h-3 w-3" aria-hidden />
+                <span aria-hidden>{compact.format(post.comment_count)}</span>
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between">
+          {rel && <time dateTime={post.posted_at ?? undefined}>{rel}</time>}
+          {post.url && (
+            <a
+              href={post.url}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 rounded text-brand hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <MessageCircle className="h-3 w-3" aria-hidden />
-              <span aria-hidden>{compact.format(post.comment_count)}</span>
-            </span>
+              Original <ExternalLink className="h-3 w-3" />
+            </a>
           )}
         </div>
       </footer>
-
-      <div className="flex items-center justify-between text-[11px]">
-        {rel && <time dateTime={post.posted_at ?? undefined} className="text-muted-foreground">{rel}</time>}
-        {post.url && (
-          <a
-            href={post.url}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-1 rounded text-brand hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            Original <ExternalLink className="h-3 w-3" />
-          </a>
-        )}
-      </div>
     </article>
   );
 }

@@ -3,47 +3,38 @@
 import type { ReactNode } from 'react';
 import { FileText, Radio, Layers, CalendarRange } from 'lucide-react';
 import { StatCard } from '@/components/stat-card';
-import { InfoBubble } from '@/components/info-bubble';
-import type { EXPL } from '@/lib/client/explanations';
 
 /** Wraps a StatCard so the whole tile acts as a button (KPI-as-navigation).
- *  The explanation bubble is rendered as a SIBLING in the corner — outside the
- *  role=button — so the tile stays a single valid control (no interactive
- *  nesting) while still carrying its info + Hilfe-Center deep-link. The bubble
- *  stops click propagation itself, so opening it never triggers navigation. */
+ *  The StatCard renders its explanation bubble inline next to the label (via
+ *  explId). InfoBubble stops click propagation, so tapping it never triggers
+ *  navigation — the same reason it is safe inside <Link> rows elsewhere — and
+ *  the keydown guard ignores keys bubbling up from the bubble so Enter/Space on
+ *  it doesn't navigate either. */
 function ClickableTile({
   label,
   onClick,
-  explId,
   children,
 }: {
   label: string;
   onClick: () => void;
-  explId?: keyof typeof EXPL;
   children: ReactNode;
 }) {
   return (
-    <div className="relative rounded-xl">
-      <div
-        role="button"
-        tabIndex={0}
-        aria-label={label}
-        onClick={onClick}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            onClick();
-          }
-        }}
-        className="cursor-pointer rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-      >
-        {children}
-      </div>
-      {explId && (
-        <span className="absolute bottom-1.5 right-2 z-10">
-          <InfoBubble id={explId} side="top" />
-        </span>
-      )}
+    <div
+      role="button"
+      tabIndex={0}
+      aria-label={label}
+      onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.target !== e.currentTarget) return; // nested InfoBubble owns its keys
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      className="cursor-pointer rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+    >
+      {children}
     </div>
   );
 }
@@ -69,15 +60,14 @@ export function StatStrip({
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
       <StatCard label="Posts im Fenster" value={posts} icon={<FileText className="h-5 w-5" />} accent="brand" explId="social_kpi_posts" />
 
-      {/* explId on ClickableTile renders the bubble as a corner SIBLING (outside
-          the role=button), so the tile stays one valid control while keeping its
-          explanation + Hilfe-Center link. aria-label names the navigation. */}
-      <ClickableTile label="Zur Kanal-Ansicht" onClick={onKanaele} explId="social_kpi_channels">
-        <StatCard label="Kanäle" value={channels} icon={<Radio className="h-5 w-5" />} />
+      {/* StatCard renders its own bubble inline next to the label (explId); the
+          tile itself is the navigation, named by aria-label. */}
+      <ClickableTile label="Zur Kanal-Ansicht" onClick={onKanaele}>
+        <StatCard label="Kanäle" value={channels} icon={<Radio className="h-5 w-5" />} explId="social_kpi_channels" />
       </ClickableTile>
 
-      <ClickableTile label="Zur Themen-Ansicht" onClick={onThemen} explId="social_kpi_themes">
-        <StatCard label="Themen" value={themes} icon={<Layers className="h-5 w-5" />} accent="purple" />
+      <ClickableTile label="Zur Themen-Ansicht" onClick={onThemen}>
+        <StatCard label="Themen" value={themes} icon={<Layers className="h-5 w-5" />} accent="purple" explId="social_kpi_themes" />
       </ClickableTile>
 
       <StatCard label="Beobachtung" value={windowDays} subtitle="Tage (Standard)" icon={<CalendarRange className="h-5 w-5" />} accent="amber" explId="social_window" />
