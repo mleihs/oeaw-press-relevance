@@ -6,6 +6,7 @@
 
 import { db, socialRefreshRuns } from '@/lib/server/db';
 import { syncSocialPosts } from './sync';
+import { persistAndReconcilePostImages } from './images';
 import { analyzeSocialPosts, regenerateThemeSnapshot } from './analyze';
 import { getLastCompletedRefreshAt } from './list';
 import { getSocialSettings } from './settings';
@@ -147,6 +148,17 @@ export async function runSocialRefresh(
     await recordRun({ triggeredBy, status: 'error', error: message, ms: res.ms });
     emit('complete', completePayload(res));
     return res;
+  }
+
+  // Persist post images to durable storage + GC orphaned objects. Independent
+  // of Apify; fully non-fatal — image trouble must never fail a refresh.
+  try {
+    emit('storing_images', {});
+    const img = await persistAndReconcilePostImages();
+    emit('images', { stored: img.stored, failed: img.failed, removed: img.removed });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    log.error('social_refresh_image_error', { message });
   }
 
   // Analyze — internally resilient (per-batch failures don't throw).
