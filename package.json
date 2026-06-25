@@ -23,6 +23,7 @@
     "analyze-events": "tsx scripts/analyze-events.ts",
     "apply-event-scores": "tsx scripts/apply-event-scores.ts",
     "sync-social": "tsx scripts/sync-social.ts",
+    "backfill-social-images": "tsx scripts/backfill-social-images.ts",
     "webdb-import:v2": "tsx scripts/webdb-import-v2.ts",
     "backfill-venue": "tsx scripts/backfill-venue.ts",
     "enrich-all": "tsx scripts/enrich-all.ts",
@@ -30,6 +31,7 @@
     "db:introspect": "drizzle-kit introspect && mv drizzle/schema.ts drizzle/relations.ts lib/server/db/ && rm -rf drizzle/"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1075.0",
     "@supabase/supabase-js": "^2.105.1",
     "@tanstack/react-query": "^5.100.9",
     "@tanstack/react-virtual": "^3.13.24",

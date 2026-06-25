@@ -735,6 +735,7 @@ export const socialPosts = pgTable("social_posts", {
 	commentCount: integer("comment_count"),
 	mediaType: text("media_type"),
 	imageUrl: text("image_url"),
+	imagePath: text("image_path"),
 	raw: jsonb().default({}).notNull(),
 	fetchedAt: timestamp("fetched_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	topic: text(),

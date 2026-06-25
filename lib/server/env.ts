@@ -114,6 +114,19 @@ const Schema = z.object({
   // Refresh throttle: skip the Apify fetch if a successful refresh ran within
   // this many minutes (unless forced). Guards against token-burning re-clicks.
   SOCIAL_MIN_REFRESH_MINUTES: z.coerce.number().int().nonnegative().default(30),
+
+  // S3-compatible object storage (lib/server/storage/s3.ts) — durable social
+  // post images, and reusable for any future blob. Optional as a group: with
+  // no S3_ENDPOINT the social-image store is simply disabled and the serving
+  // route falls back to the live IG proxy. If S3_ENDPOINT is set, the
+  // conditional check below requires key/secret/bucket. One bucket per project;
+  // a shared MinIO can back several projects via separate buckets + keys.
+  S3_ENDPOINT: z.string().min(1).optional(),
+  S3_REGION: z.string().min(1).optional(),
+  S3_ACCESS_KEY_ID: z.string().min(1).optional(),
+  S3_SECRET_ACCESS_KEY: z.string().min(1).optional(),
+  S3_BUCKET: z.string().min(1).optional(),
+  S3_FORCE_PATH_STYLE: z.string().optional(),
 });
 
 type Normalized = Record<string, string | undefined>;
@@ -138,6 +151,13 @@ function runConditionalChecks(env: Normalized, errors: string[]): void {
     }
     if (!env.WEBDB_MYSQL_DATABASE) {
       errors.push('WEBDB_MYSQL_DATABASE — required when WEBDB_MYSQL_HOST is set');
+    }
+  }
+  if (env.S3_ENDPOINT) {
+    for (const k of ['S3_ACCESS_KEY_ID', 'S3_SECRET_ACCESS_KEY', 'S3_BUCKET'] as const) {
+      if (!env[k]) {
+        errors.push(`${k} — required when S3_ENDPOINT is set (object storage for social images)`);
+      }
     }
   }
 }

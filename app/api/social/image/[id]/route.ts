@@ -1,30 +1,25 @@
 import { NextRequest } from 'next/server';
 import { eq } from 'drizzle-orm';
 import { db, socialPosts } from '@/lib/server/db';
+import { getObject } from '@/lib/server/storage/s3';
 import { validateParams, withApiError } from '@/lib/server/http';
 import { idParamSchema } from '@/lib/server/schemas';
+import { fetchRemoteImage } from '@/lib/server/social/images';
 
-// Same-origin proxy for a post's Instagram thumbnail. The fbcdn/cdninstagram
-// URLs hotlink-block cross-origin <img> requests (Referer-based) and aren't
-// guaranteed under any CSP; fetching them server-side (no browser Referer) and
-// streaming from our own origin sidesteps both. The id → stored URL lookup
-// avoids an open image proxy (no arbitrary ?url= SSRF). Expired signed URLs
-// return 502 → the client shows its designed fallback.
+// Same-origin image endpoint for a post.
+//
+//  1. Durable path — if the post has a stored object (`image_path`), stream it
+//     from the private `social-images` bucket. This is the steady state: the
+//     bytes were downloaded once at refresh time, so neither IG signed-URL
+//     expiry nor unreachable *.fna.fbcdn.net hosts can break the image.
+//  2. Fallback — no stored object yet → proxy the live IG `displayUrl`
+//     server-side (no browser Referer, sidesteps hotlink/CSP). Expired or
+//     unresolvable hosts return 502 and the client shows its branded
+//     placeholder. The fetch is host-allow-listed (cdninstagram/fbcdn) to keep
+//     the proxy from becoming an SSRF vector.
 
-// Defense-in-depth: the stored URL still originates from the Apify scraper's
-// `displayUrl`, so constrain it to https on the known Instagram CDN hosts before
-// fetching. Stops a poisoned `raw.displayUrl` from turning the proxy into an
-// SSRF vector against internal/arbitrary hosts.
-const ALLOWED_IMAGE_HOST = /(?:^|\.)(?:cdninstagram\.com|fbcdn\.net)$/i;
-function isAllowedImageUrl(raw: string): boolean {
-  let u: URL;
-  try {
-    u = new URL(raw);
-  } catch {
-    return false;
-  }
-  return u.protocol === 'https:' && ALLOWED_IMAGE_HOST.test(u.hostname);
-}
+const STORED_CACHE = 'public, max-age=31536000, immutable';
+const LIVE_CACHE = 'public, max-age=86400, stale-while-revalidate=604800';
 
 export const GET = withApiError(async (
   _req: NextRequest,
@@ -34,29 +29,32 @@ export const GET = withApiError(async (
 
   const row = await db.query.socialPosts.findFirst({
     where: eq(socialPosts.id, id),
-    columns: { imageUrl: true },
+    columns: { imageUrl: true, imagePath: true },
   });
-  if (!row?.imageUrl) return new Response(null, { status: 404 });
-  if (!isAllowedImageUrl(row.imageUrl)) return new Response(null, { status: 502 });
+  if (!row) return new Response(null, { status: 404 });
 
-  let upstream: Response;
-  try {
-    upstream = await fetch(row.imageUrl, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; StoryScout/1.0)' },
-      signal: AbortSignal.timeout(15000),
-    });
-  } catch {
-    return new Response(null, { status: 502 });
+  // 1) Durable: stream the stored object from object storage (S3/MinIO).
+  if (row.imagePath) {
+    try {
+      const obj = await getObject(row.imagePath);
+      if (obj) {
+        return new Response(obj.bytes, {
+          headers: {
+            'Content-Type': obj.contentType || 'image/jpeg',
+            'Cache-Control': STORED_CACHE,
+          },
+        });
+      }
+    } catch {
+      // fall through to the live proxy
+    }
   }
-  if (!upstream.ok || !upstream.body) return new Response(null, { status: 502 });
 
-  const contentType = upstream.headers.get('content-type') || 'image/jpeg';
-  return new Response(upstream.body, {
-    headers: {
-      'Content-Type': contentType,
-      // Cache hard at the edge/browser; the underlying signed URL is stable
-      // while valid, and a re-sync replaces the row anyway.
-      'Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800',
-    },
+  // 2) Fallback: proxy the live IG URL (may 502 → client placeholder).
+  if (!row.imageUrl) return new Response(null, { status: 404 });
+  const img = await fetchRemoteImage(row.imageUrl);
+  if (!img) return new Response(null, { status: 502 });
+  return new Response(img.bytes, {
+    headers: { 'Content-Type': img.contentType, 'Cache-Control': LIVE_CACHE },
   });
 });
