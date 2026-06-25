@@ -61,7 +61,7 @@ async function main(): Promise<void> {
         suggestedAngle: r.suggested_angle?.trim() || null,
         targetAudience: r.target_audience?.trim() || null,
         reasoning: r.reasoning?.trim() || null,
-        llmModel: 'anthropic/claude-opus-4 (in-chat)',
+        llmModel: 'anthropic/claude-opus-4.8 (in-chat)',
         analysisCost: 0,
         analyzedAt: sql`NOW()`,
       })
