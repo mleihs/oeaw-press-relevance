@@ -31,6 +31,7 @@
     "db:introspect": "drizzle-kit introspect && mv drizzle/schema.ts drizzle/relations.ts lib/server/db/ && rm -rf drizzle/"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1075.0",
     "@supabase/supabase-js": "^2.105.1",
     "@tanstack/react-query": "^5.100.9",
     "@tanstack/react-virtual": "^3.13.24",

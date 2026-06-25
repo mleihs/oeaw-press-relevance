@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { imageKeyForPost, isAllowedImageUrl, selectOrphanKeys } from './images';
 
 describe('imageKeyForPost', () => {
-  it('maps a post id to a deterministic posts/<id>.jpg key', () => {
+  it('maps a post id to a deterministic social/posts/<id>.jpg key', () => {
     expect(imageKeyForPost('8e494a3a-1111-2222-3333-444455556666')).toBe(
-      'posts/8e494a3a-1111-2222-3333-444455556666.jpg',
+      'social/posts/8e494a3a-1111-2222-3333-444455556666.jpg',
     );
   });
 });

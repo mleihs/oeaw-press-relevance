@@ -1,10 +1,10 @@
 import { NextRequest } from 'next/server';
 import { eq } from 'drizzle-orm';
 import { db, socialPosts } from '@/lib/server/db';
-import { getSupabaseAdmin } from '@/lib/server/db/supabase';
+import { getObject } from '@/lib/server/storage/s3';
 import { validateParams, withApiError } from '@/lib/server/http';
 import { idParamSchema } from '@/lib/server/schemas';
-import { SOCIAL_IMAGE_BUCKET, fetchRemoteImage } from '@/lib/server/social/images';
+import { fetchRemoteImage } from '@/lib/server/social/images';
 
 // Same-origin image endpoint for a post.
 //
@@ -33,17 +33,14 @@ export const GET = withApiError(async (
   });
   if (!row) return new Response(null, { status: 404 });
 
-  // 1) Durable: stream the stored object from the private bucket.
+  // 1) Durable: stream the stored object from object storage (S3/MinIO).
   if (row.imagePath) {
     try {
-      const supa = getSupabaseAdmin();
-      const { data, error } = await supa.storage
-        .from(SOCIAL_IMAGE_BUCKET)
-        .download(row.imagePath);
-      if (!error && data) {
-        return new Response(data, {
+      const obj = await getObject(row.imagePath);
+      if (obj) {
+        return new Response(obj.bytes, {
           headers: {
-            'Content-Type': data.type || 'image/jpeg',
+            'Content-Type': obj.contentType || 'image/jpeg',
             'Cache-Control': STORED_CACHE,
           },
         });
