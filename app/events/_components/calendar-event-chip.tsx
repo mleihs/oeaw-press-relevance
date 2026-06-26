@@ -1,88 +1,135 @@
 'use client';
 
-// Custom Schedule-X event chips. The whole point of the calendar for the press
-// desk is that *relevance is visible at a glance*, so the chip itself is the
-// score badge: its fill is the score band (reusing getScoreBandClass — the same
-// colour language as the table's PressScoreBadge), the score % leads, and the
-// editorial decision shows as a left accent border (reusing decisionAccentClass).
-// Unanalyzed events render muted + dashed with a "–", so they visibly recede and
-// read as "needs scoring".
-import { getScoreBandClass } from '@/lib/shared/score-utils';
-import { decisionAccentClass } from '@/components/decision-badge';
+// Notion-Calendar-inspired event chips, mapped to our project palette. Each
+// event reads as a soft, band-tinted block with a saturated colour bar down the
+// left edge — that bar + tint carry the *relevance band* at a glance (the
+// Notion "calendar colour", here = AI relevance). The title leads; the time and
+// the exact score sit quietly on a second line; the editorial decision shows as
+// a small corner icon. Relevance stays visible (colour + %), just not shouty.
+import { Check, Pause, X as XIcon, type LucideIcon } from 'lucide-react';
+import { getScoreBand } from '@/lib/shared/score-utils';
 import { cn } from '@/lib/shared/utils';
+import type { Decision } from '@/lib/shared/types';
 import { readChipData } from '../_lib/to-calendar-event';
 
 type SxEventProp = { calendarEvent: Record<string, unknown> };
 
-function scorePct(score: number | null): string {
-  return score === null ? '–' : `${Math.round(score * 100)}%`;
-}
+/** Band → {left bar, tint background, text colour} for light + dark. */
+const BAND = {
+  high: {
+    bar: 'bg-brand',
+    tint: 'bg-brand/10 dark:bg-brand/25',
+    text: 'text-brand dark:text-blue-100',
+  },
+  mid: {
+    bar: 'bg-amber-500',
+    tint: 'bg-amber-500/10 dark:bg-amber-400/20',
+    text: 'text-amber-700 dark:text-amber-200',
+  },
+  low: {
+    bar: 'bg-orange-500',
+    tint: 'bg-orange-500/10 dark:bg-orange-400/20',
+    text: 'text-orange-700 dark:text-orange-200',
+  },
+  very_low: {
+    bar: 'bg-muted-foreground/40',
+    tint: 'bg-muted',
+    text: 'text-foreground/70',
+  },
+  none: {
+    bar: 'bg-muted-foreground/30',
+    tint: 'bg-muted/60 dark:bg-muted/40',
+    text: 'text-muted-foreground',
+  },
+} as const;
+
+const DECISION: Record<
+  Exclude<Decision, 'undecided'>,
+  { cls: string; Icon: LucideIcon; label: string }
+> = {
+  pitch: { cls: 'text-green-600 dark:text-green-400', Icon: Check, label: 'Pitch' },
+  hold: { cls: 'text-blue-600 dark:text-blue-400', Icon: Pause, label: 'Hold' },
+  skip: { cls: 'text-muted-foreground', Icon: XIcon, label: 'Skip' },
+};
 
 function EventChip({
   calendarEvent,
   layout,
-}: SxEventProp & { layout: 'month' | 'week' | 'agenda' | 'bar' }) {
+}: SxEventProp & { layout: 'month' | 'week' | 'bar' | 'agenda' }) {
   const { title, _score, _analyzed, _decision, _timeLabel } = readChipData(calendarEvent);
+  const b = BAND[_analyzed ? getScoreBand(_score) : 'none'];
+  const pct = _score === null ? null : `${Math.round(_score * 100)}%`;
+  const dec = _decision !== 'undecided' ? DECISION[_decision] : null;
 
-  const fill = _analyzed
-    ? getScoreBandClass(_score, 'badge')
-    : 'bg-muted text-muted-foreground border border-dashed border-border';
-  const accent = decisionAccentClass(_decision);
+  const Bar = <span className={cn('absolute inset-y-0 left-0 w-1', b.bar)} aria-hidden />;
 
-  if (layout === 'week') {
-    return (
-      <div className={cn('flex h-full w-full flex-col gap-0.5 overflow-hidden rounded px-1.5 py-1', fill, accent)}>
-        <div className="flex items-baseline gap-1">
-          <span className="text-xs font-bold tabular-nums">{scorePct(_score)}</span>
-          <span className="text-[10px] opacity-80 tabular-nums">{_timeLabel}</span>
-        </div>
-        <span className="line-clamp-3 text-[11px] font-medium leading-snug">{title}</span>
-      </div>
-    );
-  }
-
-  if (layout === 'bar') {
-    // Multi-day / all-day spanning bar (week view's date grid). Fills the
-    // wrapper height, single line, score-led.
+  if (layout === 'month') {
     return (
       <div
         className={cn(
-          'flex h-full w-full items-center gap-1.5 overflow-hidden rounded px-1.5 text-[11px] leading-tight',
-          fill,
-          accent,
+          'relative flex w-full cursor-pointer items-center gap-1 overflow-hidden rounded-[5px] py-0.5 pr-1 pl-2 text-[11px] leading-tight',
+          b.tint,
+          b.text,
         )}
         title={title}
       >
-        <span className="font-bold tabular-nums">{scorePct(_score)}</span>
-        {_timeLabel && <span className="opacity-70 tabular-nums">{_timeLabel}</span>}
+        {Bar}
+        {dec && <dec.Icon className={cn('h-2.5 w-2.5 shrink-0', dec.cls)} aria-label={`Entscheidung: ${dec.label}`} />}
         <span className="truncate font-medium">{title}</span>
+        {pct && (
+          <span className="ml-auto shrink-0 pl-0.5 text-[10px] font-semibold opacity-70 tabular-nums">
+            {pct}
+          </span>
+        )}
       </div>
     );
   }
 
-  if (layout === 'agenda') {
+  if (layout === 'week') {
     return (
-      <div className={cn('flex w-full items-center gap-2 rounded px-2 py-1.5', fill, accent)}>
-        <span className="text-xs font-bold tabular-nums">{scorePct(_score)}</span>
-        <span className="text-[11px] opacity-80 tabular-nums">{_timeLabel}</span>
-        <span className="truncate text-xs font-medium">{title}</span>
+      <div
+        className={cn(
+          'relative flex h-full w-full cursor-pointer flex-col overflow-hidden rounded-md py-0.5 pr-1.5 pl-2.5 leading-tight',
+          b.tint,
+          b.text,
+        )}
+        title={title}
+      >
+        {Bar}
+        {dec && (
+          <dec.Icon
+            className={cn('absolute top-1 right-1 h-3 w-3', dec.cls)}
+            aria-label={`Entscheidung: ${dec.label}`}
+          />
+        )}
+        <span className="line-clamp-2 pr-3 text-[11px] font-semibold">{title}</span>
+        <span className="truncate text-[10px] font-medium opacity-70 tabular-nums">
+          {_timeLabel}
+          {pct && ` · ${pct}`}
+        </span>
       </div>
     );
   }
 
-  // month grid — compact single line, score leads
+  // bar (week date-grid, multi-day) + agenda — horizontal row
   return (
     <div
       className={cn(
-        'flex w-full items-center gap-1 rounded px-1 py-0.5 text-[11px] leading-tight',
-        fill,
-        accent,
+        'relative flex w-full cursor-pointer items-center gap-1.5 overflow-hidden rounded-md py-1 pr-2 pl-2.5 text-[11px] leading-tight',
+        b.tint,
+        b.text,
       )}
       title={title}
     >
-      <span className="font-bold tabular-nums">{scorePct(_score)}</span>
-      <span className="opacity-70 tabular-nums">{_timeLabel}</span>
-      <span className="truncate font-medium">{title}</span>
+      {Bar}
+      <span className="truncate font-semibold">{title}</span>
+      <span className="ml-auto shrink-0 text-[10px] font-medium opacity-70 tabular-nums">
+        {_timeLabel}
+        {pct && ` · ${pct}`}
+      </span>
+      {dec && (
+        <dec.Icon className={cn('h-3 w-3 shrink-0', dec.cls)} aria-label={`Entscheidung: ${dec.label}`} />
+      )}
     </div>
   );
 }
@@ -99,9 +146,7 @@ export function MonthAgendaEventChip({ calendarEvent }: SxEventProp) {
   return <EventChip calendarEvent={calendarEvent} layout="agenda" />;
 }
 
-/** Multi-day / all-day spanning events (week view's date grid). Without this the
- *  slot falls back to Schedule-X's default event, which our `.sx__event` reset
- *  strips — leaving bare text. */
+/** Multi-day / all-day spanning events (week view's date grid). */
 export function DateGridEventChip({ calendarEvent }: SxEventProp) {
   return <EventChip calendarEvent={calendarEvent} layout="bar" />;
 }

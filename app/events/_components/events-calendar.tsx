@@ -114,7 +114,7 @@ function CalendarInner({
       // hours so it opens on the relevant range instead of empty night hours,
       // and a sane grid height keeps rows from being clipped mid-cell.
       dayBoundaries: { start: '07:00', end: '22:00' },
-      weekOptions: { gridHeight: 700 },
+      weekOptions: { gridHeight: 800 },
       events: sxEvents,
       callbacks: {
         onEventClick: (calendarEvent) =>

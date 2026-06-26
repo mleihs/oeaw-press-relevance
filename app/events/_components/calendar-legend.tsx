@@ -1,3 +1,4 @@
+import { Check, Pause, X as XIcon, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/shared/utils';
 
 export interface CalendarSummary {
@@ -19,6 +20,15 @@ function Swatch({ className, label }: { className: string; label: string }) {
   );
 }
 
+function IconItem({ Icon, className, label }: { Icon: LucideIcon; className: string; label: string }) {
+  return (
+    <span className="inline-flex items-center gap-1">
+      <Icon className={cn('h-3 w-3 shrink-0', className)} aria-hidden />
+      <span className="text-muted-foreground">{label}</span>
+    </span>
+  );
+}
+
 /** Learnable colour key + at-a-glance window summary, so the press desk can read
  *  the calendar's two signals (fill = relevance band, left border = decision)
  *  and immediately see how many events / how many are high-relevance / unscored
@@ -29,13 +39,13 @@ export function CalendarLegend({ summary }: { summary: CalendarSummary }) {
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
         <span className="font-medium text-foreground/70">Relevanz:</span>
         <Swatch className="bg-brand" label="Hoch ≥70%" />
-        <Swatch className="bg-amber-100" label="Mittel" />
-        <Swatch className="bg-orange-100" label="Niedrig" />
-        <Swatch className="border border-dashed border-border bg-muted" label="Unbewertet" />
-        <span className="ml-1 font-medium text-foreground/70">Rand:</span>
-        <Swatch className="border-l-4 border-l-green-500 bg-transparent" label="Pitch" />
-        <Swatch className="border-l-4 border-l-blue-500 bg-transparent" label="Hold" />
-        <Swatch className="border-l-4 border-l-muted-foreground/50 bg-transparent" label="Skip" />
+        <Swatch className="bg-amber-500" label="Mittel" />
+        <Swatch className="bg-orange-500" label="Niedrig" />
+        <Swatch className="bg-muted-foreground/40" label="Unbewertet" />
+        <span className="ml-1 font-medium text-foreground/70">Status:</span>
+        <IconItem Icon={Check} className="text-green-600 dark:text-green-400" label="Pitch" />
+        <IconItem Icon={Pause} className="text-blue-600 dark:text-blue-400" label="Hold" />
+        <IconItem Icon={XIcon} className="text-muted-foreground" label="Skip" />
       </div>
 
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 whitespace-nowrap tabular-nums">
