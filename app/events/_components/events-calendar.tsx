@@ -48,7 +48,7 @@ function hashEvents(events: Event[]): string {
 
 export function EventsCalendar({ events, view, anchor }: Props) {
   const { resolvedTheme } = useTheme();
-  const [selected, setSelected] = useState<Event | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
 
   const eventsById = useMemo(
@@ -56,11 +56,16 @@ export function EventsCalendar({ events, view, anchor }: Props) {
     [events],
   );
 
+  // Derive the selected event from the *current* map, not a captured snapshot:
+  // a decision/score change arrives via router.refresh() → new `events`, and the
+  // open modal must reflect it instead of showing the pre-mutation event.
+  const selected = selectedId ? eventsById.get(selectedId) ?? null : null;
+
   const onEventClick = useCallback(
     (calendarEvent: { id: string | number }) => {
-      const full = eventsById.get(String(calendarEvent.id));
-      if (full) {
-        setSelected(full);
+      const id = String(calendarEvent.id);
+      if (eventsById.has(id)) {
+        setSelectedId(id);
         setOpen(true);
       }
     },

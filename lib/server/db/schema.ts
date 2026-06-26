@@ -816,5 +816,5 @@ export const eventScoreWeights = pgTable("event_score_weights", {
 	recomputedCount: integer("recomputed_count"),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 }, (table) => [
-	index("idx_event_score_weights_created_at").on(table.createdAt),
+	index("idx_event_score_weights_created_at").on(table.createdAt.desc()),
 ]);

@@ -3,7 +3,13 @@
 // and same-day comparison stay in one place — was duplicated across two
 // components before this file landed.
 
+// All event timestamps are timestamptz; pin formatting to Europe/Vienna so the
+// rendered day/time is the event's civil time everywhere — independent of the
+// viewer's locale and of the server TZ (UTC on Vercel) for RSC-rendered lists.
+const EVENT_TZ = 'Europe/Vienna';
+
 export const eventDateFmt = new Intl.DateTimeFormat('de-AT', {
+  timeZone: EVENT_TZ,
   day: '2-digit',
   month: '2-digit',
   year: 'numeric',
@@ -12,6 +18,7 @@ export const eventDateFmt = new Intl.DateTimeFormat('de-AT', {
 });
 
 export const eventDateLongFmt = new Intl.DateTimeFormat('de-AT', {
+  timeZone: EVENT_TZ,
   weekday: 'long',
   day: '2-digit',
   month: 'long',
@@ -19,6 +26,7 @@ export const eventDateLongFmt = new Intl.DateTimeFormat('de-AT', {
 });
 
 export const eventTimeFmt = new Intl.DateTimeFormat('de-AT', {
+  timeZone: EVENT_TZ,
   hour: '2-digit',
   minute: '2-digit',
 });

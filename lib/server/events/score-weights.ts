@@ -87,32 +87,40 @@ export async function saveEventScoreWeights(
     timeliness: patch.timeliness / total,
   };
 
-  // Recompute the stored overall score from the stored sub-scores. NULL
-  // sub-scores count as 0 (matches weightedScore's missing-dim behaviour).
-  const updated = await db
-    .update(eventsTable)
-    .set({
-      eventScore: sql`
-        ${n.public_appeal} * COALESCE(${eventsTable.publicAppeal}, 0)
-        + ${n.scientific_significance} * COALESCE(${eventsTable.scientificSignificance}, 0)
-        + ${n.reach} * COALESCE(${eventsTable.reach}, 0)
-        + ${n.timeliness} * COALESCE(${eventsTable.timeliness}, 0)`,
-    })
-    .where(eq(eventsTable.analysisStatus, 'analyzed'))
-    .returning({ id: eventsTable.id });
-  const recomputed = updated.length;
+  // Recompute every analyzed event's stored score from its stored sub-scores,
+  // then append the history row — ATOMICALLY, so a crash between the two can't
+  // leave events re-weighted with no record of which config produced them.
+  // The recompute is a single set-based UPDATE (a bulk re-weight belongs in
+  // Postgres, not N app round-trips). The weighted sum below MUST stay in
+  // lockstep with weightedScore()/computeEventScore (lib/shared/scoring.ts):
+  // NULL sub-scores count as 0, mirroring its `?? 0` — same JS+SQL dual-path
+  // convention as the publication press_score.
+  return db.transaction(async (tx) => {
+    const updated = await tx
+      .update(eventsTable)
+      .set({
+        eventScore: sql`
+          ${n.public_appeal} * COALESCE(${eventsTable.publicAppeal}, 0)
+          + ${n.scientific_significance} * COALESCE(${eventsTable.scientificSignificance}, 0)
+          + ${n.reach} * COALESCE(${eventsTable.reach}, 0)
+          + ${n.timeliness} * COALESCE(${eventsTable.timeliness}, 0)`,
+      })
+      .where(eq(eventsTable.analysisStatus, 'analyzed'))
+      .returning({ id: eventsTable.id });
+    const recomputed = updated.length;
 
-  const [row] = await db
-    .insert(eventScoreWeights)
-    .values({
-      publicAppeal: n.public_appeal,
-      scientificSignificance: n.scientific_significance,
-      reach: n.reach,
-      timeliness: n.timeliness,
-      note: patch.note?.trim() || null,
-      recomputedCount: recomputed,
-    })
-    .returning();
+    const [row] = await tx
+      .insert(eventScoreWeights)
+      .values({
+        publicAppeal: n.public_appeal,
+        scientificSignificance: n.scientific_significance,
+        reach: n.reach,
+        timeliness: n.timeliness,
+        note: patch.note?.trim() || null,
+        recomputedCount: recomputed,
+      })
+      .returning();
 
-  return { current: rowToEntry(row), recomputed };
+    return { current: rowToEntry(row), recomputed };
+  });
 }

@@ -21,7 +21,7 @@ export const changelogEntries: ChangelogEntry[] = [
   {
     category: 'neu',
     title: 'Einstellbare Bewertungs-Gewichtung für Events',
-    body: 'In den Einstellungen lässt sich jetzt festlegen, wie stark die vier Einzel-Scores einer Veranstaltung (Öffentlichkeitswirkung, Wissenschaftliche Bedeutung, Reichweite, Aktualität) in den Gesamt-Relevanzscore eingehen — über Presets oder einen Aufteilungsbalken, der immer 100 % ergibt, mit Live-Vorschau. Beim Speichern werden alle bewerteten Events sofort neu berechnet; jede Einstellung wird im Verlauf gesichert und lässt sich per „Übernehmen" wiederherstellen.',
+    body: 'In den Einstellungen lässt sich jetzt festlegen, wie stark die vier Einzel-Scores einer Veranstaltung (Öffentlichkeitswirkung, Wissenschaftliche Bedeutung, Reichweite, Aktualität) in den Gesamt-Relevanzscore eingehen: über Presets oder einen Aufteilungsbalken (immer 100 %), mit Live-Vorschau. Beim Speichern werden alle bewerteten Events sofort neu berechnet; jede Einstellung wird im Verlauf gesichert und lässt sich per „Übernehmen" wiederherstellen.',
   },
   {
     category: 'verbesserung',

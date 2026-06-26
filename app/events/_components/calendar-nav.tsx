@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { cn } from '@/lib/shared/utils';
 import { buildEventsUrl } from '../_lib/build-events-url';
 import type { EventsTab } from '@/lib/server/events/list';
 import type { CalendarWindow } from '../_lib/calendar-range';
@@ -79,19 +78,27 @@ export function CalendarNav({
         <ChevronRight className="h-4 w-4" />
       </Link>
 
-      <Link
-        href={buildEventsUrl({ tab, main, view: win.view, date: win.todayAnchor })}
-        replace
-        scroll={false}
-        prefetch={false}
-        aria-disabled={win.containsToday}
-        className={cn(
-          'ml-1 inline-flex h-8 items-center rounded-md border bg-background px-3 text-sm font-medium transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
-          win.containsToday && 'pointer-events-none opacity-50',
-        )}
-      >
-        Heute
-      </Link>
+      {win.containsToday ? (
+        // Already on today's window — render a genuinely disabled control (no
+        // href, out of the tab order) instead of a focusable link that merely
+        // looks disabled.
+        <span
+          aria-disabled="true"
+          className="ml-1 inline-flex h-8 items-center rounded-md border bg-background px-3 text-sm font-medium opacity-50"
+        >
+          Heute
+        </span>
+      ) : (
+        <Link
+          href={buildEventsUrl({ tab, main, view: win.view, date: win.todayAnchor })}
+          replace
+          scroll={false}
+          prefetch={false}
+          className="ml-1 inline-flex h-8 items-center rounded-md border bg-background px-3 text-sm font-medium transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+        >
+          Heute
+        </Link>
+      )}
     </div>
   );
 }

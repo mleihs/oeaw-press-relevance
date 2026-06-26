@@ -132,19 +132,22 @@ function AllocationBar({ value, onChange }: { value: Weights; onChange: (w: Weig
         {[0, 1, 2].map((i) => (
           <div
             key={i}
-            role="separator"
+            role="slider"
             tabIndex={0}
             aria-orientation="vertical"
             aria-label={`Grenze ${EVENT_SCORE_LABELS[DIMS[i]]} / ${EVENT_SCORE_LABELS[DIMS[i + 1]]}`}
+            aria-valuemin={0}
+            aria-valuemax={100}
             aria-valuenow={value[DIMS[i]]}
+            aria-valuetext={`${EVENT_SCORE_LABELS[DIMS[i]]} ${value[DIMS[i]]} %, ${EVENT_SCORE_LABELS[DIMS[i + 1]]} ${value[DIMS[i + 1]]} %`}
             onPointerDown={(e) => {
               drag.current = i;
-              (e.target as HTMLElement).setPointerCapture(e.pointerId);
+              (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
             }}
             onPointerMove={(e) => onMove(i, e)}
             onPointerUp={(e) => {
               drag.current = null;
-              (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
+              (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
             }}
             onKeyDown={(e) => onKey(i, e)}
             className="absolute top-0 bottom-0 z-10 -ml-2 flex w-4 cursor-ew-resize items-center justify-center focus-visible:outline-none"
@@ -262,7 +265,7 @@ export function EventWeightsCard() {
             {/* Live preview */}
             <div className="space-y-2 rounded-lg border bg-muted/30 p-3">
               <p className="text-xs font-medium text-muted-foreground">
-                Vorschau — Gesamtscore zweier Beispiel-Events mit dieser Gewichtung
+                Vorschau: Gesamtscore zweier Beispiel-Events mit dieser Gewichtung
               </p>
               {SAMPLES.map((s) => {
                 const overall = computeEventScore(s.dims, normWeights);
@@ -327,7 +330,7 @@ export function EventWeightsCard() {
                         onClick={() => {
                           setW(fromServer(h));
                           setNote(`Wiederhergestellt vom ${dateFmt.format(new Date(h.created_at))}`);
-                          toast.info('Werte übernommen — zum Anwenden „Speichern" klicken');
+                          toast.info('Werte übernommen. Zum Anwenden „Speichern" klicken.');
                         }}
                         className="inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 font-medium text-brand transition-colors hover:bg-brand/10"
                       >
