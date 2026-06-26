@@ -55,6 +55,40 @@ export function filtersForEventsTab(
   return and(...parts)!;
 }
 
+/** Absolute half-open instant bounds [from, to) for a calendar view's visible
+ *  window. Computed app-side (Vienna civil time → UTC instants, see
+ *  app/events/_lib/calendar-range.ts); kept as a plain string pair here so the
+ *  server layer never imports app-feature code (boundaries rule). */
+export interface EventsCalendarWindow {
+  fromInstant: string;
+  toInstant: string;
+}
+
+/** Events overlapping the calendar's visible instant window. An event overlaps
+ *  when it starts before the window ends AND its end — or its start, when it has
+ *  no end — is at/after the window start, so a multi-day event spanning into the
+ *  window from an earlier month is still shown. The bounds are cast to
+ *  timestamptz so Postgres compares them against the timestamptz `event_at`
+ *  column regardless of bind-param type inference. */
+function eventsInRangeFilter(fromInstant: string, toInstant: string): SQL {
+  return sql`${eventsTable.eventAt} < ${toInstant}::timestamptz AND COALESCE(${eventsTable.eventEndAt}, ${eventsTable.eventAt}) >= ${fromInstant}::timestamptz`;
+}
+
+/** Calendar-mode filter. The visible instant window replaces the list's
+ *  open-ended `event_at >= NOW()`, but the decision-tab scoping and main-news
+ *  exclusion compose identically — so the same tabs and toggle that drive the
+ *  list also filter the calendar (e.g. "only Pitch events this month"). */
+export function filtersForEventsCalendar(
+  window: EventsCalendarWindow,
+  tab: EventsTab,
+  opts: EventsFilterOptions = {},
+): SQL {
+  const parts: SQL[] = [eventsInRangeFilter(window.fromInstant, window.toInstant)];
+  if (tab !== 'upcoming') parts.push(eq(eventsTable.decision, tab));
+  if (!opts.includeMainNews) parts.push(mainNewsExclusion());
+  return and(...parts)!;
+}
+
 export interface EventsStats {
   upcoming: number;
   undecided: number;
@@ -158,4 +192,18 @@ export async function listEvents(
     .where(filter)
     .orderBy(primary, asc(eventsTable.eventAt));
   return { events: rows.map(eventRowToApi), total: rows.length };
+}
+
+/** Fetches the events overlapping a calendar window for the active tab. The
+ *  calendar positions events by date itself, but a stable chronological order
+ *  keeps same-cell stacking deterministic between renders. */
+export function listEventsInRange(
+  window: EventsCalendarWindow,
+  tab: EventsTab,
+  opts: EventsFilterOptions = {},
+): Promise<EventsListResult> {
+  return listEvents(filtersForEventsCalendar(window, tab, opts), {
+    by: 'date',
+    order: 'asc',
+  });
 }

@@ -1,0 +1,76 @@
+/* Maps Schedule-X theme-default tokens onto the app's shadcn tokens so the
+   calendar reads as a native part of the events feature rather than a foreign
+   widget. The shadcn tokens (--background, --card, --border, --primary, …)
+   already flip in dark mode via the `.dark` class on <html>, so this single
+   mapping covers BOTH themes; we still pass `isDark` to the calendar for its
+   non-colour layout logic. Scoped to .sx-events-calendar so nothing leaks. */
+.sx-events-calendar {
+  /* Keep Schedule-X's stacking inside the calendar so it never paints over the
+     Radix event modal (portalled to <body>, z-50). Schedule-X ships
+     --sx-z-index-week-header:100 / --sx-z-index-event-modal:101, which beat the
+     dialog and pushed the MO–SO header row + event bars IN FRONT of the modal.
+     We cap those vars far below 50 AND isolate the calendar into its own
+     stacking context (belt and suspenders). */
+  --sx-z-index-week-header: 1;
+  --sx-z-index-event-modal: 1;
+  isolation: isolate;
+
+  --sx-color-background: var(--background);
+  --sx-color-on-background: var(--foreground);
+
+  --sx-color-surface: var(--card);
+  --sx-color-on-surface: var(--card-foreground);
+  --sx-color-surface-bright: var(--card);
+  --sx-color-surface-dim: var(--muted);
+  --sx-color-surface-container: var(--card);
+  --sx-color-surface-container-low: var(--card);
+  --sx-color-surface-container-high: var(--muted);
+
+  --sx-internal-color-text: var(--foreground);
+  --sx-internal-color-light-gray: var(--muted);
+  --sx-internal-color-gray-ripple-background: var(--muted);
+  --sx-color-neutral: var(--muted-foreground);
+  --sx-color-neutral-variant: var(--muted-foreground);
+
+  --sx-color-primary: var(--primary);
+  --sx-color-on-primary: var(--primary-foreground);
+  --sx-color-primary-container: var(--accent);
+  --sx-color-on-primary-container: var(--accent-foreground);
+
+  --sx-border: var(--border);
+  --sx-color-outline: var(--border);
+  --sx-color-outline-variant: var(--border);
+
+  --sx-rounding-extra-small: calc(var(--radius) - 6px);
+  --sx-rounding-small: calc(var(--radius) - 4px);
+  --sx-rounding-extra-large: var(--radius);
+}
+
+/* The custom chips own their own background, padding and rounding (band colour +
+   decision border), so neutralise Schedule-X's default event wrapper to avoid a
+   double pill / extra inset around them. Harmless if a selector doesn't match. */
+.sx-events-calendar .sx__event,
+.sx-events-calendar .sx__month-grid-event,
+.sx-events-calendar .sx__time-grid-event,
+.sx-events-calendar .sx__date-grid-event,
+.sx-events-calendar .sx__month-agenda-event {
+  background-color: transparent;
+  box-shadow: none;
+  padding: 0;
+  border: none;
+}
+
+/* Let the month-grid event chips size to content (the score-led single line). */
+.sx-events-calendar .sx__month-grid-event {
+  height: auto;
+}
+
+/* Hide Schedule-X's built-in header bar (Today / prev-next / view-select / date
+   picker). Navigation is driven server-side by our CalendarNav + view switcher
+   — a single URL-based source of truth. Schedule-X's own controls navigate
+   client-side beyond the server-loaded window and would show empty months. The
+   in-grid weekday row (.sx__week-header / day-name rows) is a different element
+   and stays visible. */
+.sx-events-calendar .sx__calendar-header {
+  display: none;
+}

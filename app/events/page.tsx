@@ -7,12 +7,22 @@ import {
   isEventsSort,
   isEventsTab,
   listEvents,
+  listEventsInRange,
   type EventsSort,
   type EventsSortOrder,
   type EventsTab,
 } from '@/lib/server/events/list';
+import { SCORE_BAND_HIGH } from '@/lib/shared/constants';
+import {
+  computeCalendarWindow,
+  isCalendarView,
+} from './_lib/calendar-range';
 import { EventsTabsNav } from './_components/events-tabs-nav';
 import { EventsTable } from './_components/events-table';
+import { EventsViewSwitcher } from './_components/events-view-switcher';
+import { CalendarNav } from './_components/calendar-nav';
+import { CalendarLegend, type CalendarSummary } from './_components/calendar-legend';
+import { EventsCalendarLoader } from './_components/events-calendar-loader';
 import { RefreshButton } from './_components/refresh-button';
 import { MainNewsToggle } from './_components/main-news-toggle';
 import { EventAnalyzeModal } from './_components/event-analyze-modal';
@@ -24,7 +34,8 @@ export const dynamic = 'force-dynamic';
 
 // Pre-computes the toggle href for each sortable column (functions can't cross
 // the RSC → Client boundary). Same column → flip order; new column → asc.
-// `tab` and `main` are preserved so a sort never resets the active view.
+// `tab` and `main` are preserved so a sort never resets the active view. Sorting
+// only applies to the list, so these intentionally omit the calendar `view`.
 function buildSortHrefs(
   activeTab: EventsTab,
   includeMainNews: boolean,
@@ -53,6 +64,8 @@ export default async function EventsPage({
     main?: string | string[];
     sort?: string | string[];
     order?: string | string[];
+    view?: string | string[];
+    date?: string | string[];
   }>;
 }) {
   const sp = await searchParams;
@@ -66,15 +79,40 @@ export default async function EventsPage({
   const sortBy: EventsSort = isEventsSort(sortRaw) ? sortRaw : DEFAULT_EVENTS_SORT.by;
   const sortOrder: EventsSortOrder = orderRaw === 'desc' ? 'desc' : 'asc';
 
+  // View: list (default) | week | month. The calendar views swap the list's
+  // open-ended `>= NOW()` for the visible month/week window (?date= anchors it).
+  const viewRaw = Array.isArray(sp.view) ? sp.view[0] : sp.view;
+  const dateRaw = Array.isArray(sp.date) ? sp.date[0] : sp.date;
+  const calView = isCalendarView(viewRaw) ? viewRaw : null;
+  const calWindow = calView ? computeCalendarWindow(calView, dateRaw) : null;
+
   const [overview, list] = await Promise.all([
     getEventsOverview({ includeMainNews }),
-    listEvents(filtersForEventsTab(activeTab, { includeMainNews }), {
-      by: sortBy,
-      order: sortOrder,
-    }),
+    calWindow
+      ? listEventsInRange(calWindow, activeTab, { includeMainNews })
+      : listEvents(filtersForEventsTab(activeTab, { includeMainNews }), {
+          by: sortBy,
+          order: sortOrder,
+        }),
   ]);
 
   const sortHrefs = buildSortHrefs(activeTab, includeMainNews, sortBy, sortOrder);
+
+  const summary: CalendarSummary | null = calWindow
+    ? {
+        total: list.events.length,
+        high: list.events.filter(
+          (e) =>
+            e.analysis_status === 'analyzed' &&
+            e.event_score !== null &&
+            e.event_score >= SCORE_BAND_HIGH,
+        ).length,
+        unscored: list.events.filter(
+          (e) => !(e.analysis_status === 'analyzed' && e.event_score !== null),
+        ).length,
+        undecided: list.events.filter((e) => e.decision === 'undecided').length,
+      }
+    : null;
 
   return (
     <div className="space-y-6">
@@ -90,7 +128,13 @@ export default async function EventsPage({
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <EventsTabsNav activeTab={activeTab} stats={overview.stats} />
+        <EventsTabsNav
+          activeTab={activeTab}
+          stats={overview.stats}
+          main={includeMainNews}
+          view={calView}
+          date={calWindow?.anchor ?? null}
+        />
         <div className="flex items-center gap-4">
           <MainNewsToggle showMainNews={includeMainNews} />
           <EventAnalyzeModal />
@@ -98,12 +142,35 @@ export default async function EventsPage({
         </div>
       </div>
 
-      <EventsTable
-        rows={list.events}
-        sortBy={sortBy}
-        sortOrder={sortOrder}
-        sortHrefs={sortHrefs}
-      />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <EventsViewSwitcher
+          activeView={calView ?? 'list'}
+          tab={activeTab}
+          main={includeMainNews}
+          date={calWindow?.anchor ?? null}
+        />
+        {calWindow && (
+          <CalendarNav window={calWindow} tab={activeTab} main={includeMainNews} />
+        )}
+      </div>
+
+      {calWindow ? (
+        <div className="space-y-3">
+          {summary && <CalendarLegend summary={summary} />}
+          <EventsCalendarLoader
+            events={list.events}
+            view={calWindow.view}
+            anchor={calWindow.anchor}
+          />
+        </div>
+      ) : (
+        <EventsTable
+          rows={list.events}
+          sortBy={sortBy}
+          sortOrder={sortOrder}
+          sortHrefs={sortHrefs}
+        />
+      )}
     </div>
   );
 }
