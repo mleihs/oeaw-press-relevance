@@ -43,9 +43,14 @@ export function computePressScore(dimensions: Record<ScoreDimension, number>): n
 }
 
 /**
- * Compute the event relevance score from the 4 event dimensions via
- * EVENT_SCORE_WEIGHTS (Veranstaltungsbetrieb-Eignung, not press potential).
+ * Compute the event relevance score from the 4 event dimensions
+ * (Veranstaltungsbetrieb-Eignung, not press potential). Weights default to the
+ * static EVENT_SCORE_WEIGHTS; callers that have user-configured weights (the DB
+ * history) pass them in so the stored score reflects the current weighting.
  */
-export function computeEventScore(dimensions: Record<EventScoreDimension, number>): number {
-  return weightedScore(dimensions, EVENT_SCORE_WEIGHTS);
+export function computeEventScore(
+  dimensions: Record<EventScoreDimension, number>,
+  weights: Record<EventScoreDimension, number> = EVENT_SCORE_WEIGHTS,
+): number {
+  return weightedScore(dimensions, weights);
 }

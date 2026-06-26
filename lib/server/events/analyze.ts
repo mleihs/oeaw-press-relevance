@@ -13,6 +13,7 @@ import {
 } from '@/lib/server/openrouter';
 import { runLLMBatch } from '@/lib/server/llm-batch';
 import { computeEventScore } from '@/lib/shared/scoring';
+import { getCurrentEventScoreWeights } from './score-weights';
 import {
   SYSTEM_PROMPT,
   buildEventEvaluationPrompt,
@@ -107,6 +108,10 @@ export async function runEventsAnalysisBatch(
     return;
   }
 
+  // Current team-configured weighting, so freshly-analyzed events use the same
+  // weights as the recompute behind the Settings card.
+  const weights = await getCurrentEventScoreWeights();
+
   const result = await runLLMBatch<EventRow, EventAnalysisResult>({
     items: events,
     apiKey,
@@ -128,7 +133,7 @@ export async function runEventsAnalysisBatch(
           .update(eventsTable)
           .set({
             analysisStatus: 'analyzed',
-            eventScore: computeEventScore(dims),
+            eventScore: computeEventScore(dims, weights),
             publicAppeal: dims.public_appeal,
             scientificSignificance: dims.scientific_significance,
             reach: dims.reach,

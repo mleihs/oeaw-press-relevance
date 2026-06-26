@@ -38,6 +38,8 @@ async function main(): Promise<void> {
   const { db, events } = await import('@/lib/server/db');
   const { eq, sql } = await import('drizzle-orm');
   const { computeEventScore } = await import('@/lib/shared/scoring');
+  const { getCurrentEventScoreWeights } = await import('@/lib/server/events/score-weights');
+  const weights = await getCurrentEventScoreWeights();
 
   const clamp01 = (n: number) => Math.max(0, Math.min(1, Number(n) || 0));
   let applied = 0;
@@ -52,7 +54,7 @@ async function main(): Promise<void> {
       .update(events)
       .set({
         analysisStatus: 'analyzed',
-        eventScore: computeEventScore(dims),
+        eventScore: computeEventScore(dims, weights),
         publicAppeal: dims.public_appeal,
         scientificSignificance: dims.scientific_significance,
         reach: dims.reach,

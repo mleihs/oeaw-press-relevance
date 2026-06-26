@@ -18,6 +18,7 @@ import { openCheatSheet } from '@/lib/client/commands/controller';
 import { InfoBubble } from '@/components/info-bubble';
 import { SocialChannelsCard } from './_components/social-channels-card';
 import { SocialSettingsCard } from './_components/social-settings-card';
+import { EventWeightsCard } from './_components/event-weights-card';
 import { Save, CheckCircle2, Eye, EyeOff, Loader2, XCircle, ShieldCheck, Info, User, Keyboard } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -295,6 +296,9 @@ export default function SettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Event-score weighting (server-persisted history; self-saves) */}
+      <EventWeightsCard />
 
       {/* Save */}
       <div className="flex gap-3">

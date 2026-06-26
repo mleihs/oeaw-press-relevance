@@ -458,6 +458,24 @@ export const DEFAULT_SETTINGS: AppSettings = {
   reviewerName: '',
 };
 
+// Event-score weighting (Settings → Bewertungs-Gewichtung). The four weights
+// over the event sub-scores; the overall event_score is their weighted sum.
+// Stored normalized (sum = 1) as an append-only history (latest = current).
+export interface EventScoreWeights {
+  public_appeal: number;
+  scientific_significance: number;
+  reach: number;
+  timeliness: number;
+}
+
+export interface EventScoreWeightEntry extends EventScoreWeights {
+  id: number;
+  note: string | null;
+  /** How many events were recomputed when this config was applied. */
+  recomputed_count: number | null;
+  created_at: string;
+}
+
 // ===========================================================================
 // Social-media monitoring ("Lagebild" — /social). Wire DTOs (snake_case + ISO
 // strings), mapped from Drizzle rows in lib/server/social/to-api.ts.

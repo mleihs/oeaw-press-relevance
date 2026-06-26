@@ -120,6 +120,24 @@ export const socialSettingsUpdateSchema = z.object({
 
 export type SocialSettingsUpdate = z.infer<typeof socialSettingsUpdateSchema>;
 
+// Event-score weights save. Raw, non-negative "relative importance" values
+// (bounded so a fat-finger can't overflow); the server normalizes them to sum 1
+// before storing. At least one must be > 0.
+export const eventScoreWeightsUpdateSchema = z
+  .object({
+    public_appeal: z.coerce.number().min(0).max(1000),
+    scientific_significance: z.coerce.number().min(0).max(1000),
+    reach: z.coerce.number().min(0).max(1000),
+    timeliness: z.coerce.number().min(0).max(1000),
+    note: z.string().trim().max(120).optional(),
+  })
+  .refine(
+    (d) => d.public_appeal + d.scientific_significance + d.reach + d.timeliness > 0,
+    { message: 'Mindestens ein Gewicht muss größer als 0 sein.' },
+  );
+
+export type EventScoreWeightsUpdate = z.infer<typeof eventScoreWeightsUpdateSchema>;
+
 // ===========================================================================
 // API-edge query / param / payload schemas (Pass A, ADR 0018)
 //

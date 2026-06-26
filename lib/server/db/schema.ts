@@ -803,3 +803,18 @@ export const socialSettings = pgTable("social_settings", {
 	check("social_settings_theme_check", sql`theme_window_days >= 1 AND theme_window_days <= 365`),
 	check("social_settings_retention_check", sql`retention_days IS NULL OR (retention_days >= 1 AND retention_days <= 3650)`),
 ]);
+
+// Append-only history of event-score weightings. Current = latest row; saving
+// new weights inserts a row, reverting re-applies an old config as a new row.
+export const eventScoreWeights = pgTable("event_score_weights", {
+	id: bigserial({ mode: 'number' }).primaryKey().notNull(),
+	publicAppeal: doublePrecision("public_appeal").notNull(),
+	scientificSignificance: doublePrecision("scientific_significance").notNull(),
+	reach: doublePrecision("reach").notNull(),
+	timeliness: doublePrecision("timeliness").notNull(),
+	note: text(),
+	recomputedCount: integer("recomputed_count"),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+	index("idx_event_score_weights_created_at").on(table.createdAt),
+]);
