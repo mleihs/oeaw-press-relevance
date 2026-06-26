@@ -47,6 +47,9 @@ export async function syncSocialPosts(
       'APIFY_TOKEN ist nicht gesetzt. Der Social-Media-Sync ist deaktiviert. Setze die Variable in .env.local (oder den Vercel-Secrets), um Posts zu laden.',
     );
   }
+  // Capture the narrowed token so the per-group fetch closures below see `string`
+  // (TS doesn't carry property narrowing into nested closures).
+  const apifyToken = opts.apifyToken;
 
   const channels = await db
     .select({
@@ -61,25 +64,40 @@ export async function syncSocialPosts(
     return { channels: 0, fetched: 0, created: 0, updated: 0, unmatched: 0, pruned: 0, ms: Date.now() - startedAt };
   }
 
-  // Resolve each channel's effective window; fetch up to the widest one (one
-  // batched Apify run), then enforce each channel's own window on store.
+  // Resolve each channel's effective window, then group channels by it so each
+  // profile is scraped to exactly its own window. Apify bills per result, and
+  // `onlyPostsNewerThan` is a single run-wide value, so fetching every profile
+  // to the widest window would make a short-window channel pay to re-scrape
+  // posts that get discarded again on store. Channels sharing a window are still
+  // batched into one actor run; the common case (all channels on the global
+  // default) collapses to a single group — identical to one batched run. Groups
+  // run concurrently, so wall-clock stays the slowest single run, not the sum.
   const channelByHandle = new Map(
     channels.map((c) => [
       c.handle.toLowerCase(),
       { id: c.id, lookback: effectiveLookbackDays(c.lookbackDays, opts.windowDays) },
     ]),
   );
-  const maxLookback = Math.max(...channels.map((c) => effectiveLookbackDays(c.lookbackDays, opts.windowDays)));
 
-  const posts = await fetchInstagramPosts(
-    channels.map((c) => c.handle),
-    {
-      token: opts.apifyToken,
-      actor: opts.actor,
-      resultsLimit: opts.resultsLimit,
-      onlyPostsNewerThanDays: maxLookback,
-    },
+  const handlesByLookback = new Map<number, string[]>();
+  for (const c of channels) {
+    const lookback = effectiveLookbackDays(c.lookbackDays, opts.windowDays);
+    const group = handlesByLookback.get(lookback);
+    if (group) group.push(c.handle);
+    else handlesByLookback.set(lookback, [c.handle]);
+  }
+
+  const batches = await Promise.all(
+    [...handlesByLookback.entries()].map(([lookback, handles]) =>
+      fetchInstagramPosts(handles, {
+        token: apifyToken,
+        actor: opts.actor,
+        resultsLimit: opts.resultsLimit,
+        onlyPostsNewerThanDays: lookback,
+      }),
+    ),
   );
+  const posts = batches.flat();
 
   // Map each post to its channel via ownerUsername; skip posts with no matching
   // active channel, or older than that channel's window (authoritative filter).
