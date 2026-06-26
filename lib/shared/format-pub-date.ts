@@ -43,7 +43,7 @@ function parseDateOnly(iso: string): Date {
 
 /** Honest, German-locale publication-date label at the precision we can defend. */
 export function formatPubDate(iso: string | null | undefined): string {
-  if (!iso) return '—';
+  if (!iso) return '–';
   const precision = pubDatePrecision(iso);
   if (precision === 'day') return format(parseDateOnly(iso), 'd. MMM yyyy', { locale: de });
   if (precision === 'month') return format(parseDateOnly(iso), 'MMM yyyy', { locale: de });

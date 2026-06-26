@@ -17,6 +17,7 @@ import {
   computeCalendarWindow,
   isCalendarView,
 } from './_lib/calendar-range';
+import { buildEventsUrl } from './_lib/build-events-url';
 import { EventsTabsNav } from './_components/events-tabs-nav';
 import { EventsTable } from './_components/events-table';
 import { EventsViewSwitcher } from './_components/events-view-switcher';
@@ -46,12 +47,12 @@ function buildSortHrefs(
   for (const col of EVENTS_SORT_VALUES) {
     const next: EventsSortOrder =
       sort === col ? (order === 'asc' ? 'desc' : 'asc') : 'asc';
-    const params = new URLSearchParams();
-    if (activeTab !== 'upcoming') params.set('tab', activeTab);
-    if (includeMainNews) params.set('main', '1');
-    params.set('sort', col);
-    params.set('order', next);
-    out[col] = `/events?${params.toString()}`;
+    out[col] = buildEventsUrl({
+      tab: activeTab,
+      main: includeMainNews,
+      sort: col,
+      order: next,
+    });
   }
   return out;
 }

@@ -297,6 +297,10 @@ export function EventWeightsCard() {
               </Button>
               {isDirty && <span className="text-xs text-muted-foreground">Ungespeicherte Änderung</span>}
             </div>
+            <p className="text-xs text-muted-foreground">
+              Diese Karte speichert direkt auf dem Server (mit Verlauf), unabhängig
+              vom Button „Einstellungen speichern" unten auf der Seite.
+            </p>
 
             {/* History timeline */}
             <div className="space-y-2 border-t pt-4">

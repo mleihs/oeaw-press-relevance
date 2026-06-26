@@ -31,4 +31,14 @@ describe('buildEventsUrl', () => {
       buildEventsUrl({ tab: 'hold', main: true, view: 'week', date: '2026-07-13' }),
     ).toBe('/events?tab=hold&main=1&view=week&date=2026-07-13');
   });
+
+  it('emits a list-view sort href (sort + order together, with tab/main)', () => {
+    expect(
+      buildEventsUrl({ tab: 'pitch', main: true, sort: 'score', order: 'desc' }),
+    ).toBe('/events?tab=pitch&main=1&sort=score&order=desc');
+  });
+
+  it('drops a sort with no order (both required, never half-emitted)', () => {
+    expect(buildEventsUrl({ sort: 'score' })).toBe('/events');
+  });
 });

@@ -16,7 +16,11 @@ import { createEventsServicePlugin } from '@schedule-x/events-service';
 import '@schedule-x/theme-default/dist/index.css';
 import './events-calendar.css';
 import { toCalendarEvent } from '../_lib/to-calendar-event';
-import { CALENDAR_TZ, type CalendarView } from '../_lib/calendar-range';
+import {
+  CALENDAR_TZ,
+  CALENDAR_SHELL_HEIGHT,
+  type CalendarView,
+} from '../_lib/calendar-range';
 import {
   MonthGridEventChip,
   TimeGridEventChip,
@@ -33,17 +37,15 @@ interface Props {
   anchor: string;
 }
 
-/** Cheap stable signature of the data that affects rendering (decision border +
- *  score colour), so the calendar remounts and reflects a decision change made
- *  in the modal — which arrives via router.refresh() and would otherwise leave
- *  Schedule-X's already-initialised app showing stale chips. */
-function hashEvents(events: Event[]): string {
-  let h = 0;
-  for (const e of events) {
-    const s = `${e.id}${e.decision}${e.event_score ?? ''}${e.analysis_status ?? ''}`;
-    for (let i = 0; i < s.length; i++) h = (Math.imul(h, 31) + s.charCodeAt(i)) | 0;
-  }
-  return `${events.length}_${h}`;
+/** Stable signature of the data that affects rendering (decision border + score
+ *  colour), used as part of the calendar's remount key so it reflects a decision
+ *  change made in the modal — which arrives via router.refresh() and would
+ *  otherwise leave Schedule-X's already-initialised app showing stale chips.
+ *  A plain join is enough: it's only compared for equality, never hashed. */
+function dataSignature(events: Event[]): string {
+  return events
+    .map((e) => `${e.id}:${e.decision}:${e.event_score ?? ''}:${e.analysis_status ?? ''}`)
+    .join('|');
 }
 
 export function EventsCalendar({ events, view, anchor }: Props) {
@@ -77,7 +79,7 @@ export function EventsCalendar({ events, view, anchor }: Props) {
   // initialises with the correct isDark instead of flashing the wrong theme.
   if (resolvedTheme === undefined) return <CalendarSkeleton />;
 
-  const dataSig = hashEvents(events);
+  const dataSig = dataSignature(events);
 
   return (
     <>
@@ -108,6 +110,12 @@ function CalendarInner({
 
   const calendar = useNextCalendarApp(
     {
+      // month-agenda isn't in our switcher and Schedule-X's own view picker is
+      // hidden, but it is NOT dead: Schedule-X is responsive by default and, on a
+      // narrow container, auto-switches month-grid/week (neither small-screen
+      // compatible) to the first registered small-compat view — month-agenda. So
+      // it's the calendar's mobile rendering and must stay registered, with its
+      // MonthAgendaEventChip custom component.
       views: [createViewMonthGrid(), createViewWeek(), createViewMonthAgenda()],
       defaultView: view === 'week' ? 'week' : 'month-grid',
       selectedDate: Temporal.PlainDate.from(anchor),
@@ -132,7 +140,7 @@ function CalendarInner({
   if (!calendar) return <CalendarSkeleton />;
 
   return (
-    <div className="sx-events-calendar h-[78vh] min-h-[560px]">
+    <div className={`sx-events-calendar ${CALENDAR_SHELL_HEIGHT}`}>
       <ScheduleXCalendar
         calendarApp={calendar}
         customComponents={{

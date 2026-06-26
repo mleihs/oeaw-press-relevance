@@ -12,6 +12,10 @@ import { Temporal } from 'temporal-polyfill';
 
 export const CALENDAR_TZ = 'Europe/Vienna';
 
+/** Shell height shared by the live calendar island and its loading skeleton, so
+ *  the layout doesn't jump when the JS-only island swaps in. */
+export const CALENDAR_SHELL_HEIGHT = 'h-[78vh] min-h-[560px]';
+
 export const CALENDAR_VIEW_VALUES = ['week', 'month'] as const;
 export type CalendarView = (typeof CALENDAR_VIEW_VALUES)[number];
 

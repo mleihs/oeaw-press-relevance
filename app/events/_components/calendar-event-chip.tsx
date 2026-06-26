@@ -61,6 +61,21 @@ function EventChip({
   const pct = _score === null ? null : `${Math.round(_score * 100)}%`;
   const dec = _decision !== 'undecided' ? DECISION[_decision] : null;
 
+  // Schedule-X already wraps every event in a focusable, Enter/Space-activatable
+  // `role="button"` element (core.js handleKeyDown → onEventClick), so the chip
+  // itself stays presentational — adding role/tabIndex here would create a second
+  // tab stop. We only give the wrapper a coherent accessible name: with no
+  // aria-label on the chip a screen reader would stitch together the loose title
+  // + time + "%" text nodes; this one label reads as a sentence instead.
+  const ariaLabel = [
+    title,
+    _timeLabel,
+    pct ? `Relevanz ${pct}` : 'noch nicht bewertet',
+    dec ? `Entscheidung: ${dec.label}` : null,
+  ]
+    .filter(Boolean)
+    .join(', ');
+
   const Bar = <span className={cn('absolute inset-y-0 left-0 w-1', b.bar)} aria-hidden />;
 
   if (layout === 'month') {
@@ -72,9 +87,10 @@ function EventChip({
           b.text,
         )}
         title={title}
+        aria-label={ariaLabel}
       >
         {Bar}
-        {dec && <dec.Icon className={cn('h-2.5 w-2.5 shrink-0', dec.cls)} aria-label={`Entscheidung: ${dec.label}`} />}
+        {dec && <dec.Icon className={cn('h-2.5 w-2.5 shrink-0', dec.cls)} aria-hidden />}
         <span className="truncate font-medium">{title}</span>
         {pct && (
           <span className="ml-auto shrink-0 pl-0.5 text-[10px] font-semibold opacity-70 tabular-nums">
@@ -94,12 +110,13 @@ function EventChip({
           b.text,
         )}
         title={title}
+        aria-label={ariaLabel}
       >
         {Bar}
         {dec && (
           <dec.Icon
             className={cn('absolute top-1 right-1 h-3 w-3', dec.cls)}
-            aria-label={`Entscheidung: ${dec.label}`}
+            aria-hidden
           />
         )}
         <span className="line-clamp-2 pr-3 text-[11px] font-semibold">{title}</span>
@@ -120,6 +137,7 @@ function EventChip({
         b.text,
       )}
       title={title}
+      aria-label={ariaLabel}
     >
       {Bar}
       <span className="truncate font-semibold">{title}</span>
@@ -128,7 +146,7 @@ function EventChip({
         {pct && ` · ${pct}`}
       </span>
       {dec && (
-        <dec.Icon className={cn('h-3 w-3 shrink-0', dec.cls)} aria-label={`Entscheidung: ${dec.label}`} />
+        <dec.Icon className={cn('h-3 w-3 shrink-0', dec.cls)} aria-hidden />
       )}
     </div>
   );
