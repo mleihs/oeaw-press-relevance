@@ -14,6 +14,16 @@ export interface ChangelogEntry {
 // auf das heutige Datum heben, sonst zeigt der Unread-Dot keinen neuen Stand an.
 export const changelogEntries: ChangelogEntry[] = [
   {
+    category: 'neu',
+    title: 'Veranstaltungen: Wochen- und Monatskalender',
+    body: 'Die Events-Seite hat jetzt neben der Liste eine Wochen- und eine Monatsansicht. Jeder Termin erscheint als farbiger Block, dessen Farbe die Relevanz auf einen Blick zeigt (von Grau für unbewertet bis Brand-Blau für hochrelevant), mit dezenter Zeit- und Score-Angabe; die getroffene Entscheidung (Pitch/Hold/Skip) sitzt als kleines Symbol in der Ecke. Ein Klick öffnet ein Cockpit mit Score-Aufschlüsselung, Pitch und den Triage-Buttons. Umgeschaltet wird über Liste · Woche · Monat, geblättert per Pfeil oder „Heute".',
+  },
+  {
+    category: 'neu',
+    title: 'Einstellbare Bewertungs-Gewichtung für Events',
+    body: 'In den Einstellungen lässt sich jetzt festlegen, wie stark die vier Einzel-Scores einer Veranstaltung (Öffentlichkeitswirkung, Wissenschaftliche Bedeutung, Reichweite, Aktualität) in den Gesamt-Relevanzscore eingehen — über Presets oder einen Aufteilungsbalken, der immer 100 % ergibt, mit Live-Vorschau. Beim Speichern werden alle bewerteten Events sofort neu berechnet; jede Einstellung wird im Verlauf gesichert und lässt sich per „Übernehmen" wiederherstellen.',
+  },
+  {
     category: 'verbesserung',
     title: 'Fehlender Score: jetzt mit konkretem Grund',
     body: 'Publikationen ohne Story Score zeigen in der „N/A"-Bubble jetzt einen pro Eintrag verfassten Grund statt eines allgemeinen Hinweises. Je nach Fall: keine DOI hinterlegt (bei Zeitschriften-Beiträgen oft nachtragbar), ein Publikationstyp wie Sammelwerks- oder Zeitungsbeitrag, der in CrossRef/OpenAlex gar nicht geführt wird, eine vergebene DOI ohne frei abrufbaren Abstract, ein Buch- bzw. Sammelband-DOI, oder ein noch nicht erschienenes Paper (Pre-Publication-Window). Der spezifische Grund steht voran, die allgemeine Erklärung folgt als Kontext.',
@@ -120,7 +130,7 @@ export const changelogClosing =
  * Bump this whenever a new entry is added on top so that returning users
  * see the brand-colored dot until they open the panel.
  */
-export const changelogLastUpdated = '2026-06-17T12:00:00.000Z';
+export const changelogLastUpdated = '2026-06-26T12:00:00.000Z';
 
 /** Auto-derived from changelogLastUpdated: single source of truth for the
  *  panel's soft date anchor ("Stand Mai 2026"). */
