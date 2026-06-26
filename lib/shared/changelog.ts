@@ -14,6 +14,11 @@ export interface ChangelogEntry {
 // auf das heutige Datum heben, sonst zeigt der Unread-Dot keinen neuen Stand an.
 export const changelogEntries: ChangelogEntry[] = [
   {
+    category: 'hintergrund',
+    title: 'Social Media: kostensparenderes Laden der Kanäle',
+    body: 'Der Social-Media-Abruf holt pro Instagram-Kanal jetzt nur noch genau dessen eingestellten Beobachtungszeitraum, statt für alle Kanäle das jeweils breiteste Fenster zu laden und Überschüssiges wieder zu verwerfen. Da der Abrufdienst pro Beitrag abrechnet, spart das Kosten, sobald Kanäle unterschiedliche Zeiträume haben. Bei einheitlichem Zeitraum bleibt alles wie bisher; die Abrufe laufen weiterhin parallel, also ohne Tempoverlust.',
+  },
+  {
     category: 'neu',
     title: 'Veranstaltungen: Wochen- und Monatskalender',
     body: 'Die Events-Seite hat jetzt neben der Liste eine Wochen- und eine Monatsansicht. Jeder Termin erscheint als farbiger Block, dessen Farbe die Relevanz auf einen Blick zeigt (von Grau für unbewertet bis Brand-Blau für hochrelevant), mit dezenter Zeit- und Score-Angabe; die getroffene Entscheidung (Pitch/Hold/Skip) sitzt als kleines Symbol in der Ecke. Ein Klick öffnet ein Cockpit mit Score-Aufschlüsselung, Pitch und den Triage-Buttons. Umgeschaltet wird über Liste · Woche · Monat, geblättert per Pfeil oder „Heute".',
@@ -130,7 +135,7 @@ export const changelogClosing =
  * Bump this whenever a new entry is added on top so that returning users
  * see the brand-colored dot until they open the panel.
  */
-export const changelogLastUpdated = '2026-06-26T12:00:00.000Z';
+export const changelogLastUpdated = '2026-06-26T18:00:00.000Z';
 
 /** Auto-derived from changelogLastUpdated: single source of truth for the
  *  panel's soft date anchor ("Stand Mai 2026"). */
