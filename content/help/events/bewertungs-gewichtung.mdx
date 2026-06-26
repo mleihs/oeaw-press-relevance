@@ -1,0 +1,45 @@
+---
+title: Bewertungs-Gewichtung anpassen
+description: Wie stark die vier Dimensionen einer Veranstaltung in den Gesamt-Relevanzscore eingehen, lässt sich in den Einstellungen festlegen.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+Der [Relevanz-Score einer Veranstaltung](/help/events/relevanz-score) setzt sich aus
+vier Dimensionen zusammen – Öffentlichkeitswirkung, Wissenschaftliche Bedeutung,
+Reichweite und Aktualität. Wie stark jede davon in den Gesamtscore eingeht, lässt
+sich unter **Einstellungen** im Abschnitt *Bewertungsgewichtung für Events* festlegen.
+
+## Presets und Aufteilungsbalken {#einstellen}
+
+Die Gewichtung kann auf zwei Wegen gesetzt werden:
+
+- **Presets**: fertige Profile wie *Ausgewogen*, *Publikumsfokus*,
+  *Wissenschaftsfokus* oder *Aktualitätsfokus* als Startpunkt.
+- **Aufteilungsbalken**: ein Balken, der zusammen immer 100 % ergibt. Die Trenner
+  lassen sich ziehen (oder mit den Pfeiltasten verschieben), um Gewicht zwischen
+  benachbarten Dimensionen zu verschieben. Weil die Summe stets 100 % bleibt, sind
+  die Prozentwerte exakt und vorhersehbar.
+
+Eine **Live-Vorschau** zeigt an zwei Beispiel-Events, wie sich die aktuelle Gewichtung
+auf den Gesamtscore auswirkt – so wird sichtbar, welche Art von Veranstaltung mit den
+gewählten Gewichten höher rankt.
+
+## Speichern und Neuberechnung {#speichern}
+
+<Callout type="info">
+  Diese Karte speichert eigenständig auf dem Server – unabhängig vom globalen
+  „Einstellungen speichern" am Seitenende.
+</Callout>
+
+Beim Speichern werden **alle bereits bewerteten Events sofort neu berechnet** (die
+Einzel-Scores der Dimensionen bleiben, nur ihre Gewichtung im Gesamtscore ändert
+sich). Es wird also keine erneute LLM-Analyse ausgelöst – die Neugewichtung ist eine
+reine Rechenoperation und kostet nichts.
+
+## Verlauf und Wiederherstellen {#verlauf}
+
+Jede gespeicherte Gewichtung wird im **Verlauf** mit Zeitpunkt, Aufteilung und Zahl
+der neu berechneten Events festgehalten. Über **Übernehmen** lässt sich eine frühere
+Gewichtung wieder in die Eingabe laden; angewendet wird sie erst mit dem nächsten
+Speichern.

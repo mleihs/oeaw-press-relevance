@@ -47,6 +47,13 @@ Jeder Post wird **genau einmal** analysiert; das Ergebnis wird am Post
 gespeichert. Eine fehlgeschlagene Analyse (etwa abgeschnittene Antwort) wird bei
 der nächsten Aktualisierung automatisch erneut versucht.
 
+Auch der Abruf selbst arbeitet sparsam: Jeder Kanal wird **nur auf seinen eigenen
+Beobachtungszeitraum** geladen, statt für alle Kanäle pauschal das breiteste Fenster
+zu holen und Überschüssiges wieder zu verwerfen. Da Apify pro Ergebnis abrechnet,
+spart das Kosten, sobald Kanäle unterschiedliche Zeiträume haben. Bei einheitlichem
+Zeitraum ändert sich nichts; Kanäle mit gleichem Fenster werden weiterhin in einem
+gemeinsamen Lauf gebündelt, und die Läufe laufen parallel – also ohne Tempoverlust.
+
 ## Headless aktualisieren {#cli}
 
 Für geplante Läufe (Cron) gibt es ein CLI:

@@ -3,7 +3,9 @@
   "pages": [
     "seiten-tour",
     "event-detail",
+    "kalender-ansichten",
     "relevanz-score",
+    "bewertungs-gewichtung",
     "decision-workflow",
     "webdb-sync",
     "event-flag"

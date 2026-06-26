@@ -17,16 +17,19 @@ export const changelogEntries: ChangelogEntry[] = [
     category: 'hintergrund',
     title: 'Social Media: kostensparenderes Laden der Kanäle',
     body: 'Der Social-Media-Abruf holt pro Instagram-Kanal jetzt nur noch genau dessen eingestellten Beobachtungszeitraum, statt für alle Kanäle das jeweils breiteste Fenster zu laden und Überschüssiges wieder zu verwerfen. Da der Abrufdienst pro Beitrag abrechnet, spart das Kosten, sobald Kanäle unterschiedliche Zeiträume haben. Bei einheitlichem Zeitraum bleibt alles wie bisher; die Abrufe laufen weiterhin parallel, also ohne Tempoverlust.',
+    href: '/help/social/kanaele-verwalten#datenquelle',
   },
   {
     category: 'neu',
     title: 'Veranstaltungen: Wochen- und Monatskalender',
     body: 'Die Events-Seite hat jetzt neben der Liste eine Wochen- und eine Monatsansicht. Jeder Termin erscheint als farbiger Block, dessen Farbe die Relevanz auf einen Blick zeigt (von Grau für unbewertet bis Brand-Blau für hochrelevant), mit dezenter Zeit- und Score-Angabe; die getroffene Entscheidung (Pitch/Hold/Skip) sitzt als kleines Symbol in der Ecke. Ein Klick öffnet ein Cockpit mit Score-Aufschlüsselung, Pitch und den Triage-Buttons. Umgeschaltet wird über Liste · Woche · Monat, geblättert per Pfeil oder „Heute".',
+    href: '/help/events/kalender-ansichten',
   },
   {
     category: 'neu',
     title: 'Einstellbare Bewertungs-Gewichtung für Events',
     body: 'In den Einstellungen lässt sich jetzt festlegen, wie stark die vier Einzel-Scores einer Veranstaltung (Öffentlichkeitswirkung, Wissenschaftliche Bedeutung, Reichweite, Aktualität) in den Gesamt-Relevanzscore eingehen: über Presets oder einen Aufteilungsbalken (immer 100 %), mit Live-Vorschau. Beim Speichern werden alle bewerteten Events sofort neu berechnet; jede Einstellung wird im Verlauf gesichert und lässt sich per „Übernehmen" wiederherstellen.',
+    href: '/help/events/bewertungs-gewichtung',
   },
   {
     category: 'verbesserung',
