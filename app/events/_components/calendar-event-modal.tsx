@@ -30,7 +30,13 @@ interface Props {
 export function CalendarEventModal({ event, open, onOpenChange }: Props) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[88vh] gap-4 overflow-y-auto sm:max-w-xl">
+      <DialogContent
+        className="max-h-[88vh] gap-4 overflow-y-auto sm:max-w-xl"
+        // Don't auto-focus the first interactive child: for analyzed events that
+        // is the score's InfoBubble, whose onFocus opens the popover — so it
+        // would spring open over the modal content the moment the dialog opens.
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
         {event && (
           <>
             <DialogHeader>
