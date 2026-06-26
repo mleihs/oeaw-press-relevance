@@ -260,7 +260,7 @@ export function Nav() {
     <header className="bg-brand shadow-md">
       <div className="mx-auto flex h-14 max-w-7xl items-center px-4">
         <Link href="/" className="mr-6 font-semibold text-lg text-white">
-          Story Scout
+          Science Propaganda Ninja
         </Link>
 
         {/* Desktop primary tabs + Mehr dropdown */}
@@ -324,7 +324,7 @@ export function Nav() {
             >
               <SheetHeader className="px-4 pt-4 pb-2">
                 <SheetTitle className="text-white text-lg font-semibold">
-                  Story Scout
+                  Science Propaganda Ninja
                 </SheetTitle>
                 <SheetDescription className="sr-only">
                   Hauptnavigation: Bereiche, Schnellzugriffe und Einstellungen.

@@ -565,7 +565,7 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <Brain className="h-4 w-4 text-brand" />
-              Story Scout Analyse
+              Science Propaganda Ninja Analyse
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">

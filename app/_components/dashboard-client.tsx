@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { AnimatePresence, motion } from 'motion/react';
@@ -25,12 +26,9 @@ import { InfoBubble } from '@/components/info-bubble';
 import { EmptyState } from '@/components/empty-state';
 import { CapybaraEmpty } from '@/components/capybara-logo';
 import { ChangelogPanel } from '@/components/changelog-panel';
-import { CapybaraGlitch } from '@/components/capybara-glitch';
-import { CapybaraLightbox } from '@/components/capybara-lightbox';
 import { PublicationFlag } from '@/components/publication-flag';
 import { VenueLine } from '@/components/venue-line';
 import { FlagshipBadge } from '@/components/flagship-badge';
-import { AUTH_STORAGE_KEY, AUTH_SUCCESS_EVENT } from '@/lib/client/auth-events';
 import { displayAuthor, displayInstitute, displayTitle } from '@/lib/shared/publication-display';
 import { formatPubDate, pubDateTitle } from '@/lib/shared/format-pub-date';
 import {
@@ -125,13 +123,6 @@ function DimensionBadge({
   );
 }
 
-const DASHBOARD_GLITCH_DATE_KEY = 'storyscout-dashboard-glitch-date';
-
-/** Local-timezone YYYY-MM-DD via en-CA locale (ISO format, no UTC offset confusion). */
-function todayLocal(): string {
-  return new Date().toLocaleDateString('en-CA');
-}
-
 export function DashboardClient({ data, period, sortBy }: DashboardClientProps) {
   const {
     stats,
@@ -164,27 +155,6 @@ export function DashboardClient({ data, period, sortBy }: DashboardClientProps) 
         counts: periodCounts,
         capped: capReached,
       });
-
-  // Capybara boot-sequence: play once per local-calendar-day. Triggered either
-  // on mount (returning user already authenticated in this session) or on the
-  // auth-success event (first password entry of the session). Either path
-  // ends in the cyber image staying visible after the animation completes.
-  const [playGlitch, setPlayGlitch] = useState(false);
-  useEffect(() => {
-    const tryTrigger = () => {
-      if (sessionStorage.getItem(AUTH_STORAGE_KEY) !== '1') return false;
-      const last = localStorage.getItem(DASHBOARD_GLITCH_DATE_KEY);
-      if (last !== todayLocal()) setPlayGlitch(true);
-      return true;
-    };
-    if (tryTrigger()) return;
-    window.addEventListener(AUTH_SUCCESS_EVENT, tryTrigger);
-    return () => window.removeEventListener(AUTH_SUCCESS_EVENT, tryTrigger);
-  }, []);
-
-  const handleGlitchComplete = useCallback(() => {
-    localStorage.setItem(DASHBOARD_GLITCH_DATE_KEY, todayLocal());
-  }, []);
 
   // Single navigation primitive: replace the URL with the same period+limit
   // but a different sortBy. router.replace + scroll:false keeps the scroll
@@ -252,40 +222,32 @@ export function DashboardClient({ data, period, sortBy }: DashboardClientProps) 
                 aria-hidden="true"
                 className="pointer-events-none absolute left-1/2 top-1/2 hidden h-48 w-48 -translate-x-1/2 -translate-y-1/2 rounded-full blur-xl bg-[radial-gradient(circle,_rgba(255,255,255,0.5)_0%,_rgba(255,255,255,0.22)_35%,_transparent_70%)] dark:block"
               />
-              <CapybaraLightbox
-                src="/capybara-logo-cyber.png"
-                alt="Story Scout Capybara, Cyber-Edition, in voller Größe"
-                width={1254}
-                height={1254}
-              >
-                <CapybaraGlitch
-                  oldSrc="/capybara-logo-alpha.png"
-                  cyberSrc="/capybara-logo-cyber-alpha.png"
-                  restCyberSrc="/capybara-logo-cyber.png"
-                  oldAlt="Story Scout Capybara"
-                  cyberAlt="Story Scout Capybara, Cyber-Edition"
-                  play={playGlitch}
-                  onComplete={handleGlitchComplete}
-                  className="relative h-[161px] w-[161px]"
-                  sizes="161px"
-                  priority
-                />
-              </CapybaraLightbox>
+              <Image
+                src="/capybara-logo-alpha.png"
+                alt="Science Propaganda Ninja Capybara"
+                width={161}
+                height={161}
+                className="relative h-[161px] w-[161px] object-contain"
+                sizes="161px"
+                priority
+              />
             </div>
 
             <div>
               <div className="flex items-baseline gap-2">
                 <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-br from-foreground via-foreground to-foreground/70 bg-clip-text text-transparent">
-                  Story Scout
+                  Science Propaganda Ninja
                 </h1>
                 <span className="text-xs font-medium tracking-wide text-muted-foreground/70 tabular-nums">
-                  v0.2
+                  0.1
                 </span>
               </div>
               <p className="text-muted-foreground mt-1.5 max-w-md">
                 Finde die besten Storys in ÖAW-Publikationen.
                 <br />
                 Finde ÖAW-weit upcoming Events.
+                <br />
+                Behalte die Social-Media-Themenlage im Blick.
               </p>
               <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
                 <div className="inline-flex items-center gap-1.5">

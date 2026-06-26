@@ -16,10 +16,10 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  if (!UUID_RE.test(id)) return { title: 'Publikation | Story Scout' };
+  if (!UUID_RE.test(id)) return { title: 'Publikation | Science Propaganda Ninja' };
   const pub = await getPub(id);
-  if (!pub) return { title: 'Publikation | Story Scout' };
-  return { title: `${displayTitle(pub.original_title || pub.title, pub.citation)} | Story Scout` };
+  if (!pub) return { title: 'Publikation | Science Propaganda Ninja' };
+  return { title: `${displayTitle(pub.original_title || pub.title, pub.citation)} | Science Propaganda Ninja` };
 }
 
 // Per ADR 0009: read-heavy admin pages opt out of ISR. The publication
