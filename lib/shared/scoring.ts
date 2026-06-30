@@ -20,7 +20,8 @@ export function bayesSmooth(n: number, avg: number, prior: number, k = 3): numbe
 /**
  * Generic weighted sum: Σ dimensions[k]·weights[k] over the weight keys.
  * Single source of truth for every "dimensions → score" computation
- * (publication press_score, event relevance score). Missing dims count as 0.
+ * (publication press_score, event relevance score). Missing dims count as 0
+ * (the `?? 0` also defends against a stray null reaching it at runtime).
  */
 export function weightedScore<K extends string>(
   dimensions: Partial<Record<K, number>>,
@@ -35,8 +36,10 @@ export function weightedScore<K extends string>(
 
 /**
  * Compute press_score from the 5 publication dimensions via SCORE_WEIGHTS.
- * Useful for client-side preview, tests, and keeping the JS + PG paths in
- * lockstep when SCORE_WEIGHTS changes.
+ * THE single press-score formula: the server entry `calculatePressScore`
+ * (lib/server/analysis/score.ts) delegates here and only adds storage rounding,
+ * and this stays the JS mirror of the PG `press_score` formula — one path when
+ * SCORE_WEIGHTS changes. Unrounded by design (rounding is a persistence concern).
  */
 export function computePressScore(dimensions: Record<ScoreDimension, number>): number {
   return weightedScore(dimensions, SCORE_WEIGHTS);
