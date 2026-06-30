@@ -592,4 +592,39 @@ describe('runEnrichmentBatch — DOI-less path', () => {
     expect(String(h.updateSets[0].enrichedSource)).toContain('pdf');
     expect(complete(events)).toMatchObject({ successful: 1 });
   });
+
+  it('WebDB data without an abstract yields partial and omits keywords', async () => {
+    // Source data but no abstract -> partial. The DOI-less write must NOT
+    // touch enriched_keywords (the cascade never produces them; clobbering
+    // the column to null would erase any prior DOI-era keywords).
+    mockWebDb.mockReturnValue({
+      source: WEBDB_SOURCE_TAG,
+      word_count: 30,
+    });
+    const { events, emit } = collectEvents();
+    await runEnrichmentBatch({
+      pubs: [makePub({ id: 'p1', doi: null, url: null })],
+      abortSignal: new AbortController().signal,
+      emit,
+    });
+    expect(h.updateSets[0].enrichmentStatus).toBe('partial');
+    expect(h.updateSets[0].enrichedAbstract).toBeNull();
+    expect(h.updateSets[0].wordCount).toBe(30);
+    expect(h.updateSets[0]).not.toHaveProperty('enrichedKeywords');
+    expect(complete(events)).toMatchObject({ partial: 1, successful: 0 });
+  });
+
+  it('no local data and no pdf yields failed status', async () => {
+    // Reachable via the explicit-ids path (the status query would filter this
+    // row out otherwise): no abstract, no .pdf url, no WebDB hit.
+    const { events, emit } = collectEvents();
+    await runEnrichmentBatch({
+      pubs: [makePub({ id: 'p1', doi: null, url: null })],
+      abortSignal: new AbortController().signal,
+      emit,
+    });
+    expect(h.updateSets[0].enrichmentStatus).toBe('failed');
+    expect(h.updateSets[0].enrichedSource).toBeNull();
+    expect(complete(events)).toMatchObject({ failed: 1, successful: 0 });
+  });
 });
