@@ -159,7 +159,14 @@ Punkt vollständig + getestet ist (keine Sammelcommits über mehrere Punkte).
   motion 12.38→12.42, recharts 3.8→3.9, date-fns 4.1→4.4, pg 8.20→8.22, @tanstack/* 5.100→5.101, shadcn 4.7→4.12, u.a.
 - Danach `npm run typecheck && npm run test && npm run build`.
 
-### [ ] 3.2 `@types/node` 20 → 22 oder 24 (NICHT 26 — kein LTS)
+### [x] 3.2 `@types/node` 20 → 22 oder 24 (NICHT 26 — kein LTS)
+> DONE: `@types/node` `^20`→`^22` (resolved 22.20.0) — auf Vercel-Node 22 angeglichen
+> (niedrigste Deploy-Runtime = prod-Floor; verhindert versehentliche Node-23/24-only-APIs
+> im App-Code, die auf Vercel brächen). `engines.node` `>=20`→`>=22` mit angehoben
+> (konsistent zum neuen Types-Floor; nichts läuft mehr auf Node 20 — Vercel 22, CI+lokal 24;
+> advisory, kein .npmrc engine-strict). NICHT 24 gewählt, obwohl lokal/CI 24, weil die
+> deployte App auf 22 läuft. Lockfile-Diff exakt auf @types/node beschränkt (5±, keine
+> Transitiven). typecheck+test(481)+build (exit 0) grün.
 - An Deploy-Runtime angleichen (Vercel Node 22, lokal 24). `engines.node` (`>=20`) ggf. mit anheben.
 
 ### [ ] NICHT bumpen (bewusst):

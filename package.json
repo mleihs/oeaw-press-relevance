@@ -3,7 +3,7 @@
   "version": "0.3.0",
   "private": true,
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "scripts": {
     "predev": "fumadocs-mdx",
@@ -81,7 +81,7 @@
     "@playwright/test": "^1.59.1",
     "@tailwindcss/postcss": "^4.2.4",
     "@tanstack/react-query-devtools": "^5.100.9",
-    "@types/node": "^20",
+    "@types/node": "^22",
     "@types/pg": "^8.20.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
