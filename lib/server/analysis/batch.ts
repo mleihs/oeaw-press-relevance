@@ -1,10 +1,8 @@
 import { and, eq, gte, inArray } from 'drizzle-orm';
 import { db, publications, descNullsLast } from '@/lib/server/db';
-import {
-  analyzePublications,
-  calculatePressScore,
-  checkKeyBalance,
-} from './openrouter';
+import { analyzePublications } from './analyze';
+import { calculatePressScore } from './score';
+import { checkKeyBalance } from '@/lib/server/openrouter';
 import { runLLMBatch } from '@/lib/server/llm-batch';
 import type { AnalysisResult } from '@/lib/shared/types';
 import type { PublicationForPrompt } from './prompts';

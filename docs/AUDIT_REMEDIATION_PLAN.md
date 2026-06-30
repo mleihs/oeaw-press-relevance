@@ -75,9 +75,14 @@ Punkt vollständig + getestet ist (keine Sammelcommits über mehrere Punkte).
   Detail-/Analyze-Surface lädt Vollzeile on demand.
 - **Akzeptanz:** `/events` rendert unverändert; Payload kleiner; Detail/Analyze funktioniert weiter.
 
-### [ ] 1.7 Toten Shim löschen
-- `lib/server/analysis/openrouter.ts` (39 Z., 0 Consumer). Vorher verifizieren: `rg "analysis/openrouter" lib app scripts`
-  → 0 Treffer. `batch.ts` importiert bereits aus `@/lib/server/openrouter`. Dann löschen.
+### [x] 1.7 Shim aufgelöst (Prämisse war falsch — NICHT 0 Consumer)
+- `lib/server/analysis/openrouter.ts` war KEIN toter Shim: es definierte die LIVE-Funktion `analyzePublications`
+  (genutzt von `batch.ts:134`) + re-exportierte `calculatePressScore`/`checkKeyBalance`/`estimateCost` als
+  Back-Compat-Indirektion. Einziger Consumer: `batch.ts` (kein Test). Statt Blind-Löschen: nach `analysis/analyze.ts`
+  umbenannt (parallel zu `events/analyze.ts`, der verwirrende `openrouter`-Name kollidierte mit dem shared
+  `@/lib/server/openrouter`), Re-Exports entfernt, `batch.ts` auf echte Quellen umgebogen
+  (`analyzePublications`→`./analyze`, `calculatePressScore`→`./score`, `checkKeyBalance`→shared client).
+  `estimateCost`-Re-Export war ungenutzt. typecheck+build+451 Tests grün.
 
 ---
 
