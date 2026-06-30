@@ -1,7 +1,8 @@
 import 'server-only';
 import { eq } from 'drizzle-orm';
 import { db, events as eventsTable } from '@/lib/server/db';
-import { eventRowToApi, type Event } from './to-api';
+import { eventRowToApi } from './to-api';
+import type { Event } from '@/lib/shared/types';
 
 /** Single-row read for /events/[id]. Inlined Drizzle query: one consumer
  *  (the detail page), so no events-repo by the threshold rule in

@@ -6,7 +6,7 @@
 // allowed here because this is a client component (it is not in the RSC page).
 import dynamic from 'next/dynamic';
 import { CalendarSkeleton } from './calendar-skeleton';
-import type { Event } from '@/lib/server/events/to-api';
+import type { Event } from '@/lib/shared/types';
 import type { CalendarView } from '../_lib/calendar-range';
 
 const EventsCalendar = dynamic(

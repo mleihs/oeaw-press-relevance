@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Temporal } from 'temporal-polyfill';
 import { toCalendarEvent, readChipData } from './to-calendar-event';
-import type { Event } from '@/lib/server/events/to-api';
+import type { Event } from '@/lib/shared/types';
 
 function makeEvent(overrides: Partial<Event> = {}): Event {
   return {

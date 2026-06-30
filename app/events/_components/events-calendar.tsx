@@ -29,7 +29,7 @@ import {
 } from './calendar-event-chip';
 import { CalendarEventModal } from './calendar-event-modal';
 import { CalendarSkeleton } from './calendar-skeleton';
-import type { Event } from '@/lib/server/events/to-api';
+import type { Event } from '@/lib/shared/types';
 
 interface Props {
   events: Event[];

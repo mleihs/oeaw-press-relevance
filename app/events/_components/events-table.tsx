@@ -19,7 +19,7 @@ import { eventDateFmt, eventTimeFmt, isSameLocalDay } from '../_lib/event-format
 import { cn } from '@/lib/shared/utils';
 import { decodeHtmlBlock } from '@/lib/shared/html-utils';
 import type { EventsSort, EventsSortOrder } from '@/lib/server/events/list';
-import type { Event } from '@/lib/server/events/to-api';
+import type { Event } from '@/lib/shared/types';
 
 interface Props {
   rows: Event[];

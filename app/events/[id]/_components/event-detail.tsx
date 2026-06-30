@@ -26,7 +26,7 @@ import {
 import { sanitizeEventInformation } from '@/lib/server/events/html-utils';
 import { decodeHtmlBlock } from '@/lib/shared/html-utils';
 import { EventAnalysisCard } from './event-analysis-card';
-import type { Event } from '@/lib/server/events/to-api';
+import type { Event } from '@/lib/shared/types';
 
 export function EventDetail({ event }: { event: Event }) {
   const start = new Date(event.event_at);

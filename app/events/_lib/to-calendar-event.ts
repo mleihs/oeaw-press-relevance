@@ -14,8 +14,7 @@
 // Temporal.ZonedDateTime"). Installing the global polyfill makes our instances
 // share Schedule-X's constructor.
 import 'temporal-polyfill/global';
-import type { Event } from '@/lib/server/events/to-api';
-import type { Decision } from '@/lib/shared/types';
+import type { Decision, Event } from '@/lib/shared/types';
 import { CALENDAR_TZ } from './calendar-range';
 
 export interface CalendarChipData {

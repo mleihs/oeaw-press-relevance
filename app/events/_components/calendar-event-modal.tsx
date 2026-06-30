@@ -19,7 +19,7 @@ import { Badge } from '@/components/ui/badge';
 import { EventAnalysisCard } from '@/app/events/[id]/_components/event-analysis-card';
 import { EventDecisionButtons } from './event-decision-buttons';
 import { eventDateLongFmt, eventTimeFmt } from '../_lib/event-format';
-import type { Event } from '@/lib/server/events/to-api';
+import type { Event } from '@/lib/shared/types';
 
 interface Props {
   event: Event | null;

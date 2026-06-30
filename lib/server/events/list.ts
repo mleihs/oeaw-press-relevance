@@ -2,7 +2,8 @@ import 'server-only';
 import { and, asc, eq, gte, sql, type SQL } from 'drizzle-orm';
 import { db, events as eventsTable } from '@/lib/server/db';
 import { ascNullsLast, descNullsLast } from '@/lib/server/db/sort';
-import { eventListColumns, eventListRowToApi, type Event } from './to-api';
+import { eventListColumns, eventListRowToApi } from './to-api';
+import type { Event } from '@/lib/shared/types';
 
 export const EVENTS_TAB_VALUES = [
   'upcoming',

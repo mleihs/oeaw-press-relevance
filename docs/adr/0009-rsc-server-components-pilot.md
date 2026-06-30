@@ -53,6 +53,11 @@ when the client mutates the prefetched cache, which the pilot does not.
 - `ARCHITECTURE_PLAN.md` §A4 (Open Questions)
 - `eslint.config.mjs` (`app-pages → server` rule)
 - `lib/server/researchers/detail.ts`, `app/persons/[id]/page.tsx`
+- `app/researchers/page.tsx` — the canonical decision-#4 escape hatch:
+  a `'use client'` page that keeps client `useApiQuery` (not RSC first-paint)
+  because the leaderboard + beeswarm distribution re-filter interactively via
+  nuqs query-state (`?view=…&since=…`). RSC first-paint would buy nothing —
+  the very next filter change refetches client-side.
 - ADR 0005, ADR 0006 (the one this amends)
 - [ADR 0010](0010-rsc-mutation-router-refresh.md) extends decision #4
   with the mutation pattern (`invalidateQueries` + `router.refresh()`)

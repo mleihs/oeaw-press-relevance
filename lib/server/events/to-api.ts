@@ -1,6 +1,10 @@
 import { events as eventsTable } from '@/lib/server/db';
-import { isDecision, type Decision, type FlagNote } from '@/lib/shared/types';
-import type { EventLang } from '@/lib/server/ingest/adapters/typo3-events';
+import {
+  isDecision,
+  type Event,
+  type EventLang,
+  type FlagNote,
+} from '@/lib/shared/types';
 
 // Drizzle-row → wire-DTO mapper for the events feature. Centralises the
 // `decision`/`flag_notes`/`lang` runtime narrowing so consumers (RSC pages,
@@ -10,41 +14,9 @@ import type { EventLang } from '@/lib/server/ingest/adapters/typo3-events';
 
 export type EventRow = typeof eventsTable.$inferSelect;
 
-export interface Event {
-  id: string;
-  webdb_uid: number;
-  title: string;
-  teaser: string | null;
-  bodytext: string | null;
-  event_information: string | null;
-  event_at: string;
-  event_end_at: string | null;
-  location_title: string | null;
-  organizer_title: string | null;
-  institute: string | null;
-  url: string | null;
-  lang: EventLang | null;
-  available_langs: EventLang[];
-  decision: Decision;
-  decided_at: string | null;
-  flag_notes: FlagNote[];
-  // LLM relevance analysis (Veranstaltungsbetrieb). Null until analyzed.
-  analysis_status: 'pending' | 'analyzed' | 'failed' | null;
-  event_score: number | null;
-  public_appeal: number | null;
-  scientific_significance: number | null;
-  reach: number | null;
-  timeliness: number | null;
-  pitch_suggestion: string | null;
-  suggested_angle: string | null;
-  target_audience: string | null;
-  reasoning: string | null;
-  llm_model: string | null;
-  analysis_cost: number | null;
-  analyzed_at: string | null;
-  synced_at: string;
-  created_at: string;
-}
+// The `Event` wire DTO now lives in lib/shared/types.ts (parallel to
+// `Publication`) so consumers import it from shared without crossing the server
+// boundary; this module owns the Drizzle-row → `Event` mapping below.
 
 const VALID_ANALYSIS_STATUS = new Set(['pending', 'analyzed', 'failed']);
 
