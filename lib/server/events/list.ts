@@ -2,7 +2,7 @@ import 'server-only';
 import { and, asc, eq, gte, sql, type SQL } from 'drizzle-orm';
 import { db, events as eventsTable } from '@/lib/server/db';
 import { ascNullsLast, descNullsLast } from '@/lib/server/db/sort';
-import { eventRowToApi, type Event } from './to-api';
+import { eventListColumns, eventListRowToApi, type Event } from './to-api';
 
 export const EVENTS_TAB_VALUES = [
   'upcoming',
@@ -187,12 +187,14 @@ export async function listEvents(
   const col = sort.by === 'score' ? eventsTable.eventScore : eventsTable.eventAt;
   const primary =
     sort.order === 'asc' ? ascNullsLast(col) : descNullsLast(col);
+  // Slim projection (eventListColumns) drops the heavy text fields the list +
+  // calendar never render — see to-api.ts. Detail/analyze load the full row.
   const rows = await db
-    .select()
+    .select(eventListColumns)
     .from(eventsTable)
     .where(filter)
     .orderBy(primary, asc(eventsTable.eventAt));
-  return { events: rows.map(eventRowToApi), total: rows.length };
+  return { events: rows.map(eventListRowToApi), total: rows.length };
 }
 
 /** Fetches the events overlapping a calendar window for the active tab. The

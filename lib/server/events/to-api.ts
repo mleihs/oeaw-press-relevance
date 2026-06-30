@@ -99,3 +99,66 @@ export function eventRowToApi(row: EventRow): Event {
     created_at: row.createdAt,
   };
 }
+
+// Heavy text columns the list/calendar surfaces never render: `bodytext` +
+// `event_information` are multi-KB sanitized HTML, and `reasoning` + the three
+// pitch-prose fields are LLM output. They're omitted from the list projection
+// below so they don't ride in the RSC payload of every row; the detail page
+// (getEventById) still loads the full row on demand.
+const EVENT_HEAVY_COLUMNS = [
+  'bodytext',
+  'eventInformation',
+  'reasoning',
+  'pitchSuggestion',
+  'suggestedAngle',
+  'targetAudience',
+] as const;
+type EventHeavyColumn = (typeof EVENT_HEAVY_COLUMNS)[number];
+
+/** `db.select()` projection for list/calendar reads — every events column
+ *  except the heavy text fields above. */
+export const eventListColumns = {
+  id: eventsTable.id,
+  webdbUid: eventsTable.webdbUid,
+  title: eventsTable.title,
+  teaser: eventsTable.teaser,
+  eventAt: eventsTable.eventAt,
+  eventEndAt: eventsTable.eventEndAt,
+  locationTitle: eventsTable.locationTitle,
+  organizerTitle: eventsTable.organizerTitle,
+  institute: eventsTable.institute,
+  url: eventsTable.url,
+  lang: eventsTable.lang,
+  availableLangs: eventsTable.availableLangs,
+  decision: eventsTable.decision,
+  decidedAt: eventsTable.decidedAt,
+  flagNotes: eventsTable.flagNotes,
+  analysisStatus: eventsTable.analysisStatus,
+  eventScore: eventsTable.eventScore,
+  publicAppeal: eventsTable.publicAppeal,
+  scientificSignificance: eventsTable.scientificSignificance,
+  reach: eventsTable.reach,
+  timeliness: eventsTable.timeliness,
+  llmModel: eventsTable.llmModel,
+  analysisCost: eventsTable.analysisCost,
+  analyzedAt: eventsTable.analyzedAt,
+  syncedAt: eventsTable.syncedAt,
+  createdAt: eventsTable.createdAt,
+};
+
+export type EventListRow = Omit<EventRow, EventHeavyColumn>;
+
+/** Maps a slimmed list row to the wire `Event`, defaulting the omitted heavy
+ *  columns to null (the list/calendar never read them). Reuses `eventRowToApi`
+ *  so the decision/flag_notes/lang narrowing stays single-sourced. */
+export function eventListRowToApi(row: EventListRow): Event {
+  return eventRowToApi({
+    ...row,
+    bodytext: null,
+    eventInformation: null,
+    reasoning: null,
+    pitchSuggestion: null,
+    suggestedAngle: null,
+    targetAudience: null,
+  });
+}

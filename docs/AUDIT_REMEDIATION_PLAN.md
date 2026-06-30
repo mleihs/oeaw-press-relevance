@@ -65,7 +65,7 @@ Punkt vollständig + getestet ist (keine Sammelcommits über mehrere Punkte).
 - **Akzeptanz:** `npm run build` grün; ein Test-Import einer dieser Module in eine Client-Komponente bricht jetzt mit
   klarer `server-only`-Meldung.
 
-### [ ] 1.6 Events-Liste: Spaltenprojektion (einziger echter Perf-Win)
+### [x] 1.6 Events-Liste: Spaltenprojektion (einziger echter Perf-Win)
 - **Problem:** `lib/server/events/list.ts:189` `db.select().from(eventsTable)` zieht alle Spalten inkl.
   `bodytext`/`event_information` (Multi-KB-HTML) + LLM-Prosa (`reasoning`, `pitch_suggestion`, `suggested_angle`,
   `target_audience`), die Liste/Kalender nie rendern → tote KB im RSC-Payload pro Zeile.
