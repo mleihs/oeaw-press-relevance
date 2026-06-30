@@ -35,7 +35,7 @@ Punkt vollständig + getestet ist (keine Sammelcommits über mehrere Punkte).
   (`xmax = 0`-Accounting).
 - **Akzeptanz:** Test pinnt den Maintainer-Spalten-Schutz; würde rot, wenn jemand eine Spalte in die SET-Liste aufnimmt.
 
-### [ ] 1.3 `flag.ts`-Duplikat zusammenführen
+### [x] 1.3 `flag.ts`-Duplikat zusammenführen
 - **Problem:** `lib/server/events/flag.ts` und `lib/server/publications/flag.ts` sind byte-identisch in `norm()`,
   `defaultBy()`, setFlag/clearFlag-Dedup-Logik. Einziger Unterschied: Persistenz (events inline Drizzle, publications via
   `publicationsRepo`).
