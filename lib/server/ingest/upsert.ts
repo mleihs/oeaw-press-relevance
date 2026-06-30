@@ -29,6 +29,34 @@ function chunk<T>(arr: T[], size: number): T[][] {
 }
 
 /**
+ * Builds the `ON CONFLICT DO UPDATE SET` map for {@link upsertBatch}: each
+ * Drizzle update key → `excluded.<resolved-db-column-name>`. Returns `null`
+ * when `updateKeys` is empty (the caller then emits `DO NOTHING`).
+ *
+ * Pure: resolves the column name from the table's own schema and touches no DB.
+ * The `EXCLUDED.<col>` reference uses the *resolved DB column name* (so a
+ * camelCase JS key maps to its snake_case column), quoted via `sql.identifier`
+ * — column names come from our schema, never input. Throws on an update key
+ * that is not a column.
+ */
+export function buildUpsertSet<T extends PgTable>(
+  table: T,
+  updateKeys: readonly string[],
+): Record<string, SQL> | null {
+  if (updateKeys.length === 0) return null;
+  const cols = getTableColumns(table) as Record<string, { name: string }>;
+  return Object.fromEntries(
+    updateKeys.map((k) => {
+      const col = cols[k];
+      if (!col) {
+        throw new Error(`upsertBatch: unknown update column "${k}" on table`);
+      }
+      return [k, sql`excluded.${sql.identifier(col.name)}`];
+    }),
+  );
+}
+
+/**
  * Bulk insert `rows` into `table` with `ON CONFLICT (<target>) DO UPDATE SET
  * <updateKeys> = EXCLUDED.<col>`; `DO NOTHING` if `updateKeys` is empty.
  *
@@ -47,25 +75,11 @@ export async function upsertBatch<T extends PgTable>(
 ): Promise<number> {
   if (rows.length === 0) return 0;
 
-  const cols = getTableColumns(table) as Record<string, { name: string }>;
   const targetKeys = (Array.isArray(target) ? target : [target]) as string[];
   const tableCols = table as unknown as Record<string, PgColumn>;
   const targetCols: PgColumn[] = targetKeys.map((k) => tableCols[k]);
 
-  const set: Record<string, SQL> | null =
-    updateKeys.length === 0
-      ? null
-      : Object.fromEntries(
-          updateKeys.map((k) => {
-            const col = cols[k];
-            if (!col) {
-              throw new Error(
-                `upsertBatch: unknown update column "${k}" on table`,
-              );
-            }
-            return [k, sql`excluded.${sql.identifier(col.name)}`];
-          }),
-        );
+  const set = buildUpsertSet(table, updateKeys);
 
   let submitted = 0;
   for (const slice of chunk(rows, BATCH)) {
