@@ -52,6 +52,54 @@ export class EventsSyncConfigError extends Error {
   }
 }
 
+export interface EventsUpsertResult {
+  imported: number;
+  updated: number;
+}
+
+/** Bulk INSERT … ON CONFLICT (webdb_uid) DO UPDATE in a single round-trip.
+ *  The maintainer columns (decision, decided_at, flag_notes, created_at) and
+ *  the LLM scoring columns are omitted from the SET list by construction, so
+ *  a re-sync from ANY source never overwrites triage progress or scores.
+ *  `xmax = 0` is Postgres' canonical inserted-vs-updated marker on UPSERT — a
+ *  freshly inserted row has xmax = 0, a row updated by the ON CONFLICT branch
+ *  carries the current transaction id, so the same RETURNING column tells us
+ *  which branch the row took.
+ *
+ *  Shared by syncUpcomingEvents (WEBDB MySQL) and scripts/import-events-json.ts
+ *  (TYPO3 JSON export, Redmine #4165) so the SET list can never drift between
+ *  the two ingestion paths. */
+export async function upsertEvents(
+  normalized: NormalizedEvent[],
+): Promise<EventsUpsertResult> {
+  if (normalized.length === 0) return { imported: 0, updated: 0 };
+  const upserted = await db
+    .insert(eventsTable)
+    .values(normalized)
+    .onConflictDoUpdate({
+      target: eventsTable.webdbUid,
+      set: {
+        title: sql`excluded.title`,
+        teaser: sql`excluded.teaser`,
+        bodytext: sql`excluded.bodytext`,
+        eventInformation: sql`excluded.event_information`,
+        eventAt: sql`excluded.event_at`,
+        eventEndAt: sql`excluded.event_end_at`,
+        locationTitle: sql`excluded.location_title`,
+        organizerTitle: sql`excluded.organizer_title`,
+        institute: sql`excluded.institute`,
+        url: sql`excluded.url`,
+        lang: sql`excluded.lang`,
+        availableLangs: sql`excluded.available_langs`,
+        syncedAt: sql`NOW()`,
+      },
+    })
+    .returning({ inserted: sql<boolean>`(xmax = 0)` });
+
+  const imported = upserted.reduce((n, r) => n + (r.inserted ? 1 : 0), 0);
+  return { imported, updated: upserted.length - imported };
+}
+
 export async function syncUpcomingEvents(
   options: SyncOptions,
 ): Promise<EventsSyncResult> {
@@ -96,38 +144,9 @@ export async function syncUpcomingEvents(
     ? await fillMissingLocationsViaLlm(normalized)
     : 0;
 
-  // One bulk INSERT … ON CONFLICT DO UPDATE in a single round-trip. The
-  // maintainer columns (decision, decided_at, flag_notes, created_at) are
-  // omitted from the SET list by construction, so a re-sync never overwrites
-  // triage progress. `xmax = 0` is Postgres' canonical inserted-vs-updated
-  // marker on UPSERT — a freshly inserted row has xmax = 0, a row updated by
-  // the ON CONFLICT branch carries the current transaction id, so the same
-  // RETURNING column tells us which branch the row took.
-  const upserted = await db
-    .insert(eventsTable)
-    .values(normalized)
-    .onConflictDoUpdate({
-      target: eventsTable.webdbUid,
-      set: {
-        title: sql`excluded.title`,
-        teaser: sql`excluded.teaser`,
-        bodytext: sql`excluded.bodytext`,
-        eventInformation: sql`excluded.event_information`,
-        eventAt: sql`excluded.event_at`,
-        eventEndAt: sql`excluded.event_end_at`,
-        locationTitle: sql`excluded.location_title`,
-        organizerTitle: sql`excluded.organizer_title`,
-        institute: sql`excluded.institute`,
-        url: sql`excluded.url`,
-        lang: sql`excluded.lang`,
-        availableLangs: sql`excluded.available_langs`,
-        syncedAt: sql`NOW()`,
-      },
-    })
-    .returning({ inserted: sql<boolean>`(xmax = 0)` });
-
-  const imported = upserted.reduce((n, r) => n + (r.inserted ? 1 : 0), 0);
-  const updated = upserted.length - imported;
+  // Single-source the UPSERT (and its maintainer/scoring-column omissions) in
+  // upsertEvents so this MySQL path and the JSON-export importer can't drift.
+  const { imported, updated } = await upsertEvents(normalized);
 
   // Prune upcoming rows that are NOT in the incoming set. Catches translations
   // we used to mirror separately (l10n_parent>0, now filtered out at the
