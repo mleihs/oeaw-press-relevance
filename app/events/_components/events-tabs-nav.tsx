@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/shared/utils';
-import { buildEventsUrl } from '../_lib/build-events-url';
+import { buildEventsUrl, type EventsFilterState } from '../_lib/build-events-url';
 import type { CalendarView } from '../_lib/calendar-range';
 import {
   EVENTS_TAB_VALUES,
@@ -38,6 +38,7 @@ export function EventsTabsNav({
   main = false,
   view = null,
   date = null,
+  filters,
 }: {
   activeTab: EventsTab;
   stats: EventsStats;
@@ -46,6 +47,8 @@ export function EventsTabsNav({
   main?: boolean;
   view?: CalendarView | null;
   date?: string | null;
+  /** List filters (search/band/institute) preserved across a tab switch. */
+  filters?: EventsFilterState;
 }) {
   return (
     <nav
@@ -55,7 +58,7 @@ export function EventsTabsNav({
       {EVENTS_TAB_VALUES.map((value) => {
         const { label, Icon, statsKey } = TAB_DISPLAY[value];
         const isActive = value === activeTab;
-        const href = buildEventsUrl({ tab: value, main, view, date });
+        const href = buildEventsUrl({ tab: value, main, ...filters, view, date });
         return (
           <Link
             key={value}

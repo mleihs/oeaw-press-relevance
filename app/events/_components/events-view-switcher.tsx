@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { List, CalendarRange, CalendarDays, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/shared/utils';
-import { buildEventsUrl } from '../_lib/build-events-url';
+import { buildEventsUrl, type EventsFilterState } from '../_lib/build-events-url';
 import type { EventsTab } from '@/lib/server/events/list';
 import type { CalendarView } from '../_lib/calendar-range';
 
@@ -22,11 +22,14 @@ export function EventsViewSwitcher({
   tab,
   main,
   date,
+  filters,
 }: {
   activeView: ActiveEventsView;
   tab: EventsTab;
   main: boolean;
   date: string | null;
+  /** List filters (search/band/institute) preserved across a view switch. */
+  filters?: EventsFilterState;
 }) {
   return (
     <nav
@@ -36,8 +39,8 @@ export function EventsViewSwitcher({
       {ITEMS.map(({ key, label, Icon }) => {
         const href =
           key === 'list'
-            ? buildEventsUrl({ tab, main })
-            : buildEventsUrl({ tab, main, view: key, date });
+            ? buildEventsUrl({ tab, main, ...filters })
+            : buildEventsUrl({ tab, main, ...filters, view: key, date });
         const isActive = key === activeView;
         return (
           <Link

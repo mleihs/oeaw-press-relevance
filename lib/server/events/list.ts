@@ -1,8 +1,10 @@
 import 'server-only';
-import { and, asc, eq, gte, sql, type SQL } from 'drizzle-orm';
+import { and, asc, eq, gte, ilike, isNotNull, or, sql, type SQL } from 'drizzle-orm';
 import { db, events as eventsTable } from '@/lib/server/db';
 import { ascNullsLast, descNullsLast } from '@/lib/server/db/sort';
 import { eventListColumns, eventListRowToApi } from './to-api';
+import { SCORE_BAND_HIGH, SCORE_BAND_MID } from '@/lib/shared/constants';
+import type { EventsBand } from '@/lib/shared/events-filter';
 import type { Event } from '@/lib/shared/types';
 
 export const EVENTS_TAB_VALUES = [
@@ -31,6 +33,13 @@ export interface EventsFilterOptions {
   /** Include the main-site news folder (institute = MAIN_OEAW_NEWS_INSTITUTE).
    *  Default false → those events are hidden (the UI toggle opts back in). */
   includeMainNews?: boolean;
+  /** Title/teaser substring (ILIKE). Trimmed, wildcard-escaped and length-capped
+   *  in searchFilter; an empty/blank string is a no-op. */
+  search?: string;
+  /** Score-band quick filter (see EVENTS_BAND_VALUES). */
+  band?: EventsBand;
+  /** Exact institute label (one of getUpcomingInstitutes). */
+  institute?: string;
 }
 
 /** Baseline: only upcoming events. Every tab and every stat counter is
@@ -47,14 +56,62 @@ function mainNewsExclusion(): SQL {
   return sql`${eventsTable.institute} IS DISTINCT FROM ${MAIN_OEAW_NEWS_INSTITUTE}`;
 }
 
+/** Escapes ILIKE wildcards in user input so a literal `%`/`_` matches itself
+ *  (mirrors the publications search layer). */
+function likeEscape(s: string): string {
+  return s.replace(/[\\%_]/g, (m) => '\\' + m);
+}
+
+/** Title/teaser substring match. Returns null for blank input (a no-op). */
+function searchFilter(raw: string): SQL | null {
+  const q = raw.trim().slice(0, 100);
+  if (!q) return null;
+  const pattern = `%${likeEscape(q)}%`;
+  // teaser is nullable; ILIKE on NULL is NULL, so the OR falls back to title.
+  return or(ilike(eventsTable.title, pattern), ilike(eventsTable.teaser, pattern))!;
+}
+
+/** Score-band predicate. high/mid/low gate on `analysis_status = 'analyzed'`
+ *  (matching the list's "scored" rule), `unscored` is its complement. Each
+ *  fragment is fully parenthesised so it composes safely under the outer AND —
+ *  the `unscored` OR would otherwise bind looser than the AND join. */
+function bandFilter(band: EventsBand): SQL {
+  const score = eventsTable.eventScore;
+  const status = eventsTable.analysisStatus;
+  switch (band) {
+    case 'high':
+      return sql`(${status} = 'analyzed' AND ${score} >= ${SCORE_BAND_HIGH})`;
+    case 'mid':
+      return sql`(${status} = 'analyzed' AND ${score} >= ${SCORE_BAND_MID} AND ${score} < ${SCORE_BAND_HIGH})`;
+    case 'low':
+      return sql`(${status} = 'analyzed' AND ${score} < ${SCORE_BAND_MID})`;
+    case 'unscored':
+      return sql`(${status} IS DISTINCT FROM 'analyzed' OR ${score} IS NULL)`;
+  }
+}
+
+/** Conditions shared by the list and the calendar: decision-tab scoping,
+ *  main-news exclusion, and the optional search / band / institute filters. The
+ *  base predicate (upcoming vs the visible window) is prepended by each caller,
+ *  so the same tabs, toggle and filters drive both surfaces identically. */
+function commonEventFilters(tab: EventsTab, opts: EventsFilterOptions): SQL[] {
+  const parts: SQL[] = [];
+  if (tab !== 'upcoming') parts.push(eq(eventsTable.decision, tab));
+  if (!opts.includeMainNews) parts.push(mainNewsExclusion());
+  if (opts.search) {
+    const s = searchFilter(opts.search);
+    if (s) parts.push(s);
+  }
+  if (opts.band) parts.push(bandFilter(opts.band));
+  if (opts.institute) parts.push(eq(eventsTable.institute, opts.institute));
+  return parts;
+}
+
 export function filtersForEventsTab(
   tab: EventsTab,
   opts: EventsFilterOptions = {},
 ): SQL {
-  const parts: SQL[] = [upcomingFilter()];
-  if (tab !== 'upcoming') parts.push(eq(eventsTable.decision, tab));
-  if (!opts.includeMainNews) parts.push(mainNewsExclusion());
-  return and(...parts)!;
+  return and(upcomingFilter(), ...commonEventFilters(tab, opts))!;
 }
 
 /** Absolute half-open instant bounds [from, to) for a calendar view's visible
@@ -85,10 +142,10 @@ export function filtersForEventsCalendar(
   tab: EventsTab,
   opts: EventsFilterOptions = {},
 ): SQL {
-  const parts: SQL[] = [eventsInRangeFilter(window.fromInstant, window.toInstant)];
-  if (tab !== 'upcoming') parts.push(eq(eventsTable.decision, tab));
-  if (!opts.includeMainNews) parts.push(mainNewsExclusion());
-  return and(...parts)!;
+  return and(
+    eventsInRangeFilter(window.fromInstant, window.toInstant),
+    ...commonEventFilters(tab, opts),
+  )!;
 }
 
 export interface EventsStats {
@@ -150,6 +207,25 @@ export async function getEventsOverview(
       ? new Date(row.lastSynced).toISOString()
       : null,
   };
+}
+
+/** Distinct institute labels among upcoming events, for the filter dropdown.
+ *  Respects the main-news toggle (so "OEAW - Home" only appears when opted in)
+ *  but deliberately ignores the active tab/search/band/institute — a faceted
+ *  filter shows every value you could pick, stable as you navigate. */
+export async function getUpcomingInstitutes(
+  opts: EventsFilterOptions = {},
+): Promise<string[]> {
+  const parts: SQL[] = [upcomingFilter(), isNotNull(eventsTable.institute)];
+  if (!opts.includeMainNews) parts.push(mainNewsExclusion());
+  const rows = await db
+    .selectDistinct({ institute: eventsTable.institute })
+    .from(eventsTable)
+    .where(and(...parts))
+    .orderBy(asc(eventsTable.institute));
+  return rows
+    .map((r) => r.institute)
+    .filter((i): i is string => i !== null);
 }
 
 export interface EventsListResult {

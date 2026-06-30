@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { buildEventsUrl } from '../_lib/build-events-url';
+import { buildEventsUrl, type EventsFilterState } from '../_lib/build-events-url';
 import type { EventsTab } from '@/lib/server/events/list';
 import type { CalendarWindow } from '../_lib/calendar-range';
 
@@ -42,10 +42,13 @@ export function CalendarNav({
   window: win,
   tab,
   main,
+  filters,
 }: {
   window: CalendarWindow;
   tab: EventsTab;
   main: boolean;
+  /** List filters (search/band/institute) preserved across prev/next/today. */
+  filters?: EventsFilterState;
 }) {
   const stepClass =
     'inline-flex h-8 w-8 items-center justify-center rounded-md border bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none';
@@ -53,7 +56,7 @@ export function CalendarNav({
   return (
     <div className="flex items-center gap-2">
       <Link
-        href={buildEventsUrl({ tab, main, view: win.view, date: win.prevAnchor })}
+        href={buildEventsUrl({ tab, main, ...filters, view: win.view, date: win.prevAnchor })}
         replace
         scroll={false}
         prefetch={false}
@@ -68,7 +71,7 @@ export function CalendarNav({
       </span>
 
       <Link
-        href={buildEventsUrl({ tab, main, view: win.view, date: win.nextAnchor })}
+        href={buildEventsUrl({ tab, main, ...filters, view: win.view, date: win.nextAnchor })}
         replace
         scroll={false}
         prefetch={false}
@@ -90,7 +93,7 @@ export function CalendarNav({
         </span>
       ) : (
         <Link
-          href={buildEventsUrl({ tab, main, view: win.view, date: win.todayAnchor })}
+          href={buildEventsUrl({ tab, main, ...filters, view: win.view, date: win.todayAnchor })}
           replace
           scroll={false}
           prefetch={false}

@@ -41,4 +41,22 @@ describe('buildEventsUrl', () => {
   it('drops a sort with no order (both required, never half-emitted)', () => {
     expect(buildEventsUrl({ sort: 'score' })).toBe('/events');
   });
+
+  it('encodes the list filters (q / band / institute)', () => {
+    expect(buildEventsUrl({ q: 'quantum' })).toBe('/events?q=quantum');
+    expect(buildEventsUrl({ band: 'high' })).toBe('/events?band=high');
+    expect(buildEventsUrl({ institute: 'IMBA' })).toBe('/events?institute=IMBA');
+  });
+
+  it('carries the filters across a tab + a calendar view + a sort', () => {
+    expect(
+      buildEventsUrl({ tab: 'undecided', q: 'quantum', band: 'high', institute: 'IMBA' }),
+    ).toBe('/events?tab=undecided&q=quantum&band=high&institute=IMBA');
+    expect(buildEventsUrl({ band: 'high', view: 'month', date: '2026-07-01' })).toBe(
+      '/events?band=high&view=month&date=2026-07-01',
+    );
+    expect(buildEventsUrl({ q: 'lecture', sort: 'score', order: 'desc' })).toBe(
+      '/events?q=lecture&sort=score&order=desc',
+    );
+  });
 });
