@@ -144,7 +144,17 @@ Punkt vollständig + getestet ist (keine Sammelcommits über mehrere Punkte).
 
 ## PHASE 3 — Versionen (Routine)
 
-### [ ] 3.1 Minor/Patch-Bumps
+### [x] 3.1 Minor/Patch-Bumps
+> DONE: `npm update` (npm 11.9.0). Gebumpt u.a. @supabase/supabase-js 2.105→2.109,
+> radix-ui 1.4.3→1.6.0, lucide-react 1.16→1.22, motion 12.38→12.42, recharts 3.8→3.9,
+> date-fns 4.1→4.4, pg 8.20→8.22, @tanstack/* 5.100→5.101, shadcn 4.7→4.12,
+> fumadocs-ui 16.8→16.10, @playwright/test 1.60→1.61, tailwindcss 4.3.0→4.3.2 + Patches.
+> NUR package-lock.json geändert (die `^`-Ranges in package.json deckten die neuen Versionen
+> bereits ab). `npm outdated` danach: nur noch die 4 bewusst gepinnten (@types/node=3.2,
+> eslint/react-day-picker/temporal-polyfill = NICHT bumpen). typecheck+test(481)+build grün.
+> 6 moderate Vulns bleiben (transitiv: esbuild in drizzle-kit-Loader, postcss in next) —
+> `audit fix --force` würde drizzle-kit→0.18.1 / next→9.3.3 downgraden (Major-Breaking,
+> widerspricht „Stack ist aktuell"); pre-existing, kein Major in diesem Update geändert.
 - `npm update` deckt ab: @supabase/supabase-js 2.105→2.109, radix-ui 1.4.3→1.6.0, lucide-react 1.16→1.22,
   motion 12.38→12.42, recharts 3.8→3.9, date-fns 4.1→4.4, pg 8.20→8.22, @tanstack/* 5.100→5.101, shadcn 4.7→4.12, u.a.
 - Danach `npm run typecheck && npm run test && npm run build`.
