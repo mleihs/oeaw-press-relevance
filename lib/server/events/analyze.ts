@@ -9,9 +9,8 @@ import { db, events as eventsTable } from '@/lib/server/db';
 import {
   chatCompletionJson,
   parseJsonContent,
-  checkKeyBalance,
 } from '@/lib/server/openrouter';
-import { runLLMBatch } from '@/lib/server/llm-batch';
+import { runLLMBatch, preflightBalance } from '@/lib/server/llm-batch';
 import { computeEventScore } from '@/lib/shared/scoring';
 import { getCurrentEventScoreWeights } from './score-weights';
 import {
@@ -82,29 +81,9 @@ export async function runEventsAnalysisBatch(
 ): Promise<void> {
   const { events, apiKey, model, batchSize, abortSignal, emit } = opts;
 
-  // Pre-flight (same shape as the publication analysis modal expects).
-  const maskedKey = apiKey.length > 8 ? '...' + apiKey.slice(-8) : '***';
-  const keyInfo = await checkKeyBalance(apiKey);
-  emit('init', {
-    total: events.length,
-    model,
-    api_key_hint: maskedKey,
-    key_balance: keyInfo,
-  });
-
-  if (keyInfo.effectiveBudget !== null && keyInfo.effectiveBudget < 0.01) {
-    emit('error', {
-      message: `OpenRouter-Budget aufgebraucht: $${keyInfo.effectiveBudget.toFixed(4)} verfügbar. Bitte Credits aufladen auf openrouter.ai/settings/credits.`,
-      fatal: true,
-    });
-    emit('complete', {
-      processed: 0,
-      total: events.length,
-      successful: 0,
-      failed: events.length,
-      tokens_used: 0,
-      cost: 0,
-    });
+  // Pre-flight: masked-key + balance 'init', and an early abort if the budget
+  // can't cover a single call. Shared with the publication runner.
+  if (!(await preflightBalance({ apiKey, total: events.length, model, emit }))) {
     return;
   }
 

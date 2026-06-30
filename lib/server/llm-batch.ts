@@ -6,13 +6,17 @@
 // inter-batch delay, and the success/failure tally.
 //
 // What it deliberately does NOT own (kept caller-side, because it differs per
-// feature): pre-flight (budget check, "init" emit, empty-row short-circuit),
-// the LLM call + prompt, result→row pairing + the DB write, and the SSE wire
-// protocol. Callers map the NEUTRAL lifecycle hooks below onto their own event
-// names (publications use init/progress/error/complete/cancelled; social uses
+// feature): the empty-row short-circuit, the LLM call + prompt, result→row
+// pairing + the DB write, and the SSE wire protocol. Callers map the NEUTRAL
+// lifecycle hooks below onto their own event names (publications use
+// init/progress/error/complete/cancelled; social uses
 // analyzing/progress/error/cancelled), so existing modals stay byte-compatible.
+//
+// The budget pre-flight (`preflightBalance` below) IS offered here as an opt-in
+// helper, because the publication + event runners emit a byte-identical
+// 'init'/'error'/'complete' gate. Social opts out (no per-run budget gate).
 
-import { isFatalLlmError } from '@/lib/server/openrouter';
+import { checkKeyBalance, isFatalLlmError } from '@/lib/server/openrouter';
 import { log } from '@/lib/server/log';
 
 export interface LLMBatchProgress<TItem> {
@@ -152,4 +156,61 @@ export async function runLLMBatch<TItem, TResult>(
     total,
     cancelled,
   };
+}
+
+export interface PreflightBalanceArgs {
+  apiKey: string;
+  /** Row count for the run — drives the 'init' frame and the zero tally. */
+  total: number;
+  model: string;
+  emit: (type: string, data: unknown) => void;
+}
+
+/**
+ * Shared OpenRouter budget pre-flight for the publication + event analysis
+ * runners. Emits the 'init' frame (masked key + live key balance); on an
+ * exhausted budget (<$0.01 effective) emits a fatal 'error' plus a zero
+ * 'complete' and returns false so the caller aborts before spending anything.
+ * Returns true to proceed. The error message appends whatever of the key-limit
+ * / account-balance figures are known (empty parenthetical when neither is).
+ */
+export async function preflightBalance(
+  args: PreflightBalanceArgs,
+): Promise<boolean> {
+  const { apiKey, total, model, emit } = args;
+
+  const maskedKey = apiKey.length > 8 ? '...' + apiKey.slice(-8) : '***';
+  const keyInfo = await checkKeyBalance(apiKey);
+
+  emit('init', {
+    total,
+    model,
+    api_key_hint: maskedKey,
+    key_balance: keyInfo,
+  });
+
+  if (keyInfo.effectiveBudget !== null && keyInfo.effectiveBudget < 0.01) {
+    const parts: string[] = [];
+    if (keyInfo.limitRemaining !== null) {
+      parts.push(`Key-Limit: $${keyInfo.limitRemaining.toFixed(4)} verbleibend`);
+    }
+    if (keyInfo.accountBalance !== null) {
+      parts.push(`Account-Guthaben: $${keyInfo.accountBalance.toFixed(4)}`);
+    }
+    const detail = parts.length > 0 ? ` (${parts.join(', ')})` : '';
+    emit('error', {
+      message: `OpenRouter-Budget aufgebraucht: $${keyInfo.effectiveBudget.toFixed(4)} verfügbar${detail}. Bitte Credits aufladen auf openrouter.ai/settings/credits.`,
+      fatal: true,
+    });
+    emit('complete', {
+      processed: 0,
+      total,
+      successful: 0,
+      failed: total,
+      tokens_used: 0,
+      cost: 0,
+    });
+    return false;
+  }
+  return true;
 }

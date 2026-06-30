@@ -2,8 +2,7 @@ import { and, eq, gte, inArray } from 'drizzle-orm';
 import { db, publications, descNullsLast } from '@/lib/server/db';
 import { analyzePublications } from './analyze';
 import { calculatePressScore } from './score';
-import { checkKeyBalance } from '@/lib/server/openrouter';
-import { runLLMBatch } from '@/lib/server/llm-batch';
+import { runLLMBatch, preflightBalance } from '@/lib/server/llm-batch';
 import type { AnalysisResult } from '@/lib/shared/types';
 import type { PublicationForPrompt } from './prompts';
 import { publicationToApi } from '../publications/to-api';
@@ -84,40 +83,10 @@ export async function runAnalysisBatch(
 ): Promise<void> {
   const { pubs, apiKey, model, batchSize, abortSignal, emit } = opts;
 
-  // Pre-flight (publication-specific): masked-key + balance 'init', and an
-  // early abort if the budget can't cover a single call. Kept here, not in the
-  // shared runner, because the message + the 'init' payload are pub-specific.
-  const maskedKey = apiKey.length > 8 ? '...' + apiKey.slice(-8) : '***';
-  const keyInfo = await checkKeyBalance(apiKey);
-
-  emit('init', {
-    total: pubs.length,
-    model,
-    api_key_hint: maskedKey,
-    key_balance: keyInfo,
-  });
-
-  if (keyInfo.effectiveBudget !== null && keyInfo.effectiveBudget < 0.01) {
-    const parts: string[] = [];
-    if (keyInfo.limitRemaining !== null) {
-      parts.push(`Key-Limit: $${keyInfo.limitRemaining.toFixed(4)} verbleibend`);
-    }
-    if (keyInfo.accountBalance !== null) {
-      parts.push(`Account-Guthaben: $${keyInfo.accountBalance.toFixed(4)}`);
-    }
-    const detail = parts.length > 0 ? ` (${parts.join(', ')})` : '';
-    emit('error', {
-      message: `OpenRouter-Budget aufgebraucht: $${keyInfo.effectiveBudget.toFixed(4)} verfügbar${detail}. Bitte Credits aufladen auf openrouter.ai/settings/credits.`,
-      fatal: true,
-    });
-    emit('complete', {
-      processed: 0,
-      total: pubs.length,
-      successful: 0,
-      failed: pubs.length,
-      tokens_used: 0,
-      cost: 0,
-    });
+  // Pre-flight: masked-key + balance 'init', and an early abort if the budget
+  // can't cover a single call. Shared with the event runner (preflightBalance
+  // emits the 'init'/'error'/'complete' frames this modal expects).
+  if (!(await preflightBalance({ apiKey, total: pubs.length, model, emit }))) {
     return;
   }
 
