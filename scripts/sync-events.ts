@@ -25,7 +25,7 @@
 // recompute-press-scores). The file is gitignored by virtue of being
 // outside the repo.
 
-import { loadDbUrl, parseScriptArgs } from './lib/db.mjs';
+import { loadDbUrl, parseScriptArgs, confirmProd, redactedDatabaseUrl } from './lib/db.mjs';
 
 const { target, flags } = parseScriptArgs();
 const isProd = target === 'prod';
@@ -41,30 +41,8 @@ process.loadEnvFile('.env.local');
 //    would silently make `--target=prod` write to local — a foot-gun.
 process.env.DATABASE_URL = loadDbUrl(target);
 
-function redactedDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (!url) return '(DATABASE_URL not set)';
-  return url.replace(/:[^@/]+@/, ':***@');
-}
-
-async function confirmProd(): Promise<void> {
-  if (!isProd) return;
-  if (flags.includes('--yes')) return;
-
-  process.stdout.write(
-    `[sync-events] PROD target: ${redactedDatabaseUrl()}\nProceed? [y/N] `,
-  );
-  const answer = await new Promise<string>((resolve) => {
-    process.stdin.once('data', (d) => resolve(d.toString().trim().toLowerCase()));
-  });
-  if (answer !== 'y' && answer !== 'yes') {
-    console.error('[sync-events] Aborted.');
-    process.exit(1);
-  }
-}
-
 async function main(): Promise<void> {
-  await confirmProd();
+  await confirmProd({ isProd, flags, label: 'sync-events' });
 
   // Dynamic import: lib/server/db (Drizzle) reads DATABASE_URL at module
   // load, so it must be loaded AFTER the override above.

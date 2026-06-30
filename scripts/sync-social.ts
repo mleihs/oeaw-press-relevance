@@ -12,7 +12,7 @@
 //   npm run sync-social -- --force               # bypass the refresh throttle
 //   npm run sync-social -- --target=prod --yes   # CI / unattended → prod
 
-import { loadDbUrl, parseScriptArgs } from './lib/db.mjs';
+import { loadDbUrl, parseScriptArgs, confirmProd, redactedDatabaseUrl } from './lib/db.mjs';
 
 const { target, flags } = parseScriptArgs();
 const isProd = target === 'prod';
@@ -20,34 +20,13 @@ const isProd = target === 'prod';
 process.loadEnvFile('.env.local');
 process.env.DATABASE_URL = loadDbUrl(target);
 
-function redactedDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (!url) return '(DATABASE_URL not set)';
-  return url.replace(/:[^@/]+@/, ':***@');
-}
-
-async function confirmProd(): Promise<void> {
-  if (!isProd) return;
-  if (flags.includes('--yes')) return;
-  process.stdout.write(
-    `[sync-social] PROD target: ${redactedDatabaseUrl()}\nProceed? [y/N] `,
-  );
-  const answer = await new Promise<string>((resolve) => {
-    process.stdin.once('data', (d) => resolve(d.toString().trim().toLowerCase()));
-  });
-  if (answer !== 'y' && answer !== 'yes') {
-    console.error('[sync-social] Aborted.');
-    process.exit(1);
-  }
-}
-
 function num(v: string | undefined, fallback: number): number {
   const n = Number(v);
   return Number.isFinite(n) ? n : fallback;
 }
 
 async function main(): Promise<void> {
-  await confirmProd();
+  await confirmProd({ isProd, flags, label: 'sync-social' });
 
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {

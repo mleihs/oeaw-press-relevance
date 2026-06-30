@@ -24,7 +24,7 @@
 //   npm run import-events-json -- --target=prod --yes   # → prod Supabase (unattended)
 
 import { readFileSync } from 'node:fs';
-import { loadDbUrl, parseScriptArgs } from './lib/db.mjs';
+import { loadDbUrl, parseScriptArgs, confirmProd, redactedDatabaseUrl } from './lib/db.mjs';
 
 const { target, flags } = parseScriptArgs();
 const isProd = target === 'prod';
@@ -41,27 +41,6 @@ const fileArg = flagValue('--file');
 const urlArg = flagValue('--url');
 const sourceLabel = fileArg ? `file:${fileArg}` : (urlArg ?? DEFAULT_URL);
 
-function redactedDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (!url) return '(DATABASE_URL not set)';
-  return url.replace(/:[^@/]+@/, ':***@');
-}
-
-async function confirmProd(): Promise<void> {
-  if (!isProd) return;
-  if (flags.includes('--yes')) return;
-  process.stdout.write(
-    `[import-events-json] PROD target: ${redactedDatabaseUrl()}\nProceed? [y/N] `,
-  );
-  const answer = await new Promise<string>((resolve) => {
-    process.stdin.once('data', (d) => resolve(d.toString().trim().toLowerCase()));
-  });
-  if (answer !== 'y' && answer !== 'yes') {
-    console.error('[import-events-json] Aborted.');
-    process.exit(1);
-  }
-}
-
 async function loadExport(): Promise<unknown> {
   if (fileArg) return JSON.parse(readFileSync(fileArg, 'utf-8'));
   const url = urlArg ?? DEFAULT_URL;
@@ -71,7 +50,7 @@ async function loadExport(): Promise<unknown> {
 }
 
 async function main(): Promise<void> {
-  if (!dryRun) await confirmProd();
+  if (!dryRun) await confirmProd({ isProd, flags, label: 'import-events-json' });
 
   // Pure adapter — safe to import before the DB module loads.
   const { parseEventNewsGrouped } = await import(

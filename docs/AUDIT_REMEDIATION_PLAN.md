@@ -44,7 +44,7 @@ Punkt vollständig + getestet ist (keine Sammelcommits über mehrere Punkte).
 - **Test:** vorhandene Flag-Tests (falls da) müssen grün bleiben; sonst kurzen Unit-Test für die generische Dedup-Logik.
 - **Akzeptanz:** Eine Implementierung, beide Domains binden nur Backend.
 
-### [ ] 1.4 Script-Boilerplate DRY: `confirmProd()` + `redactedDatabaseUrl()`
+### [x] 1.4 Script-Boilerplate DRY: `confirmProd()` + `redactedDatabaseUrl()`
 - **Problem:** Wortgleich in `scripts/sync-events.ts`, `scripts/analyze-events.ts`, `scripts/sync-social.ts`,
   `scripts/import-events-json.ts`. `parseScriptArgs`/`loadDbUrl` liegen bereits in `scripts/lib/db.mjs`.
 - **Vorgehen:** `redactedDatabaseUrl()` und `confirmProd({ isProd, flags, label })` nach `scripts/lib/db.mjs`; 4 lokale
