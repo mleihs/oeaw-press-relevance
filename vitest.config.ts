@@ -14,7 +14,12 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    include: ['{app,components,lib}/**/*.test.{ts,tsx}'],
+    // App/lib tests are .ts(x); the node-run helper scripts under scripts/lib
+    // (cf. scripts/lib/doi-extract.mjs) are .mjs and carry co-located .test.mjs.
+    include: [
+      '{app,components,lib}/**/*.test.{ts,tsx}',
+      'scripts/**/*.test.mjs',
+    ],
     coverage: {
       provider: 'v8',
       // Measurement only (no enforced threshold yet) so `npm run test:coverage`

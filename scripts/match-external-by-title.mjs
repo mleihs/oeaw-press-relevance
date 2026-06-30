@@ -24,6 +24,13 @@
  *   flags: --status=failed,partial (default) --max=N --source=crossref,openalex
  */
 import { connectDb } from './lib/db.mjs';
+import {
+  normTitle,
+  stripJats,
+  openalexAbstract,
+  isMatchableTitle,
+  pickExactTitleMatch,
+} from './lib/title-match.mjs';
 
 const argv = process.argv.slice(2);
 const has = (f) => argv.includes(f);
@@ -37,12 +44,6 @@ const max = Number(val('--max', 'Infinity'));
 const MAILTO = 'matthias.leihs@gmail.com';
 const UA = `oeaw-press-relevance/1.0 (mailto:${MAILTO})`;
 
-const norm = (s) => (s || '')
-  .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&[a-z]+;/gi, ' ')
-  .replace(/<[^>]+>/g, ' ')
-  .normalize('NFKD').replace(/[̀-ͯ]/g, '')
-  .toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
-
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function getJson(url) {
   const ctrl = new AbortController();
@@ -52,14 +53,6 @@ async function getJson(url) {
     if (!res.ok) return null;
     return await res.json();
   } catch { return null; } finally { clearTimeout(t); }
-}
-
-function stripJats(s) { return (s || '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim(); }
-function openalexAbstract(inv) {
-  if (!inv || typeof inv !== 'object') return '';
-  const words = [];
-  for (const [w, ps] of Object.entries(inv)) for (const p of ps) words[p] = w;
-  return words.filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
 }
 
 async function crossref(title) {
@@ -100,30 +93,19 @@ try {
   let matched = 0, withAbstract = 0, doiOnly = 0;
   const writes = [];
 
-  // Generic titles are a false-positive trap ("Introduction" === "Introduction"
-  // is exact but meaningless). Require >=3 normalized words and reject a
-  // blocklist of front-matter titles.
-  const GENERIC = new Set(['introduction', 'einleitung', 'einfuhrung', 'vorwort', 'vorbemerkung',
-    'preface', 'foreword', 'editorial', 'geleitwort', 'nachwort', 'nachruf', 'obituary',
-    'conclusion', 'schluss', 'schlusswort', 'inhalt', 'contents', 'abstract', 'review',
-    'rezension', 'buchbesprechung', 'vorschau', 'impressum']);
-
   for (const p of rows) {
-    const pn = norm(p.title);
-    const words = pn.split(' ').filter(Boolean);
-    if (words.length < 3 || GENERIC.has(pn)) continue; // too generic/short to match safely
+    const pn = normTitle(p.title);
+    // too generic/short to match safely (>=3 words + front-matter blocklist)
+    if (!isMatchableTitle(pn)) continue;
     const pubYear = p.published_at ? new Date(p.published_at).getFullYear() : null;
     let cands = [];
     if (sources.includes('crossref')) { cands = cands.concat(await crossref(p.title)); await sleep(120); }
     if (sources.includes('openalex')) { cands = cands.concat(await openalex(p.title)); await sleep(120); }
 
-    // EXACT normalized-title equality + year corroboration (±1 when both known)
-    const exact = cands.filter((c) => c.title && norm(c.title) === pn)
-      .filter((c) => !(pubYear && c.year) || Math.abs(c.year - pubYear) <= 1);
-    if (exact.length === 0) continue;
-    // prefer a candidate that actually carries an abstract, then one with a DOI
-    exact.sort((a, b) => (b.abstract.length - a.abstract.length) || ((b.doi ? 1 : 0) - (a.doi ? 1 : 0)));
-    const best = exact[0];
+    // EXACT normalized-title equality + year corroboration (±1 when both known),
+    // best-abstract-then-DOI tie-break — see scripts/lib/title-match.mjs.
+    const best = pickExactTitleMatch(cands, pn, pubYear);
+    if (!best) continue;
     matched++;
     const abs = best.abstract.length >= 120 ? best.abstract : '';
     if (abs) withAbstract++; else doiOnly++;

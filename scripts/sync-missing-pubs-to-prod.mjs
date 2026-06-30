@@ -20,6 +20,7 @@
  *   node scripts/sync-missing-pubs-to-prod.mjs --apply    # write
  */
 import { connectDb } from './lib/db.mjs';
+import { setDifference } from './lib/prod-sync.mjs';
 
 const apply = process.argv.includes('--apply');
 const CHUNK = 2000;
@@ -40,7 +41,7 @@ for (const c of chunk(allLocalIds, CHUNK)) {
   const present = new Set(
     (await P.query('SELECT id FROM publications WHERE id = ANY($1::uuid[])', [c])).rows.map((r) => r.id)
   );
-  missing.push(...c.filter((id) => !present.has(id)));
+  missing.push(...setDifference(c, present));
 }
 console.log(`Local publications absent from prod: ${missing.length}`);
 if (missing.length === 0) {
@@ -62,7 +63,7 @@ async function missingParents(prodTable, ids) {
   for (const c of chunk(ids, CHUNK)) {
     (await P.query(`SELECT id FROM ${prodTable} WHERE id = ANY($1::uuid[])`, [c])).rows.forEach((r) => present.add(r.id));
   }
-  return ids.filter((id) => !present.has(id));
+  return setDifference(ids, present);
 }
 const refOrg = await distinctRef('orgunit_publications', 'orgunit_id');
 const refPer = await distinctRef('person_publications', 'person_id');
