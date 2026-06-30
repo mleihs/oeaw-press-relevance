@@ -12,7 +12,7 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { DecisionBadge } from '@/components/decision-badge';
-import { ScoreBadge } from '@/components/score-bar';
+import { ScoreReasonBadge } from './score-reason-badge';
 import { EventFlag } from './event-flag';
 import { buildOeawSearchUrl } from '../_lib/build-search-url';
 import { eventDateFmt, eventTimeFmt, isSameLocalDay } from '../_lib/event-format';
@@ -205,7 +205,7 @@ function EventRowView({ event }: { event: Event }) {
       </td>
       <td className="p-3 text-center align-top">
         {event.analysis_status === 'analyzed' && event.event_score !== null ? (
-          <ScoreBadge score={event.event_score} ariaLabel="Relevanz-Score" />
+          <ScoreReasonBadge score={event.event_score} reasoning={event.reasoning} />
         ) : (
           <span className="text-xs text-muted-foreground/50" title="Noch nicht analysiert">–</span>
         )}

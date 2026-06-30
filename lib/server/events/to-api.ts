@@ -73,14 +73,16 @@ export function eventRowToApi(row: EventRow): Event {
 }
 
 // Heavy text columns the list/calendar surfaces never render: `bodytext` +
-// `event_information` are multi-KB sanitized HTML, and `reasoning` + the three
-// pitch-prose fields are LLM output. They're omitted from the list projection
-// below so they don't ride in the RSC payload of every row; the detail page
-// (getEventById) still loads the full row on demand.
+// `event_information` are multi-KB sanitized HTML, and the three pitch-prose
+// fields are LLM output that only the detail page / cockpit show. They're
+// omitted from the list projection below so they don't ride in the RSC payload
+// of every row; the detail page (getEventById) loads the full row on demand.
+// `reasoning` is deliberately NOT heavy here: it's a 2-3 sentence justification
+// the list surfaces as a scan-time tooltip on the score badge (ScoreReasonBadge),
+// cheap enough to carry on every row.
 const EVENT_HEAVY_COLUMNS = [
   'bodytext',
   'eventInformation',
-  'reasoning',
   'pitchSuggestion',
   'suggestedAngle',
   'targetAudience',
@@ -111,6 +113,7 @@ export const eventListColumns = {
   scientificSignificance: eventsTable.scientificSignificance,
   reach: eventsTable.reach,
   timeliness: eventsTable.timeliness,
+  reasoning: eventsTable.reasoning,
   llmModel: eventsTable.llmModel,
   analysisCost: eventsTable.analysisCost,
   analyzedAt: eventsTable.analyzedAt,
@@ -128,7 +131,6 @@ export function eventListRowToApi(row: EventListRow): Event {
     ...row,
     bodytext: null,
     eventInformation: null,
-    reasoning: null,
     pitchSuggestion: null,
     suggestedAngle: null,
     targetAudience: null,
