@@ -1,3 +1,4 @@
+import 'server-only';
 import { asc } from 'drizzle-orm';
 import { db, orgunits as orgunitsTable } from '@/lib/server/db';
 import type { Orgunit } from '@/lib/shared/types';

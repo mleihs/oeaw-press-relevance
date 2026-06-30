@@ -5,6 +5,11 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, '.'),
+      // `server-only` is a bare specifier Next resolves at build time; under
+      // vitest's plain-Node run there is no bundler to resolve it, so map it to
+      // an empty module (the server-side no-op). Lets server-guarded read
+      // modules (lib/server/**/{list,fetch}.ts) be unit-tested.
+      'server-only': path.resolve(__dirname, 'test/server-only-shim.ts'),
     },
   },
   test: {

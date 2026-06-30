@@ -1,3 +1,4 @@
+import 'server-only';
 import { eq } from 'drizzle-orm';
 import { db, events as eventsTable } from '@/lib/server/db';
 import { eventRowToApi, type Event } from './to-api';

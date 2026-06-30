@@ -1,6 +1,7 @@
 // Read layer for the social monitor. Pure SELECTs — the /social page and the
 // settings channel card read through here; no external calls, no cost.
 
+import 'server-only';
 import { asc, eq, inArray, ne, sql } from 'drizzle-orm';
 import {
   db,

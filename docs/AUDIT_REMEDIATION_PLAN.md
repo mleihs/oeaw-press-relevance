@@ -51,7 +51,13 @@ Punkt vollständig + getestet ist (keine Sammelcommits über mehrere Punkte).
   Kopien löschen und importieren. ACHTUNG: `.ts`-Scripts importieren aus `.mjs` — Import-Pfad/Interop prüfen (tsx).
 - **Akzeptanz:** Keine Duplikate mehr; alle 4 Scripts laufen (zumindest `--help`/Dry-Run-Pfad).
 
-### [ ] 1.5 `server-only`-Guard auf Server-Entry-Module
+### [x] 1.5 `server-only`-Guard auf Server-Entry-Module
+> Umgesetzt auf die 4 reinen RSC-Read-Entries: `events/list`, `events/fetch`, `orgunits/list`,
+> `social/list`. BEWUSST ausgeschlossen (werden von Node-CLI gezogen, `server-only` würde dort
+> werfen): `db/index.ts` (alle Scripts), `publications/list`+`publications/fetch`+`press-releases/list`+
+> `dashboard/fetch` (RSC-Smoke-Scripts `scripts/smoke/rsc/*`). Vitest-Resolve aliast `server-only`
+> auf einen No-op-Stub (`test/server-only-shim.ts`). `server-only` ist KEIN npm-Dep — Next aliast es
+> beim Build, tsc löst via Next-Typen auf.
 - **Problem:** Client/Server-Lint-Grenze nicht erzwungen; Backstop `import 'server-only'` nur in 4/82 Modulen.
 - **Vorgehen:** `import 'server-only';` an den Kopf von: `lib/server/db/index.ts`, jeder `lib/server/*/list.ts`,
   `lib/server/dashboard/fetch.ts` (und weitere `fetch.ts`). NICHT in Module, die legitim von Scripts (Node-CLI) genutzt

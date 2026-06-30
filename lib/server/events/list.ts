@@ -1,3 +1,4 @@
+import 'server-only';
 import { and, asc, eq, gte, sql, type SQL } from 'drizzle-orm';
 import { db, events as eventsTable } from '@/lib/server/db';
 import { ascNullsLast, descNullsLast } from '@/lib/server/db/sort';
