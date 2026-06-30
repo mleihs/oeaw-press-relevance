@@ -24,7 +24,7 @@ Punkt vollständig + getestet ist (keine Sammelcommits über mehrere Punkte).
 - **Test:** Unit-Test für `calculatePressScore` ergänzen (pur, trivial) — gleiche Inputs → gleiche Outputs wie vorher.
 - **Akzeptanz:** Eine Formel, getestet; `npm run test` grün; bestehende Scores bit-identisch.
 
-### [ ] 1.2 `upsertEvents`-Test (sichert aktuell UNCOMMITTETEN Diff) ⭐
+### [x] 1.2 `upsertEvents`-Test (sichert aktuell UNCOMMITTETEN Diff) ⭐
 - **Problem:** `lib/server/events/sync.ts` `upsertEvents` (neu, uncommitted) ist der einzige Schreibpfad für beide
   Event-Ingest-Wege (WEBDB-MySQL + neuer `scripts/import-events-json.ts`). Vertrag: SET-Liste lässt Maintainer-Spalten
   (`decision`, `decided_at`, `flag_notes`, `created_at`) + LLM-Scores aus → Re-Sync zerstört keine Triage. Ungetestet.
