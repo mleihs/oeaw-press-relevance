@@ -88,7 +88,12 @@ Punkt vollständig + getestet ist (keine Sammelcommits über mehrere Punkte).
 
 ## PHASE 2 — Mittelfristig (1-3 Tage)
 
-### [ ] 2.1 `runEnrichmentBatch` zerlegen (Wartbarkeits-Hotspot)
+### [x] 2.1 `runEnrichmentBatch` zerlegen (Wartbarkeits-Hotspot)
+> DONE (d264376): `seedFromLocalSources` / `finalizeStatus` / `writeEnrichment` /
+> `mergePdfIntoAcc` + `enrichNoDoi` / `enrichWithDoi` extrahiert; beide Zweige teilen
+> sich `EnrichmentAccumulator`; `!`-Assertions via Narrowing weg; Pacing-Konstanten.
+> Keyword-Write bleibt DOI-only (Verhalten bit-erhalten — WebDB-Loader darf
+> `enriched_keywords` ohnehin nicht schreiben). +2 No-DOI-Leiter-Tests.
 - **Datei:** `lib/server/enrichment/batch.ts:308-585` (~280 Z., zwei Quasi-Duplikat-Zweige: No-DOI 343-426, DOI 428-574).
 - **Vorgehen:** Extrahieren: `finalizeStatus(hasAbstract, hasAnyData, counters)`, `writeEnrichment(pub, {...})`,
   `seedFromLocalSources(pub)` (WebDb-Merge + csv-Source-Bookkeeping). Beide Zweige unterscheiden sich danach nur in der
@@ -97,12 +102,21 @@ Punkt vollständig + getestet ist (keine Sammelcommits über mehrere Punkte).
 - **Test:** `batch.test.ts` existiert (595 Z.) — muss grün bleiben; Status-Leiter-Fälle ergänzen falls Lücken.
 - **Akzeptanz:** Funktion deutlich kürzer, keine `!`-Assertions mehr in dem Block, Tests grün.
 
-### [ ] 2.2 Preflight-Balance-Block DRY
+### [x] 2.2 Preflight-Balance-Block DRY
+> DONE (71381f4): `preflightBalance({ apiKey, total, model, emit })` neben `runLLMBatch`;
+> beide Runner rufen es. Reichere Message (mit Key-Limit/Account-Detail) ist Superset der
+> Event-Message (identisch wenn Detail leer) → Publication-Frames bit-gleich, Event-Message
+> nur reicher. Social bleibt bewusst ohne Gate. +5 Tests (Frame-Order, Masking, Detail).
 - Duplikat zwischen `lib/server/analysis/batch.ts:91-135` und `lib/server/events/analyze.ts:85-118`.
 - `preflightBalance({ apiKey, total, model, emit })` neben `runLLMBatch`; beide Runner rufen es vor `runLLMBatch`.
 - Akzeptanz: ein Preflight-Pfad; SSE-Events (`init`/`error`/`complete`) unverändert für Client.
 
-### [ ] 2.3 Cross-Domain-Konsistenz
+### [x] 2.3 Cross-Domain-Konsistenz
+> DONE (b0c5724): `Event` + `EventLang` (`= Lang | 'mul'`) nach `lib/shared/types.ts`
+> (parallel zu `Publication`, KEIN Re-Export — matcht publications/to-api); typo3-events +
+> to-api ziehen aus shared; alle 10 Consumer (8 app/events + fetch.ts/list.ts) repointed.
+> Scoring-Location: NICHT verschoben — ADR 0020 (publications behält `analysis/`, ADR-0008-
+> Maxime). researchers-Divergenz: Notiz in ADR 0009 (decision-#4 Escape-Hatch).
 - **`Event`-Typ** `lib/server/events/to-api.ts:13` → nach `lib/shared/types.ts` verschieben; `to-api.ts` re-exportiert.
   3 Client-Importe anpassen: `calendar-event-modal.tsx:22`, `events-calendar.tsx:32`, `event-analysis-card.tsx:10`.
 - **Scoring-Location:** entweder Publications-Scoring nach `lib/server/publications/` ODER events/social-Analyzer hoch
@@ -111,10 +125,20 @@ Punkt vollständig + getestet ist (keine Sammelcommits über mehrere Punkte).
 - **`researchers`-Divergenz:** entweder in ADR 0009 begründen (Client-Fetch wegen interaktivem Re-Filtern der Viz) ODER
   First-Paint auf RSC angleichen. Minimal: ADR-Notiz. Kein Code-Zwang.
 
-### [ ] 2.4 Ingest-/Prod-Sync-Matching in testbare Funktionen
+### [x] 2.4 Ingest-/Prod-Sync-Matching in testbare Funktionen
 - Pure Matching-/Diff-Logik aus `scripts/push-analysis-to-prod.mjs`, `sync-missing-pubs-to-prod.mjs`,
   `match-external-by-title.mjs` in `lib/server`-Funktionen ziehen; `.mjs` bleibt dünner DB-Wrapper. Unit-Tests dafür.
 - Außerdem `lib/server/ingest/upsert.ts` `buildUpsert`/SET-Listen-Konstruktion (pur, kein DB) unit-testen.
+> DONE (2 Commits):
+> - **2.4a (b06c56c):** `buildUpsertSet(table, updateKeys)` pur aus `upsertBatch` extrahiert
+>   (null=DO NOTHING; sonst `{key: excluded.<db-col>}`); +3 Tests (rendert via PgDialect, pinnt
+>   camelCase→snake_case der EXCLUDED-Ref).
+> - **2.4b (383dba4):** ABWEICHUNG vom Plan-Wortlaut „lib/server" — node-run `.mjs` kann KEIN
+>   `lib/server/*.ts` importieren. Stattdessen Präzedenz `scripts/lib/doi-extract.mjs` gefolgt:
+>   pure Logik nach `scripts/lib/{title-match,prod-sync}.mjs` (`normTitle`, `isMatchableTitle`,
+>   `pickExactTitleMatch`; `setDifference`, `partitionForPush`). Scripts behalten alle Queries/
+>   TX/Logs — nur In-Memory-Logik verschoben (wortgleich). vitest-`include` um
+>   `scripts/**/*.test.mjs` erweitert; +20 Tests.
 
 ---
 
