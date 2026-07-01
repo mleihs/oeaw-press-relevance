@@ -32,7 +32,9 @@ export interface EventAnalysisResult {
   reasoning: string;
 }
 
-export const SYSTEM_PROMPT = `Du bist Veranstaltungs- und Pressereferent:in an der Österreichischen Akademie der Wissenschaften (ÖAW) und kuratierst das zentrale Veranstaltungsprogramm. Deine Aufgabe ist es einzuschätzen, wie relevant eine Veranstaltung für die zentrale Bewerbung auf der ÖAW-Veranstaltungsseite ist, also für ein breites, überwiegend fachfremdes Publikum. Öffentliche Vorträge, Ausstellungen, Podien und Aktionstage sind in der Regel relevanter als rein interne Fachseminare, Arbeitstreffen oder Gremiensitzungen. Bewerte ausschließlich aus dem Inhalt heraus. Antworte ausschließlich mit gültigem JSON.`;
+export const SYSTEM_PROMPT = `Du bist Veranstaltungs- und Pressereferent:in an der Österreichischen Akademie der Wissenschaften (ÖAW) und kuratierst das zentrale Veranstaltungsprogramm. Deine Aufgabe ist einzuschätzen, wie relevant eine Veranstaltung für die zentrale Bewerbung auf der ÖAW-Veranstaltungsseite und für die Presse- und Öffentlichkeitsarbeit ist, also für ein breites, überwiegend fachfremdes Publikum.
+
+Leitlinien: Öffentliche Formate (Vorträge, Ausstellungen, Buchpräsentationen, Podien, Lesungen, Aktionstage, Kinderuni), international sichtbare Flaggschiff-Kongresse sowie Veranstaltungen zu gesellschaftlich aktuellen Themen sind in der Regel HOCH relevant, auch wenn sie im Kern wissenschaftlich sind. Rein interne Formate (Fachseminare, Arbeitstreffen, Gremiensitzungen, geschlossene Graduate Schools, reine Calls for Papers) sind in der Regel NIEDRIG relevant. Nutze die volle Skala von 0.0 bis 1.0 und weiche nicht reflexartig in die Mitte aus. Bewerte die vier Dimensionen unabhängig voneinander; sie messen Unterschiedliches und dürfen auseinanderfallen. Bewerte ausschließlich aus dem Inhalt heraus. Antworte ausschließlich mit gültigem JSON.`;
 
 function wordTruncate(text: string, maxWords: number): string {
   const parts = text.trim().split(/\s+/);
@@ -66,13 +68,21 @@ Beschreibung: ${pickContent(ev)}`;
     })
     .join('\n\n');
 
-  return `Bewerte die folgenden ${events.length} Veranstaltungen der Österreichischen Akademie der Wissenschaften (ÖAW) danach, wie relevant sie für die zentrale Bewerbung auf der ÖAW-Veranstaltungsseite sind.
+  return `Bewerte die folgenden ${events.length} Veranstaltungen der Österreichischen Akademie der Wissenschaften (ÖAW) danach, wie relevant sie für die zentrale Bewerbung auf der ÖAW-Veranstaltungsseite und für die Presse- und Öffentlichkeitsarbeit sind.
 
-Liefere für JEDE Veranstaltung:
-1. public_appeal (0.0-1.0): Eignung und Interesse für ein breites, fachfremdes Publikum. Hoch bei öffentlichen Vorträgen, Ausstellungen, Lesungen, Podien, Aktionstagen; niedrig bei internen Fachseminaren, Workshops, Arbeitstreffen, Gremiensitzungen.
-2. scientific_significance (0.0-1.0): Wissenschaftliche bzw. thematische Bedeutung. Prominenz von Thema oder Vortragenden, Flaggschiff- oder Leuchtturm-Charakter, gesellschaftliche Tragweite des Themas.
-3. reach (0.0-1.0): Breite der Zielgruppe. Hoch bei überregionalem, allgemein anschlussfähigem Interesse; niedrig bei sehr spezialisiertem Nischenpublikum.
-4. timeliness (0.0-1.0): Aktueller Anlass. Bezug zu laufendem Diskurs, Jahrestagen, Saison, aktuellen Ereignissen oder Trends.
+Grundhaltung: Öffentliche Formate (Vorträge, Ausstellungen, Buchpräsentationen, Podien, Lesungen, Aktionstage, Kinderuni), international sichtbare Flaggschiff-Kongresse und Veranstaltungen zu gesellschaftlich aktuellen Themen sind HOCH relevant, auch wenn sie im Kern wissenschaftlich sind. Rein interne Formate (Fachseminare, Arbeitstreffen, Gremiensitzungen, geschlossene Graduate Schools, reine Calls for Papers) sind NIEDRIG relevant. Nutze die volle Skala von 0.0 bis 1.0 und weiche nicht reflexartig in die Mitte aus.
+
+Liefere für JEDE Veranstaltung vier UNABHÄNGIG zu bewertende Dimensionen. Sie messen Unterschiedliches und dürfen auseinanderfallen, vergib also nicht vier ähnliche Zahlen:
+1. public_appeal (0.0-1.0): Interesse eines breiten, fachfremden Laienpublikums am THEMA selbst, unabhängig vom Format. Hoch bei gesellschaftlich, historisch oder kulturell anschlussfähigen Themen (Demokratie, Identität, aktuelle Konflikte, Alltags- und Kulturgeschichte, Jubiläen); niedrig bei hochspezialisierten Fachthemen ohne Alltagsbezug.
+2. scientific_significance (0.0-1.0): wissenschaftliche und kulturelle Bedeutung sowie Prominenz. Hoch bei Leuchtturm- oder Flaggschiff-Charakter, internationaler Strahlkraft, prominenten Vortragenden, großer Tragweite; niedrig bei Routine- oder Nischenformaten.
+3. reach (0.0-1.0): tatsächliche Breitenwirkung und Öffnung, das FORMAT-Maß. Hoch bei öffentlich zugänglichen, auf ein großes oder überregionales Publikum angelegten Veranstaltungen (offener Eintritt, Ausstellung, Publikumsprogramm, Medienanschluss, großes Teilnehmerfeld); niedrig bei geschlossenem oder kleinem Fachkreis (Anmeldung, Teilnehmerbegrenzung, CfP). Fällt oft von public_appeal ab: ein breit interessantes Thema im geschlossenen Workshop hat niedrige reach, ein Fachthema als großes öffentliches Festival hohe.
+4. timeliness (0.0-1.0): aktueller Anlass. Hoch bei Bezug zu laufendem öffentlichem Diskurs, aktuellen Ereignissen und Konflikten, Jahrestagen und Jubiläen, Saison; niedrig ohne aktuellen Aufhänger.
+
+Kalibrierung (Archetypen zur Orientierung, nicht wörtlich übernehmen):
+- Internationaler Flaggschiff-Kongress mit öffentlichem Begleitprogramm (Ausstellungen, Stadt-Kooperation, großes Teilnehmerfeld): public_appeal ~0.7, scientific_significance ~0.9, reach ~0.8, timeliness ~0.4.
+- Öffentliche Buchpräsentation oder Abendvortrag zu einem gesellschaftlich-historischen Thema an prominentem Ort, offene Einladung: public_appeal ~0.7, scientific_significance ~0.5, reach ~0.6, timeliness ~0.4.
+- Veranstaltung zu einem tagesaktuellen gesellschaftlichen Thema (aktueller Konflikt, großes Jubiläum) mit öffentlichem Zugang: timeliness ~0.85, public_appeal ~0.7, reach ~0.6.
+- Geschlossene Graduate School, interner Workshop oder Fachseminar mit Anmeldung und kleinem Teilnehmerkreis: public_appeal ~0.2, scientific_significance ~0.4, reach ~0.15, timeliness ~0.2.
 
 5. pitch_suggestion: Ein 2-4 Sätze langer deutscher Teaser, wie er auf der Veranstaltungsseite stehen könnte. Lebendig, zugänglich, fachfremd. Aufhänger, worum es geht, warum es einen Besuch lohnt.
 6. suggested_angle: Ein Satz auf Deutsch, der den Aufhänger / die Bewerbungs-Stoßrichtung beschreibt.
