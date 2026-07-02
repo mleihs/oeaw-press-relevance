@@ -35,7 +35,7 @@ const AXIS = 'var(--muted-foreground)';
 const GRID = 'var(--border)';
 const DIAG = '#f59e0b';
 
-type Datum = { x: number; y: number };
+type Datum = { x: number; y: number; c: number };
 
 function ScatterTip({
   active,
@@ -48,10 +48,13 @@ function ScatterTip({
   const d = payload[0].payload;
   return (
     <div className="rounded-md border border-border bg-popover px-2.5 py-1.5 text-xs shadow-md">
-      <div className="tabular-nums">
+      <div className="tabular-nums font-medium">
+        {d.c === 1 ? '1 Publikation' : `${d.c} Publikationen`}
+      </div>
+      <div className="tabular-nums text-muted-foreground">
         Story Score <strong>{Math.round(d.x)} %</strong>
       </div>
-      <div className="tabular-nums">
+      <div className="tabular-nums text-muted-foreground">
         Press-Similarity <strong>{d.y.toFixed(1)} %</strong>
       </div>
     </div>
@@ -68,13 +71,23 @@ function ScatterTip({
  */
 export function ScoreSimilarityScatter({ points }: Props) {
   const data = useMemo<Datum[]>(
-    () => points.map(([s, p]) => ({ x: s * 100, y: p * 100 })),
+    () => points.map(([s, p, c]) => ({ x: s * 100, y: p * 100, c })),
     [points],
   );
 
+  // Sum of bin counts — the actual number of analyzed pubs behind the cells.
+  const total = useMemo(() => data.reduce((sum, d) => sum + d.c, 0), [data]);
+
+  // Diagnostic-quadrant pub count. Bin edges are aligned to 40 % / 85 % in the
+  // SQL, so summing the counts of cells whose centres clear the thresholds is
+  // exact, not an approximation.
   const diagCount = useMemo(
     () =>
-      data.filter((d) => d.x <= DIAG_SCORE_MAX && d.y >= DIAG_SIM_MIN).length,
+      data.reduce(
+        (sum, d) =>
+          d.x <= DIAG_SCORE_MAX && d.y >= DIAG_SIM_MIN ? sum + d.c : sum,
+        0,
+      ),
     [data],
   );
 
@@ -86,7 +99,7 @@ export function ScoreSimilarityScatter({ points }: Props) {
             className="h-2.5 w-2.5 rounded-full"
             style={{ background: BRAND_HEX, opacity: 0.55 }}
           />
-          eine analysierte Publikation
+          Punktgröße: Anzahl Publikationen je Zelle
         </span>
         <span className="inline-flex items-center gap-1.5">
           <span
@@ -133,7 +146,7 @@ export function ScoreSimilarityScatter({ points }: Props) {
                 fill: AXIS,
               }}
             />
-            <ZAxis range={[12, 12]} />
+            <ZAxis type="number" dataKey="c" range={[16, 260]} />
             <ReferenceArea
               x1={0}
               x2={DIAG_SCORE_MAX}
@@ -160,7 +173,7 @@ export function ScoreSimilarityScatter({ points }: Props) {
       </div>
 
       <p className="sr-only">
-        Streudiagramm aus {data.length} analysierten Publikationen, X-Achse
+        Streudiagramm aus {total} analysierten Publikationen, X-Achse
         Story Score 0 bis 100 Prozent, Y-Achse Press-Similarity {SIM_MIN_PCT}{' '}
         bis 100 Prozent. Story Score und Press-Similarity sind unabhängige
         Signale: {diagCount} Publikationen liegen im Bereich niedriger Story

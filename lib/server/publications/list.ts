@@ -413,8 +413,20 @@ export async function listPublications(
     const press_release: PressRelease | null =
       prs.find((p) => p.lang === ('de' as Lang)) ?? prs[0] ?? null;
 
+    // The list projection omits the heavy citation-export blobs
+    // (LIST_TRIMMED_COLUMNS) to cut pooler egress; refill them as null so the
+    // Publication DTO keeps its full `string | null` shape for the wire.
+    const rowFull = {
+      ...row,
+      ris: null,
+      bibtex: null,
+      endnote: null,
+      citationApa: null,
+      fullTextSnippet: null,
+    };
+
     return {
-      ...publicationToApi(row),
+      ...publicationToApi(rowFull),
       publication_type_lookup: row.publicationTypeRef
         ? {
             name_de: row.publicationTypeRef.nameDe,

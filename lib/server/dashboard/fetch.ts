@@ -98,30 +98,39 @@ async function getSimilarityDistribution(): Promise<number[]> {
 }
 
 /**
- * One [press_score, press_similarity] pair per analyzed pub that has both
- * metrics. Feeds the joint scatter that complements the marginal
- * histograms: the marginals can't show that a low Story Score can coincide
- * with a high Press-Similarity (the LLM-blind-spot cross-check); only the
- * joint view does. Values rounded server-side (s: 3dp, p: 4dp) to keep the
- * embedded RSC payload lean; identity is intentionally omitted (distribution
- * view, not a row list).
+ * 2D density bins [press_score, press_similarity, count] over analyzed pubs
+ * that have both metrics. Feeds the joint scatter that complements the
+ * marginal histograms: the marginals can't show that a low Story Score can
+ * coincide with a high Press-Similarity (the LLM-blind-spot cross-check);
+ * only the joint view does.
+ *
+ * Binned server-side rather than shipping every raw point: the scatter is a
+ * distribution view, so a fixed grid of populated cells (each carrying a
+ * count) conveys the same shape at a fraction of the pooler egress. This
+ * query used to return up to 4000 raw rows on EVERY (uncached) dashboard
+ * render — under continuous healthcheck/monitor polling that was the single
+ * largest egress driver. Bin edges are chosen so the diagnostic-quadrant
+ * thresholds (score 40 %, similarity 85 %) land exactly on a cell boundary,
+ * so the top-left count the chart reports stays exact.
  */
 async function getScoreSimilarityPoints(): Promise<ScoreSimilarityPoint[]> {
-  // Bound both the result payload and the SVG render: a distribution scatter
-  // needs shape, not every point. Random-sample to at most 4000 so the chart
-  // (and the embedded RSC payload) stays cheap as the analyzed corpus grows.
-  const rows = await db.execute<{ s: number; p: number }>(sql`
-    SELECT round(press_score::numeric, 3)::float8 AS s,
-           round(press_similarity::numeric, 4)::float8 AS p
+  // Score binned at 0.02 (2 %), similarity at 0.01 (1 %). Cell centre =
+  // bucket floor + half a bin. At most ~50×30 populated cells (score 0..1 ×
+  // similarity ~0.7..1.0) regardless of corpus size, vs. thousands of raw
+  // points before.
+  const rows = await db.execute<{ s: number; p: number; c: number }>(sql`
+    SELECT
+      LEAST(floor(press_score / 0.02) * 0.02 + 0.01, 1)::float8 AS s,
+      LEAST(floor(press_similarity / 0.01) * 0.01 + 0.005, 1)::float8 AS p,
+      count(*)::int AS c
     FROM publications
     WHERE analysis_status = 'analyzed'
       AND press_score IS NOT NULL
       AND press_similarity IS NOT NULL
       AND archived = false
-    ORDER BY random()
-    LIMIT 4000
+    GROUP BY 1, 2
   `);
-  return rows.map((r) => [r.s, r.p]);
+  return rows.map((r) => [r.s, r.p, r.c]);
 }
 
 // Most recent publications.synced_at — webdb-import stamps every upserted
@@ -245,7 +254,7 @@ export interface DashboardData {
   flaggedCount: number;
   pressReleasedCount: number;
   orphansCount: number;
-  /** (press_score, press_similarity) pairs for the joint scatter. */
+  /** (press_score, press_similarity, count) density bins for the joint scatter. */
   scoreSimilarityPoints: ScoreSimilarityPoint[];
   /** Most recent publications.synced_at, formatted (Europe/Vienna) — the
    *  date the loaded WebDB snapshot reflects. null when nothing is synced. */
