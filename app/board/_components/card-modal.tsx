@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Dialog as DialogPrimitive } from 'radix-ui';
 import {
   X,
   Check,
@@ -12,6 +13,7 @@ import {
   SquareArrowOutUpRight,
   Plus,
   Trash2,
+  Pencil,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/shared/utils';
@@ -29,13 +31,24 @@ import {
   removeWatcherApi,
 } from '../_lib/api';
 import { ChannelIcon } from '../_lib/channels';
+import { PROSE_CLASS } from '../_lib/prose';
 import { formatDateTimeMeta, relativeDay } from '../_lib/due';
 import { BoardAvatar } from './board-avatar';
 import { displayNameOf, membersById } from '../_lib/people';
-import { activityPhrase, ActivityIcon } from './activity-line';
+import { CommentActivityStrand } from './comment-strand';
+import { AttachmentsSection } from './attachments-section';
 import { CardMovePopover } from './card-move-popover';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
@@ -83,108 +96,114 @@ export function CardModal({
     qc.invalidateQueries({ queryKey: QK.boards });
   };
 
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      // Ein offenes Radix-Select/-Popover ruft bei Escape preventDefault auf —
-      // dann NICHT das ganze Modal schließen (sonst gehen ungesicherte Edits
-      // verloren); nur das genestete Layer soll sich schließen.
-      if (e.key === 'Escape' && !e.defaultPrevented) onClose();
-    }
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
-
-  // Backdrop schließt nur, wenn mousedown UND mouseup direkt auf dem Overlay
-  // liegen — sonst schließt ein Text-Auswahl-Drag, der über dem Backdrop endet,
-  // versehentlich das Modal (der Klick-Target ist dann der gemeinsame Vorfahr).
-  const downOnOverlay = useRef(false);
-
   const column = card ? columns.find((c) => c.id === card.column_id) : undefined;
   const accent = column?.color ?? '#64748b';
 
+  // Radix Dialog liefert Focus-Trap, aria-modal, Scroll-Lock, Escape und
+  // Klick-außerhalb selbst — die früheren Handrollungen (keydown-defaultPrevented,
+  // onMouseDown-Target-Guard) entfallen. Genestete Radix-Layer (Move-Popover,
+  // Selects) koordinieren über den DismissableLayer-Stack: Escape schließt erst
+  // das innere Layer, ein Klick darin gilt nicht als „außerhalb". Der
+  // Text-Auswahl-Drag-Fehlschluss entfällt, weil Radix nur bei pointerdown
+  // *außerhalb* des Contents schließt.
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:p-11"
-      style={{ backgroundColor: 'rgba(13,36,80,.42)' }}
-      onMouseDown={(e) => {
-        downOnOverlay.current = e.target === e.currentTarget;
-      }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget && downOnOverlay.current) onClose();
-      }}
-    >
-      <div
-        className="w-full max-w-[840px] overflow-hidden rounded-2xl bg-card shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {isPending || !card ? (
-          <div className="p-10 text-center text-sm text-muted-foreground">Lädt…</div>
-        ) : (
-          <>
-            {/* Header */}
-            <div
-              className="flex items-center gap-2 border-b px-5 py-4"
-              style={{ backgroundColor: `${accent}14` }}
-            >
-              {column && (
-                <ChannelIcon name={column.name} className="h-[18px] w-[18px]" style={{ color: accent }} />
-              )}
-              <span
-                className="rounded-md border bg-card px-2 py-0.5 text-[12.5px] font-semibold"
-                style={{ borderColor: `${accent}33`, color: accent }}
+    <DialogPrimitive.Root open onOpenChange={(o) => !o && onClose()}>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Overlay
+          className="fixed inset-0 z-50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
+          style={{ backgroundColor: 'rgba(13,36,80,.42)' }}
+        />
+        <DialogPrimitive.Content
+          // Ohne gerenderte Description sonst eine Radix-Warnung; wir haben keine.
+          aria-describedby={undefined}
+          // Escape in einem Textarea (Beschreibung, Kommentar) bricht nur das
+          // Editieren ab, nicht das Modal. Der Guard MUSS hier stehen: Radix
+          // lauscht capture-phase auf document und prüft nur defaultPrevented —
+          // ein stopPropagation im Feld-Handler käme zu spät. Gleiches gilt fürs
+          // Titel-Input, aber nur bei ungespeicherter Umbenennung (data-dirty) —
+          // sonst soll Escape das Modal normal schließen.
+          onEscapeKeyDown={(e) => {
+            const t = e.target;
+            if (t instanceof HTMLTextAreaElement) e.preventDefault();
+            else if (t instanceof HTMLInputElement && t.dataset.dirty === 'true') e.preventDefault();
+          }}
+          className="fixed left-1/2 top-1/2 z-50 flex max-h-[calc(100vh-2rem)] w-[calc(100%-2rem)] max-w-[840px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl bg-card shadow-2xl outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
+        >
+          {/* Zugänglicher Dialogtitel (der sichtbare Titel ist ein editierbares
+              Input-Feld, kein Heading) — Radix verdrahtet aria-labelledby. */}
+          <DialogPrimitive.Title className="sr-only">
+            {card?.title || 'Karte'}
+          </DialogPrimitive.Title>
+          {isPending || !card ? (
+            <div className="p-10 text-center text-sm text-muted-foreground">Lädt…</div>
+          ) : (
+            <>
+              {/* Header */}
+              <div
+                className="flex shrink-0 items-center gap-2 border-b px-5 py-4"
+                style={{ backgroundColor: `${accent}14` }}
               >
-                {column?.name ?? 'Kanal'}
-              </span>
-              <div className="ml-auto flex items-center gap-2">
-                <CardMovePopover
-                  card={card}
-                  currentSlug={boardSlug}
-                  columns={columns}
-                  onMove={async (columnId) => {
-                    const updated = await moveCardApi(cardId, columnId);
-                    applyCard(updated);
-                  }}
-                />
-                <CompleteButton card={card} onDone={applyCard} />
-                <button
-                  type="button"
-                  onClick={onClose}
-                  aria-label="Schließen"
-                  className="flex h-[34px] w-[34px] items-center justify-center rounded-md bg-muted text-muted-foreground hover:text-foreground"
+                {column && (
+                  <ChannelIcon name={column.name} className="h-[18px] w-[18px]" style={{ color: accent }} />
+                )}
+                <span
+                  className="rounded-md border bg-card px-2 py-0.5 text-[12.5px] font-semibold"
+                  style={{ borderColor: `${accent}33`, color: accent }}
                 >
-                  <X className="h-4 w-4" />
-                </button>
+                  {column?.name ?? 'Kanal'}
+                </span>
+                <div className="ml-auto flex items-center gap-2">
+                  <CardMovePopover
+                    card={card}
+                    currentSlug={boardSlug}
+                    columns={columns}
+                    onMove={async (columnId) => {
+                      const updated = await moveCardApi(cardId, columnId);
+                      applyCard(updated);
+                    }}
+                  />
+                  <CompleteButton card={card} onDone={applyCard} />
+                  <DialogPrimitive.Close asChild>
+                    <button
+                      type="button"
+                      aria-label="Schließen"
+                      className="flex h-[34px] w-[34px] items-center justify-center rounded-md bg-muted text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </DialogPrimitive.Close>
+                </div>
               </div>
-            </div>
 
-            {/* Body */}
-            <div className="flex max-h-[calc(100vh-180px)] flex-col md:flex-row">
-              <div className="flex-1 overflow-y-auto p-6">
-                <MainColumn
-                  key={card.id}
-                  card={card}
-                  members={byId}
-                  onPatch={applyCard}
-                  onInvalidate={invalidate}
-                  onOpenCard={onOpenCard}
-                  columns={columns}
-                />
+              {/* Body */}
+              <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+                <div className="flex-1 overflow-y-auto p-6">
+                  <MainColumn
+                    key={card.id}
+                    card={card}
+                    members={byId}
+                    onPatch={applyCard}
+                    onInvalidate={invalidate}
+                    onOpenCard={onOpenCard}
+                    columns={columns}
+                  />
+                </div>
+                <div className="w-full shrink-0 overflow-y-auto border-t bg-muted/30 p-5 md:w-[248px] md:border-l md:border-t-0">
+                  <Sidebar
+                    key={card.id}
+                    card={card}
+                    members={members}
+                    byId={byId}
+                    onPatch={applyCard}
+                    onInvalidate={invalidate}
+                  />
+                </div>
               </div>
-              <div className="w-full shrink-0 overflow-y-auto border-t bg-muted/30 p-5 md:w-[248px] md:border-l md:border-t-0">
-                <Sidebar
-                  key={card.id}
-                  card={card}
-                  members={members}
-                  byId={byId}
-                  onPatch={applyCard}
-                  onInvalidate={invalidate}
-                />
-              </div>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
+            </>
+          )}
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
 }
 
@@ -231,7 +250,6 @@ function MainColumn({
   // Lokaler Editier-Zustand. MainColumn wird per key={card.id} remountet, wenn
   // eine andere Karte geöffnet wird — daher kein Prop-Sync-Effekt nötig.
   const [title, setTitle] = useState(card.title);
-  const [desc, setDesc] = useState(card.description_md ?? '');
 
   const saveField = useMutation({
     mutationFn: (patch: { title?: string; description_md?: string | null }) =>
@@ -249,6 +267,21 @@ function MainColumn({
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         onBlur={() => title.trim() && title !== card.title && saveField.mutate({ title: title.trim() })}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') {
+            // Umbenennung verwerfen. Der reverted Titel == card.title, also
+            // committet das nachfolgende Blur nicht. Modal bleibt bei dirty
+            // offen (onEscapeKeyDown am DialogContent liest data-dirty).
+            setTitle(card.title);
+          } else if (e.key === 'Enter') {
+            e.preventDefault();
+            e.currentTarget.blur();
+          }
+        }}
+        // Signalisiert dem DialogContent-Escape-Guard, dass eine ungespeicherte
+        // Umbenennung anliegt (Escape hält dann das Modal offen).
+        data-dirty={title !== card.title ? 'true' : undefined}
+        aria-label="Kartentitel"
         className="w-full border-none bg-transparent text-[21px] font-bold tracking-tight text-foreground outline-none"
       />
 
@@ -264,13 +297,7 @@ function MainColumn({
         </a>
       )}
 
-      <Textarea
-        value={desc}
-        onChange={(e) => setDesc(e.target.value)}
-        onBlur={() => desc !== (card.description_md ?? '') && saveField.mutate({ description_md: desc || null })}
-        placeholder="Beschreibung (Markdown)…"
-        className="min-h-[80px] resize-y text-[13.5px] leading-relaxed"
-      />
+      <DescriptionField card={card} onSave={(v) => saveField.mutate({ description_md: v })} />
 
       <ItemSection
         card={card}
@@ -295,31 +322,93 @@ function MainColumn({
         columns={columns}
       />
 
-      {/* Aktivität (Phase 3 ergänzt Kommentare) */}
-      <div className="border-t pt-4">
-        <div className="mb-3 text-[13.5px] font-semibold text-foreground">Aktivität</div>
-        <ul className="space-y-2.5">
-          {[...card.activity].reverse().map((a) => {
-            return (
-              <li key={a.id} className="flex items-start gap-2 text-[13px] text-muted-foreground">
-                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted">
-                  <ActivityIcon verb={a.verb} className="h-3.5 w-3.5" />
-                </span>
-                <span>
-                  <span className="font-medium text-foreground">
-                    {displayNameOf(members.get(a.actor_id))}
-                  </span>{' '}
-                  {activityPhrase(a)} · {relativeDay(a.created_at)}
-                </span>
-              </li>
-            );
-          })}
-          {card.activity.length === 0 && (
-            <li className="text-[13px] text-muted-foreground">Noch keine Aktivität.</li>
-          )}
-        </ul>
-      </div>
+      <AttachmentsSection card={card} onInvalidate={onInvalidate} />
+
+      <CommentActivityStrand card={card} members={members} onInvalidate={onInvalidate} />
     </div>
+  );
+}
+
+/** Beschreibung: Ansicht (gesäubertes Markdown-HTML) mit Bearbeiten-Stift, oder
+ *  Textarea im Editiermodus. Speichert onBlur / ⌘↵; Escape verwirft. Kein
+ *  Prop-Sync-Effekt nötig — MainColumn wird per key={card.id} remountet. */
+function DescriptionField({
+  card,
+  onSave,
+}: {
+  card: CardDetail;
+  onSave: (value: string | null) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(card.description_md ?? '');
+  // Escape verwirft; das dabei ausgelöste Blur darf dann NICHT committen.
+  const cancelled = useRef(false);
+
+  const commit = () => {
+    if (cancelled.current) {
+      cancelled.current = false;
+      return;
+    }
+    const next = draft.trim() ? draft : '';
+    if (next !== (card.description_md ?? '')) onSave(next || null);
+    setEditing(false);
+  };
+
+  const startEditing = () => {
+    cancelled.current = false;
+    setDraft(card.description_md ?? '');
+    setEditing(true);
+  };
+
+  if (editing) {
+    return (
+      <Textarea
+        autoFocus
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') {
+            // Nur das Editieren abbrechen — dass das Modal offen bleibt,
+            // sichert onEscapeKeyDown am DialogContent (nicht dieser Handler).
+            cancelled.current = true;
+            setDraft(card.description_md ?? '');
+            setEditing(false);
+          } else if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+            e.preventDefault();
+            commit();
+          }
+        }}
+        placeholder="Beschreibung als Markdown… ⌘↵ speichert, Esc verwirft"
+        className="min-h-[96px] resize-y text-[13.5px] leading-relaxed"
+      />
+    );
+  }
+
+  if (card.description_html) {
+    return (
+      <div className="group relative">
+        <div className={PROSE_CLASS} dangerouslySetInnerHTML={{ __html: card.description_html }} />
+        <button
+          type="button"
+          onClick={startEditing}
+          aria-label="Beschreibung bearbeiten"
+          className="absolute -right-1 -top-1 rounded bg-card/80 p-1 text-muted-foreground opacity-0 transition-opacity hover:text-brand focus-visible:opacity-100 group-hover:opacity-100"
+        >
+          <Pencil className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={startEditing}
+      className="text-[13.5px] text-muted-foreground transition-colors hover:text-foreground"
+    >
+      Beschreibung hinzufügen…
+    </button>
   );
 }
 
@@ -489,26 +578,21 @@ function ConvertDialog({
     onError: (e: Error) => toast.error(e.message),
   });
   return (
-    <div
-      className="fixed inset-0 z-[60] flex items-center justify-center p-4"
-      style={{ backgroundColor: 'rgba(13,36,80,.42)' }}
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-md rounded-2xl bg-card p-5 shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="mb-1 text-base font-semibold text-foreground">Als eigene Karte anlegen</div>
-        <p className="mb-4 text-sm text-muted-foreground">
-          Aus der Unteraufgabe „{item.text}" wird eine geplante Karte.
-        </p>
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Als eigene Karte anlegen</DialogTitle>
+          <DialogDescription>
+            Aus der Unteraufgabe „{item.text}" wird eine geplante Karte.
+          </DialogDescription>
+        </DialogHeader>
         <div className="space-y-3">
           <div>
             <label className="mb-1 block font-mono text-[10.5px] uppercase tracking-wider text-muted-foreground">
               Ziel-Kanal
             </label>
             <Select value={columnId} onValueChange={setColumnId}>
-              <SelectTrigger>
+              <SelectTrigger aria-label="Ziel-Kanal">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -524,24 +608,24 @@ function ConvertDialog({
             <label className="mb-1 block font-mono text-[10.5px] uppercase tracking-wider text-muted-foreground">
               Fälligkeit (optional)
             </label>
-            <Input type="date" value={dueAt} onChange={(e) => setDueAt(e.target.value)} />
+            <Input
+              type="date"
+              value={dueAt}
+              onChange={(e) => setDueAt(e.target.value)}
+              aria-label="Fälligkeitsdatum"
+            />
           </div>
         </div>
-        <div className="mt-5 flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="rounded-md px-3 py-2 text-sm text-muted-foreground hover:text-foreground">
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>
             Abbrechen
-          </button>
-          <button
-            type="button"
-            onClick={() => convert.mutate()}
-            disabled={convert.isPending}
-            className="inline-flex items-center gap-1.5 rounded-md bg-brand px-3 py-2 text-sm font-medium text-white hover:bg-brand/90"
-          >
-            <Check className="h-4 w-4" /> Umwandeln
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+          <Button onClick={() => convert.mutate()} disabled={convert.isPending}>
+            <Check className="mr-1 h-4 w-4" /> Umwandeln
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -599,13 +683,14 @@ function Sidebar({
           onBlur={() => {
             if (due !== dueValue) patchDue.mutate(due);
           }}
+          aria-label="Fälligkeitsdatum"
           className="h-9"
         />
       </SidebarField>
 
       <SidebarField label="Zuständig">
         <Select value={card.assignee_id ?? NONE} onValueChange={(v) => patchAssignee.mutate(v)}>
-          <SelectTrigger className="h-9">
+          <SelectTrigger className="h-9" aria-label="Zuständige Person">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -639,7 +724,7 @@ function Sidebar({
           ))}
           {notWatching.length > 0 && (
             <Select value="" onValueChange={(v) => v && addW.mutate(v)}>
-              <SelectTrigger className="h-8 text-[13px] text-muted-foreground">
+              <SelectTrigger className="h-8 text-[13px] text-muted-foreground" aria-label="Beobachter hinzufügen">
                 <span className="inline-flex items-center gap-1">
                   <Plus className="h-3.5 w-3.5" /> Beobachter
                 </span>

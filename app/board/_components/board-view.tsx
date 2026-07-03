@@ -16,6 +16,7 @@ import { QK } from '@/lib/client/query-keys';
 import { rankBetween, compareRank } from '@/lib/shared/rank';
 import type { BoardMember, BoardWithColumns, CardChip } from '@/lib/shared/board';
 import { fetchBoardView, fetchMembers, moveCardApi } from '../_lib/api';
+import { useBoardRealtime } from '../_lib/use-board-realtime';
 import { EMPTY_FILTERS, matchCard, type BoardFilters } from '../_lib/filter';
 import { firstNameOf, membersById } from '../_lib/people';
 import { Button } from '@/components/ui/button';
@@ -52,6 +53,7 @@ export function BoardView({
   });
 
   const board = data ?? initialData;
+  useBoardRealtime(board.board.id, slug);
   const byId = useMemo(() => membersById(members), [members]);
   const resolveFirstName = useMemo(
     () => (userId: string) => firstNameOf(byId.get(userId)),

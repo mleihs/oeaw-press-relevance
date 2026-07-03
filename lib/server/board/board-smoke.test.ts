@@ -19,12 +19,18 @@ import {
 } from './cards';
 import { addItem, patchItem, convertItemToCard } from './items';
 import { addWatcher } from './watchers';
+import { addComment, editComment, deleteComment } from './comments';
+import { addAttachment } from './attachments';
 import { listBoardMembers } from './members';
 import {
+  AttachmentRejectedError,
+  BoardForbiddenError,
   ColumnNotEmptyError,
   ItemAlreadyConvertedError,
   isUniqueViolation,
 } from './errors';
+import { MAX_ATTACHMENT_BYTES } from '@/lib/shared/board';
+import type { CurrentUser } from '@/lib/shared/types';
 
 /**
  * Board-Serverpfad end-to-end gegen den LOKALEN Stack. Deckt die Raw-SQL-Reads
@@ -108,6 +114,86 @@ describe.skipIf(!isLocal)('board server lifecycle (lokaler Stack)', () => {
 
       const src = await getCardDetail(card.id);
       expect(src.items.find((i) => i.id === it2.id)?.converted_card_id).toBe(conv.id);
+
+      // Markdown-Beschreibung: description_html wird server-gerendert + gesäubert.
+      const withDesc = await patchCard(uid, card.id, {
+        description_md: '**fett** <script>alert(1)</script>',
+      });
+      expect(withDesc.description_html).toContain('<strong>fett</strong>');
+      expect(withDesc.description_html).not.toContain('<script');
+
+      // Kommentar-Lebenszyklus: add -> body_html gerendert + comment_added-
+      // Activity; edit (nur Urheber); Fremd-Edit verboten; delete.
+      const currentUser: CurrentUser = {
+        id: u.id,
+        email: u.email,
+        displayName: u.displayName,
+        role: u.role as CurrentUser['role'],
+      };
+      const cmt = await addComment(uid, card.id, 'Erster **Kommentar** mit [Link](https://oeaw.ac.at)');
+      expect(cmt.body_html).toContain('<strong>Kommentar</strong>');
+      expect(cmt.body_html).toContain('target="_blank"');
+
+      const afterComment = await getCardDetail(card.id);
+      expect(afterComment.comments.map((c) => c.id)).toContain(cmt.id);
+      expect(afterComment.comment_count).toBe(1);
+      expect(afterComment.activity.map((a) => a.verb)).toContain('comment_added');
+
+      const edited = await editComment(currentUser, cmt.id, 'Korrigierter Kommentar');
+      expect(edited.body_html).toContain('Korrigierter Kommentar');
+      expect(edited.edited_at).not.toBeNull();
+
+      // Fremd-Nutzer (falls vorhanden) darf den Kommentar nicht bearbeiten.
+      const other = members.find((m) => m.id !== uid);
+      if (other) {
+        const otherUser: CurrentUser = {
+          id: other.id,
+          email: other.email,
+          displayName: other.display_name,
+          role: other.role,
+        };
+        await expect(editComment(otherUser, cmt.id, 'fremd')).rejects.toBeInstanceOf(
+          BoardForbiddenError,
+        );
+      }
+
+      await deleteComment(currentUser, cmt.id);
+      const afterDelete = await getCardDetail(card.id);
+      expect(afterDelete.comments).toHaveLength(0);
+      expect(afterDelete.comment_count).toBe(0);
+
+      // Anhang-Validierung: die Reject-Pfade schlagen VOR putObject fehl, also
+      // wird kein echtes Objekt geschrieben (kein MinIO-Zugriff im Test).
+      await expect(
+        addAttachment(uid, card.id, {
+          filename: 'schad.exe',
+          contentType: 'application/x-msdownload',
+          bytes: new ArrayBuffer(10),
+        }),
+      ).rejects.toBeInstanceOf(AttachmentRejectedError);
+      // Extension-Fallback (leerer content-type) darf nicht blanket-akzeptieren:
+      // unbekannte Endung bleibt abgelehnt.
+      await expect(
+        addAttachment(uid, card.id, {
+          filename: 'schad.exe',
+          contentType: '',
+          bytes: new ArrayBuffer(10),
+        }),
+      ).rejects.toBeInstanceOf(AttachmentRejectedError);
+      await expect(
+        addAttachment(uid, card.id, {
+          filename: 'gross.pdf',
+          contentType: 'application/pdf',
+          bytes: new ArrayBuffer(MAX_ATTACHMENT_BYTES + 1),
+        }),
+      ).rejects.toBeInstanceOf(AttachmentRejectedError);
+      await expect(
+        addAttachment(uid, card.id, {
+          filename: 'leer.pdf',
+          contentType: 'application/pdf',
+          bytes: new ArrayBuffer(0),
+        }),
+      ).rejects.toBeInstanceOf(AttachmentRejectedError);
 
       const full = await getBoardWithColumns(uid, board.slug);
       expect(full.columns).toHaveLength(2);

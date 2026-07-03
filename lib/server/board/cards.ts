@@ -1,7 +1,8 @@
 import 'server-only';
 
 import { asc, eq, sql } from 'drizzle-orm';
-import { db, cards, cardActivity, boardColumns } from '@/lib/server/db';
+import { db, cards, cardActivity, cardAttachments, boardColumns } from '@/lib/server/db';
+import { deleteObjects } from '@/lib/server/storage/s3';
 import type { CardChip, CardDetail } from '@/lib/shared/board';
 import type { CardCreatePayload, CardPatchPayload } from '@/lib/shared/board-schemas';
 import { CardNotFoundError, ColumnNotFoundError } from './errors';
@@ -12,6 +13,9 @@ import {
   cardItemFromRow,
 } from './to-api';
 import { writeActivity } from './activity';
+import { renderCardMarkdown } from './markdown';
+import { loadComments } from './comments';
+import { loadAttachments } from './attachments';
 
 /** ISO/Datums-String -> timestamptz-tauglicher ISO oder null. */
 function normalizeDue(value: string | null | undefined): string | null | undefined {
@@ -88,14 +92,18 @@ async function loadActivity(cardId: string) {
 }
 
 export async function getCardDetail(cardId: string): Promise<CardDetail> {
-  const [row, items, activity] = await Promise.all([
+  const [row, items, comments, attachments, activity] = await Promise.all([
     loadChipRow(cardId),
     loadItems(cardId),
+    loadComments(cardId),
+    loadAttachments(cardId),
     loadActivity(cardId),
   ]);
+  const descriptionMd = (row.description_md as string | null) ?? null;
   return {
     ...cardChipFromRow(row),
-    description_md: (row.description_md as string | null) ?? null,
+    description_md: descriptionMd,
+    description_html: descriptionMd ? renderCardMarkdown(descriptionMd) : null,
     created_by: row.created_by as string,
     created_at: new Date(row.created_at as string).toISOString(),
     updated_at: new Date(row.updated_at as string).toISOString(),
@@ -103,6 +111,8 @@ export async function getCardDetail(cardId: string): Promise<CardDetail> {
     source_event_id: (row.source_event_id as string | null) ?? null,
     source_publication_id: (row.source_publication_id as string | null) ?? null,
     items,
+    comments,
+    attachments,
     activity,
   };
 }
@@ -233,8 +243,15 @@ export async function moveCard(
 }
 
 /** Karte löschen (Cascade räumt Items/Watcher/Kommentare/Anhänge/Activity —
- *  der append-only Trigger lässt den Cascade-Delete zu, §Migration). */
+ *  der append-only Trigger lässt den Cascade-Delete zu, §Migration).
+ *  Die S3-Objekte der Anhänge räumt der Cascade NICHT — vorher einsammeln
+ *  und best-effort löschen, sonst verwaisen die Blobs in MinIO. */
 export async function deleteCard(cardId: string): Promise<void> {
+  const atts = await db
+    .select({ s3Key: cardAttachments.s3Key })
+    .from(cardAttachments)
+    .where(eq(cardAttachments.cardId, cardId));
   const res = await db.delete(cards).where(eq(cards.id, cardId)).returning({ id: cards.id });
   if (res.length === 0) throw new CardNotFoundError();
+  if (atts.length > 0) await deleteObjects(atts.map((a) => a.s3Key)).catch(() => {});
 }

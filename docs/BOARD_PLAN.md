@@ -294,19 +294,129 @@ in v1); Convert-Lookup in beide Richtungen über `cards.converted_from_item_id`.
   keinen Browser-Supabase-Client, alle Writes laufen über die API (owner-Pfad) —
   broad write für `authenticated` würde die Rank-/Activity-Invarianten umgehbar
   machen. Datenintegrität vor Aspiration.
-- **Offen für Phase 3:** Kartenmodal ist ein hand-gerolltes Overlay ohne
-  Focus-Trap (a11y-Pass in Phase 3 eingeplant); Markdown wird noch als Rohtext
-  (Textarea) gezeigt, nicht gerendert → beim Rendern sanitizen.
+- **Offen für Phase 3:** ~~Kartenmodal ist ein hand-gerolltes Overlay ohne
+  Focus-Trap~~ → ERLEDIGT (Radix-Dialog, s. Phase 3). ~~Markdown wird noch als
+  Rohtext (Textarea) gezeigt~~ → ERLEDIGT (gesäubertes Markdown-Rendering).
+- **Offen (fürs Bauen notiert, 2026-07-03):** Login-Seite zeigt „Passwort
+  vergessen? Admin kontaktieren." + „Zugänge vergibt die Kommunikationsleitung."
+  als reinen Text — es fehlen die Links UND die dahinterliegende Logik
+  (Passwort-Reset-Anforderung/Admin-Kontakt). Nachziehen.
 - **prod-Deploy offen:** Migration `20260703000002` noch nicht auf prod
   angewendet (blockiert wie Phase 1 ggf. durch Egress-Restriction).
 
 ### Phase 3 — Kollaboration
-- [ ] Kommentare + Aktivitätslog im Modal (ein Strang, MeisterTask-Stil)
-- [ ] Anhänge: Upload → MinIO (`board/attachments/`), Proxy-Route analog
-      Social-Images, DOCX/PDF/Bilder; Größenlimit
-- [ ] Realtime einschalten: `postgres_changes` auf cards/card_items/card_comments
-      → Query-Invalidierung; Reconnect-Handling
-- [ ] E2E: Board-Grundflow (Karte anlegen, verschieben, abhaken) + a11y-Pass
+**Vorab-Fixes aus dem Phase-2-Review (2026-07-03, erledigt):**
+- [x] Kartenmodal auf Radix-Dialog-Primitive umgestellt (Focus-Trap, aria-modal,
+      Scroll-Lock, role=dialog + sr-only DialogTitle). Manuelle Escape-/Backdrop-
+      Guards (defaultPrevented, onMouseDown-Target) entfernt — Radix koordiniert
+      genestete Layer (Move-Popover/Selects) über den DismissableLayer-Stack.
+      Genestetes ConvertDialog auf shadcn-Dialog-Wrapper. In-Browser verifiziert
+      (öffnen, Escape schließt, Nesting).
+- [x] `description_md` wird als gesäubertes Markdown gerendert: neue Pipeline
+      `lib/server/board/markdown.ts` (marked → sanitize-html Allow-List, server-
+      only, Muster wie `sanitizeEventInformation`). `CardDetail.description_html`
+      + Kommentare `body_html`. Client rendert nur die gesäuberte Ausgabe via
+      `dangerouslySetInnerHTML` (shared `PROSE_CLASS`). View/Edit-Toggle mit
+      Bearbeiten-Stift; ⌘↵ speichert, Esc verwirft. XSS-Tests grün + in-Browser
+      verifiziert (script/onerror/javascript:/data: gestrippt).
+
+**Kern:**
+- [x] Kommentare + Aktivitätslog im Modal (ein Strang, MeisterTask-Stil):
+      `lib/server/board/comments.ts` (add/edit-own/delete-own-o.-admin,
+      `BoardForbiddenError`→403), Routen `cards/[id]/comments` + `comments/[id]`,
+      `comment-strand.tsx` (Composer: Enter sendet, ⇧↵ neue Zeile, Esc blurrt;
+      `comment_added`-Activity im Strang ausgeblendet, da der Kommentar selbst
+      steht). In-Browser verifiziert.
+- [x] Anhänge: Upload → MinIO (`board/attachments/<cardId>/<id>-<name>`),
+      Proxy-Route (auth, `Content-Disposition attachment` außer Bild-Allow-List,
+      `nosniff`), Delete (Urheber/Admin). `attachments.ts` + Routen
+      `cards/[id]/attachments` (POST, multipart, Content-Length-Frühabbruch) +
+      `attachments/[id]` (GET/DELETE). **Limit 4 MB** (Vercel ~4,5-MB-Body-Limit
+      bei server-proxiertem Upload; Presigned-PUT-URLs gegen MinIO = Follow-up für
+      größere Dateien). Allow-List PDF/Office/Text/Bild, SVG bewusst NICHT.
+      MinIO-Round-Trip in-Browser verifiziert (Upload/Download/Delete + UI-Tile +
+      415-Reject); append-only Activity überlebt Attachment-Löschung.
+- [x] Realtime eingeschaltet (2026-07-03): Migration `20260703000003` lokal +
+      **prod** angewendet (5 Tabellen in `supabase_realtime` + `REPLICA IDENTITY
+      FULL`). `/api/auth/realtime-token` (requireUser-gated, httpOnly bleibt),
+      Browser-Client `lib/client/supabase-realtime.ts`, Hook
+      `app/board/_lib/use-board-realtime.ts` (in board-view.tsx verdrahtet).
+      Zwei-Tab-Sync in-Browser verifiziert (Karte in Tab A → Tab B ohne Reload).
+- [x] E2E + a11y (2026-07-03): `e2e/board-flow.spec.ts` (self-seeding Wegwerf-
+      Admin via Service-Role, localhost-guarded; Flow anlegen→Checkliste→abhaken→
+      verschieben→abschließen + axe-Scan main + Modal). **Grün.** a11y fand+fixte
+      5 echte Bugs (unbenannte Filter-/Assignee-/Watcher-/Move-Comboboxen, Titel-
+      + Datum-Inputs). color-contrast (muted-foreground-Token + brand-Nav) als
+      getrackte Design-Token-Schuld geloggt (separater Design/Font-Pass, nicht
+      blockierend). Fix in `e2e/global-setup.ts`: Origin-Header (CSRF) — vorher
+      failte gate-Login bei gesetztem GATE_PASSWORD.
+- [x] **Code-Review-Funde ANGEWENDET** (2026-07-03). Opus-8-Finder + ein
+      Fable-Nachlauf (medium): 8 schwerste direkt gefixt (Realtime-Semantik,
+      Radix-`onEscapeKeyDown` statt totem `stopPropagation`, Umlaut-Dateinamen,
+      MinIO-Leak in deleteCard, Sanitizer-Dedup), dann #6–#10 nachgezogen.
+      Zwei Reconciliations ggü. der Rohliste: Fund #3 (card_activity-Sub) wird
+      **bewusst behalten** — Activity committet separat nach ihrem Companion-
+      Event, ein Companion-getriggerter Refetch kann der Zeile davonlaufen; die
+      Sub sichert den Strang für Fremdbeobachter (React Query dedupt die Doppel-
+      Invalidierung ohnehin). #6 (Titel-Escape) löst den Modal-Offen-Guard über
+      `data-dirty` am DialogContent, nicht über wirkungsloses `stopPropagation`.
+      Ursprungsliste (Referenz), Reihenfolge nach Schwere:
+      1. `use-board-realtime.ts` onCardDetail: Kommentar/Anhang-Events
+         invalidieren das Board NICHT → Chip-Badges `comment_count`/
+         `attachment_count` (card-chip.tsx) veralten für Fremdnutzer. Fix: bei
+         card_comments/card_attachments auch Board invalidieren (cache-peek wie
+         onItem). Kommentar „ändern den Chip nicht" ist FALSCH.
+      2. `use-board-realtime.ts` refresh(): stirbt permanent nach EINEM transienten
+         Token-Fetch-Fail (kein Reschedule bei !t) → Realtime bricht nach ~1h
+         still ab. Fix: bei Fehler kurzen Retry planen. Zugleich Storm mildern
+         (lead −300→−60; getSession gibt sonst 5 Min lang denselben Token → 30s-
+         Floor-Loop, C5).
+      3. `use-board-realtime.ts`: card_activity-Subscription redundant (jede
+         Activity hat ein Companion-Event, das QK.card schon invalidiert) →
+         Doppel-Invalidierung + heißeste-Tabelle-Fanout. Fix: card_activity aus
+         der Subscription nehmen (opt. auch aus Publication/FULL via Migration).
+      4. `card-modal.tsx` DescriptionField: `cancelled`-Ref kann `true` über
+         Edit-Sessions lecken (Unmount-Blur nicht garantiert) → NÄCHSTE echte
+         Beschreibungs-Bearbeitung wird still verworfen. **5 Finder-Konsens.**
+         Fix: `cancelled.current=false` in startEditing zurücksetzen.
+      5. `cards.ts` deleteCard: löscht nur DB-Cascade, NICHT die MinIO-Objekte →
+         verwaiste Blobs (500-MB-Limit). Fix: vor dem Delete s3_keys der Karte
+         holen + `deleteObjects` (Muster wie deleteAttachment).
+      6. `card-modal.tsx` Titel-`<input>`: kein Escape-Guard → Escape verwirft die
+         Umbenennung + schließt Modal. Fix: onKeyDown, Escape = auf card.title
+         zurücksetzen + stopPropagation, Enter = commit+blur.
+      7. `attachments.ts` addAttachment: MIME-Allow-List lehnt gültige .docx/.csv
+         ab, wenn der Browser leeren/generischen content-type meldet (415). Fix:
+         Extension-Fallback gegen Allow-List, wenn file.type leer/unbekannt.
+      8. `attachments/[id]/route.ts` GET: `Cache-Control: max-age=3600` cached
+         vertrauliche Dateien auf Platte (Shared-Workstation nach Logout). Fix:
+         `no-store`.
+      9. `attachments/[id]` POST: `Content-Length` fehlt/gefälscht umgeht den
+         Early-Abort → OOM auf self-host. Fix: fehlendes Content-Length = 411.
+      10. `comment-strand.tsx` Sort-Comparator nicht-antisymmetrisch (`|| kind`-
+          Tiebreak) → Reihenfolge flackert bei gleichem Timestamp. Fix: Tiebreak
+          entfernen (JS-sort ist stabil) bzw. `commentPatchSchema =
+          commentCreateSchema` (F6, byte-identisch).
+      **Bewusst NICHT geändert (dokumentiert):** cross-board-Move-Quellboard-
+      Staleness heilt in 15s (staleTime); Self-Echo-Flicker; all-authenticated-
+      Read-Modell + Browser-JWT/disabled-Token-Fenster (Architektur); markdown-
+      sanitize-Dedup mit sanitizeEventInformation (eigener Pass, XSS-Allow-List
+      nicht beiläufig mergen); SidebarField-Label / Escape-stopPropagation
+      zentralisieren.
+- [x] Nach den Fixes erneut grün (2026-07-03): tsc 0, eslint 0 (5 pre-existing
+      warnings fremde Files), vitest 575 pass/6 skip, `npm run build` ok, board-
+      flow-E2E (2 Tests) grün; Escape-Verhalten (Titel-Input + Beschreibungs-/
+      Kommentar-Textarea, inkl. cancelled-Ref-Reset) in-Browser verifiziert.
+      **Offen: committen/pushen/prod-Migration** (User fragt Commit an — Push
+      erst nach Rückfrage). **Zurückgestellt (User 2026-07-03):** „Gate-Passer/
+      anonyme → Board-Admin" — abgelehnt als Auth-Bypass/Privilege-Escalation;
+      falls nochmal Thema, sichere Variante (Gate-Passer → `member`-
+      Autoprovision, nie anonym, nie admin) statt der wörtlichen Anfrage.
+- [ ] Cleanup-Schwanz (bewusst zurückgestellt, kein Verhaltensfehler):
+      `withBoardApiError`-Wrapper (DRY für ~15 kopierte catch-Blöcke — breiter
+      mechanischer Refactor, eigener Commit) und Self-Echo-Doppel-Refetch
+      (React-Query-staleTime-gated, +1 kleiner Board-GET pro Mutation; Origin-
+      Tagging von Realtime-Events nicht trivial). Beide efficiency-only.
 
 ### Phase 4 — Triage-Integration (der eigentliche Mehrwert)
 - [ ] „Karte anlegen" aus Event-Cockpit: vorbefüllt mit Titel, ÖAW-Link,

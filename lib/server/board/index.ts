@@ -7,6 +7,8 @@ export * from './columns';
 export * from './cards';
 export * from './items';
 export * from './watchers';
+export * from './comments';
+export * from './attachments';
 export * from './members';
 export * from './errors';
 export * from './errors-http';

@@ -135,6 +135,18 @@ export const itemConvertSchema = z.object({
 });
 export type ItemConvertPayload = z.infer<typeof itemConvertSchema>;
 
+// --- Comments -------------------------------------------------------------
+
+export const commentCreateSchema = z.object({
+  body_md: z.string().trim().min(1, 'Kommentar darf nicht leer sein.').max(10000),
+});
+export type CommentCreatePayload = z.infer<typeof commentCreateSchema>;
+
+// Bearbeiten hat exakt dieselbe Shape wie Anlegen (nur body_md) — Alias statt
+// byte-identischer Dublette, damit beide Pfade nicht auseinanderdriften.
+export const commentPatchSchema = commentCreateSchema;
+export type CommentPatchPayload = z.infer<typeof commentPatchSchema>;
+
 // --- Watchers -------------------------------------------------------------
 
 export const watcherCreateSchema = z.object({

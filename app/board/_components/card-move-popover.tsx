@@ -67,7 +67,7 @@ export function CardMovePopover({
           Board
         </div>
         <Select value={boardSlug} onValueChange={setBoardSlug}>
-          <SelectTrigger className="mb-2 h-8">
+          <SelectTrigger className="mb-2 h-8" aria-label="Ziel-Board">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

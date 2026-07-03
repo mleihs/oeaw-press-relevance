@@ -29,6 +29,39 @@ export class CardItemNotFoundError extends Error {
   }
 }
 
+export class CommentNotFoundError extends Error {
+  constructor(message = 'Kommentar nicht gefunden.') {
+    super(message);
+    this.name = 'CommentNotFoundError';
+  }
+}
+
+export class AttachmentNotFoundError extends Error {
+  constructor(message = 'Anhang nicht gefunden.') {
+    super(message);
+    this.name = 'AttachmentNotFoundError';
+  }
+}
+
+/** Aktion an fremdem Inhalt ohne Berechtigung (403). Kommentare/Anhänge darf
+ *  nur der Urheber ändern/löschen (Admin zusätzlich löschen). */
+export class BoardForbiddenError extends Error {
+  constructor(message = 'Keine Berechtigung für diese Aktion.') {
+    super(message);
+    this.name = 'BoardForbiddenError';
+  }
+}
+
+/** Upload verletzt Größen-/Typ-Limit (413/415 — beide als 400-nahe 4xx). */
+export class AttachmentRejectedError extends Error {
+  readonly status: number;
+  constructor(message: string, status = 400) {
+    super(message);
+    this.name = 'AttachmentRejectedError';
+    this.status = status;
+  }
+}
+
 /** Spalte enthält noch Karten -> Löschen verboten (409). Das „Spalte enthält
  *  Karten"-Warnmodal im Design ist die UI dazu; die DB (RESTRICT) garantiert es
  *  zusätzlich hart. */

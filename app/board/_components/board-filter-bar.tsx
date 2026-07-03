@@ -82,7 +82,7 @@ export function BoardFilterBar({
         value={filters.columnId ?? ALL}
         onValueChange={(v) => onChange({ ...filters, columnId: v === ALL ? null : v })}
       >
-        <SelectTrigger className="h-9 w-[170px]">
+        <SelectTrigger className="h-9 w-[170px]" aria-label="Kanal filtern">
           <SelectValue placeholder="Alle Kanäle" />
         </SelectTrigger>
         <SelectContent>
@@ -101,7 +101,7 @@ export function BoardFilterBar({
           onChange({ ...filters, personId: v === ALL ? null : (v as BoardFilters['personId']) })
         }
       >
-        <SelectTrigger className="h-9 w-[180px]">
+        <SelectTrigger className="h-9 w-[180px]" aria-label="Person filtern">
           <SelectValue placeholder="Alle Personen" />
         </SelectTrigger>
         <SelectContent>

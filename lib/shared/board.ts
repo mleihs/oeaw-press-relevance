@@ -12,6 +12,11 @@ export const BOARD_COLUMN_SWATCHES = [
   '#16a34a', '#e11d48', '#64748b', '#0891b2', '#d97706',
 ] as const;
 
+/** Obergrenze pro Anhang (Bytes). Geteilt zwischen Server-Validierung
+ *  (lib/server/board/attachments.ts) und UI-Hinweis. Bewusst konservativ wegen
+ *  Vercels ~4,5-MB-Request-Body-Limit bei server-proxiertem Upload. */
+export const MAX_ATTACHMENT_BYTES = 4 * 1024 * 1024;
+
 /** Checkliste UND Unteraufgaben in einer Tabelle, unterschieden über kind. */
 export const CARD_ITEM_KINDS = ['checklist', 'subtask'] as const;
 export type CardItemKind = (typeof CARD_ITEM_KINDS)[number];
@@ -106,6 +111,28 @@ export interface CardItem {
   converted_card_id: string | null;
 }
 
+export interface CardComment {
+  id: string;
+  card_id: string;
+  author_id: string;
+  body_md: string;
+  /** Server-gerendertes, gesäubertes HTML aus body_md (gleiche Pipeline wie
+   *  description_html). Client rendert nur diese Ausgabe. */
+  body_html: string;
+  created_at: string;
+  edited_at: string | null;
+}
+
+export interface CardAttachment {
+  id: string;
+  card_id: string;
+  filename: string;
+  content_type: string | null;
+  size_bytes: number | null;
+  uploaded_by: string;
+  created_at: string;
+}
+
 export interface CardActivityEntry {
   id: number;
   card_id: string;
@@ -118,6 +145,9 @@ export interface CardActivityEntry {
 /** Volle Karte fürs Modal. */
 export interface CardDetail extends CardChip {
   description_md: string | null;
+  /** Server-gerendertes, gesäubertes HTML aus description_md (Markdown →
+   *  marked → sanitize-html). Client rendert nur diese Ausgabe. */
+  description_html: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -125,6 +155,8 @@ export interface CardDetail extends CardChip {
   source_event_id: string | null;
   source_publication_id: string | null;
   items: CardItem[];
+  comments: CardComment[];
+  attachments: CardAttachment[];
   activity: CardActivityEntry[];
 }
 

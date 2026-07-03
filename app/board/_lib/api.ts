@@ -3,7 +3,9 @@ import type {
   BoardMember,
   BoardSummary,
   BoardWithColumns,
+  CardAttachment,
   CardChip,
+  CardComment,
   CardDetail,
   CardItem,
   CardItemKind,
@@ -107,6 +109,36 @@ export const convertItemApi = (id: string, columnId: string, dueAt?: string | nu
     column_id: columnId,
     due_at: dueAt ?? undefined,
   }).then((r) => r.card);
+
+// --- Comments ---
+export const addCommentApi = (cardId: string, bodyMd: string) =>
+  send<{ comment: CardComment }>(`/api/board/cards/${cardId}/comments`, 'POST', {
+    body_md: bodyMd,
+  }).then((r) => r.comment);
+export const editCommentApi = (id: string, bodyMd: string) =>
+  send<{ comment: CardComment }>(`/api/board/comments/${id}`, 'PATCH', {
+    body_md: bodyMd,
+  }).then((r) => r.comment);
+export const deleteCommentApi = (id: string) =>
+  send<{ ok: true }>(`/api/board/comments/${id}`, 'DELETE');
+
+// --- Attachments ---
+// Multipart: KEIN content-type-Header setzen — der Browser setzt die
+// multipart-Boundary selbst (send() würde application/json erzwingen).
+export const uploadAttachmentApi = (cardId: string, file: File) => {
+  const fd = new FormData();
+  fd.append('file', file);
+  return fetch(`/api/board/cards/${cardId}/attachments`, {
+    method: 'POST',
+    body: fd,
+  })
+    .then((r) => jsonOrThrow<{ attachment: CardAttachment }>(r))
+    .then((r) => r.attachment);
+};
+export const deleteAttachmentApi = (id: string) =>
+  send<{ ok: true }>(`/api/board/attachments/${id}`, 'DELETE');
+/** Same-origin Proxy-URL für Download/Inline-Ansicht eines Anhangs. */
+export const attachmentUrl = (id: string) => `/api/board/attachments/${id}`;
 
 // --- Watchers ---
 export const addWatcherApi = (cardId: string, userId: string) =>

@@ -2,10 +2,14 @@ import 'server-only';
 
 import { apiError } from '@/lib/server/http';
 import {
+  AttachmentNotFoundError,
+  AttachmentRejectedError,
   BoardConflictError,
+  BoardForbiddenError,
   BoardNotFoundError,
   CardItemNotFoundError,
   CardNotFoundError,
+  CommentNotFoundError,
   ColumnNotEmptyError,
   ColumnNotFoundError,
   ItemAlreadyConvertedError,
@@ -25,11 +29,19 @@ export function boardErrorToResponse(err: unknown): Response | null {
   ) {
     return apiError(err.message, 409);
   }
+  if (err instanceof BoardForbiddenError) {
+    return apiError(err.message, 403);
+  }
+  if (err instanceof AttachmentRejectedError) {
+    return apiError(err.message, err.status);
+  }
   if (
     err instanceof BoardNotFoundError ||
     err instanceof ColumnNotFoundError ||
     err instanceof CardNotFoundError ||
-    err instanceof CardItemNotFoundError
+    err instanceof CardItemNotFoundError ||
+    err instanceof CommentNotFoundError ||
+    err instanceof AttachmentNotFoundError
   ) {
     return apiError(err.message, 404);
   }
