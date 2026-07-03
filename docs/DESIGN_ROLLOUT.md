@@ -129,16 +129,35 @@ shadcn-Tokens* (`--primary`/Neutrals) + Regressions-Sweep bleibt Phase D.
   weiterhin nicht verbunden — wie Vorsession).
 
 ### Phase D — Feature-Screens inkrementell (§8.3)
-- [ ] **Kalender** (`/events` Schedule-X Monat/Woche + Event-Modal) — frische
-      Mock-Vorlage (`Toolkit-Redesign.dc.html` + kalender/woche-Screenshots).
-- [ ] **Dashboard** (Kacheln, Stat-Reihe, Top-Storys, Score-Verteilung/Dims/
-      Keywords) nach Mock.
-- [ ] **Publikationen** (Filterleiste + Score-Zeilen-Liste + Detail) nach Mock.
-- [ ] **Veranstaltungen-Tabelle** (Pitch/Verwerfen/Im-Board-Zeilen) nach Mock.
-- [ ] **Kern-Token-Umpolung**: `--primary`/Neutrals in globals.css auf ÖAW-
-      Slate/Blau ziehen, danach visueller Regressions-Sweep über alle Screens.
-- [ ] Board-Politur: Inline-Hex → Tokens (channels.tsx, card-chip, due-badge).
-- [ ] Social / Researchers / Settings / Press-Releases mitziehen.
+> **Reframing 2026-07-03 (Struktur-Survey):** Die vier Feature-Screens haben
+> praktisch KEIN Inline-Hex — sie sind bereits durchgängig über Tailwind-Klassen
+> an shadcn/ÖAW-Tokens gebunden; der Kalender ist Schedule-X `theme-default`,
+> per `events-calendar.css` auf `--sx-color-* → --card/--primary/--border`
+> gebrückt. Score-Bänder zentral in `lib/shared/score-utils.ts`+`constants.ts`.
+> ⇒ Der **Kern-Token-Umpolung ist der Haupt-Hebel**: er propagiert automatisch
+> in alle vier Screens (inkl. Kalender via Bridge). Screen-„Redesign" = danach
+> nur noch gezielte struktur-spezifische Politur, kein Rewrite.
+- [x] **Kern-Token-Umpolung (globals.css)** — shadcn-Neutrals von Stock-Grau
+      (hue 0) auf ÖAW-Slate umgepolt (mock-exakt = Phase-A-Rohwerte), light+dark:
+      `--foreground`→ink, `--muted`/`--secondary`/`--accent`→fill, `--muted-fg`
+      →ink-subtle, `--border`→line, `--input`→line-strong, `--primary`→#0047bb;
+      `body` → `bg-canvas` (Seite #f7f8fa, Surfaces bleiben weiß). Dark:
+      Neutral-Skala+Foregrounds auf ÖAW-Dark; Surfaces/`--primary` unverändert.
+      Kontrast geprüft (muted-fg/canvas 4.74:1, ink ≥15:1, primary-text 8:1).
+      Verifiziert: tsc0/vitest583/build grün, kompiliertes CSS trägt light+dark
+      (`--primary:#0047bb`/`#e5e5e5`, `body{bg var(--n-canvas)}`). **VISUELLER
+      Regressions-Sweep über alle Screens NOCH AUSSTÄNDIG** (Chrome-Extension
+      nicht verbunden) — der eine unverifizierte Rest dieser Änderung.
+- [ ] **Per-Screen-Politur** (struktur-spezifisch, nach Mock; nach Re-Pole nur
+      noch Feinschliff): Kalender-Chips · Dashboard-Kachel-Duotone-Icons + Mono-
+      Zahlen · Pubs-Zeilen-Score-Layout · Events-Zeilen-Datumsbadge. Braucht
+      In-Browser-Check.
+- [ ] Board-Politur: Rest-Inline-Hex → Tokens (board-column/card-modal/boards-
+      overview/board-switcher/board-avatar; people.ts=User-Avatar-Palette,
+      kategorial). `channels.tsx`/`card-chip`/`due-badge` bereits token-basiert.
+- [ ] Chart-/Kategorial-Hex sichten (design-tokens.ts als SSOT; beeswarm/
+      activity-chart/leaderboard/spotlight; score-bar `#6b7280`-Fallback).
+- [ ] Social / Researchers / Settings / Press-Releases visueller Sweep.
 
 ### Phase E — Phase-5 MeisterTask-Importer (separater Track, extern blockiert)
 - [ ] Read-Client-Schicht + Import-Pipeline + Fixture-Tests. **Blocker:**
@@ -177,3 +196,10 @@ durch Egress-402 blockiert (Memory `prod-supabase-free-tier-500mb`).
   build/vitest583 grün; In-Browser weiter blockiert (Extension nicht verbunden).
   Auf Branch `design/rollout-phase-a-b`. Nächste Checkbox: Phase D (Feature-
   Screens, Kalender zuerst) + Kern-Token-Umpolung.
+- 2026-07-03: **Phase D — Kern-Token-Umpolung DONE** (Struktur-Survey ergab: die
+  4 Screens sind schon token-gebunden → Re-Pole ist der Haupt-Hebel, kein Screen-
+  Rewrite). shadcn-Neutrals in globals.css auf ÖAW-Slate (light+dark), `body`→
+  `bg-canvas`, `--primary`→#0047bb. Kontrast-geprüft, tsc0/vitest583/build grün,
+  CSS-Emission verifiziert. **VISUELLER Sweep ausständig** (Extension nicht
+  verbunden) — das ist der noch unverifizierte Teil. Rest Phase D (Per-Screen-
+  Politur, Board-Rest-Hex, Charts) ist Feinschliff auf dem neuen Token-Fundament.

@@ -119,22 +119,26 @@
 :root {
   --radius: 0.625rem;
   --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  /* Kern-Neutrals auf ÖAW-Slate umgepolt (Rollout Phase D, mock-exakt =
+     Phase-A-Rohwerte). Surfaces (--background/--card/--popover) bleiben weiß;
+     die Seiten-Canvas (#f7f8fa) kommt über `body { bg-canvas }` unten, damit
+     Modals/Cards weiß auf Canvas sitzen (wie im Mock). Kontrast geprüft. */
+  --foreground: #16202e; /* n-ink */
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: #16202e;
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.38 0.18 260);
+  --popover-foreground: #16202e;
+  --primary: #0047bb; /* brand-500 */
   --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --secondary: #eef1f5; /* n-fill */
+  --secondary-foreground: #333d4c; /* n-ink-strong */
+  --muted: #eef1f5; /* n-fill */
+  --muted-foreground: #64707f; /* n-ink-subtle */
+  --accent: #eef1f5; /* n-fill */
+  --accent-foreground: #333d4c;
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
+  --border: #e2e6ec; /* n-line */
+  --input: #cbd2dc; /* n-line-strong */
   --ring: oklch(0.48 0.15 260);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
@@ -192,22 +196,26 @@
 
 .dark {
   --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
+  /* Dark: Kern-Neutrals auf ÖAW-Dark-Slate (Phase-A/-B-Dark-Werte). Surfaces
+     (--background/--card/--popover) + --primary bleiben wie gehabt (Elevation/
+     Primär-Button-Look unverändert); nur die Neutral-Skala + Foregrounds kühl
+     getönt. Light-first; Dark-Feinschliff bleibt der In-Browser-Sweep. */
+  --foreground: #f0f3f7; /* n-ink dark */
   --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
+  --card-foreground: #f0f3f7;
   --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
+  --popover-foreground: #f0f3f7;
   --primary: oklch(0.922 0 0);
   --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  --secondary: #232e3a; /* n-fill dark */
+  --secondary-foreground: #f0f3f7;
+  --muted: #232e3a;
+  --muted-foreground: #9aa4b2; /* n-ink-subtle dark */
+  --accent: #232e3a;
+  --accent-foreground: #f0f3f7;
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
+  --border: #2a3542; /* n-line dark */
+  --input: #3a4757; /* n-line-strong dark */
   --ring: oklch(0.556 0 0);
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
@@ -262,7 +270,9 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    /* Seiten-Canvas (#f7f8fa light / #0e141b dark) — Surfaces bleiben weiß über
+       --card/--popover, sodass Cards/Modals auf der Canvas sitzen (Mock). */
+    @apply bg-canvas text-foreground;
   }
 }
 
