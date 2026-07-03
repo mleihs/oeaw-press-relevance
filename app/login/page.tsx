@@ -17,9 +17,11 @@ import { AlertCircle, Loader2, LogIn, LockKeyhole, Mail } from 'lucide-react';
  * das App-Layout, wie im Design (fixed inset-0 über der Nav).
  */
 
-/** Nur same-origin-Pfade als Redirect-Ziel akzeptieren (kein `//evil`). */
+/** Nur same-origin-Pfade als Redirect-Ziel akzeptieren: führender `/`,
+ *  danach weder `/` noch `\` — URL-Parser normalisieren `\` zu `/`,
+ *  `/\evil.com` wäre sonst ein Open Redirect (Security-Review 2026-07-03). */
 function safeNextPath(raw: string | null): string {
-  if (raw && raw.startsWith('/') && !raw.startsWith('//')) return raw;
+  if (raw && /^\/(?![/\\])/.test(raw)) return raw;
   return '/';
 }
 
