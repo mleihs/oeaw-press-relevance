@@ -16,10 +16,7 @@ function MetaBadge({
   label: string;
 }) {
   return (
-    <span
-      className="inline-flex items-center gap-1 rounded-md bg-muted px-1.5 py-0.5 font-mono text-[11px] font-medium text-muted-foreground"
-      style={{ backgroundColor: '#eef1f5', color: '#475262' }}
-    >
+    <span className="inline-flex items-center gap-1 rounded-md bg-fill px-1.5 py-0.5 font-mono text-[11px] font-medium text-ink-soft">
       <Icon className="h-3 w-3" />
       {label}
     </span>
@@ -72,15 +69,15 @@ export function CardChip({
         opacity: isDragging ? 0.4 : completed ? 0.62 : 1,
       }}
       className={cn(
-        'cursor-pointer rounded-[10px] border border-border bg-card px-[13px] py-3 shadow-sm transition-colors hover:border-muted-foreground/40',
+        'cursor-pointer rounded-[10px] border border-line bg-surface px-[13px] py-3 shadow-card transition-[border-color,box-shadow] hover:border-line-strong hover:shadow-card-hover',
       )}
     >
       <div className="flex items-start gap-1.5">
-        {completed && <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />}
+        {completed && <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success" />}
         <div
           className={cn(
             'text-[13.5px] font-semibold leading-snug',
-            completed ? 'text-muted-foreground line-through' : 'text-foreground',
+            completed ? 'text-ink-muted line-through' : 'text-ink-heading',
           )}
         >
           {card.title}
@@ -105,15 +102,12 @@ export function CardChip({
           {card.watcher_ids.length > 0 && (
             <span className="ml-auto flex items-center pl-2">
               {shownWatchers.map((id, i) => (
-                <span key={id} style={{ marginLeft: i === 0 ? 0 : -7 }} className="ring-2 ring-card rounded-full">
+                <span key={id} style={{ marginLeft: i === 0 ? 0 : -7 }} className="ring-2 ring-surface rounded-full">
                   <BoardAvatar member={members.get(id)} size={22} />
                 </span>
               ))}
               {extraWatchers > 0 && (
-                <span
-                  className="ml-[-7px] inline-flex h-[22px] w-[22px] items-center justify-center rounded-full ring-2 ring-card font-mono text-[9.5px] font-semibold"
-                  style={{ backgroundColor: '#eef1f5', color: '#64707f' }}
-                >
+                <span className="ml-[-7px] inline-flex h-[22px] w-[22px] items-center justify-center rounded-full bg-fill text-ink-subtle ring-2 ring-surface font-mono text-[9.5px] font-semibold">
                   +{extraWatchers}
                 </span>
               )}

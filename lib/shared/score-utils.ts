@@ -28,20 +28,25 @@ export function getScoreBand(score: number | null): ScoreBand {
   return 'very_low';
 }
 
+// Bands map onto the design-system state tokens (docs/design/DESIGN_SYSTEM.md
+// §2.3) rather than ad-hoc tailwind colors, so score badges stay on-token and
+// dark-mode-capable: high = solid brand, mid = warning tint, low = "soon" tint,
+// very_low/none = neutral fill. Light appearance is near-identical to the prior
+// amber-100/orange-100/neutral-100 values.
 const BAND_CLASSES: Record<ScoreBandVariant, Record<ScoreBand, string>> = {
   badge: {
-    high: 'bg-brand text-white',
-    mid: 'bg-amber-100 text-amber-800',
-    low: 'bg-orange-100 text-orange-800',
-    very_low: 'bg-neutral-100 text-neutral-600',
-    none: 'bg-neutral-100 text-neutral-600',
+    high: 'bg-brand-500 text-white',
+    mid: 'bg-warning-tint text-warning-ink',
+    low: 'bg-soon-tint text-soon',
+    very_low: 'bg-fill text-ink-subtle',
+    none: 'bg-fill text-ink-subtle',
   },
   hero: {
-    high: 'bg-brand text-white',
-    mid: 'bg-amber-100 text-amber-800',
-    low: 'bg-neutral-100 text-neutral-600',
-    very_low: 'bg-neutral-100 text-neutral-600',
-    none: 'bg-neutral-100 text-neutral-600',
+    high: 'bg-brand-500 text-white',
+    mid: 'bg-warning-tint text-warning-ink',
+    low: 'bg-fill text-ink-subtle',
+    very_low: 'bg-fill text-ink-subtle',
+    none: 'bg-fill text-ink-subtle',
   },
 };
 

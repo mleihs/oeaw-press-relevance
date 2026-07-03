@@ -7,7 +7,17 @@ Dieses Dokument fasst das **Design Book** (`docs/design/board/Designsystem.dc.ht
 das Redaktionsboard, gilt aber ab jetzt als **die** Designsprache für das
 gesamte Press-Toolkit. Neue Oberflächen bauen direkt danach; die Bestands-
 Screens (Dashboard, Publikationen, Events, Triage, Social, …) werden
-**inkrementell** angeglichen, nicht in einem Rutsch (§7 Rollout).
+**inkrementell** angeglichen, nicht in einem Rutsch (§8 Rollout).
+
+> **Toolkit-weite Referenz (neu, 2026-07-03):** `docs/design/board/Toolkit-Redesign.dc.html`
+> zeigt die Designsprache erstmals **auf die Nicht-Board-Screens angewandt** —
+> Dashboard (Redaktionsboard-Kachel + Triage/PM-Kacheln + Stat-Reihe + Top-Storys
+> + Score-Verteilung/Dimensions-Balken/Keywords), Publikationen (Filterleiste +
+> Score-Zeilen-Liste), Veranstaltungen als **Tabelle UND neu gestylter
+> Schedule-X-Kalender** (Monat/Woche) inkl. Event-Cockpit-Modal. Tokens sind
+> identisch zu diesem Doc; das Mock ist die verbindliche Vorlage für die
+> §8-Angleichung dieser Screens. Es verwendet durchgängig **Phosphor-Icons**
+> (§7) und **Geist/Geist Mono** (bereits app-weit geladen).
 
 > Single Source of Truth für Tokens: die CSS-Variablen in `app/globals.css`
 > (`--brand-*`, `--channel-*`, semantische Zustände). Dieses Dokument ist die
@@ -132,10 +142,15 @@ max-width 1160.
 
 ## 7. Icons
 
-Das Design Book nutzt **Phosphor Icons**. Der Bestand nutzt **lucide-react**.
-Bis zu einer Entscheidung über den Icon-Rollout (Kostenfrage: neue Dependency
-vs. Konsistenz) gilt die Mapping-Tabelle unten; das Board wird gemäß der beim
-Bau getroffenen Entscheidung (siehe Memory `board-feature-plan`) gebaut.
+Das Design Book nutzt **Phosphor Icons** — und die neue toolkit-weite Referenz
+(`Toolkit-Redesign.dc.html`) bestätigt das jetzt durchgängig über alle
+Screens (Dashboard/Publikationen/Events/Kalender), inkl. der duotone-Varianten
+für Kachel-Glyphen. Der Bestand nutzt **lucide-react** (Stand 2026-07-03: 107
+Dateien lucide, 0 Phosphor). Der Icon-Wechsel bleibt die eine noch offene
+**harte globale Umstellung** (§8.4): eine neue Dependency + ein fokussierter
+Pass über alle Icon-Aufrufe — separat zu entscheiden, nicht verstreut. Bis
+dahin gilt die Mapping-Tabelle unten; das Board wurde bewusst noch auf lucide
+gebaut (siehe Memory `board-feature-plan`).
 
 | Bedeutung | Phosphor | lucide (Fallback) |
 |---|---|---|

@@ -32,7 +32,7 @@ export function EmptyState({
 }: EmptyStateProps) {
   const wrapper =
     variant === 'card'
-      ? 'rounded-lg border bg-card p-10 text-center'
+      ? 'rounded-lg border border-line bg-card p-10 text-center'
       : 'py-8 text-center';
 
   return (

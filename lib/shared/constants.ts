@@ -210,12 +210,16 @@ export const STATUS_LABELS: Record<string, string> = {
   failed: 'Fehlgeschlagen',
 };
 
+// On the design-system state tokens (docs/design/DESIGN_SYSTEM.md §2.3) so the
+// enrichment-status badge stays on-token and works in dark mode (the prior
+// neutral-/amber-/green-/red-100 values were light-only). Light appearance is
+// near-identical.
 export const STATUS_COLORS: Record<string, string> = {
-  pending: 'bg-neutral-100 text-neutral-600',
-  enriched: 'bg-brand/10 text-brand',
-  partial: 'bg-amber-100 text-amber-900',
-  analyzed: 'bg-green-100 text-green-700',
-  failed: 'bg-red-100 text-red-700',
+  pending: 'bg-fill text-ink-subtle',
+  enriched: 'bg-info-tint text-info',
+  partial: 'bg-warning-tint text-warning-ink',
+  analyzed: 'bg-success-tint text-success',
+  failed: 'bg-danger-tint text-danger',
 };
 
 /**

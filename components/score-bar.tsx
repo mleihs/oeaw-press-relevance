@@ -34,7 +34,7 @@ export function ScoreBar({ dimension, value, compact, label: labelProp, color: c
     return (
       <div className="flex items-center gap-1.5">
         <div
-          className="h-2 w-16 rounded-full bg-muted overflow-hidden"
+          className="h-2 w-16 rounded-full bg-fill overflow-hidden"
           role="progressbar"
           aria-valuenow={pct}
           aria-valuemin={0}
@@ -61,7 +61,7 @@ export function ScoreBar({ dimension, value, compact, label: labelProp, color: c
         <span className="font-medium">{pct}%</span>
       </div>
       <div
-        className="h-2.5 w-full rounded-full bg-muted overflow-hidden"
+        className="h-2.5 w-full rounded-full bg-fill overflow-hidden"
         role="progressbar"
         aria-valuenow={pct}
         aria-valuemin={0}
