@@ -39,7 +39,7 @@ import { StatusBanner } from '@/components/status-banner';
 import {
   LLM_MODELS,
   STATUS_LABELS,
-  STATUS_COLORS,
+  STATUS_BADGE_VARIANTS,
   SOURCE_BADGE_CLASSES as SOURCE_COLOR,
 } from '@/lib/shared/constants';
 import {
@@ -656,9 +656,9 @@ function StatusBadge({ status, naReason }: { status: string; naReason?: string |
   const key = explId in EXPL ? (explId as keyof typeof EXPL) : null;
   return (
     <span className="inline-flex items-center gap-1">
-      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[status] || STATUS_COLORS.pending}`}>
+      <Badge variant={STATUS_BADGE_VARIANTS[status] || 'neutral'}>
         {STATUS_LABELS[status] || status}
-      </span>
+      </Badge>
       {key && <InfoBubble id={key} content={leadWithReason(EXPL[key], naReason)} />}
     </span>
   );

@@ -210,16 +210,19 @@ export const STATUS_LABELS: Record<string, string> = {
   failed: 'Fehlgeschlagen',
 };
 
-// On the design-system state tokens (docs/design/DESIGN_SYSTEM.md §2.3) so the
-// enrichment-status badge stays on-token and works in dark mode (the prior
-// neutral-/amber-/green-/red-100 values were light-only). Light appearance is
-// near-identical.
-export const STATUS_COLORS: Record<string, string> = {
-  pending: 'bg-fill text-ink-subtle',
-  enriched: 'bg-info-tint text-info',
-  partial: 'bg-warning-tint text-warning-ink',
-  analyzed: 'bg-success-tint text-success',
-  failed: 'bg-danger-tint text-danger',
+// Status → Badge-Zustands-Variante (components/ui/badge.tsx §2.3-Varianten).
+// Die Varianten sind der SSOT der Tint/Ink-Klassen; hier nur noch das Mapping,
+// damit Status-Chips nicht per Klassen-String an der Badge-Definition
+// vorbeidriften.
+export const STATUS_BADGE_VARIANTS: Record<
+  string,
+  'neutral' | 'info' | 'success' | 'warning' | 'danger'
+> = {
+  pending: 'neutral',
+  enriched: 'info',
+  partial: 'warning',
+  analyzed: 'success',
+  failed: 'danger',
 };
 
 /**

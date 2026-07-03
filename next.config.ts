@@ -5,10 +5,13 @@ const nextConfig: NextConfig = {
   // React 19 strict-mode is on by default; nothing extra needed for that.
   experimental: {
     // Tree-shake heavy icon/util barrels — material bundle reduction on Dashboard
-    // and table pages where lucide-react / date-fns / motion get imported wide.
-    // radix-ui (the unified meta-package) + recharts are wide barrels too.
+    // and table pages where the Phosphor SSR entry / date-fns / motion get
+    // imported wide. radix-ui (the unified meta-package) + recharts are wide
+    // barrels too. Der dist/ssr-Subpath muss explizit rein (der Haupt-Entry aus
+    // Nexts Default-Liste deckt ihn nicht ab) — lib/icons.ts re-exportiert
+    // darüber, sonst kompiliert Dev alle ~1500 Icons des Barrels mit.
     optimizePackageImports: [
-      "lucide-react",
+      "@phosphor-icons/react/dist/ssr",
       "date-fns",
       "motion",
       "radix-ui",

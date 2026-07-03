@@ -42,7 +42,7 @@ export default function RootLayout({
   return (
     <html lang="de" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable} antialiased bg-background text-foreground flex flex-col min-h-screen`}
+        className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable} antialiased bg-canvas text-foreground flex flex-col min-h-screen`}
       >
         {/* Fumadocs RootProvider: theme disabled so next-themes stays in
             charge; search disabled because Science Propaganda Ninja owns a single global

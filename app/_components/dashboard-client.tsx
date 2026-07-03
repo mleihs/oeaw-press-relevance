@@ -330,7 +330,7 @@ export function DashboardClient({ data, period, sortBy, boardCards }: DashboardC
               Zur Triage-Sitzung
               {flaggedCount > 0 && (
                 <span className="ml-2 inline-flex items-center gap-1 text-xs text-amber-700 dark:text-amber-300/90">
-                  <Pin className="h-3 w-3 fill-amber-400 text-amber-500" />
+                  <Pin weight="fill" className="h-3 w-3 text-amber-500" />
                   {flaggedCount} geflaggt
                 </span>
               )}

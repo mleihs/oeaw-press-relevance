@@ -16,7 +16,7 @@ import { CitationCard } from './citation-card';
 import { doiToUrl } from '@/lib/shared/doi-utils';
 import {
   STATUS_LABELS,
-  STATUS_COLORS,
+  STATUS_BADGE_VARIANTS,
   OA_LABELS,
 } from '@/lib/shared/constants';
 import { getScoreBandClass, getScoreBandStoryLabel } from '@/lib/shared/score-utils';
@@ -158,11 +158,11 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
               <InfoBubble id="open_access" size="sm" />
             </span>
           )}
-          <Badge className={STATUS_COLORS[pub.enrichment_status] || STATUS_COLORS.pending}>
+          <Badge variant={STATUS_BADGE_VARIANTS[pub.enrichment_status] || 'neutral'}>
             {STATUS_LABELS[pub.enrichment_status] || pub.enrichment_status}
           </Badge>
           {hasAnalysis && (
-            <Badge className={STATUS_COLORS.analyzed}>{STATUS_LABELS.analyzed}</Badge>
+            <Badge variant={STATUS_BADGE_VARIANTS.analyzed}>{STATUS_LABELS.analyzed}</Badge>
           )}
         </div>
 

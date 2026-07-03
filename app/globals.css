@@ -10,7 +10,10 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --color-brand: #0047bb;
+  /* Legacy-Alias (unsuffixiertes bg-/text-brand): hängt an derselben var()-Kette
+     wie brand-500, damit ein künftiger Dark-Override von --brand-500 überall
+     durchschlägt statt hier statisch festgebacken zu sein. */
+  --color-brand: var(--brand-500);
   /* Flagship venue (Nature/Science family) attention pulse. Registered as a
      theme animation — the Tailwind v4 way to extend `animate-*` — so it works
      with the `motion-safe:` variant (see venue-line.tsx). Deliberately louder
@@ -123,22 +126,22 @@
      Phase-A-Rohwerte). Surfaces (--background/--card/--popover) bleiben weiß;
      die Seiten-Canvas (#f7f8fa) kommt über `body { bg-canvas }` unten, damit
      Modals/Cards weiß auf Canvas sitzen (wie im Mock). Kontrast geprüft. */
-  --foreground: #16202e; /* n-ink */
+  --foreground: var(--n-ink);
   --card: oklch(1 0 0);
-  --card-foreground: #16202e;
+  --card-foreground: var(--n-ink);
   --popover: oklch(1 0 0);
-  --popover-foreground: #16202e;
-  --primary: #0047bb; /* brand-500 */
+  --popover-foreground: var(--n-ink);
+  --primary: var(--brand-500);
   --primary-foreground: oklch(1 0 0);
-  --secondary: #eef1f5; /* n-fill */
-  --secondary-foreground: #333d4c; /* n-ink-strong */
-  --muted: #eef1f5; /* n-fill */
-  --muted-foreground: #64707f; /* n-ink-subtle */
-  --accent: #eef1f5; /* n-fill */
-  --accent-foreground: #333d4c;
+  --secondary: var(--n-fill);
+  --secondary-foreground: var(--n-ink-strong);
+  --muted: var(--n-fill);
+  --muted-foreground: var(--n-ink-subtle);
+  --accent: var(--n-fill);
+  --accent-foreground: var(--n-ink-strong);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: #e2e6ec; /* n-line */
-  --input: #cbd2dc; /* n-line-strong */
+  --border: var(--n-line);
+  --input: var(--n-line-strong);
   --ring: oklch(0.48 0.15 260);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
@@ -200,22 +203,22 @@
      (--background/--card/--popover) + --primary bleiben wie gehabt (Elevation/
      Primär-Button-Look unverändert); nur die Neutral-Skala + Foregrounds kühl
      getönt. Light-first; Dark-Feinschliff bleibt der In-Browser-Sweep. */
-  --foreground: #f0f3f7; /* n-ink dark */
+  --foreground: var(--n-ink);
   --card: oklch(0.205 0 0);
-  --card-foreground: #f0f3f7;
+  --card-foreground: var(--n-ink);
   --popover: oklch(0.205 0 0);
-  --popover-foreground: #f0f3f7;
+  --popover-foreground: var(--n-ink);
   --primary: oklch(0.922 0 0);
   --primary-foreground: oklch(0.205 0 0);
-  --secondary: #232e3a; /* n-fill dark */
-  --secondary-foreground: #f0f3f7;
-  --muted: #232e3a;
-  --muted-foreground: #9aa4b2; /* n-ink-subtle dark */
-  --accent: #232e3a;
-  --accent-foreground: #f0f3f7;
+  --secondary: var(--n-fill);
+  --secondary-foreground: var(--n-ink);
+  --muted: var(--n-fill);
+  --muted-foreground: var(--n-ink-subtle);
+  --accent: var(--n-fill);
+  --accent-foreground: var(--n-ink);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: #2a3542; /* n-line dark */
-  --input: #3a4757; /* n-line-strong dark */
+  --border: var(--n-line);
+  --input: var(--n-line-strong);
   --ring: oklch(0.556 0 0);
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
@@ -255,6 +258,10 @@
   --state-info-tint: #12233f;   --state-success-tint: #0f2a20;
   --state-warning-tint: #2e2410; --state-danger-tint: #331515;
   --state-soon-tint: #2e1a10;
+  /* Line-Töne der Tints (Borders): die Light-Pastelle (#f4dcb8/#f4c4c4) würden
+     auf den dunklen Tints grell aufreißen — stattdessen aufgehellte, entsättigte
+     Varianten des jeweiligen Tint-Huetons (~2× Tint-Luminanz). */
+  --state-warning-line: #5a471a; --state-danger-line: #5f2525;
   /* Dark-mode state TEXT: the light-first fg values (e.g. info #0047bb) sink to
      ~2:1 on the dark tints above. Lift each to a light tint of its own hue so the
      status/score badges clear WCAG AA (≥4.5:1) on the dark tints. */
