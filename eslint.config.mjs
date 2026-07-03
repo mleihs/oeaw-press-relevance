@@ -22,6 +22,9 @@ const eslintConfig = defineConfig([
     ".source/**",
     // Generated coverage report (vitest --coverage); not source.
     "coverage/**",
+    // Claude-Design-Referenzen (Phase 0 Redaktionsboard) — Mock-Runtime und
+    // Templates, kein App-Code; werden nur als Spez gelesen.
+    "docs/design/**",
   ]),
   {
     rules: {

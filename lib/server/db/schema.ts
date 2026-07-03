@@ -3,17 +3,22 @@ import { sql } from "drizzle-orm"
 
 
 
+// id = auth.users(id) — FK (users_id_fkey, ON DELETE CASCADE) lebt nur in der
+// Migration 20260703000001, weil auth.users nicht Teil dieses Schemas ist.
+// Zeilen entstehen ausschließlich über den Trigger on_auth_user_created.
 export const users = pgTable("users", {
-	id: uuid().defaultRandom().primaryKey().notNull(),
+	id: uuid().primaryKey().notNull(),
 	email: text().notNull(),
 	displayName: text("display_name"),
-	role: text().default('editor').notNull(),
+	role: text().default('member').notNull(),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	disabledAt: timestamp("disabled_at", { withTimezone: true, mode: 'string' }),
 }, (table) => [
 	index("idx_users_email").using("btree", table.email.asc().nullsLast().op("text_ops")),
 	unique("users_email_key").on(table.email),
-	check("users_role_check", sql`role = ANY (ARRAY['admin'::text, 'editor'::text, 'viewer'::text])`),
+	check("users_role_check", sql`role = ANY (ARRAY['admin'::text, 'member'::text])`),
+	pgPolicy("authenticated_select", { as: "permissive", for: "select", to: ["authenticated"], using: sql`true` }),
 ]);
 
 export const userSettings = pgTable("user_settings", {

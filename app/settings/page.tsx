@@ -17,6 +17,7 @@ import { useKeyboardShortcutsEnabled } from '@/lib/client/hooks/use-keyboard-sho
 import { openCheatSheet } from '@/lib/client/commands/controller';
 import { InfoBubble } from '@/components/info-bubble';
 import { SocialChannelsCard } from './_components/social-channels-card';
+import { UserManagementCard } from './_components/user-management-card';
 import { SocialSettingsCard } from './_components/social-settings-card';
 import { EventWeightsCard } from './_components/event-weights-card';
 import { Save, CheckCircle2, Eye, EyeOff, Loader2, XCircle, ShieldCheck, Info, User, Keyboard } from 'lucide-react';
@@ -84,6 +85,9 @@ export default function SettingsPage() {
           Konfigurieren Sie Ihre API-Schlüssel und Analyse-Parameter. Alle Einstellungen werden im Browser gespeichert.
         </p>
       </div>
+
+      {/* Nutzerverwaltung — admin-only (self-gated; Server erzwingt es) */}
+      <UserManagementCard />
 
       {/* Identity — used for flag notes + decision attribution */}
       <Card>

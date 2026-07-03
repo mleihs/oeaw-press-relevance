@@ -220,15 +220,38 @@ schreibt Activity bei create/move/complete/convert selbst; Esc-Kaskade
 „zuletzt aktiv" pro Board aus `card_activity` ableiten (kein Denormalisieren
 in v1); Convert-Lookup in beide Richtungen über `cards.converted_from_item_id`.
 
-### Phase 1 — Identität (Supabase Auth)
-- [ ] `@supabase/ssr` einbauen; Login-UI (E-Mail+Passwort), Session-Handling
-- [ ] `users`-Stub an `auth.users` koppeln (Trigger oder App-seitig), 10 Accounts anlegen
-- [ ] `useCurrentUser`-Hook + Server-Helper (`requireUser()`/`requireAdmin()`)
-- [ ] Nutzerverwaltung in `/settings` (admin-only): Liste mit Rolle/Status,
-      Anlegen (E-Mail + Initialpasswort via Supabase-Admin-API),
-      Deaktivieren, Rolle ändern, Passwort-Reset
-- [ ] Gate unangetastet lassen; Dev-Bypass-Verhalten klären
-- [ ] Tests: Auth-Helper, Rollen-Checks, RLS-Smoke (anon darf nichts auf Board-Tabellen)
+### Phase 1 — Identität (Supabase Auth) ✅ (2026-07-03)
+- [x] `@supabase/ssr` eingebaut — bewusst OHNE Browser-Supabase-Client:
+      alle Auth-Flüsse laufen über `/api/auth/*` (login/logout/me), dadurch
+      können die Session-Cookies httpOnly + sameSite=strict sein
+      (`lib/server/auth/client.ts`). Login-UI unter `/login`
+      (Vollbild-Overlay nach Design), Avatar-Menü mit Abmelden in der Nav.
+- [x] `users`-Stub an `auth.users` gekoppelt (Migration
+      `20260703000001_users_auth_link.sql`): FK id→auth.users (CASCADE;
+      Phase-2-Autoren-FKs mit RESTRICT verhindern dann das Löschen von
+      Nutzern mit Inhalten), role admin|member, `disabled_at`,
+      Spiegel-Trigger `on_auth_user_created` + E-Mail-Sync-Trigger,
+      RLS-Policy `authenticated_select`. **Gotcha:** GoTrue merged custom
+      `app_metadata` erst NACH dem Insert — der Trigger sieht die Rolle
+      nie, `createAdminUser` setzt sie explizit nach.
+      Accounts werden über die Nutzerverwaltung angelegt (Initial-Admin
+      in prod via Admin-API seeden).
+- [x] `useCurrentUser`-Hook (mit Hydration-Gate — React 19 hydriert
+      Subtrees verzögert, s. Kommentar im Hook) + `requireUser()`/
+      `requireAdmin()` (`lib/server/auth/require.ts`, wirft `ApiAuthError`
+      → withApiError antwortet 401/403).
+- [x] Nutzerverwaltung in `/settings` (admin-only, Design Verwaltung.dc):
+      Liste (Rolle/Status/letzte Anmeldung/„Neu"), Anlegen mit generiertem
+      Initialpasswort (einmalige Anzeige, kein SMTP), Deaktivieren
+      (= `disabled_at` + auth-Ban; Alt-JWTs blockt requireUser sofort),
+      Rolle ändern, Passwort-Reset. Server-Guards: keine
+      Selbst-Deaktivierung, letzter aktiver Admin unantastbar.
+- [x] Gate unangetastet (proxy.ts unverändert); Dev-Bypass wie gehabt
+      (Gate aus in development, Supabase-Auth läuft auch in dev).
+- [x] Tests: pure Auth-Helper + Guards + Schemas (Unit) und RLS-/Auth-Smoke
+      gegen den lokalen Stack (Trigger, anon-Blockade, authenticated-Select,
+      Ban, CASCADE, createAdminUser-Regression); Suite skippt sauber ohne
+      lokalen Stack und läuft nie gegen prod (localhost-Guard).
 
 ### Phase 2 — Board-Kern
 - [ ] Migration: Tabellen aus §4 + RLS + Seed (Board „Channels" mit 8 Spalten)

@@ -37,6 +37,7 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { AvatarMenu } from '@/components/avatar-menu';
 import { CommandMenuButton } from '@/components/command/command-menu-button';
 import { openCommandMenu, openCheatSheet } from '@/lib/client/commands/controller';
 
@@ -305,6 +306,7 @@ export function Nav() {
             />
           </div>
           <ThemeToggle />
+          <AvatarMenu />
 
           {/* Mobile hamburger sheet */}
           <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>

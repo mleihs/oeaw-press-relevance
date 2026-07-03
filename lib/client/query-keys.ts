@@ -19,4 +19,6 @@ export const QK = {
   recentSession: ['review-recent-session'] as const,
   events: ['events'] as const,
   event: (id: string) => ['event', id] as const,
+  currentUser: ['current-user'] as const,
+  adminUsers: ['admin-users'] as const,
 } as const;
