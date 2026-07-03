@@ -1,3 +1,4 @@
+import { getTableColumns } from 'drizzle-orm';
 import { events as eventsTable } from '@/lib/server/db';
 import {
   isDecision,
@@ -86,40 +87,20 @@ const EVENT_HEAVY_COLUMNS = [
   'pitchSuggestion',
   'suggestedAngle',
   'targetAudience',
-] as const;
+] as const satisfies readonly (keyof EventRow)[];
 type EventHeavyColumn = (typeof EVENT_HEAVY_COLUMNS)[number];
 
+const eventColumns = getTableColumns(eventsTable);
+
 /** `db.select()` projection for list/calendar reads — every events column
- *  except the heavy text fields above. */
-export const eventListColumns = {
-  id: eventsTable.id,
-  webdbUid: eventsTable.webdbUid,
-  title: eventsTable.title,
-  teaser: eventsTable.teaser,
-  eventAt: eventsTable.eventAt,
-  eventEndAt: eventsTable.eventEndAt,
-  locationTitle: eventsTable.locationTitle,
-  organizerTitle: eventsTable.organizerTitle,
-  institute: eventsTable.institute,
-  url: eventsTable.url,
-  lang: eventsTable.lang,
-  availableLangs: eventsTable.availableLangs,
-  decision: eventsTable.decision,
-  decidedAt: eventsTable.decidedAt,
-  flagNotes: eventsTable.flagNotes,
-  analysisStatus: eventsTable.analysisStatus,
-  eventScore: eventsTable.eventScore,
-  publicAppeal: eventsTable.publicAppeal,
-  scientificSignificance: eventsTable.scientificSignificance,
-  reach: eventsTable.reach,
-  timeliness: eventsTable.timeliness,
-  reasoning: eventsTable.reasoning,
-  llmModel: eventsTable.llmModel,
-  analysisCost: eventsTable.analysisCost,
-  analyzedAt: eventsTable.analyzedAt,
-  syncedAt: eventsTable.syncedAt,
-  createdAt: eventsTable.createdAt,
-};
+ *  except the heavy text fields above. Derived from the schema (all columns
+ *  minus EVENT_HEAVY_COLUMNS) so future columns are list-visible by default
+ *  instead of silently missing from a hand-maintained projection. */
+export const eventListColumns = Object.fromEntries(
+  Object.entries(eventColumns).filter(
+    ([name]) => !(EVENT_HEAVY_COLUMNS as readonly string[]).includes(name),
+  ),
+) as Omit<typeof eventColumns, EventHeavyColumn>;
 
 export type EventListRow = Omit<EventRow, EventHeavyColumn>;
 

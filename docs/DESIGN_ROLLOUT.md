@@ -72,6 +72,8 @@ shadcn-Tokens* (`--primary`/Neutrals) + Regressions-Sweep bleibt Phase D.
       `shadow-sm`→`shadow-card`; Radius `rounded-xl`≈14px passt bereits.
 - [x] **Enrichment-Status-Badge** (`lib/shared/constants.ts` `STATUS_COLORS`):
       war light-only (in Dark kaputt) → State-Tokens, jetzt dark-fähig.
+      *(Später im Review-Fix konsolidiert zu `STATUS_BADGE_VARIANTS` →
+      Badge-Varianten als SSOT, s. Code-Review-Härtung.)*
 - **Verifiziert:** tsc 0 · eslint 0 Fehler · vitest 583 · `npm run build` grün ·
   alle konsumierten Utilities im kompilierten CSS emittiert. In-Browser-Check
   ausständig (Chrome-Extension nicht verbunden). **UNCOMMITTED.**
@@ -159,6 +161,47 @@ shadcn-Tokens* (`--primary`/Neutrals) + Regressions-Sweep bleibt Phase D.
       activity-chart/leaderboard/spotlight; score-bar `#6b7280`-Fallback).
 - [ ] Social / Researchers / Settings / Press-Releases visueller Sweep.
 
+### Code-Review-Härtung (2026-07-03, nach Phase D — alle 8 Findings gefixt)
+Code-Review (medium, 8 Finder + Verifier) über lib/icons.ts + globals.css +
+Verdrahtung; alle 8 CONFIRMED Findings angewendet:
+- [x] `app/layout.tsx` `<body>`: `bg-background` → `bg-canvas` — die Klasse
+      überstimmte die Base-Regel, die Phase-D-Canvas griff sonst NIE.
+- [x] `entity-flag.tsx`: `iconClass:'fill-none'` machte Phosphor-Decision-Icons
+      unsichtbar → `iconWeight`-Feld (`'fill'`/`'regular'`), Render nutzt
+      `weight=`. Pin gefüllt jetzt amber-500 (vorher fill-amber-400 + Kontur).
+- [x] Alle 5 `fill-*`-Icon-Sites → Phosphor `weight="fill"` (dropdown-menu
+      RadioItem-Punkt, pub-list Star, dashboard-client Pin, entity-flag ×2).
+- [x] `content/help/index.mdx`: Phantom-`lucide-react`-Import (nur transitiv via
+      fumadocs-ui installiert) → `@/lib/icons`; dafür 5 neue validierte Mappings
+      (Funnel→Filter, ChartLine→LineChart, Graph→Network, Tag, TreeStructure→
+      Workflow). `components.json` `iconLibrary`→`phosphor`.
+- [x] globals.css dark: `--state-warning-line`/`--state-danger-line` waren nicht
+      überschrieben (Light-Pastell auf Dark-Tint) → `#5a471a`/`#5f2525`.
+- [x] globals.css: Umpolungs-Werte von Roh-Hex-Duplikaten auf `var(--n-*)`/
+      `var(--brand-500)`-Ketten (:root + .dark); Legacy `--color-brand` hängt
+      jetzt an `var(--brand-500)` statt statisch.
+- [x] `design-tokens.ts` auf BRAND/NEUTRAL/STATE gestutzt: CHANNEL_ACCENTS/
+      COLUMN_SWATCH/SCORE_SCALE/scoreColor gestrichen (0 Konsumenten, Dritt-
+      kopien von board.ts-Swatches/DB-Seed/score-utils, SCORE_SCALE widersprach
+      SCORE_BAND).
+- [x] `STATUS_COLORS` → `STATUS_BADGE_VARIANTS` (`Record<status,BadgeVariant>`);
+      detail-client + publication-table (dort war die Badge-Hülle handgerollt)
+      rendern über `<Badge variant>`. Drift pending/neutral konvergiert.
+- [x] Bonus: next.config `optimizePackageImports` lucide-react →
+      `@phosphor-icons/react/dist/ssr` (Dev kompilierte sonst das volle
+      1500-Icon-Barrel mit).
+- **Lint-Nullstand (gleiche Session):** die 5 vorbestehenden eslint-Warnungen
+  root-cause-gefixt → `eslint --max-warnings=0` exit 0: events-filter-bar
+  setState-in-Effect → render-adjust-Pattern; `eventListColumns` jetzt aus
+  `getTableColumns(events)` minus `EVENT_HEAVY_COLUMNS` abgeleitet (Projektion
+  kann nicht mehr vom Schema driften); schema.ts unbenutzter Callback-Param;
+  html-utils.test `.not.toThrow` war No-op-Property-Access → echter Thunk-Call;
+  import-press-news tote `lang()` gelöscht. boundaries-Legacy-Selector-Notice
+  bleibt (Objekt-Selektoren empirisch geprobt: 6.0.2-Schema lehnt `{type:…}` ab;
+  Boundary-Regel per Verletzungs-Probe verifiziert feuernd).
+- **Verifiziert:** tsc 0 · eslint 0 (inkl. --max-warnings=0) · vitest 583 ·
+  build grün · CSS-Emission (bg-canvas, dark state-lines, brand-var-Kette).
+
 ### Phase E — Phase-5 MeisterTask-Importer (separater Track, extern blockiert)
 - [ ] Read-Client-Schicht + Import-Pipeline + Fixture-Tests. **Blocker:**
       `MEISTERTASK_API_TOKEN` leer → nur fixture-baubar, nicht gegen echte Daten
@@ -203,3 +246,9 @@ durch Egress-402 blockiert (Memory `prod-supabase-free-tier-500mb`).
   CSS-Emission verifiziert. **VISUELLER Sweep ausständig** (Extension nicht
   verbunden) — das ist der noch unverifizierte Teil. Rest Phase D (Per-Screen-
   Politur, Board-Rest-Hex, Charts) ist Feinschliff auf dem neuen Token-Fundament.
+- 2026-07-03: **Code-Review-Härtung DONE** (Details im gleichnamigen Abschnitt):
+  alle 8 Review-Findings gefixt (Top: `bg-background`-Override auf `<body>`,
+  der die Canvas killte; unsichtbare fill-none-Decision-Icons; Phantom-lucide
+  in der Hilfe) + eslint auf echten Nullstand (--max-warnings=0). tsc0/eslint0/
+  vitest583/build grün, CSS-Emission verifiziert. Committed + deployt
+  (Vercel + Coolify); visueller Sweep bleibt der offene Rest.

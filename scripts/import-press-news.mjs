@@ -112,10 +112,6 @@ function extractPressNewsDoi(html) {
   return extractDoiFromText(text);
 }
 
-function lang(sysLanguageUid) {
-  return sysLanguageUid === 0 ? 'de' : sysLanguageUid === 1 ? 'en' : null;
-}
-
 function buildUrl(l, slug) {
   if (!slug) return null;
   return l === 'en' ? `${NEWS_BASE}/en/news/${slug}` : `${NEWS_BASE}/news/${slug}`;

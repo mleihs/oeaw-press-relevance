@@ -48,7 +48,14 @@ export function EventsFilterBar({
   // Local mirror so typing is instant; the URL is updated debounced.
   const [draft, setDraft] = useState(q);
   // Re-sync when the URL `q` changes from elsewhere (tab switch, reset button).
-  useEffect(() => setDraft(q), [q]);
+  // Adjusted during render (React-docs "storing information from previous
+  // renders" pattern) instead of an effect — avoids the extra commit and the
+  // set-state-in-effect cascade.
+  const [prevQ, setPrevQ] = useState(q);
+  if (prevQ !== q) {
+    setPrevQ(q);
+    setDraft(q);
+  }
 
   const pushParams = (mutate: (p: URLSearchParams) => void) => {
     const next = new URLSearchParams(params.toString());

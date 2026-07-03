@@ -802,7 +802,7 @@ export const socialSettings = pgTable("social_settings", {
 	themeWindowDays: integer("theme_window_days").default(14).notNull(),
 	retentionDays: integer("retention_days"),
 	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-}, (table) => [
+}, () => [
 	check("social_settings_singleton", sql`id = 1`),
 	check("social_settings_fresh_check", sql`fresh_window_days >= 1 AND fresh_window_days <= 365`),
 	check("social_settings_theme_check", sql`theme_window_days >= 1 AND theme_window_days <= 365`),

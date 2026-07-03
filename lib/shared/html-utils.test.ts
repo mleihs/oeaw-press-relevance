@@ -77,7 +77,7 @@ describe('decodeHtmlBlock', () => {
   });
 
   it('does not blow up on malformed / partial HTML', () => {
-    expect(decodeHtmlBlock('Plain text with <unclosed and >dangling')).not.toThrow;
+    expect(() => decodeHtmlBlock('Plain text with <unclosed and >dangling')).not.toThrow();
     // Just check it returns a string — robustness over correctness for bad input.
     expect(typeof decodeHtmlBlock('Plain text with <unclosed and >dangling')).toBe('string');
   });
