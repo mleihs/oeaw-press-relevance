@@ -188,6 +188,21 @@ export class ApiValidationError extends Error {
   }
 }
 
+/**
+ * Thrown by `requireUser()`/`requireAdmin()` (lib/server/auth/require.ts)
+ * when a route needs an authenticated Supabase-Auth identity. `withApiError`
+ * maps it to a structured 401/403 instead of the 500 fallthrough — the same
+ * contract ApiValidationError has for 400s.
+ */
+export class ApiAuthError extends Error {
+  readonly status: 401 | 403;
+  constructor(message: string, status: 401 | 403) {
+    super(message);
+    this.name = 'ApiAuthError';
+    this.status = status;
+  }
+}
+
 function parseOrThrow<S extends z.ZodType>(
   schema: S,
   input: unknown,
@@ -296,6 +311,12 @@ export function withApiError<Args extends unknown[]>(
         // return the structured 400 instead of the 500 fallthrough.
         rlog().warn('validation_rejected', { message: err.message });
         return apiError(err.message, 400);
+      }
+      if (err instanceof ApiAuthError) {
+        // Expected auth rejection (kein/deaktiviertes Konto, fehlende
+        // Admin-Rolle) — strukturierte 401/403 statt 500.
+        rlog().warn('auth_rejected', { status: err.status, message: err.message });
+        return apiError(err.message, err.status);
       }
       rlog().error('route_unhandled_error', { err });
       return errorToApiResponse(err);

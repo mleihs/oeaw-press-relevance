@@ -2,7 +2,7 @@
 
 import { formatDistanceToNow, format } from 'date-fns';
 import { de } from 'date-fns/locale';
-import { Heart, MessageCircle, ExternalLink } from 'lucide-react';
+import { Heart, MessageCircle, ExternalLink } from '@/lib/icons';
 import {
   HoverCard,
   HoverCardContent,

@@ -49,12 +49,14 @@ export const SIMILARITY_RANGE_MIN = 0.70;
 export const SIMILARITY_RANGE_MAX = 1.00;
 
 /**
- * One [press_score, press_similarity] pair (both raw 0..1) for the joint
- * dashboard scatter. Isomorphic on purpose: the server fetcher produces it
- * and the client chart consumes it, so it lives here rather than in
- * lib/server (a client import of the server module would pull postgres).
+ * One density bin [press_score, press_similarity, count] for the joint
+ * dashboard scatter: score/similarity are the raw 0..1 cell centres, count is
+ * how many analyzed pubs fall in that cell. Isomorphic on purpose: the server
+ * fetcher produces it and the client chart consumes it, so it lives here
+ * rather than in lib/server (a client import of the server module would pull
+ * postgres).
  */
-export type ScoreSimilarityPoint = [number, number];
+export type ScoreSimilarityPoint = [number, number, number];
 
 /**
  * Eligible-pub counts per dashboard period, all four computed in one

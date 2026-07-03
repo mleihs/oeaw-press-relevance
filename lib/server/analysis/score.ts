@@ -3,7 +3,7 @@
 // engines). Keep this file engine-agnostic so the scoring is one canonical
 // computation regardless of which model produced the dimension values.
 
-import { SCORE_WEIGHTS } from '@/lib/shared/constants';
+import { computePressScore } from '@/lib/shared/scoring';
 import sessionModel from '@/lib/shared/session-model.json';
 import type { AnalysisResult } from '@/lib/shared/types';
 
@@ -16,15 +16,13 @@ export type DimensionScores = Pick<
   | 'media_timeliness'
 >;
 
+// Persisted press_score. The weighted-sum formula lives in `computePressScore`
+// → `weightedScore` (lib/shared/scoring) — one path, shared with the PG mirror.
+// This server entry only adds the 4-decimal storage rounding so stored scores
+// don't carry IEEE-754 drift (e.g. 0.6100000000000001 → 0.61). Bit-identical to
+// the previous hand-rolled loop for all numeric/null dimension inputs.
 export function calculatePressScore(dims: DimensionScores): number {
-  let score = 0;
-  for (const [dim, weight] of Object.entries(SCORE_WEIGHTS)) {
-    const val = dims[dim as keyof DimensionScores];
-    if (typeof val === 'number') {
-      score += val * weight;
-    }
-  }
-  return Math.round(score * 10000) / 10000;
+  return Math.round(computePressScore(dims) * 10000) / 10000;
 }
 
 // Tag written to publications.llm_model when this Claude Code session is the

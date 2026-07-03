@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  ::selection { background: #cfe0ff; }
+  .swatch-row:hover .copyhex { opacity: 1; }
+</style>
+</helmet>
+<div style="min-height:100vh;background:#f7f8fa;font-family:'Geist',system-ui,sans-serif;color:#16202e;-webkit-font-smoothing:antialiased;padding-bottom:120px;">
+
+  <!-- ===== HEADER BAND ===== -->
+  <header style="background:#0047bb;color:#fff;position:relative;overflow:hidden;">
+    <div style="position:absolute;inset:0;background:radial-gradient(1200px 400px at 82% -30%,rgba(125,168,255,.35),transparent 60%);"></div>
+    <div style="position:relative;max-width:1120px;margin:0 auto;padding:44px 32px 48px;">
+      <div style="display:flex;align-items:center;gap:10px;font-family:'Geist Mono',monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#a9c4ff;font-weight:500;">
+        <span style="width:16px;height:2px;background:#7da8ff;border-radius:2px;"></span>ÖAW · Redaktions-Toolkit
+      </div>
+      <h1 style="margin:18px 0 0;font-size:40px;line-height:1.04;font-weight:700;letter-spacing:-0.022em;max-width:780px;">Kommunikations-Design-System</h1>
+      <p style="margin:16px 0 0;font-size:16px;line-height:1.55;color:#d6e3ff;max-width:640px;font-weight:400;">Das gemeinsame visuelle Fundament für das Press-Relevance-Toolkit. Es verfeinert das on-the-fly gewachsene System zu klaren Farb-, Typo- und Komponenten-Regeln, die vom Board bis zum Dashboard tragen.</p>
+      <div style="display:flex;gap:8px;margin-top:26px;flex-wrap:wrap;">
+        <span style="font-family:'Geist Mono',monospace;font-size:12px;padding:6px 12px;background:rgba(255,255,255,.14);border-radius:999px;color:#eaf1ff;font-weight:500;">v1.0</span>
+        <span style="font-family:'Geist Mono',monospace;font-size:12px;padding:6px 12px;background:rgba(255,255,255,.14);border-radius:999px;color:#eaf1ff;font-weight:500;">Light Mode</span>
+        <span style="font-family:'Geist Mono',monospace;font-size:12px;padding:6px 12px;background:rgba(255,255,255,.14);border-radius:999px;color:#eaf1ff;font-weight:500;">Geist + Geist Mono</span>
+        <span style="font-family:'Geist Mono',monospace;font-size:12px;padding:6px 12px;background:rgba(255,255,255,.14);border-radius:999px;color:#eaf1ff;font-weight:500;"><i class="ph ph-shapes" style="margin-right:5px;"></i>Phosphor Icons</span>
+      </div>
+    </div>
+  </header>
+
+  <div style="max-width:1120px;margin:0 auto;padding:0 32px;">
+
+    <!-- ===== 01 PRINZIPIEN ===== -->
+    <section style="margin-top:56px;">
+      <div style="display:flex;align-items:center;gap:9px;font-family:'Geist Mono',monospace;font-size:12px;letter-spacing:.13em;text-transform:uppercase;color:#64707f;font-weight:600;margin-bottom:22px;">
+        <span style="width:6px;height:6px;border-radius:2px;background:#0047bb;"></span>01 · Prinzipien
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;">
+        <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;padding:22px 20px;box-shadow:0 1px 2px rgba(16,32,46,.05);">
+          <i class="ph-duotone ph-lightning" style="font-size:26px;color:#0047bb;"></i>
+          <h3 style="margin:14px 0 6px;font-size:15px;font-weight:600;">Schnell vor hübsch</h3>
+          <p style="margin:0;font-size:13px;line-height:1.5;color:#64707f;">Jede Interaktion muss schneller sein als MeisterTask. Dichte Layouts, wenige Klicks, Tastatur zuerst.</p>
+        </div>
+        <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;padding:22px 20px;box-shadow:0 1px 2px rgba(16,32,46,.05);">
+          <i class="ph-duotone ph-feather" style="font-size:26px;color:#0d9488;"></i>
+          <h3 style="margin:14px 0 6px;font-size:15px;font-weight:600;">Bewusst leichtgewichtig</h3>
+          <p style="margin:0;font-size:13px;line-height:1.5;color:#64707f;">Keine Tags, keine Abhängigkeiten, keine Zeiterfassung. Nur was das Team wirklich nutzt bekommt UI.</p>
+        </div>
+        <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;padding:22px 20px;box-shadow:0 1px 2px rgba(16,32,46,.05);">
+          <i class="ph-duotone ph-swatches" style="font-size:26px;color:#7c3aed;"></i>
+          <h3 style="margin:14px 0 6px;font-size:15px;font-weight:600;">Farbe trägt Bedeutung</h3>
+          <p style="margin:0;font-size:13px;line-height:1.5;color:#64707f;">Akzentfarben markieren Ausspielkanäle. Neutralflächen bleiben ruhig, Farbe zeigt Zugehörigkeit und Status.</p>
+        </div>
+        <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;padding:22px 20px;box-shadow:0 1px 2px rgba(16,32,46,.05);">
+          <i class="ph-duotone ph-text-aa" style="font-size:26px;color:#ea580c;"></i>
+          <h3 style="margin:14px 0 6px;font-size:15px;font-weight:600;">Klar beschriftet</h3>
+          <p style="margin:0;font-size:13px;line-height:1.5;color:#64707f;">Deutsch, knapp, ohne Em-Dash. Zahlen und Kürzel in Geist Mono, damit sie ruhig in Spalten stehen.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 02 FARBE ===== -->
+    <section style="margin-top:60px;">
+      <div style="display:flex;align-items:center;gap:9px;font-family:'Geist Mono',monospace;font-size:12px;letter-spacing:.13em;text-transform:uppercase;color:#64707f;font-weight:600;margin-bottom:8px;">
+        <span style="width:6px;height:6px;border-radius:2px;background:#0047bb;"></span>02 · Farbkonzept
+      </div>
+      <p style="margin:0 0 26px;font-size:14px;color:#64707f;max-width:640px;line-height:1.55;">Vier Rollen: <strong style="color:#333d4c;font-weight:600;">Marke</strong> für Identität und Primäraktionen, <strong style="color:#333d4c;font-weight:600;">Neutral</strong> (leicht kühl getönt) für Flächen und Text, <strong style="color:#333d4c;font-weight:600;">Semantik</strong> für Status, <strong style="color:#333d4c;font-weight:600;">Kanäle</strong> für Board-Zugehörigkeit.</p>
+
+      <!-- Marke ramp -->
+      <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;padding:22px;box-shadow:0 1px 2px rgba(16,32,46,.05);margin-bottom:16px;">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px;">
+          <h3 style="margin:0;font-size:15px;font-weight:600;">Marke · ÖAW-Blau</h3>
+          <span style="font-family:'Geist Mono',monospace;font-size:12px;color:#9aa4b2;">--brand · 500 = #0047BB</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(10,1fr);gap:6px;">
+          <div style="height:64px;border-radius:8px 2px 2px 8px;background:#eef4ff;display:flex;align-items:flex-end;padding:6px;font-family:'Geist Mono',monospace;font-size:10px;color:#0047bb;">50</div>
+          <div style="height:64px;border-radius:2px;background:#dbe7ff;display:flex;align-items:flex-end;padding:6px;font-family:'Geist Mono',monospace;font-size:10px;color:#0047bb;">100</div>
+          <div style="height:64px;border-radius:2px;background:#b8ccff;display:flex;align-items:flex-end;padding:6px;font-family:'Geist Mono',monospace;font-size:10px;color:#003ea3;">200</div>
+          <div style="height:64px;border-radius:2px;background:#85a6ff;display:flex;align-items:flex-end;padding:6px;font-family:'Geist Mono',monospace;font-size:10px;color:#00337f;">300</div>
+          <div style="height:64px;border-radius:2px;background:#4b78ee;display:flex;align-items:flex-end;padding:6px;font-family:'Geist Mono',monospace;font-size:10px;color:#fff;">400</div>
+          <div style="height:64px;border-radius:2px;background:#0047bb;display:flex;align-items:flex-end;padding:6px;font-family:'Geist Mono',monospace;font-size:10px;color:#fff;font-weight:600;">500</div>
+          <div style="height:64px;border-radius:2px;background:#003ea3;display:flex;align-items:flex-end;padding:6px;font-family:'Geist Mono',monospace;font-size:10px;color:#fff;">600</div>
+          <div style="height:64px;border-radius:2px;background:#00337f;display:flex;align-items:flex-end;padding:6px;font-family:'Geist Mono',monospace;font-size:10px;color:#cdd;">700</div>
+          <div style="height:64px;border-radius:2px;background:#0a2a60;display:flex;align-items:flex-end;padding:6px;font-family:'Geist Mono',monospace;font-size:10px;color:#9ab;">800</div>
+          <div style="height:64px;border-radius:2px 8px 8px 2px;background:#0d2450;display:flex;align-items:flex-end;padding:6px;font-family:'Geist Mono',monospace;font-size:10px;color:#789;">900</div>
+        </div>
+      </div>
+
+      <!-- Neutral ramp -->
+      <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;padding:22px;box-shadow:0 1px 2px rgba(16,32,46,.05);margin-bottom:16px;">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px;">
+          <h3 style="margin:0;font-size:15px;font-weight:600;">Neutral · kühl getönte Slate-Skala</h3>
+          <span style="font-family:'Geist Mono',monospace;font-size:12px;color:#9aa4b2;">Ersetzt reines Grau · +Hauch Blau</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(10,1fr);gap:6px;">
+          <div style="height:64px;border-radius:8px 2px 2px 8px;background:#f7f8fa;border:1px solid #eef1f5;display:flex;align-items:flex-end;padding:6px;font-family:'Geist Mono',monospace;font-size:10px;color:#64707f;">BG</div>
+          <div style="height:64px;border-radius:2px;background:#eef1f5;display:flex;align-items:flex-end;padding:6px;font-family:'Geist Mono',monospace;font-size:10px;color:#64707f;">100</div>
+          <div style="height:64px;border-radius:2px;background:#e2e6ec;display:flex;align-items:flex-end;padding:6px;font-family:'Geist Mono',monospace;font-size:10px;color:#64707f;">200</div>
+          <div style="height:64px;border-radius:2px;background:#cbd2dc;display:flex;align-items:flex-end;padding:6px;font-family:'Geist Mono',monospace;font-size:10px;color:#475262;">300</div>
+          <div style="height:64px;border-radius:2px;background:#9aa4b2;display:flex;align-items:flex-end;padding:6px;font-family:'Geist Mono',monospace;font-size:10px;color:#fff;">400</div>
+          <div style="height:64px;border-radius:2px;background:#64707f;display:flex;align-items:flex-end;padding:6px;font-family:'Geist Mono',monospace;font-size:10px;color:#fff;">500</div>
+          <div style="height:64px;border-radius:2px;background:#475262;display:flex;align-items:flex-end;padding:6px;font-family:'Geist Mono',monospace;font-size:10px;color:#fff;">600</div>
+          <div style="height:64px;border-radius:2px;background:#333d4c;display:flex;align-items:flex-end;padding:6px;font-family:'Geist Mono',monospace;font-size:10px;color:#cbd;">700</div>
+          <div style="height:64px;border-radius:2px;background:#212b38;display:flex;align-items:flex-end;padding:6px;font-family:'Geist Mono',monospace;font-size:10px;color:#9ab;">800</div>
+          <div style="height:64px;border-radius:2px 8px 8px 2px;background:#16202e;display:flex;align-items:flex-end;padding:6px;font-family:'Geist Mono',monospace;font-size:10px;color:#789;">FG</div>
+        </div>
+      </div>
+
+      <!-- Semantik -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:16px;">
+        <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;padding:18px;box-shadow:0 1px 2px rgba(16,32,46,.05);">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="width:34px;height:34px;border-radius:9px;background:#eef4ff;color:#0047bb;display:flex;align-items:center;justify-content:center;"><i class="ph-bold ph-info" style="font-size:18px;"></i></span>
+            <div><div style="font-size:14px;font-weight:600;">Info</div><div style="font-family:'Geist Mono',monospace;font-size:11px;color:#9aa4b2;">#0047BB</div></div>
+          </div>
+        </div>
+        <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;padding:18px;box-shadow:0 1px 2px rgba(16,32,46,.05);">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="width:34px;height:34px;border-radius:9px;background:#e7f7ef;color:#059669;display:flex;align-items:center;justify-content:center;"><i class="ph-bold ph-check-circle" style="font-size:18px;"></i></span>
+            <div><div style="font-size:14px;font-weight:600;">Erfolg</div><div style="font-family:'Geist Mono',monospace;font-size:11px;color:#9aa4b2;">#059669</div></div>
+          </div>
+        </div>
+        <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;padding:18px;box-shadow:0 1px 2px rgba(16,32,46,.05);">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="width:34px;height:34px;border-radius:9px;background:#fdf1e3;color:#d97706;display:flex;align-items:center;justify-content:center;"><i class="ph-bold ph-warning" style="font-size:18px;"></i></span>
+            <div><div style="font-size:14px;font-weight:600;">Warnung</div><div style="font-family:'Geist Mono',monospace;font-size:11px;color:#9aa4b2;">#D97706</div></div>
+          </div>
+        </div>
+        <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;padding:18px;box-shadow:0 1px 2px rgba(16,32,46,.05);">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="width:34px;height:34px;border-radius:9px;background:#fdeaea;color:#dc2626;display:flex;align-items:center;justify-content:center;"><i class="ph-bold ph-clock-countdown" style="font-size:18px;"></i></span>
+            <div><div style="font-size:14px;font-weight:600;">Überfällig</div><div style="font-family:'Geist Mono',monospace;font-size:11px;color:#9aa4b2;">#DC2626</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Kanal-Akzente -->
+      <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;padding:22px;box-shadow:0 1px 2px rgba(16,32,46,.05);">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:4px;">
+          <h3 style="margin:0;font-size:15px;font-weight:600;">Kanal-Akzente · die 8 Ausspielkanäle</h3>
+          <span style="font-family:'Geist Mono',monospace;font-size:12px;color:#9aa4b2;">Solid · Tint · Icon</span>
+        </div>
+        <p style="margin:6px 0 18px;font-size:13px;color:#64707f;line-height:1.5;max-width:640px;">Jede Board-Spalte trägt genau eine dieser Farben. Solid für Punkt und Rahmen, Tint als ruhiger Kartengrund, plus ein festes Kanal-Icon.</p>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
+          <div style="border:1px solid #eef1f5;border-radius:11px;overflow:hidden;">
+            <div style="background:#eaf1ff;padding:13px 14px;display:flex;align-items:center;gap:9px;border-left:3px solid #2563eb;">
+              <i class="ph-fill ph-megaphone-simple" style="font-size:17px;color:#2563eb;"></i>
+              <span style="font-size:13px;font-weight:600;color:#1e3a8a;">PM/Presse</span>
+            </div>
+            <div style="display:flex;font-family:'Geist Mono',monospace;font-size:10px;"><span style="flex:1;background:#2563eb;color:#fff;padding:5px 8px;">#2563EB</span><span style="flex:1;background:#eaf1ff;color:#2563eb;padding:5px 8px;">tint</span></div>
+          </div>
+          <div style="border:1px solid #eef1f5;border-radius:11px;overflow:hidden;">
+            <div style="background:#e6f7f4;padding:13px 14px;display:flex;align-items:center;gap:9px;border-left:3px solid #0d9488;">
+              <i class="ph-fill ph-globe-hemisphere-west" style="font-size:17px;color:#0d9488;"></i>
+              <span style="font-size:13px;font-weight:600;color:#0f766e;">Web</span>
+            </div>
+            <div style="display:flex;font-family:'Geist Mono',monospace;font-size:10px;"><span style="flex:1;background:#0d9488;color:#fff;padding:5px 8px;">#0D9488</span><span style="flex:1;background:#e6f7f4;color:#0d9488;padding:5px 8px;">tint</span></div>
+          </div>
+          <div style="border:1px solid #eef1f5;border-radius:11px;overflow:hidden;">
+            <div style="background:#f2ecff;padding:13px 14px;display:flex;align-items:center;gap:9px;border-left:3px solid #7c3aed;">
+              <i class="ph-fill ph-pen-nib" style="font-size:17px;color:#7c3aed;"></i>
+              <span style="font-size:13px;font-weight:600;color:#6d28d9;">Blog GÖ</span>
+            </div>
+            <div style="display:flex;font-family:'Geist Mono',monospace;font-size:10px;"><span style="flex:1;background:#7c3aed;color:#fff;padding:5px 8px;">#7C3AED</span><span style="flex:1;background:#f2ecff;color:#7c3aed;padding:5px 8px;">tint</span></div>
+          </div>
+          <div style="border:1px solid #eef1f5;border-radius:11px;overflow:hidden;">
+            <div style="background:#fbeafc;padding:13px 14px;display:flex;align-items:center;gap:9px;border-left:3px solid #c026d3;">
+              <i class="ph-fill ph-microphone-stage" style="font-size:17px;color:#c026d3;"></i>
+              <span style="font-size:13px;font-weight:600;color:#a21caf;">Podcast</span>
+            </div>
+            <div style="display:flex;font-family:'Geist Mono',monospace;font-size:10px;"><span style="flex:1;background:#c026d3;color:#fff;padding:5px 8px;">#C026D3</span><span style="flex:1;background:#fbeafc;color:#c026d3;padding:5px 8px;">tint</span></div>
+          </div>
+          <div style="border:1px solid #eef1f5;border-radius:11px;overflow:hidden;">
+            <div style="background:#fdeee3;padding:13px 14px;display:flex;align-items:center;gap:9px;border-left:3px solid #ea580c;">
+              <i class="ph-fill ph-calendar-star" style="font-size:17px;color:#ea580c;"></i>
+              <span style="font-size:13px;font-weight:600;color:#c2410c;">Events</span>
+            </div>
+            <div style="display:flex;font-family:'Geist Mono',monospace;font-size:10px;"><span style="flex:1;background:#ea580c;color:#fff;padding:5px 8px;">#EA580C</span><span style="flex:1;background:#fdeee3;color:#ea580c;padding:5px 8px;">tint</span></div>
+          </div>
+          <div style="border:1px solid #eef1f5;border-radius:11px;overflow:hidden;">
+            <div style="background:#e7f7ec;padding:13px 14px;display:flex;align-items:center;gap:9px;border-left:3px solid #16a34a;">
+              <i class="ph-fill ph-monitor" style="font-size:17px;color:#16a34a;"></i>
+              <span style="font-size:13px;font-weight:600;color:#15803d;">Screens</span>
+            </div>
+            <div style="display:flex;font-family:'Geist Mono',monospace;font-size:10px;"><span style="flex:1;background:#16a34a;color:#fff;padding:5px 8px;">#16A34A</span><span style="flex:1;background:#e7f7ec;color:#16a34a;padding:5px 8px;">tint</span></div>
+          </div>
+          <div style="border:1px solid #eef1f5;border-radius:11px;overflow:hidden;">
+            <div style="background:#fdeaef;padding:13px 14px;display:flex;align-items:center;gap:9px;border-left:3px solid #e11d48;">
+              <i class="ph-fill ph-sparkle" style="font-size:17px;color:#e11d48;"></i>
+              <span style="font-size:13px;font-weight:600;color:#be123c;">Science Pop</span>
+            </div>
+            <div style="display:flex;font-family:'Geist Mono',monospace;font-size:10px;"><span style="flex:1;background:#e11d48;color:#fff;padding:5px 8px;">#E11D48</span><span style="flex:1;background:#fdeaef;color:#e11d48;padding:5px 8px;">tint</span></div>
+          </div>
+          <div style="border:1px solid #eef1f5;border-radius:11px;overflow:hidden;">
+            <div style="background:#eef1f5;padding:13px 14px;display:flex;align-items:center;gap:9px;border-left:3px solid #64748b;">
+              <i class="ph-fill ph-archive" style="font-size:17px;color:#64748b;"></i>
+              <span style="font-size:13px;font-weight:600;color:#475569;">Zeitlos</span>
+            </div>
+            <div style="display:flex;font-family:'Geist Mono',monospace;font-size:10px;"><span style="flex:1;background:#64748b;color:#fff;padding:5px 8px;">#64748B</span><span style="flex:1;background:#eef1f5;color:#64748b;padding:5px 8px;">tint</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Score / Daten Skala -->
+      <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;padding:22px;box-shadow:0 1px 2px rgba(16,32,46,.05);margin-top:16px;">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px;">
+          <h3 style="margin:0;font-size:15px;font-weight:600;">Daten-Skala · Relevanz-Score</h3>
+          <span style="font-family:'Geist Mono',monospace;font-size:12px;color:#9aa4b2;">niedrig → hoch · Neutral zu Marke</span>
+        </div>
+        <div style="display:flex;gap:4px;align-items:flex-end;height:90px;">
+          <div style="flex:1;height:34%;background:#cbd2dc;border-radius:5px;"></div>
+          <div style="flex:1;height:40%;background:#9aa4b2;border-radius:5px;"></div>
+          <div style="flex:1;height:48%;background:#fbc98a;border-radius:5px;"></div>
+          <div style="flex:1;height:56%;background:#f59e42;border-radius:5px;"></div>
+          <div style="flex:1;height:64%;background:#e88a2a;border-radius:5px;"></div>
+          <div style="flex:1;height:72%;background:#6b93e6;border-radius:5px;"></div>
+          <div style="flex:1;height:82%;background:#2f6ad0;border-radius:5px;"></div>
+          <div style="flex:1;height:100%;background:#0047bb;border-radius:5px;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:8px;font-family:'Geist Mono',monospace;font-size:11px;color:#9aa4b2;"><span>0 %</span><span>Relevanz</span><span>100 %</span></div>
+      </div>
+    </section>
+
+    <!-- ===== 03 TYPOGRAFIE ===== -->
+    <section style="margin-top:60px;">
+      <div style="display:flex;align-items:center;gap:9px;font-family:'Geist Mono',monospace;font-size:12px;letter-spacing:.13em;text-transform:uppercase;color:#64707f;font-weight:600;margin-bottom:22px;">
+        <span style="width:6px;height:6px;border-radius:2px;background:#0047bb;"></span>03 · Typografie
+      </div>
+      <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:16px;">
+        <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;padding:26px;box-shadow:0 1px 2px rgba(16,32,46,.05);">
+          <div style="font-family:'Geist Mono',monospace;font-size:11px;color:#9aa4b2;margin-bottom:18px;">GEIST · UI & Fließtext</div>
+          <div style="font-size:38px;font-weight:700;letter-spacing:-0.02em;line-height:1.1;">Redaktion planen</div>
+          <div style="font-size:22px;font-weight:600;margin-top:16px;color:#333d4c;">Karte, Kanal, Fälligkeit</div>
+          <div style="font-size:15px;margin-top:14px;color:#475262;line-height:1.6;max-width:440px;">Fließtext in 15px für Beschreibungen und Kommentare. Ruhig, gut lesbar, mit ausreichend Zeilenhöhe für lange Checklisten-Einträge im Freitext.</div>
+          <div style="display:flex;gap:22px;margin-top:22px;font-size:13px;color:#64707f;">
+            <span>Regular <strong style="font-weight:400;color:#16202e;">400</strong></span>
+            <span>Medium <strong style="font-weight:500;color:#16202e;">500</strong></span>
+            <span>Semibold <strong style="font-weight:600;color:#16202e;">600</strong></span>
+            <span>Bold <strong style="font-weight:700;color:#16202e;">700</strong></span>
+          </div>
+        </div>
+        <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;padding:26px;box-shadow:0 1px 2px rgba(16,32,46,.05);">
+          <div style="font-family:'Geist Mono',monospace;font-size:11px;color:#9aa4b2;margin-bottom:18px;">GEIST MONO · Zahlen, Kürzel, Meta</div>
+          <div style="font-family:'Geist Mono',monospace;font-size:30px;font-weight:500;letter-spacing:-0.01em;">2 / 8</div>
+          <div style="font-family:'Geist Mono',monospace;font-size:15px;color:#475262;margin-top:16px;line-height:1.7;">25. Sep 2026<br>#PRESSE-0471<br>3 Anhänge · 6 Kommentare</div>
+          <div style="margin-top:22px;font-size:13px;color:#64707f;line-height:1.6;">Alle Zähler, Datumsangaben, Fortschritte und IDs stehen in Mono, damit sie in Kartenreihen sauber untereinander fluchten.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 04 ELEVATION & RADIUS ===== -->
+    <section style="margin-top:60px;">
+      <div style="display:flex;align-items:center;gap:9px;font-family:'Geist Mono',monospace;font-size:12px;letter-spacing:.13em;text-transform:uppercase;color:#64707f;font-weight:600;margin-bottom:22px;">
+        <span style="width:6px;height:6px;border-radius:2px;background:#0047bb;"></span>04 · Elevation & Form
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr) 1.1fr;gap:16px;">
+        <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;padding:22px;text-align:center;box-shadow:0 1px 2px rgba(16,32,46,.05);">
+          <div style="height:60px;background:#fff;border:1px solid #e2e6ec;border-radius:10px;box-shadow:0 1px 2px rgba(16,32,46,.05);margin-bottom:14px;"></div>
+          <div style="font-size:13px;font-weight:600;">Ebene 1 · Karte</div>
+          <div style="font-family:'Geist Mono',monospace;font-size:11px;color:#9aa4b2;margin-top:3px;">ruht auf Board</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;padding:22px;text-align:center;box-shadow:0 1px 2px rgba(16,32,46,.05);">
+          <div style="height:60px;background:#fff;border:1px solid #e2e6ec;border-radius:10px;box-shadow:0 6px 16px rgba(16,32,46,.10);margin-bottom:14px;"></div>
+          <div style="font-size:13px;font-weight:600;">Ebene 2 · Popover</div>
+          <div style="font-family:'Geist Mono',monospace;font-size:11px;color:#9aa4b2;margin-top:3px;">Menü, Dropdown</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;padding:22px;text-align:center;box-shadow:0 1px 2px rgba(16,32,46,.05);">
+          <div style="height:60px;background:#fff;border:1px solid #e2e6ec;border-radius:10px;box-shadow:0 24px 48px rgba(16,32,46,.22);margin-bottom:14px;"></div>
+          <div style="font-size:13px;font-weight:600;">Ebene 3 · Modal</div>
+          <div style="font-family:'Geist Mono',monospace;font-size:11px;color:#9aa4b2;margin-top:3px;">Kartendetail</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;padding:22px;box-shadow:0 1px 2px rgba(16,32,46,.05);">
+          <div style="font-size:13px;font-weight:600;margin-bottom:14px;">Radius-Skala</div>
+          <div style="display:flex;align-items:flex-end;gap:10px;">
+            <div style="text-align:center;"><div style="width:40px;height:40px;background:#eef4ff;border:1px solid #b8ccff;border-radius:6px;"></div><div style="font-family:'Geist Mono',monospace;font-size:10px;color:#9aa4b2;margin-top:6px;">6</div></div>
+            <div style="text-align:center;"><div style="width:40px;height:40px;background:#eef4ff;border:1px solid #b8ccff;border-radius:10px;"></div><div style="font-family:'Geist Mono',monospace;font-size:10px;color:#9aa4b2;margin-top:6px;">10</div></div>
+            <div style="text-align:center;"><div style="width:40px;height:40px;background:#eef4ff;border:1px solid #b8ccff;border-radius:14px;"></div><div style="font-family:'Geist Mono',monospace;font-size:10px;color:#9aa4b2;margin-top:6px;">14</div></div>
+            <div style="text-align:center;"><div style="width:40px;height:40px;background:#eef4ff;border:1px solid #b8ccff;border-radius:999px;"></div><div style="font-family:'Geist Mono',monospace;font-size:10px;color:#9aa4b2;margin-top:6px;">pill</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 05 IKONOGRAFIE ===== -->
+    <section style="margin-top:60px;">
+      <div style="display:flex;align-items:center;gap:9px;font-family:'Geist Mono',monospace;font-size:12px;letter-spacing:.13em;text-transform:uppercase;color:#64707f;font-weight:600;margin-bottom:8px;">
+        <span style="width:6px;height:6px;border-radius:2px;background:#0047bb;"></span>05 · Ikonografie
+      </div>
+      <p style="margin:0 0 22px;font-size:14px;color:#64707f;max-width:660px;line-height:1.55;"><strong style="color:#333d4c;font-weight:600;">Phosphor Icons</strong> (MIT, kostenlos) lösen das bisherige Lucide-Set ab. Sechs Strichstärken; wir nutzen <strong style="color:#333d4c;font-weight:600;">Regular</strong> für Inline-UI, <strong style="color:#333d4c;font-weight:600;">Bold</strong> für aktive Zustände und <strong style="color:#333d4c;font-weight:600;">Duotone</strong> für Feature- und Kanal-Akzente.</p>
+      <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;padding:24px;box-shadow:0 1px 2px rgba(16,32,46,.05);margin-bottom:16px;">
+        <div style="font-family:'Geist Mono',monospace;font-size:11px;color:#9aa4b2;margin-bottom:16px;">STRICHSTÄRKEN · dasselbe Glyph</div>
+        <div style="display:flex;gap:34px;align-items:center;flex-wrap:wrap;">
+          <div style="text-align:center;"><i class="ph-thin ph-kanban" style="font-size:34px;color:#16202e;"></i><div style="font-family:'Geist Mono',monospace;font-size:10px;color:#9aa4b2;margin-top:8px;">Thin</div></div>
+          <div style="text-align:center;"><i class="ph-light ph-kanban" style="font-size:34px;color:#16202e;"></i><div style="font-family:'Geist Mono',monospace;font-size:10px;color:#9aa4b2;margin-top:8px;">Light</div></div>
+          <div style="text-align:center;"><i class="ph ph-kanban" style="font-size:34px;color:#16202e;"></i><div style="font-family:'Geist Mono',monospace;font-size:10px;color:#0047bb;margin-top:8px;font-weight:600;">Regular</div></div>
+          <div style="text-align:center;"><i class="ph-bold ph-kanban" style="font-size:34px;color:#16202e;"></i><div style="font-family:'Geist Mono',monospace;font-size:10px;color:#0047bb;margin-top:8px;font-weight:600;">Bold</div></div>
+          <div style="text-align:center;"><i class="ph-fill ph-kanban" style="font-size:34px;color:#16202e;"></i><div style="font-family:'Geist Mono',monospace;font-size:10px;color:#9aa4b2;margin-top:8px;">Fill</div></div>
+          <div style="text-align:center;"><i class="ph-duotone ph-kanban" style="font-size:34px;color:#0047bb;"></i><div style="font-family:'Geist Mono',monospace;font-size:10px;color:#0047bb;margin-top:8px;font-weight:600;">Duotone</div></div>
+        </div>
+      </div>
+      <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;padding:24px;box-shadow:0 1px 2px rgba(16,32,46,.05);">
+        <div style="font-family:'Geist Mono',monospace;font-size:11px;color:#9aa4b2;margin-bottom:18px;">SET · seitenweit verwendetes Vokabular</div>
+        <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:18px 8px;">
+          <div style="text-align:center;"><i class="ph ph-kanban" style="font-size:24px;color:#333d4c;"></i><div style="font-family:'Geist Mono',monospace;font-size:9.5px;color:#9aa4b2;margin-top:8px;">board</div></div>
+          <div style="text-align:center;"><i class="ph ph-magnifying-glass" style="font-size:24px;color:#333d4c;"></i><div style="font-family:'Geist Mono',monospace;font-size:9.5px;color:#9aa4b2;margin-top:8px;">suche</div></div>
+          <div style="text-align:center;"><i class="ph ph-funnel" style="font-size:24px;color:#333d4c;"></i><div style="font-family:'Geist Mono',monospace;font-size:9.5px;color:#9aa4b2;margin-top:8px;">filter</div></div>
+          <div style="text-align:center;"><i class="ph ph-list-checks" style="font-size:24px;color:#333d4c;"></i><div style="font-family:'Geist Mono',monospace;font-size:9.5px;color:#9aa4b2;margin-top:8px;">checkliste</div></div>
+          <div style="text-align:center;"><i class="ph ph-check-circle" style="font-size:24px;color:#333d4c;"></i><div style="font-family:'Geist Mono',monospace;font-size:9.5px;color:#9aa4b2;margin-top:8px;">erledigt</div></div>
+          <div style="text-align:center;"><i class="ph ph-clock" style="font-size:24px;color:#333d4c;"></i><div style="font-family:'Geist Mono',monospace;font-size:9.5px;color:#9aa4b2;margin-top:8px;">fällig</div></div>
+          <div style="text-align:center;"><i class="ph ph-paperclip" style="font-size:24px;color:#333d4c;"></i><div style="font-family:'Geist Mono',monospace;font-size:9.5px;color:#9aa4b2;margin-top:8px;">anhang</div></div>
+          <div style="text-align:center;"><i class="ph ph-chat-circle" style="font-size:24px;color:#333d4c;"></i><div style="font-family:'Geist Mono',monospace;font-size:9.5px;color:#9aa4b2;margin-top:8px;">kommentar</div></div>
+          <div style="text-align:center;"><i class="ph ph-eye" style="font-size:24px;color:#333d4c;"></i><div style="font-family:'Geist Mono',monospace;font-size:9.5px;color:#9aa4b2;margin-top:8px;">beobachter</div></div>
+          <div style="text-align:center;"><i class="ph ph-plus" style="font-size:24px;color:#333d4c;"></i><div style="font-family:'Geist Mono',monospace;font-size:9.5px;color:#9aa4b2;margin-top:8px;">hinzufügen</div></div>
+          <div style="text-align:center;"><i class="ph ph-dots-three-outline" style="font-size:24px;color:#333d4c;"></i><div style="font-family:'Geist Mono',monospace;font-size:9.5px;color:#9aa4b2;margin-top:8px;">mehr</div></div>
+          <div style="text-align:center;"><i class="ph ph-arrow-line-right" style="font-size:24px;color:#333d4c;"></i><div style="font-family:'Geist Mono',monospace;font-size:9.5px;color:#9aa4b2;margin-top:8px;">verschieben</div></div>
+          <div style="text-align:center;"><i class="ph ph-list-bullets" style="font-size:24px;color:#333d4c;"></i><div style="font-family:'Geist Mono',monospace;font-size:9.5px;color:#9aa4b2;margin-top:8px;">unteraufg.</div></div>
+          <div style="text-align:center;"><i class="ph ph-clock-countdown" style="font-size:24px;color:#333d4c;"></i><div style="font-family:'Geist Mono',monospace;font-size:9.5px;color:#9aa4b2;margin-top:8px;">überfällig</div></div>
+          <div style="text-align:center;"><i class="ph ph-link-simple" style="font-size:24px;color:#333d4c;"></i><div style="font-family:'Geist Mono',monospace;font-size:9.5px;color:#9aa4b2;margin-top:8px;">öaw-link</div></div>
+          <div style="text-align:center;"><i class="ph ph-lightning" style="font-size:24px;color:#333d4c;"></i><div style="font-family:'Geist Mono',monospace;font-size:9.5px;color:#9aa4b2;margin-top:8px;">triage</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 06 KOMPONENTEN ===== -->
+    <section style="margin-top:60px;">
+      <div style="display:flex;align-items:center;gap:9px;font-family:'Geist Mono',monospace;font-size:12px;letter-spacing:.13em;text-transform:uppercase;color:#64707f;font-weight:600;margin-bottom:22px;">
+        <span style="width:6px;height:6px;border-radius:2px;background:#0047bb;"></span>06 · Komponenten
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <!-- Buttons -->
+        <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;padding:24px;box-shadow:0 1px 2px rgba(16,32,46,.05);">
+          <div style="font-family:'Geist Mono',monospace;font-size:11px;color:#9aa4b2;margin-bottom:16px;">BUTTONS</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+            <button style="border:none;background:#0047bb;color:#fff;font-family:inherit;font-size:13px;font-weight:600;padding:9px 15px;border-radius:9px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;box-shadow:0 1px 2px rgba(0,71,187,.3);"><i class="ph-bold ph-plus" style="font-size:15px;"></i>Karte anlegen</button>
+            <button style="border:1px solid #cbd2dc;background:#fff;color:#333d4c;font-family:inherit;font-size:13px;font-weight:600;padding:9px 15px;border-radius:9px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;">Sekundär</button>
+            <button style="border:none;background:transparent;color:#475262;font-family:inherit;font-size:13px;font-weight:600;padding:9px 12px;border-radius:9px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;">Ghost</button>
+            <button style="border:none;background:#dc2626;color:#fff;font-family:inherit;font-size:13px;font-weight:600;padding:9px 15px;border-radius:9px;cursor:pointer;">Löschen</button>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;">
+            <button style="border:1px solid #cbd2dc;background:#fff;color:#475262;width:36px;height:36px;border-radius:9px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;"><i class="ph ph-dots-three-outline" style="font-size:16px;"></i></button>
+            <button style="border:1px solid #cbd2dc;background:#fff;color:#475262;width:36px;height:36px;border-radius:9px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;"><i class="ph ph-funnel" style="font-size:16px;"></i></button>
+            <button style="border:1px solid #cbd2dc;background:#fff;color:#475262;width:36px;height:36px;border-radius:9px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;"><i class="ph ph-paperclip" style="font-size:16px;"></i></button>
+          </div>
+        </div>
+
+        <!-- Inputs -->
+        <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;padding:24px;box-shadow:0 1px 2px rgba(16,32,46,.05);">
+          <div style="font-family:'Geist Mono',monospace;font-size:11px;color:#9aa4b2;margin-bottom:16px;">EINGABEN</div>
+          <div style="display:flex;align-items:center;gap:8px;border:1px solid #cbd2dc;border-radius:9px;padding:0 11px;height:38px;background:#fff;margin-bottom:12px;">
+            <i class="ph ph-magnifying-glass" style="font-size:16px;color:#9aa4b2;"></i>
+            <input placeholder="Volltextsuche…" style="border:none;outline:none;font-family:inherit;font-size:13.5px;flex:1;color:#16202e;background:transparent;"/>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;border:1px solid #cbd2dc;border-radius:9px;padding:0 11px;height:38px;background:#fff;margin-bottom:12px;color:#475262;font-size:13.5px;">
+            Kanal: Alle <i class="ph ph-caret-down" style="font-size:14px;color:#9aa4b2;"></i>
+          </div>
+          <div style="display:flex;align-items:center;gap:9px;">
+            <span style="display:inline-flex;align-items:center;gap:7px;background:#0047bb;color:#fff;font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:999px;"><i class="ph-fill ph-circle" style="font-size:9px;"></i>Nur überfällig</span>
+            <span style="display:inline-flex;align-items:center;gap:7px;background:#eef1f5;color:#64707f;font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:999px;">Erledigte zeigen</span>
+          </div>
+        </div>
+
+        <!-- Badges & Pills -->
+        <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;padding:24px;box-shadow:0 1px 2px rgba(16,32,46,.05);">
+          <div style="font-family:'Geist Mono',monospace;font-size:11px;color:#9aa4b2;margin-bottom:16px;">META-BADGES · Karten-Chip</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+            <span style="display:inline-flex;align-items:center;gap:5px;font-family:'Geist Mono',monospace;font-size:11.5px;font-weight:500;color:#dc2626;background:#fdeaea;padding:4px 8px;border-radius:7px;"><i class="ph-bold ph-clock-countdown" style="font-size:13px;"></i>28. Jun</span>
+            <span style="display:inline-flex;align-items:center;gap:5px;font-family:'Geist Mono',monospace;font-size:11.5px;font-weight:500;color:#475262;background:#eef1f5;padding:4px 8px;border-radius:7px;"><i class="ph ph-clock" style="font-size:13px;"></i>8. Jul</span>
+            <span style="display:inline-flex;align-items:center;gap:5px;font-family:'Geist Mono',monospace;font-size:11.5px;font-weight:500;color:#475262;background:#eef1f5;padding:4px 8px;border-radius:7px;"><i class="ph ph-list-checks" style="font-size:13px;"></i>2/8</span>
+            <span style="display:inline-flex;align-items:center;gap:5px;font-family:'Geist Mono',monospace;font-size:11.5px;font-weight:500;color:#475262;background:#eef1f5;padding:4px 8px;border-radius:7px;"><i class="ph ph-chat-circle" style="font-size:13px;"></i>3</span>
+            <span style="display:inline-flex;align-items:center;gap:5px;font-family:'Geist Mono',monospace;font-size:11.5px;font-weight:500;color:#475262;background:#eef1f5;padding:4px 8px;border-radius:7px;"><i class="ph ph-paperclip" style="font-size:13px;"></i>2</span>
+            <span style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;color:#059669;background:#e7f7ef;padding:4px 9px;border-radius:7px;"><i class="ph-bold ph-check-circle" style="font-size:13px;"></i>Erledigt</span>
+          </div>
+          <div style="font-family:'Geist Mono',monospace;font-size:11px;color:#9aa4b2;margin:20px 0 12px;">AVATARE · Beobachter</div>
+          <div style="display:flex;align-items:center;">
+            <span style="width:26px;height:26px;border-radius:999px;background:#2563eb;color:#fff;font-size:10.5px;font-weight:600;display:flex;align-items:center;justify-content:center;border:2px solid #fff;">CH</span>
+            <span style="width:26px;height:26px;border-radius:999px;background:#0d9488;color:#fff;font-size:10.5px;font-weight:600;display:flex;align-items:center;justify-content:center;border:2px solid #fff;margin-left:-8px;">MW</span>
+            <span style="width:26px;height:26px;border-radius:999px;background:#7c3aed;color:#fff;font-size:10.5px;font-weight:600;display:flex;align-items:center;justify-content:center;border:2px solid #fff;margin-left:-8px;">LP</span>
+            <span style="width:26px;height:26px;border-radius:999px;background:#eef1f5;color:#64707f;font-size:10.5px;font-weight:600;display:flex;align-items:center;justify-content:center;border:2px solid #fff;margin-left:-8px;">+2</span>
+          </div>
+        </div>
+
+        <!-- Karten-Chip preview -->
+        <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;padding:24px;box-shadow:0 1px 2px rgba(16,32,46,.05);">
+          <div style="font-family:'Geist Mono',monospace;font-size:11px;color:#9aa4b2;margin-bottom:16px;">KARTEN-CHIP · gebaut aus dem System</div>
+          <div style="background:#fff;border:1px solid #e2e6ec;border-left:3px solid #ea580c;border-radius:10px;padding:12px 13px;box-shadow:0 1px 2px rgba(16,32,46,.05);">
+            <div style="font-size:13.5px;font-weight:600;line-height:1.35;color:#16202e;">Lange Nacht der Forschung 2026</div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;align-items:center;">
+              <span style="display:inline-flex;align-items:center;gap:5px;font-family:'Geist Mono',monospace;font-size:11px;font-weight:500;color:#475262;background:#eef1f5;padding:3px 7px;border-radius:6px;"><i class="ph ph-clock" style="font-size:12px;"></i>25. Sep</span>
+              <span style="display:inline-flex;align-items:center;gap:5px;font-family:'Geist Mono',monospace;font-size:11px;font-weight:500;color:#475262;background:#eef1f5;padding:3px 7px;border-radius:6px;"><i class="ph ph-list-checks" style="font-size:12px;"></i>3/8</span>
+              <span style="display:inline-flex;align-items:center;gap:5px;font-family:'Geist Mono',monospace;font-size:11px;font-weight:500;color:#475262;background:#eef1f5;padding:3px 7px;border-radius:6px;"><i class="ph ph-paperclip" style="font-size:12px;"></i>3</span>
+              <span style="flex:1;"></span>
+              <span style="display:flex;align-items:center;">
+                <span style="width:22px;height:22px;border-radius:999px;background:#2563eb;color:#fff;font-size:9.5px;font-weight:600;display:flex;align-items:center;justify-content:center;border:2px solid #fff;">CH</span>
+                <span style="width:22px;height:22px;border-radius:999px;background:#0d9488;color:#fff;font-size:9.5px;font-weight:600;display:flex;align-items:center;justify-content:center;border:2px solid #fff;margin-left:-7px;">MW</span>
+              </span>
+            </div>
+          </div>
+          <p style="margin:14px 0 0;font-size:12.5px;color:#64707f;line-height:1.5;">3px Kanal-Rand links, Titel in 13,5px Semibold, Meta-Badges in Mono, Beobachter rechts. Ein Bauplan für alle Karten.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== ANWENDUNG / CTA ===== -->
+    <section style="margin-top:60px;background:#0d2450;border-radius:18px;padding:34px 36px;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;">
+      <div style="max-width:560px;">
+        <div style="font-family:'Geist Mono',monospace;font-size:12px;letter-spacing:.13em;text-transform:uppercase;color:#7da8ff;font-weight:600;margin-bottom:10px;">In Anwendung</div>
+        <h2 style="margin:0 0 8px;font-size:24px;font-weight:700;letter-spacing:-0.01em;">Das Redaktionsboard</h2>
+        <p style="margin:0;font-size:14.5px;line-height:1.55;color:#c7d5f0;">Board, Karten-Modal und Triage-zu-Karte sind vollständig aus diesem System gebaut. Dieselben Farben, dieselbe Typo, dieselben Icons tragen das gesamte Toolkit.</p>
+      </div>
+      <a href="Redaktionsboard.dc.html" style="text-decoration:none;background:#fff;color:#0d2450;font-size:14px;font-weight:600;padding:13px 20px;border-radius:11px;display:inline-flex;align-items:center;gap:9px;white-space:nowrap;box-shadow:0 6px 20px rgba(0,0,0,.25);"><i class="ph-bold ph-kanban" style="font-size:17px;"></i>Board öffnen</a>
+    </section>
+
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

@@ -4,7 +4,7 @@ import { useRef, useState, type ReactNode } from 'react';
 import Image from 'next/image';
 import { Dialog as DialogPrimitive } from 'radix-ui';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
-import { X, ZoomIn } from 'lucide-react';
+import { X, ZoomIn } from '@/lib/icons';
 
 /**
  * Image lightbox with a measured-rect FLIP morph: the full-size image flies
@@ -108,7 +108,7 @@ export function CapybaraLightbox({
             <DialogPrimitive.Content asChild forceMount aria-describedby={undefined}>
               <motion.div className="fixed inset-0 z-50 outline-none">
                 <DialogPrimitive.Title className="sr-only">
-                  Story Scout Capybara in voller Größe
+                  Science Propaganda Ninja Capybara in voller Größe
                 </DialogPrimitive.Title>
 
                 {/* Backdrop catcher: click anywhere (incl. the image, which is

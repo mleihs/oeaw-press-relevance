@@ -199,7 +199,7 @@ function RealGate({ children }: { children: React.ReactNode }) {
             className="mt-8 text-xs text-muted-foreground/70 tracking-widest uppercase"
             style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}
           >
-            Story Scout &middot; ÖAW
+            Science Propaganda Ninja &middot; ÖAW
           </p>
         </div>
       </div>

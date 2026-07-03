@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowUpRight, ArrowDownRight, Minus, Sparkles } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Minus, Sparkles } from '@/lib/icons';
 import { cn } from '@/lib/shared/utils';
 
 interface TrendDeltaProps {

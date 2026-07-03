@@ -1,6 +1,6 @@
 'use client';
 
-import { Download, ChevronDown } from 'lucide-react';
+import { Download, ChevronDown } from '@/lib/icons';
 import { getApiHeaders } from '@/lib/client/stores/settings-store';
 import { Button } from '@/components/ui/button';
 import {

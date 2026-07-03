@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { motion } from 'motion/react';
 import { AnimateNumber } from '@/components/animate-number';
-import { Crown, Award, Medal, Sparkles } from 'lucide-react';
+import { Crown, Award, Medal, Sparkles } from '@/lib/icons';
 import {
   METRIC_SHORT_LABELS,
   type LeaderboardMetric,

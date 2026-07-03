@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { InfoBubble } from '@/components/info-bubble';
-import { Clock, Loader2, Save } from 'lucide-react';
+import { Clock, Loader2, Save } from '@/lib/icons';
 import { toast } from 'sonner';
 import type { SocialSettings } from '@/lib/shared/types';
 

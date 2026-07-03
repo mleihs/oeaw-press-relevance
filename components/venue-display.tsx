@@ -1,4 +1,4 @@
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink } from '@/lib/icons';
 import { lookupVenue } from '@/lib/shared/venue-registry';
 
 /**

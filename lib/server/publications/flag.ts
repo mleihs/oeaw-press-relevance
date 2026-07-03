@@ -1,53 +1,27 @@
+// Publication flag-notes: thin binding of the generic flag-notes engine
+// (lib/server/flag-notes.ts) to the publications repo. All dedup/timestamp
+// logic lives in the engine; this only injects persistence + the not-found error.
+
 import { publicationsRepo } from '@/lib/server/repos/publications';
 import type { FlagNote } from '@/lib/shared/types';
 import type { FlagSetPayload, FlagDeletePayload } from '@/lib/shared/schemas';
 import { PublicationNotFoundError } from './errors';
+import { setFlagNote, clearFlagNote, type FlagNoteStore } from '@/lib/server/flag-notes';
 
-// Same-name dedup uses normalized comparison so "Marie" and "marie " match.
-function norm(name: string): string {
-  return name.trim().toLowerCase();
+// readFlagNotes returns undefined for a missing pub (→ notFound), [] for a pub
+// with no notes — exactly the contract the engine expects.
+function store(pubId: string): FlagNoteStore {
+  return {
+    readNotes: () => publicationsRepo.readFlagNotes(pubId),
+    writeNotes: (notes) => publicationsRepo.updateFlagNotes(pubId, notes),
+    notFound: () => new PublicationNotFoundError(),
+  };
 }
 
-// Multi-user identity isn't wired yet — empty/missing `by` defaults to "team".
-function defaultBy(by: string | null | undefined): string {
-  return by?.trim() || 'team';
+export function setFlag(pubId: string, payload: FlagSetPayload): Promise<FlagNote[]> {
+  return setFlagNote(store(pubId), payload);
 }
 
-async function readNotes(pubId: string): Promise<FlagNote[]> {
-  const notes = await publicationsRepo.readFlagNotes(pubId);
-  if (notes === undefined) throw new PublicationNotFoundError();
-  return notes;
-}
-
-/**
- * Upsert a flag note for the current reviewer. Same-name re-flag overwrites
- * the previous note + timestamp instead of stacking — the typical workflow
- * is "I changed my mind about my note", not "I want two flags".
- */
-export async function setFlag(
-  pubId: string,
-  payload: FlagSetPayload,
-): Promise<FlagNote[]> {
-  const by = defaultBy(payload.by);
-  const note = payload.note?.trim() ?? '';
-  const current = await readNotes(pubId);
-  const filtered = current.filter((n) => norm(n.by) !== norm(by));
-  const next: FlagNote[] = [
-    ...filtered,
-    { by, note, at: new Date().toISOString() },
-  ];
-  await publicationsRepo.updateFlagNotes(pubId, next);
-  return next;
-}
-
-/** Remove the current reviewer's flag. No-op if they hadn't flagged. */
-export async function clearFlag(
-  pubId: string,
-  payload: FlagDeletePayload,
-): Promise<FlagNote[]> {
-  const by = defaultBy(payload.by);
-  const current = await readNotes(pubId);
-  const next = current.filter((n) => norm(n.by) !== norm(by));
-  await publicationsRepo.updateFlagNotes(pubId, next);
-  return next;
+export function clearFlag(pubId: string, payload: FlagDeletePayload): Promise<FlagNote[]> {
+  return clearFlagNote(store(pubId), payload);
 }

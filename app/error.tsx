@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle } from '@/lib/icons';
 
 // Global error boundary for the App Router. Replaces the default Next.js
 // stack-trace screen with a recoverable, branded fallback that lets the

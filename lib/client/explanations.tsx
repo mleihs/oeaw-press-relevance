@@ -1506,7 +1506,7 @@ export const EXPL = {
         Häufigste Ursache: das Institut hat die Pub intern
         <strong> nicht für die Web-Anzeige freigegeben</strong>. Solche Pubs
         landen erst gar nicht in der WebDB und folglich auch nicht im
-        lokalen Datenbestand von Story Scout. Seltener: das Paper ist erst
+        lokalen Datenbestand von Science Propaganda Ninja. Seltener: das Paper ist erst
         nach dem letzten Import erschienen. Metadaten werden via OpenAlex
         und CrossRef nachgereichert. Wird die Pub später freigegeben und
         importiert, übernimmt der Match-Job die Zuordnung automatisch.
@@ -1564,7 +1564,7 @@ export const EXPL = {
           <strong>Häufigste Ursache:</strong> Das publizierende Institut hat
           die Pub intern nicht für die Web-Anzeige freigegeben. Solche Pubs
           landen erst gar nicht in der WebDB und folglich auch nicht im
-          lokalen Datenstand von Story Scout. Seltener kommt vor, dass die Pub
+          lokalen Datenstand von Science Propaganda Ninja. Seltener kommt vor, dass die Pub
           erst nach dem letzten Import publiziert wurde.
         </Para>
         <Para>

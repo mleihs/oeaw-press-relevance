@@ -50,14 +50,18 @@ const ROOT = path.resolve(__dirname, '..');
 // (warm graphite tone preserved, paper turned transparent) reads better
 // and is theme-/glitch-safe (clip-path/invert still act on a transparent
 // rectangle). Same alpha formula either way — only the colour channels
-// differ. gain/subtract for the logo stay as-is: gain scales the alpha
-// matte, subtract trims the 1024→140 downscale anti-alias halo. They were
-// tuned for the black-ink render; with real rgb the stroke now carries its
-// own tone so it reads as authentic soft pencil rather than flat ink.
+// differ. Logo gain raised to 3.0 (subtract 0) for the Science-Propaganda-Ninja
+// art: the alpha = (255-lum)*gain matte makes opacity proportional to darkness,
+// which suits sparse LINE art but greys out a fully-SHADED illustration — a
+// mid-tone graphite pixel (lum~150) lands at ~60% alpha and blends toward the
+// white page, so the hero looked washed out at gain 1.0/1.5. gain 3.0 pushes
+// every non-paper pixel (down to mid-grey) to full opacity, preserving the art's
+// true graphite tone; only near-white paper (lum>245 threshold) stays transparent
+// so dark mode still works. preserveRgb keeps the real pencil colour.
 const TARGETS = [
   { input: 'public/capybara-gate.png',       output: 'public/capybara-gate-alpha.png',       gain: 1.3,  subtract: 0,  preserveRgb: false },
   { input: 'public/capybara-gate-cyber.png', output: 'public/capybara-gate-cyber-alpha.png', gain: 1.2,  subtract: 0,  preserveRgb: false },
-  { input: 'public/capybara-logo.png',       output: 'public/capybara-logo-alpha.png',       gain: 1.0,  subtract: 40, preserveRgb: true  },
+  { input: 'public/capybara-logo.png',       output: 'public/capybara-logo-alpha.png',       gain: 3.0,  subtract: 0,  preserveRgb: true  },
   { input: 'public/capybara-logo-cyber.png', output: 'public/capybara-logo-cyber-alpha.png', gain: 0.85, subtract: 20, preserveRgb: true  },
 ];
 

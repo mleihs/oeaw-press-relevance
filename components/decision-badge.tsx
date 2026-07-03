@@ -3,7 +3,7 @@
 // bundles it to the client tree on demand (when imported by a client
 // component) without us forcing the boundary here. Same convention as
 // `citation-card.tsx`, `enrichment-source-badge.tsx`.
-import { Check, Pause, X as XIcon } from 'lucide-react';
+import { Check, Pause, X as XIcon } from '@/lib/icons';
 import { cn } from '@/lib/shared/utils';
 import type { Decision } from '@/lib/shared/types';
 

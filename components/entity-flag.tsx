@@ -3,7 +3,7 @@
 import { useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQueryClient, type QueryKey } from '@tanstack/react-query';
-import { Pin, Loader2, Trash2 } from 'lucide-react';
+import { Pin, Loader2, Trash2 } from '@/lib/icons';
 import { toast } from 'sonner';
 import type { FlagNote, Decision } from '@/lib/shared/types';
 import { loadSettings, getApiHeaders } from '@/lib/client/stores/settings-store';
@@ -143,7 +143,7 @@ export function EntityFlag({
               className={`relative inline-flex items-center justify-center rounded ${buttonSize} ${visuals.buttonClass} transition-colors`}
               onClick={(e) => e.stopPropagation()}
             >
-              <StateIcon className={`${iconSize} ${visuals.iconClass}`} />
+              <StateIcon weight={visuals.iconWeight} className={iconSize} />
               {totalCount > 1 && !visuals.tooltip && (
                 <span className="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[14px] h-[14px] px-1 rounded-full bg-amber-500 text-white text-[9px] font-semibold leading-none">
                   {totalCount}
@@ -276,14 +276,14 @@ function decisionVisuals(
     const v = DECISION_VARIANTS[decision];
     return {
       Icon: v.Icon,
-      iconClass: 'fill-none',
+      iconWeight: 'regular' as const,
       buttonClass: v.iconButton,
       tooltip: `Entschieden: ${v.label}`,
     };
   }
   return {
     Icon: Pin,
-    iconClass: iAmFlagging ? 'fill-amber-400' : '',
+    iconWeight: iAmFlagging ? ('fill' as const) : ('regular' as const),
     buttonClass: `text-muted-foreground/70 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-500/15 ${iAmFlagging ? 'text-amber-500' : ''}`,
     tooltip: null as string | null,
   };

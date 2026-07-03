@@ -10,7 +10,10 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --color-brand: #0047bb;
+  /* Legacy-Alias (unsuffixiertes bg-/text-brand): hängt an derselben var()-Kette
+     wie brand-500, damit ein künftiger Dark-Override von --brand-500 überall
+     durchschlägt statt hier statisch festgebacken zu sein. */
+  --color-brand: var(--brand-500);
   /* Flagship venue (Nature/Science family) attention pulse. Registered as a
      theme animation — the Tailwind v4 way to extend `animate-*` — so it works
      with the `motion-safe:` variant (see venue-line.tsx). Deliberately louder
@@ -67,27 +70,78 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
+
+  /* ── ÖAW Design System — Tokens (docs/design/DESIGN_SYSTEM.md) ──────────
+     Additiv zu den shadcn-Bestands-Tokens. Rohwerte in :root/.dark unten;
+     hier als @theme-Mappings, damit bg-/text-/border-/shadow-Utilities sie
+     auflösen (dark-fähig via var()). Utilities: bg-brand-500, text-ink-subtle,
+     border-line, bg-surface, text-danger, shadow-card, … SSOT: DESIGN_SYSTEM.md.
+     Rollout-Plan: docs/DESIGN_ROLLOUT.md (Phase A). */
+  --color-brand-50: var(--brand-50);
+  --color-brand-100: var(--brand-100);
+  --color-brand-200: var(--brand-200);
+  --color-brand-300: var(--brand-300);
+  --color-brand-400: var(--brand-400);
+  --color-brand-500: var(--brand-500);
+  --color-brand-600: var(--brand-600);
+  --color-brand-700: var(--brand-700);
+  --color-brand-800: var(--brand-800);
+  --color-brand-900: var(--brand-900);
+  --color-canvas: var(--n-canvas);
+  --color-surface: var(--n-surface);
+  --color-surface-muted: var(--n-surface-muted);
+  --color-fill: var(--n-fill);
+  --color-line: var(--n-line);
+  --color-line-strong: var(--n-line-strong);
+  --color-ink-muted: var(--n-ink-muted);
+  --color-ink-subtle: var(--n-ink-subtle);
+  --color-ink-soft: var(--n-ink-soft);
+  --color-ink-strong: var(--n-ink-strong);
+  --color-ink-heading: var(--n-ink-heading);
+  --color-ink: var(--n-ink);
+  --color-info: var(--state-info);
+  --color-info-tint: var(--state-info-tint);
+  --color-success: var(--state-success);
+  --color-success-tint: var(--state-success-tint);
+  --color-warning: var(--state-warning);
+  --color-warning-ink: var(--state-warning-ink);
+  --color-warning-tint: var(--state-warning-tint);
+  --color-warning-line: var(--state-warning-line);
+  --color-danger: var(--state-danger);
+  --color-danger-tint: var(--state-danger-tint);
+  --color-danger-line: var(--state-danger-line);
+  --color-soon: var(--state-soon);
+  --color-soon-tint: var(--state-soon-tint);
+  --shadow-card: var(--elevation-card);
+  --shadow-card-hover: var(--elevation-card-hover);
+  --shadow-popover: var(--elevation-popover);
+  --shadow-modal: var(--elevation-modal);
+  --shadow-btn: var(--elevation-btn);
 }
 
 :root {
   --radius: 0.625rem;
   --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  /* Kern-Neutrals auf ÖAW-Slate umgepolt (Rollout Phase D, mock-exakt =
+     Phase-A-Rohwerte). Surfaces (--background/--card/--popover) bleiben weiß;
+     die Seiten-Canvas (#f7f8fa) kommt über `body { bg-canvas }` unten, damit
+     Modals/Cards weiß auf Canvas sitzen (wie im Mock). Kontrast geprüft. */
+  --foreground: var(--n-ink);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: var(--n-ink);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.38 0.18 260);
+  --popover-foreground: var(--n-ink);
+  --primary: var(--brand-500);
   --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --secondary: var(--n-fill);
+  --secondary-foreground: var(--n-ink-strong);
+  --muted: var(--n-fill);
+  --muted-foreground: var(--n-ink-subtle);
+  --accent: var(--n-fill);
+  --accent-foreground: var(--n-ink-strong);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
+  --border: var(--n-line);
+  --input: var(--n-line-strong);
   --ring: oklch(0.48 0.15 260);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
@@ -114,26 +168,57 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* ── ÖAW Design System — Rohwerte (Spiegel von DESIGN_SYSTEM.md §2/§5) ──
+     Additiv & non-breaking: brechen nichts, bis Komponenten sie konsumieren
+     (Phase B+, docs/DESIGN_ROLLOUT.md). @theme-Mappings oben. */
+  /* Marke — ÖAW-Blau (500 = #0047bb) */
+  --brand-50: #eef4ff;  --brand-100: #dbe7ff; --brand-200: #b8ccff;
+  --brand-300: #85a6ff; --brand-400: #4b78ee; --brand-500: #0047bb;
+  --brand-600: #003ea3; --brand-700: #00337f; --brand-800: #0a2a60;
+  --brand-900: #0d2450;
+  /* Neutral — kühl getöntes Slate (Rollen statt Skala) */
+  --n-canvas: #f7f8fa;      --n-surface: #ffffff;    --n-surface-muted: #fbfcfd;
+  --n-fill: #eef1f5;        --n-line: #e2e6ec;       --n-line-strong: #cbd2dc;
+  --n-ink-muted: #9aa4b2;   --n-ink-subtle: #64707f; --n-ink-soft: #475262;
+  --n-ink-strong: #333d4c;  --n-ink-heading: #212b38; --n-ink: #16202e;
+  /* Semantische Zustände (Text/Tint/Border) */
+  --state-info: #0047bb;    --state-info-tint: #eef4ff;
+  --state-success: #059669; --state-success-tint: #e7f7ef;
+  --state-warning: #d97706; --state-warning-ink: #92620c;
+  --state-warning-tint: #fdf1e3; --state-warning-line: #f4dcb8;
+  --state-danger: #dc2626;  --state-danger-tint: #fdeaea; --state-danger-line: #f4c4c4;
+  --state-soon: #c2410c;    --state-soon-tint: #fdeee3;
+  /* Elevation (§5) */
+  --elevation-card: 0 1px 2px rgba(16, 32, 46, .05);
+  --elevation-card-hover: 0 5px 16px rgba(16, 32, 46, .13);
+  --elevation-popover: 0 6px 16px rgba(16, 32, 46, .10);
+  --elevation-modal: 0 24px 60px rgba(13, 36, 80, .32);
+  --elevation-btn: 0 1px 2px rgba(0, 71, 187, .3);
 }
 
 .dark {
   --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
+  /* Dark: Kern-Neutrals auf ÖAW-Dark-Slate (Phase-A/-B-Dark-Werte). Surfaces
+     (--background/--card/--popover) + --primary bleiben wie gehabt (Elevation/
+     Primär-Button-Look unverändert); nur die Neutral-Skala + Foregrounds kühl
+     getönt. Light-first; Dark-Feinschliff bleibt der In-Browser-Sweep. */
+  --foreground: var(--n-ink);
   --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
+  --card-foreground: var(--n-ink);
   --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
+  --popover-foreground: var(--n-ink);
   --primary: oklch(0.922 0 0);
   --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  --secondary: var(--n-fill);
+  --secondary-foreground: var(--n-ink);
+  --muted: var(--n-fill);
+  --muted-foreground: var(--n-ink-subtle);
+  --accent: var(--n-fill);
+  --accent-foreground: var(--n-ink);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
+  --border: var(--n-line);
+  --input: var(--n-line-strong);
   --ring: oklch(0.556 0 0);
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
@@ -160,6 +245,31 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+
+  /* ── ÖAW Design System — Dark-Overrides ────────────────────────────────
+     Das Design Book ist light-first; hier lesbare Dark-Entsprechungen der
+     Neutral-Rollen + Zustand-Tints, damit früh-adoptierende Komponenten in
+     dark nicht brechen. Marke + State-Textfarben bleiben (lesen auf Tints ok).
+     Feinschliff pro Screen in Phase D. */
+  --n-canvas: #0e141b;      --n-surface: #161e27;    --n-surface-muted: #1b242e;
+  --n-fill: #232e3a;        --n-line: #2a3542;       --n-line-strong: #3a4757;
+  --n-ink-muted: #7c8794;   --n-ink-subtle: #9aa4b2; --n-ink-soft: #b4bdc9;
+  --n-ink-strong: #cdd5df;  --n-ink-heading: #e4e9ef; --n-ink: #f0f3f7;
+  --state-info-tint: #12233f;   --state-success-tint: #0f2a20;
+  --state-warning-tint: #2e2410; --state-danger-tint: #331515;
+  --state-soon-tint: #2e1a10;
+  /* Line-Töne der Tints (Borders): die Light-Pastelle (#f4dcb8/#f4c4c4) würden
+     auf den dunklen Tints grell aufreißen — stattdessen aufgehellte, entsättigte
+     Varianten des jeweiligen Tint-Huetons (~2× Tint-Luminanz). */
+  --state-warning-line: #5a471a; --state-danger-line: #5f2525;
+  /* Dark-mode state TEXT: the light-first fg values (e.g. info #0047bb) sink to
+     ~2:1 on the dark tints above. Lift each to a light tint of its own hue so the
+     status/score badges clear WCAG AA (≥4.5:1) on the dark tints. */
+  --state-info: #85a6ff;    /* brand-300 on #12233f ≈ 6.5:1 */
+  --state-success: #34d399; /* on #0f2a20 ≈ 7:1 */
+  --state-warning: #fbbf24; --state-warning-ink: #fcd34d; /* on #2e2410 */
+  --state-danger: #f87171;  /* on #331515 ≈ 5.5:1 */
+  --state-soon: #fb923c;    /* on #2e1a10 ≈ 6:1 */
 }
 
 @layer base {
@@ -167,7 +277,9 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    /* Seiten-Canvas (#f7f8fa light / #0e141b dark) — Surfaces bleiben weiß über
+       --card/--popover, sodass Cards/Modals auf der Canvas sitzen (Mock). */
+    @apply bg-canvas text-foreground;
   }
 }
 

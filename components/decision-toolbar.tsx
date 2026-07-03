@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Loader2, CalendarIcon, MessageSquarePlus } from 'lucide-react';
+import { Loader2, CalendarIcon, MessageSquarePlus } from '@/lib/icons';
 import { toast } from 'sonner';
 import type { Publication, Decision } from '@/lib/shared/types';
 import type { MeistertaskPushResult } from "@/lib/shared/meistertask-types";

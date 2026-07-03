@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
-import { ChevronRight, ChevronDown } from 'lucide-react';
+import { ChevronRight, ChevronDown } from '@/lib/icons';
 import { Badge } from '@/components/ui/badge';
 import { isWithinDays } from '@/lib/shared/social-filter';
 import type { SocialPost } from '@/lib/shared/types';

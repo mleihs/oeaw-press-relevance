@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { Camera, Maximize2 } from 'lucide-react';
+import { Camera, Maximize2 } from '@/lib/icons';
 import { cn } from '@/lib/shared/utils';
 import { ImageQuickview, type QuickviewRect } from './image-quickview';
 

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { motion } from 'motion/react';
-import { Star } from 'lucide-react';
+import { Star } from '@/lib/icons';
 import { InfoBubble } from '@/components/info-bubble';
 import { EmptyState } from '@/components/empty-state';
 import { displayTitle } from '@/lib/shared/publication-display';
@@ -56,7 +56,7 @@ export function PubList({ publications }: PubListProps) {
                   )}
                   {p.mahighlight && (
                     <span className="inline-flex items-center gap-0.5 text-brand">
-                      <Star className="h-2.5 w-2.5 fill-current" />
+                      <Star weight="fill" className="h-2.5 w-2.5" />
                       Eigen-Highlight
                       <InfoBubble id="mahighlight_self" />
                     </span>

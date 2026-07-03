@@ -17,7 +17,7 @@ import { getApiHeaders } from '@/lib/client/stores/settings-store';
 import { consumeSSE } from '@/lib/client/sse';
 import { LLM_MODELS } from '@/lib/shared/constants';
 import { cn } from '@/lib/shared/utils';
-import { Brain, Play, AlertCircle, Check, Loader2 } from 'lucide-react';
+import { Brain, Play, AlertCircle, Check, Loader2 } from '@/lib/icons';
 
 type Phase = 'idle' | 'running' | 'done' | 'error';
 const DEFAULT_MODEL = 'deepseek/deepseek-chat';

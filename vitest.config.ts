@@ -5,11 +5,21 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, '.'),
+      // `server-only` is a bare specifier Next resolves at build time; under
+      // vitest's plain-Node run there is no bundler to resolve it, so map it to
+      // an empty module (the server-side no-op). Lets server-guarded read
+      // modules (lib/server/**/{list,fetch}.ts) be unit-tested.
+      'server-only': path.resolve(__dirname, 'test/server-only-shim.ts'),
     },
   },
   test: {
     environment: 'node',
-    include: ['{app,components,lib}/**/*.test.{ts,tsx}'],
+    // App/lib tests are .ts(x); the node-run helper scripts under scripts/lib
+    // (cf. scripts/lib/doi-extract.mjs) are .mjs and carry co-located .test.mjs.
+    include: [
+      '{app,components,lib}/**/*.test.{ts,tsx}',
+      'scripts/**/*.test.mjs',
+    ],
     coverage: {
       provider: 'v8',
       // Measurement only (no enforced threshold yet) so `npm run test:coverage`

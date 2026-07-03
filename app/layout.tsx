@@ -30,8 +30,8 @@ const newsreader = Newsreader({
 });
 
 export const metadata: Metadata = {
-  title: "Story Scout | ÖAW",
-  description: "Story Scout findet die besten Stories in Publikationen der Österreichischen Akademie der Wissenschaften",
+  title: "Science Propaganda Ninja | ÖAW",
+  description: "Science Propaganda Ninja findet die besten Stories in Publikationen der Österreichischen Akademie der Wissenschaften",
 };
 
 export default function RootLayout({
@@ -42,10 +42,10 @@ export default function RootLayout({
   return (
     <html lang="de" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable} antialiased bg-background text-foreground flex flex-col min-h-screen`}
+        className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable} antialiased bg-canvas text-foreground flex flex-col min-h-screen`}
       >
         {/* Fumadocs RootProvider: theme disabled so next-themes stays in
-            charge; search disabled because Story Scout owns a single global
+            charge; search disabled because Science Propaganda Ninja owns a single global
             ⌘K palette (components/command) that surfaces Orama help results
             itself via useDocsSearch. Disabling it here removes Fumadocs's
             duplicate global ⌘K + its sidebar search trigger; DocsLayout still
@@ -66,7 +66,7 @@ export default function RootLayout({
                   </main>
                   <footer className="border-t bg-background/50 mt-auto">
                     <div className="mx-auto max-w-7xl px-4 py-4 flex items-center justify-between text-xs text-muted-foreground">
-                      <span>Story Scout 0.2</span>
+                      <span>Science Propaganda Ninja 0.1</span>
                       <div className="flex items-center gap-4">
                         <Link href="/settings" className="hover:text-foreground transition-colors">
                           Einstellungen

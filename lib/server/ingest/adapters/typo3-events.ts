@@ -22,6 +22,7 @@ import {
   type WebdbMysqlConfig,
 } from './webdb';
 import { tsTimestamp, nullIfEmpty } from './webdb-normalize';
+import type { EventLang } from '@/lib/shared/types';
 
 export interface RawTypo3Event {
   uid: number;
@@ -43,8 +44,6 @@ export interface RawTypo3Event {
    *  this row via l10n_parent. Null when no translation exists. */
   translation_langs: string | null;
 }
-
-export type EventLang = 'de' | 'en' | 'mul';
 
 export interface NormalizedEvent {
   webdbUid: number;

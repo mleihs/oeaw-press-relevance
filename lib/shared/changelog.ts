@@ -14,6 +14,39 @@ export interface ChangelogEntry {
 // auf das heutige Datum heben, sonst zeigt der Unread-Dot keinen neuen Stand an.
 export const changelogEntries: ChangelogEntry[] = [
   {
+    category: 'neu',
+    title: 'Veranstaltungen: Suche und Filter in der Liste',
+    body: 'Die Veranstaltungsliste hat jetzt eine Filterleiste: eine Volltextsuche über Titel und Teaser, einen Filter nach Relevanz-Band (Hoch, Mittel, Niedrig oder noch unbewertet) und eine Auswahl nach Institut. Die Filter stehen in der Adresszeile, bleiben also beim Blättern und beim Umschalten zwischen Liste und Kalender erhalten und lassen sich als Lesezeichen oder Link teilen.',
+  },
+  {
+    category: 'verbesserung',
+    title: 'Veranstaltungen: Begründung direkt am Score',
+    body: 'In der Veranstaltungsliste zeigt der Relevanz-Score jetzt beim Überfahren mit der Maus oder per Tastatur die zugehörige Begründung an, ohne dass man erst die Detailansicht öffnen muss. So lässt sich auf einen Blick nachvollziehen, warum eine Veranstaltung hoch oder niedrig eingestuft wurde.',
+  },
+  {
+    category: 'verbesserung',
+    title: 'Veranstaltungen: geschärfte Relevanz-Bewertung',
+    body: 'Die Relevanz-Bewertung der Veranstaltungen wurde neu kalibriert. Öffentliche Formate wie Vorträge, Ausstellungen, Buchpräsentationen und Kinderuni sowie international sichtbare Flaggschiff-Kongresse und tagesaktuelle Themen treten jetzt deutlicher hervor, rein interne Formate wie Fachseminare oder geschlossene Arbeitstreffen werden klarer nach unten gestuft. Die vier Einzel-Dimensionen werden zudem unabhängiger voneinander bewertet, damit die Gesamtwertung die tatsächliche Eignung für die Öffentlichkeitsarbeit besser trifft.',
+  },
+  {
+    category: 'hintergrund',
+    title: 'Social Media: kostensparenderes Laden der Kanäle',
+    body: 'Der Social-Media-Abruf holt pro Instagram-Kanal jetzt nur noch genau dessen eingestellten Beobachtungszeitraum, statt für alle Kanäle das jeweils breiteste Fenster zu laden und Überschüssiges wieder zu verwerfen. Da der Abrufdienst pro Beitrag abrechnet, spart das Kosten, sobald Kanäle unterschiedliche Zeiträume haben. Bei einheitlichem Zeitraum bleibt alles wie bisher; die Abrufe laufen weiterhin parallel, also ohne Tempoverlust.',
+    href: '/help/social/kanaele-verwalten#datenquelle',
+  },
+  {
+    category: 'neu',
+    title: 'Veranstaltungen: Wochen- und Monatskalender',
+    body: 'Die Events-Seite hat jetzt neben der Liste eine Wochen- und eine Monatsansicht. Jeder Termin erscheint als farbiger Block, dessen Farbe die Relevanz auf einen Blick zeigt (von Grau für unbewertet bis Brand-Blau für hochrelevant), mit dezenter Zeit- und Score-Angabe; die getroffene Entscheidung (Pitch/Hold/Skip) sitzt als kleines Symbol in der Ecke. Ein Klick öffnet ein Cockpit mit Score-Aufschlüsselung, Pitch und den Triage-Buttons. Umgeschaltet wird über Liste · Woche · Monat, geblättert per Pfeil oder „Heute".',
+    href: '/help/events/kalender-ansichten',
+  },
+  {
+    category: 'neu',
+    title: 'Einstellbare Bewertungs-Gewichtung für Events',
+    body: 'In den Einstellungen lässt sich jetzt festlegen, wie stark die vier Einzel-Scores einer Veranstaltung (Öffentlichkeitswirkung, Wissenschaftliche Bedeutung, Reichweite, Aktualität) in den Gesamt-Relevanzscore eingehen: über Presets oder einen Aufteilungsbalken (immer 100 %), mit Live-Vorschau. Beim Speichern werden alle bewerteten Events sofort neu berechnet; jede Einstellung wird im Verlauf gesichert und lässt sich per „Übernehmen" wiederherstellen.',
+    href: '/help/events/bewertungs-gewichtung',
+  },
+  {
     category: 'verbesserung',
     title: 'Fehlender Score: jetzt mit konkretem Grund',
     body: 'Publikationen ohne Story Score zeigen in der „N/A"-Bubble jetzt einen pro Eintrag verfassten Grund statt eines allgemeinen Hinweises. Je nach Fall: keine DOI hinterlegt (bei Zeitschriften-Beiträgen oft nachtragbar), ein Publikationstyp wie Sammelwerks- oder Zeitungsbeitrag, der in CrossRef/OpenAlex gar nicht geführt wird, eine vergebene DOI ohne frei abrufbaren Abstract, ein Buch- bzw. Sammelband-DOI, oder ein noch nicht erschienenes Paper (Pre-Publication-Window). Der spezifische Grund steht voran, die allgemeine Erklärung folgt als Kontext.',
@@ -120,7 +153,7 @@ export const changelogClosing =
  * Bump this whenever a new entry is added on top so that returning users
  * see the brand-colored dot until they open the panel.
  */
-export const changelogLastUpdated = '2026-06-17T12:00:00.000Z';
+export const changelogLastUpdated = '2026-07-02T12:00:00.000Z';
 
 /** Auto-derived from changelogLastUpdated: single source of truth for the
  *  panel's soft date anchor ("Stand Mai 2026"). */

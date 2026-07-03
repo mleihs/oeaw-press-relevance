@@ -33,7 +33,7 @@ import {
 import {
   ClipboardCheck, Pin, Crown, Sparkles, CheckCircle2, Loader2, Info,
   Calendar as CalendarIcon, Clock, ListChecks,
-} from 'lucide-react';
+} from '@/lib/icons';
 import type { EXPL } from '@/lib/client/explanations';
 
 type SortMode = 'press_score' | 'combined';

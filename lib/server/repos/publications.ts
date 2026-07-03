@@ -68,6 +68,25 @@ const QUEUE_WITH = {
   },
 } as const;
 
+// Heavy citation-export scalar columns excluded from the LIST projection to
+// cut pooler egress (never rendered in the table or its row-detail sheet).
+// `LIST_TRIMMED_COLUMNS` is the matching key list the list-mapper null-refills
+// so the wire DTO keeps its `string | null` shape. Keep the two in sync.
+export const LIST_TRIMMED_COLUMNS = [
+  'ris',
+  'bibtex',
+  'endnote',
+  'citationApa',
+  'fullTextSnippet',
+] as const;
+const LIST_COLUMN_EXCLUDE = {
+  ris: false,
+  bibtex: false,
+  endnote: false,
+  citationApa: false,
+  fullTextSnippet: false,
+} as const;
+
 export interface UpdateDecisionSet {
   decision: Decision;
   decidedBy: string | null;
@@ -105,6 +124,13 @@ export const publicationsRepo = {
       orderBy: opts.orderBy,
       limit: opts.limit,
       offset: opts.offset,
+      // Drop the heavy citation-export blobs from the LIST projection: raw
+      // BibTeX/RIS/EndNote/APA and the full-text snippet are never rendered in
+      // the table or its row-detail sheet, but were being SELECTed (and shipped
+      // over the pooler) for every row. `list.ts` null-refills them at the
+      // publicationToApi boundary so the wire DTO shape is unchanged. Kept:
+      // abstract / enriched_abstract (the sheet renders them).
+      columns: LIST_COLUMN_EXCLUDE,
       with: listWith(opts.embedOrgunitWhere),
     });
   },

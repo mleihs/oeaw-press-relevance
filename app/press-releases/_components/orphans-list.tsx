@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ChevronDown, AlertCircle, Users, ExternalLink } from 'lucide-react';
+import { ChevronDown, AlertCircle, Users, ExternalLink } from '@/lib/icons';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { SectionLabel } from '@/components/section-label';

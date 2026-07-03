@@ -25,9 +25,9 @@ describe('formatPubDate', () => {
     expect(formatPubDate('2026-01-01')).toBe('2026');
   });
 
-  it('returns an em-dash for a missing date', () => {
-    expect(formatPubDate(null)).toBe('—');
-    expect(formatPubDate(undefined)).toBe('—');
+  it('returns an en-dash for a missing date', () => {
+    expect(formatPubDate(null)).toBe('–');
+    expect(formatPubDate(undefined)).toBe('–');
   });
 });
 

@@ -1,7 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { runLLMBatch, type RunLLMBatchOptions } from './llm-batch';
+import {
+  runLLMBatch,
+  preflightBalance,
+  type RunLLMBatchOptions,
+} from './llm-batch';
+import { checkKeyBalance } from '@/lib/server/openrouter';
 
 vi.mock('@/lib/server/log', () => ({ log: { error: vi.fn(), warn: vi.fn(), info: vi.fn() } }));
+
+// Keep the REAL isFatalLlmError (the runLLMBatch error-classification tests
+// depend on it); stub only the network-touching checkKeyBalance.
+vi.mock('@/lib/server/openrouter', async (orig) => ({
+  ...(await orig<typeof import('@/lib/server/openrouter')>()),
+  checkKeyBalance: vi.fn(),
+}));
+
+const mockBalance = vi.mocked(checkKeyBalance);
 
 interface Item { id: string }
 interface Res { ok: boolean }
@@ -123,5 +137,136 @@ describe('runLLMBatch', () => {
     expect(onBatchStart.mock.calls[0][0]).toMatchObject({ processed: 0, batchIndex: 1, totalBatches: 3, total: 5 });
     expect(onBatchStart.mock.calls[1][0]).toMatchObject({ processed: 2, batchIndex: 2 });
     expect(onBatchStart.mock.calls[2][0]).toMatchObject({ processed: 4, batchIndex: 3 });
+  });
+});
+
+describe('preflightBalance', () => {
+  // A fully-funded key (the common happy case).
+  const HEALTHY = {
+    limitRemaining: 10,
+    usage: 1,
+    limit: 20,
+    accountBalance: 8,
+    effectiveBudget: 8,
+  };
+
+  type Ev = { type: string; data: Record<string, unknown> };
+  function collectEvents() {
+    const events: Ev[] = [];
+    const emit = vi.fn((type: string, data: unknown) => {
+      events.push({ type, data: data as Record<string, unknown> });
+    });
+    return { events, emit };
+  }
+  const ofType = (events: Ev[], type: string) =>
+    events.filter((e) => e.type === type);
+
+  beforeEach(() => vi.clearAllMocks());
+
+  it('emits a single init frame and returns true when funded', async () => {
+    mockBalance.mockResolvedValue(HEALTHY);
+    const { events, emit } = collectEvents();
+
+    const ok = await preflightBalance({
+      apiKey: 'abcdefghijklmnop',
+      total: 7,
+      model: 'deepseek/deepseek-chat',
+      emit,
+    });
+
+    expect(ok).toBe(true);
+    expect(events.map((e) => e.type)).toEqual(['init']);
+    expect(ofType(events, 'init')[0].data).toEqual({
+      total: 7,
+      model: 'deepseek/deepseek-chat',
+      api_key_hint: '...ijklmnop',
+      key_balance: HEALTHY,
+    });
+  });
+
+  it('masks a short key as *** in the init frame', async () => {
+    mockBalance.mockResolvedValue(HEALTHY);
+    const { events, emit } = collectEvents();
+    await preflightBalance({ apiKey: 'short', total: 1, model: 'm', emit });
+    expect(ofType(events, 'init')[0].data.api_key_hint).toBe('***');
+  });
+
+  it('on an exhausted budget emits fatal error + zero complete and returns false', async () => {
+    mockBalance.mockResolvedValue({
+      limitRemaining: 0.002,
+      usage: 5,
+      limit: 5,
+      accountBalance: 0.001,
+      effectiveBudget: 0.001,
+    });
+    const { events, emit } = collectEvents();
+
+    const ok = await preflightBalance({
+      apiKey: 'abcdefghijklmnop',
+      total: 4,
+      model: 'm',
+      emit,
+    });
+
+    expect(ok).toBe(false);
+    // The exact frame order the analysis/event modals consume.
+    expect(events.map((e) => e.type)).toEqual(['init', 'error', 'complete']);
+
+    const err = ofType(events, 'error')[0].data;
+    expect(err.fatal).toBe(true);
+    expect(err.message).toBe(
+      'OpenRouter-Budget aufgebraucht: $0.0010 verfügbar ' +
+        '(Key-Limit: $0.0020 verbleibend, Account-Guthaben: $0.0010). ' +
+        'Bitte Credits aufladen auf openrouter.ai/settings/credits.',
+    );
+
+    expect(ofType(events, 'complete')[0].data).toEqual({
+      processed: 0,
+      total: 4,
+      successful: 0,
+      failed: 4,
+      tokens_used: 0,
+      cost: 0,
+    });
+  });
+
+  it('omits an absent figure from the budget-exhausted detail', async () => {
+    // Only the key-limit is known (account balance unavailable) -> a single
+    // parenthetical part. With NEITHER known the parenthetical disappears
+    // entirely, which is exactly the legacy event-runner message.
+    mockBalance.mockResolvedValue({
+      limitRemaining: 0.005,
+      usage: 0,
+      limit: 1,
+      accountBalance: null,
+      effectiveBudget: 0.005,
+    });
+    const { events, emit } = collectEvents();
+
+    await preflightBalance({ apiKey: 'k', total: 2, model: 'm', emit });
+
+    expect(ofType(events, 'error')[0].data.message).toBe(
+      'OpenRouter-Budget aufgebraucht: $0.0050 verfügbar ' +
+        '(Key-Limit: $0.0050 verbleibend). ' +
+        'Bitte Credits aufladen auf openrouter.ai/settings/credits.',
+    );
+  });
+
+  it('proceeds (returns true) when the budget is unknown (all null)', async () => {
+    // checkKeyBalance's fallback: no budget data at all. We can't prove
+    // exhaustion, so the run is allowed to start (only 'init' fires).
+    mockBalance.mockResolvedValue({
+      limitRemaining: null,
+      usage: 0,
+      limit: null,
+      accountBalance: null,
+      effectiveBudget: null,
+    });
+    const { events, emit } = collectEvents();
+
+    const ok = await preflightBalance({ apiKey: 'k', total: 3, model: 'm', emit });
+
+    expect(ok).toBe(true);
+    expect(events.map((e) => e.type)).toEqual(['init']);
   });
 });

@@ -6,9 +6,11 @@ import {
   Pause,
   X as XIcon,
   type LucideIcon,
-} from 'lucide-react';
+} from '@/lib/icons';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/shared/utils';
+import { buildEventsUrl, type EventsFilterState } from '../_lib/build-events-url';
+import type { CalendarView } from '../_lib/calendar-range';
 import {
   EVENTS_TAB_VALUES,
   type EventsStats,
@@ -33,9 +35,20 @@ const TAB_DISPLAY: Record<
 export function EventsTabsNav({
   activeTab,
   stats,
+  main = false,
+  view = null,
+  date = null,
+  filters,
 }: {
   activeTab: EventsTab;
   stats: EventsStats;
+  /** Carried through so switching decision tabs preserves the main-news toggle
+   *  and the active calendar view/date instead of resetting to the list. */
+  main?: boolean;
+  view?: CalendarView | null;
+  date?: string | null;
+  /** List filters (search/band/institute) preserved across a tab switch. */
+  filters?: EventsFilterState;
 }) {
   return (
     <nav
@@ -45,7 +58,7 @@ export function EventsTabsNav({
       {EVENTS_TAB_VALUES.map((value) => {
         const { label, Icon, statsKey } = TAB_DISPLAY[value];
         const isActive = value === activeTab;
-        const href = value === 'upcoming' ? '/events' : `/events?tab=${value}`;
+        const href = buildEventsUrl({ tab: value, main, ...filters, view, date });
         return (
           <Link
             key={value}

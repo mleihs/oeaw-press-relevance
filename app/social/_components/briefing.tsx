@@ -1,4 +1,4 @@
-import { Sparkles } from 'lucide-react';
+import { Sparkles } from '@/lib/icons';
 import { InfoBubble } from '@/components/info-bubble';
 
 /** The LLM-generated narrative summary — the "5-second" takeaway, directly

@@ -1,4 +1,9 @@
 import sanitizeHtml from 'sanitize-html';
+import {
+  ANCHOR_ALLOWED_SCHEMES,
+  anchorTransform,
+  emptyAnchorFilter,
+} from '@/lib/server/html-sanitize';
 
 // Server-side HTML helpers for the events feature. The strip-to-text path
 // (formerly `stripHtmlToText`) lives in `lib/shared/html-utils.ts` as
@@ -31,25 +36,17 @@ export function sanitizeEventInformation(html: string): string {
     // transformTags BEFORE the attribute allow-list pass, so without them
     // here the `target=_blank rel=noopener noreferrer` we add below would
     // get silently dropped (caught by sanitize-event-info.test.ts).
+    // Anchor policy is shared with the board sanitizer: lib/server/html-sanitize.ts.
     allowedAttributes: {
       a: ['href', 'class', 'target', 'rel'],
     },
-    allowedSchemes: ['https', 'http', 'mailto', 'tel'],
+    allowedSchemes: ANCHOR_ALLOWED_SCHEMES,
     transformTags: {
-      a: (tagName, attribs) => ({
-        tagName: 'a',
-        attribs: {
-          ...attribs,
-          target: '_blank',
-          rel: 'noopener noreferrer',
-        },
-      }),
+      a: anchorTransform,
     },
-    // Strip TYPO3-specific link schemes (t3://) the editor sometimes leaves
-    // in download icons; without an allowed-scheme match sanitize-html
-    // already drops the href, but this prevents the empty `<a>` shell from
-    // staying visible-yet-dead in the rendered output.
-    exclusiveFilter: (frame) =>
-      frame.tag === 'a' && !frame.attribs.href,
+    // Also strips TYPO3-specific link schemes (t3://) the editor sometimes
+    // leaves in download icons: without an allowed-scheme match the href is
+    // already dropped, and the filter removes the empty `<a>` shell.
+    exclusiveFilter: emptyAnchorFilter,
   });
 }

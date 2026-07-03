@@ -9,7 +9,7 @@ import {
   TrendingUp,
   Wrench,
   type LucideIcon,
-} from 'lucide-react';
+} from '@/lib/icons';
 import {
   Sheet,
   SheetClose,

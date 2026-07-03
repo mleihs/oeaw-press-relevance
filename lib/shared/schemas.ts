@@ -120,6 +120,24 @@ export const socialSettingsUpdateSchema = z.object({
 
 export type SocialSettingsUpdate = z.infer<typeof socialSettingsUpdateSchema>;
 
+// Event-score weights save. Raw, non-negative "relative importance" values
+// (bounded so a fat-finger can't overflow); the server normalizes them to sum 1
+// before storing. At least one must be > 0.
+export const eventScoreWeightsUpdateSchema = z
+  .object({
+    public_appeal: z.coerce.number().min(0).max(1000),
+    scientific_significance: z.coerce.number().min(0).max(1000),
+    reach: z.coerce.number().min(0).max(1000),
+    timeliness: z.coerce.number().min(0).max(1000),
+    note: z.string().trim().max(120).optional(),
+  })
+  .refine(
+    (d) => d.public_appeal + d.scientific_significance + d.reach + d.timeliness > 0,
+    { message: 'Mindestens ein Gewicht muss größer als 0 sein.' },
+  );
+
+export type EventScoreWeightsUpdate = z.infer<typeof eventScoreWeightsUpdateSchema>;
+
 // ===========================================================================
 // API-edge query / param / payload schemas (Pass A, ADR 0018)
 //
@@ -187,6 +205,37 @@ export const gatePayloadSchema = z.object({
   password: z.string().min(1, 'Password required'),
 });
 export type GatePayload = z.infer<typeof gatePayloadSchema>;
+
+/** POST /api/auth/login (Supabase-Auth-Identität hinter dem Gate). */
+export const loginPayloadSchema = z.object({
+  email: z.email('Bitte eine gültige E-Mail-Adresse angeben.'),
+  password: z.string().min(1, 'Passwort erforderlich.'),
+});
+export type LoginPayload = z.infer<typeof loginPayloadSchema>;
+
+export const userRoleSchema = z.enum(['admin', 'member']);
+
+/** POST /api/auth/users — Nutzer anlegen (admin-only). Das Initialpasswort
+ *  generiert das Formular client-seitig (generatePassword) und der Admin
+ *  gibt es persönlich weiter; min 10 hält Tippfehler-Passwörter fern. */
+export const userCreatePayloadSchema = z.object({
+  email: z.email('Bitte eine gültige E-Mail-Adresse angeben.'),
+  password: z.string().min(10, 'Initialpasswort braucht mindestens 10 Zeichen.'),
+  displayName: z.string().trim().min(1, 'Name erforderlich.').max(120),
+  role: userRoleSchema,
+});
+export type UserCreatePayload = z.infer<typeof userCreatePayloadSchema>;
+
+/** PATCH /api/auth/users/[id] — Rolle ändern und/oder (de)aktivieren. */
+export const userPatchPayloadSchema = z
+  .object({
+    role: userRoleSchema.optional(),
+    disabled: z.boolean().optional(),
+  })
+  .refine((v) => v.role !== undefined || v.disabled !== undefined, {
+    message: 'Leerer Patch: role oder disabled angeben.',
+  });
+export type UserPatchPayload = z.infer<typeof userPatchPayloadSchema>;
 
 /** GET /api/persons/[id] query. (`id` itself is validated by the
  *  server-side idParamSchema.) */

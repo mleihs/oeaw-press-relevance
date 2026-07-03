@@ -35,6 +35,7 @@
  *   node scripts/push-analysis-to-prod.mjs --apply --overwrite  # also refresh prod rows that already have a score
  */
 import { connectDb } from './lib/db.mjs';
+import { partitionForPush } from './lib/prod-sync.mjs';
 import { readFileSync } from 'fs';
 
 const argv = process.argv.slice(2);
@@ -82,10 +83,8 @@ try {
   )).rows;
   const prodScoreById = new Map(prodRows.map((r) => [r.id, r.press_score]));
 
-  const present = localRows.filter((r) => prodScoreById.has(r.id));
-  const missing = localRows.filter((r) => !prodScoreById.has(r.id));
-  const presentNull = present.filter((r) => prodScoreById.get(r.id) === null);
-  const presentScored = present.filter((r) => prodScoreById.get(r.id) !== null);
+  const { present, missing, presentNull, presentScored, toWrite } =
+    partitionForPush(localRows, prodScoreById, overwrite);
 
   console.log(`  present in prod : ${present.length}  (NULL score: ${presentNull.length}, already scored: ${presentScored.length})`);
   console.log(`  MISSING in prod : ${missing.length}  → need full publication-row sync (Phase 7), NOT pushed here`);
@@ -93,8 +92,6 @@ try {
     const m = await local.query(`SELECT id, webdb_uid, left(title,50) t FROM publications WHERE id = ANY($1::uuid[]) ORDER BY webdb_uid`, [missing.map((r) => r.id)]);
     for (const row of m.rows) console.log(`      missing: uid=${row.webdb_uid} ${row.t}`);
   }
-
-  const toWrite = overwrite ? present : presentNull;
   console.log(`\n${apply ? 'APPLY' : 'DRY-RUN'}: ${toWrite.length} prod row(s) would be ${overwrite ? 'written (incl. overwrite)' : 'updated (prod NULL only)'}.`);
   if (!overwrite && presentScored.length) console.log(`  (${presentScored.length} prod rows already scored are protected; pass --overwrite to refresh them.)`);
 

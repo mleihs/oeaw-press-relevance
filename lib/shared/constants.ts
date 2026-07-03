@@ -210,12 +210,19 @@ export const STATUS_LABELS: Record<string, string> = {
   failed: 'Fehlgeschlagen',
 };
 
-export const STATUS_COLORS: Record<string, string> = {
-  pending: 'bg-neutral-100 text-neutral-600',
-  enriched: 'bg-brand/10 text-brand',
-  partial: 'bg-amber-100 text-amber-900',
-  analyzed: 'bg-green-100 text-green-700',
-  failed: 'bg-red-100 text-red-700',
+// Status → Badge-Zustands-Variante (components/ui/badge.tsx §2.3-Varianten).
+// Die Varianten sind der SSOT der Tint/Ink-Klassen; hier nur noch das Mapping,
+// damit Status-Chips nicht per Klassen-String an der Badge-Definition
+// vorbeidriften.
+export const STATUS_BADGE_VARIANTS: Record<
+  string,
+  'neutral' | 'info' | 'success' | 'warning' | 'danger'
+> = {
+  pending: 'neutral',
+  enriched: 'info',
+  partial: 'warning',
+  analyzed: 'success',
+  failed: 'danger',
 };
 
 /**

@@ -11,7 +11,7 @@
 //   npm run analyze-events -- --target=prod --yes       # → prod, unattended
 //   npm run analyze-events -- --target=prod --yes --limit=200 --force
 
-import { loadDbUrl, parseScriptArgs } from './lib/db.mjs';
+import { loadDbUrl, parseScriptArgs, confirmProd, redactedDatabaseUrl } from './lib/db.mjs';
 
 const { target, flags } = parseScriptArgs();
 const isProd = target === 'prod';
@@ -23,26 +23,8 @@ const limitFlag = flags.find((f) => /^--limit=\d+$/.test(f));
 const limit = limitFlag ? parseInt(limitFlag.split('=')[1], 10) : 50;
 const force = flags.includes('--force');
 
-function redactedDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (!url) return '(DATABASE_URL not set)';
-  return url.replace(/:[^@/]+@/, ':***@');
-}
-
-async function confirmProd(): Promise<void> {
-  if (!isProd || flags.includes('--yes')) return;
-  process.stdout.write(`[analyze-events] PROD target: ${redactedDatabaseUrl()}\nProceed? [y/N] `);
-  const answer = await new Promise<string>((resolve) => {
-    process.stdin.once('data', (d) => resolve(d.toString().trim().toLowerCase()));
-  });
-  if (answer !== 'y' && answer !== 'yes') {
-    console.error('[analyze-events] Aborted.');
-    process.exit(1);
-  }
-}
-
 async function main(): Promise<void> {
-  await confirmProd();
+  await confirmProd({ isProd, flags, label: 'analyze-events' });
 
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {

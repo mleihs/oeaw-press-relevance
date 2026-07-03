@@ -18,6 +18,16 @@ const badgeVariants = cva(
           "border-border text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
         ghost: "[a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
         link: "text-primary underline-offset-4 [a&]:hover:underline",
+        // ── ÖAW Design System — Zustand-Varianten (Tint-BG + Zustandstext,
+        //    docs/design/DESIGN_SYSTEM.md §2.3). Additiv; konsumieren die
+        //    Phase-A-Tokens. Für Status-Chips quer über alle Features. ──
+        brand: "bg-brand-50 text-brand-700 dark:bg-brand-900 dark:text-brand-200",
+        info: "bg-info-tint text-info",
+        success: "bg-success-tint text-success",
+        warning: "bg-warning-tint text-warning-ink",
+        danger: "bg-danger-tint text-danger",
+        soon: "bg-soon-tint text-soon",
+        neutral: "bg-fill text-ink-soft",
       },
     },
     defaultVariants: {

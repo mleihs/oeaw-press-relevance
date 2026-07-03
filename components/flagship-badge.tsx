@@ -1,4 +1,4 @@
-import { Sparkles } from 'lucide-react';
+import { Sparkles } from '@/lib/icons';
 import { journalTier } from '@/lib/shared/journal-tier';
 import { cn } from '@/lib/shared/utils';
 

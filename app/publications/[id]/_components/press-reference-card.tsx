@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { motion } from 'motion/react';
-import { Sparkles, ChevronRight, Info, ExternalLink } from 'lucide-react';
+import { Sparkles, ChevronRight, Info, ExternalLink } from '@/lib/icons';
 import { useApiQuery } from '@/lib/client/hooks/use-api-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';

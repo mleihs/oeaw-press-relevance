@@ -2,7 +2,7 @@
 
 import { useQueryStates } from 'nuqs';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Users } from 'lucide-react';
+import { Users } from '@/lib/icons';
 import { filterParsers } from './_filters';
 import { FiltersBar } from './_components/filters-bar';
 import { SpotlightPodium } from './_components/spotlight-podium';

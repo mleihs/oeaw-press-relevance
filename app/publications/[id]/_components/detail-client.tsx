@@ -6,7 +6,7 @@ import {
   ExternalLink, FileText, Brain,
   Award, ShieldCheck, Megaphone, Users, Building2, FolderOpen, BookText,
   Mail, Crown, Newspaper, Info, AlertTriangle,
-} from 'lucide-react';
+} from '@/lib/icons';
 import type { PublicationWithRelations } from '@/lib/shared/types';
 import { cn } from '@/lib/shared/utils';
 import { decodeHtmlBlock } from '@/lib/shared/html-utils';
@@ -16,7 +16,7 @@ import { CitationCard } from './citation-card';
 import { doiToUrl } from '@/lib/shared/doi-utils';
 import {
   STATUS_LABELS,
-  STATUS_COLORS,
+  STATUS_BADGE_VARIANTS,
   OA_LABELS,
 } from '@/lib/shared/constants';
 import { getScoreBandClass, getScoreBandStoryLabel } from '@/lib/shared/score-utils';
@@ -29,6 +29,8 @@ import { InfoBubble } from '@/components/info-bubble';
 import { StatusBanner } from '@/components/status-banner';
 import { publicationCompleteness } from '@/lib/shared/completeness';
 import { MeistertaskButton } from '@/components/meistertask-button';
+import { CreateCardButton } from '@/components/board/create-card-button';
+import { publicationToCardSource } from '../_lib/publication-to-card-source';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { TintBadge } from '@/components/tint-badge';
@@ -65,8 +67,11 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
     <div className="space-y-6">
       {/* Header */}
       <div className="space-y-3">
-        <div className="flex items-start gap-2">
+        <div className="flex flex-wrap items-start gap-2">
           <h1 className="text-2xl font-bold leading-tight flex-1">{titleForDisplay}</h1>
+          <div className="mt-0.5 shrink-0">
+            <CreateCardButton source={publicationToCardSource(pub, titleForDisplay)} />
+          </div>
           <div className="mt-0.5 shrink-0">
             <PublicationFlag pubId={pub.id} flagNotes={pub.flag_notes ?? []} decision={pub.decision} />
           </div>
@@ -153,11 +158,11 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
               <InfoBubble id="open_access" size="sm" />
             </span>
           )}
-          <Badge className={STATUS_COLORS[pub.enrichment_status] || STATUS_COLORS.pending}>
+          <Badge variant={STATUS_BADGE_VARIANTS[pub.enrichment_status] || 'neutral'}>
             {STATUS_LABELS[pub.enrichment_status] || pub.enrichment_status}
           </Badge>
           {hasAnalysis && (
-            <Badge className={STATUS_COLORS.analyzed}>{STATUS_LABELS.analyzed}</Badge>
+            <Badge variant={STATUS_BADGE_VARIANTS.analyzed}>{STATUS_LABELS.analyzed}</Badge>
           )}
         </div>
 
@@ -565,7 +570,7 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <Brain className="h-4 w-4 text-brand" />
-              Story Scout Analyse
+              Science Propaganda Ninja Analyse
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">

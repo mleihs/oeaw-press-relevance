@@ -1,0 +1,44 @@
+---
+title: Wochen- und Monatskalender
+description: Veranstaltungen als Liste, Wochen- oder Monatskalender ansehen; Farbe zeigt die Relevanz, ein Klick öffnet das Triage-Cockpit.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+Die Veranstaltungsseite bietet neben der **Liste** zwei Kalenderansichten: **Woche**
+und **Monat**. So lässt sich auf einen Blick erkennen, wann sich relevante Termine
+häufen, statt nur eine chronologische Liste abzuarbeiten.
+
+## Umschalten und Blättern {#navigation}
+
+Oben links wird über **Liste · Woche · Monat** umgeschaltet. In den Kalenderansichten
+blättert man mit den Pfeilen vor und zurück; **Heute** springt zum aktuellen Zeitraum.
+Die aktive Auswahl (Tab, gewählter Zeitraum) bleibt beim Umschalten erhalten, sodass
+der Wechsel zwischen den Ansichten nie den Filter zurücksetzt.
+
+## Farbe = Relevanz auf einen Blick {#farbe}
+
+Jeder Termin erscheint als farbiger Block, dessen Farbe die Relevanz widerspiegelt –
+dieselben Bänder wie bei den Publikationen:
+
+- **Grau / gestrichelt**: noch nicht bewertet.
+- **Orange → Gelb → Brand-Blau**: steigende Relevanz, von niedrig bis hochrelevant.
+
+Die genaue Uhrzeit und der Score stehen dezent darunter. Die getroffene Entscheidung
+(**Pitch**, **Hold**, **Skip**) sitzt als kleines Symbol in der Ecke des Blocks.
+
+<Callout type="info">
+  Die Farbe spiegelt den [Relevanz-Score](/help/events/relevanz-score). Noch nicht
+  bewertete Termine bleiben neutral grau – über „Analysieren" lassen sie sich einstufen.
+</Callout>
+
+## Klick öffnet das Cockpit {#cockpit}
+
+Ein Klick auf einen Termin öffnet ein Cockpit mit der Score-Aufschlüsselung, dem
+Pitch-Vorschlag und den Triage-Buttons – dieselben Werkzeuge wie auf der
+[Detailseite](/help/events/event-detail), nur als schnelles Overlay. Von dort führt
+„Details öffnen" zur vollständigen Veranstaltung. Die Blöcke sind auch per Tastatur
+erreichbar: mit Tab anspringen, mit Enter öffnen.
+
+Auf schmalen Bildschirmen wechselt die Monatsansicht automatisch in eine kompakte
+Tagesagenda, damit die Termine auch mobil lesbar bleiben.

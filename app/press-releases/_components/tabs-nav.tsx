@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Layers, Link2, FileQuestion, type LucideIcon } from 'lucide-react';
+import { Layers, Link2, FileQuestion, type LucideIcon } from '@/lib/icons';
 import { Badge } from '@/components/ui/badge';
 import { InfoBubble } from '@/components/info-bubble';
 import { cn } from '@/lib/shared/utils';

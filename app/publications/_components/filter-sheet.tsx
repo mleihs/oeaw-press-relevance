@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { de } from 'date-fns/locale';
-import { CalendarIcon, Check, ChevronsUpDown, SlidersHorizontal } from 'lucide-react';
+import { CalendarIcon, Check, ChevronsUpDown, SlidersHorizontal } from '@/lib/icons';
 import { InfoBubble } from '@/components/info-bubble';
 import type { EXPL } from '@/lib/client/explanations';
 

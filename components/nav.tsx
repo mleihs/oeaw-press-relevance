@@ -20,8 +20,9 @@ import {
   Keyboard,
   ChevronDown,
   Layers,
+  Kanban,
   type LucideIcon,
-} from 'lucide-react';
+} from '@/lib/icons';
 import { Button } from '@/components/ui/button';
 import {
   Popover,
@@ -37,6 +38,7 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { AvatarMenu } from '@/components/avatar-menu';
 import { CommandMenuButton } from '@/components/command/command-menu-button';
 import { openCommandMenu, openCheatSheet } from '@/lib/client/commands/controller';
 
@@ -65,6 +67,7 @@ const PRIMARY: NavLink[] = [
   { href: '/publications',    label: 'Publikationen',   icon: BookOpen },
   { href: '/events',          label: 'Veranstaltungen', icon: CalendarDays },
   { href: '/review',          label: 'Triage',          icon: ClipboardCheck },
+  { href: '/board',           label: 'Board',           icon: Kanban },
 ];
 
 const SECONDARY: NavLink[] = [
@@ -260,7 +263,7 @@ export function Nav() {
     <header className="bg-brand shadow-md">
       <div className="mx-auto flex h-14 max-w-7xl items-center px-4">
         <Link href="/" className="mr-6 font-semibold text-lg text-white">
-          Story Scout
+          Science Propaganda Ninja
         </Link>
 
         {/* Desktop primary tabs + Mehr dropdown */}
@@ -305,6 +308,7 @@ export function Nav() {
             />
           </div>
           <ThemeToggle />
+          <AvatarMenu />
 
           {/* Mobile hamburger sheet */}
           <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
@@ -324,7 +328,7 @@ export function Nav() {
             >
               <SheetHeader className="px-4 pt-4 pb-2">
                 <SheetTitle className="text-white text-lg font-semibold">
-                  Story Scout
+                  Science Propaganda Ninja
                 </SheetTitle>
                 <SheetDescription className="sr-only">
                   Hauptnavigation: Bereiche, Schnellzugriffe und Einstellungen.

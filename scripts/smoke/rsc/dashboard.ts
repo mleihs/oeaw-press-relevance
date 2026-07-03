@@ -66,13 +66,14 @@ async function main() {
     month.scoreSimilarityPoints.every(
       (pt) =>
         Array.isArray(pt) &&
-        pt.length === 2 &&
+        pt.length === 3 &&
         pt[0] >= 0 &&
         pt[0] <= 1 &&
         pt[1] >= 0 &&
-        pt[1] <= 1,
+        pt[1] <= 1 &&
+        pt[2] >= 1,
     ),
-    'scoreSimilarityPoints has out-of-range or malformed [s,p] tuples',
+    'scoreSimilarityPoints has out-of-range or malformed [s,p,count] bins',
   );
   assert(month.flaggedCount >= 0, 'flaggedCount negative');
   assert(month.pressReleasedCount >= 0, 'pressReleasedCount negative');

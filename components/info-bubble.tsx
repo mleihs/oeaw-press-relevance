@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
-import { Info } from 'lucide-react';
+import { Info } from '@/lib/icons';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { EXPL, EXPL_KB_MAP, type Explanation, type KbAnchor } from '@/lib/client/explanations';
 import { useInfoBubblesEnabled } from '@/lib/client/hooks/use-info-bubbles';

@@ -31,7 +31,12 @@ export default async function globalSetup() {
     return;
   }
 
-  const ctx = await request.newContext({ baseURL: 'http://localhost:3000' });
+  // Origin-Header setzen: /api/auth/* erzwingt Same-Origin (CSRF, http.ts).
+  // Playwrights request-Context schickt sonst keinen Origin → 403.
+  const ctx = await request.newContext({
+    baseURL: 'http://localhost:3000',
+    extraHTTPHeaders: { origin: 'http://localhost:3000' },
+  });
   const res = await ctx.post('/api/auth/gate', {
     data: { password: gatePassword },
   });

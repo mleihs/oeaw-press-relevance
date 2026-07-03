@@ -1,4 +1,4 @@
-import { Layers, Link2, FileQuestion, CalendarDays } from 'lucide-react';
+import { Layers, Link2, FileQuestion, CalendarDays } from '@/lib/icons';
 import { StatCard } from '@/components/stat-card';
 import type { PressReleasesStats } from '@/lib/server/press-releases/list';
 

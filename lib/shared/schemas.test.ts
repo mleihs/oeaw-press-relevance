@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
   gatePayloadSchema,
+  loginPayloadSchema,
+  userCreatePayloadSchema,
+  userPatchPayloadSchema,
   personDetailQuerySchema,
   researchersLeaderboardQuerySchema,
   similarPressedQuerySchema,
@@ -19,6 +22,48 @@ describe('gatePayloadSchema', () => {
     expect(gatePayloadSchema.safeParse({ password: '' }).success).toBe(false);
     expect(gatePayloadSchema.safeParse({}).success).toBe(false);
     expect(gatePayloadSchema.safeParse({ password: 5 }).success).toBe(false);
+  });
+});
+
+describe('loginPayloadSchema', () => {
+  it('accepts email + password', () => {
+    expect(
+      loginPayloadSchema.safeParse({ email: 'a.b@oeaw.ac.at', password: 'x' }).success,
+    ).toBe(true);
+  });
+  it('rejects malformed email and empty password', () => {
+    expect(loginPayloadSchema.safeParse({ email: 'kein-at', password: 'x' }).success).toBe(false);
+    expect(loginPayloadSchema.safeParse({ email: 'a.b@oeaw.ac.at', password: '' }).success).toBe(false);
+    expect(loginPayloadSchema.safeParse({}).success).toBe(false);
+  });
+});
+
+describe('userCreatePayloadSchema', () => {
+  const valid = {
+    email: 'julia.denk@oeaw.ac.at',
+    password: 'abcd-efgh-jkmn',
+    displayName: 'Julia Denk',
+    role: 'member',
+  };
+  it('accepts a valid payload', () => {
+    expect(userCreatePayloadSchema.safeParse(valid).success).toBe(true);
+  });
+  it('rejects short passwords, blank names, unknown roles', () => {
+    expect(userCreatePayloadSchema.safeParse({ ...valid, password: 'kurz' }).success).toBe(false);
+    expect(userCreatePayloadSchema.safeParse({ ...valid, displayName: '   ' }).success).toBe(false);
+    expect(userCreatePayloadSchema.safeParse({ ...valid, role: 'editor' }).success).toBe(false);
+  });
+});
+
+describe('userPatchPayloadSchema', () => {
+  it('accepts role-only, disabled-only, or both', () => {
+    expect(userPatchPayloadSchema.safeParse({ role: 'admin' }).success).toBe(true);
+    expect(userPatchPayloadSchema.safeParse({ disabled: true }).success).toBe(true);
+    expect(userPatchPayloadSchema.safeParse({ role: 'member', disabled: false }).success).toBe(true);
+  });
+  it('rejects the empty patch and legacy roles', () => {
+    expect(userPatchPayloadSchema.safeParse({}).success).toBe(false);
+    expect(userPatchPayloadSchema.safeParse({ role: 'viewer' }).success).toBe(false);
   });
 });
 

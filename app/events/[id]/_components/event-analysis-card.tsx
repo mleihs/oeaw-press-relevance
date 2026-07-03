@@ -1,13 +1,13 @@
 'use client';
 
-import { Sparkles, Megaphone } from 'lucide-react';
+import { Sparkles, Megaphone } from '@/lib/icons';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScoreBar } from '@/components/score-bar';
 import { InfoBubble } from '@/components/info-bubble';
 import { getScoreBandClass } from '@/lib/shared/score-utils';
 import { EVENT_SCORE_COLORS, EVENT_SCORE_LABELS } from '@/lib/shared/constants';
 import { eventDateFmt } from '@/app/events/_lib/event-format';
-import type { Event } from '@/lib/server/events/to-api';
+import type { Event } from '@/lib/shared/types';
 
 /** Relevanz-Score + Pitch for an analyzed event. Renders nothing until the
  *  event has been scored. Mirrors the publication detail Analyse/Pitch cards. */

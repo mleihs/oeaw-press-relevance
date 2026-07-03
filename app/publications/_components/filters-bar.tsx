@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useRef, useState } from 'react';
-import { RotateCcw, Search } from 'lucide-react';
+import { RotateCcw, Search } from '@/lib/icons';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { InfoBubble } from '@/components/info-bubble';

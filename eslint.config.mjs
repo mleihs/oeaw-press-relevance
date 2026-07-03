@@ -22,6 +22,9 @@ const eslintConfig = defineConfig([
     ".source/**",
     // Generated coverage report (vitest --coverage); not source.
     "coverage/**",
+    // Claude-Design-Referenzen (Phase 0 Redaktionsboard) — Mock-Runtime und
+    // Templates, kein App-Code; werden nur als Spez gelesen.
+    "docs/design/**",
   ]),
   {
     rules: {
@@ -100,9 +103,10 @@ const eslintConfig = defineConfig([
   //
   // Selector form: still string-based even though v6's TS types document an
   // object form (`{ type: "shared" }`). The runtime ESLint JSON-schema in
-  // eslint-plugin-boundaries@6.0.2 only validates string selectors, so the
-  // "Consider migrating to object-based selectors" notice printed at lint
-  // start is unactionable until upstream ships the schema update.
+  // eslint-plugin-boundaries@6.0.2 rejects `{ type: … }` at the from/allow
+  // positions (empirisch geprobt 2026-07-03: "Unexpected property 'type'"),
+  // so the "Consider migrating to object-based selectors" notice printed at
+  // lint start is unactionable until upstream ships the schema update.
   //
   // Pattern order matters (first-match-wins): app/api/** must come BEFORE
   // app/** so route handlers resolve to api-routes, not app-pages.

@@ -19,4 +19,14 @@ export const QK = {
   recentSession: ['review-recent-session'] as const,
   events: ['events'] as const,
   event: (id: string) => ['event', id] as const,
+  currentUser: ['current-user'] as const,
+  adminUsers: ['admin-users'] as const,
+  // Board (Redaktionsboard)
+  boards: ['boards'] as const,
+  board: (slug: string) => ['board', slug] as const,
+  boardMembers: ['board-members'] as const,
+  card: (id: string) => ['card', id] as const,
+  /** Karten aus einer Triage-Quelle (Event/Publikation) — „liegt im Board". */
+  cardsForSource: (kind: 'event' | 'publication', id: string) =>
+    ['cards-for-source', kind, id] as const,
 } as const;

@@ -1,6 +1,6 @@
 'use client';
 
-import { Search } from 'lucide-react';
+import { Search } from '@/lib/icons';
 import { useIsMac } from '@/lib/client/commands/platform';
 import { openCommandMenu } from '@/lib/client/commands/controller';
 

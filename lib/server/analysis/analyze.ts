@@ -1,17 +1,12 @@
-import { AnalysisResult, LLMResponse } from '@/lib/shared/types';
-import { SYSTEM_PROMPT, buildEvaluationPrompt, PublicationForPrompt } from './prompts';
-import { calculatePressScore } from './score';
-import {
-  chatCompletionJson,
-  parseJsonContent,
-  checkKeyBalance,
-  estimateCost,
-} from '@/lib/server/openrouter';
+import type { AnalysisResult, LLMResponse } from '@/lib/shared/types';
+import { SYSTEM_PROMPT, buildEvaluationPrompt, type PublicationForPrompt } from './prompts';
+import { chatCompletionJson, parseJsonContent } from '@/lib/server/openrouter';
 
-// Back-compat re-exports: batch.ts imports these from this module, and the
-// HTTP/cost/balance primitives now live in the shared client.
-export { calculatePressScore, checkKeyBalance, estimateCost };
-
+// Publications relevance analysis via the shared OpenRouter client — the
+// publications counterpart to lib/server/events/analyze.ts. Builds the
+// evaluation prompt, asks the model for JSON, and returns parsed
+// AnalysisResults + token/cost. Used by runAnalysisBatch (batch.ts) as the
+// per-batch `analyze` callback passed to runLLMBatch.
 export async function analyzePublications(
   publications: PublicationForPrompt[],
   apiKey: string,
