@@ -253,30 +253,52 @@ in v1); Convert-Lookup in beide Richtungen über `cards.converted_from_item_id`.
       Ban, CASCADE, createAdminUser-Regression); Suite skippt sauber ohne
       lokalen Stack und läuft nie gegen prod (localhost-Guard).
 
-### Phase 2 — Board-Kern
-- [ ] Migration: Tabellen aus §4 + RLS + Seed (Board „Channels" mit 8 Spalten)
-- [ ] Board-Verwaltung in `/settings`: Boards anlegen/umbenennen/archivieren
-      (admin), Spalten anlegen/umbenennen/Farbe/Reihenfolge (alle Member)
-- [ ] schema.ts hand-mirrorn; `check-schema-drift` grün
-- [ ] `lib/server/board/*.ts` (CRUD, Move mit Rank-Neuberechnung, Aktivität schreiben)
-- [ ] API-Routen `app/api/board/*` (withApiError + Zod, Schemas in lib/shared)
-- [ ] Board-Übersicht als `/board`-Einstieg (Grid: Name, Kartenzahl, zuletzt
-      aktiv; „Neues Board" für Admins) + Board-Switcher im Header (Dropdown
-      mit Filter — MT-Projektliste, aber flach: keine Mitgliedschafts-Gruppen,
-      stattdessen optional Favoriten-Pin)
-- [ ] Board-UI: Spalten + Karten-Chips (Fälligkeit/Fortschritt/Zähler-Badges),
-      dnd-kit für Karten-Drag (Spalten-Reihenfolge nur in der Verwaltung,
-      s. Phase-0-Abgleich), optimistische Moves
-- [ ] Kartenmodal: Titel, Beschreibung (Markdown), Checkliste/Unteraufgaben
-      (Enter = neuer Eintrag, Klick = abhaken), Fälligkeit, Beobachter,
-      Assignee (optional), Abschließen, **Kanal-/Board-Wechsel im Modal**
-      („Aufgabe verschieben"), Metadaten (Erstellt/Geändert)
-- [ ] **Unteraufgabe → eigene Karte umwandeln** (Zeitreise-Workflow:
-      Episodenkandidat wird Karte; `converted_from_item_id` verlinkt zurück)
-- [ ] Personen-Leiste rechts (MT-Muster): Avatare mit Karten-Zähler,
-      Klick = Filter auf Person; „Nicht zugewiesen" als erste Gruppe
-- [ ] Filterleiste: Suche (Titel + Checklisten-Texte), Kanal, Person,
-      „nur überfällig", „Erledigte zeigen" (Muster: /events-Filter)
+### Phase 2 — Board-Kern ✅ (2026-07-03)
+- [x] Migration: Tabellen aus §4 + RLS + Seed (Board „Channels" mit 8 Spalten).
+      `20260703000002_board_core.sql`; ALLE §4-Invarianten (rank COLLATE "C" +
+      CHECK + UNIQUE(scope,rank) mit 23505-Retry, append-only card_activity
+      BEFORE UPDATE/DELETE-Trigger via `pg_trigger_depth()` — empirisch
+      verifiziert: direkt=1 verboten, Cascade=2 erlaubt, FK-Löschregeln
+      RESTRICT/CASCADE/SET NULL, updated_at-Trigger). Lokal angewendet +
+      per DB-Smoke-Test alle Invarianten grün. **prod-Migration noch offen.**
+- [x] Board-Verwaltung in `/settings` (`board-management-card.tsx`, self-gated):
+      Boards anlegen/archivieren (admin), Spalten anlegen/umbenennen/Farbe/
+      Reihenfolge per dnd-kit (alle Member), „Spalte enthält Karten"-Warnmodal.
+- [x] schema.ts hand-mirrorn; `check-schema-drift` grün (44/44).
+- [x] `lib/server/board/*.ts` (CRUD, Move mit Rank-Neuberechnung + 23505-Retry,
+      Aktivität schreiben, Convert). End-to-end Vitest-Integrationstest grün.
+- [x] API-Routen `app/api/board/*` (withApiError + Zod, requireUser/-Admin,
+      Schemas in `lib/shared/board-schemas.ts`).
+- [x] Board-Übersicht `/board` (Grid + Favoriten-Stern + Archiv + „Neues Board"
+      admin) + Board-Switcher im Header (Popover, Favoriten/Suche/aktuelles Board).
+- [x] Board-UI `/board/[slug]`: Spalten + Karten-Chips (Fälligkeit soon/overdue/
+      Fortschritt/Zähler/Beobachter-Avatare), dnd-kit Karten-Drag, optimistische
+      Moves. **Rank-Sortierung client-seitig via `compareRank` (bytewise, matcht
+      COLLATE "C") — NICHT localeCompare (Review-Fund).**
+- [x] Kartenmodal: Titel + Beschreibung editierbar, Checkliste/Unteraufgaben
+      (Enter/abhaken/löschen), Fälligkeit, Beobachter, Assignee, Abschließen,
+      Kanal-/Board-Wechsel („Verschieben"-Popover), Metadaten, Aktivitäts-Strang.
+- [x] **Unteraufgabe → eigene Karte umwandeln** (`converted_from_item_id`,
+      Rück-Lookup `converted_card_id`, „Karte öffnen").
+- [x] Personen-Leiste rechts (Avatare + Zähler, „Nicht zugewiesen" zuerst,
+      Klick = Personen-Filter).
+- [x] Filterleiste: Suche (Titel + Item-Texte via `search_text`), Kanal, Person,
+      „nur überfällig", „Erledigte zeigen".
+
+**Phase-2-Notizen (fürs Bauen/Review):**
+- **Design Book ist ab jetzt toolkit-weit** (User 2026-07-03): `docs/design/
+  DESIGN_SYSTEM.md`; Board = Referenzimplementierung. Tokens übernommen; Icons
+  vorerst lucide (Mapping §7), Font Geist ist **schon** app-weit (layout.tsx).
+- **RLS bewusst nur `authenticated_select`** (nicht die in §4 zusätzlich
+  genannten insert/update/delete-Policies): Realtime braucht nur SELECT, es gibt
+  keinen Browser-Supabase-Client, alle Writes laufen über die API (owner-Pfad) —
+  broad write für `authenticated` würde die Rank-/Activity-Invarianten umgehbar
+  machen. Datenintegrität vor Aspiration.
+- **Offen für Phase 3:** Kartenmodal ist ein hand-gerolltes Overlay ohne
+  Focus-Trap (a11y-Pass in Phase 3 eingeplant); Markdown wird noch als Rohtext
+  (Textarea) gezeigt, nicht gerendert → beim Rendern sanitizen.
+- **prod-Deploy offen:** Migration `20260703000002` noch nicht auf prod
+  angewendet (blockiert wie Phase 1 ggf. durch Egress-Restriction).
 
 ### Phase 3 — Kollaboration
 - [ ] Kommentare + Aktivitätslog im Modal (ein Strang, MeisterTask-Stil)

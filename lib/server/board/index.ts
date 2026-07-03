@@ -1,0 +1,12 @@
+import 'server-only';
+
+// Einheitliche Import-Fläche für den Board-Serverpfad (Routen ziehen alles von
+// hier). CRUD, Move mit Rank-Retry, Convert, Aktivität, Fehler-Mapping.
+export * from './boards';
+export * from './columns';
+export * from './cards';
+export * from './items';
+export * from './watchers';
+export * from './members';
+export * from './errors';
+export * from './errors-http';

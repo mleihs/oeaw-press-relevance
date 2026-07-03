@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { initialRanks, isValidRank, rankBetween, RANK_PATTERN } from './rank';
+import { compareRank, initialRanks, isValidRank, rankBetween, RANK_PATTERN } from './rank';
 
 /** Every rank this module hands out must satisfy the stored-rank invariant. */
 function expectValid(rank: string) {
@@ -138,5 +138,22 @@ describe('initialRanks', () => {
       const mid = rankBetween(ranks[i], ranks[i + 1]);
       expect(ranks[i] < mid && mid < ranks[i + 1]).toBe(true);
     }
+  });
+});
+
+describe('compareRank', () => {
+  it('entspricht dem Codeunit-Vergleich (< / >)', () => {
+    expect(compareRank('b', 'c')).toBe(-1);
+    expect(compareRank('c', 'b')).toBe(1);
+    expect(compareRank('m', 'm')).toBe(0);
+    expect(compareRank('b', 'bb')).toBe(-1); // Präfix sortiert davor
+    expect(compareRank('az', 'b')).toBe(-1);
+  });
+
+  it('sortiert eine gemischte Rank-Liste identisch zur bytewise-Ordnung', () => {
+    const ranks = ['x', 'd', 'g', 'az', 'b', 'bb', 'm'];
+    const viaCompare = [...ranks].sort(compareRank);
+    const viaBytewise = [...ranks].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+    expect(viaCompare).toEqual(viaBytewise);
   });
 });

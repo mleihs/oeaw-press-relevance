@@ -31,6 +31,18 @@ export function isValidRank(rank: string): boolean {
   return RANK_PATTERN.test(rank);
 }
 
+/**
+ * Bytewise (Codeunit-)Vergleich zweier Ranks für `Array.sort`. MUSS überall
+ * dort benutzt werden, wo Ranks client-seitig sortiert werden — `localeCompare`
+ * wendet Locale-Collation an und kann von Postgres' `ORDER BY rank` (die Spalte
+ * ist COLLATE "C") abweichen, wodurch Client- und Server-Reihenfolge in
+ * Randfällen divergieren würden. Da alle Ranks aus /^[a-z]*[b-z]$/ stammen,
+ * ist `<`/`>` exakt der bytewise Vergleich.
+ */
+export function compareRank(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
 function assertBound(rank: string | null, side: 'prev' | 'next'): void {
   if (rank !== null && !isValidRank(rank)) {
     throw new RangeError(`invalid ${side} rank: ${JSON.stringify(rank)}`);

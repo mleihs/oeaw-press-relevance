@@ -20,6 +20,7 @@ import {
   Keyboard,
   ChevronDown,
   Layers,
+  Kanban,
   type LucideIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -66,6 +67,7 @@ const PRIMARY: NavLink[] = [
   { href: '/publications',    label: 'Publikationen',   icon: BookOpen },
   { href: '/events',          label: 'Veranstaltungen', icon: CalendarDays },
   { href: '/review',          label: 'Triage',          icon: ClipboardCheck },
+  { href: '/board',           label: 'Board',           icon: Kanban },
 ];
 
 const SECONDARY: NavLink[] = [

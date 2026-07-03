@@ -18,6 +18,7 @@ import { openCheatSheet } from '@/lib/client/commands/controller';
 import { InfoBubble } from '@/components/info-bubble';
 import { SocialChannelsCard } from './_components/social-channels-card';
 import { UserManagementCard } from './_components/user-management-card';
+import { BoardManagementCard } from './_components/board-management-card';
 import { SocialSettingsCard } from './_components/social-settings-card';
 import { EventWeightsCard } from './_components/event-weights-card';
 import { Save, CheckCircle2, Eye, EyeOff, Loader2, XCircle, ShieldCheck, Info, User, Keyboard } from 'lucide-react';
@@ -88,6 +89,9 @@ export default function SettingsPage() {
 
       {/* Nutzerverwaltung — admin-only (self-gated; Server erzwingt es) */}
       <UserManagementCard />
+
+      {/* Board-Verwaltung — Spalten für alle, Boards anlegen/archivieren admin */}
+      <BoardManagementCard />
 
       {/* Identity — used for flag notes + decision attribution */}
       <Card>

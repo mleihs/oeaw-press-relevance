@@ -21,4 +21,9 @@ export const QK = {
   event: (id: string) => ['event', id] as const,
   currentUser: ['current-user'] as const,
   adminUsers: ['admin-users'] as const,
+  // Board (Redaktionsboard)
+  boards: ['boards'] as const,
+  board: (slug: string) => ['board', slug] as const,
+  boardMembers: ['board-members'] as const,
+  card: (id: string) => ['card', id] as const,
 } as const;
