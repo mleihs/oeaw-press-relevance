@@ -10,7 +10,9 @@ ablöst. Der strukturelle Mehrwert gegenüber MeisterTask: Die Triage
 (Events/Publikationen) speist das Board direkt — aus einer „pitchen"-Entscheidung
 wird eine vorbefüllte Karte.
 
-**Nicht-Ziele:** Tags, Abhängigkeiten, Zeiterfassung, Automationen, Mobile-App,
+**Nicht-Ziele:** Tags, Abhängigkeiten, Zeiterfassung, Automationen,
+native Mobile-App (responsive Mobile-Ansichten sind im Design enthalten
+und werden umgesetzt — Board, Modal, Navigation),
 personenzentrierte Ansichten (Agenda/„Meine Aufgaben"-Dashboard, s. §2),
 Benachrichtigungen/Erwähnungen (später optional, wenn das Team sie vermisst).
 Das Team nutzt nichts davon; das Board bleibt bewusst leichtgewichtig.
@@ -98,12 +100,15 @@ users                    -- Stub existiert; an auth.users koppeln (id = auth.uid
 boards                   -- id uuid, name, slug, rank, archived_at
 board_columns            -- id, board_id FK, name, color, rank
 cards                    -- id, board_id, column_id, title, description_md,
+                         --   link_url text NULL (ÖAW-Link als eigenes Feld,
+                         --   Triage befüllt es; Design zeigt ihn als Chip),
                          --   rank, due_at, completed_at, created_by,
                          --   assignee_id FK NULL (kaum genutzt, aber MT-Personen-
                          --   leiste braucht es), converted_from_item_id FK NULL,
                          --   source_event_id FK NULL, source_publication_id FK NULL,
                          --   meistertask_task_id text NULL (Import-Idempotenz),
                          --   created_at, updated_at
+user_board_favorites     -- user_id, board_id (PK beide; Stern im Switcher/Übersicht)
 card_items               -- id, card_id, kind check(checklist|subtask), text, rank,
                          --   done_at, done_by
 card_watchers            -- card_id, user_id (PK beide)
@@ -118,13 +123,102 @@ Indizes: `cards(board_id, column_id, rank)`, `cards(due_at)`,
 RLS: alle Tabellen ENABLE + Policies für `authenticated` (select/insert/update/
 delete); Drizzle-Serverpfad prüft Zugriff selbst (wie im Restsystem).
 
+**DB-seitige Invarianten (gehören in die Phase-2-Migration, nicht nur in den
+App-Code):**
+
+- **Ranks:** alle `rank`-Spalten als `text COLLATE "C" NOT NULL CHECK
+  (rank ~ '^[a-z]*[b-z]$')`. `COLLATE "C"` = bytewise, damit `ORDER BY rank`
+  exakt dem JS-Codeunit-Vergleich aus `lib/shared/rank.ts` entspricht
+  (locale-Collation könnte theoretisch abweichen). Der CHECK erzwingt die
+  Modul-Invariante (nie auf `a` endend — sonst kein Midpoint mehr möglich).
+  Zusätzlich UNIQUE je Geltungsbereich (`cards(column_id, rank)`,
+  `board_columns(board_id, rank)`, `card_items(card_id, rank)`): macht
+  Race-Kollisionen zweier gleichzeitiger Moves zu einem retrybaren Fehler
+  statt stiller Fehlordnung; Server-Move-Pfad fängt 23505 und rechnet neu.
+- **Enums:** `card_items.kind`, `users.role` als text + CHECK
+  (Writer-Analyse vor jedem CHECK, Memory `pg-check-pre-flight`).
+- **Append-only `card_activity`:** BEFORE UPDATE/DELETE-Trigger mit RAISE —
+  RLS allein reicht nicht, weil der Drizzle-Serverpfad als service-role an
+  RLS vorbeigeht. (Keine UPDATE/DELETE-Policies gibt es zusätzlich.)
+- **Löschregeln als FKs:** `cards.column_id` / `cards.board_id` ON DELETE
+  RESTRICT (das „Spalte enthält Karten"-Warnmodal im Design ist die UI dazu —
+  die DB garantiert es hart); `card_items`/`card_watchers`/`card_comments`/
+  `card_attachments`/`card_activity` → CASCADE zur Karte;
+  `source_event_id`/`source_publication_id`/`converted_from_item_id` →
+  SET NULL; Autoren-FKs (`created_by`, `author_id`, `actor_id`, `done_by`)
+  RESTRICT — Nutzer werden nie gelöscht, nur deaktiviert (§3.1).
+- **`updated_at`** via Trigger (`moddatetime` o. ä.), nicht app-seitig —
+  gilt dann auch für Realtime-/SQL-Schreibpfade.
+
 ## 5. Phasen
 
-### Phase 0 — Design & Entscheidungen
-- [ ] Claude-Design-Entwurf für Board / Kartenmodal / Triage-zu-Karte
-      (Prompt existiert, Session 2026-07-03) → per Design-Sync einholen
-- [ ] Routenname festlegen (Vorschlag: `/board`, Board-Auswahl via Slug)
-- [ ] Rank-Utility bauen + testen (pure Funktion, vitest)
+### Phase 0 — Design & Entscheidungen ✅ (2026-07-03)
+- [x] Claude-Design-Entwurf erstellt (2026-07-03): Board / Kartenmodal /
+      Triage-zu-Karte, Verwaltungs-Screens, Board-Übersicht + Switcher,
+      Login, **inkl. Mobile-Ansichten**
+- [x] Design per DesignSync geholt und gegen Plan §5 abgeglichen
+      (Ergebnis unten). Quelle: Claude-Design-Projekt „Designsystem für
+      OEAW-Press-Relevance" (`7e47982d-6cf6-4220-b07c-bfb3ca491569`;
+      taucht in `list_projects` NICHT auf — kein Design-System-Projekt —
+      Dateien via `get_file` mit dieser ID). Lokale Kopien aller 5 Screens
+      + Runtime: **`docs/design/board/`** (`.dc.html` = HTML-Template +
+      `data-dc-script`-Logik; braucht zum Rendern die Claude-Design-Umgebung,
+      als Spez lesbar).
+- [x] Route: **`/board`** = Board-Übersicht, **`/board/[slug]`** = einzelnes
+      Board (konsistent zu `/events`, `/social`; Nav-Label „Board" wie im
+      Design).
+- [x] Rank-Utility: `lib/shared/rank.ts` (`rankBetween`, `initialRanks`,
+      `RANK_PATTERN`) + 20 Tests in `rank.test.ts`. Midpoint-Algorithmus
+      über `a–z`, erzeugte Keys enden nie auf `a`; DB-Seite s. §4.
+
+#### Phase-0-Ergebnis: Design-Abgleich (2026-07-03)
+
+Der Entwurf deckt §5 weitgehend ab (Board, Karten-Chips mit allen Badges,
+Kartenmodal inkl. Verschieben/Abschließen/Convert, Personen-Leiste,
+Filterleiste, Triage-Modal, ⌘K-Palette, Login, Verwaltung, Mobile als
+Bottom-Sheets + Kanal-Tabs + Quick-Add-FAB). Abweichungen und Folgerungen:
+
+**Design vereinfacht — Plan angepasst:**
+- **Kein Spalten-Drag im Board**: Spalten-Reihenfolge lebt in der Verwaltung
+  (dort per Drag); dnd-kit im Board nur für Karten. Übernommen.
+- **Karten-Drag nur zwischen Spalten** (Drop = Kanalwechsel), keine manuelle
+  Sortierung innerhalb der Spalte designt. Ranks bleiben im Datenmodell
+  (Sortierung innerhalb der Spalte = rank; Drop hängt ans Spaltenende an,
+  In-Spalte-Sortierung kann später ohne Schemaänderung kommen).
+
+**Im Design, aber nicht im Plan — übernehmen:**
+- Filterleiste zusätzlich: **Kanal-Filter** + Toggle **„Erledigte zeigen"**
+  (nötig, weil erledigte Karten durchgestrichen in der Spalte bleiben);
+  Suche matcht Titel **und** Checklisten-Texte.
+- Fälligkeits-Badge mit „soon"-Zustand (≤3 Tage, orange) neben überfällig/rot.
+- Personen-Leiste matcht Assignee ∨ Beobachter ∨ **Vorname im
+  Checklisten-Freitext** (MT-Kultur „Ownership im Text"; bewusst unscharf).
+- Kanal-Icons für die 8 Channels als Name→Icon-Mapping im Client (keine
+  DB-Spalte; generische Boards haben keine Icons).
+- Login-Fehlerzustände, Avatar-Menü mit Abmelden (Phase 1).
+- Mobile Quick-Add-FAB (nur Titel, Kanal = aktiver Tab).
+- `cards.link_url` als eigenes Feld (Design zeigt ÖAW-Link als Chip getrennt
+  von der Beschreibung) — in §4 ergänzt, ebenso `user_board_favorites`.
+
+**Im Design, aber NICHT übernehmen:**
+- Karten-Referenznummer `#PRES-0471` (bräuchte Sequenz; rein kosmetisch → v1 ohne).
+- „Karte anlegen" + Spalten-„+" öffnen im Mock das Triage-Modal — in echt:
+  schlankes Quick-Create-Formular; Triage-Modal nur für „Aus Triage anlegen".
+
+**Plan-Punkte ohne Design (bewusst offen, beim Bauen ergänzen):**
+- Beschreibung **bearbeiten** (Modal zeigt sie read-only), Datepicker für
+  Fälligkeit im Modal, Beobachter-**Picker** (Button ohne Funktion),
+  Anhang-Upload-Flow (P3), Publikationen-Variante des Triage-Modals (P4),
+  Score-Kontext im Prefill (P4), sichtbare Karte↔Event-Verknüpfung (P4),
+  Dashboard-Kachel (P4), „Karte verschieben" am Mobile-Sheet.
+
+**Sonstiges fürs Bauen:** Aktivitäts-Verben aus dem Mock als `verb`-Vokabular
+(created, item_checked, attachment_added, moved, due_set, completed, reopened,
+created_from_triage, created_from_subtask; von/nach im `payload`); Server
+schreibt Activity bei create/move/complete/convert selbst; Esc-Kaskade
+(Palette→Switcher) und Enter-Semantik (neuer Eintrag/Kommentar/Login) global;
+„zuletzt aktiv" pro Board aus `card_activity` ableiten (kein Denormalisieren
+in v1); Convert-Lookup in beide Richtungen über `cards.converted_from_item_id`.
 
 ### Phase 1 — Identität (Supabase Auth)
 - [ ] `@supabase/ssr` einbauen; Login-UI (E-Mail+Passwort), Session-Handling
@@ -148,7 +242,8 @@ delete); Drizzle-Serverpfad prüft Zugriff selbst (wie im Restsystem).
       mit Filter — MT-Projektliste, aber flach: keine Mitgliedschafts-Gruppen,
       stattdessen optional Favoriten-Pin)
 - [ ] Board-UI: Spalten + Karten-Chips (Fälligkeit/Fortschritt/Zähler-Badges),
-      dnd-kit für Karten- und Spalten-Drag, optimistische Moves
+      dnd-kit für Karten-Drag (Spalten-Reihenfolge nur in der Verwaltung,
+      s. Phase-0-Abgleich), optimistische Moves
 - [ ] Kartenmodal: Titel, Beschreibung (Markdown), Checkliste/Unteraufgaben
       (Enter = neuer Eintrag, Klick = abhaken), Fälligkeit, Beobachter,
       Assignee (optional), Abschließen, **Kanal-/Board-Wechsel im Modal**
@@ -157,7 +252,8 @@ delete); Drizzle-Serverpfad prüft Zugriff selbst (wie im Restsystem).
       Episodenkandidat wird Karte; `converted_from_item_id` verlinkt zurück)
 - [ ] Personen-Leiste rechts (MT-Muster): Avatare mit Karten-Zähler,
       Klick = Filter auf Person; „Nicht zugewiesen" als erste Gruppe
-- [ ] Filterleiste: Suche, Person, „nur überfällig" (Muster: /events-Filter)
+- [ ] Filterleiste: Suche (Titel + Checklisten-Texte), Kanal, Person,
+      „nur überfällig", „Erledigte zeigen" (Muster: /events-Filter)
 
 ### Phase 3 — Kollaboration
 - [ ] Kommentare + Aktivitätslog im Modal (ein Strang, MeisterTask-Stil)

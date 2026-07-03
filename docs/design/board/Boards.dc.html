@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  ::selection { background: #cfe0ff; }
+</style>
+</helmet>
+<div data-screen-label="Board-Übersicht" style="min-height:100vh;background:#f7f8fa;font-family:'Geist',system-ui,sans-serif;color:#16202e;-webkit-font-smoothing:antialiased;">
+
+  <!-- ===== TOP NAV ===== -->
+  <header style="background:#0047bb;color:#fff;box-shadow:0 1px 3px rgba(0,50,130,.35);">
+    <div style="height:54px;display:flex;align-items:center;padding:0 18px;gap:4px;max-width:1160px;margin:0 auto;">
+      <div style="display:flex;align-items:center;gap:9px;margin-right:18px;">
+        <i class="ph-fill ph-radio-button" style="font-size:20px;color:#9cc0ff;"></i>
+        <span style="font-weight:600;font-size:16px;letter-spacing:-0.01em;">ÖAW Presse</span>
+      </div>
+      <a style="display:flex;align-items:center;gap:7px;padding:7px 11px;border-radius:8px;font-size:13.5px;font-weight:500;color:rgba(255,255,255,.72);text-decoration:none;cursor:pointer;"><i class="ph ph-chart-bar" style="font-size:16px;"></i>Dashboard</a>
+      <a style="display:flex;align-items:center;gap:7px;padding:7px 11px;border-radius:8px;font-size:13.5px;font-weight:500;color:rgba(255,255,255,.72);text-decoration:none;cursor:pointer;"><i class="ph ph-book-open" style="font-size:16px;"></i>Publikationen</a>
+      <a style="display:flex;align-items:center;gap:7px;padding:7px 11px;border-radius:8px;font-size:13.5px;font-weight:500;color:rgba(255,255,255,.72);text-decoration:none;cursor:pointer;"><i class="ph ph-clipboard-text" style="font-size:16px;"></i>Triage</a>
+      <a aria-current="page" style="display:flex;align-items:center;gap:7px;padding:7px 11px;border-radius:8px;font-size:13.5px;font-weight:600;color:#fff;background:rgba(255,255,255,.20);text-decoration:none;cursor:pointer;"><i class="ph-bold ph-kanban" style="font-size:16px;"></i>Board</a>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:6px;">
+        <button style="width:34px;height:34px;border:none;background:rgba(255,255,255,.12);color:#fff;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="ph ph-magnifying-glass" style="font-size:16px;"></i></button>
+        <span style="width:32px;height:32px;border-radius:999px;background:#9cc0ff;color:#00337f;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;margin-left:4px;">CH</span>
+      </div>
+    </div>
+  </header>
+
+  <div style="max-width:1160px;margin:0 auto;padding:34px 24px 96px;">
+
+    <!-- header -->
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:26px;">
+      <div>
+        <h1 style="margin:0;font-size:27px;font-weight:700;letter-spacing:-0.015em;">Redaktionsboards</h1>
+        <p style="margin:8px 0 0;font-size:14px;color:#64707f;">{{ headerSub }}</p>
+      </div>
+      <div style="background:#fff;border:1px solid #e2e6ec;border-radius:11px;padding:9px 11px;box-shadow:0 1px 2px rgba(16,32,46,.05);">
+        <div style="font-size:11px;color:#9aa4b2;font-weight:500;margin-bottom:6px;">Ansehen als</div>
+        <div style="display:flex;gap:3px;background:#f1f3f6;border-radius:8px;padding:3px;">
+          <button onClick="{{ setAdmin }}" style="{{ adminTabStyle }}"><i class="ph-fill ph-shield-check" style="font-size:14px;"></i>Admin</button>
+          <button onClick="{{ setMember }}" style="{{ memberTabStyle }}"><i class="ph ph-user" style="font-size:14px;"></i>Member</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- active grid -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+      <sc-for list="{{ tiles }}" as="b" hint-placeholder-count="9">
+        <a href="Redaktionsboard.dc.html" style="{{ b.wrapStyle }}" style-hover="border-color:#b8c2d0;box-shadow:0 8px 22px rgba(16,32,46,.12);transform:translateY(-2px);">
+          <div style="display:flex;align-items:center;gap:11px;">
+            <span style="{{ b.iconWrapStyle }}"><i class="ph-fill ph-kanban" style="font-size:18px;"></i></span>
+            <span style="flex:1;"></span>
+            <button onClick="{{ b.onFav }}" title="Anpinnen" style="width:30px;height:30px;border:none;background:transparent;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="{{ b.starIcon }}" style="{{ b.starStyle }}"></i></button>
+          </div>
+          <div style="margin-top:14px;font-size:16px;font-weight:600;color:#16202e;letter-spacing:-0.01em;">{{ b.name }}</div>
+          <div style="margin-top:14px;display:flex;align-items:center;gap:8px;font-family:'Geist Mono',monospace;font-size:11.5px;color:#9aa4b2;">
+            <span style="{{ b.countStyle }}">{{ b.countLabel }}</span>
+            <span style="width:3px;height:3px;border-radius:999px;background:#cbd2dc;"></span>
+            <span>{{ b.activity }}</span>
+          </div>
+        </a>
+      </sc-for>
+
+      <!-- Neues Board (admin) -->
+      <sc-if value="{{ isAdmin }}" hint-placeholder-val="{{ true }}">
+        <button style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;min-height:150px;border:1.5px dashed #cbd2dc;background:transparent;border-radius:14px;cursor:pointer;color:#64707f;font-family:inherit;" style-hover="border-color:#0047bb;color:#0047bb;background:#eef4ff;">
+          <span style="width:40px;height:40px;border-radius:11px;background:#eef4ff;color:#0047bb;display:flex;align-items:center;justify-content:center;"><i class="ph-bold ph-plus" style="font-size:20px;"></i></span>
+          <span style="font-size:14px;font-weight:600;">Neues Board</span>
+        </button>
+      </sc-if>
+    </div>
+
+    <!-- archived -->
+    <div style="margin-top:32px;">
+      <button onClick="{{ toggleArchived }}" style="display:inline-flex;align-items:center;gap:9px;border:none;background:transparent;font-family:inherit;cursor:pointer;padding:6px 4px;">
+        <i class="{{ archChevron }}" style="font-size:15px;color:#9aa4b2;"></i>
+        <span style="font-size:13.5px;font-weight:600;color:#475262;">Archiviert</span>
+        <span style="font-family:'Geist Mono',monospace;font-size:11.5px;font-weight:500;color:#64707f;background:#eef1f5;padding:2px 8px;border-radius:999px;">{{ archCount }}</span>
+      </button>
+      <sc-if value="{{ archivedOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:14px;">
+          <sc-for list="{{ archivedTiles }}" as="b" hint-placeholder-count="2">
+            <div style="border:1px solid #e2e6ec;border-radius:14px;background:#fff;padding:18px;opacity:.72;">
+              <div style="display:flex;align-items:center;gap:11px;">
+                <span style="width:36px;height:36px;border-radius:10px;background:#f1f3f6;color:#9aa4b2;display:flex;align-items:center;justify-content:center;"><i class="ph ph-kanban" style="font-size:18px;"></i></span>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-size:15px;font-weight:600;color:#475262;">{{ b.name }}</div>
+                  <div style="font-family:'Geist Mono',monospace;font-size:11px;color:#9aa4b2;margin-top:2px;">{{ b.countLabel }}</div>
+                </div>
+                <button style="display:inline-flex;align-items:center;gap:6px;border:1px solid #cbd2dc;background:#fff;color:#475262;font-family:inherit;font-size:12px;font-weight:600;padding:6px 10px;border-radius:8px;cursor:pointer;"><i class="ph ph-arrow-counter-clockwise" style="font-size:13px;"></i>Zurück</button>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const ACTIVE = [
+  { name:'Channels', accent:'#0047bb', count:187, activity:'aktiv vor 2 Std.', fav:true },
+  { name:'Web-Team', accent:'#0d9488', count:42, activity:'aktiv gestern', fav:true },
+  { name:'Lange Nacht 2026', accent:'#ea580c', count:23, activity:'aktiv vor 3 Tagen', fav:false },
+  { name:'Social Media Planung', accent:'#c026d3', count:15, activity:'aktiv vor 5 Std.', fav:false },
+  { name:'Podcast-Produktion', accent:'#7c3aed', count:31, activity:'aktiv gestern', fav:false },
+  { name:'Wissenschaftspreise', accent:'#16a34a', count:19, activity:'aktiv vor 6 Tagen', fav:false },
+  { name:'Jahresbericht 2025', accent:'#2563eb', count:12, activity:'aktiv vor 1 Woche', fav:false },
+  { name:'Krisenkommunikation', accent:'#dc2626', count:7, activity:'aktiv vor 4 Tagen', fav:false },
+  { name:'CD Relaunch', accent:'#64748b', count:0, activity:'aktiv vor 2 Wochen', fav:false },
+];
+const ARCHIVED = [
+  { name:'Redaktionsklausur 2025', count:54 },
+  { name:'Website Relaunch 2024', count:88 },
+];
+function tint(hex){ return hex + '18'; }
+function countLabel(n){ return n + (n === 1 ? ' Karte' : ' Karten'); }
+
+class Component extends DCLogic {
+  state = { role:'admin', archivedOpen:false, favs:{ 'Channels':true, 'Web-Team':true } };
+
+  renderVals(){
+    const s = this.state;
+    const admin = s.role === 'admin';
+    const segOn = { display:'inline-flex', alignItems:'center', gap:'6px', border:'none', fontFamily:'inherit', fontSize:'12.5px', fontWeight:600, padding:'6px 12px', borderRadius:'6px', cursor:'pointer', background:'#fff', color:'#0047bb', boxShadow:'0 1px 2px rgba(16,32,46,.1)' };
+    const segOff = { display:'inline-flex', alignItems:'center', gap:'6px', border:'none', fontFamily:'inherit', fontSize:'12.5px', fontWeight:600, padding:'6px 12px', borderRadius:'6px', cursor:'pointer', background:'transparent', color:'#64707f' };
+
+    const sorted = ACTIVE.slice().sort((a, b) => (this.isFav(b.name) ? 1 : 0) - (this.isFav(a.name) ? 1 : 0));
+    const tiles = sorted.map(b => {
+      const fav = this.isFav(b.name);
+      return {
+        name: b.name, activity: b.activity,
+        wrapStyle:{ display:'block', textDecoration:'none', background:'#fff', border:'1px solid #e2e6ec', borderLeft:'3px solid ' + b.accent, borderRadius:'14px', padding:'18px', boxShadow:'0 1px 2px rgba(16,32,46,.05)', cursor:'pointer', transition:'box-shadow .15s, border-color .15s, transform .15s' },
+        iconWrapStyle:{ width:38, height:38, borderRadius:10, background: tint(b.accent), color:b.accent, display:'flex', alignItems:'center', justifyContent:'center' },
+        starIcon: fav ? 'ph-fill ph-star' : 'ph ph-star',
+        starStyle:{ fontSize:'16px', color: fav ? '#f59e0b' : '#cbd2dc' },
+        onFav: (e) => { e.preventDefault(); e.stopPropagation(); this.setState(st => ({ favs:{ ...st.favs, [b.name]: !this.isFav(b.name) } })); },
+        countStyle:{ color: b.count === 0 ? '#cbd2dc' : '#64707f' },
+        countLabel: countLabel(b.count),
+      };
+    });
+
+    return {
+      headerSub: ACTIVE.length + ' aktive Boards · ' + ARCHIVED.length + ' archiviert',
+      isAdmin: admin, adminTabStyle: admin ? segOn : segOff, memberTabStyle: !admin ? segOn : segOff,
+      setAdmin: () => this.setState({ role:'admin' }),
+      setMember: () => this.setState({ role:'member' }),
+      tiles,
+      toggleArchived: () => this.setState({ archivedOpen: !s.archivedOpen }),
+      archivedOpen: s.archivedOpen,
+      archChevron: s.archivedOpen ? 'ph ph-caret-down' : 'ph ph-caret-right',
+      archCount: ARCHIVED.length,
+      archivedTiles: ARCHIVED.map(b => ({ name:b.name, countLabel: countLabel(b.count) })),
+    };
+  }
+
+  isFav(name){ return !!this.state.favs[name]; }
+}
+</script>
+</body>
+</html>

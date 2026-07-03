@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  ::selection { background: #cfe0ff; }
+  input::placeholder { color: #9aa4b2; }
+  .scroll::-webkit-scrollbar { width: 10px; }
+  .scroll::-webkit-scrollbar-thumb { background: #cbd2dc; border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
+</style>
+</helmet>
+<div data-screen-label="Verwaltung" style="min-height:100vh;background:#f7f8fa;font-family:'Geist',system-ui,sans-serif;color:#16202e;-webkit-font-smoothing:antialiased;">
+
+  <!-- ===== TOP NAV ===== -->
+  <header style="background:#0047bb;color:#fff;box-shadow:0 1px 3px rgba(0,50,130,.35);">
+    <div style="height:54px;display:flex;align-items:center;padding:0 18px;gap:4px;max-width:1120px;margin:0 auto;">
+      <div style="display:flex;align-items:center;gap:9px;margin-right:18px;">
+        <i class="ph-fill ph-radio-button" style="font-size:20px;color:#9cc0ff;"></i>
+        <span style="font-weight:600;font-size:16px;letter-spacing:-0.01em;">ÖAW Presse</span>
+      </div>
+      <a style="display:flex;align-items:center;gap:7px;padding:7px 11px;border-radius:8px;font-size:13.5px;font-weight:500;color:rgba(255,255,255,.72);text-decoration:none;cursor:pointer;"><i class="ph ph-chart-bar" style="font-size:16px;"></i>Dashboard</a>
+      <a href="Redaktionsboard.dc.html" style="display:flex;align-items:center;gap:7px;padding:7px 11px;border-radius:8px;font-size:13.5px;font-weight:500;color:rgba(255,255,255,.72);text-decoration:none;cursor:pointer;"><i class="ph ph-kanban" style="font-size:16px;"></i>Board</a>
+      <a style="display:flex;align-items:center;gap:7px;padding:7px 11px;border-radius:8px;font-size:13.5px;font-weight:500;color:rgba(255,255,255,.72);text-decoration:none;cursor:pointer;"><i class="ph ph-clipboard-text" style="font-size:16px;"></i>Triage</a>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:6px;">
+        <a aria-current="page" style="display:flex;align-items:center;gap:7px;padding:7px 11px;border-radius:8px;font-size:13.5px;font-weight:600;color:#fff;background:rgba(255,255,255,.20);text-decoration:none;cursor:pointer;"><i class="ph-bold ph-gear-six" style="font-size:16px;"></i>Einstellungen</a>
+        <span style="width:32px;height:32px;border-radius:999px;background:#9cc0ff;color:#00337f;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;margin-left:4px;">CH</span>
+      </div>
+    </div>
+  </header>
+
+  <div style="max-width:900px;margin:0 auto;padding:32px 24px 96px;">
+
+    <!-- Page header -->
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:8px;">
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;font-family:'Geist Mono',monospace;font-size:11.5px;color:#9aa4b2;font-weight:500;margin-bottom:8px;"><a style="color:#9aa4b2;text-decoration:none;">Einstellungen</a><i class="ph ph-caret-right" style="font-size:11px;"></i><span style="color:#64707f;">Verwaltung</span></div>
+        <h1 style="margin:0;font-size:26px;font-weight:700;letter-spacing:-0.015em;">Verwaltung</h1>
+        <p style="margin:8px 0 0;font-size:14px;color:#64707f;line-height:1.55;max-width:520px;">Zwei Rollen. <strong style="color:#333d4c;font-weight:600;">Member</strong> dürfen alles Inhaltliche, auch Spalten anlegen. <strong style="color:#333d4c;font-weight:600;">Admins</strong> zusätzlich Nutzer- und Board-Verwaltung.</p>
+      </div>
+      <!-- role demo switch -->
+      <div style="background:#fff;border:1px solid #e2e6ec;border-radius:11px;padding:9px 11px;box-shadow:0 1px 2px rgba(16,32,46,.05);">
+        <div style="font-size:11px;color:#9aa4b2;font-weight:500;margin-bottom:6px;">Diese Seite ansehen als</div>
+        <div style="display:flex;gap:3px;background:#f1f3f6;border-radius:8px;padding:3px;">
+          <button onClick="{{ setAdmin }}" style="{{ adminTabStyle }}"><i class="ph-fill ph-shield-check" style="font-size:14px;"></i>Admin</button>
+          <button onClick="{{ setMember }}" style="{{ memberTabStyle }}"><i class="ph ph-user" style="font-size:14px;"></i>Member</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:20px;margin-top:24px;">
+
+      <!-- ===== NUTZERVERWALTUNG ===== -->
+      <sc-if value="{{ viewerAdmin }}" hint-placeholder-val="{{ true }}">
+        <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;box-shadow:0 1px 2px rgba(16,32,46,.05);overflow:hidden;">
+          <div style="display:flex;align-items:center;gap:11px;padding:18px 22px;border-bottom:1px solid #eef1f5;">
+            <span style="width:34px;height:34px;border-radius:9px;background:#eef4ff;color:#0047bb;display:flex;align-items:center;justify-content:center;"><i class="ph-duotone ph-users-three" style="font-size:19px;"></i></span>
+            <div style="flex:1;">
+              <div style="display:flex;align-items:center;gap:8px;"><h2 style="margin:0;font-size:16px;font-weight:600;">Nutzerverwaltung</h2><span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#0047bb;background:#eef4ff;padding:2px 8px;border-radius:999px;"><i class="ph-fill ph-shield-check" style="font-size:12px;"></i>Nur Admins</span></div>
+              <p style="margin:2px 0 0;font-size:12.5px;color:#9aa4b2;">{{ userSummary }}</p>
+            </div>
+            <button onClick="{{ toggleCreate }}" style="display:inline-flex;align-items:center;gap:7px;border:none;background:#0047bb;color:#fff;font-family:inherit;font-size:13px;font-weight:600;padding:9px 14px;border-radius:9px;cursor:pointer;box-shadow:0 1px 2px rgba(0,71,187,.3);"><i class="ph-bold ph-user-plus" style="font-size:15px;"></i>Nutzer anlegen</button>
+          </div>
+
+          <!-- create form -->
+          <sc-if value="{{ createOpen }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:18px 22px;background:#fbfcfd;border-bottom:1px solid #eef1f5;">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+                <div>
+                  <label style="display:block;font-size:12px;font-weight:600;color:#475262;margin-bottom:6px;">Name</label>
+                  <input value="{{ fName }}" onInput="{{ onFName }}" placeholder="z.B. Julia Denk" style="width:100%;border:1px solid #cbd2dc;border-radius:9px;padding:9px 12px;font-family:inherit;font-size:13.5px;color:#16202e;outline:none;box-sizing:border-box;"/>
+                </div>
+                <div>
+                  <label style="display:block;font-size:12px;font-weight:600;color:#475262;margin-bottom:6px;">E-Mail</label>
+                  <input value="{{ fEmail }}" onInput="{{ onFEmail }}" placeholder="vorname.nachname@oeaw.ac.at" style="width:100%;border:1px solid #cbd2dc;border-radius:9px;padding:9px 12px;font-family:inherit;font-size:13.5px;color:#16202e;outline:none;box-sizing:border-box;"/>
+                </div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr auto;gap:14px;align-items:end;">
+                <div>
+                  <label style="display:block;font-size:12px;font-weight:600;color:#475262;margin-bottom:6px;">Initialpasswort <span style="color:#9aa4b2;font-weight:400;">wird persönlich weitergegeben, kein Mail-Versand</span></label>
+                  <div style="display:flex;align-items:center;gap:8px;border:1px solid #cbd2dc;border-radius:9px;padding:0 6px 0 12px;height:40px;background:#fff;">
+                    <i class="ph ph-key" style="font-size:15px;color:#9aa4b2;"></i>
+                    <input value="{{ fPw }}" onInput="{{ onFPw }}" style="border:none;outline:none;font-family:'Geist Mono',monospace;font-size:13.5px;flex:1;color:#16202e;background:transparent;letter-spacing:.02em;"/>
+                    <button onClick="{{ onGenPw }}" title="Neu generieren" style="width:30px;height:30px;border:none;background:#f1f3f6;color:#64707f;border-radius:7px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="ph ph-arrows-clockwise" style="font-size:15px;"></i></button>
+                    <button onClick="{{ onCopyPw }}" title="Kopieren" style="width:30px;height:30px;border:none;background:#f1f3f6;color:#64707f;border-radius:7px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="{{ copyPwIcon }}" style="font-size:15px;"></i></button>
+                  </div>
+                </div>
+                <div>
+                  <label style="display:block;font-size:12px;font-weight:600;color:#475262;margin-bottom:6px;">Rolle</label>
+                  <div style="display:flex;gap:3px;background:#f1f3f6;border-radius:8px;padding:3px;height:40px;">
+                    <button onClick="{{ onFRoleMember }}" style="{{ fRoleMemberStyle }}">Member</button>
+                    <button onClick="{{ onFRoleAdmin }}" style="{{ fRoleAdminStyle }}">Admin</button>
+                  </div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;margin-top:16px;">
+                <span style="flex:1;"></span>
+                <button onClick="{{ toggleCreate }}" style="border:1px solid #cbd2dc;background:#fff;color:#333d4c;font-family:inherit;font-size:13px;font-weight:600;padding:9px 15px;border-radius:9px;cursor:pointer;">Abbrechen</button>
+                <button onClick="{{ onCreate }}" style="border:none;background:#0047bb;color:#fff;font-family:inherit;font-size:13px;font-weight:600;padding:9px 16px;border-radius:9px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;"><i class="ph-bold ph-check" style="font-size:15px;"></i>Anlegen</button>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- table -->
+          <div style="padding:6px 10px 10px;">
+            <div style="display:grid;grid-template-columns:1fr 130px 130px 150px 40px;gap:8px;padding:10px 12px;font-family:'Geist Mono',monospace;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:#9aa4b2;font-weight:600;">
+              <span>Name</span><span>Rolle</span><span>Status</span><span>Letzte Anmeldung</span><span></span>
+            </div>
+            <sc-for list="{{ userRows }}" as="u" hint-placeholder-count="6">
+              <div style="{{ u.rowStyle }}">
+                <div style="display:flex;align-items:center;gap:11px;min-width:0;">
+                  <span style="{{ u.avatarStyle }}">{{ u.initials }}</span>
+                  <div style="min-width:0;">
+                    <div style="font-size:13.5px;font-weight:600;color:#16202e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ u.name }}</div>
+                    <div style="font-size:12px;color:#9aa4b2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ u.email }}</div>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:center;"><span style="{{ u.roleStyle }}"><i class="{{ u.roleIcon }}" style="font-size:12px;"></i>{{ u.roleLabel }}</span></div>
+                <div style="display:flex;align-items:center;"><span style="{{ u.statusStyle }}"><span style="{{ u.statusDot }}"></span>{{ u.statusLabel }}</span></div>
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <span style="font-family:'Geist Mono',monospace;font-size:12px;color:#64707f;">{{ u.lastLogin }}</span>
+                  <sc-if value="{{ u.isNew }}" hint-placeholder-val="{{ false }}"><span style="font-size:10px;font-weight:600;color:#c2410c;background:#fdeee3;padding:1px 6px;border-radius:999px;">Neu</span></sc-if>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:flex-end;position:relative;">
+                  <button onClick="{{ u.onMenu }}" style="width:30px;height:30px;border:none;background:transparent;color:#9aa4b2;border-radius:7px;cursor:pointer;display:flex;align-items:center;justify-content:center;" style-hover="background:#f1f3f6;color:#475262;"><i class="ph-bold ph-dots-three" style="font-size:17px;"></i></button>
+                  <sc-if value="{{ u.menuOpen }}" hint-placeholder-val="{{ false }}">
+                    <div onClick="{{ stop }}" style="position:absolute;right:0;top:34px;width:210px;background:#fff;border:1px solid #e2e6ec;border-radius:11px;box-shadow:0 14px 36px rgba(16,32,46,.2);padding:5px;z-index:40;">
+                      <button onClick="{{ u.onToggleRole }}" style="width:100%;display:flex;align-items:center;gap:9px;border:none;background:transparent;color:#333d4c;font-family:inherit;font-size:13px;font-weight:500;padding:8px 9px;border-radius:8px;cursor:pointer;" style-hover="background:#f7f8fa;"><i class="ph ph-shield" style="font-size:16px;color:#64707f;"></i>{{ u.toggleRoleLabel }}</button>
+                      <button onClick="{{ u.onReset }}" style="width:100%;display:flex;align-items:center;gap:9px;border:none;background:transparent;color:#333d4c;font-family:inherit;font-size:13px;font-weight:500;padding:8px 9px;border-radius:8px;cursor:pointer;" style-hover="background:#f7f8fa;"><i class="ph ph-key" style="font-size:16px;color:#64707f;"></i>Passwort zurücksetzen</button>
+                      <div style="height:1px;background:#eef1f5;margin:4px 6px;"></div>
+                      <button onClick="{{ u.onToggleActive }}" style="{{ u.toggleActiveStyle }}"><i class="{{ u.toggleActiveIcon }}" style="font-size:16px;"></i>{{ u.toggleActiveLabel }}</button>
+                    </div>
+                  </sc-if>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- locked card for members -->
+      <sc-if value="{{ viewerMember }}" hint-placeholder-val="{{ false }}">
+        <div style="background:#fff;border:1px dashed #cbd2dc;border-radius:14px;padding:22px;display:flex;align-items:center;gap:14px;">
+          <span style="width:38px;height:38px;border-radius:10px;background:#f1f3f6;color:#9aa4b2;display:flex;align-items:center;justify-content:center;"><i class="ph ph-lock-simple" style="font-size:20px;"></i></span>
+          <div>
+            <div style="font-size:15px;font-weight:600;color:#475262;">Nutzerverwaltung</div>
+            <p style="margin:3px 0 0;font-size:13px;color:#9aa4b2;">Nur für Admins sichtbar. Als Member kannst du Boards und Spalten verwalten, aber keine Nutzer.</p>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ===== BOARD-VERWALTUNG ===== -->
+      <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;box-shadow:0 1px 2px rgba(16,32,46,.05);overflow:hidden;">
+        <div style="display:flex;align-items:center;gap:11px;padding:18px 22px;border-bottom:1px solid #eef1f5;">
+          <span style="width:34px;height:34px;border-radius:9px;background:#e6f7f4;color:#0d9488;display:flex;align-items:center;justify-content:center;"><i class="ph-duotone ph-columns-plus-left" style="font-size:19px;"></i></span>
+          <div style="flex:1;">
+            <h2 style="margin:0;font-size:16px;font-weight:600;">Board-Verwaltung</h2>
+            <p style="margin:2px 0 0;font-size:12.5px;color:#9aa4b2;">Spalten anlegen und ordnen dürfen alle. Archivieren nur Admins.</p>
+          </div>
+        </div>
+        <div style="padding:10px 12px 14px;display:flex;flex-direction:column;gap:8px;">
+          <sc-for list="{{ boardRows }}" as="b" hint-placeholder-count="4">
+            <div style="{{ b.wrapStyle }}">
+              <!-- board head row -->
+              <div onClick="{{ b.onToggle }}" style="display:flex;align-items:center;gap:12px;padding:13px 14px;cursor:pointer;">
+                <span style="width:32px;height:32px;border-radius:8px;background:#f1f3f6;color:#64707f;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ph-fill ph-kanban" style="font-size:16px;"></i></span>
+                <div style="flex:1;min-width:0;">
+                  <div style="display:flex;align-items:center;gap:8px;"><span style="{{ b.nameStyle }}">{{ b.name }}</span><sc-if value="{{ b.archived }}" hint-placeholder-val="{{ false }}"><span style="font-size:10.5px;font-weight:600;color:#64748b;background:#eef1f5;padding:2px 8px;border-radius:999px;">Archiviert</span></sc-if></div>
+                  <div style="font-family:'Geist Mono',monospace;font-size:11.5px;color:#9aa4b2;margin-top:2px;">{{ b.metaLabel }}</div>
+                </div>
+                <sc-if value="{{ b.showArchive }}" hint-placeholder-val="{{ true }}">
+                  <button onClick="{{ b.onArchive }}" title="{{ b.archiveTitle }}" style="width:32px;height:32px;border:none;background:transparent;color:#9aa4b2;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;" style-hover="background:#f1f3f6;color:#475262;"><i class="{{ b.archiveIcon }}" style="font-size:16px;"></i></button>
+                </sc-if>
+                <i class="{{ b.chevron }}" style="font-size:16px;color:#9aa4b2;"></i>
+              </div>
+
+              <!-- expanded columns -->
+              <sc-if value="{{ b.expanded }}" hint-placeholder-val="{{ false }}">
+                <div style="border-top:1px solid #eef1f5;background:#fbfcfd;padding:12px 14px 14px;">
+                  <sc-if value="{{ b.hasColumns }}" hint-placeholder-val="{{ true }}">
+                    <div style="display:flex;flex-direction:column;gap:5px;">
+                      <sc-for list="{{ b.columns }}" as="col" hint-placeholder-count="3">
+                        <div draggable="true" onDragStart="{{ col.onDragStart }}" onDragOver="{{ col.onDragOver }}" onDrop="{{ col.onDrop }}" onDragEnd="{{ onColDragEnd }}" style="{{ col.rowStyle }}">
+                          <i class="ph ph-dots-six-vertical" style="font-size:16px;color:#cbd2dc;cursor:grab;flex-shrink:0;"></i>
+                          <div style="position:relative;">
+                            <button onClick="{{ col.onToggleColor }}" style="{{ col.dotStyle }}"></button>
+                            <sc-if value="{{ col.colorOpen }}" hint-placeholder-val="{{ false }}">
+                              <div onClick="{{ stop }}" style="position:absolute;left:0;top:26px;background:#fff;border:1px solid #e2e6ec;border-radius:11px;box-shadow:0 14px 36px rgba(16,32,46,.2);padding:8px;z-index:40;display:grid;grid-template-columns:repeat(5,1fr);gap:6px;width:170px;">
+                                <sc-for list="{{ col.swatches }}" as="sw" hint-placeholder-count="10">
+                                  <button onClick="{{ sw.onPick }}" style="{{ sw.style }}"></button>
+                                </sc-for>
+                              </div>
+                            </sc-if>
+                          </div>
+                          <input value="{{ col.name }}" onInput="{{ col.onRename }}" style="flex:1;min-width:0;border:1px solid transparent;border-radius:7px;padding:6px 8px;font-family:inherit;font-size:13.5px;font-weight:500;color:#16202e;background:transparent;outline:none;" style-hover="background:#f1f3f6;" style-focus="border-color:#b8ccff;background:#fff;"/>
+                          <span style="font-family:'Geist Mono',monospace;font-size:11.5px;color:#9aa4b2;flex-shrink:0;">{{ col.cardLabel }}</span>
+                          <button onClick="{{ col.onDelete }}" title="Spalte löschen" style="width:28px;height:28px;border:none;background:transparent;color:#cbd2dc;border-radius:7px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;" style-hover="background:#fdeaea;color:#dc2626;"><i class="ph ph-trash" style="font-size:15px;"></i></button>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ b.noColumns }}" hint-placeholder-val="{{ false }}">
+                    <div style="border:1.5px dashed #d5dbe3;border-radius:11px;padding:26px 16px;text-align:center;">
+                      <i class="ph-duotone ph-columns" style="font-size:26px;color:#cbd2dc;"></i>
+                      <div style="font-size:13.5px;font-weight:600;color:#475262;margin-top:8px;">Dieses Board hat noch keine Spalten</div>
+                      <p style="margin:3px 0 0;font-size:12.5px;color:#9aa4b2;">Lege die erste Spalte an, damit Karten einen Ausspielkanal bekommen.</p>
+                    </div>
+                  </sc-if>
+                  <button onClick="{{ b.onAddColumn }}" style="display:inline-flex;align-items:center;gap:7px;border:1.5px dashed #cbd2dc;background:transparent;color:#475262;font-family:inherit;font-size:13px;font-weight:600;padding:8px 13px;border-radius:9px;cursor:pointer;margin-top:10px;" style-hover="border-color:#0047bb;color:#0047bb;background:#eef4ff;"><i class="ph-bold ph-plus" style="font-size:14px;"></i>Spalte hinzufügen</button>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== CONFIRM: DEAKTIVIEREN ===== -->
+  <sc-if value="{{ confirmOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ onConfirmClose }}" style="position:fixed;inset:0;background:rgba(13,36,80,.42);backdrop-filter:blur(2px);z-index:80;display:flex;align-items:center;justify-content:center;padding:20px;">
+      <div onClick="{{ stop }}" style="width:100%;max-width:420px;background:#fff;border-radius:16px;box-shadow:0 24px 60px rgba(13,36,80,.32);padding:24px;">
+        <div style="display:flex;align-items:center;gap:11px;margin-bottom:12px;">
+          <span style="width:38px;height:38px;border-radius:10px;background:#fdeee3;color:#c2410c;display:flex;align-items:center;justify-content:center;"><i class="ph-bold ph-user-minus" style="font-size:19px;"></i></span>
+          <h3 style="margin:0;font-size:16.5px;font-weight:700;">Nutzer deaktivieren?</h3>
+        </div>
+        <p style="margin:0 0 20px;font-size:13.5px;color:#64707f;line-height:1.55;"><strong style="color:#333d4c;font-weight:600;">{{ confirmName }}</strong> kann sich danach nicht mehr anmelden. Kommentare und Aktivitäten im Board bleiben der Person zugeordnet.</p>
+        <div style="display:flex;justify-content:flex-end;gap:10px;">
+          <button onClick="{{ onConfirmClose }}" style="border:1px solid #cbd2dc;background:#fff;color:#333d4c;font-family:inherit;font-size:13px;font-weight:600;padding:9px 15px;border-radius:9px;cursor:pointer;">Abbrechen</button>
+          <button onClick="{{ onConfirmDeactivate }}" style="border:none;background:#dc2626;color:#fff;font-family:inherit;font-size:13px;font-weight:600;padding:9px 16px;border-radius:9px;cursor:pointer;">Deaktivieren</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ===== PASSWORD REVEAL (reset / created) ===== -->
+  <sc-if value="{{ revealOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ onRevealClose }}" style="position:fixed;inset:0;background:rgba(13,36,80,.42);backdrop-filter:blur(2px);z-index:80;display:flex;align-items:center;justify-content:center;padding:20px;">
+      <div onClick="{{ stop }}" style="width:100%;max-width:430px;background:#fff;border-radius:16px;box-shadow:0 24px 60px rgba(13,36,80,.32);padding:24px;">
+        <div style="display:flex;align-items:center;gap:11px;margin-bottom:8px;">
+          <span style="width:38px;height:38px;border-radius:10px;background:#e7f7ef;color:#059669;display:flex;align-items:center;justify-content:center;"><i class="ph-bold ph-check-circle" style="font-size:20px;"></i></span>
+          <h3 style="margin:0;font-size:16.5px;font-weight:700;">{{ revealTitle }}</h3>
+        </div>
+        <p style="margin:0 0 16px;font-size:13.5px;color:#64707f;line-height:1.55;">{{ revealSub }}</p>
+        <div style="display:flex;align-items:center;gap:10px;border:1px solid #e2e6ec;background:#f7f8fa;border-radius:11px;padding:12px 14px;margin-bottom:14px;">
+          <i class="ph ph-key" style="font-size:18px;color:#64707f;"></i>
+          <span style="font-family:'Geist Mono',monospace;font-size:17px;font-weight:500;letter-spacing:.03em;color:#16202e;flex:1;">{{ revealPw }}</span>
+          <button onClick="{{ onCopyReveal }}" style="display:inline-flex;align-items:center;gap:6px;border:1px solid #cbd2dc;background:#fff;color:#333d4c;font-family:inherit;font-size:12.5px;font-weight:600;padding:7px 11px;border-radius:8px;cursor:pointer;"><i class="{{ copyRevealIcon }}" style="font-size:14px;"></i>{{ copyRevealLabel }}</button>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:8px;background:#fdf1e3;border:1px solid #f4dcb8;border-radius:9px;padding:10px 12px;margin-bottom:18px;">
+          <i class="ph-bold ph-warning" style="font-size:15px;color:#d97706;flex-shrink:0;margin-top:1px;"></i>
+          <span style="font-size:12px;color:#92620c;line-height:1.5;">Wird nur jetzt angezeigt. Bitte kopieren und persönlich weitergeben. Kein automatischer Mail-Versand.</span>
+        </div>
+        <div style="display:flex;justify-content:flex-end;">
+          <button onClick="{{ onRevealClose }}" style="border:none;background:#0047bb;color:#fff;font-family:inherit;font-size:13px;font-weight:600;padding:9px 18px;border-radius:9px;cursor:pointer;">Fertig</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ===== SPALTE LÖSCHEN: WARNUNG (enthält Karten) ===== -->
+  <sc-if value="{{ warnOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ onWarnClose }}" style="position:fixed;inset:0;background:rgba(13,36,80,.42);backdrop-filter:blur(2px);z-index:80;display:flex;align-items:center;justify-content:center;padding:20px;">
+      <div onClick="{{ stop }}" style="width:100%;max-width:430px;background:#fff;border-radius:16px;box-shadow:0 24px 60px rgba(13,36,80,.32);padding:24px;">
+        <div style="display:flex;align-items:center;gap:11px;margin-bottom:12px;">
+          <span style="width:38px;height:38px;border-radius:10px;background:#fdeaea;color:#dc2626;display:flex;align-items:center;justify-content:center;"><i class="ph-bold ph-warning-octagon" style="font-size:20px;"></i></span>
+          <h3 style="margin:0;font-size:16.5px;font-weight:700;">Spalte enthält Karten</h3>
+        </div>
+        <p style="margin:0 0 20px;font-size:13.5px;color:#64707f;line-height:1.55;">Die Spalte <strong style="color:#333d4c;font-weight:600;">{{ warnName }}</strong> enthält noch <strong style="color:#333d4c;font-weight:600;">{{ warnCount }}</strong>. Verschiebe die Karten zuerst in eine andere Spalte, dann kann die Spalte gelöscht werden.</p>
+        <div style="display:flex;justify-content:flex-end;">
+          <button onClick="{{ onWarnClose }}" style="border:none;background:#0047bb;color:#fff;font-family:inherit;font-size:13px;font-weight:600;padding:9px 18px;border-radius:9px;cursor:pointer;">Verstanden</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const PEOPLE_COLORS = { CH:'#2563eb', MW:'#0d9488', LP:'#7c3aed', SK:'#ea580c', TR:'#c026d3', AH:'#16a34a', FK:'#0891b2', JD:'#d97706', PE:'#4f46e5', NM:'#db2777' };
+const SWATCHES = ['#2563eb','#0d9488','#7c3aed','#c026d3','#ea580c','#16a34a','#e11d48','#64748b','#0891b2','#d97706'];
+const PWWORDS = ['kobalt','anker','falke','birke','delta','morgen','quarz','nebel','feder','strom','wolke','kranich','saphir','linde','komet'];
+function initialsOf(name){ return name.split(/\s+/).filter(Boolean).slice(0,2).map(w => w[0].toUpperCase()).join(''); }
+function genPw(){ const a = PWWORDS[Math.floor(Math.random()*PWWORDS.length)]; let b = PWWORDS[Math.floor(Math.random()*PWWORDS.length)]; while(b===a) b = PWWORDS[Math.floor(Math.random()*PWWORDS.length)]; const n = 100 + Math.floor(Math.random()*900); return a + '-' + b + '-' + n; }
+let CID = 500; const cid = () => 'g' + (CID++);
+
+const SEED_USERS = [
+  { id:'u1', name:'Christine Brand', email:'christine.brand@oeaw.ac.at', role:'admin', active:true, lastLogin:'vor 2 Std.' },
+  { id:'u2', name:'Sara Kanduth', email:'sara.kanduth@oeaw.ac.at', role:'admin', active:true, lastLogin:'heute' },
+  { id:'u3', name:'Markus Wieser', email:'markus.wieser@oeaw.ac.at', role:'member', active:true, lastLogin:'gestern' },
+  { id:'u4', name:'Lena Pichler', email:'lena.pichler@oeaw.ac.at', role:'member', active:true, lastLogin:'vor 3 Tagen' },
+  { id:'u5', name:'Tobias Reithner', email:'tobias.reithner@oeaw.ac.at', role:'member', active:true, lastLogin:'vor 1 Woche' },
+  { id:'u6', name:'Anna Huber', email:'anna.huber@oeaw.ac.at', role:'member', active:true, lastLogin:'vor 5 Tagen' },
+  { id:'u7', name:'Paul Egger', email:'paul.egger@oeaw.ac.at', role:'member', active:true, lastLogin:'vor 2 Wochen' },
+  { id:'u8', name:'Nadia Mayr', email:'nadia.mayr@oeaw.ac.at', role:'member', active:true, lastLogin:'gestern' },
+  { id:'u9', name:'Julia Denk', email:'julia.denk@oeaw.ac.at', role:'member', active:true, lastLogin:null, isNew:true },
+  { id:'u10', name:'Felix Kramer', email:'felix.kramer@oeaw.ac.at', role:'member', active:false, lastLogin:'vor 3 Monaten' },
+];
+
+const col = (name, color, cards) => ({ id:cid(), name, color, cards });
+const SEED_BOARDS = [
+  { id:'b1', name:'Channels', archived:false, columns:[
+    col('PM/Presse','#2563eb',24), col('Web','#0d9488',41), col('Blog GÖ','#7c3aed',18), col('Podcast','#c026d3',12),
+    col('Events','#ea580c',33), col('Screens','#16a34a',9), col('Science Pop','#e11d48',15), col('Zeitlos','#64748b',35),
+  ] },
+  { id:'b2', name:'Web-Team', archived:false, columns:[
+    col('Ideen','#64748b',10), col('In Arbeit','#ea580c',18), col('Review','#7c3aed',8), col('Publiziert','#16a34a',6),
+  ] },
+  { id:'b3', name:'Lange Nacht 2026', archived:false, columns:[
+    col('Stände','#0d9488',9), col('Programm','#2563eb',7), col('Kommunikation','#ea580c',7),
+  ] },
+  { id:'b4', name:'Social Media Planung', archived:false, columns:[
+    col('Entwürfe','#c026d3',8), col('Geplant','#16a34a',7),
+  ] },
+  { id:'b5', name:'CD Relaunch', archived:false, columns:[] },
+  { id:'b6', name:'Redaktionsklausur 2025', archived:true, columns:[
+    col('Themen','#2563eb',31), col('Erledigt','#16a34a',23),
+  ] },
+];
+
+class Component extends DCLogic {
+  state = {
+    viewerRole:'admin',
+    users: SEED_USERS.slice(),
+    boards: SEED_BOARDS.map(b => ({ ...b, columns: b.columns.slice() })),
+    createOpen:false, fName:'', fEmail:'', fPw: genPw(), fRole:'member', copyPw:false,
+    rowMenu:null,
+    confirm:{ open:false, id:null },
+    reveal:{ open:false, title:'', sub:'', pw:'' }, copyReveal:false,
+    warn:{ open:false, name:'', count:0 },
+    expandedBoard:'b1',
+    colorOpenId:null,
+    dragCol:null,
+  };
+
+  updateBoard(id, fn){ this.setState(s => ({ boards: s.boards.map(b => b.id === id ? fn(b) : b) })); }
+  copy(text){ try { if(navigator.clipboard) navigator.clipboard.writeText(text); } catch(e){} }
+
+  boardOf(colId){ return this.state.boards.find(b => b.columns.some(c => c.id === colId)); }
+
+  deleteColumn(boardId, colId){
+    const board = this.state.boards.find(b => b.id === boardId);
+    const c = board && board.columns.find(x => x.id === colId);
+    if(!c) return;
+    if(c.cards > 0){ this.setState({ warn:{ open:true, name:c.name, count: c.cards + (c.cards === 1 ? ' Karte' : ' Karten') } }); return; }
+    this.updateBoard(boardId, b => ({ ...b, columns: b.columns.filter(x => x.id !== colId) }));
+  }
+
+  moveColumn(boardId, fromId, toId){
+    if(fromId === toId) return;
+    this.updateBoard(boardId, b => {
+      const cols = b.columns.slice();
+      const fi = cols.findIndex(c => c.id === fromId);
+      const ti = cols.findIndex(c => c.id === toId);
+      if(fi < 0 || ti < 0) return b;
+      const [m] = cols.splice(fi, 1);
+      cols.splice(ti, 0, m);
+      return { ...b, columns: cols };
+    });
+  }
+
+  createUser(){
+    const name = this.state.fName.trim();
+    if(!name){ return; }
+    const email = this.state.fEmail.trim() || (name.toLowerCase().replace(/\s+/g,'.').replace(/[^a-z.]/g,'') + '@oeaw.ac.at');
+    const pw = this.state.fPw;
+    const u = { id:cid(), name, email, role:this.state.fRole, active:true, lastLogin:null, isNew:true };
+    this.setState(s => ({ users:[...s.users, u], createOpen:false, fName:'', fEmail:'', fPw:genPw(), fRole:'member',
+      reveal:{ open:true, title:'Nutzer angelegt', sub: name + ' kann sich mit diesem Initialpasswort anmelden:', pw }, copyReveal:false }));
+  }
+
+  resetPw(id){
+    const u = this.state.users.find(x => x.id === id);
+    const pw = genPw();
+    this.setState({ rowMenu:null, reveal:{ open:true, title:'Passwort zurückgesetzt', sub:'Neues Initialpasswort für ' + (u?u.name:'') + ':', pw }, copyReveal:false });
+  }
+
+  renderVals(){
+    const s = this.state;
+    const admin = s.viewerRole === 'admin';
+    const segOn = { display:'inline-flex', alignItems:'center', gap:'6px', border:'none', fontFamily:'inherit', fontSize:'12.5px', fontWeight:600, padding:'6px 12px', borderRadius:'6px', cursor:'pointer', background:'#fff', color:'#0047bb', boxShadow:'0 1px 2px rgba(16,32,46,.1)' };
+    const segOff = { display:'inline-flex', alignItems:'center', gap:'6px', border:'none', fontFamily:'inherit', fontSize:'12.5px', fontWeight:600, padding:'6px 12px', borderRadius:'6px', cursor:'pointer', background:'transparent', color:'#64707f' };
+    const roleSegOn = { border:'none', fontFamily:'inherit', fontSize:'12.5px', fontWeight:600, padding:'0 14px', borderRadius:'6px', cursor:'pointer', background:'#fff', color:'#0047bb', boxShadow:'0 1px 2px rgba(16,32,46,.1)' };
+    const roleSegOff = { border:'none', fontFamily:'inherit', fontSize:'12.5px', fontWeight:600, padding:'0 14px', borderRadius:'6px', cursor:'pointer', background:'transparent', color:'#64707f' };
+
+    const activeUsers = s.users.filter(u => u.active).length;
+
+    const userRows = s.users.map(u => {
+      const ini = initialsOf(u.name);
+      const color = PEOPLE_COLORS[ini] || '#64748b';
+      const isAdmin = u.role === 'admin';
+      const active = u.active;
+      return {
+        initials: ini, name: u.name, email: u.email,
+        avatarStyle:{ width:34, height:34, borderRadius:999, background: active ? color : '#cbd2dc', color:'#fff', fontSize:12, fontWeight:600, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 },
+        rowStyle:{ display:'grid', gridTemplateColumns:'1fr 130px 130px 150px 40px', gap:'8px', alignItems:'center', padding:'10px 12px', borderRadius:'10px', opacity: active ? 1 : 0.55 },
+        roleStyle:{ display:'inline-flex', alignItems:'center', gap:'5px', fontSize:'11.5px', fontWeight:600, padding:'3px 9px', borderRadius:'999px', color: isAdmin ? '#0047bb' : '#64707f', background: isAdmin ? '#eef4ff' : '#f1f3f6' },
+        roleIcon: isAdmin ? 'ph-fill ph-shield-check' : 'ph ph-user',
+        roleLabel: isAdmin ? 'Admin' : 'Member',
+        statusStyle:{ display:'inline-flex', alignItems:'center', gap:'6px', fontSize:'12px', fontWeight:500, color: active ? '#15803d' : '#9aa4b2' },
+        statusDot:{ width:7, height:7, borderRadius:999, background: active ? '#16a34a' : '#cbd2dc', flexShrink:0 },
+        statusLabel: active ? 'Aktiv' : 'Deaktiviert',
+        lastLogin: u.lastLogin || 'Noch nie',
+        isNew: !!u.isNew && active,
+        onMenu: (e) => { e.stopPropagation(); this.setState({ rowMenu: s.rowMenu === u.id ? null : u.id }); },
+        menuOpen: s.rowMenu === u.id,
+        onToggleRole: () => this.setState({ users: s.users.map(x => x.id === u.id ? { ...x, role: isAdmin ? 'member' : 'admin' } : x), rowMenu:null }),
+        toggleRoleLabel: isAdmin ? 'Zu Member machen' : 'Zu Admin machen',
+        onReset: () => this.resetPw(u.id),
+        onToggleActive: () => { if(active){ this.setState({ confirm:{ open:true, id:u.id }, rowMenu:null }); } else { this.setState({ users: s.users.map(x => x.id === u.id ? { ...x, active:true } : x), rowMenu:null }); } },
+        toggleActiveLabel: active ? 'Deaktivieren' : 'Reaktivieren',
+        toggleActiveIcon: active ? 'ph ph-user-minus' : 'ph ph-user-plus',
+        toggleActiveStyle:{ width:'100%', display:'flex', alignItems:'center', gap:'9px', border:'none', background:'transparent', color: active ? '#dc2626' : '#059669', fontFamily:'inherit', fontSize:'13px', fontWeight:500, padding:'8px 9px', borderRadius:'8px', cursor:'pointer' },
+      };
+    });
+
+    const boardRows = s.boards.map(b => {
+      const expanded = s.expandedBoard === b.id;
+      const total = b.columns.reduce((n, c) => n + c.cards, 0);
+      const columns = b.columns.map(c => ({
+        name: c.name,
+        rowStyle:{ display:'flex', alignItems:'center', gap:'9px', background:'#fff', border:'1px solid ' + (s.dragCol === c.id ? '#b8ccff' : '#e2e6ec'), borderRadius:'9px', padding:'5px 8px', opacity: s.dragCol === c.id ? 0.5 : 1 },
+        dotStyle:{ width:15, height:15, borderRadius:'5px', background:c.color, border:'none', cursor:'pointer', flexShrink:0, padding:0 },
+        cardLabel: c.cards + (c.cards === 1 ? ' Karte' : ' Karten'),
+        onRename: (e) => this.updateBoard(b.id, bb => ({ ...bb, columns: bb.columns.map(x => x.id === c.id ? { ...x, name:e.target.value } : x) })),
+        onDelete: (e) => { if(e) e.stopPropagation(); this.deleteColumn(b.id, c.id); },
+        onToggleColor: (e) => { if(e) e.stopPropagation(); this.setState({ colorOpenId: s.colorOpenId === c.id ? null : c.id }); },
+        colorOpen: s.colorOpenId === c.id,
+        swatches: SWATCHES.map(hex => ({ style:{ width:24, height:24, borderRadius:'6px', background:hex, border: hex === c.color ? '2px solid #16202e' : '1px solid rgba(0,0,0,.06)', cursor:'pointer', padding:0 }, onPick: () => this.updateBoard(b.id, bb => ({ ...bb, columns: bb.columns.map(x => x.id === c.id ? { ...x, color:hex } : x) })) || this.setState({ colorOpenId:null }) })),
+        onDragStart: (e) => { this.setState({ dragCol:c.id }); if(e.dataTransfer){ e.dataTransfer.effectAllowed='move'; try{ e.dataTransfer.setData('text/plain', c.id); }catch(err){} } },
+        onDragOver: (e) => { e.preventDefault(); if(e.dataTransfer) e.dataTransfer.dropEffect='move'; },
+        onDrop: (e) => { e.preventDefault(); this.moveColumn(b.id, s.dragCol, c.id); this.setState({ dragCol:null }); },
+      }));
+      return {
+        name: b.name, archived: b.archived,
+        wrapStyle:{ border:'1px solid #e2e6ec', borderRadius:'12px', overflow:'hidden', background:'#fff', opacity: b.archived ? 0.62 : 1 },
+        nameStyle:{ fontSize:'14.5px', fontWeight:600, color:'#16202e' },
+        metaLabel: b.columns.length + (b.columns.length === 1 ? ' Spalte · ' : ' Spalten · ') + total + (total === 1 ? ' Karte' : ' Karten'),
+        onToggle: () => this.setState({ expandedBoard: expanded ? null : b.id, colorOpenId:null }),
+        expanded, chevron: expanded ? 'ph ph-caret-up' : 'ph ph-caret-down',
+        showArchive: admin,
+        archiveIcon: b.archived ? 'ph ph-arrow-counter-clockwise' : 'ph ph-archive',
+        archiveTitle: b.archived ? 'Wiederherstellen' : 'Archivieren',
+        onArchive: (e) => { e.stopPropagation(); this.updateBoard(b.id, bb => ({ ...bb, archived: !bb.archived })); },
+        hasColumns: b.columns.length > 0, noColumns: b.columns.length === 0,
+        columns,
+        onAddColumn: (e) => { if(e) e.stopPropagation(); this.updateBoard(b.id, bb => ({ ...bb, columns:[...bb.columns, { id:cid(), name:'Neue Spalte', color: SWATCHES[bb.columns.length % SWATCHES.length], cards:0 }] })); },
+      };
+    });
+
+    return {
+      viewerAdmin: admin, viewerMember: !admin,
+      setAdmin: () => this.setState({ viewerRole:'admin' }),
+      setMember: () => this.setState({ viewerRole:'member', createOpen:false, rowMenu:null }),
+      adminTabStyle: admin ? segOn : segOff,
+      memberTabStyle: !admin ? segOn : segOff,
+
+      userSummary: s.users.length + ' Nutzer · ' + activeUsers + ' aktiv · ' + s.users.filter(u => u.role === 'admin').length + ' Admins',
+      userRows,
+
+      createOpen: s.createOpen,
+      toggleCreate: () => this.setState({ createOpen: !s.createOpen, fName:'', fEmail:'', fPw:genPw(), fRole:'member', rowMenu:null }),
+      fName: s.fName, onFName: (e) => this.setState({ fName:e.target.value }),
+      fEmail: s.fEmail, onFEmail: (e) => this.setState({ fEmail:e.target.value }),
+      fPw: s.fPw, onFPw: (e) => this.setState({ fPw:e.target.value }),
+      onGenPw: () => this.setState({ fPw:genPw(), copyPw:false }),
+      onCopyPw: () => { this.copy(s.fPw); this.setState({ copyPw:true }); setTimeout(() => this.setState({ copyPw:false }), 1500); },
+      copyPwIcon: s.copyPw ? 'ph-bold ph-check' : 'ph ph-copy',
+      onFRoleMember: () => this.setState({ fRole:'member' }),
+      onFRoleAdmin: () => this.setState({ fRole:'admin' }),
+      fRoleMemberStyle: s.fRole === 'member' ? roleSegOn : roleSegOff,
+      fRoleAdminStyle: s.fRole === 'admin' ? roleSegOn : roleSegOff,
+      onCreate: () => this.createUser(),
+
+      boardRows,
+      onColDragEnd: () => this.setState({ dragCol:null }),
+
+      stop: (e) => e.stopPropagation(),
+
+      confirmOpen: s.confirm.open,
+      confirmName: (s.users.find(u => u.id === s.confirm.id) || {}).name || '',
+      onConfirmClose: () => this.setState({ confirm:{ open:false, id:null } }),
+      onConfirmDeactivate: () => this.setState({ users: s.users.map(u => u.id === s.confirm.id ? { ...u, active:false } : u), confirm:{ open:false, id:null } }),
+
+      revealOpen: s.reveal.open, revealTitle: s.reveal.title, revealSub: s.reveal.sub, revealPw: s.reveal.pw,
+      onRevealClose: () => this.setState({ reveal:{ open:false, title:'', sub:'', pw:'' } }),
+      onCopyReveal: () => { this.copy(s.reveal.pw); this.setState({ copyReveal:true }); setTimeout(() => this.setState({ copyReveal:false }), 1500); },
+      copyRevealIcon: s.copyReveal ? 'ph-bold ph-check' : 'ph ph-copy',
+      copyRevealLabel: s.copyReveal ? 'Kopiert' : 'Kopieren',
+
+      warnOpen: s.warn.open, warnName: s.warn.name, warnCount: s.warn.count,
+      onWarnClose: () => this.setState({ warn:{ open:false, name:'', count:0 } }),
+    };
+  }
+}
+</script>
+</body>
+</html>

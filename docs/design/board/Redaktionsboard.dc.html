@@ -1,0 +1,1333 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  ::selection { background: #cfe0ff; }
+  .col-scroll::-webkit-scrollbar { height: 10px; width: 10px; }
+  .col-scroll::-webkit-scrollbar-thumb { background: #cbd2dc; border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
+  .col-scroll::-webkit-scrollbar-track { background: transparent; }
+  input::placeholder, textarea::placeholder { color: #9aa4b2; }
+</style>
+</helmet>
+<div data-screen-label="Redaktionsboard" style="height:100vh;display:flex;flex-direction:column;background:#f7f8fa;font-family:'Geist',system-ui,sans-serif;color:#16202e;-webkit-font-smoothing:antialiased;overflow:hidden;">
+
+  <!-- ===== TOP NAV ===== -->
+  <header style="background:#0047bb;color:#fff;flex-shrink:0;box-shadow:0 1px 3px rgba(0,50,130,.35);">
+    <div style="height:54px;display:flex;align-items:center;padding:0 18px;gap:4px;">
+      <div style="display:flex;align-items:center;gap:9px;margin-right:18px;">
+        <i class="ph-fill ph-radio-button" style="font-size:20px;color:#9cc0ff;"></i>
+        <span style="font-weight:600;font-size:16px;letter-spacing:-0.01em;white-space:nowrap;">ÖAW Presse</span>
+      </div>
+      <a style="display:flex;align-items:center;gap:7px;padding:7px 11px;border-radius:8px;font-size:13.5px;font-weight:500;color:rgba(255,255,255,.72);text-decoration:none;cursor:pointer;"><i class="ph ph-chart-bar" style="font-size:16px;"></i>Dashboard</a>
+      <a style="display:flex;align-items:center;gap:7px;padding:7px 11px;border-radius:8px;font-size:13.5px;font-weight:500;color:rgba(255,255,255,.72);text-decoration:none;cursor:pointer;"><i class="ph ph-book-open" style="font-size:16px;"></i>Publikationen</a>
+      <a style="display:flex;align-items:center;gap:7px;padding:7px 11px;border-radius:8px;font-size:13.5px;font-weight:500;color:rgba(255,255,255,.72);text-decoration:none;cursor:pointer;"><i class="ph ph-calendar-dots" style="font-size:16px;"></i>Veranstaltungen</a>
+      <a style="display:flex;align-items:center;gap:7px;padding:7px 11px;border-radius:8px;font-size:13.5px;font-weight:500;color:rgba(255,255,255,.72);text-decoration:none;cursor:pointer;"><i class="ph ph-clipboard-text" style="font-size:16px;"></i>Triage</a>
+      <a aria-current="page" style="display:flex;align-items:center;gap:7px;padding:7px 11px;border-radius:8px;font-size:13.5px;font-weight:600;color:#fff;background:rgba(255,255,255,.20);text-decoration:none;cursor:pointer;"><i class="ph-bold ph-kanban" style="font-size:16px;"></i>Board</a>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:6px;">
+        <button onClick="{{ openPalette }}" style="display:flex;align-items:center;gap:8px;height:34px;padding:0 10px;border:none;background:rgba(255,255,255,.12);color:rgba(255,255,255,.9);border-radius:8px;cursor:pointer;font-family:inherit;" style-hover="background:rgba(255,255,255,.2)"><i class="ph ph-magnifying-glass" style="font-size:15px;"></i><span style="font-size:12.5px;font-weight:500;">Suchen</span><span style="font-family:'Geist Mono',monospace;font-size:10.5px;background:rgba(255,255,255,.18);padding:2px 5px;border-radius:5px;">⌘K</span></button>
+        <button style="width:34px;height:34px;border:none;background:rgba(255,255,255,.12);color:#fff;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="ph ph-question" style="font-size:16px;"></i></button>
+        <div style="position:relative;margin-left:4px;">
+          <button onClick="{{ toggleAvatarMenu }}" style="width:32px;height:32px;border:none;border-radius:999px;background:#9cc0ff;color:#00337f;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;cursor:pointer;">CH</button>
+          <sc-if value="{{ avatarMenuOpen }}" hint-placeholder-val="{{ false }}">
+            <div onClick="{{ stop }}" style="position:absolute;right:0;top:40px;width:214px;background:#fff;border:1px solid #e2e6ec;border-radius:12px;box-shadow:0 12px 32px rgba(16,32,46,.18);padding:6px;z-index:90;text-align:left;">
+              <div style="padding:8px 10px 9px;border-bottom:1px solid #eef1f5;margin-bottom:4px;">
+                <div style="font-size:13px;font-weight:600;color:#16202e;">Christine Brand</div>
+                <div style="font-size:11.5px;color:#9aa4b2;">christine.brand@oeaw.ac.at</div>
+              </div>
+              <button onClick="{{ onLogout }}" style="width:100%;display:flex;align-items:center;gap:9px;border:none;background:transparent;color:#dc2626;font-family:inherit;font-size:13px;font-weight:500;padding:9px 10px;border-radius:8px;cursor:pointer;" style-hover="background:#fdeaea;"><i class="ph ph-sign-out" style="font-size:16px;"></i>Abmelden</button>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== BOARD TOOLBAR ===== -->
+  <div style="background:#fff;border-bottom:1px solid #e2e6ec;flex-shrink:0;">
+    <div style="height:58px;display:flex;align-items:center;padding:0 20px;gap:14px;">
+      <div style="position:relative;">
+        <div onClick="{{ toggleSwitcher }}" style="display:flex;align-items:center;gap:10px;cursor:pointer;border-radius:10px;padding:4px 8px 4px 4px;margin:-4px -4px -4px -4px;" style-hover="background:#f7f8fa;">
+          <span style="width:32px;height:32px;border-radius:9px;background:#eef4ff;color:#0047bb;display:flex;align-items:center;justify-content:center;"><i class="ph-duotone ph-kanban" style="font-size:19px;"></i></span>
+          <div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:15px;font-weight:600;line-height:1.1;white-space:nowrap;">Redaktionsplan <span style="font-weight:500;color:#64707f;">· {{ activeBoard }}</span> <i class="{{ switcherCaret }}" style="font-size:13px;color:#9aa4b2;"></i></div>
+            <div style="font-family:'Geist Mono',monospace;font-size:11px;color:#9aa4b2;margin-top:1px;">{{ totalLabel }}</div>
+          </div>
+        </div>
+        <sc-if value="{{ switcherOpen }}" hint-placeholder-val="{{ false }}">
+          <div onClick="{{ stop }}" style="position:absolute;left:0;top:52px;width:320px;background:#fff;border:1px solid #e2e6ec;border-radius:13px;box-shadow:0 18px 44px rgba(16,32,46,.22);z-index:50;overflow:hidden;">
+            <div style="padding:10px;border-bottom:1px solid #eef1f5;">
+              <div style="display:flex;align-items:center;gap:8px;border:1px solid #cbd2dc;border-radius:9px;padding:0 11px;height:36px;background:#fff;">
+                <i class="ph ph-magnifying-glass" style="font-size:15px;color:#9aa4b2;"></i>
+                <input value="{{ switcherQuery }}" onInput="{{ onSwitcherQuery }}" placeholder="Board suchen…" autofocus="true" style="border:none;outline:none;font-family:inherit;font-size:13px;flex:1;color:#16202e;background:transparent;min-width:0;"/>
+              </div>
+            </div>
+            <div class="col-scroll" style="max-height:340px;overflow-y:auto;padding:8px;">
+              <sc-if value="{{ hasFavs }}" hint-placeholder-val="{{ true }}">
+                <div style="font-family:'Geist Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#9aa4b2;font-weight:600;padding:4px 9px 6px;display:flex;align-items:center;gap:5px;"><i class="ph-fill ph-star" style="font-size:11px;color:#f59e0b;"></i>Favoriten</div>
+                <sc-for list="{{ switcherFavs }}" as="b" hint-placeholder-count="2">
+                  <div onClick="{{ b.onPick }}" style="{{ b.rowStyle }}" style-hover="background:#f7f8fa;">
+                    <span style="{{ b.dotStyle }}"></span>
+                    <div style="flex:1;min-width:0;"><div style="font-size:13.5px;font-weight:600;color:#16202e;">{{ b.name }}</div><div style="font-family:'Geist Mono',monospace;font-size:11px;color:#9aa4b2;">{{ b.meta }}</div></div>
+                    <i class="{{ b.checkIcon }}" style="font-size:14px;color:#0047bb;"></i>
+                    <button onClick="{{ b.onToggleFav }}" style="width:26px;height:26px;border:none;background:transparent;border-radius:7px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="{{ b.starIcon }}" style="{{ b.starStyle }}"></i></button>
+                  </div>
+                </sc-for>
+                <div style="height:1px;background:#eef1f5;margin:8px 6px;"></div>
+              </sc-if>
+              <div style="font-family:'Geist Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#9aa4b2;font-weight:600;padding:4px 9px 6px;">Alle Boards</div>
+              <sc-for list="{{ switcherOthers }}" as="b" hint-placeholder-count="6">
+                <div onClick="{{ b.onPick }}" style="{{ b.rowStyle }}" style-hover="background:#f7f8fa;">
+                  <span style="{{ b.dotStyle }}"></span>
+                  <div style="flex:1;min-width:0;"><div style="font-size:13.5px;font-weight:600;color:#16202e;">{{ b.name }}</div><div style="font-family:'Geist Mono',monospace;font-size:11px;color:#9aa4b2;">{{ b.meta }}</div></div>
+                  <i class="{{ b.checkIcon }}" style="font-size:14px;color:#0047bb;"></i>
+                  <button onClick="{{ b.onToggleFav }}" style="width:26px;height:26px;border:none;background:transparent;border-radius:7px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="{{ b.starIcon }}" style="{{ b.starStyle }}"></i></button>
+                </div>
+              </sc-for>
+            </div>
+            <a href="Boards.dc.html" style="display:flex;align-items:center;gap:8px;padding:12px 14px;border-top:1px solid #eef1f5;text-decoration:none;color:#0047bb;font-size:13px;font-weight:600;" style-hover="background:#f7f8fa;"><i class="ph ph-squares-four" style="font-size:16px;"></i>Alle Boards ansehen<span style="flex:1;"></span><i class="ph ph-arrow-right" style="font-size:14px;"></i></a>
+          </div>
+        </sc-if>
+      </div>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:9px;">
+        <button onClick="{{ onOpenTriage }}" style="display:inline-flex;align-items:center;gap:7px;border:1px solid #cbd2dc;background:#fff;color:#333d4c;font-family:inherit;font-size:13px;font-weight:600;padding:9px 14px;border-radius:9px;cursor:pointer;"><i class="ph-duotone ph-lightning" style="font-size:16px;color:#ea580c;"></i>Aus Triage anlegen</button>
+        <button onClick="{{ onNewCard }}" style="display:inline-flex;align-items:center;gap:7px;border:none;background:#0047bb;color:#fff;font-family:inherit;font-size:13px;font-weight:600;padding:9px 15px;border-radius:9px;cursor:pointer;box-shadow:0 1px 2px rgba(0,71,187,.3);"><i class="ph-bold ph-plus" style="font-size:15px;"></i>Karte anlegen</button>
+      </div>
+    </div>
+
+    <!-- ===== FILTER BAR ===== -->
+    <div style="height:54px;display:flex;align-items:center;padding:0 20px;gap:10px;border-top:1px solid #eef1f5;">
+      <div style="display:flex;align-items:center;gap:8px;border:1px solid #cbd2dc;border-radius:9px;padding:0 11px;height:36px;background:#fff;width:280px;">
+        <i class="ph ph-magnifying-glass" style="font-size:15px;color:#9aa4b2;"></i>
+        <input value="{{ search }}" onInput="{{ onSearch }}" placeholder="Titel oder Checkliste durchsuchen…" style="border:none;outline:none;font-family:inherit;font-size:13px;flex:1;color:#16202e;background:transparent;min-width:0;"/>
+        <sc-if value="{{ hasSearch }}" hint-placeholder-val="{{ true }}"><i class="ph ph-x" onClick="{{ onClearSearch }}" style="font-size:14px;color:#9aa4b2;cursor:pointer;"></i></sc-if>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:7px;border:1px solid #cbd2dc;border-radius:9px;padding:0 6px 0 11px;height:36px;background:#fff;">
+        <i class="ph ph-funnel" style="font-size:14px;color:#9aa4b2;"></i>
+        <select value="{{ channel }}" onChange="{{ onChannel }}" style="border:none;outline:none;background:transparent;font-family:inherit;font-size:13px;color:#333d4c;font-weight:500;cursor:pointer;padding-right:2px;">
+          <option value="all">Alle Kanäle</option>
+          <option value="presse">PM/Presse</option>
+          <option value="web">Web</option>
+          <option value="blog">Blog GÖ</option>
+          <option value="podcast">Podcast</option>
+          <option value="events">Events</option>
+          <option value="screens">Screens</option>
+          <option value="sciencepop">Science Pop</option>
+          <option value="zeitlos">Zeitlos</option>
+        </select>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:7px;border:1px solid #cbd2dc;border-radius:9px;padding:0 6px 0 11px;height:36px;background:#fff;">
+        <i class="ph ph-user" style="font-size:14px;color:#9aa4b2;"></i>
+        <select value="{{ person }}" onChange="{{ onPerson }}" style="border:none;outline:none;background:transparent;font-family:inherit;font-size:13px;color:#333d4c;font-weight:500;cursor:pointer;padding-right:2px;">
+          <option value="all">Alle Personen</option>
+          <option value="CH">Christine</option>
+          <option value="MW">Markus</option>
+          <option value="LP">Lena</option>
+          <option value="SK">Sara</option>
+          <option value="TR">Tobias</option>
+          <option value="AH">Anna</option>
+        </select>
+      </div>
+
+      <button onClick="{{ toggleOverdue }}" style="{{ overdueBtnStyle }}"><i class="ph-bold ph-clock-countdown" style="font-size:15px;"></i>Nur überfällig</button>
+      <button onClick="{{ toggleCompleted }}" style="{{ completedBtnStyle }}"><i class="ph ph-check-circle" style="font-size:15px;"></i>Erledigte zeigen</button>
+
+      <sc-if value="{{ hasFilters }}" hint-placeholder-val="{{ true }}">
+        <button onClick="{{ onResetFilters }}" style="margin-left:2px;display:inline-flex;align-items:center;gap:6px;border:none;background:transparent;color:#64707f;font-family:inherit;font-size:13px;font-weight:500;padding:8px 8px;border-radius:8px;cursor:pointer;">Zurücksetzen</button>
+      </sc-if>
+    </div>
+  </div>
+
+  <!-- ===== BOARD + PEOPLE BAR ===== -->
+  <div onClick="{{ closeMenus }}" style="flex:1;display:flex;min-height:0;">
+   <div class="col-scroll" style="flex:1;overflow-x:auto;overflow-y:hidden;padding:16px 20px 20px;">
+    <div style="display:flex;gap:14px;height:100%;align-items:stretch;min-width:min-content;">
+      <sc-for list="{{ board }}" as="col" hint-placeholder-count="8">
+        <div style="width:296px;flex-shrink:0;display:flex;flex-direction:column;height:100%;">
+          <!-- column header -->
+          <div style="display:flex;align-items:center;gap:9px;padding:2px 4px 11px;">
+            <span style="{{ col.dotStyle }}"></span>
+            <i class="{{ col.iconClass }}" style="{{ col.iconStyle }}"></i>
+            <span style="font-size:13.5px;font-weight:600;color:#16202e;">{{ col.name }}</span>
+            <span style="font-family:'Geist Mono',monospace;font-size:11.5px;font-weight:500;color:#64707f;background:#eef1f5;padding:2px 7px;border-radius:999px;">{{ col.count }}</span>
+            <span style="flex:1;"></span>
+            <button onClick="{{ col.onAdd }}" title="Karte in diesem Kanal" style="width:26px;height:26px;border:none;background:transparent;color:#9aa4b2;border-radius:7px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="ph ph-plus" style="font-size:15px;"></i></button>
+          </div>
+          <!-- droppable body -->
+          <div class="col-scroll" onDragOver="{{ col.onDragOver }}" onDrop="{{ col.onDrop }}" style="{{ col.bodyStyle }}">
+            <sc-for list="{{ col.cards }}" as="card" hint-placeholder-count="3">
+              <div draggable="true" onDragStart="{{ card.onDragStart }}" onDragEnd="{{ onDragEnd }}" onClick="{{ card.onOpen }}" style="{{ card.wrapStyle }}" style-hover="border-color:#b8c2d0;box-shadow:0 5px 16px rgba(16,32,46,.13);">
+                <!-- title -->
+                <sc-if value="{{ card.completed }}" hint-placeholder-val="{{ true }}">
+                  <div style="display:flex;align-items:flex-start;gap:7px;">
+                    <i class="ph-fill ph-check-circle" style="font-size:16px;color:#059669;flex-shrink:0;margin-top:1px;"></i>
+                    <span style="font-size:13.5px;font-weight:600;line-height:1.35;color:#9aa4b2;text-decoration:line-through;">{{ card.title }}</span>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ card.open }}" hint-placeholder-val="{{ true }}">
+                  <div style="font-size:13.5px;font-weight:600;line-height:1.35;color:#16202e;">{{ card.title }}</div>
+                </sc-if>
+                <!-- meta badges -->
+                <sc-if value="{{ card.hasMeta }}" hint-placeholder-val="{{ true }}">
+                  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;align-items:center;">
+                    <sc-if value="{{ card.dueOverdue }}" hint-placeholder-val="{{ true }}">
+                      <span style="display:inline-flex;align-items:center;gap:5px;font-family:'Geist Mono',monospace;font-size:11px;font-weight:500;color:#dc2626;background:#fdeaea;padding:3px 7px;border-radius:6px;"><i class="ph-bold ph-clock-countdown" style="font-size:12px;"></i>{{ card.dueLabel }}</span>
+                    </sc-if>
+                    <sc-if value="{{ card.dueNormal }}" hint-placeholder-val="{{ true }}">
+                      <span style="{{ card.dueStyle }}"><i class="ph ph-clock" style="font-size:12px;"></i>{{ card.dueLabel }}</span>
+                    </sc-if>
+                    <sc-if value="{{ card.hasProg }}" hint-placeholder-val="{{ true }}">
+                      <span style="display:inline-flex;align-items:center;gap:5px;font-family:'Geist Mono',monospace;font-size:11px;font-weight:500;color:#475262;background:#eef1f5;padding:3px 7px;border-radius:6px;"><i class="ph ph-list-checks" style="font-size:12px;"></i>{{ card.progLabel }}</span>
+                    </sc-if>
+                    <sc-if value="{{ card.hasSubs }}" hint-placeholder-val="{{ true }}">
+                      <span style="display:inline-flex;align-items:center;gap:5px;font-family:'Geist Mono',monospace;font-size:11px;font-weight:500;color:#475262;background:#eef1f5;padding:3px 7px;border-radius:6px;"><i class="ph ph-list-bullets" style="font-size:12px;"></i>{{ card.subLabel }}</span>
+                    </sc-if>
+                    <sc-if value="{{ card.hasComments }}" hint-placeholder-val="{{ true }}">
+                      <span style="display:inline-flex;align-items:center;gap:5px;font-family:'Geist Mono',monospace;font-size:11px;font-weight:500;color:#475262;background:#eef1f5;padding:3px 7px;border-radius:6px;"><i class="ph ph-chat-circle" style="font-size:12px;"></i>{{ card.commentCount }}</span>
+                    </sc-if>
+                    <sc-if value="{{ card.hasAttach }}" hint-placeholder-val="{{ true }}">
+                      <span style="display:inline-flex;align-items:center;gap:5px;font-family:'Geist Mono',monospace;font-size:11px;font-weight:500;color:#475262;background:#eef1f5;padding:3px 7px;border-radius:6px;"><i class="ph ph-paperclip" style="font-size:12px;"></i>{{ card.attachCount }}</span>
+                    </sc-if>
+                    <span style="flex:1;min-width:8px;"></span>
+                    <sc-if value="{{ card.hasWatchers }}" hint-placeholder-val="{{ true }}">
+                      <span style="display:flex;align-items:center;">
+                        <sc-for list="{{ card.watchers }}" as="w" hint-placeholder-count="2">
+                          <span style="{{ w.style }}">{{ w.initials }}</span>
+                        </sc-for>
+                      </span>
+                    </sc-if>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <sc-if value="{{ col.empty }}" hint-placeholder-val="{{ true }}">
+              <div style="border:1.5px dashed #d5dbe3;border-radius:10px;padding:16px;text-align:center;color:#9aa4b2;font-size:12px;">Keine Karten</div>
+            </sc-if>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+   </div>
+
+   <!-- PEOPLE BAR -->
+   <sc-if value="{{ peopleBarOpen }}" hint-placeholder-val="{{ true }}">
+     <div style="width:80px;flex-shrink:0;border-left:1px solid #e2e6ec;background:#fff;display:flex;flex-direction:column;">
+       <button onClick="{{ togglePeopleBar }}" title="Leiste einklappen" style="height:38px;border:none;border-bottom:1px solid #eef1f5;background:transparent;color:#9aa4b2;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;font-family:'Geist Mono',monospace;font-size:10px;letter-spacing:.09em;">TEAM<i class="ph ph-caret-right" style="font-size:12px;"></i></button>
+       <div class="col-scroll" style="flex:1;overflow-y:auto;padding:8px 7px;display:flex;flex-direction:column;gap:1px;">
+         <div onClick="{{ unassigned.onClick }}" style="{{ unassigned.wrapStyle }}" title="Nicht zugewiesen">
+           <span style="{{ unassigned.avatarStyle }}"><i class="ph ph-user-circle-dashed" style="font-size:19px;"></i></span>
+           <span style="{{ unassigned.countStyle }}">{{ unassigned.count }}</span>
+         </div>
+         <div style="height:1px;background:#eef1f5;margin:6px 8px;"></div>
+         <sc-for list="{{ team }}" as="m" hint-placeholder-count="8">
+           <div onClick="{{ m.onClick }}" style="{{ m.wrapStyle }}" title="{{ m.name }}">
+             <span style="{{ m.avatarStyle }}">{{ m.initials }}</span>
+             <span style="{{ m.countStyle }}">{{ m.count }}</span>
+           </div>
+         </sc-for>
+       </div>
+     </div>
+   </sc-if>
+   <sc-if value="{{ peopleBarClosed }}" hint-placeholder-val="{{ false }}">
+     <div style="width:38px;flex-shrink:0;border-left:1px solid #e2e6ec;background:#fff;display:flex;flex-direction:column;align-items:center;padding-top:8px;">
+       <button onClick="{{ togglePeopleBar }}" title="Team-Leiste ausklappen" style="width:28px;height:28px;border:none;background:#f7f8fa;color:#64707f;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="ph ph-users" style="font-size:15px;"></i></button>
+     </div>
+   </sc-if>
+  </div>
+
+  <!-- ===== CARD MODAL ===== -->
+  <sc-if value="{{ hasOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ onClose }}" style="position:fixed;inset:0;background:rgba(13,36,80,.42);backdrop-filter:blur(2px);z-index:60;display:flex;align-items:flex-start;justify-content:center;padding:44px 20px;overflow-y:auto;">
+      <div onClick="{{ onDialogClick }}" style="width:100%;max-width:840px;background:#fff;border-radius:16px;box-shadow:0 24px 60px rgba(13,36,80,.32);overflow:hidden;display:flex;flex-direction:column;">
+        <!-- modal header -->
+        <div style="{{ openCard.headerStyle }}">
+          <div style="display:flex;align-items:center;gap:9px;">
+            <i class="{{ openCard.iconClass }}" style="{{ openCard.headerIconStyle }}"></i>
+            <span style="{{ openCard.channelPillStyle }}">{{ openCard.channelName }}</span>
+            <span style="font-family:'Geist Mono',monospace;font-size:11px;color:#9aa4b2;">{{ openCard.ref }}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:7px;">
+            <div style="position:relative;">
+              <button onClick="{{ openCard.onToggleMove }}" style="display:inline-flex;align-items:center;gap:7px;border:1px solid #cbd2dc;background:#fff;color:#333d4c;font-family:inherit;font-size:13px;font-weight:600;padding:8px 13px;border-radius:9px;cursor:pointer;"><i class="ph ph-arrow-line-right" style="font-size:15px;"></i>Verschieben</button>
+              <sc-if value="{{ openCard.moveOpen }}" hint-placeholder-val="{{ false }}">
+                <div onClick="{{ stop }}" style="position:absolute;right:0;top:44px;width:252px;background:#fff;border:1px solid #e2e6ec;border-radius:12px;box-shadow:0 14px 36px rgba(16,32,46,.2);padding:13px;z-index:30;text-align:left;">
+                  <div style="font-family:'Geist Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#9aa4b2;font-weight:600;margin-bottom:7px;">Board</div>
+                  <select value="{{ openCard.boardName }}" onChange="{{ openCard.onBoard }}" style="width:100%;border:1px solid #cbd2dc;border-radius:8px;padding:8px 10px;font-family:inherit;font-size:13px;color:#16202e;outline:none;box-sizing:border-box;background:#fff;cursor:pointer;margin-bottom:13px;">
+                    <option>Channels</option>
+                    <option>Web-Team</option>
+                    <option>Lange Nacht der Forschung</option>
+                    <option>Social Media Planung</option>
+                    <option>CD Relaunch</option>
+                  </select>
+                  <div style="font-family:'Geist Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#9aa4b2;font-weight:600;margin-bottom:7px;">Kanal</div>
+                  <div style="display:flex;flex-direction:column;gap:4px;max-height:280px;overflow-y:auto;" class="col-scroll">
+                    <sc-for list="{{ openCard.channelOptions }}" as="ch" hint-placeholder-count="8">
+                      <button onClick="{{ ch.onSelect }}" style="{{ ch.style }}"><i class="{{ ch.iconClass }}" style="font-size:13px;"></i>{{ ch.name }}<span style="flex:1;"></span><i class="{{ ch.activeIcon }}" style="font-size:13px;"></i></button>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-if>
+            </div>
+            <button onClick="{{ openCard.onToggleComplete }}" style="{{ openCard.completeBtnStyle }}"><i class="{{ openCard.completeIcon }}" style="font-size:15px;"></i>{{ openCard.completeLabel }}</button>
+            <button onClick="{{ onClose }}" style="width:34px;height:34px;border:none;background:#eef1f5;color:#64707f;border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="ph ph-x" style="font-size:16px;"></i></button>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:stretch;max-height:calc(100vh - 180px);">
+          <!-- MAIN -->
+          <div class="col-scroll" style="flex:1;padding:22px 24px;overflow-y:auto;">
+            <input value="{{ openCard.title }}" onInput="{{ openCard.onTitle }}" style="{{ openCard.titleStyle }}"/>
+
+            <!-- description -->
+            <div style="margin-top:14px;background:#f7f8fa;border:1px solid #eef1f5;border-radius:10px;padding:13px 14px;">
+              <sc-if value="{{ openCard.hasLink }}" hint-placeholder-val="{{ true }}">
+                <a href="{{ openCard.linkUrl }}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:500;color:#0047bb;text-decoration:none;background:#eef4ff;padding:4px 9px;border-radius:7px;margin-bottom:9px;"><i class="ph ph-link-simple" style="font-size:14px;"></i>{{ openCard.linkLabel }}</a>
+              </sc-if>
+              <div style="font-size:13.5px;line-height:1.55;color:#475262;white-space:pre-wrap;">{{ openCard.desc }}</div>
+            </div>
+
+            <!-- CHECKLIST -->
+            <div style="margin-top:22px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:11px;">
+                <i class="ph-bold ph-list-checks" style="font-size:16px;color:#0047bb;"></i>
+                <span style="font-size:13.5px;font-weight:600;">Checkliste</span>
+                <span style="font-family:'Geist Mono',monospace;font-size:11.5px;color:#64707f;background:#eef1f5;padding:2px 8px;border-radius:999px;">{{ openCard.checkProg }}</span>
+                <span style="flex:1;"></span>
+                <span style="{{ openCard.progBarWrap }}"><span style="{{ openCard.progBarFill }}"></span></span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:2px;">
+                <sc-for list="{{ openCard.checklist }}" as="it" hint-placeholder-count="3">
+                  <div onClick="{{ it.onToggle }}" style="display:flex;align-items:flex-start;gap:10px;padding:7px 8px;border-radius:8px;cursor:pointer;" style-hover="background:#f7f8fa;">
+                    <span style="{{ it.boxStyle }}"><i class="{{ it.checkIcon }}" style="{{ it.checkIconStyle }}"></i></span>
+                    <span style="{{ it.textStyle }}">{{ it.text }}</span>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;padding:7px 8px;margin-top:2px;">
+                <span style="width:19px;height:19px;border-radius:6px;border:1.5px dashed #cbd2dc;flex-shrink:0;"></span>
+                <input value="{{ openCard.newItem }}" onInput="{{ openCard.onNewItem }}" onKeyDown="{{ openCard.onNewItemKey }}" placeholder="Eintrag hinzufügen, Enter zum Speichern…" style="border:none;outline:none;font-family:inherit;font-size:13.5px;flex:1;color:#16202e;background:transparent;"/>
+              </div>
+            </div>
+
+            <!-- SUBTASKS -->
+            <sc-if value="{{ openCard.showSubs }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top:22px;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:11px;">
+                  <i class="ph-bold ph-list-bullets" style="font-size:16px;color:#7c3aed;"></i>
+                  <span style="font-size:13.5px;font-weight:600;">Unteraufgaben</span>
+                  <span style="font-family:'Geist Mono',monospace;font-size:11.5px;color:#64707f;background:#eef1f5;padding:2px 8px;border-radius:999px;">{{ openCard.subProg }}</span>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:2px;">
+                  <sc-for list="{{ openCard.subtasks }}" as="it" hint-placeholder-count="2">
+                    <div onClick="{{ it.onToggle }}" style="display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:8px;cursor:pointer;" style-hover="background:#f7f8fa;">
+                      <span style="{{ it.boxStyle }}"><i class="{{ it.checkIcon }}" style="{{ it.checkIconStyle }}"></i></span>
+                      <span style="{{ it.textStyle }}">{{ it.text }}</span>
+                      <span style="flex:1;min-width:8px;"></span>
+                      <sc-if value="{{ it.canConvert }}" hint-placeholder-val="{{ true }}">
+                        <button onClick="{{ it.onConvert }}" title="Als eigene Karte anlegen" style="display:inline-flex;align-items:center;gap:5px;border:1px solid #e2e6ec;background:#fff;color:#64707f;font-family:inherit;font-size:11px;font-weight:600;padding:4px 8px;border-radius:7px;cursor:pointer;flex-shrink:0;" style-hover="border-color:#b8ccff;color:#0047bb;background:#eef4ff;"><i class="ph ph-arrow-square-out" style="font-size:13px;"></i>Als Karte</button>
+                      </sc-if>
+                      <sc-if value="{{ it.converted }}" hint-placeholder-val="{{ false }}">
+                        <button onClick="{{ it.onOpenLinked }}" title="Verknüpfte Karte öffnen" style="display:inline-flex;align-items:center;gap:5px;border:none;background:#eef4ff;color:#0047bb;font-family:inherit;font-size:11px;font-weight:600;padding:4px 8px;border-radius:7px;cursor:pointer;flex-shrink:0;"><i class="ph-bold ph-link-simple" style="font-size:12px;"></i>Karte öffnen</button>
+                      </sc-if>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;padding:7px 8px;margin-top:2px;">
+                  <span style="width:19px;height:19px;border-radius:999px;border:1.5px dashed #cbd2dc;flex-shrink:0;"></span>
+                  <input value="{{ openCard.newSub }}" onInput="{{ openCard.onNewSub }}" onKeyDown="{{ openCard.onNewSubKey }}" placeholder="Unteraufgabe hinzufügen…" style="border:none;outline:none;font-family:inherit;font-size:13.5px;flex:1;color:#16202e;background:transparent;"/>
+                </div>
+              </div>
+            </sc-if>
+
+            <!-- ATTACHMENTS -->
+            <sc-if value="{{ openCard.hasAttach }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top:22px;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:11px;">
+                  <i class="ph-bold ph-paperclip" style="font-size:16px;color:#64707f;"></i>
+                  <span style="font-size:13.5px;font-weight:600;">Anhänge</span>
+                  <span style="font-family:'Geist Mono',monospace;font-size:11.5px;color:#64707f;">{{ openCard.attachCount }}</span>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:9px;">
+                  <sc-for list="{{ openCard.attachments }}" as="a" hint-placeholder-count="2">
+                    <div style="display:flex;align-items:center;gap:9px;border:1px solid #e2e6ec;border-radius:10px;padding:9px 12px;background:#fff;max-width:270px;cursor:pointer;" style-hover="border-color:#cbd2dc;background:#f7f8fa;">
+                      <span style="{{ a.iconWrapStyle }}"><i class="{{ a.iconClass }}" style="font-size:16px;"></i></span>
+                      <div style="min-width:0;">
+                        <div style="font-size:12.5px;font-weight:500;color:#16202e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;">{{ a.name }}</div>
+                        <div style="font-family:'Geist Mono',monospace;font-size:10px;color:#9aa4b2;text-transform:uppercase;">{{ a.kind }}</div>
+                      </div>
+                    </div>
+                  </sc-for>
+                  <div style="display:flex;align-items:center;gap:7px;border:1.5px dashed #cbd2dc;border-radius:10px;padding:9px 14px;color:#64707f;font-size:12.5px;font-weight:500;cursor:pointer;"><i class="ph ph-plus" style="font-size:15px;"></i>Datei</div>
+                </div>
+              </div>
+            </sc-if>
+
+            <!-- ACTIVITY + COMMENTS -->
+            <div style="margin-top:24px;border-top:1px solid #eef1f5;padding-top:18px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                <i class="ph-bold ph-chat-circle" style="font-size:16px;color:#0047bb;"></i>
+                <span style="font-size:13.5px;font-weight:600;">Kommentare & Aktivität</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:14px;">
+                <sc-for list="{{ openCard.feed }}" as="f" hint-placeholder-count="2">
+                  <div style="display:flex;gap:11px;">
+                    <sc-if value="{{ f.isComment }}" hint-placeholder-val="{{ true }}">
+                      <span style="{{ f.avatarStyle }}">{{ f.actor }}</span>
+                    </sc-if>
+                    <sc-if value="{{ f.isActivity }}" hint-placeholder-val="{{ true }}">
+                      <span style="width:28px;height:28px;border-radius:999px;background:#eef1f5;color:#9aa4b2;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="{{ f.verbIcon }}" style="font-size:14px;"></i></span>
+                    </sc-if>
+                    <div style="flex:1;min-width:0;">
+                      <sc-if value="{{ f.isComment }}" hint-placeholder-val="{{ true }}">
+                        <div style="background:#f7f8fa;border:1px solid #eef1f5;border-radius:10px;padding:9px 12px;">
+                          <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:3px;"><span style="font-size:12.5px;font-weight:600;color:#16202e;">{{ f.name }}</span><span style="font-family:'Geist Mono',monospace;font-size:10.5px;color:#9aa4b2;">{{ f.when }}</span></div>
+                          <div style="font-size:13px;line-height:1.5;color:#333d4c;">{{ f.body }}</div>
+                        </div>
+                      </sc-if>
+                      <sc-if value="{{ f.isActivity }}" hint-placeholder-val="{{ true }}">
+                        <div style="font-size:12.5px;line-height:1.5;color:#64707f;padding-top:5px;"><span style="font-weight:600;color:#475262;">{{ f.name }}</span> {{ f.body }} <span style="font-family:'Geist Mono',monospace;font-size:10.5px;color:#9aa4b2;">· {{ f.when }}</span></div>
+                      </sc-if>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="display:flex;gap:11px;margin-top:16px;">
+                <span style="width:28px;height:28px;border-radius:999px;background:#0047bb;color:#fff;font-size:10.5px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;">CH</span>
+                <div style="flex:1;display:flex;align-items:center;gap:8px;border:1px solid #cbd2dc;border-radius:10px;padding:0 6px 0 12px;height:40px;">
+                  <input value="{{ openCard.newComment }}" onInput="{{ openCard.onNewComment }}" onKeyDown="{{ openCard.onCommentKey }}" placeholder="Kommentar schreiben…" style="border:none;outline:none;font-family:inherit;font-size:13.5px;flex:1;color:#16202e;background:transparent;"/>
+                  <button onClick="{{ openCard.onSendComment }}" style="width:30px;height:30px;border:none;background:#0047bb;color:#fff;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="ph-bold ph-paper-plane-tilt" style="font-size:14px;"></i></button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SIDEBAR -->
+          <div style="width:248px;flex-shrink:0;border-left:1px solid #eef1f5;background:#fbfcfd;padding:20px 18px;overflow-y:auto;display:flex;flex-direction:column;">
+            <div style="font-family:'Geist Mono',monospace;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:#9aa4b2;font-weight:600;margin-bottom:9px;">Kanal</div>
+            <div style="display:flex;align-items:center;gap:9px;border:1px solid #e2e6ec;border-radius:9px;padding:9px 12px;margin-bottom:20px;background:#fff;">
+              <i class="{{ openCard.iconClass }}" style="{{ openCard.headerIconStyle }}"></i>
+              <span style="font-size:13px;font-weight:600;color:#333d4c;">{{ openCard.channelName }}</span>
+              <span style="flex:1;"></span>
+              <button onClick="{{ openCard.onToggleMove }}" title="Verschieben" style="border:none;background:transparent;color:#9aa4b2;cursor:pointer;display:flex;align-items:center;padding:2px;"><i class="ph ph-arrow-line-right" style="font-size:15px;"></i></button>
+            </div>
+
+            <div style="font-family:'Geist Mono',monospace;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:#9aa4b2;font-weight:600;margin-bottom:9px;">Fälligkeit</div>
+            <div style="{{ openCard.dueBoxStyle }}">
+              <i class="{{ openCard.dueBoxIcon }}" style="font-size:15px;"></i>
+              <span style="font-family:'Geist Mono',monospace;font-size:13px;font-weight:500;">{{ openCard.dueBoxLabel }}</span>
+            </div>
+
+            <div style="font-family:'Geist Mono',monospace;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:#9aa4b2;font-weight:600;margin:20px 0 9px;">Zuständig</div>
+            <div style="position:relative;margin-bottom:20px;">
+              <button onClick="{{ openCard.onToggleAssignee }}" style="width:100%;display:flex;align-items:center;gap:9px;border:1px solid #e2e6ec;background:#fff;border-radius:9px;padding:8px 11px;cursor:pointer;">
+                <sc-if value="{{ openCard.hasAssignee }}" hint-placeholder-val="{{ false }}"><span style="{{ openCard.assigneeAvatarStyle }}">{{ openCard.assigneeInitials }}</span></sc-if>
+                <sc-if value="{{ openCard.noAssignee }}" hint-placeholder-val="{{ true }}"><span style="width:24px;height:24px;border-radius:999px;border:1.5px dashed #cbd2dc;color:#cbd2dc;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ph ph-user" style="font-size:13px;"></i></span></sc-if>
+                <span style="{{ openCard.assigneeNameStyle }}">{{ openCard.assigneeName }}</span>
+                <span style="flex:1;"></span>
+                <i class="ph ph-caret-down" style="font-size:13px;color:#9aa4b2;"></i>
+              </button>
+              <sc-if value="{{ openCard.assigneeOpen }}" hint-placeholder-val="{{ false }}">
+                <div onClick="{{ stop }}" class="col-scroll" style="position:absolute;left:0;right:0;top:46px;background:#fff;border:1px solid #e2e6ec;border-radius:11px;box-shadow:0 14px 36px rgba(16,32,46,.2);padding:5px;z-index:20;max-height:260px;overflow-y:auto;">
+                  <sc-for list="{{ openCard.assigneeOptions }}" as="o" hint-placeholder-count="4">
+                    <div onClick="{{ o.onSelect }}" style="{{ o.rowStyle }}">
+                      <span style="{{ o.avatarStyle }}">{{ o.initials }}</span>
+                      <span style="font-size:12.5px;color:#333d4c;">{{ o.name }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+
+            <div style="font-family:'Geist Mono',monospace;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:#9aa4b2;font-weight:600;margin-bottom:9px;">Beobachter</div>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <sc-for list="{{ openCard.watcherList }}" as="w" hint-placeholder-count="2">
+                <div style="display:flex;align-items:center;gap:9px;">
+                  <span style="{{ w.style }}">{{ w.initials }}</span>
+                  <span style="font-size:12.5px;color:#333d4c;">{{ w.name }}</span>
+                </div>
+              </sc-for>
+              <button style="display:inline-flex;align-items:center;gap:7px;border:1.5px dashed #cbd2dc;background:transparent;color:#64707f;font-family:inherit;font-size:12.5px;font-weight:500;padding:7px 10px;border-radius:9px;cursor:pointer;margin-top:2px;"><i class="ph ph-plus" style="font-size:14px;"></i>Beobachter</button>
+            </div>
+
+            <div style="margin-top:auto;padding-top:20px;border-top:1px solid #eef1f5;margin-top:24px;font-family:'Geist Mono',monospace;font-size:11px;color:#9aa4b2;line-height:1.8;">
+              <div>Erstellt · {{ openCard.metaCreated }}</div>
+              <div>Geändert · {{ openCard.metaUpdated }}</div>
+              <div style="color:#cbd2dc;">{{ openCard.ref }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ===== TRIAGE MODAL ===== -->
+  <sc-if value="{{ triageOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ onTriageClose }}" style="position:fixed;inset:0;background:rgba(13,36,80,.42);backdrop-filter:blur(2px);z-index:70;display:flex;align-items:flex-start;justify-content:center;padding:44px 20px;overflow-y:auto;">
+      <div onClick="{{ stop }}" style="width:100%;max-width:560px;background:#fff;border-radius:16px;box-shadow:0 24px 60px rgba(13,36,80,.32);overflow:hidden;">
+        <div style="background:linear-gradient(180deg,#fff7f1,#fff);border-bottom:1px solid #eef1f5;padding:20px 24px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="width:34px;height:34px;border-radius:9px;background:#fdeee3;color:#ea580c;display:flex;align-items:center;justify-content:center;"><i class="ph-duotone ph-lightning" style="font-size:19px;"></i></span>
+            <div>
+              <div style="font-size:16px;font-weight:600;line-height:1.15;">Karte anlegen aus Triage</div>
+              <div style="font-size:12.5px;color:#64707f;margin-top:1px;">Vorbefüllt aus dem Event-Bewertungs-Tool</div>
+            </div>
+            <span style="flex:1;"></span>
+            <button onClick="{{ onTriageClose }}" style="width:32px;height:32px;border:none;background:#eef1f5;color:#64707f;border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="ph ph-x" style="font-size:15px;"></i></button>
+          </div>
+        </div>
+
+        <div class="col-scroll" style="padding:20px 24px;max-height:calc(100vh - 260px);overflow-y:auto;">
+          <label style="display:block;font-size:12px;font-weight:600;color:#475262;margin-bottom:6px;">Titel</label>
+          <input value="{{ tTitle }}" onInput="{{ onTTitle }}" style="width:100%;border:1px solid #cbd2dc;border-radius:9px;padding:9px 12px;font-family:inherit;font-size:14px;color:#16202e;outline:none;box-sizing:border-box;margin-bottom:16px;"/>
+
+          <label style="display:block;font-size:12px;font-weight:600;color:#475262;margin-bottom:6px;">ÖAW-Link</label>
+          <div style="display:flex;align-items:center;gap:8px;border:1px solid #cbd2dc;border-radius:9px;padding:0 12px;height:40px;margin-bottom:16px;">
+            <i class="ph ph-link-simple" style="font-size:15px;color:#9aa4b2;"></i>
+            <input value="{{ tLink }}" onInput="{{ onTLink }}" style="border:none;outline:none;font-family:inherit;font-size:13.5px;flex:1;color:#16202e;background:transparent;"/>
+          </div>
+
+          <div style="display:flex;gap:14px;margin-bottom:16px;">
+            <div style="flex:1;">
+              <label style="display:block;font-size:12px;font-weight:600;color:#475262;margin-bottom:6px;">Kanal</label>
+              <select value="{{ tChannel }}" onChange="{{ onTChannel }}" style="width:100%;border:1px solid #cbd2dc;border-radius:9px;padding:9px 12px;font-family:inherit;font-size:13.5px;color:#16202e;outline:none;box-sizing:border-box;background:#fff;cursor:pointer;">
+                <option value="presse">PM/Presse</option>
+                <option value="web">Web</option>
+                <option value="blog">Blog GÖ</option>
+                <option value="podcast">Podcast</option>
+                <option value="events">Events</option>
+                <option value="screens">Screens</option>
+                <option value="sciencepop">Science Pop</option>
+                <option value="zeitlos">Zeitlos</option>
+              </select>
+            </div>
+            <div style="flex:1;">
+              <label style="display:block;font-size:12px;font-weight:600;color:#475262;margin-bottom:6px;">Fälligkeit</label>
+              <input type="date" value="{{ tDue }}" onInput="{{ onTDue }}" style="width:100%;border:1px solid #cbd2dc;border-radius:9px;padding:8px 12px;font-family:inherit;font-size:13.5px;color:#16202e;outline:none;box-sizing:border-box;"/>
+            </div>
+          </div>
+
+          <label style="display:block;font-size:12px;font-weight:600;color:#475262;margin-bottom:6px;">Speaker-Liste</label>
+          <textarea value="{{ tSpeakers }}" onInput="{{ onTSpeakers }}" rows="2" style="width:100%;border:1px solid #cbd2dc;border-radius:9px;padding:9px 12px;font-family:inherit;font-size:13.5px;color:#16202e;outline:none;box-sizing:border-box;resize:vertical;line-height:1.5;margin-bottom:18px;"></textarea>
+
+          <label style="display:block;font-size:12px;font-weight:600;color:#475262;margin-bottom:9px;">Format-Checkliste</label>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <sc-for list="{{ triageFormats }}" as="f" hint-placeholder-count="4">
+              <div onClick="{{ f.onToggle }}" style="{{ f.rowStyle }}">
+                <span style="{{ f.boxStyle }}"><i class="{{ f.checkIcon }}" style="{{ f.checkIconStyle }}"></i></span>
+                <i class="{{ f.iconClass }}" style="font-size:16px;color:#64707f;"></i>
+                <span style="font-size:13.5px;font-weight:500;color:#16202e;">{{ f.label }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="border-top:1px solid #eef1f5;padding:16px 24px;display:flex;align-items:center;gap:10px;">
+          <span style="font-size:12px;color:#9aa4b2;">Landet als Karte im Kanal <strong style="color:#475262;font-weight:600;">{{ tChannelName }}</strong></span>
+          <span style="flex:1;"></span>
+          <button onClick="{{ onTriageClose }}" style="border:1px solid #cbd2dc;background:#fff;color:#333d4c;font-family:inherit;font-size:13px;font-weight:600;padding:9px 15px;border-radius:9px;cursor:pointer;">Abbrechen</button>
+          <button onClick="{{ onTriageCreate }}" style="border:none;background:#0047bb;color:#fff;font-family:inherit;font-size:13px;font-weight:600;padding:9px 16px;border-radius:9px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;box-shadow:0 1px 2px rgba(0,71,187,.3);"><i class="ph-bold ph-arrow-right" style="font-size:15px;"></i>Karte anlegen</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ===== CONVERT: UNTERAUFGABE → KARTE ===== -->
+  <sc-if value="{{ convertOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ onCvClose }}" style="position:fixed;inset:0;background:rgba(13,36,80,.42);backdrop-filter:blur(2px);z-index:90;display:flex;align-items:flex-start;justify-content:center;padding:80px 20px;overflow-y:auto;">
+      <div onClick="{{ stop }}" style="width:100%;max-width:440px;background:#fff;border-radius:16px;box-shadow:0 24px 60px rgba(13,36,80,.32);overflow:hidden;">
+        <div style="padding:18px 22px;border-bottom:1px solid #eef1f5;display:flex;align-items:center;gap:10px;">
+          <span style="width:32px;height:32px;border-radius:9px;background:#f2ecff;color:#7c3aed;display:flex;align-items:center;justify-content:center;"><i class="ph-duotone ph-arrow-square-out" style="font-size:18px;"></i></span>
+          <div>
+            <div style="font-size:15px;font-weight:600;line-height:1.15;">Als eigene Karte anlegen</div>
+            <div style="font-size:12px;color:#64707f;margin-top:1px;">Aus der Unteraufgabe wird eine geplante Karte</div>
+          </div>
+        </div>
+        <div style="padding:18px 22px;">
+          <label style="display:block;font-size:12px;font-weight:600;color:#475262;margin-bottom:6px;">Titel</label>
+          <div style="border:1px solid #eef1f5;background:#f7f8fa;border-radius:9px;padding:10px 12px;font-size:13.5px;color:#333d4c;margin-bottom:16px;line-height:1.4;">{{ cvText }}</div>
+          <div style="display:flex;gap:14px;">
+            <div style="flex:1;">
+              <label style="display:block;font-size:12px;font-weight:600;color:#475262;margin-bottom:6px;">Ziel-Kanal</label>
+              <select value="{{ cvCh }}" onChange="{{ onCvCh }}" style="width:100%;border:1px solid #cbd2dc;border-radius:9px;padding:9px 12px;font-family:inherit;font-size:13.5px;color:#16202e;outline:none;box-sizing:border-box;background:#fff;cursor:pointer;">
+                <option value="presse">PM/Presse</option>
+                <option value="web">Web</option>
+                <option value="blog">Blog GÖ</option>
+                <option value="podcast">Podcast</option>
+                <option value="events">Events</option>
+                <option value="screens">Screens</option>
+                <option value="sciencepop">Science Pop</option>
+                <option value="zeitlos">Zeitlos</option>
+              </select>
+            </div>
+            <div style="flex:1;">
+              <label style="display:block;font-size:12px;font-weight:600;color:#475262;margin-bottom:6px;">Fälligkeit <span style="color:#9aa4b2;font-weight:400;">optional</span></label>
+              <input type="date" value="{{ cvDue }}" onInput="{{ onCvDue }}" style="width:100%;border:1px solid #cbd2dc;border-radius:9px;padding:8px 12px;font-family:inherit;font-size:13.5px;color:#16202e;outline:none;box-sizing:border-box;"/>
+            </div>
+          </div>
+        </div>
+        <div style="border-top:1px solid #eef1f5;padding:14px 22px;display:flex;align-items:center;justify-content:flex-end;gap:10px;">
+          <button onClick="{{ onCvClose }}" style="border:1px solid #cbd2dc;background:#fff;color:#333d4c;font-family:inherit;font-size:13px;font-weight:600;padding:9px 15px;border-radius:9px;cursor:pointer;">Abbrechen</button>
+          <button onClick="{{ onCvCreate }}" style="border:none;background:#0047bb;color:#fff;font-family:inherit;font-size:13px;font-weight:600;padding:9px 16px;border-radius:9px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;"><i class="ph-bold ph-check" style="font-size:15px;"></i>Umwandeln</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ===== LOGIN ===== -->
+  <sc-if value="{{ isLogin }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;z-index:200;background:#f7f8fa;display:flex;align-items:center;justify-content:center;padding:24px;font-family:'Geist',system-ui,sans-serif;">
+      <div style="position:absolute;top:0;left:0;right:0;height:220px;background:#0047bb;"></div>
+      <div style="position:absolute;top:0;left:0;right:0;height:220px;background:radial-gradient(700px 260px at 78% -40%,rgba(125,168,255,.4),transparent 60%);"></div>
+      <div style="position:relative;width:100%;max-width:400px;">
+        <div style="display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:22px;color:#fff;">
+          <i class="ph-fill ph-radio-button" style="font-size:24px;color:#9cc0ff;"></i>
+          <span style="font-size:20px;font-weight:600;letter-spacing:-0.01em;">ÖAW Presse</span>
+        </div>
+        <div style="background:#fff;border:1px solid #e2e6ec;border-radius:16px;box-shadow:0 24px 60px rgba(13,36,80,.22);padding:28px 28px 24px;">
+          <h1 style="margin:0 0 4px;font-size:20px;font-weight:700;letter-spacing:-0.01em;color:#16202e;">Anmelden</h1>
+          <p style="margin:0 0 22px;font-size:13.5px;color:#64707f;">Redaktions-Toolkit der Kommunikationsabteilung</p>
+
+          <sc-if value="{{ hasLoginError }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:center;gap:8px;background:#fdeaea;border:1px solid #f4c4c4;color:#dc2626;font-size:12.5px;font-weight:500;padding:10px 12px;border-radius:9px;margin-bottom:16px;"><i class="ph-bold ph-warning-circle" style="font-size:16px;flex-shrink:0;"></i>{{ loginError }}</div>
+          </sc-if>
+
+          <label style="display:block;font-size:12px;font-weight:600;color:#475262;margin-bottom:6px;">E-Mail</label>
+          <div style="display:flex;align-items:center;gap:9px;border:1px solid #cbd2dc;border-radius:9px;padding:0 12px;height:42px;margin-bottom:15px;">
+            <i class="ph ph-envelope-simple" style="font-size:16px;color:#9aa4b2;"></i>
+            <input value="{{ loginEmail }}" onInput="{{ onLoginEmail }}" placeholder="vorname.nachname@oeaw.ac.at" style="border:none;outline:none;font-family:inherit;font-size:14px;flex:1;color:#16202e;background:transparent;"/>
+          </div>
+
+          <label style="display:block;font-size:12px;font-weight:600;color:#475262;margin-bottom:6px;">Passwort</label>
+          <div style="display:flex;align-items:center;gap:9px;border:1px solid #cbd2dc;border-radius:9px;padding:0 12px;height:42px;margin-bottom:22px;">
+            <i class="ph ph-lock-simple" style="font-size:16px;color:#9aa4b2;"></i>
+            <input type="password" value="{{ loginPw }}" onInput="{{ onLoginPw }}" onKeyDown="{{ onLoginKey }}" placeholder="••••••••" style="border:none;outline:none;font-family:inherit;font-size:14px;flex:1;color:#16202e;background:transparent;"/>
+          </div>
+
+          <button onClick="{{ onLogin }}" style="width:100%;border:none;background:#0047bb;color:#fff;font-family:inherit;font-size:14.5px;font-weight:600;padding:12px;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 2px 6px rgba(0,71,187,.3);"><i class="ph-bold ph-sign-in" style="font-size:17px;"></i>Anmelden</button>
+
+          <div style="margin-top:18px;padding-top:16px;border-top:1px solid #eef1f5;font-size:12px;color:#9aa4b2;line-height:1.6;text-align:center;">Zugänge vergibt die Kommunikationsleitung. Passwort vergessen? IT kontaktieren.</div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ===== COMMAND PALETTE (⌘K) ===== -->
+  <sc-if value="{{ paletteOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closePalette }}" style="position:fixed;inset:0;background:rgba(13,36,80,.42);backdrop-filter:blur(2px);z-index:120;display:flex;align-items:flex-start;justify-content:center;padding:88px 20px 20px;">
+      <div onClick="{{ stop }}" style="width:100%;max-width:600px;background:#fff;border-radius:16px;box-shadow:0 30px 70px rgba(13,36,80,.4);overflow:hidden;display:flex;flex-direction:column;max-height:calc(100vh - 140px);">
+        <div style="display:flex;align-items:center;gap:11px;padding:14px 18px;border-bottom:1px solid #eef1f5;">
+          <i class="ph ph-magnifying-glass" style="font-size:19px;color:#9aa4b2;"></i>
+          <input value="{{ paletteQuery }}" onInput="{{ onPaletteQuery }}" placeholder="Karten und Boards durchsuchen…" autofocus="true" style="border:none;outline:none;font-family:inherit;font-size:16px;flex:1;color:#16202e;background:transparent;min-width:0;"/>
+          <span style="font-family:'Geist Mono',monospace;font-size:11px;color:#9aa4b2;background:#f1f3f6;padding:3px 7px;border-radius:6px;">esc</span>
+        </div>
+        <div class="col-scroll" style="flex:1;overflow-y:auto;padding:8px;">
+          <!-- Boards -->
+          <sc-if value="{{ hasPaletteBoards }}" hint-placeholder-val="{{ true }}">
+            <div style="font-family:'Geist Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#9aa4b2;font-weight:600;padding:8px 10px 5px;">Boards</div>
+            <sc-for list="{{ paletteBoards }}" as="b" hint-placeholder-count="3">
+              <div onClick="{{ b.onPick }}" style="display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:9px;cursor:pointer;" style-hover="background:#f7f8fa;">
+                <span style="width:28px;height:28px;border-radius:8px;background:#f1f3f6;color:#64707f;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ph-fill ph-kanban" style="font-size:15px;"></i></span>
+                <span style="{{ b.dotStyle }}"></span>
+                <span style="flex:1;font-size:13.5px;font-weight:600;color:#16202e;">{{ b.name }}</span>
+                <span style="font-family:'Geist Mono',monospace;font-size:11px;color:#9aa4b2;">{{ b.meta }}</span>
+                <i class="ph ph-arrow-elbow-down-left" style="font-size:14px;color:#cbd2dc;"></i>
+              </div>
+            </sc-for>
+          </sc-if>
+          <!-- Cards grouped by board · channel -->
+          <sc-for list="{{ paletteGroups }}" as="g" hint-placeholder-count="3">
+            <div style="display:flex;align-items:center;gap:6px;font-family:'Geist Mono',monospace;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#9aa4b2;font-weight:600;padding:10px 10px 5px;">
+              <i class="{{ g.iconClass }}" style="{{ g.iconStyle }}"></i>{{ g.label }}
+            </div>
+            <sc-for list="{{ g.cards }}" as="c" hint-placeholder-count="2">
+              <div onClick="{{ c.onOpen }}" style="display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:9px;cursor:pointer;" style-hover="background:#f7f8fa;">
+                <i class="ph ph-cards-three" style="font-size:16px;color:#cbd2dc;flex-shrink:0;"></i>
+                <span style="flex:1;min-width:0;font-size:13.5px;font-weight:500;color:#16202e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ c.title }}</span>
+                <sc-if value="{{ c.hasMeta }}" hint-placeholder-val="{{ false }}"><span style="font-family:'Geist Mono',monospace;font-size:11px;color:#9aa4b2;flex-shrink:0;">{{ c.meta }}</span></sc-if>
+                <i class="ph ph-arrow-elbow-down-left" style="font-size:14px;color:#cbd2dc;flex-shrink:0;"></i>
+              </div>
+            </sc-for>
+          </sc-for>
+          <!-- empty -->
+          <sc-if value="{{ paletteEmpty }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:36px 16px;text-align:center;">
+              <i class="ph ph-magnifying-glass" style="font-size:28px;color:#cbd2dc;"></i>
+              <div style="font-size:13.5px;color:#64707f;margin-top:10px;">Keine Treffer für „{{ paletteQuery }}"</div>
+            </div>
+          </sc-if>
+        </div>
+        <div style="display:flex;align-items:center;gap:16px;padding:10px 16px;border-top:1px solid #eef1f5;background:#fbfcfd;font-size:11.5px;color:#9aa4b2;">
+          <span style="display:inline-flex;align-items:center;gap:5px;"><span style="font-family:'Geist Mono',monospace;background:#eef1f5;padding:2px 5px;border-radius:5px;">↵</span>Öffnen</span>
+          <span style="display:inline-flex;align-items:center;gap:5px;"><span style="font-family:'Geist Mono',monospace;background:#eef1f5;padding:2px 5px;border-radius:5px;">esc</span>Schließen</span>
+          <span style="flex:1;"></span>
+          <span>Karten und Boards</span>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const NOW = new Date(2026, 6, 3); // 2026-07-03
+const MONTHS = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+
+const CH = [
+  { id:'presse',     name:'PM/Presse',   short:'Presse',  accent:'#2563eb', tint:'#eaf1ff', text:'#1e3a8a', icon:'ph-megaphone-simple' },
+  { id:'web',        name:'Web',         short:'Web',     accent:'#0d9488', tint:'#e6f7f4', text:'#0f766e', icon:'ph-globe-hemisphere-west' },
+  { id:'blog',       name:'Blog GÖ',     short:'Blog',    accent:'#7c3aed', tint:'#f2ecff', text:'#6d28d9', icon:'ph-pen-nib' },
+  { id:'podcast',    name:'Podcast',     short:'Podcast', accent:'#c026d3', tint:'#fbeafc', text:'#a21caf', icon:'ph-microphone-stage' },
+  { id:'events',     name:'Events',      short:'Events',  accent:'#ea580c', tint:'#fdeee3', text:'#c2410c', icon:'ph-calendar-star' },
+  { id:'screens',    name:'Screens',     short:'Screens', accent:'#16a34a', tint:'#e7f7ec', text:'#15803d', icon:'ph-monitor' },
+  { id:'sciencepop', name:'Science Pop', short:'Sci Pop', accent:'#e11d48', tint:'#fdeaef', text:'#be123c', icon:'ph-sparkle' },
+  { id:'zeitlos',    name:'Zeitlos',     short:'Zeitlos', accent:'#64748b', tint:'#eef1f5', text:'#475569', icon:'ph-archive' },
+];
+const CHMAP = Object.fromEntries(CH.map(c => [c.id, c]));
+
+const PEOPLE = {
+  CH:{ name:'Christine Brand',   first:'christine', color:'#2563eb' },
+  MW:{ name:'Markus Wieser',     first:'markus',    color:'#0d9488' },
+  LP:{ name:'Lena Pichler',      first:'lena',      color:'#7c3aed' },
+  SK:{ name:'Sara Kanduth',      first:'sara',      color:'#ea580c' },
+  TR:{ name:'Tobias Reithner',   first:'tobias',    color:'#c026d3' },
+  AH:{ name:'Anna Huber',        first:'anna',      color:'#16a34a' },
+  FK:{ name:'Felix Kramer',      first:'felix',     color:'#0891b2' },
+  JD:{ name:'Julia Denk',        first:'julia',     color:'#d97706' },
+  PE:{ name:'Paul Egger',        first:'paul',      color:'#4f46e5' },
+  NM:{ name:'Nadia Mayr',        first:'nadia',     color:'#db2777' },
+};
+// Zähler bilden die reale Board-Größe ab (~200 Karten). "Nicht zugewiesen" ist
+// mit Abstand die größte Gruppe, weil Ownership im Checklisten-Freitext steht.
+const TEAM = [
+  { key:'CH', count:14 }, { key:'MW', count:9 }, { key:'LP', count:11 }, { key:'SK', count:7 },
+  { key:'TR', count:6 }, { key:'AH', count:5 }, { key:'FK', count:8 }, { key:'JD', count:4 },
+  { key:'PE', count:3 }, { key:'NM', count:2 },
+];
+const UNASSIGNED_COUNT = 123;
+const BOARDS = ['Channels', 'Web-Team', 'Lange Nacht der Forschung', 'Social Media Planung', 'CD Relaunch'];
+
+function metaDates(c){
+  const n = parseInt((c.id || 'c0').replace(/\D/g,'')) || 1;
+  const created = new Date(2026, 5, ((n * 3) % 28) + 1); // im Juni gestreut
+  const cl = created.getDate() + '. ' + MONTHS[created.getMonth()] + ' 2026';
+  return { created: cl, updated: n % 3 === 0 ? 'heute' : (n % 3 === 1 ? 'gestern' : 'vor 2 Tagen') };
+}
+
+const cl = (text, done) => ({ kind:'checklist', text, done });
+const st = (text, done) => ({ kind:'subtask', text, done });
+
+const SEED = [
+  { id:'c1', ch:'presse', title:'Quantencomputer-Durchbruch am IQOQI', due:'2026-07-08',
+    desc:'Neue Publikation zu fehlertoleranten Qubits. Pressegespräch mit dem Institut abstimmen, Sperrfrist beachten.',
+    link:{ url:'https://www.oeaw.ac.at/iqoqi', label:'oeaw.ac.at/iqoqi' },
+    items:[ cl('PM aufsetzen. Sara, Freigabe Kommunikationsleitung', false), cl('Zitat Institutsleitung einholen. Markus', false), cl('Bildmaterial IQOQI anfragen', true), cl('Sperrfrist mit Journal klären', false) ],
+    comments:[ {a:'SK', t:'Sperrfrist ist der 9. Juli, 15 Uhr. Bitte einhalten.', w:'vor 1 Tag'}, {a:'MW', t:'Zitat kommt bis morgen.', w:'vor 4 Std.'} ],
+    attachments:[ {name:'20260701_Qubits_Abstract.pdf', kind:'pdf'} ],
+    watchers:['CH','MW'],
+    activity:[ {a:'MW', v:'hat »Bildmaterial IQOQI anfragen« abgehakt', w:'vor 4 Std.'}, {a:'CH', v:'hat die Karte erstellt', w:'vor 2 Tagen'} ] },
+
+  { id:'c2', ch:'presse', title:'Jahresbericht 2025 · Pressegespräch', due:'2026-06-28',
+    desc:'Präsentation des Jahresberichts vor der Presse. Ablauf und Mappe koordinieren.',
+    items:[ cl('Termin mit Präsidium fixieren', true), cl('Pressemappe layouten. Lena', true), cl('Einladungen versenden', true), cl('Statements Vizepräsidentin', false), cl('Livestream-Technik prüfen', false) ],
+    comments:[ {a:'CH', t:'Termin steht: 10. Juli, 10 Uhr, Festsaal.', w:'vor 3 Tagen'} ],
+    watchers:['SK'],
+    activity:[ {a:'LP', v:'hat »Pressemappe layouten« abgehakt', w:'vor 2 Tagen'} ] },
+
+  { id:'c3', ch:'web', title:'Iran-Themencluster', due:null,
+    desc:'Sammelkarte für Iran-Winkel. Owner steht jeweils im Checklisten-Text, keine feste Zuweisung.',
+    items:[ cl('Huthis und ihre Rolle in der Region? Brand, Christine fragt an', false), cl('Wasserknappheit Isfahan, Geoforschung. Markus prüft Experten', false), cl('Frauenbewegung historisch einordnen. Lena, ITV angefragt', true), cl('Sanktionen und Wissenschaft. Sara recherchiert', false), cl('Kulturerbe Persepolis, freigegebenes ITV liegt vor', true), cl('Atomprogramm, Physik-Kontext. offen', false) ],
+    comments:[ {a:'CH', t:'Huthi-Winkel hat Priorität, passt zur aktuellen Lage.', w:'vor 5 Std.'}, {a:'MW', t:'Experte für Isfahan gefunden, Rückmeldung diese Woche.', w:'gestern'} ],
+    attachments:[ {name:'20260615_Iran_Kulturerbe_ITV_Nazari_freigegeben.docx', kind:'docx'}, {name:'20260620_Iran_Frauen_ITV_Sahar_freigegeben.docx', kind:'docx'} ],
+    watchers:['CH'],
+    activity:[ {a:'LP', v:'hat »Frauenbewegung historisch einordnen« abgehakt', w:'vor 6 Std.'}, {a:'CH', v:'hat einen Anhang hinzugefügt', w:'gestern'}, {a:'MW', v:'hat die Karte von Zeitlos nach Web verschoben', w:'vor 3 Tagen'} ] },
+
+  { id:'c4', ch:'web', title:'Klimaforschung, Web-Interview', due:'2026-07-15',
+    desc:'Interview mit dem Institut für Klima- und Umweltforschung für die Website.',
+    items:[ cl('Web-Interview (zugesagt). Markus koordiniert', false), cl('Fragenkatalog abstimmen', false), cl('Termin Aufzeichnung finden', false) ],
+    comments:[], attachments:[], watchers:['LP'], activity:[] },
+
+  { id:'c5', ch:'blog', title:'Blog GÖ: Geschichte der Akademie 1847', due:null,
+    desc:'Blogserie zur Gründungsgeschichte. Erster Teil.',
+    items:[ cl('Recherche im Archiv', true), cl('Text redigieren. Lena', false) ],
+    comments:[ {a:'LP', t:'Erster Entwurf steht, brauche noch Bilder.', w:'vor 2 Tagen'} ],
+    attachments:[], watchers:[], activity:[] },
+
+  { id:'c6', ch:'blog', title:'Gastbeitrag Digital Humanities', due:'2026-07-22',
+    desc:'Externer Gastbeitrag für den Blog.',
+    items:[ cl('Autor:in anfragen', true), cl('Briefing verschicken', true), cl('Rohtext lektorieren', false), cl('Freigabe einholen', false) ],
+    comments:[], attachments:[], watchers:[], activity:[] },
+
+  { id:'c7', ch:'podcast', title:'Zeitreise-Podcast: Episodenkandidaten Q3', due:null,
+    desc:'Serien-Backlog. Konkrete Folgen werden eigene Karten mit Publikationsdatum.',
+    items:[ st('Die Radiumfrauen von Wien', true), st('Boltzmanns letzter Sommer', false), st('Das erste Röntgenbild der Akademie', true), st('Die Vermessung der Adria 1866', false), st('Kältelabor: Kryoforschung damals und heute', false) ],
+    comments:[ {a:'TR', t:'Radiumfrauen ist spruchreif, mache eine eigene Karte.', w:'vor 1 Tag'} ],
+    attachments:[], watchers:['TR'], activity:[] },
+
+  { id:'c8', ch:'podcast', title:'Folge: Die Radiumfrauen von Wien', due:'2026-07-30',
+    desc:'Konkrete Episode aus dem Zeitreise-Backlog.',
+    items:[ cl('Skript schreiben. Tobias', true), cl('Historikerin als Gast anfragen', true), cl('Aufnahmetermin Studio', false), cl('Schnitt und Mastering', false), cl('Cover-Grafik', false), cl('Shownotes und Quellen', false) ],
+    comments:[], attachments:[ {name:'Skript_Radiumfrauen_v2.docx', kind:'docx'} ], watchers:['TR'], activity:[] },
+
+  { id:'c9', ch:'events', title:'Lange Nacht der Forschung 2026', due:'2026-09-25',
+    desc:'ÖAW-Standort Campus. Formate koordinieren, Speaker bestätigen, alle Kanäle bespielen.',
+    link:{ url:'https://www.oeaw.ac.at/lange-nacht', label:'oeaw.ac.at/lange-nacht' },
+    items:[ cl('Web-Interview (zugesagt). Markus koordiniert', true), cl('Video für Social produzieren. Lena', false), cl('Fotos vom Termin. Lena', true), cl('PM aufsetzen. Sara', false), cl('Standdesign finalisieren', true), cl('Speaker-Liste bestätigen', false), cl('Programmheft-Text liefern', false), cl('Screens-Content vorbereiten', false) ],
+    comments:[ {a:'CH', t:'Bitte Speaker bis Ende Juli fixieren.', w:'vor 2 Tagen'}, {a:'MW', t:'Web-ITV ist zugesagt.', w:'vor 1 Tag'}, {a:'LP', t:'Fotograf gebucht.', w:'vor 20 Std.'} ],
+    attachments:[ {name:'Speaker_Lange_Nacht_2026.docx', kind:'docx'}, {name:'Standplan_Campus.pdf', kind:'pdf'}, {name:'Programm_Entwurf.docx', kind:'docx'} ],
+    watchers:['CH','MW','LP'],
+    activity:[ {a:'LP', v:'hat »Fotos vom Termin« abgehakt', w:'vor 20 Std.'}, {a:'MW', v:'hat die Fälligkeit auf 25. Sep 2026 gesetzt', w:'vor 4 Tagen'} ] },
+
+  { id:'c10', ch:'events', title:'Preisverleihung ÖAW · Coverage', due:'2026-07-04',
+    desc:'Verleihung der Akademiepreise. Redaktionelle Begleitung.',
+    items:[ cl('Fotograf bestätigen', true), cl('PM vorbereiten. Sara', false), cl('Social-Posts planen', false), cl('Zitate Preisträger:innen', false), cl('Web-Nachbericht', false) ],
+    comments:[], attachments:[], watchers:['SK'], activity:[] },
+
+  { id:'c11', ch:'events', title:'Symposium KI und Ethik', due:'2026-06-30',
+    desc:'Interdisziplinäres Symposium. Anmeldung und Nachbericht.',
+    items:[ cl('Programm final', false), cl('Anmeldung Web', false), cl('Foto und Video klären', false), cl('Nachbericht planen', false) ],
+    comments:[], attachments:[], watchers:[], activity:[] },
+
+  { id:'c12', ch:'screens', title:'Screen-Content Juli · Foyer', due:'2026-07-01',
+    desc:'Bespielung der Foyer-Screens für Juli.',
+    items:[ cl('Slides Nobelpreis-Serie', true), cl('Termin-Ankündigungen aktualisieren', true), cl('Freigabe Haustechnik', false) ],
+    comments:[], attachments:[], watchers:[], activity:[] },
+
+  { id:'c13', ch:'screens', title:'Digital Signage: Nobelpreis-Serie', due:null, completed:true,
+    desc:'Serie über ÖAW-nahe Nobelpreisträger:innen für die Screens.',
+    items:[ cl('Konzept', true), cl('Design', true), cl('Freigabe', true), cl('Ausspielung', true) ],
+    comments:[], attachments:[], watchers:[],
+    activity:[ {a:'MW', v:'hat die Karte abgeschlossen', w:'vor 3 Tagen'} ] },
+
+  { id:'c14', ch:'sciencepop', title:'Science Busters Kooperation', due:'2026-08-12',
+    desc:'Mögliche Kooperation für ein Wissenschaftskabarett-Format.',
+    items:[ cl('Erstkontakt', true), cl('Themen abstimmen', false), cl('Termin Aufzeichnung', false), cl('Location', false), cl('Bewerbung Social', false), cl('Nachbereitung', false) ],
+    comments:[ {a:'AH', t:'Sie haben grundsätzlich Interesse signalisiert.', w:'vor 3 Tagen'} ],
+    attachments:[], watchers:['AH'], activity:[] },
+
+  { id:'c15', ch:'sciencepop', title:'Kinderuni-Beitrag: Vulkane', due:'2026-07-18',
+    desc:'Kindgerechter Beitrag zum Thema Vulkanismus.',
+    items:[ cl('Text kindgerecht', true), cl('Illustrationen', true), cl('Faktencheck Geologie', true), cl('Freigabe Redaktion', false) ],
+    comments:[], attachments:[], watchers:[], activity:[] },
+
+  { id:'c16', ch:'zeitlos', title:'Serie: Vergessene Forscherinnen', due:null,
+    desc:'Backlog-Idee. Porträtserie über Wissenschaftlerinnen der Akademiegeschichte.',
+    items:[ cl('Kandidatinnen sammeln', false), cl('Archivrecherche', false), cl('Bildrechte klären', false), cl('Format festlegen', false), cl('Redaktionsplan', false) ],
+    comments:[], attachments:[], watchers:[], activity:[] },
+
+  { id:'c17', ch:'zeitlos', title:'Idee: Podcast über das Akademie-Archiv', due:null,
+    desc:'Loser Backlog-Eintrag, noch nicht spruchreif.',
+    items:[ st('Gespräch mit Archivleitung', false), st('Pilotfolge skizzieren', false), st('Technik-Setup klären', false) ],
+    comments:[], attachments:[], watchers:[], activity:[] },
+
+  { id:'c18', ch:'web', title:'Nachbericht Festveranstaltung', due:null, completed:true,
+    desc:'Nachbericht ist online, Karte abgeschlossen.',
+    items:[ cl('Text', true), cl('Fotos', true), cl('Online', true) ],
+    comments:[], attachments:[], watchers:[], activity:[] },
+];
+
+function parseDate(iso){ const [y,m,d] = iso.split('-').map(Number); return new Date(y, m-1, d); }
+function fmtDue(iso, completed){
+  if(!iso) return { has:false };
+  const d = parseDate(iso);
+  const label = d.getDate() + '. ' + MONTHS[d.getMonth()] + (d.getFullYear() !== 2026 ? ' ' + d.getFullYear() : '');
+  const overdue = !completed && d < NOW;
+  const diff = Math.round((d - NOW) / 86400000);
+  const soon = !overdue && diff >= 0 && diff <= 3;
+  return { has:true, label, overdue, soon };
+}
+const attachMeta = {
+  docx:{ icon:'ph-file-doc', color:'#2563eb', bg:'#eaf1ff' },
+  pdf:{ icon:'ph-file-pdf', color:'#dc2626', bg:'#fdeaea' },
+  img:{ icon:'ph-file-image', color:'#16a34a', bg:'#e7f7ec' },
+};
+const verbIcons = { erstellt:'ph-plus', abgehakt:'ph-check', hinzugefügt:'ph-paperclip', verschoben:'ph-arrow-line-right', gesetzt:'ph-clock', abgeschlossen:'ph-check-circle', geschrieben:'ph-chat-circle' };
+function verbIcon(v){ for(const k in verbIcons){ if(v.includes(k)) return verbIcons[k]; } return 'ph-dot'; }
+
+let UID = 1000;
+const uid = () => 'x' + (UID++);
+
+const BOARD_LIST = [
+  { name:'Channels', accent:'#0047bb', count:187, activity:'vor 2 Std.' },
+  { name:'Web-Team', accent:'#0d9488', count:42, activity:'gestern' },
+  { name:'Lange Nacht 2026', accent:'#ea580c', count:23, activity:'vor 3 Tagen' },
+  { name:'Social Media Planung', accent:'#c026d3', count:15, activity:'vor 5 Std.' },
+  { name:'Podcast-Produktion', accent:'#7c3aed', count:31, activity:'gestern' },
+  { name:'Wissenschaftspreise', accent:'#16a34a', count:19, activity:'vor 6 Tagen' },
+  { name:'Jahresbericht 2025', accent:'#2563eb', count:12, activity:'vor 1 Woche' },
+  { name:'Krisenkommunikation', accent:'#dc2626', count:7, activity:'vor 4 Tagen' },
+  { name:'CD Relaunch', accent:'#64748b', count:0, activity:'vor 2 Wochen' },
+];
+
+class Component extends DCLogic {
+  state = {
+    cards: SEED.map(c => ({ ...c, items: c.items.map(it => ({ ...it, id: uid() })) })),
+    search:'', channel:'all', person:'all', onlyOverdue:false, showCompleted:true,
+    openId:null, dragId:null, overCol:null,
+    newItem:'', newSub:'', newComment:'',
+    peopleBarOpen:true,
+    moveOpen:false, moveBoard:'Channels', assigneeOpen:false, avatarMenuOpen:false,
+    convert:{ open:false, subId:null, cardId:null, text:'', ch:'podcast', due:'' },
+    screen:'board', loginEmail:'', loginPw:'', loginError:'',
+    activeBoard:'Channels', switcherOpen:false, switcherQuery:'', favs:{ 'Channels':true, 'Web-Team':true },
+    paletteOpen:false, paletteQuery:'',
+    triageOpen:false,
+    tTitle:'Lange Nacht der Forschung 2026 · ÖAW-Standort', tLink:'https://www.oeaw.ac.at/veranstaltungen', tChannel:'events', tDue:'2026-09-25',
+    tSpeakers:'Univ.-Prof. Anna Huber\nDr. Markus Wieser',
+    tFormats:{ web:true, video:true, fotos:true, pm:false },
+  };
+
+  updateCard(id, fn){ this.setState(s => ({ cards: s.cards.map(c => c.id === id ? fn(c) : c) })); }
+
+  componentDidMount(){
+    this._onKey = (e) => {
+      if((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')){ e.preventDefault(); this.setState(s => ({ paletteOpen: !s.paletteOpen, paletteQuery:'' })); }
+      else if(e.key === 'Escape'){ if(this.state.paletteOpen) this.setState({ paletteOpen:false }); else if(this.state.switcherOpen) this.setState({ switcherOpen:false }); }
+    };
+    window.addEventListener('keydown', this._onKey);
+  }
+  componentWillUnmount(){ if(this._onKey) window.removeEventListener('keydown', this._onKey); }
+
+  switcherList(favOnly){
+    const s = this.state;
+    const q = s.switcherQuery.trim().toLowerCase();
+    return BOARD_LIST.filter(b => (!!s.favs[b.name] === favOnly) && (!q || b.name.toLowerCase().includes(q))).map(b => {
+      const active = b.name === s.activeBoard, fav = !!s.favs[b.name];
+      return {
+        name: b.name, meta: b.count + ' Karten · ' + b.activity, active,
+        dotStyle:{ width:'10px', height:'10px', borderRadius:'3px', background:b.accent, flexShrink:0 },
+        rowStyle:{ display:'flex', alignItems:'center', gap:'10px', padding:'8px 9px', borderRadius:'9px', cursor:'pointer', background: active ? '#eef4ff' : 'transparent' },
+        starIcon: fav ? 'ph-fill ph-star' : 'ph ph-star',
+        starStyle:{ fontSize:'15px', color: fav ? '#f59e0b' : '#cbd2dc' },
+        checkIcon: active ? 'ph-bold ph-check' : '',
+        onPick: () => this.setState({ activeBoard:b.name, switcherOpen:false, switcherQuery:'' }),
+        onToggleFav: (e) => { e.stopPropagation(); this.setState(st => ({ favs:{ ...st.favs, [b.name]: !st.favs[b.name] } })); },
+      };
+    });
+  }
+
+  paletteBoards(){
+    const q = this.state.paletteQuery.trim().toLowerCase();
+    return BOARD_LIST.filter(b => !q || b.name.toLowerCase().includes(q)).slice(0, q ? 20 : 4).map(b => ({
+      name: b.name, meta: b.count + ' Karten',
+      dotStyle:{ width:'9px', height:'9px', borderRadius:'3px', background:b.accent, flexShrink:0 },
+      onPick: () => this.setState({ activeBoard:b.name, paletteOpen:false }),
+    }));
+  }
+
+  paletteGroups(){
+    const q = this.state.paletteQuery.trim().toLowerCase();
+    const match = (c) => !q || c.title.toLowerCase().includes(q) || c.items.some(it => it.text.toLowerCase().includes(q));
+    return CH.map(ch => {
+      const cards = this.state.cards.filter(c => c.ch === ch.id && match(c));
+      return {
+        label: this.state.activeBoard + ' · ' + ch.name,
+        dotStyle:{ width:'8px', height:'8px', borderRadius:'2px', background:ch.accent, flexShrink:0 },
+        iconClass:'ph-fill ' + ch.icon, iconStyle:{ fontSize:'15px', color:ch.accent, flexShrink:0 },
+        cards: cards.map(c => {
+          const done = c.items.filter(i => i.kind === 'checklist' && i.done).length;
+          const total = c.items.filter(i => i.kind === 'checklist').length;
+          return { title:c.title, meta: total ? (done + '/' + total) : '', hasMeta: total > 0, completed:!!c.completed,
+            onOpen: () => this.setState({ openId:c.id, paletteOpen:false, newItem:'', newSub:'', newComment:'' }) };
+        }),
+      };
+    }).filter(g => g.cards.length > 0);
+  }
+
+  matchCard(c){
+    const s = this.state;
+    if(s.channel !== 'all' && c.ch !== s.channel) return false;
+    if(!s.showCompleted && c.completed) return false;
+    if(s.onlyOverdue){ const d = fmtDue(c.due, c.completed); if(!d.overdue) return false; }
+    if(s.search.trim()){
+      const q = s.search.toLowerCase();
+      const hit = c.title.toLowerCase().includes(q) || c.items.some(it => it.text.toLowerCase().includes(q));
+      if(!hit) return false;
+    }
+    if(s.person === 'unassigned'){
+      if(c.assignee) return false;
+    } else if(s.person !== 'all'){
+      const p = PEOPLE[s.person];
+      const inA = c.assignee === s.person;
+      const inW = (c.watchers||[]).includes(s.person);
+      const inT = c.items.some(it => it.text.toLowerCase().includes(p.first));
+      if(!inA && !inW && !inT) return false;
+    }
+    return true;
+  }
+
+  watcherView(initials, big){
+    const p = PEOPLE[initials] || { name:initials, color:'#64748b' };
+    const sz = big ? 28 : 22;
+    return { initials, name:p.name, style:{ width:sz, height:sz, borderRadius:999, background:p.color, color:'#fff', fontSize: big?11:9.5, fontWeight:600, display:'flex', alignItems:'center', justifyContent:'center', border:'2px solid #fff', marginLeft: big?0:'-7px', flexShrink:0 } };
+  }
+
+  buildCardChip(c){
+    const meta = CHMAP[c.ch];
+    const due = fmtDue(c.due, c.completed);
+    const checks = c.items.filter(i => i.kind === 'checklist');
+    const subs = c.items.filter(i => i.kind === 'subtask');
+    const doneCount = checks.filter(i => i.done).length;
+    const subDone = subs.filter(i => i.done).length;
+    const hasProg = checks.length > 0;
+    const hasSubs = subs.length > 0;
+    const comments = c.comments || [];
+    const attach = c.attachments || [];
+    const watchers = (c.watchers || []).slice(0,3).map(w => this.watcherView(w, false));
+    const overflow = (c.watchers || []).length - watchers.length;
+    if(overflow > 0) watchers.push({ initials:'+'+overflow, name:'', style:{ width:22, height:22, borderRadius:999, background:'#eef1f5', color:'#64707f', fontSize:9.5, fontWeight:600, display:'flex', alignItems:'center', justifyContent:'center', border:'2px solid #fff', marginLeft:'-7px', flexShrink:0 } });
+    const hasMeta = due.has || hasProg || hasSubs || comments.length || attach.length || watchers.length;
+    return {
+      id:c.id, title:c.title, completed:!!c.completed, open:!c.completed,
+      wrapStyle:{ background:'#fff', border:'1px solid #e2e6ec', borderLeft:'3px solid '+meta.accent, borderRadius:'10px', padding:'12px 13px', boxShadow:'0 1px 2px rgba(16,32,46,.05)', cursor:'pointer', transition:'box-shadow .14s, border-color .14s', opacity: c.completed ? 0.62 : 1 },
+      hasMeta: !!hasMeta,
+      dueOverdue: due.has && due.overdue,
+      dueNormal: due.has && !due.overdue,
+      dueLabel: due.label,
+      dueStyle:{ display:'inline-flex', alignItems:'center', gap:'5px', fontFamily:"'Geist Mono',monospace", fontSize:'11px', fontWeight:500, color: due.soon ? '#c2410c' : '#475262', background: due.soon ? '#fdeee3' : '#eef1f5', padding:'3px 7px', borderRadius:'6px' },
+      hasProg, progLabel: doneCount + '/' + checks.length,
+      hasSubs, subLabel: subDone + '/' + subs.length,
+      hasComments: comments.length > 0, commentCount: comments.length,
+      hasAttach: attach.length > 0, attachCount: attach.length,
+      hasWatchers: watchers.length > 0, watchers,
+      onOpen: () => this.setState({ openId:c.id, newItem:'', newSub:'', newComment:'' }),
+      onDragStart: (e) => { this.setState({ dragId:c.id }); if(e.dataTransfer){ e.dataTransfer.effectAllowed='move'; try{ e.dataTransfer.setData('text/plain', c.id); }catch(err){} } },
+    };
+  }
+
+  buildBoard(){
+    return CH.map(meta => {
+      const cards = this.state.cards.filter(c => c.ch === meta.id && this.matchCard(c)).map(c => this.buildCardChip(c));
+      const isOver = this.state.overCol === meta.id;
+      return {
+        id:meta.id, name:meta.name, count:cards.length, cards, empty: cards.length === 0,
+        iconClass:'ph-fill ' + meta.icon,
+        iconStyle:{ fontSize:'15px', color:meta.accent },
+        dotStyle:{ width:'9px', height:'9px', borderRadius:'3px', background:meta.accent, flexShrink:0 },
+        bodyStyle:{ flex:1, overflowY:'auto', overflowX:'hidden', display:'flex', flexDirection:'column', gap:'9px', padding:'4px', borderRadius:'12px', background: isOver ? '#e7eefb' : '#eef1f5', outline: isOver ? '2px dashed '+meta.accent : '2px dashed transparent', outlineOffset:'-2px', transition:'background .12s' },
+        onAdd: () => this.openTriageFor(meta.id),
+        onDragOver: (e) => { e.preventDefault(); if(e.dataTransfer) e.dataTransfer.dropEffect='move'; if(this.state.overCol !== meta.id) this.setState({ overCol:meta.id }); },
+        onDrop: (e) => { e.preventDefault(); this.moveCard(this.state.dragId, meta.id); this.setState({ dragId:null, overCol:null }); },
+      };
+    });
+  }
+
+  moveCard(id, chId){
+    if(!id) return;
+    const card = this.state.cards.find(c => c.id === id);
+    if(!card || card.ch === chId) return;
+    const from = CHMAP[card.ch].name, to = CHMAP[chId].name;
+    this.updateCard(id, c => ({ ...c, ch:chId, activity:[{ a:'CH', v:'hat die Karte von '+from+' nach '+to+' verschoben', w:'gerade eben' }, ...(c.activity||[])] }));
+  }
+
+  itemView(c, it){
+    const done = it.done;
+    const round = it.kind === 'subtask';
+    const converted = !!it.linkedId;
+    return {
+      text: it.text,
+      boxStyle:{ width:'19px', height:'19px', borderRadius: round ? '999px' : '6px', border: done ? 'none' : '1.5px solid #cbd2dc', background: done ? '#0047bb' : '#fff', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, marginTop: round ? 0 : '1px', transition:'all .12s' },
+      checkIcon: done ? 'ph-bold ph-check' : '',
+      checkIconStyle:{ fontSize:'12px', color:'#fff' },
+      textStyle:{ fontSize:'13.5px', lineHeight:1.5, color: done ? '#9aa4b2' : '#333d4c', textDecoration: done ? 'line-through' : 'none' },
+      onToggle: () => this.updateCard(c.id, cc => ({ ...cc, items: cc.items.map(x => x.id === it.id ? { ...x, done: !x.done } : x) })),
+      canConvert: round && !converted,
+      converted,
+      onConvert: (e) => { if(e) e.stopPropagation(); this.setState({ convert:{ open:true, subId:it.id, cardId:c.id, text:it.text, ch:c.ch, due:'' } }); },
+      onOpenLinked: (e) => { if(e) e.stopPropagation(); if(it.linkedId) this.setState({ openId:it.linkedId, newItem:'', newSub:'', newComment:'' }); },
+    };
+  }
+
+  buildOpenCard(){
+    const c = this.state.cards.find(x => x.id === this.state.openId);
+    if(!c) return { _empty:true };
+    const meta = CHMAP[c.ch];
+    const due = fmtDue(c.due, c.completed);
+    const checks = c.items.filter(i => i.kind === 'checklist');
+    const subs = c.items.filter(i => i.kind === 'subtask');
+    const doneCount = checks.filter(i => i.done).length;
+    const pct = checks.length ? Math.round(doneCount / checks.length * 100) : 0;
+    const comments = (c.comments || []).map(cm => ({ isComment:true, isActivity:false, actor:cm.a, name:(PEOPLE[cm.a]||{}).name || cm.a, body:cm.t, when:cm.w, avatarStyle:{ width:28, height:28, borderRadius:999, background:(PEOPLE[cm.a]||{color:'#64748b'}).color, color:'#fff', fontSize:10.5, fontWeight:600, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 } }));
+    const acts = (c.activity || []).map(ac => ({ isComment:false, isActivity:true, name:(PEOPLE[ac.a]||{}).name || ac.a, body:ac.v, when:ac.w, verbIcon:'ph ' + verbIcon(ac.v) }));
+    const feed = [...comments, ...acts];
+    const attachments = (c.attachments || []).map(a => { const m = attachMeta[a.kind] || attachMeta.docx; return { name:a.name, kind:a.kind, iconClass:'ph-fill ' + m.icon, iconWrapStyle:{ width:32, height:32, borderRadius:8, background:m.bg, color:m.color, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 } }; });
+
+    return {
+      _empty:false,
+      title:c.title, ref:'#' + c.ch.slice(0,4).toUpperCase() + '-' + c.id.replace('c','').padStart(4,'0'),
+      channelName:meta.name, iconClass:'ph-fill ' + meta.icon,
+      headerStyle:{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'12px', padding:'16px 20px', borderBottom:'1px solid #eef1f5', background:meta.tint },
+      headerIconStyle:{ fontSize:'18px', color:meta.accent },
+      channelPillStyle:{ display:'inline-flex', alignItems:'center', fontSize:'12.5px', fontWeight:600, color:meta.text, background:'#fff', padding:'4px 11px', borderRadius:999, border:'1px solid '+meta.accent+'33' },
+      titleStyle:{ width:'100%', border:'none', outline:'none', fontFamily:'inherit', fontSize:'21px', fontWeight:700, letterSpacing:'-0.01em', color:'#16202e', background:'transparent', padding:0, lineHeight:1.25 },
+
+      completed:!!c.completed,
+      completeLabel: c.completed ? 'Abgeschlossen' : 'Abschließen',
+      completeIcon: c.completed ? 'ph-fill ph-check-circle' : 'ph ph-check-circle',
+      completeBtnStyle:{ display:'inline-flex', alignItems:'center', gap:'7px', border: c.completed ? 'none' : '1px solid #cbd2dc', background: c.completed ? '#e7f7ef' : '#fff', color: c.completed ? '#059669' : '#333d4c', fontFamily:'inherit', fontSize:'13px', fontWeight:600, padding:'8px 13px', borderRadius:'9px', cursor:'pointer' },
+      onToggleComplete: () => this.updateCard(c.id, cc => ({ ...cc, completed: !cc.completed, activity:[{ a:'CH', v: cc.completed ? 'hat die Karte wieder geöffnet' : 'hat die Karte abgeschlossen', w:'gerade eben' }, ...(cc.activity||[])] })),
+      onTitle: (e) => this.updateCard(c.id, cc => ({ ...cc, title:e.target.value })),
+
+      hasLink: !!c.link, linkUrl: c.link ? c.link.url : '#', linkLabel: c.link ? c.link.label : '',
+      desc: c.desc || '',
+
+      checkProg: doneCount + ' / ' + checks.length,
+      progBarWrap:{ width:'96px', height:'6px', background:'#eef1f5', borderRadius:999, overflow:'hidden' },
+      progBarFill:{ display:'block', height:'100%', width: pct + '%', background:'#0047bb', borderRadius:999, transition:'width .2s' },
+      checklist: checks.map(it => this.itemView(c, it)),
+      newItem: this.state.newItem,
+      onNewItem: (e) => this.setState({ newItem:e.target.value }),
+      onNewItemKey: (e) => { if(e.key === 'Enter' && e.target.value.trim()){ const t = e.target.value.trim(); this.updateCard(c.id, cc => ({ ...cc, items:[...cc.items, { id:uid(), kind:'checklist', text:t, done:false }] })); this.setState({ newItem:'' }); } },
+
+      showSubs: subs.length > 0,
+      subProg: subs.filter(i => i.done).length + ' / ' + subs.length,
+      subtasks: subs.map(it => this.itemView(c, it)),
+      newSub: this.state.newSub,
+      onNewSub: (e) => this.setState({ newSub:e.target.value }),
+      onNewSubKey: (e) => { if(e.key === 'Enter' && e.target.value.trim()){ const t = e.target.value.trim(); this.updateCard(c.id, cc => ({ ...cc, items:[...cc.items, { id:uid(), kind:'subtask', text:t, done:false }] })); this.setState({ newSub:'' }); } },
+
+      hasAttach: attachments.length > 0, attachCount: attachments.length, attachments,
+
+      feed,
+      newComment: this.state.newComment,
+      onNewComment: (e) => this.setState({ newComment:e.target.value }),
+      onCommentKey: (e) => { if(e.key === 'Enter') this.sendComment(c.id, e.target.value); },
+      onSendComment: () => this.sendComment(c.id, this.state.newComment),
+
+      channelOptions: CH.map(m => ({
+        name:m.name, short:m.short, iconClass:'ph-fill ' + m.icon,
+        style:{ display:'inline-flex', alignItems:'center', gap:'6px', fontFamily:'inherit', fontSize:'12px', fontWeight:600, padding:'7px 10px', borderRadius:'8px', cursor:'pointer', width:'100%', border:'1px solid ' + (m.id === c.ch ? m.accent : '#e2e6ec'), background: m.id === c.ch ? m.tint : '#fff', color: m.id === c.ch ? m.text : '#475262' },
+        active: m.id === c.ch, activeIcon: m.id === c.ch ? 'ph-bold ph-check' : '',
+        onSelect: () => { this.moveCard(c.id, m.id); this.setState({ moveOpen:false }); },
+      })),
+
+      // Verschieben-Popover
+      moveOpen: this.state.moveOpen,
+      onToggleMove: (e) => { if(e) e.stopPropagation(); this.setState({ moveOpen: !this.state.moveOpen, assigneeOpen:false }); },
+      boardName: this.state.moveBoard,
+      onBoard: (e) => this.setState({ moveBoard: e.target.value }),
+
+      // Assignee (dezent, optional)
+      assigneeInitials: c.assignee || '',
+      assigneeAvatarStyle: c.assignee ? { width:24, height:24, borderRadius:999, background:(PEOPLE[c.assignee]||{}).color, color:'#fff', fontSize:9.5, fontWeight:600, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 } : {},
+      assigneeName: c.assignee ? (PEOPLE[c.assignee]||{}).name : 'Niemand · optional',
+      assigneeNameStyle: { fontSize:'12.5px', color: c.assignee ? '#333d4c' : '#9aa4b2', fontWeight: c.assignee ? 500 : 400 },
+      hasAssignee: !!c.assignee, noAssignee: !c.assignee,
+      assigneeOpen: this.state.assigneeOpen,
+      onToggleAssignee: (e) => { if(e) e.stopPropagation(); this.setState({ assigneeOpen: !this.state.assigneeOpen, moveOpen:false }); },
+      assigneeOptions: [{ key:null, name:'Niemand', color:'#cbd2dc', dashed:true }].concat(Object.keys(PEOPLE).map(k => ({ key:k, name:PEOPLE[k].name, color:PEOPLE[k].color }))).map(o => ({
+        name:o.name, initials: o.key || '–', active: (c.assignee||null) === o.key,
+        avatarStyle:{ width:24, height:24, borderRadius:999, background:o.dashed ? '#fff' : o.color, border:o.dashed ? '1.5px dashed #cbd2dc' : 'none', color:o.dashed ? '#9aa4b2' : '#fff', fontSize:9.5, fontWeight:600, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 },
+        rowStyle:{ display:'flex', alignItems:'center', gap:'9px', padding:'6px 8px', borderRadius:'8px', cursor:'pointer', background: (c.assignee||null) === o.key ? '#eef4ff' : 'transparent' },
+        onSelect: () => this.updateCard(c.id, cc => ({ ...cc, assignee:o.key })) || this.setState({ assigneeOpen:false }),
+      })),
+
+      // Metadaten
+      metaCreated: metaDates(c).created,
+      metaUpdated: metaDates(c).updated,
+
+      dueBoxStyle:{ display:'flex', alignItems:'center', gap:'8px', border:'1px solid ' + (due.overdue ? '#f4c4c4' : '#e2e6ec'), background: due.overdue ? '#fdeaea' : '#fff', color: due.overdue ? '#dc2626' : (due.has ? '#333d4c' : '#9aa4b2'), padding:'9px 12px', borderRadius:'9px' },
+      dueBoxIcon: due.overdue ? 'ph-bold ph-clock-countdown' : (due.has ? 'ph ph-calendar-dots' : 'ph ph-calendar-plus'),
+      dueBoxLabel: due.has ? due.label : 'Kein Datum',
+
+      watcherList: (c.watchers || []).map(w => this.watcherView(w, true)),
+
+      onClose: () => this.setState({ openId:null }),
+    };
+  }
+
+  sendComment(id, val){
+    const t = (val || '').trim();
+    if(!t) return;
+    this.updateCard(id, c => ({ ...c, comments:[...(c.comments||[]), { a:'CH', t, w:'gerade eben' }] }));
+    this.setState({ newComment:'' });
+  }
+
+  openTriageFor(chId){ this.setState({ triageOpen:true, tChannel:chId }); }
+
+  createFromSubtask(){
+    const cv = this.state.convert;
+    if(!cv.open || !cv.subId) return;
+    const id = 'c' + uid();
+    const card = { id, ch:cv.ch, title:cv.text, due:cv.due || null,
+      desc:'Aus Unteraufgabe von »' + (this.state.cards.find(c => c.id === cv.cardId)||{}).title + '« angelegt.',
+      items:[], comments:[], attachments:[], watchers:[],
+      activity:[{ a:'CH', v:'hat die Karte aus einer Unteraufgabe angelegt', w:'gerade eben' }] };
+    this.setState(s => ({
+      cards: [card, ...s.cards].map(c => c.id === cv.cardId
+        ? { ...c, items: c.items.map(it => it.id === cv.subId ? { ...it, linkedId:id } : it) }
+        : c),
+      convert:{ open:false, subId:null, cardId:null, text:'', ch:'podcast', due:'' },
+    }));
+  }
+
+  createFromTriage(){
+    const s = this.state;
+    const items = [];
+    if(s.tFormats.web) items.push({ id:uid(), kind:'checklist', text:'Web-Interview anfragen', done:false });
+    if(s.tFormats.video) items.push({ id:uid(), kind:'checklist', text:'Video für Social produzieren', done:false });
+    if(s.tFormats.fotos) items.push({ id:uid(), kind:'checklist', text:'Fotos vom Termin', done:false });
+    if(s.tFormats.pm) items.push({ id:uid(), kind:'checklist', text:'PM aufsetzen und freigeben', done:false });
+    const speakers = s.tSpeakers.trim();
+    const desc = 'Aus Triage übernommen.' + (speakers ? '\nSpeaker: ' + speakers.replace(/\n/g, ', ') : '');
+    const id = 'c' + uid();
+    const card = { id, ch:s.tChannel, title:s.tTitle.trim() || 'Neue Karte', due:s.tDue || null,
+      desc, link:{ url:s.tLink, label:s.tLink.replace(/^https?:\/\/(www\.)?/,'') }, items,
+      comments:[], attachments:[], watchers:[],
+      activity:[{ a:'CH', v:'hat die Karte aus der Triage angelegt', w:'gerade eben' }] };
+    this.setState(st => ({ cards:[card, ...st.cards], triageOpen:false, openId:id, channel:'all', onlyOverdue:false }));
+  }
+
+  renderVals(){
+    const s = this.state;
+    const board = this.buildBoard();
+    const totalVisible = board.reduce((n, c) => n + c.count, 0);
+    const totalAll = s.cards.length;
+    const hasFilters = s.channel !== 'all' || s.person !== 'all' || s.onlyOverdue || !s.showCompleted || s.search.trim().length > 0;
+
+    const pillBase = { display:'inline-flex', alignItems:'center', gap:'7px', border:'1px solid', fontFamily:'inherit', fontSize:'13px', fontWeight:600, padding:'0 13px', height:'36px', borderRadius:'9px', cursor:'pointer' };
+    const onPill = { ...pillBase, background:'#0047bb', color:'#fff', borderColor:'#0047bb' };
+    const offPill = { ...pillBase, background:'#fff', color:'#64707f', borderColor:'#cbd2dc' };
+
+    const open = this.buildOpenCard();
+
+    return {
+      board,
+      totalLabel: totalAll + ' Karten · 8 Kanäle',
+      totalVisible,
+      search:s.search, hasSearch: s.search.length > 0,
+      onSearch:(e)=>this.setState({ search:e.target.value }),
+      onClearSearch:()=>this.setState({ search:'' }),
+      channel:s.channel, onChannel:(e)=>this.setState({ channel:e.target.value }),
+      person:s.person, onPerson:(e)=>this.setState({ person:e.target.value }),
+      overdueBtnStyle: s.onlyOverdue ? onPill : offPill,
+      completedBtnStyle: s.showCompleted ? onPill : offPill,
+      toggleOverdue:()=>this.setState({ onlyOverdue:!s.onlyOverdue }),
+      toggleCompleted:()=>this.setState({ showCompleted:!s.showCompleted }),
+      hasFilters,
+      onResetFilters:()=>this.setState({ search:'', channel:'all', person:'all', onlyOverdue:false, showCompleted:true }),
+
+      // ===== PEOPLE BAR =====
+      peopleBarOpen: s.peopleBarOpen,
+      peopleBarClosed: !s.peopleBarOpen,
+      togglePeopleBar: () => this.setState({ peopleBarOpen: !s.peopleBarOpen }),
+      unassigned: (() => {
+        const active = s.person === 'unassigned';
+        return { count: UNASSIGNED_COUNT, active,
+          wrapStyle:{ display:'flex', flexDirection:'column', alignItems:'center', gap:'4px', padding:'8px 4px', borderRadius:'10px', cursor:'pointer', background: active ? '#eef4ff' : 'transparent', border:'1px solid ' + (active ? '#b8ccff' : 'transparent') },
+          avatarStyle:{ width:34, height:34, borderRadius:999, background: active ? '#eef4ff' : '#f7f8fa', border:'1.5px dashed ' + (active ? '#0047bb' : '#cbd2dc'), color: active ? '#0047bb' : '#9aa4b2', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 },
+          countStyle:{ fontFamily:"'Geist Mono',monospace", fontSize:'10px', fontWeight:500, color: active ? '#0047bb' : '#9aa4b2' },
+          onClick: () => this.setState({ person: active ? 'all' : 'unassigned' }),
+        };
+      })(),
+      team: TEAM.map(t => {
+        const p = PEOPLE[t.key]; const active = s.person === t.key;
+        return { name:p.name, initials:t.key, count:t.count, active,
+          wrapStyle:{ display:'flex', flexDirection:'column', alignItems:'center', gap:'4px', padding:'7px 4px', borderRadius:'10px', cursor:'pointer', background: active ? '#eef4ff' : 'transparent' },
+          avatarStyle:{ width:34, height:34, borderRadius:999, background:p.color, color:'#fff', fontSize:12, fontWeight:600, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, boxShadow: active ? '0 0 0 2px #fff, 0 0 0 4px '+p.color : 'none' },
+          countStyle:{ fontFamily:"'Geist Mono',monospace", fontSize:'10px', fontWeight:500, color: active ? '#0047bb' : '#9aa4b2' },
+          onClick: () => this.setState({ person: active ? 'all' : t.key }),
+        };
+      }),
+
+      // ===== CONVERT SUBTASK → CARD =====
+      convertOpen: s.convert.open,
+      cvText: s.convert.text,
+      cvCh: s.convert.ch, onCvCh: (e) => this.setState({ convert:{ ...s.convert, ch:e.target.value } }),
+      cvChName: CHMAP[s.convert.ch] ? CHMAP[s.convert.ch].name : '',
+      cvDue: s.convert.due, onCvDue: (e) => this.setState({ convert:{ ...s.convert, due:e.target.value } }),
+      onCvClose: () => this.setState({ convert:{ open:false, subId:null, cardId:null, text:'', ch:'podcast', due:'' } }),
+      onCvCreate: () => this.createFromSubtask(),
+
+      // ===== AUTH / LOGIN =====
+      screen: s.screen, isLogin: s.screen === 'login',
+      avatarMenuOpen: s.avatarMenuOpen,
+      toggleAvatarMenu: (e) => { if(e) e.stopPropagation(); this.setState({ avatarMenuOpen: !s.avatarMenuOpen }); },
+      onLogout: () => this.setState({ screen:'login', avatarMenuOpen:false, openId:null }),
+      loginEmail: s.loginEmail, onLoginEmail: (e) => this.setState({ loginEmail:e.target.value, loginError:'' }),
+      loginPw: s.loginPw, onLoginPw: (e) => this.setState({ loginPw:e.target.value, loginError:'' }),
+      onLoginKey: (e) => { if(e.key === 'Enter') this.renderVals().onLogin(); },
+      loginError: s.loginError, hasLoginError: !!s.loginError,
+      onLogin: () => {
+        const em = s.loginEmail.trim(), pw = s.loginPw;
+        if(!em || !pw){ this.setState({ loginError:'Bitte E-Mail und Passwort eingeben.' }); return; }
+        if(!em.includes('@') || pw.length < 6){ this.setState({ loginError:'E-Mail oder Passwort ist nicht korrekt.', loginPw:'' }); return; }
+        this.setState({ screen:'board', loginError:'', loginPw:'' });
+      },
+      closeMenus: () => { if(s.avatarMenuOpen || s.moveOpen || s.assigneeOpen || s.switcherOpen) this.setState({ avatarMenuOpen:false, moveOpen:false, assigneeOpen:false, switcherOpen:false }); },
+
+      // ===== BOARD SWITCHER =====
+      activeBoard: s.activeBoard,
+      switcherOpen: s.switcherOpen,
+      toggleSwitcher: (e) => { if(e) e.stopPropagation(); this.setState({ switcherOpen: !s.switcherOpen, switcherQuery:'', avatarMenuOpen:false }); },
+      switcherCaret: s.switcherOpen ? 'ph ph-caret-up' : 'ph ph-caret-down',
+      switcherQuery: s.switcherQuery,
+      onSwitcherQuery: (e) => this.setState({ switcherQuery: e.target.value }),
+      switcherFavs: this.switcherList(true),
+      switcherOthers: this.switcherList(false),
+      hasFavs: this.switcherList(true).length > 0,
+
+      // ===== COMMAND PALETTE =====
+      paletteOpen: s.paletteOpen,
+      openPalette: () => this.setState({ paletteOpen:true, paletteQuery:'' }),
+      closePalette: () => this.setState({ paletteOpen:false }),
+      paletteQuery: s.paletteQuery,
+      onPaletteQuery: (e) => this.setState({ paletteQuery: e.target.value }),
+      paletteBoards: this.paletteBoards(),
+      hasPaletteBoards: this.paletteBoards().length > 0,
+      paletteGroups: this.paletteGroups(),
+      paletteEmpty: this.paletteBoards().length === 0 && this.paletteGroups().length === 0,
+
+      onDragEnd:()=>this.setState({ dragId:null, overCol:null }),
+      onNewCard:()=>this.setState({ triageOpen:true }),
+      onOpenTriage:()=>this.setState({ triageOpen:true }),
+      stop:(e)=>{ e.stopPropagation(); },
+      onDialogClick:(e)=>{ e.stopPropagation(); if(s.moveOpen || s.assigneeOpen) this.setState({ moveOpen:false, assigneeOpen:false }); },
+
+      hasOpen: !!s.openId && !open._empty,
+      openCard: open,
+      onClose:()=>this.setState({ openId:null }),
+
+      triageOpen:s.triageOpen,
+      tTitle:s.tTitle, onTTitle:(e)=>this.setState({ tTitle:e.target.value }),
+      tLink:s.tLink, onTLink:(e)=>this.setState({ tLink:e.target.value }),
+      tChannel:s.tChannel, onTChannel:(e)=>this.setState({ tChannel:e.target.value }),
+      tChannelName: CHMAP[s.tChannel].name,
+      tDue:s.tDue, onTDue:(e)=>this.setState({ tDue:e.target.value }),
+      tSpeakers:s.tSpeakers, onTSpeakers:(e)=>this.setState({ tSpeakers:e.target.value }),
+      triageFormats: [
+        { key:'web', label:'Web-Interview', icon:'ph-globe-hemisphere-west' },
+        { key:'video', label:'Video für Social', icon:'ph-video-camera' },
+        { key:'fotos', label:'Fotos', icon:'ph-camera' },
+        { key:'pm', label:'Pressemitteilung', icon:'ph-megaphone-simple' },
+      ].map(f => {
+        const on = s.tFormats[f.key];
+        return { label:f.label, iconClass:'ph ' + f.icon,
+          rowStyle:{ display:'flex', alignItems:'center', gap:'11px', border:'1px solid ' + (on ? '#0047bb' : '#e2e6ec'), background: on ? '#eef4ff' : '#fff', borderRadius:'10px', padding:'11px 13px', cursor:'pointer', transition:'all .12s' },
+          boxStyle:{ width:'20px', height:'20px', borderRadius:'6px', border: on ? 'none' : '1.5px solid #cbd2dc', background: on ? '#0047bb' : '#fff', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 },
+          checkIcon: on ? 'ph-bold ph-check' : '', checkIconStyle:{ fontSize:'13px', color:'#fff' },
+          onToggle: () => this.setState(st => ({ tFormats:{ ...st.tFormats, [f.key]: !st.tFormats[f.key] } })),
+        };
+      }),
+      onTriageClose:()=>this.setState({ triageOpen:false }),
+      onTriageCreate:()=>this.createFromTriage(),
+    };
+  }
+}
+</script>
+</body>
+</html>
+
