@@ -418,15 +418,28 @@ in v1); Convert-Lookup in beide Richtungen über `cards.converted_from_item_id`.
       (React-Query-staleTime-gated, +1 kleiner Board-GET pro Mutation; Origin-
       Tagging von Realtime-Events nicht trivial). Beide efficiency-only.
 
-### Phase 4 — Triage-Integration (der eigentliche Mehrwert)
-- [ ] „Karte anlegen" aus Event-Cockpit: vorbefüllt mit Titel, ÖAW-Link,
-      Datum, Score-Kontext; Format-Checkliste als Template (Web-ITV / Video /
-      Fotos / PM)
-- [ ] Dasselbe aus Publikationen (DOI-Link, Autoren)
-- [ ] Bestehenden MeisterTask-Push parallel weiterbetreiben (Übergangszeit),
-      Karte↔Event-Verknüpfung sichtbar machen (`source_event_id`)
-- [ ] Dashboard-Kachel: fällige/überfällige + zuletzt erstellte Karten
-- [ ] Globale Kartensuche (⌘K-Palette über alle Boards; shadcn `command`)
+### Phase 4 — Triage-Integration (der eigentliche Mehrwert) — DONE 2026-07-03
+- [x] „Karte anlegen" aus Event-Cockpit (Detailseite + Kalender-Cockpit-Modal):
+      vorbefüllt mit Titel, ÖAW-Link (bzw. oeaw-Suche als Fallback), Datum,
+      Institut/Ort, Score-Kontext; Format-Checkliste als Template (Web-ITV /
+      Video / Fotos / PM) als initiale card_items.
+- [x] Dasselbe aus Publikationen (DOI-Link, Lead-/Autor:innen, Story-Score).
+- [x] Bestehenden MeisterTask-Push parallel weiterbetrieben; Karte↔Quelle
+      sichtbar: `source_event_id`/`source_publication_id` (Activity
+      `created_from_triage`), SourceChip im Kartenmodal (Rücklink zu Event/Pub)
+      + „Im Board"-Deep-Link an Event/Pub (getCardsForSource).
+- [x] Dashboard-Kachel: fällige/überfällige + zuletzt angelegte Karten
+      (getBoardDashboardCards, Kalendertag-Buckets), Deep-Link `?card=`.
+- [x] Globale Kartensuche (⌘K-Palette über alle Boards; searchCards + neue
+      „Karten"-Gruppe in command-menu). Karten öffnen via `?card=`-Deep-Link
+      (board-view auf nuqs umgestellt).
+- Umsetzung: createCard/cardCreateSchema um Quelle+Beschreibung+Items erweitert;
+  Client-API nach `lib/client/board-api.ts` verschoben (Boundaries: components→
+  client); geteilter CreateCardDialog/CreateCardButton in `components/board/`.
+  tsc0/eslint0/vitest583(+8 neu)/build grün; alle 5 Flows in-Browser (lokal,
+  admin@local.test) end-to-end verifiziert. /code-review (Opus, high, 3 Finder):
+  ESCAPE-Bug (LIKE-Escaping), Titel-max(200)-Clamp, leerer Modal-Wrapper-Slot,
+  ⌘K-Stale-Treffer, exactly-one-source-Refine, Kalendertag-Buckets gefixt.
 
 ### Phase 5 — Migration & Ablösung
 - [ ] Import-Script über MeisterTask-API: alle Boards (Channels + Nebenboards),

@@ -15,7 +15,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DecisionBadge } from '@/components/decision-badge';
 import { EventFlag } from '@/app/events/_components/event-flag';
+import { CreateCardButton } from '@/components/board/create-card-button';
 import { buildOeawSearchUrl } from '@/app/events/_lib/build-search-url';
+import { eventToCardSource } from '@/app/events/_lib/event-to-card-source';
 import {
   eventDateFmt,
   eventDateLongFmt,
@@ -93,12 +95,13 @@ export function EventDetail({ event }: { event: Event }) {
               </div>
             )}
           </div>
-          <div className="flex items-center gap-2 justify-self-end">
+          <div className="flex flex-wrap items-center gap-2 justify-self-end">
             <EventFlag
               eventId={event.id}
               flagNotes={event.flag_notes}
               decision={event.decision}
             />
+            <CreateCardButton source={eventToCardSource(event)} />
             {event.url ? (
               <Button asChild size="sm" variant="outline">
                 <a href={event.url} target="_blank" rel="noopener noreferrer">

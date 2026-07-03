@@ -14,7 +14,10 @@ import {
   Plus,
   Trash2,
   Pencil,
+  CalendarDays,
+  Newspaper,
 } from 'lucide-react';
+import NextLink from 'next/link';
 import { toast } from 'sonner';
 import { cn } from '@/lib/shared/utils';
 import { QK } from '@/lib/client/query-keys';
@@ -285,16 +288,21 @@ function MainColumn({
         className="w-full border-none bg-transparent text-[21px] font-bold tracking-tight text-foreground outline-none"
       />
 
-      {card.link_url && (
-        <a
-          href={card.link_url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 rounded-md bg-brand/10 px-2 py-1 text-[13px] font-medium text-brand hover:underline"
-        >
-          <LinkIcon className="h-3.5 w-3.5" />
-          {card.link_url.replace(/^https?:\/\//, '').slice(0, 60)}
-        </a>
+      {(card.link_url || card.source_event_id || card.source_publication_id) && (
+        <div className="flex flex-wrap items-center gap-2">
+          {card.link_url && (
+            <a
+              href={card.link_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-md bg-brand/10 px-2 py-1 text-[13px] font-medium text-brand hover:underline"
+            >
+              <LinkIcon className="h-3.5 w-3.5" />
+              {card.link_url.replace(/^https?:\/\//, '').slice(0, 60)}
+            </a>
+          )}
+          <SourceChip card={card} />
+        </div>
       )}
 
       <DescriptionField card={card} onSave={(v) => saveField.mutate({ description_md: v })} />
@@ -326,6 +334,31 @@ function MainColumn({
 
       <CommentActivityStrand card={card} members={members} onInvalidate={onInvalidate} />
     </div>
+  );
+}
+
+/** Rücklink zur Triage-Quelle (Event/Publikation), aus der die Karte angelegt
+ *  wurde. Interner Deep-Link; null wenn keine Quelle gesetzt ist. */
+function SourceChip({ card }: { card: CardDetail }) {
+  const source = card.source_event_id
+    ? { href: `/events/${card.source_event_id}`, label: 'Aus Event', Icon: CalendarDays }
+    : card.source_publication_id
+      ? {
+          href: `/publications/${card.source_publication_id}`,
+          label: 'Aus Publikation',
+          Icon: Newspaper,
+        }
+      : null;
+  if (!source) return null;
+  const { href, label, Icon } = source;
+  return (
+    <NextLink
+      href={href}
+      className="inline-flex items-center gap-1.5 rounded-md bg-muted px-2 py-1 text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+    >
+      <Icon className="h-3.5 w-3.5" />
+      {label}
+    </NextLink>
   );
 }
 

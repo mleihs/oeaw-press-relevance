@@ -1,7 +1,8 @@
 import 'server-only';
 
 import { asc, eq, sql } from 'drizzle-orm';
-import { db, cards, cardActivity, cardAttachments, boardColumns } from '@/lib/server/db';
+import { db, cards, cardItems, cardActivity, cardAttachments, boardColumns } from '@/lib/server/db';
+import { rankBetween } from '@/lib/shared/rank';
 import { deleteObjects } from '@/lib/server/storage/s3';
 import type { CardChip, CardDetail } from '@/lib/shared/board';
 import type { CardCreatePayload, CardPatchPayload } from '@/lib/shared/board-schemas';
@@ -117,8 +118,10 @@ export async function getCardDetail(cardId: string): Promise<CardDetail> {
   };
 }
 
-/** Quick-Create: Titel + Zielspalte; Board aus der Spalte abgeleitet, Rank ans
- *  Spaltenende. Schreibt Activity 'created'. */
+/** Quick-Create (Titel + Zielspalte) UND Triage-Create (Phase 4): optional mit
+ *  vorbefüllter Beschreibung, Quelle (Event/Publikation) und initialer
+ *  Checkliste. Board aus der Spalte abgeleitet, Rank ans Spaltenende. Activity
+ *  'created_from_triage' wenn eine Quelle gesetzt ist, sonst 'created'. */
 export async function createCard(
   userId: string,
   payload: CardCreatePayload,
@@ -140,6 +143,9 @@ export async function createCard(
         title: payload.title,
         linkUrl: payload.link_url ?? null,
         dueAt: normalizeDue(payload.due_at) ?? null,
+        descriptionMd: payload.description_md ?? null,
+        sourceEventId: payload.source_event_id ?? null,
+        sourcePublicationId: payload.source_publication_id ?? null,
         rank,
         createdBy: userId,
       })
@@ -147,7 +153,21 @@ export async function createCard(
     return row;
   });
 
-  await writeActivity(inserted.id, userId, 'created');
+  // Initiale Checkliste (Triage-Template) in EINEM Insert. Die Karte ist frisch,
+  // ihre Item-Ranks haben keine Konkurrenz -> sequenziell rankBetween ohne Retry.
+  const initialItems = payload.items ?? [];
+  if (initialItems.length > 0) {
+    let prev: string | null = null;
+    const rows = initialItems.map((it) => {
+      const rank = rankBetween(prev, null);
+      prev = rank;
+      return { cardId: inserted.id, kind: it.kind, text: it.text, rank };
+    });
+    await db.insert(cardItems).values(rows);
+  }
+
+  const fromTriage = payload.source_event_id != null || payload.source_publication_id != null;
+  await writeActivity(inserted.id, userId, fromTriage ? 'created_from_triage' : 'created');
   const chipRow = await loadChipRow(inserted.id);
   return cardChipFromRow(chipRow);
 }

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { eq } from 'drizzle-orm';
-import { db, users, boards, cards } from '@/lib/server/db';
+import { db, users, boards, cards, events, publications } from '@/lib/server/db';
 import { slugifyBoardName } from '@/lib/shared/board';
 import {
   listBoards,
@@ -17,6 +17,7 @@ import {
   getCardDetail,
   deleteCard,
 } from './cards';
+import { getBoardDashboardCards, searchCards, getCardsForSource } from './queries';
 import { addItem, patchItem, convertItemToCard } from './items';
 import { addWatcher } from './watchers';
 import { addComment, editComment, deleteComment } from './comments';
@@ -242,6 +243,85 @@ describe.skipIf(!isLocal)('board server lifecycle (lokaler Stack)', () => {
     } finally {
       await db.delete(boards).where(eq(boards.id, a.id));
       await db.delete(boards).where(eq(boards.id, b.id));
+    }
+  });
+
+  it('Triage-Create: Quelle + Beschreibung + Checkliste + created_from_triage', async () => {
+    const [u] = await db.select().from(users).limit(1);
+    const [ev] = await db.select().from(events).limit(1);
+    const [pub] = await db.select().from(publications).limit(1);
+    const board = await createBoard('Triage Smoke Board');
+    try {
+      const col = await createColumn(board.id, 'Ideen');
+
+      // Ohne Quelle: Beschreibung + initiale Checkliste, Activity bleibt 'created'.
+      const plain = await createCard(u.id, {
+        column_id: col.id,
+        title: 'zztriagesmoke-plain Meroë',
+        description_md: '**Wann:** morgen',
+        items: [
+          { kind: 'checklist', text: 'Web-ITV' },
+          { kind: 'checklist', text: 'Video' },
+          { kind: 'checklist', text: 'Fotos' },
+          { kind: 'checklist', text: 'PM' },
+        ],
+      });
+      const plainDetail = await getCardDetail(plain.id);
+      expect(plainDetail.checklist_total).toBe(4);
+      expect(plainDetail.items.map((i) => i.text)).toEqual(
+        expect.arrayContaining(['Web-ITV', 'Video', 'Fotos', 'PM']),
+      );
+      // Item-Ranks sind eindeutig + aufsteigend (sequenzielle Vergabe).
+      const ranks = plainDetail.items.map((i) => i.rank);
+      expect(new Set(ranks).size).toBe(ranks.length);
+      expect(plainDetail.description_html).toContain('<strong>Wann:</strong>');
+      expect(plainDetail.activity.map((a) => a.verb)).toContain('created');
+      expect(plainDetail.activity.map((a) => a.verb)).not.toContain('created_from_triage');
+
+      // searchCards findet die Karte board-übergreifend (Titel-Match).
+      const hits = await searchCards('zztriagesmoke-plain');
+      expect(hits.map((h) => h.id)).toContain(plain.id);
+      expect(hits.find((h) => h.id === plain.id)?.board_slug).toBe(board.slug);
+      // Item-Text-Match (Checkliste) findet dieselbe Karte.
+      const byItem = await searchCards('Web-ITV');
+      expect(byItem.map((h) => h.id)).toContain(plain.id);
+
+      // Dashboard: überfällige (offene) Karte landet in overdue, jede in recent.
+      const overdueCard = await createCard(u.id, {
+        column_id: col.id,
+        title: 'zztriagesmoke-overdue',
+        due_at: '2020-01-01',
+      });
+      const dash = await getBoardDashboardCards();
+      expect(dash.overdue.map((c) => c.id)).toContain(overdueCard.id);
+      expect(dash.recent.map((c) => c.id)).toContain(plain.id);
+
+      // Mit Event-Quelle (falls lokal ein Event existiert): source_event_id +
+      // created_from_triage + getCardsForSource-Rücklookup.
+      if (ev) {
+        const fromEvent = await createCard(u.id, {
+          column_id: col.id,
+          title: 'zztriagesmoke-event',
+          source_event_id: ev.id,
+        });
+        const evDetail = await getCardDetail(fromEvent.id);
+        expect(evDetail.source_event_id).toBe(ev.id);
+        expect(evDetail.activity.map((a) => a.verb)).toContain('created_from_triage');
+        const forEvent = await getCardsForSource({ eventId: ev.id });
+        expect(forEvent.map((c) => c.id)).toContain(fromEvent.id);
+      }
+      if (pub) {
+        const fromPub = await createCard(u.id, {
+          column_id: col.id,
+          title: 'zztriagesmoke-pub',
+          source_publication_id: pub.id,
+        });
+        const forPub = await getCardsForSource({ publicationId: pub.id });
+        expect(forPub.map((c) => c.id)).toContain(fromPub.id);
+      }
+    } finally {
+      await db.delete(cards).where(eq(cards.boardId, board.id));
+      await db.delete(boards).where(eq(boards.id, board.id));
     }
   });
 

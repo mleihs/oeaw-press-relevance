@@ -50,7 +50,9 @@ import type { PublicationListItem } from '@/lib/server/publications/list';
 // — that module transitively imports postgres + drizzle and would fail the
 // RSC → Client boundary check if pulled in as a value import.
 import type { DashboardData } from '@/lib/server/dashboard/fetch';
+import type { BoardDashboardCards } from '@/lib/shared/board';
 import { KeywordCloud } from './keyword-cloud';
+import { BoardCardsTile } from './board-cards-tile';
 
 // Recharts is ~100kB gz. Lazy-load EVERY recharts chart via next/dynamic so it
 // only ships when a card actually renders — a static import of any one of them
@@ -86,6 +88,8 @@ interface DashboardClientProps {
   data: DashboardData;
   period: DashboardPeriod;
   sortBy: SortBy;
+  /** Board-Karten-Kachel (null wenn nicht angemeldet — Board ist auth-gated). */
+  boardCards: BoardDashboardCards | null;
 }
 
 /**
@@ -123,7 +127,7 @@ function DimensionBadge({
   );
 }
 
-export function DashboardClient({ data, period, sortBy }: DashboardClientProps) {
+export function DashboardClient({ data, period, sortBy, boardCards }: DashboardClientProps) {
   const {
     stats,
     topPubs,
@@ -342,6 +346,8 @@ export function DashboardClient({ data, period, sortBy }: DashboardClientProps) 
           )}
         </CardContent>
       </Card>
+
+      {boardCards && <BoardCardsTile cards={boardCards} />}
 
       {/* Top publications with time filter */}
       <Card>

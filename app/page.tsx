@@ -1,4 +1,6 @@
 import { getDashboardData } from '@/lib/server/dashboard/fetch';
+import { getBoardDashboardCards } from '@/lib/server/board';
+import { getCurrentUser } from '@/lib/server/auth/require';
 import {
   isDashboardPeriod,
   parseSortBy,
@@ -35,5 +37,19 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
   const data = await getDashboardData(period, topPubsLimit, sortBy);
 
-  return <DashboardClient data={data} period={period} sortBy={sortBy} />;
+  // Board-Kachel nur für angemeldete Nutzer (Board ist auth-gated). Bewusst
+  // NICHT in getDashboardData: das Gate hängt an getCurrentUser() (liest
+  // Cookies → im unstable_cache-Wrapper von getDashboardData nicht erlaubt) und
+  // die Karten sollen pro Request frisch sein.
+  const user = await getCurrentUser();
+  const boardCards = user ? await getBoardDashboardCards() : null;
+
+  return (
+    <DashboardClient
+      data={data}
+      period={period}
+      sortBy={sortBy}
+      boardCards={boardCards}
+    />
+  );
 }

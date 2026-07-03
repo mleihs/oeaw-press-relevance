@@ -26,4 +26,7 @@ export const QK = {
   board: (slug: string) => ['board', slug] as const,
   boardMembers: ['board-members'] as const,
   card: (id: string) => ['card', id] as const,
+  /** Karten aus einer Triage-Quelle (Event/Publikation) — „liegt im Board". */
+  cardsForSource: (kind: 'event' | 'publication', id: string) =>
+    ['cards-for-source', kind, id] as const,
 } as const;

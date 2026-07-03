@@ -5,6 +5,7 @@ import 'server-only';
 export * from './boards';
 export * from './columns';
 export * from './cards';
+export * from './queries';
 export * from './items';
 export * from './watchers';
 export * from './comments';

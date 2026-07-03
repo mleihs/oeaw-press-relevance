@@ -3,8 +3,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
+import { useQuery } from '@tanstack/react-query';
 import { useDocsSearch } from 'fumadocs-core/search/client';
-import { FileText, Hash, CornerDownLeft } from 'lucide-react';
+import { FileText, Hash, CornerDownLeft, Kanban, CheckCircle2 } from 'lucide-react';
+import { searchCardsApi } from '@/lib/client/board-api';
+import { cardDeepLink, cardLocationLabel } from '@/lib/shared/board';
 import {
   Dialog,
   DialogContent,
@@ -180,6 +183,28 @@ export function CommandMenu() {
   const isCurrent = (href: string) =>
     href === '/' ? pathname === '/' : pathname === href;
 
+  // Board-übergreifende Kartensuche: eigener debounce'ter Fetch (die Palette
+  // filtert selbst, shouldFilter={false}). Fehler (z. B. nicht bei Supabase
+  // angemeldet → 401) bleiben still: die Gruppe rendert dann einfach nicht.
+  const [debouncedQ, setDebouncedQ] = useState('');
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQ(queryStr), 180);
+    return () => clearTimeout(t);
+  }, [queryStr]);
+  const cardSearch = useQuery({
+    queryKey: ['card-search', debouncedQ],
+    queryFn: () => searchCardsApi(debouncedQ),
+    enabled: open && debouncedQ.length >= 2,
+    staleTime: 30_000,
+    retry: false,
+    // KEIN placeholderData: sonst zeigt die „Karten"-Gruppe die Treffer des
+    // vorigen Suchbegriffs weiter, während der Debounce/Refetch läuft — Enter
+    // würde zur falschen Karte navigieren.
+  });
+  // Anzeige an den Fetch-Key (debouncedQ) koppeln, nicht an den sofortigen
+  // queryStr — so passen sichtbare Treffer immer zur gefetchten Query.
+  const cardResults = debouncedQ.length >= 2 ? (cardSearch.data ?? []) : [];
+
   const navItems = NAV_SPECS.map((s) => ({
     s,
     score: scoreCommand(queryStr, s.label, s.keywords),
@@ -244,6 +269,37 @@ export function CommandMenu() {
                       </CommandItem>
                     );
                   })}
+                </CommandGroup>
+              )}
+
+              {cardResults.length > 0 && (
+                <CommandGroup heading="Karten">
+                  {cardResults.map((c) => (
+                    <CommandItem
+                      key={`card:${c.id}`}
+                      value={`card:${c.id}`}
+                      onSelect={() => runCommand(() => router.push(cardDeepLink(c)))}
+                    >
+                      {c.completed_at ? <CheckCircle2 /> : <Kanban />}
+                      <span className="flex min-w-0 flex-1 flex-col">
+                        <span
+                          className={
+                            c.completed_at
+                              ? 'truncate text-muted-foreground line-through'
+                              : 'truncate'
+                          }
+                        >
+                          {c.title}
+                        </span>
+                        <span className="truncate text-xs text-muted-foreground">
+                          {cardLocationLabel(c)}
+                        </span>
+                      </span>
+                      <CommandShortcut>
+                        <CornerDownLeft className="h-3 w-3" />
+                      </CommandShortcut>
+                    </CommandItem>
+                  ))}
                 </CommandGroup>
               )}
 

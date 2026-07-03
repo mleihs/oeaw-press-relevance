@@ -29,6 +29,8 @@ import { InfoBubble } from '@/components/info-bubble';
 import { StatusBanner } from '@/components/status-banner';
 import { publicationCompleteness } from '@/lib/shared/completeness';
 import { MeistertaskButton } from '@/components/meistertask-button';
+import { CreateCardButton } from '@/components/board/create-card-button';
+import { publicationToCardSource } from '../_lib/publication-to-card-source';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { TintBadge } from '@/components/tint-badge';
@@ -65,8 +67,11 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
     <div className="space-y-6">
       {/* Header */}
       <div className="space-y-3">
-        <div className="flex items-start gap-2">
+        <div className="flex flex-wrap items-start gap-2">
           <h1 className="text-2xl font-bold leading-tight flex-1">{titleForDisplay}</h1>
+          <div className="mt-0.5 shrink-0">
+            <CreateCardButton source={publicationToCardSource(pub, titleForDisplay)} />
+          </div>
           <div className="mt-0.5 shrink-0">
             <PublicationFlag pubId={pub.id} flagNotes={pub.flag_notes ?? []} decision={pub.decision} />
           </div>

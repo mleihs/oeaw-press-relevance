@@ -167,6 +167,48 @@ export interface BoardWithColumns {
   cards: CardChip[];
 }
 
+/** Schlanke, board-übergreifende Karten-Referenz (Phase 4): Dashboard-Kachel,
+ *  ⌘K-Kartensuche, „liegt im Board"-Anzeige an Event/Publikation. Trägt den
+ *  Board-Slug für den Deep-Link `/board/{board_slug}?card={id}`. */
+export interface BoardCardRef {
+  id: string;
+  title: string;
+  board_slug: string;
+  board_name: string;
+  column_name: string | null;
+  due_at: string | null;
+  completed_at: string | null;
+  created_at: string;
+}
+
+/** Deep-Link zu einer Karte (öffnet das Modal via ?card=-Query). */
+export function cardDeepLink(ref: Pick<BoardCardRef, 'board_slug' | 'id'>): string {
+  return `/board/${encodeURIComponent(ref.board_slug)}?card=${encodeURIComponent(ref.id)}`;
+}
+
+/** Maximale Kartentitel-Länge (cardCreateSchema/cardPatchSchema `.max(200)`). */
+export const CARD_TITLE_MAX = 200;
+
+/** Kürzt einen vorbefüllten Kartentitel auf die erlaubte Länge, damit ein langer
+ *  Publikations-/Event-Titel den Create nicht mit einem 400 abweist. */
+export function clampCardTitle(title: string): string {
+  const t = title.trim();
+  return t.length <= CARD_TITLE_MAX ? t : `${t.slice(0, CARD_TITLE_MAX - 1).trimEnd()}…`;
+}
+
+/** „Board · Kanal"-Untertitel für board-übergreifende Karten-Referenzen
+ *  (Dashboard-Kachel + ⌘K-Treffer). */
+export function cardLocationLabel(ref: Pick<BoardCardRef, 'board_name' | 'column_name'>): string {
+  return ref.column_name ? `${ref.board_name} · ${ref.column_name}` : ref.board_name;
+}
+
+/** Gruppierte Karten für die Dashboard-Kachel. */
+export interface BoardDashboardCards {
+  overdue: BoardCardRef[];
+  due_soon: BoardCardRef[];
+  recent: BoardCardRef[];
+}
+
 /**
  * Slug aus einem Board-Namen (ASCII-kebab). Umlaute werden transliteriert,
  * alles andere Nicht-Alphanumerische zu einem Bindestrich. Ergebnis matcht

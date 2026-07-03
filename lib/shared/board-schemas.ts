@@ -80,14 +80,36 @@ export type ColumnPatchPayload = z.infer<typeof columnPatchSchema>;
 
 // --- Cards ----------------------------------------------------------------
 
-// Schlankes Quick-Create (Plan §5: KEIN Triage-Modal in Phase 2). Titel +
-// Zielspalte; Board wird serverseitig aus der Spalte abgeleitet.
-export const cardCreateSchema = z.object({
-  column_id: uuid,
-  title: z.string().trim().min(1, 'Titel erforderlich.').max(200),
-  link_url: linkUrlField.optional(),
-  due_at: dueAtField.optional(),
+// Ein initiales Checklisten-/Unteraufgaben-Item beim Karten-Anlegen (Triage:
+// Format-Checkliste). Shape wie itemCreateSchema minus card_id (die Karte
+// existiert beim Anlegen noch nicht).
+const initialItemSchema = z.object({
+  kind: z.enum(CARD_ITEM_KINDS),
+  text: z.string().trim().min(1).max(500),
 });
+export type InitialItemPayload = z.infer<typeof initialItemSchema>;
+
+// Quick-Create (Titel + Zielspalte; Board serverseitig aus der Spalte
+// abgeleitet) UND Triage-Create (Phase 4): optional vorbefüllte Beschreibung,
+// Quelle (Event/Publikation) und initiale Checkliste in EINEM Vorgang. Alle
+// Triage-Felder optional -> der schlanke Quick-Create-Pfad bleibt unverändert.
+export const cardCreateSchema = z
+  .object({
+    column_id: uuid,
+    title: z.string().trim().min(1, 'Titel erforderlich.').max(200),
+    link_url: linkUrlField.optional(),
+    due_at: dueAtField.optional(),
+    description_md: z.string().max(20000).nullable().optional(),
+    source_event_id: uuid.nullable().optional(),
+    source_publication_id: uuid.nullable().optional(),
+    items: z.array(initialItemSchema).max(20).optional(),
+  })
+  // Eine Karte stammt aus höchstens einer Quelle (SourceChip + getCardsForSource
+  // gehen von genau einer aus); beide gleichzeitig wäre eine widersprüchliche
+  // Zuordnung.
+  .refine((v) => !(v.source_event_id != null && v.source_publication_id != null), {
+    message: 'Nur eine Quelle (Event oder Publikation) erlaubt.',
+  });
 export type CardCreatePayload = z.infer<typeof cardCreateSchema>;
 
 export const cardPatchSchema = z

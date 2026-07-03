@@ -17,8 +17,10 @@ import {
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { EventAnalysisCard } from '@/app/events/[id]/_components/event-analysis-card';
+import { CreateCardButton } from '@/components/board/create-card-button';
 import { EventDecisionButtons } from './event-decision-buttons';
 import { eventDateLongFmt, eventTimeFmt } from '../_lib/event-format';
+import { eventToCardSource } from '../_lib/event-to-card-source';
 import type { Event } from '@/lib/shared/types';
 
 interface Props {
@@ -87,23 +89,26 @@ export function CalendarEventModal({ event, open, onOpenChange }: Props) {
 
             <EventDecisionButtons eventId={event.id} current={event.decision} />
 
-            <div className="flex items-center justify-between border-t pt-3 text-sm">
-              <Link
-                href={`/events/${event.id}`}
-                className="inline-flex items-center gap-1 font-medium text-brand hover:underline"
-              >
-                Details öffnen <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-              {event.url && (
-                <a
-                  href={event.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-emerald-700 hover:underline dark:text-emerald-400"
+            <div className="flex flex-wrap items-center gap-2 border-t pt-3 text-sm">
+              <CreateCardButton source={eventToCardSource(event)} />
+              <div className="ml-auto flex items-center gap-3">
+                <Link
+                  href={`/events/${event.id}`}
+                  className="inline-flex items-center gap-1 font-medium text-brand hover:underline"
                 >
-                  Event-Seite <ExternalLink className="h-3.5 w-3.5" />
-                </a>
-              )}
+                  Details öffnen <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+                {event.url && (
+                  <a
+                    href={event.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-emerald-700 hover:underline dark:text-emerald-400"
+                  >
+                    Event-Seite <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
+                )}
+              </div>
             </div>
           </>
         )}

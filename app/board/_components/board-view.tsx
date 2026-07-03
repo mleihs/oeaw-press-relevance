@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useQueryState } from 'nuqs';
 import {
   DndContext,
   PointerSensor,
@@ -61,7 +62,9 @@ export function BoardView({
   );
 
   const [filters, setFilters] = useState<BoardFilters>(EMPTY_FILTERS);
-  const [openCardId, setOpenCardId] = useState<string | null>(null);
+  // Karte im URL-Query (`?card=<id>`) statt lokalem State: erlaubt Deep-Links
+  // aus Dashboard-Kachel, ⌘K-Suche und der „Im Board"-Anzeige an Event/Pub.
+  const [openCardId, setOpenCardId] = useQueryState('card');
   const [quickCreateColumn, setQuickCreateColumn] = useState<string | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
 
