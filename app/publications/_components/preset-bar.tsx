@@ -1,6 +1,6 @@
 'use client';
 
-import { Sparkles, Crown, BookOpen, Megaphone, ShieldCheck } from 'lucide-react';
+import { Sparkles, Crown, BookOpen, Megaphone, ShieldCheck } from '@/lib/icons';
 import { InfoBubble } from '@/components/info-bubble';
 import { cn } from '@/lib/shared/utils';
 import type { EXPL } from '@/lib/client/explanations';

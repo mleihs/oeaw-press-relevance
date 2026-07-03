@@ -1,6 +1,6 @@
 'use client';
 
-import { Search, X, AlarmClock, CheckCircle2 } from 'lucide-react';
+import { Search, X, AlarmClock, CheckCircle2 } from '@/lib/icons';
 import { cn } from '@/lib/shared/utils';
 import type { BoardColumn, BoardMember } from '@/lib/shared/board';
 import { EMPTY_FILTERS, hasActiveFilters, type BoardFilters } from '../_lib/filter';

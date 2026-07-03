@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { ExternalLink, ListChecks, Loader2 } from 'lucide-react';
+import { ExternalLink, ListChecks, Loader2 } from '@/lib/icons';
 import { QK } from '@/lib/client/query-keys';
 import { cardDeepLink } from '@/lib/shared/board';
 import { createCardApi, fetchBoards, fetchBoardView } from '@/lib/client/board-api';

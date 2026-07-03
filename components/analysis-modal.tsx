@@ -21,7 +21,7 @@ import { getApiHeaders, loadSettings } from '@/lib/client/stores/settings-store'
 import { consumeSSE } from '@/lib/client/sse';
 import { LLM_MODELS } from '@/lib/shared/constants';
 import type { ModalStatus } from '@/lib/shared/types';
-import { Play, Square, RotateCcw, AlertCircle, Check } from 'lucide-react';
+import { Play, Square, RotateCcw, AlertCircle, Check } from '@/lib/icons';
 import { InfoBubble } from '@/components/info-bubble';
 
 interface AnalysisConfig {

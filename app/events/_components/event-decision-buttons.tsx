@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Loader2 } from 'lucide-react';
+import { Loader2 } from '@/lib/icons';
 import { toast } from 'sonner';
 import type { Decision } from '@/lib/shared/types';
 import { getApiHeaders } from '@/lib/client/stores/settings-store';

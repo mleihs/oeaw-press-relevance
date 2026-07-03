@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Radar, AlertCircle } from 'lucide-react';
+import { Radar, AlertCircle } from '@/lib/icons';
 import { getEnv } from '@/lib/server/env';
 import {
   listChannelsWithRecentPosts,

@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Tags } from 'lucide-react';
+import { Tags } from '@/lib/icons';
 import type { SocialPost } from '@/lib/shared/types';
 import { TagChip } from './social-filter-context';
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { ExternalLink, Send, Loader2, Check } from 'lucide-react';
+import { ExternalLink, Send, Loader2, Check } from '@/lib/icons';
 import { Button } from '@/components/ui/button';
 import { buildTaskUrl } from '@/lib/shared/meistertask-urls';
 import type { Publication } from '@/lib/shared/types';

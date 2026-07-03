@@ -1,6 +1,6 @@
 'use client';
 
-import { Layers } from 'lucide-react';
+import { Layers } from '@/lib/icons';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/shared/utils';
 

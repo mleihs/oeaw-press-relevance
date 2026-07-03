@@ -1,4 +1,4 @@
-import { Newspaper } from 'lucide-react';
+import { Newspaper } from '@/lib/icons';
 import {
   filtersForTab,
   getPressReleasesStats,

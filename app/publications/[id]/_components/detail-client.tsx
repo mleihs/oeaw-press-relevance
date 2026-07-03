@@ -6,7 +6,7 @@ import {
   ExternalLink, FileText, Brain,
   Award, ShieldCheck, Megaphone, Users, Building2, FolderOpen, BookText,
   Mail, Crown, Newspaper, Info, AlertTriangle,
-} from 'lucide-react';
+} from '@/lib/icons';
 import type { PublicationWithRelations } from '@/lib/shared/types';
 import { cn } from '@/lib/shared/utils';
 import { decodeHtmlBlock } from '@/lib/shared/html-utils';

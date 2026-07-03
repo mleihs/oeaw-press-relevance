@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { Pencil, Trash2, Send } from 'lucide-react';
+import { Pencil, Trash2, Send } from '@/lib/icons';
 import { toast } from 'sonner';
 import type {
   BoardMember,

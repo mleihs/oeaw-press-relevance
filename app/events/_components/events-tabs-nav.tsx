@@ -6,7 +6,7 @@ import {
   Pause,
   X as XIcon,
   type LucideIcon,
-} from 'lucide-react';
+} from '@/lib/icons';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/shared/utils';
 import { buildEventsUrl, type EventsFilterState } from '../_lib/build-events-url';

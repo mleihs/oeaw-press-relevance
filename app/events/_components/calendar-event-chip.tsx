@@ -6,7 +6,7 @@
 // Notion "calendar colour", here = AI relevance). The title leads; the time and
 // the exact score sit quietly on a second line; the editorial decision shows as
 // a small corner icon. Relevance stays visible (colour + %), just not shouty.
-import { Check, Pause, X as XIcon, type LucideIcon } from 'lucide-react';
+import { Check, Pause, X as XIcon, type LucideIcon } from '@/lib/icons';
 import { getScoreBand } from '@/lib/shared/score-utils';
 import { cn } from '@/lib/shared/utils';
 import type { Decision } from '@/lib/shared/types';

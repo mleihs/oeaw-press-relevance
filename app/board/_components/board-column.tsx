@@ -1,7 +1,7 @@
 'use client';
 
 import { useDroppable } from '@dnd-kit/core';
-import { Plus } from 'lucide-react';
+import { Plus } from '@/lib/icons';
 import { cn } from '@/lib/shared/utils';
 import type { BoardColumn as BoardColumnT, BoardMember, CardChip as CardChipT } from '@/lib/shared/board';
 import { ChannelIcon } from '../_lib/channels';

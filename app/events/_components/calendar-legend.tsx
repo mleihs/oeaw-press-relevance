@@ -1,4 +1,4 @@
-import { Check, Pause, X as XIcon, type LucideIcon } from 'lucide-react';
+import { Check, Pause, X as XIcon, type LucideIcon } from '@/lib/icons';
 import { cn } from '@/lib/shared/utils';
 
 export interface CalendarSummary {

@@ -8,7 +8,7 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
-} from 'lucide-react';
+} from '@/lib/icons';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { DecisionBadge } from '@/components/decision-badge';

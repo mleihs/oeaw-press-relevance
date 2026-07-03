@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Check, ChevronsUpDown, X } from 'lucide-react';
+import { Check, ChevronsUpDown, X } from '@/lib/icons';
 import { useVirtualizer } from '@tanstack/react-virtual';
 
 import { Command, CommandInput } from '@/components/ui/command';

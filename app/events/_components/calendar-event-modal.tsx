@@ -7,7 +7,7 @@
 // EventDecisionButtons (Pitch/Hold/Skip) verbatim, so the calendar is a real
 // workspace and stays visually identical to the rest of the events feature.
 import Link from 'next/link';
-import { ExternalLink, MapPin, Building2, ArrowRight } from 'lucide-react';
+import { ExternalLink, MapPin, Building2, ArrowRight } from '@/lib/icons';
 import {
   Dialog,
   DialogContent,

@@ -26,7 +26,7 @@ import {
   Archive,
   RotateCcw,
   AlertTriangle,
-} from 'lucide-react';
+} from '@/lib/icons';
 import { toast } from 'sonner';
 import { cn } from '@/lib/shared/utils';
 import { QK } from '@/lib/client/query-keys';

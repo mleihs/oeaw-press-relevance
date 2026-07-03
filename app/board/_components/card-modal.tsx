@@ -16,7 +16,7 @@ import {
   Pencil,
   CalendarDays,
   Newspaper,
-} from 'lucide-react';
+} from '@/lib/icons';
 import NextLink from 'next/link';
 import { toast } from 'sonner';
 import { cn } from '@/lib/shared/utils';

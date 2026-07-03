@@ -1,6 +1,6 @@
 'use client';
 
-import { Clock, AlarmClock } from 'lucide-react';
+import { Clock, AlarmClock } from '@/lib/icons';
 import { dueState, formatDueLabel } from '../_lib/due';
 
 // Fälligkeits-Badge mit overdue/soon/normal-Zuständen (Design Book §2.3).

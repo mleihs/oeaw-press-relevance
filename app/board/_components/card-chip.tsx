@@ -2,7 +2,7 @@
 
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { CheckCircle2, ListChecks, ListTree, MessageCircle, Paperclip } from 'lucide-react';
+import { CheckCircle2, ListChecks, ListTree, MessageCircle, Paperclip } from '@/lib/icons';
 import { cn } from '@/lib/shared/utils';
 import type { BoardMember, CardChip as CardChipT } from '@/lib/shared/board';
 import { BoardAvatar } from './board-avatar';

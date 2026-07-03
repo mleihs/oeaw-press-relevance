@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, CheckCircle2, XCircle, Play } from 'lucide-react';
+import { Loader2, CheckCircle2, XCircle, Play } from '@/lib/icons';
 import { getApiHeaders } from '@/lib/client/stores/settings-store';
 import { consumeSSE } from '@/lib/client/sse';
 

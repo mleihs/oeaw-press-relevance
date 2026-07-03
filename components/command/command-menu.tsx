@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { useQuery } from '@tanstack/react-query';
 import { useDocsSearch } from 'fumadocs-core/search/client';
-import { FileText, Hash, CornerDownLeft, Kanban, CheckCircle2 } from 'lucide-react';
+import { FileText, Hash, CornerDownLeft, Kanban, CheckCircle2 } from '@/lib/icons';
 import { searchCardsApi } from '@/lib/client/board-api';
 import { cardDeepLink, cardLocationLabel } from '@/lib/shared/board';
 import {

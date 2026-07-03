@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { TintBadge } from '@/components/tint-badge';
-import { Database, FileArchive, Terminal, Info, RefreshCcw } from 'lucide-react';
+import { Database, FileArchive, Terminal, Info, RefreshCcw } from '@/lib/icons';
 import { InfoBubble } from '@/components/info-bubble';
 import { useApiQuery } from '@/lib/client/hooks/use-api-query';
 

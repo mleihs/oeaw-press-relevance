@@ -101,11 +101,32 @@ shadcn-Tokens* (`--primary`/Neutrals) + Regressions-Sweep bleibt Phase D.
   detail-client, review, orphans-list, main-table, user-management-card, event-
   chip/legend, dashboard-client, enrichment-modal … → Screen-für-Screen in D.
 
-### Phase C — Phosphor-Icon-Umstellung (§8.4, harte globale Umstellung)
-- [ ] `@phosphor-icons/react` als Dependency; Icon-Wrapper/Mapping-Modul.
-- [ ] 107 lucide-Aufrufe migrieren (Mapping-Tabelle DESIGN_SYSTEM §7 +
-      Kanal→Icon). Ein fokussierter Commit-Block, screen-weise verifiziert.
-- [ ] lucide-react entfernen wenn 0 Referenzen.
+### Phase C — Phosphor-Icon-Umstellung (§8.4, harte globale Umstellung) ✅ (2026-07-03)
+- [x] `@phosphor-icons/react` (^2.1.10) als Dependency; **zentrales Mapping-Modul
+      `lib/icons.ts`**: bildet alle 138 benutzten lucide-Namen 1:1 auf ihr
+      Phosphor-Äquivalent ab und re-exportiert sie unter dem vertrauten Namen
+      (+ `LucideIcon`-Typ-Alias → Phosphors `Icon`). Jeder Ziel-Name vor dem
+      Schreiben gegen die echten 3024 Phosphor-Exports validiert (0 Fehltreffer).
+      **Value-Re-Exports über den SSR/RSC-sicheren Entry** `dist/ssr` — der
+      Haupt-Entry legt beim Modul-Load einen `createContext` an, was Server-
+      Components (`/_not-found`) den Build bricht; `dist/ssr`-Icons sind context-
+      frei und akzeptieren className/size/weight direkt.
+- [x] 108 lucide-Aufrufe-Dateien migriert — **reiner Import-Pfad-Swap**
+      (`"lucide-react"` → `"@/lib/icons"`), 0 JSX/Prop-Änderungen. Größe bleibt
+      erhalten (Tailwind `h-/w-/size-*` überschreibt Phosphors `1em`; verifiziert:
+      0 echte bare-Renders — die 5 klassenlosen Icons sitzen in Containern mit
+      `[&_svg:not([class*='size-'])]:size-4`, dialog-close + CommandItem).
+      `strokeWidth` (26×) = valides SVG-Attribut, von Phosphor visuell ignoriert
+      (nutzt `weight`), harmlos. Default-Weight `regular` ≈ lucide-Linienlook.
+- [x] lucide-react aus package.json entfernt (0 Referenzen im Source).
+- [x] **Phase C+ (User-Wunsch „andere Icons wo passend"):** Sweep ergab nichts
+      Passendes — App nutzt bereits durchgängig Icon-Komponenten; die einzigen
+      Emoji sitzen in nav.tsx-*Kommentaren* (⚙️/⌘K), keine gerenderten Glyphen;
+      Inline-SVGs sind bewusste Brand-/Data-Viz-Assets (capybara-logo, sparkline,
+      beeswarm) → nicht angefasst.
+- **Verifiziert:** tsc 0 · eslint 0 Fehler (5 pre-existing warnings, unverändert) ·
+  `npm run build` grün · vitest 583. In-Browser ausständig (Chrome-Extension
+  weiterhin nicht verbunden — wie Vorsession).
 
 ### Phase D — Feature-Screens inkrementell (§8.3)
 - [ ] **Kalender** (`/events` Schedule-X Monat/Woche + Event-Modal) — frische
@@ -148,3 +169,11 @@ durch Egress-402 blockiert (Memory `prod-supabase-free-tier-500mb`).
   → Phase-D-Backlog im Plan dokumentiert (Filterleisten, kategoriale Token-Gruppe,
   Feature-Inline-Farben). **Alles UNCOMMITTED.** Nächste Checkbox: Phase C
   (Phosphor, 107 Dateien) — oder Phase D (Feature-Screens, Kalender zuerst).
+- 2026-07-03: **Phase C DONE** — Phosphor-Umstellung via zentralem `lib/icons.ts`
+  (138 lucide→Phosphor-Mappings, alle gegen echte Exports validiert; SSR-Entry
+  gegen den RSC-`createContext`-Build-Bruch). 108 Dateien reiner Import-Pfad-Swap,
+  0 JSX-Änderungen; lucide-react entfernt. Phase C+ („andere Icons") = nichts
+  Passendes (nur Kommentar-Emoji + bewusste Brand-/Data-Viz-SVGs). tsc0/eslint0/
+  build/vitest583 grün; In-Browser weiter blockiert (Extension nicht verbunden).
+  Auf Branch `design/rollout-phase-a-b`. Nächste Checkbox: Phase D (Feature-
+  Screens, Kalender zuerst) + Kern-Token-Umpolung.

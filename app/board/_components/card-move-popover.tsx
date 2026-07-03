@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowRightToLine, Check } from 'lucide-react';
+import { ArrowRightToLine, Check } from '@/lib/icons';
 import { cn } from '@/lib/shared/utils';
 import { QK } from '@/lib/client/query-keys';
 import type { BoardColumn, CardDetail } from '@/lib/shared/board';

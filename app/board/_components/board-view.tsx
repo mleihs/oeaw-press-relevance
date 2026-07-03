@@ -11,7 +11,7 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus } from 'lucide-react';
+import { Plus } from '@/lib/icons';
 import { toast } from 'sonner';
 import { QK } from '@/lib/client/query-keys';
 import { rankBetween, compareRank } from '@/lib/shared/rank';

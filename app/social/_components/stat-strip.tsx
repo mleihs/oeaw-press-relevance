@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { FileText, Radio, Layers, CalendarRange } from 'lucide-react';
+import { FileText, Radio, Layers, CalendarRange } from '@/lib/icons';
 import { StatCard } from '@/components/stat-card';
 
 /** Wraps a StatCard so the whole tile acts as a button (KPI-as-navigation).

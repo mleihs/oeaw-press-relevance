@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { List, CalendarRange, CalendarDays, type LucideIcon } from 'lucide-react';
+import { List, CalendarRange, CalendarDays, type LucideIcon } from '@/lib/icons';
 import { cn } from '@/lib/shared/utils';
 import { buildEventsUrl, type EventsFilterState } from '../_lib/build-events-url';
 import type { EventsTab } from '@/lib/server/events/list';

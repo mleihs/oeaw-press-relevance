@@ -1,6 +1,6 @@
 'use client';
 
-import { Sparkles, Megaphone } from 'lucide-react';
+import { Sparkles, Megaphone } from '@/lib/icons';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScoreBar } from '@/components/score-bar';
 import { InfoBubble } from '@/components/info-bubble';

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { InfoBubble } from '@/components/info-bubble';
-import { Plus, Trash2, Radar, Loader2, ExternalLink } from 'lucide-react';
+import { Plus, Trash2, Radar, Loader2, ExternalLink } from '@/lib/icons';
 import { toast } from 'sonner';
 import type { SocialChannel } from '@/lib/shared/types';
 

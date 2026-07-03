@@ -10,7 +10,7 @@ import {
   RotateCcw,
   UserPlus,
   type LucideIcon,
-} from 'lucide-react';
+} from '@/lib/icons';
 import type { CardActivityEntry } from '@/lib/shared/board';
 
 const ICONS: Record<string, LucideIcon> = {

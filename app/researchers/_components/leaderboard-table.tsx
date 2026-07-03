@@ -16,7 +16,7 @@ import { InfoBubble } from '@/components/info-bubble';
 import { LoadingState } from '@/components/loading-state';
 import { EmptyState } from '@/components/empty-state';
 import { displayTitle } from '@/lib/shared/publication-display';
-import { Crown, Award, Medal, BookOpen } from 'lucide-react';
+import { Crown, Award, Medal, BookOpen } from '@/lib/icons';
 
 interface LeaderboardTableProps {
   rows: TopResearcherRow[];

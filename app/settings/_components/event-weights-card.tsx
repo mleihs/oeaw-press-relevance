@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Loader2, Save, RotateCcw, SlidersHorizontal, History, Undo2 } from 'lucide-react';
+import { Loader2, Save, RotateCcw, SlidersHorizontal, History, Undo2 } from '@/lib/icons';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';

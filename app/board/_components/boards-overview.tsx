@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Kanban, Star, Plus, ChevronDown, RotateCcw } from 'lucide-react';
+import { Kanban, Star, Plus, ChevronDown, RotateCcw } from '@/lib/icons';
 import { toast } from 'sonner';
 import { cn } from '@/lib/shared/utils';
 import { QK } from '@/lib/client/query-keys';

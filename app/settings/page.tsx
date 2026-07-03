@@ -21,7 +21,7 @@ import { UserManagementCard } from './_components/user-management-card';
 import { BoardManagementCard } from './_components/board-management-card';
 import { SocialSettingsCard } from './_components/social-settings-card';
 import { EventWeightsCard } from './_components/event-weights-card';
-import { Save, CheckCircle2, Eye, EyeOff, Loader2, XCircle, ShieldCheck, Info, User, Keyboard } from 'lucide-react';
+import { Save, CheckCircle2, Eye, EyeOff, Loader2, XCircle, ShieldCheck, Info, User, Keyboard } from '@/lib/icons';
 import { toast } from 'sonner';
 
 export default function SettingsPage() {

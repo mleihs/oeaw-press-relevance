@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
-import { X } from 'lucide-react';
+import { X } from '@/lib/icons';
 
 // Record<string, number> (not a named interface) so it satisfies Motion's
 // animation Target index signature directly.

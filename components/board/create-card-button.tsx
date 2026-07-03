@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { Kanban, ArrowUpRight } from 'lucide-react';
+import { Kanban, ArrowUpRight } from '@/lib/icons';
 import { QK } from '@/lib/client/query-keys';
 import { cardDeepLink } from '@/lib/shared/board';
 import { fetchCardsForSourceApi } from '@/lib/client/board-api';

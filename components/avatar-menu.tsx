@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
-import { LogIn, LogOut } from 'lucide-react';
+import { LogIn, LogOut } from '@/lib/icons';
 import {
   DropdownMenu,
   DropdownMenuContent,

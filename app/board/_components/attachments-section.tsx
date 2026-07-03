@@ -10,7 +10,7 @@ import {
   Trash2,
   Download,
   Loader2,
-} from 'lucide-react';
+} from '@/lib/icons';
 import { toast } from 'sonner';
 import type { CardDetail } from '@/lib/shared/board';
 import { MAX_ATTACHMENT_BYTES } from '@/lib/shared/board';

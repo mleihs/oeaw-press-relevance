@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Brain, Sparkles } from 'lucide-react';
+import { Brain, Sparkles } from '@/lib/icons';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { EnrichmentModal } from '@/components/enrichment-modal';

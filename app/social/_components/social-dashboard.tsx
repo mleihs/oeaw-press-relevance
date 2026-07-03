@@ -17,7 +17,7 @@ import { TopTags } from './top-tags';
 import { ThemeChips } from './theme-chips';
 import { EmptyState } from '@/components/empty-state';
 import { Button } from '@/components/ui/button';
-import { SearchX } from 'lucide-react';
+import { SearchX } from '@/lib/icons';
 
 const compact = new Intl.NumberFormat('de-AT', { notation: 'compact', maximumFractionDigits: 1 });
 

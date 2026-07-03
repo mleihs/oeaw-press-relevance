@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, Kanban } from 'lucide-react';
+import { ArrowRight, Kanban } from '@/lib/icons';
 import type { BoardCardRef, BoardDashboardCards } from '@/lib/shared/board';
 import { cardDeepLink, cardLocationLabel } from '@/lib/shared/board';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

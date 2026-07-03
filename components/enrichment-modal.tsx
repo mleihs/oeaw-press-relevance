@@ -18,7 +18,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { getApiHeaders } from '@/lib/client/stores/settings-store';
 import { consumeSSE } from '@/lib/client/sse';
-import { Play, Square, RotateCcw } from 'lucide-react';
+import { Play, Square, RotateCcw } from '@/lib/icons';
 import type {
   EnrichmentSourceName,
   EnrichmentSourceStatus,

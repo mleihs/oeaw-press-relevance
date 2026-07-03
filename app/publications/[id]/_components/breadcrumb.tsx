@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight } from '@/lib/icons';
 
 // Server-renderable breadcrumb shared by the RSC page, the not-found
 // fallback, and the error fallback. Three identical inline copies before

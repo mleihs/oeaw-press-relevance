@@ -1,4 +1,4 @@
-import { CalendarDays } from 'lucide-react';
+import { CalendarDays } from '@/lib/icons';
 import {
   DEFAULT_EVENTS_SORT,
   EVENTS_SORT_VALUES,

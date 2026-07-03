@@ -18,7 +18,7 @@ import { getApiHeaders } from '@/lib/client/stores/settings-store';
 import { consumeSSE } from '@/lib/client/sse';
 import { LLM_MODELS } from '@/lib/shared/constants';
 import { cn } from '@/lib/shared/utils';
-import { RefreshCw, Play, AlertCircle, Check, Loader2, Download, Sparkles, Tags } from 'lucide-react';
+import { RefreshCw, Play, AlertCircle, Check, Loader2, Download, Sparkles, Tags } from '@/lib/icons';
 
 type Phase = 'idle' | 'running' | 'done' | 'skipped' | 'error';
 type Step = 'fetch' | 'analyze' | 'snapshot' | null;

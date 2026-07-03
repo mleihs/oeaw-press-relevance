@@ -1,6 +1,6 @@
 'use client';
 
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink } from '@/lib/icons';
 import { motion } from 'motion/react';
 import { AnimateNumber } from '@/components/animate-number';
 import { PersonAvatar } from '@/app/researchers/_components/person-avatar';

@@ -45,7 +45,7 @@ import {
 import {
   ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ChevronUp, ExternalLink,
   ShieldCheck, Megaphone, Newspaper,
-} from 'lucide-react';
+} from '@/lib/icons';
 
 // Publication rows from /api/publications now ride along with embedded
 // orgunit shortcuts. Anything optional gets duck-typed so existing callers

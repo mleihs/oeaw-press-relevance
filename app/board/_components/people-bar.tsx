@@ -1,6 +1,6 @@
 'use client';
 
-import { UserCircle2 } from 'lucide-react';
+import { UserCircle2 } from '@/lib/icons';
 import { cn } from '@/lib/shared/utils';
 import type { BoardMember, CardChip } from '@/lib/shared/board';
 import type { BoardFilters } from '../_lib/filter';

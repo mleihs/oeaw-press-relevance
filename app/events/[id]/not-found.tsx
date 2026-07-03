@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { CalendarDays, ArrowLeft } from 'lucide-react';
+import { CalendarDays, ArrowLeft } from '@/lib/icons';
 import { Button } from '@/components/ui/button';
 
 export default function EventNotFound() {

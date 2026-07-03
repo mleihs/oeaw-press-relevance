@@ -1,6 +1,6 @@
 'use client';
 
-import { Sparkles } from 'lucide-react';
+import { Sparkles } from '@/lib/icons';
 import { cn } from '@/lib/shared/utils';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { PRESS_SIMILARITY_BAND_HIGH, PRESS_SIMILARITY_BAND_MID } from '@/lib/shared/constants';

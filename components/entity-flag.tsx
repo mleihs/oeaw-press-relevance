@@ -3,7 +3,7 @@
 import { useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQueryClient, type QueryKey } from '@tanstack/react-query';
-import { Pin, Loader2, Trash2 } from 'lucide-react';
+import { Pin, Loader2, Trash2 } from '@/lib/icons';
 import { toast } from 'sonner';
 import type { FlagNote, Decision } from '@/lib/shared/types';
 import { loadSettings, getApiHeaders } from '@/lib/client/stores/settings-store';

@@ -145,12 +145,13 @@ max-width 1160.
 Das Design Book nutzt **Phosphor Icons** — und die neue toolkit-weite Referenz
 (`Toolkit-Redesign.dc.html`) bestätigt das jetzt durchgängig über alle
 Screens (Dashboard/Publikationen/Events/Kalender), inkl. der duotone-Varianten
-für Kachel-Glyphen. Der Bestand nutzt **lucide-react** (Stand 2026-07-03: 107
-Dateien lucide, 0 Phosphor). Der Icon-Wechsel bleibt die eine noch offene
-**harte globale Umstellung** (§8.4): eine neue Dependency + ein fokussierter
-Pass über alle Icon-Aufrufe — separat zu entscheiden, nicht verstreut. Bis
-dahin gilt die Mapping-Tabelle unten; das Board wurde bewusst noch auf lucide
-gebaut (siehe Memory `board-feature-plan`).
+für Kachel-Glyphen. **Umgestellt 2026-07-03 (Rollout Phase C):** die App nutzt
+jetzt **Phosphor** (`@phosphor-icons/react`) über das zentrale Mapping-Modul
+`lib/icons.ts` — es bildet die vertrauten (ehemals lucide-) Namen auf ihr
+Phosphor-Äquivalent ab und re-exportiert sie (SSR-Entry `dist/ssr`, RSC-sicher).
+Call-Sites importieren aus `@/lib/icons` statt `lucide-react`; lucide ist als
+Dependency entfernt (inkl. Board). Die Mapping-Tabelle unten dokumentiert die
+Bedeutungs-Zuordnung; für neue Icons direkt Phosphor-Namen verwenden.
 
 | Bedeutung | Phosphor | lucide (Fallback) |
 |---|---|---|

@@ -8,7 +8,7 @@ import type { CurrentUser } from '@/lib/shared/types';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, Loader2, LogIn, LockKeyhole, Mail } from 'lucide-react';
+import { AlertCircle, Loader2, LogIn, LockKeyhole, Mail } from '@/lib/icons';
 
 /**
  * Anmelde-Screen (Design: docs/design/board/Redaktionsboard.dc.html

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { Kanban, ChevronDown, Check, Star, Search } from 'lucide-react';
+import { Kanban, ChevronDown, Check, Star, Search } from '@/lib/icons';
 import { cn } from '@/lib/shared/utils';
 import { QK } from '@/lib/client/query-keys';
 import { fetchBoards } from '../_lib/api';

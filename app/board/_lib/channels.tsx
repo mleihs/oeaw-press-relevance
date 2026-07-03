@@ -9,14 +9,14 @@ import {
   Sparkles,
   Archive,
   type LucideIcon,
-} from 'lucide-react';
+} from '@/lib/icons';
 
 /**
  * Kanalname -> Icon + Kurzname (Design Book). Keine DB-Spalte: die 8
  * Ausspielkanäle des „Channels"-Boards werden über ihren Spaltennamen gemappt;
  * generische Boards haben freie Spalten ohne Icon (Fallback null -> nur der
- * Farbpunkt). Icons aus lucide (Bestands-Set); Phosphor-Äquivalente stehen in
- * docs/design/DESIGN_SYSTEM.md §7.
+ * Farbpunkt). Icons kommen über das zentrale `@/lib/icons`-Modul (Phosphor,
+ * Rollout Phase C); Kanal→Icon-Mapping in docs/design/DESIGN_SYSTEM.md §7.
  */
 const CHANNELS: Record<string, { icon: LucideIcon; short: string }> = {
   'pm/presse': { icon: Megaphone, short: 'Presse' },

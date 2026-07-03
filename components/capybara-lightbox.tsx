@@ -4,7 +4,7 @@ import { useRef, useState, type ReactNode } from 'react';
 import Image from 'next/image';
 import { Dialog as DialogPrimitive } from 'radix-ui';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
-import { X, ZoomIn } from 'lucide-react';
+import { X, ZoomIn } from '@/lib/icons';
 
 /**
  * Image lightbox with a measured-rect FLIP morph: the full-size image flies
