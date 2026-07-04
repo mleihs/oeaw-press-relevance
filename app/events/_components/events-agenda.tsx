@@ -1,29 +1,11 @@
-import Link from 'next/link';
 import { CalendarX } from '@/lib/icons';
-import { ScoreReasonBadge } from './score-reason-badge';
-import { EventAgendaActions } from './event-row-actions';
+import { MobileEventCard } from './mobile-event-card';
 import {
   eventDayKey,
   eventDayMonthLongFmt,
   eventWeekdayShortFmt,
 } from '../_lib/event-format';
-import { getScoreBand, type ScoreBand } from '@/lib/shared/score-utils';
 import type { Event } from '@/lib/shared/types';
-
-/** Linker Akzentbalken nach Score-Band (Mock `evBand.bar`), tokenisiert wie
- *  der Datum-Block der Desktop-Tabelle: high=brand, mid=warning, low=soon. */
-export const AGENDA_BAR: Record<ScoreBand, string> = {
-  high: 'border-l-brand',
-  mid: 'border-l-warning',
-  low: 'border-l-soon',
-  very_low: 'border-l-line-strong',
-  none: 'border-l-line',
-};
-
-/** Kartengrund der Mobile-Event-Karten (M5) — wie die Pubs-Mobile-Karten (M4),
- *  plus 3px-Akzentbalken links. Auch vom Kompakt-Kalender-Tageslisting genutzt. */
-export const AGENDA_CARD =
-  'mb-2.5 rounded-[13px] border border-line border-l-[3px] bg-surface px-3.5 py-[13px] shadow-[0_1px_2px_rgba(16,32,46,.05)]';
 
 interface Props {
   rows: Event[];
@@ -36,6 +18,7 @@ interface Props {
  * Wiener Kalendertag („Fr · 4. Juli" + Hairline), pro Event eine Karte mit
  * Titel/Venue/Score und full-width Pitchen/Verwerfen darunter. Ersetzt auf
  * < md die Desktop-Tabelle (dort ~200px H-Overflow bei 390px, §M1-Befund).
+ * Seit M6b öffnet der Titel-Tap das Detail-Bottom-Sheet (mobile-event-card).
  */
 export function EventsAgenda({ rows, boardCardHrefs }: Props) {
   if (rows.length === 0) {
@@ -86,7 +69,7 @@ export function EventsAgenda({ rows, boardCardHrefs }: Props) {
             <span aria-hidden className="h-px flex-1 bg-line" />
           </div>
           {group.events.map((event) => (
-            <AgendaCard
+            <MobileEventCard
               key={event.id}
               event={event}
               boardCardHref={boardCardHrefs.get(event.id)}
@@ -94,70 +77,6 @@ export function EventsAgenda({ rows, boardCardHrefs }: Props) {
           ))}
         </div>
       ))}
-    </div>
-  );
-}
-
-/** Titel/Venue/Score-Kopf einer Mobile-Event-Karte — von Agenda und
- *  Kalender-Tagesliste geteilt. */
-export function AgendaCardHead({ event }: { event: Event }) {
-  const scored =
-    event.analysis_status === 'analyzed' && event.event_score !== null;
-  const venue = event.location_title || event.organizer_title;
-
-  return (
-    <div className="flex items-start gap-2.5">
-      <div className="min-w-0 flex-1">
-        <Link
-          href={`/events/${event.id}`}
-          className="text-sm font-semibold leading-[1.3] text-ink"
-        >
-          {event.title}
-        </Link>
-        {venue && <div className="mt-1 text-xs text-ink-subtle">{venue}</div>}
-      </div>
-      <div className="shrink-0">
-        {scored ? (
-          <ScoreReasonBadge
-            score={event.event_score!}
-            reasoning={event.reasoning}
-          />
-        ) : (
-          <span
-            className="font-mono text-[11px] text-ink-muted"
-            title="Noch nicht analysiert"
-          >
-            n/a
-          </span>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/** Score-Band eines Events (unanalysiert → 'none'); von Agenda-Balken und
- *  den Punkt-Markern des Kompakt-Kalenders geteilt. */
-export function eventScoreBand(event: Event): ScoreBand {
-  const scored =
-    event.analysis_status === 'analyzed' && event.event_score !== null;
-  return scored ? getScoreBand(event.event_score) : 'none';
-}
-
-function AgendaCard({
-  event,
-  boardCardHref,
-}: {
-  event: Event;
-  boardCardHref?: string;
-}) {
-  return (
-    <div className={`${AGENDA_CARD} ${AGENDA_BAR[eventScoreBand(event)]}`}>
-      <AgendaCardHead event={event} />
-      <EventAgendaActions
-        eventId={event.id}
-        current={event.decision}
-        boardCardHref={boardCardHref}
-      />
     </div>
   );
 }

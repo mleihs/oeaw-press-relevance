@@ -4,12 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight, CalendarRange } from '@/lib/icons';
 import { cn } from '@/lib/shared/utils';
-import {
-  AGENDA_BAR,
-  AGENDA_CARD,
-  AgendaCardHead,
-  eventScoreBand,
-} from './events-agenda';
+import { MobileEventCard, eventScoreBand } from './mobile-event-card';
 import { eventDayKey } from '../_lib/event-format';
 import type { CalendarWindow } from '../_lib/calendar-range';
 import type { ScoreBand } from '@/lib/shared/score-utils';
@@ -220,33 +215,10 @@ export function MobileMonthCalendar({
             </div>
           </div>
         ) : (
+          // statusOnly: in der Tagesliste bleibt der Entscheidungs-Pill,
+          // die Aktionen liegen im Detail-Sheet (Titel-Tap, M6b).
           selEvents.map((event) => (
-            <div
-              key={event.id}
-              className={`${AGENDA_CARD} ${AGENDA_BAR[eventScoreBand(event)]}`}
-            >
-              <AgendaCardHead event={event} />
-              {event.decision !== 'undecided' && (
-                <div className="mt-1.5">
-                  <span
-                    className={cn(
-                      'inline-flex items-center gap-1 rounded-full px-[9px] py-[3px] text-[11px] font-semibold',
-                      event.decision === 'pitch'
-                        ? 'bg-success-tint text-success'
-                        : event.decision === 'hold'
-                          ? 'bg-warning-tint text-warning-ink'
-                          : 'bg-fill text-ink-muted',
-                    )}
-                  >
-                    {event.decision === 'pitch'
-                      ? 'Übernommen'
-                      : event.decision === 'hold'
-                        ? 'Warten'
-                        : 'Verworfen'}
-                  </span>
-                </div>
-              )}
-            </div>
+            <MobileEventCard key={event.id} event={event} statusOnly />
           ))
         )}
       </div>
