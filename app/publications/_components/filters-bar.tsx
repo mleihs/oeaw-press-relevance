@@ -2,7 +2,6 @@
 
 import { useCallback, useRef, useState } from 'react';
 import { RotateCcw, Search } from '@/lib/icons';
-import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { InfoBubble } from '@/components/info-bubble';
 import { useKeyboardShortcuts } from '@/lib/client/hooks/use-keyboard-shortcuts';
@@ -147,8 +146,7 @@ export function FiltersBar({ total, hidden }: Props) {
   });
 
   return (
-    <Card>
-      <CardContent className="p-3 space-y-3">
+    <div className="space-y-3">
         <div className="flex flex-col lg:flex-row lg:items-center gap-3">
           <div className="relative w-full lg:max-w-xs inline-flex items-center gap-1">
             <div className="relative flex-1">
@@ -192,7 +190,6 @@ export function FiltersBar({ total, hidden }: Props) {
         </div>
 
         <ActiveFilters filters={filters} setFilters={setFilters} lookups={lookups} />
-      </CardContent>
-    </Card>
+    </div>
   );
 }

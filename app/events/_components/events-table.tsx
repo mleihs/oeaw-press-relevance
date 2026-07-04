@@ -1,273 +1,134 @@
 import Link from 'next/link';
-import {
-  ExternalLink,
-  MapPin,
-  Building2,
-  Building,
-  Search,
-  ArrowUpDown,
-  ArrowUp,
-  ArrowDown,
-} from '@/lib/icons';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { DecisionBadge } from '@/components/decision-badge';
+import { CalendarDays } from '@/lib/icons';
 import { ScoreReasonBadge } from './score-reason-badge';
+import { EventRowActions } from './event-row-actions';
 import { EventFlag } from './event-flag';
-import { buildOeawSearchUrl } from '../_lib/build-search-url';
-import { eventDateFmt, eventTimeFmt, isSameLocalDay } from '../_lib/event-format';
-import { cn } from '@/lib/shared/utils';
-import { decodeHtmlBlock } from '@/lib/shared/html-utils';
-import type { EventsSort, EventsSortOrder } from '@/lib/server/events/list';
+import { eventDayFmt, eventMonFmt, eventDateLongFmt } from '../_lib/event-format';
+import { getScoreBand, type ScoreBand } from '@/lib/shared/score-utils';
 import type { Event } from '@/lib/shared/types';
 
 interface Props {
   rows: Event[];
-  sortBy?: EventsSort;
-  sortOrder?: EventsSortOrder;
-  sortHrefs?: Partial<Record<string, string>>;
 }
 
-/** Zero-JS sortable header cell. The events page is always RSC (force-dynamic),
- *  so sorting is a plain <Link> that flips the `?sort=&order=` query — no client
- *  state, mirroring the publications table's SortHeader. */
-function SortHeader({
-  column,
-  label,
-  align = 'left',
-  sortBy,
-  sortOrder,
-  href,
-}: {
-  column: EventsSort;
-  label: string;
-  align?: 'left' | 'center';
-  sortBy?: EventsSort;
-  sortOrder?: EventsSortOrder;
-  href?: string;
-}) {
-  const active = sortBy === column;
-  const ariaSort: React.AriaAttributes['aria-sort'] = !active
-    ? 'none'
-    : sortOrder === 'asc'
-      ? 'ascending'
-      : 'descending';
-  const icon = !active ? (
-    <ArrowUpDown aria-hidden="true" className="h-3 w-3 text-muted-foreground/50" />
-  ) : sortOrder === 'asc' ? (
-    <ArrowUp aria-hidden="true" className="h-3 w-3 text-foreground" />
-  ) : (
-    <ArrowDown aria-hidden="true" className="h-3 w-3 text-foreground" />
-  );
-  return (
-    <th
-      scope="col"
-      aria-sort={href ? ariaSort : undefined}
-      className={cn('p-0 font-medium whitespace-nowrap', align === 'center' ? 'text-center' : 'text-left')}
-    >
-      {href ? (
-        <Link
-          href={href}
-          replace
-          scroll={false}
-          className={cn(
-            'flex items-center gap-1 p-3 cursor-pointer select-none hover:bg-muted transition-colors',
-            align === 'center' && 'justify-center',
-          )}
-        >
-          {label}
-          {icon}
-        </Link>
-      ) : (
-        <span className="block p-3">{label}</span>
-      )}
-    </th>
-  );
-}
+// Kartengrund — identisch zu Dashboard/Publikationen (Design System §5).
+const CARD =
+  'rounded-[14px] border border-line bg-surface shadow-[0_1px_2px_rgba(16,32,46,.05)] overflow-hidden';
 
-/** Server-rendered table — same HTML-table convention as
- *  press-releases/_components/main-table.tsx. EventFlag (decision + notes)
- *  hydrates as a small client island per row. */
-export function EventsTable({ rows, sortBy, sortOrder, sortHrefs }: Props) {
+// Datum-Block-Farbe nach Score-Band (Comp: `e.dateStyle`). Tokens statt Hex.
+const DATE_BLOCK: Record<ScoreBand, string> = {
+  high: 'bg-brand-50 text-brand',
+  mid: 'bg-warning-tint text-warning-ink',
+  low: 'bg-soon-tint text-soon',
+  very_low: 'bg-fill text-ink-subtle',
+  none: 'bg-fill text-ink-muted',
+};
+
+/**
+ * Veranstaltungs-Liste gemäß Toolkit-Redesign-Comp (Z. 269–304): Karten-Liste
+ * statt HTML-Tabelle, konsistent mit /publications. Pro Zeile: farbiger
+ * Datum-Block (nach Score-Band) · Titel + Meta-Chips · Score-Badge · inline
+ * Pitchen/Verwerfen. Der Flag-Pin (Notizen + voller Entscheidungs-Popover inkl.
+ * „Warten") bleibt als sekundäre Affordanz erhalten.
+ */
+export function EventsTable({ rows }: Props) {
   if (rows.length === 0) {
     return (
-      <Card className="border-dashed">
-        <CardContent className="p-8 text-center text-muted-foreground">
-          Keine Veranstaltungen für dieses Filter.
-        </CardContent>
-      </Card>
+      <div className={CARD}>
+        <div className="px-4 py-11 text-center">
+          <CalendarDays aria-hidden className="mx-auto h-7 w-7 text-line-strong" />
+          <div className="mt-2.5 text-[13.5px] text-ink-subtle">
+            Keine Veranstaltungen in dieser Ansicht
+          </div>
+        </div>
+      </div>
     );
   }
+
   return (
-    <Card className="overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <caption className="sr-only">Kommende Veranstaltungen</caption>
-          <thead className="bg-muted/50">
-            <tr>
-              <SortHeader
-                column="date"
-                label="Datum"
-                sortBy={sortBy}
-                sortOrder={sortOrder}
-                href={sortHrefs?.date}
-              />
-              <th scope="col" className="p-3 text-left font-medium">Titel</th>
-              <th scope="col" className="p-3 text-left font-medium">Ort / Veranstalter</th>
-              <th scope="col" className="p-3 text-left font-medium whitespace-nowrap">Status</th>
-              <SortHeader
-                column="score"
-                label="Relevanz"
-                align="center"
-                sortBy={sortBy}
-                sortOrder={sortOrder}
-                href={sortHrefs?.score}
-              />
-              <th scope="col" className="p-3 text-right font-medium whitespace-nowrap">Aktionen</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((event) => (
-              <EventRowView key={event.id} event={event} />
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </Card>
+    <div className={CARD}>
+      {rows.map((event) => (
+        <EventRowView key={event.id} event={event} />
+      ))}
+    </div>
   );
 }
 
 function EventRowView({ event }: { event: Event }) {
-  const decided = event.decision !== 'undecided';
+  const scored =
+    event.analysis_status === 'analyzed' && event.event_score !== null;
+  const band: ScoreBand = scored ? getScoreBand(event.event_score) : 'none';
+  const start = new Date(event.event_at);
+  const venue = event.location_title || event.organizer_title;
+
   return (
-    <tr
-      className={cn(
-        'border-t transition-colors hover:bg-muted/40',
-        decided && 'bg-muted/20',
-      )}
-    >
-      <td className="p-3 whitespace-nowrap text-xs text-muted-foreground align-top">
-        <EventDate value={event.event_at} endValue={event.event_end_at} />
-        {event.available_langs.length > 0 && (
-          <div className="mt-1 flex flex-wrap gap-1">
-            {event.available_langs.map((lang) => (
-              <Badge key={lang} variant="outline" className="text-[10px] uppercase">
-                {lang}
-              </Badge>
-            ))}
-          </div>
-        )}
-      </td>
-      <td className="p-3 max-w-md align-top">
+    <div className="flex items-center gap-4 border-b border-line px-[18px] py-3.5 last:border-b-0">
+      {/* Datum-Block, farbig nach Score-Band */}
+      <div
+        className={`flex w-[52px] shrink-0 flex-col items-center rounded-[10px] py-2 ${DATE_BLOCK[band]}`}
+        title={eventDateLongFmt.format(start)}
+      >
+        <div className="font-mono text-[17px] font-semibold leading-none">
+          {eventDayFmt.format(start)}
+        </div>
+        <div className="mt-[3px] font-mono text-[10px] font-medium uppercase leading-none tracking-[0.06em]">
+          {eventMonFmt.format(start).replace('.', '')}
+        </div>
+      </div>
+
+      {/* Titel + Meta */}
+      <div className="min-w-0 flex-1">
         <Link
           href={`/events/${event.id}`}
-          className="group hover:text-brand"
+          className="text-[14px] font-semibold leading-snug text-ink hover:text-brand hover:underline"
         >
-          <span className="font-medium leading-snug line-clamp-2 group-hover:underline">
-            {event.title}
-          </span>
+          {event.title}
         </Link>
-        {event.institute && (
-          <div className="mt-1">
-            <Badge variant="secondary" className="gap-1 text-[10px] py-0">
-              <Building className="h-2.5 w-2.5" />
-              {event.institute}
-            </Badge>
+        {venue && (
+          <div className="mt-[3px] truncate text-[12px] text-ink-subtle">
+            {venue}
           </div>
         )}
-        {event.teaser && (
-          <p className="mt-1 text-xs text-muted-foreground line-clamp-2 leading-snug whitespace-pre-wrap">
-            {decodeHtmlBlock(event.teaser)}
-          </p>
-        )}
-      </td>
-      <td className="p-3 max-w-xs align-top">
-        <div className="space-y-1 text-xs text-muted-foreground">
-          {event.location_title && (
-            <div className="flex items-start gap-1.5">
-              <MapPin className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-              <span className="line-clamp-2">{event.location_title}</span>
-            </div>
+        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+          {event.institute && (
+            <span className="rounded-full bg-fill px-2 py-[2px] text-[10.5px] font-medium text-ink-soft">
+              {event.institute}
+            </span>
           )}
-          {event.organizer_title && (
-            <div className="flex items-start gap-1.5">
-              <Building2 className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-              <span className="line-clamp-2">{event.organizer_title}</span>
-            </div>
-          )}
-          {!event.location_title && !event.organizer_title && (
-            <span className="italic text-muted-foreground/70">–</span>
-          )}
-        </div>
-      </td>
-      <td className="p-3 align-top">
-        <DecisionBadge decision={event.decision} />
-      </td>
-      <td className="p-3 text-center align-top">
-        {event.analysis_status === 'analyzed' && event.event_score !== null ? (
-          <ScoreReasonBadge score={event.event_score} reasoning={event.reasoning} />
-        ) : (
-          <span className="text-xs text-muted-foreground/50" title="Noch nicht analysiert">–</span>
-        )}
-      </td>
-      <td className="p-3 text-right whitespace-nowrap align-top">
-        <div className="inline-flex items-center gap-2">
-          {event.url ? (
-            <a
-              href={event.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs text-emerald-700 dark:text-emerald-400 hover:underline"
+          {event.available_langs.map((lang) => (
+            <span
+              key={lang}
+              className="rounded-full bg-fill px-2 py-[2px] text-[10.5px] font-medium uppercase text-ink-muted"
             >
-              Seite <ExternalLink className="h-3 w-3" />
-            </a>
-          ) : (
-            <a
-              href={buildOeawSearchUrl(event.title)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
-              title="Auf oeaw.ac.at suchen (URL nicht direkt in WEBDB)"
-            >
-              Suche <Search className="h-3 w-3" />
-            </a>
-          )}
-          <EventFlag
-            eventId={event.id}
-            flagNotes={event.flag_notes}
-            decision={event.decision}
-          />
+              {lang}
+            </span>
+          ))}
         </div>
-      </td>
-    </tr>
-  );
-}
+      </div>
 
-/** Renders the start datetime in de-AT and appends "– HH:MM" when the row
- *  has an event_end on the same day (most rows don't, but ÖAW workshops do). */
-function EventDate({
-  value,
-  endValue,
-}: {
-  value: string;
-  endValue: string | null;
-}) {
-  const start = new Date(value);
-  const end = endValue ? new Date(endValue) : null;
-  const startStr = eventDateFmt.format(start);
-  if (!end || isSameLocalDay(start, end)) {
-    const tail = end && eventTimeFmt.format(end);
-    return (
-      <span>
-        {startStr}
-        {tail && <span className="text-muted-foreground/70"> – {tail}</span>}
-      </span>
-    );
-  }
-  return (
-    <span>
-      {startStr}
-      <span className="text-muted-foreground/70"> – {eventDateFmt.format(end)}</span>
-    </span>
+      {/* Score */}
+      <div className="shrink-0">
+        {scored ? (
+          <ScoreReasonBadge score={event.event_score!} reasoning={event.reasoning} />
+        ) : (
+          <span
+            className="font-mono text-[11px] text-ink-muted"
+            title="Noch nicht analysiert"
+          >
+            n/a
+          </span>
+        )}
+      </div>
+
+      {/* Aktionen */}
+      <div className="flex w-[230px] shrink-0 items-center justify-end gap-2">
+        <EventRowActions eventId={event.id} current={event.decision} />
+        <EventFlag
+          eventId={event.id}
+          flagNotes={event.flag_notes}
+          decision={event.decision}
+        />
+      </div>
+    </div>
   );
 }

@@ -1,7 +1,6 @@
 import { CalendarDays } from '@/lib/icons';
 import {
   DEFAULT_EVENTS_SORT,
-  EVENTS_SORT_VALUES,
   filtersForEventsTab,
   getEventsOverview,
   getUpcomingInstitutes,
@@ -19,7 +18,7 @@ import {
   computeCalendarWindow,
   isCalendarView,
 } from './_lib/calendar-range';
-import { buildEventsUrl, type EventsFilterState } from './_lib/build-events-url';
+import { type EventsFilterState } from './_lib/build-events-url';
 import { EventsTabsNav } from './_components/events-tabs-nav';
 import { EventsTable } from './_components/events-table';
 import { EventsViewSwitcher } from './_components/events-view-switcher';
@@ -35,32 +34,6 @@ import { EventAnalyzeModal } from './_components/event-analyze-modal';
 // (decision badges, flag-popovers) that mutates and must reflect immediately,
 // not after a 60-second ISR window.
 export const dynamic = 'force-dynamic';
-
-// Pre-computes the toggle href for each sortable column (functions can't cross
-// the RSC → Client boundary). Same column → flip order; new column → asc.
-// `tab` and `main` are preserved so a sort never resets the active view. Sorting
-// only applies to the list, so these intentionally omit the calendar `view`.
-function buildSortHrefs(
-  activeTab: EventsTab,
-  includeMainNews: boolean,
-  sort: EventsSort,
-  order: EventsSortOrder,
-  filters: EventsFilterState,
-): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const col of EVENTS_SORT_VALUES) {
-    const next: EventsSortOrder =
-      sort === col ? (order === 'asc' ? 'desc' : 'asc') : 'asc';
-    out[col] = buildEventsUrl({
-      tab: activeTab,
-      main: includeMainNews,
-      ...filters,
-      sort: col,
-      order: next,
-    });
-  }
-  return out;
-}
 
 export default async function EventsPage({
   searchParams,
@@ -122,8 +95,6 @@ export default async function EventsPage({
           order: sortOrder,
         }),
   ]);
-
-  const sortHrefs = buildSortHrefs(activeTab, includeMainNews, sortBy, sortOrder, filters);
 
   const summary: CalendarSummary | null = calWindow
     ? {
@@ -205,12 +176,7 @@ export default async function EventsPage({
           />
         </div>
       ) : (
-        <EventsTable
-          rows={list.events}
-          sortBy={sortBy}
-          sortOrder={sortOrder}
-          sortHrefs={sortHrefs}
-        />
+        <EventsTable rows={list.events} />
       )}
     </div>
   );

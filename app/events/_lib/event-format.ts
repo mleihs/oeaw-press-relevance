@@ -31,6 +31,18 @@ export const eventTimeFmt = new Intl.DateTimeFormat('de-AT', {
   minute: '2-digit',
 });
 
+// Day-of-month + short month for the calendar-style date block (Toolkit-Redesign
+// events table). Pinned to Europe/Vienna like the other event formatters.
+export const eventDayFmt = new Intl.DateTimeFormat('de-AT', {
+  timeZone: EVENT_TZ,
+  day: 'numeric',
+});
+
+export const eventMonFmt = new Intl.DateTimeFormat('de-AT', {
+  timeZone: EVENT_TZ,
+  month: 'short',
+});
+
 /** Civil-day equality (local timezone). Used to collapse same-day end
  *  times to "start – end" instead of a full date range. */
 export function isSameLocalDay(a: Date, b: Date): boolean {
