@@ -116,6 +116,65 @@ der Pill (unser Pitch legt keine Karte automatisch an).
 + Monat|Woche-Sub-Segment (Comp Z. 254–257/316–319) wurde NICHT gemacht — die
 bestehende Liste|Woche|Monat-Leiste bleibt.
 
+## Status Commits (2026-07-04)
+- `c532111` feat(design): Toolkit-Redesign Views 1–3 (Desktop) — **committet**
+  (nicht mehr „UNCOMMITTED", trotz obiger Alt-Formulierungen im Doc).
+- `13bce79` chore(dev): Dev-User-Switcher · `cbb23d3` docs(ops): OPS-Log.
+- `2c3f487` feat(events): „Im Board · Karte öffnen"-Deep-Link (View-3-Punkt b).
+- **Noch NICHT gepusht** (Vercel+Coolib) — vor dem Push mit User abstimmen.
+
+## MOBILE — Voller Native-Shell (User-Entscheidung 2026-07-04, mehrere Sitzungen)
+**Scope-Entscheidung:** Nicht nur responsive Desktop-Inhalte, sondern die
+**komplette native Mobile-App-Hülle** aus dem Mock. Vorlage jetzt IM REPO:
+`docs/design/board/Board-Mobile.dc.html` (Phase-0-Konvention: nur .dc.html;
+Screenshots im Design-Projekt `7e47982d`, Datei `Board-Mobile.dc.html`, NICHT
+geholt). Zeilen-Anker im Mock: Dashboard 263 · Publikationen 360 ·
+Veranstaltungen 414 · Bottom-Nav 539 · Card-Sheet 549 · Event-Detail-Sheet 758 ·
+Publikation-Detail 797. **Der Mock ist eine self-contained SPA** (Screen-Wechsel
+per State); bei uns ist jeder Screen eine Route → State-Switch wird zu
+Route/`md:`-Split.
+
+**Architektur-Ansatz (SSR-sicher, kein JS-Hook):** Mobile = unter `md` (768px).
+Desktop-UI mit `hidden md:...`, Mobile-UI mit `md:hidden` überlagern —
+KEIN `useIsMobile`-Hook (Hydration-Falle). Bestehende Top-Nav bleibt (blaue
+`bg-brand`-Leiste + Hamburger-Sheet); der Mock ergänzt eine **Bottom-Tab-Nav** +
+per-Screen blaue App-Header. Tokens/Utilities wie oben (§Token-Mapping);
+Phosphor via `@/lib/icons`; Geist Mono für Zahlen. Routen/Icons für die
+Bottom-Nav aus `components/nav.tsx` `PRIMARY[]` wiederverwenden
+(/,/publications,/events,/review,/board mit BarChart3/BookOpen/CalendarDays/
+ClipboardCheck/Kanban).
+
+**Phasenplan (in dieser Reihenfolge, je Phase: tsc0/eslint0 + In-Browser + Commit):**
+- **M1 Bottom-Tab-Nav** — neue `components/mobile-bottom-nav.tsx` (`md:hidden`,
+  fixed bottom, 4–5 Tabs aus `PRIMARY`, aktiv nach `usePathname`, „Mehr"→öffnet
+  das bestehende Hamburger-Sheet ODER ein eigenes Sheet). In `app/layout.tsx`
+  einhängen; `<main>` unten `pb-[76px] md:pb-6` gegen Überdeckung. Mock Z. 539.
+- **M2 Per-Screen Mobile-Header** — kompakter blauer App-Header (Icon+Titel+
+  Sub+Avatar) statt der Desktop-`<h1>`-Blöcke, nur `md:hidden`. Als shared
+  `components/mobile-screen-header.tsx`, pro Screen mit passendem Icon/Sub.
+- **M3 Dashboard mobil** — `dashboard-client.tsx`: Perioden-Chips (x-scroll) →
+  Board-Kachel → 2-Spalten-Stat-Grid → Top-Storys-Karte → Dimensions → Keywords,
+  einspaltig gestapelt. Mock Z. 263–358.
+- **M4 Publikationen mobil** — Suche + Preset-Chips (x-scroll) + gestapelte
+  Karten (Score-Badge + Titel + Meta + Pitch + Chip-Reihe). Mock Z. 360–412.
+- **M5 Veranstaltungen mobil** — **Agenda-Modus** (Tag-Gruppen + Titel/Venue/
+  Score + full-width Pitchen/Verwerfen UNTER dem Titel; gepitcht→„Im Board",
+  verworfen→„Verworfen"+Zurück) UND **Kompakt-Monatskalender** (7-Spalten-Grid
+  mit Punkt-Markern + „ausgewählter Tag"-Liste). Modus-Segment Agenda|Kalender.
+  Mock Z. 414–536. Ersetzt auf Mobile die Desktop-Tabelle/Schedule-X.
+- **M6 Detail-Bottom-Sheets** — Card-/Event-/Publikations-Detail auf Mobile als
+  von-unten-Sheet (statt Desktop-Modal): Grabber/Caret-Down-Close, Meta-Rows,
+  Checkliste, Kommentare. Mock Z. 549–850. Größte Phase; ggf. weiter splitten.
+
+**Empfehlung:** M1 zuerst (self-contained, hoher Signalwert, geringes Risiko),
+dann M3 als erste komplette Screen-Umsetzung zur Validierung des `md:`-Split-
+Musters, dann M4/M5, M2 (Header) mitziehen, M6 zuletzt. Mechanisch genug für
+einen **Fable-Lauf** — der Plan ist deterministisch, Vorlage + Tokens liegen fest.
+
 ## Verifikation
 Dev-Server läuft (`npm run dev`, Port 3000). In-Browser prüfen (MCP-Tab, oder
 Dev-User-Switcher für Rollen). `npx tsc --noEmit` + `eslint --max-warnings=0`.
+**Mobile-Achtung:** MCP-Screenshot rendert unabhängig von `resize_window` in
+Desktop-Breite → für echte Mobile-Verifikation Chrome-DevTools-Device-Mode
+oder echtes Gerät; die `md:hidden`-Layer lassen sich aber via schmalem
+Fenster/DevTools prüfen.

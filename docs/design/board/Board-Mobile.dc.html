@@ -37,7 +37,10 @@
   </div>
 
   <!-- view switcher -->
-  <div style="display:flex;gap:3px;background:#fff;border:1px solid #e2e6ec;border-radius:10px;padding:3px;margin-bottom:20px;box-shadow:0 1px 2px rgba(16,32,46,.06);">
+  <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:3px;background:#fff;border:1px solid #e2e6ec;border-radius:12px;padding:3px;margin-bottom:20px;box-shadow:0 1px 2px rgba(16,32,46,.06);max-width:380px;">
+    <button onClick="{{ setDash }}" style="{{ vsDash }}"><i class="ph ph-chart-bar" style="font-size:14px;"></i>Dashboard</button>
+    <button onClick="{{ setPubs }}" style="{{ vsPubs }}"><i class="ph ph-book-open" style="font-size:14px;"></i>Publikationen</button>
+    <button onClick="{{ setEvents }}" style="{{ vsEvents }}"><i class="ph ph-calendar-dots" style="font-size:14px;"></i>Veranstaltungen</button>
     <button onClick="{{ setBoard }}" style="{{ vsBoard }}"><i class="ph ph-kanban" style="font-size:14px;"></i>Board</button>
     <button onClick="{{ setOverview }}" style="{{ vsOverview }}"><i class="ph ph-squares-four" style="font-size:14px;"></i>Übersicht</button>
     <button onClick="{{ setVerwaltung }}" style="{{ vsVerw }}"><i class="ph ph-gear-six" style="font-size:14px;"></i>Verwaltung</button>
@@ -255,6 +258,282 @@
             </div>
           </div>
         </div>
+      </sc-if>
+
+      <!-- ===== DASHBOARD SCREEN ===== -->
+      <sc-if value="{{ isDash }}" hint-placeholder-val="{{ false }}">
+        <div style="background:#0047bb;color:#fff;flex-shrink:0;">
+          <div style="{{ statusRowStyle }}">
+            <span style="font-weight:600;">{{ statusTime }}</span>
+            <span style="display:flex;align-items:center;gap:6px;"><i class="ph-fill ph-cell-signal-full" style="{{ statusIconStyle }}"></i><i class="ph-fill ph-wifi-high" style="{{ statusIconStyle }}"></i><i class="ph-fill ph-battery-high" style="{{ statusIconStyle }}"></i></span>
+          </div>
+          <div style="padding:2px 16px 14px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ph-fill ph-chart-bar" style="font-size:16px;color:#fff;"></i></span>
+              <div style="flex:1;min-width:0;"><div style="font-size:17px;font-weight:700;line-height:1.1;letter-spacing:-0.01em;">Guten Morgen, Christine</div><div style="font-family:'Geist Mono',monospace;font-size:10px;color:rgba(255,255,255,.65);margin-top:2px;">Fr, 3. Juli · Stand 06:30</div></div>
+              <span style="width:34px;height:34px;border-radius:999px;background:#9cc0ff;color:#00337f;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;">CH</span>
+            </div>
+          </div>
+        </div>
+        <div class="noscroll" style="flex:1;overflow-y:auto;background:#f7f8fa;padding:14px 12px 90px;">
+          <!-- period -->
+          <div class="noscroll" style="overflow-x:auto;margin:0 -12px 14px;padding:0 12px;">
+            <div style="display:flex;gap:7px;min-width:min-content;">
+              <sc-for list="{{ dashPeriods }}" as="p" hint-placeholder-count="4">
+                <button onClick="{{ p.onSelect }}" style="{{ p.style }}">{{ p.label }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <!-- board tile -->
+          <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;box-shadow:0 1px 2px rgba(16,32,46,.05);overflow:hidden;margin-bottom:14px;">
+            <div style="display:flex;align-items:center;gap:9px;padding:14px 15px 11px;">
+              <span style="width:30px;height:30px;border-radius:8px;background:#eef4ff;color:#0047bb;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ph-duotone ph-kanban" style="font-size:17px;"></i></span>
+              <div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:600;">Redaktionsboard</div></div>
+              <span style="display:inline-flex;align-items:center;gap:5px;font-family:'Geist Mono',monospace;font-size:11px;font-weight:500;color:#dc2626;background:#fdeaea;padding:3px 8px;border-radius:999px;flex-shrink:0;"><i class="ph-bold ph-clock-countdown" style="font-size:12px;"></i>3 überfällig</span>
+            </div>
+            <div style="padding:0 7px;">
+              <sc-for list="{{ dashTasks }}" as="t" hint-placeholder-count="4">
+                <div onClick="{{ goBoard }}" style="display:flex;align-items:center;gap:9px;padding:9px 8px;border-radius:9px;cursor:pointer;">
+                  <span style="{{ t.dotStyle }}"></span>
+                  <span style="flex:1;min-width:0;font-size:13px;font-weight:500;color:#16202e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ t.title }}</span>
+                  <span style="{{ t.dueStyle }}">{{ t.due }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div onClick="{{ goBoard }}" style="display:flex;align-items:center;gap:7px;padding:12px 15px;border-top:1px solid #eef1f5;color:#0047bb;font-size:12.5px;font-weight:600;cursor:pointer;">Zum Board<span style="flex:1;"></span><i class="ph ph-arrow-right" style="font-size:14px;"></i></div>
+          </div>
+          <!-- stats -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+            <sc-for list="{{ dashStats }}" as="st" hint-placeholder-count="4">
+              <div style="background:#fff;border:1px solid #e2e6ec;border-radius:13px;box-shadow:0 1px 2px rgba(16,32,46,.05);padding:13px 14px;">
+                <span style="{{ st.iconWrap }}"><i class="{{ st.icon }}" style="font-size:18px;"></i></span>
+                <div style="font-family:'Geist Mono',monospace;font-size:20px;font-weight:600;letter-spacing:-0.01em;line-height:1.1;margin-top:10px;">{{ st.value }}</div>
+                <div style="font-size:11.5px;color:#64707f;margin-top:3px;line-height:1.35;">{{ st.label }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <!-- top storys -->
+          <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;box-shadow:0 1px 2px rgba(16,32,46,.05);overflow:hidden;margin-bottom:14px;">
+            <div style="display:flex;align-items:center;gap:8px;padding:14px 15px 11px;border-bottom:1px solid #eef1f5;">
+              <span style="font-size:14px;font-weight:600;">Top-Storys</span>
+              <span style="flex:1;"></span>
+              <span style="font-family:'Geist Mono',monospace;font-size:10.5px;color:#9aa4b2;">{{ poolLabel }}</span>
+            </div>
+            <div style="padding:5px 7px 7px;">
+              <sc-for list="{{ dashTop }}" as="p" hint-placeholder-count="5">
+                <div onClick="{{ goPubs }}" style="display:flex;align-items:flex-start;gap:11px;padding:10px 8px;border-radius:10px;cursor:pointer;">
+                  <span style="{{ p.rankStyle }}">{{ p.rank }}</span>
+                  <div style="flex:1;min-width:0;">
+                    <div style="font-size:13px;font-weight:600;color:#16202e;line-height:1.35;">{{ p.title }}</div>
+                    <div style="font-size:11.5px;color:#9aa4b2;margin-top:2px;">{{ p.meta }}</div>
+                  </div>
+                  <span style="{{ p.scoreStyle }}">{{ p.score }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div onClick="{{ goPubs }}" style="display:flex;align-items:center;gap:7px;padding:12px 15px;border-top:1px solid #eef1f5;color:#0047bb;font-size:12.5px;font-weight:600;cursor:pointer;">Alle Publikationen<span style="flex:1;"></span><i class="ph ph-arrow-right" style="font-size:14px;"></i></div>
+          </div>
+          <!-- dimensions -->
+          <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;box-shadow:0 1px 2px rgba(16,32,46,.05);padding:15px;margin-bottom:14px;">
+            <div style="font-size:13.5px;font-weight:600;margin-bottom:13px;">Dimensions-Mittelwerte</div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <sc-for list="{{ dashDims }}" as="d" hint-placeholder-count="5">
+                <div>
+                  <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;"><span style="color:#475262;font-weight:500;">{{ d.name }}</span><span style="font-family:'Geist Mono',monospace;color:#64707f;">{{ d.val }}</span></div>
+                  <div style="height:6px;background:#eef1f5;border-radius:999px;overflow:hidden;"><span style="{{ d.barStyle }}"></span></div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <!-- keywords -->
+          <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;box-shadow:0 1px 2px rgba(16,32,46,.05);padding:15px;">
+            <div style="font-size:13.5px;font-weight:600;margin-bottom:12px;">Häufige Keywords</div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;">
+              <sc-for list="{{ dashKeywords }}" as="k" hint-placeholder-count="8">
+                <span style="{{ k.style }}">{{ k.word }}</span>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ===== PUBLIKATIONEN SCREEN ===== -->
+      <sc-if value="{{ isPubs }}" hint-placeholder-val="{{ false }}">
+        <div style="background:#0047bb;color:#fff;flex-shrink:0;">
+          <div style="{{ statusRowStyle }}">
+            <span style="font-weight:600;">{{ statusTime }}</span>
+            <span style="display:flex;align-items:center;gap:6px;"><i class="ph-fill ph-cell-signal-full" style="{{ statusIconStyle }}"></i><i class="ph-fill ph-wifi-high" style="{{ statusIconStyle }}"></i><i class="ph-fill ph-battery-high" style="{{ statusIconStyle }}"></i></span>
+          </div>
+          <div style="height:52px;display:flex;align-items:center;padding:0 16px;gap:10px;">
+            <span style="width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ph-fill ph-book-open" style="font-size:16px;color:#fff;"></i></span>
+            <div style="flex:1;min-width:0;"><div style="font-size:16px;font-weight:600;line-height:1.05;">Publikationen</div><div style="font-family:'Geist Mono',monospace;font-size:10px;color:rgba(255,255,255,.65);margin-top:1px;">9.812 analysiert · Story Score</div></div>
+            <button style="width:36px;height:36px;border:none;background:rgba(255,255,255,.14);color:#fff;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ph ph-export" style="font-size:17px;"></i></button>
+          </div>
+        </div>
+        <div style="flex-shrink:0;background:#fff;border-bottom:1px solid #e2e6ec;padding:11px 12px 10px;">
+          <div style="display:flex;align-items:center;gap:8px;border:1px solid #cbd2dc;border-radius:10px;padding:0 11px;height:40px;margin-bottom:10px;">
+            <i class="ph ph-magnifying-glass" style="font-size:16px;color:#9aa4b2;"></i>
+            <input value="{{ pubSearch }}" onInput="{{ onPubSearch }}" placeholder="Titel, Autor:in, Institut…" style="border:none;outline:none;font-family:inherit;font-size:14px;flex:1;min-width:0;color:#16202e;background:transparent;"/>
+          </div>
+          <div class="noscroll" style="overflow-x:auto;margin:0 -12px;padding:0 12px;">
+            <div style="display:flex;gap:7px;min-width:min-content;">
+              <sc-for list="{{ pubPresets }}" as="pr" hint-placeholder-count="5">
+                <button onClick="{{ pr.onSelect }}" style="{{ pr.style }}"><i class="{{ pr.icon }}" style="font-size:13px;"></i>{{ pr.label }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+        <div class="noscroll" style="flex:1;overflow-y:auto;background:#f7f8fa;padding:12px 12px 90px;">
+          <sc-for list="{{ pubRows }}" as="p" hint-placeholder-count="6">
+            <div onClick="{{ p.onOpen }}" style="background:#fff;border:1px solid #e2e6ec;border-radius:13px;box-shadow:0 1px 2px rgba(16,32,46,.05);padding:13px 14px;margin-bottom:10px;cursor:pointer;">
+              <div style="display:flex;align-items:flex-start;gap:11px;">
+                <span style="{{ p.scoreStyle }}">{{ p.score }}</span>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-size:14px;font-weight:600;color:#16202e;line-height:1.35;">{{ p.title }}</div>
+                  <div style="font-size:12px;color:#64707f;margin-top:4px;">{{ p.meta }}</div>
+                </div>
+              </div>
+              <div style="font-size:12.5px;color:#475262;margin-top:9px;line-height:1.45;">{{ p.pitch }}</div>
+              <div style="display:flex;align-items:center;gap:6px;margin-top:10px;flex-wrap:wrap;">
+                <sc-if value="{{ p.flagship }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;color:#0047bb;background:#eef4ff;padding:3px 8px;border-radius:999px;"><i class="ph-fill ph-crown-simple" style="font-size:11px;"></i>{{ p.venue }}</span></sc-if>
+                <sc-if value="{{ p.plainVenue }}" hint-placeholder-val="{{ true }}"><span style="font-size:11px;color:#9aa4b2;">{{ p.venue }}</span></sc-if>
+                <span style="font-size:10.5px;font-weight:600;color:#64707f;background:#eef1f5;padding:3px 8px;border-radius:999px;">{{ p.type }}</span>
+                <span style="flex:1;"></span>
+                <sc-if value="{{ p.hasPm }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;color:#059669;background:#e7f7ef;padding:3px 8px;border-radius:999px;"><i class="ph-bold ph-newspaper" style="font-size:11px;"></i>PM</span></sc-if>
+                <sc-if value="{{ p.flagged }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;color:#92620c;background:#fdf1e3;padding:3px 8px;border-radius:999px;"><i class="ph-fill ph-push-pin" style="font-size:11px;"></i>Geflaggt</span></sc-if>
+              </div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ pubsEmpty }}" hint-placeholder-val="{{ false }}">
+            <div style="border:1.5px dashed #d5dbe3;border-radius:14px;padding:34px 16px;text-align:center;"><i class="ph ph-magnifying-glass" style="font-size:28px;color:#cbd2dc;"></i><div style="font-size:13.5px;color:#64707f;margin-top:10px;">Keine Publikationen für diese Filter</div></div>
+          </sc-if>
+          <div style="text-align:center;font-family:'Geist Mono',monospace;font-size:11px;color:#9aa4b2;padding:6px 0 2px;">{{ pubsFooter }}</div>
+        </div>
+      </sc-if>
+
+      <!-- ===== VERANSTALTUNGEN SCREEN ===== -->
+      <sc-if value="{{ isEvents }}" hint-placeholder-val="{{ false }}">
+        <div style="background:#0047bb;color:#fff;flex-shrink:0;">
+          <div style="{{ statusRowStyle }}">
+            <span style="font-weight:600;">{{ statusTime }}</span>
+            <span style="display:flex;align-items:center;gap:6px;"><i class="ph-fill ph-cell-signal-full" style="{{ statusIconStyle }}"></i><i class="ph-fill ph-wifi-high" style="{{ statusIconStyle }}"></i><i class="ph-fill ph-battery-high" style="{{ statusIconStyle }}"></i></span>
+          </div>
+          <div style="height:52px;display:flex;align-items:center;padding:0 16px;gap:10px;">
+            <span style="width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ph-fill ph-calendar-dots" style="font-size:16px;color:#fff;"></i></span>
+            <div style="flex:1;min-width:0;"><div style="font-size:16px;font-weight:600;line-height:1.05;">Veranstaltungen</div><div style="font-family:'Geist Mono',monospace;font-size:10px;color:rgba(255,255,255,.65);margin-top:1px;">Bewerten · pitchen · ins Board</div></div>
+            <span style="width:34px;height:34px;border-radius:999px;background:#9cc0ff;color:#00337f;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;">CH</span>
+          </div>
+        </div>
+        <!-- mode + controls -->
+        <div style="flex-shrink:0;background:#fff;border-bottom:1px solid #e2e6ec;padding:11px 12px;">
+          <div style="display:flex;gap:3px;background:#eef1f5;border-radius:10px;padding:3px;margin-bottom:10px;">
+            <button onClick="{{ setEvAgenda }}" style="{{ evAgendaTab }}"><i class="ph ph-list-bullets" style="font-size:14px;"></i>Agenda</button>
+            <button onClick="{{ setEvMonth }}" style="{{ evMonthTab }}"><i class="ph ph-calendar-blank" style="font-size:14px;"></i>Kalender</button>
+          </div>
+          <sc-if value="{{ evAgendaMode }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;align-items:center;gap:7px;">
+              <button onClick="{{ onEvUpcoming }}" style="{{ evUpTab }}">Kommend<span style="{{ evUpCountStyle }}">{{ evUpCount }}</span></button>
+              <button onClick="{{ onEvPast }}" style="{{ evPastTab }}">Vergangen<span style="{{ evPastCountStyle }}">{{ evPastCount }}</span></button>
+              <span style="flex:1;"></span>
+              <button onClick="{{ toggleEvMain }}" style="{{ evMainStyle }}"><i class="ph-fill ph-star" style="font-size:13px;"></i>Main News</button>
+            </div>
+          </sc-if>
+        </div>
+
+        <!-- AGENDA -->
+        <sc-if value="{{ evAgendaMode }}" hint-placeholder-val="{{ true }}">
+          <div class="noscroll" style="flex:1;overflow-y:auto;background:#f7f8fa;padding:12px 12px 90px;">
+            <sc-for list="{{ evGroups }}" as="g" hint-placeholder-count="4">
+              <div style="display:flex;align-items:center;gap:8px;padding:6px 4px 9px;">
+                <span style="font-family:'Geist Mono',monospace;font-size:11px;font-weight:600;color:#0047bb;">{{ g.day }}</span>
+                <span style="font-size:12.5px;font-weight:600;color:#475262;">{{ g.label }}</span>
+                <span style="height:1px;flex:1;background:#e2e6ec;"></span>
+              </div>
+              <sc-for list="{{ g.events }}" as="e" hint-placeholder-count="1">
+                <div onClick="{{ e.onOpen }}" style="{{ e.wrapStyle }}">
+                  <div style="display:flex;align-items:flex-start;gap:10px;">
+                    <div style="flex:1;min-width:0;">
+                      <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
+                        <span style="font-size:14px;font-weight:600;color:#16202e;line-height:1.3;">{{ e.title }}</span>
+                        <sc-if value="{{ e.mainNews }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;color:#92620c;background:#fdf1e3;padding:2px 7px;border-radius:999px;"><i class="ph-fill ph-star" style="font-size:10px;"></i>Main</span></sc-if>
+                      </div>
+                      <div style="font-size:12px;color:#64707f;margin-top:4px;">{{ e.venue }}</div>
+                    </div>
+                    <span style="{{ e.scoreStyle }}">{{ e.score }}</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:7px;margin-top:11px;">
+                    <sc-if value="{{ e.open }}" hint-placeholder-val="{{ true }}">
+                      <button onClick="{{ e.onPitch }}" style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;border:none;background:#0047bb;color:#fff;font-family:inherit;font-size:12.5px;font-weight:600;padding:9px;border-radius:9px;cursor:pointer;"><i class="ph-bold ph-lightning" style="font-size:13px;"></i>Pitchen</button>
+                      <button onClick="{{ e.onReject }}" style="display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid #cbd2dc;background:#fff;color:#64707f;font-family:inherit;font-size:12.5px;font-weight:600;padding:9px 14px;border-radius:9px;cursor:pointer;">Verwerfen</button>
+                    </sc-if>
+                    <sc-if value="{{ e.pitched }}" hint-placeholder-val="{{ false }}">
+                      <span style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;background:#e7f7ef;color:#059669;font-size:12.5px;font-weight:600;padding:9px;border-radius:9px;"><i class="ph-bold ph-kanban" style="font-size:13px;"></i>Im Board</span>
+                      <button onClick="{{ e.onReopen }}" style="border:1px solid #cbd2dc;background:#fff;color:#64707f;font-family:inherit;font-size:12.5px;font-weight:600;padding:9px 14px;border-radius:9px;cursor:pointer;">Zurück</button>
+                    </sc-if>
+                    <sc-if value="{{ e.rejected }}" hint-placeholder-val="{{ false }}">
+                      <span style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;background:#f1f3f6;color:#9aa4b2;font-size:12.5px;font-weight:600;padding:9px;border-radius:9px;">Verworfen</span>
+                      <button onClick="{{ e.onReopen }}" style="border:1px solid #cbd2dc;background:#fff;color:#64707f;font-family:inherit;font-size:12.5px;font-weight:600;padding:9px 14px;border-radius:9px;cursor:pointer;">Zurück</button>
+                    </sc-if>
+                  </div>
+                </div>
+              </sc-for>
+            </sc-for>
+            <sc-if value="{{ evEmpty }}" hint-placeholder-val="{{ false }}">
+              <div style="border:1.5px dashed #d5dbe3;border-radius:14px;padding:34px 16px;text-align:center;"><i class="ph ph-calendar-x" style="font-size:28px;color:#cbd2dc;"></i><div style="font-size:13.5px;color:#64707f;margin-top:10px;">Keine Veranstaltungen</div></div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <!-- KALENDER (compact month) -->
+        <sc-if value="{{ evMonthMode }}" hint-placeholder-val="{{ false }}">
+          <div class="noscroll" style="flex:1;overflow-y:auto;background:#f7f8fa;padding:12px 12px 90px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+              <button onClick="{{ onMonthPrev }}" style="width:34px;height:34px;border:1px solid #cbd2dc;background:#fff;color:#475262;border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="ph ph-caret-left" style="font-size:15px;"></i></button>
+              <span style="flex:1;text-align:center;font-size:15px;font-weight:700;letter-spacing:-0.01em;">{{ evMonthLabel }}</span>
+              <button onClick="{{ onMonthNext }}" style="width:34px;height:34px;border:1px solid #cbd2dc;background:#fff;color:#475262;border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="ph ph-caret-right" style="font-size:15px;"></i></button>
+            </div>
+            <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;box-shadow:0 1px 2px rgba(16,32,46,.05);overflow:hidden;">
+              <div style="display:grid;grid-template-columns:repeat(7,1fr);background:#fbfcfd;border-bottom:1px solid #eef1f5;">
+                <sc-for list="{{ miniWeekdays }}" as="wd" hint-placeholder-count="7">
+                  <div style="padding:7px 0;text-align:center;font-family:'Geist Mono',monospace;font-size:9.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#9aa4b2;">{{ wd }}</div>
+                </sc-for>
+              </div>
+              <sc-for list="{{ miniWeeks }}" as="w" hint-placeholder-count="6">
+                <div style="display:grid;grid-template-columns:repeat(7,1fr);">
+                  <sc-for list="{{ w.days }}" as="d" hint-placeholder-count="7">
+                    <div onClick="{{ d.onTap }}" style="{{ d.cellStyle }}">
+                      <span style="{{ d.numStyle }}">{{ d.num }}</span>
+                      <div style="display:flex;gap:2px;margin-top:3px;height:5px;justify-content:center;">
+                        <sc-for list="{{ d.dots }}" as="dt" hint-placeholder-count="0"><span style="{{ dt }}"></span></sc-for>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-for>
+            </div>
+            <!-- selected day list -->
+            <div style="margin-top:14px;">
+              <div style="font-family:'Geist Mono',monospace;font-size:11px;font-weight:600;color:#475262;padding:2px 4px 9px;">{{ selDayLabel }}</div>
+              <sc-for list="{{ selDayEvents }}" as="e" hint-placeholder-count="1">
+                <div onClick="{{ e.onOpen }}" style="{{ e.wrapStyle }}">
+                  <div style="display:flex;align-items:flex-start;gap:10px;">
+                    <div style="flex:1;min-width:0;">
+                      <div style="font-size:14px;font-weight:600;color:#16202e;line-height:1.3;">{{ e.title }}</div>
+                      <div style="font-size:12px;color:#64707f;margin-top:4px;">{{ e.venue }}</div>
+                    </div>
+                    <span style="{{ e.scoreStyle }}">{{ e.score }}</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:7px;margin-top:6px;">
+                    <sc-if value="{{ e.decLabelShow }}" hint-placeholder-val="{{ false }}"><span style="{{ e.decStyle }}"><i class="{{ e.decIcon }}" style="font-size:12px;"></i>{{ e.decLabel }}</span></sc-if>
+                  </div>
+                </div>
+              </sc-for>
+              <sc-if value="{{ selDayEmpty }}" hint-placeholder-val="{{ true }}">
+                <div style="border:1.5px dashed #d5dbe3;border-radius:12px;padding:22px 14px;text-align:center;"><i class="ph-duotone ph-calendar-blank" style="font-size:24px;color:#cbd2dc;"></i><div style="font-size:12.5px;color:#9aa4b2;margin-top:7px;">Keine Veranstaltung an diesem Tag</div></div>
+              </sc-if>
+            </div>
+          </div>
+        </sc-if>
       </sc-if>
 
       <!-- BOTTOM NAV -->
@@ -476,6 +755,141 @@
         </div>
       </sc-if>
 
+      <!-- ===== EVENT DETAIL SHEET ===== -->
+      <sc-if value="{{ evSheetOpen }}" hint-placeholder-val="{{ false }}">
+        <div class="fade-in" onClick="{{ closeEvSheet }}" style="position:absolute;inset:0;background:rgba(13,36,80,.35);z-index:34;"></div>
+        <div class="sheet-in noscroll" style="position:absolute;left:0;right:0;bottom:0;max-height:88%;overflow-y:auto;background:#fff;border-radius:22px 22px 0 0;z-index:35;">
+          <div style="{{ es.headStyle }}">
+            <i class="ph-fill ph-calendar-dots" style="font-size:17px;color:#475262;"></i>
+            <span style="font-family:'Geist Mono',monospace;font-size:12.5px;font-weight:500;color:#475262;">{{ es.dateLabel }}</span>
+            <span style="flex:1;"></span>
+            <button onClick="{{ closeEvSheet }}" style="width:32px;height:32px;border:none;background:rgba(255,255,255,.6);color:#64707f;border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="ph ph-x" style="font-size:15px;"></i></button>
+          </div>
+          <div style="padding:16px 18px 26px;">
+            <div style="display:flex;align-items:flex-start;gap:10px;">
+              <div style="flex:1;font-size:18px;font-weight:700;letter-spacing:-0.01em;line-height:1.3;">{{ es.title }}</div>
+              <span style="{{ es.scoreStyle }}">{{ es.score }}</span>
+            </div>
+            <div style="font-size:13px;color:#64707f;margin-top:6px;">{{ es.venue }}</div>
+            <div style="display:flex;gap:6px;margin-top:13px;flex-wrap:wrap;">
+              <sc-for list="{{ es.reasons }}" as="r" hint-placeholder-count="2">
+                <span style="font-size:11px;font-weight:500;color:#475262;background:#eef1f5;padding:3px 9px;border-radius:999px;">{{ r }}</span>
+              </sc-for>
+            </div>
+            <div style="display:flex;gap:9px;margin-top:20px;">
+              <sc-if value="{{ es.open }}" hint-placeholder-val="{{ true }}">
+                <button onClick="{{ es.onPitch }}" style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:7px;border:none;background:#0047bb;color:#fff;font-family:inherit;font-size:14px;font-weight:600;padding:13px;border-radius:11px;cursor:pointer;"><i class="ph-bold ph-lightning" style="font-size:15px;"></i>Pitchen ins Board</button>
+                <button onClick="{{ es.onReject }}" style="border:1px solid #cbd2dc;background:#fff;color:#64707f;font-family:inherit;font-size:14px;font-weight:600;padding:13px 16px;border-radius:11px;cursor:pointer;">Verwerfen</button>
+              </sc-if>
+              <sc-if value="{{ es.pitched }}" hint-placeholder-val="{{ false }}">
+                <span style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:7px;background:#e7f7ef;color:#059669;font-size:14px;font-weight:600;padding:13px;border-radius:11px;"><i class="ph-bold ph-kanban" style="font-size:15px;"></i>Im Board</span>
+                <button onClick="{{ es.onReopen }}" style="border:1px solid #cbd2dc;background:#fff;color:#64707f;font-family:inherit;font-size:14px;font-weight:600;padding:13px 16px;border-radius:11px;cursor:pointer;">Zurück</button>
+              </sc-if>
+              <sc-if value="{{ es.rejected }}" hint-placeholder-val="{{ false }}">
+                <span style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:7px;background:#f1f3f6;color:#9aa4b2;font-size:14px;font-weight:600;padding:13px;border-radius:11px;">Verworfen</span>
+                <button onClick="{{ es.onReopen }}" style="border:1px solid #cbd2dc;background:#fff;color:#64707f;font-family:inherit;font-size:14px;font-weight:600;padding:13px 16px;border-radius:11px;cursor:pointer;">Zurücksetzen</button>
+              </sc-if>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ===== PUBLIKATION DETAIL (full screen) ===== -->
+      <sc-if value="{{ pubDetailOpen }}" hint-placeholder-val="{{ false }}">
+        <div class="fade-in noscroll" style="position:absolute;inset:0;background:#f7f8fa;z-index:45;display:flex;flex-direction:column;">
+          <div style="background:#0047bb;color:#fff;flex-shrink:0;">
+            <div style="{{ statusRowStyle }}">
+              <span style="font-weight:600;">{{ statusTime }}</span>
+              <span style="display:flex;align-items:center;gap:6px;"><i class="ph-fill ph-cell-signal-full" style="{{ statusIconStyle }}"></i><i class="ph-fill ph-wifi-high" style="{{ statusIconStyle }}"></i><i class="ph-fill ph-battery-high" style="{{ statusIconStyle }}"></i></span>
+            </div>
+            <div style="height:52px;display:flex;align-items:center;padding:0 12px;gap:8px;">
+              <button onClick="{{ closePubDetail }}" style="width:36px;height:36px;border:none;background:rgba(255,255,255,.14);color:#fff;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ph ph-arrow-left" style="font-size:18px;"></i></button>
+              <div style="flex:1;min-width:0;font-size:15px;font-weight:600;">Publikation</div>
+              <button style="width:36px;height:36px;border:none;background:rgba(255,255,255,.14);color:#fff;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ph-fill ph-push-pin" style="font-size:16px;"></i></button>
+            </div>
+          </div>
+          <div class="noscroll" style="flex:1;overflow-y:auto;padding:16px 14px 96px;">
+            <h1 style="margin:0;font-size:20px;font-weight:700;letter-spacing:-0.01em;line-height:1.3;">{{ pdm.title }}</h1>
+            <div style="font-size:13px;font-weight:600;color:#0047bb;margin-top:9px;">{{ pdm.meta }}</div>
+            <div style="font-size:12px;color:#64707f;margin-top:3px;">{{ pdm.date }} · {{ pdm.type }}</div>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:12px;flex-wrap:wrap;">
+              <sc-if value="{{ pdm.flagship }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#0047bb;background:#eef4ff;padding:4px 9px;border-radius:999px;"><i class="ph-fill ph-crown-simple" style="font-size:11px;"></i>{{ pdm.venue }}</span></sc-if>
+              <sc-for list="{{ pdm.badges }}" as="b" hint-placeholder-count="3"><span style="{{ b.style }}"><i class="{{ b.icon }}" style="font-size:11px;"></i>{{ b.text }}</span></sc-for>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:11px;flex-wrap:wrap;">
+              <sc-for list="{{ pdm.insts }}" as="o" hint-placeholder-count="1"><span style="font-size:11px;font-weight:500;color:#475262;background:#eef1f5;padding:3px 8px;border-radius:6px;">{{ o.name }}</span></sc-for>
+              <span style="font-family:'Geist Mono',monospace;font-size:11px;color:#0047bb;">DOI {{ pdm.doi }}</span>
+            </div>
+
+            <div style="background:#fff;border:1px solid #d3e2ff;border-radius:14px;box-shadow:0 1px 2px rgba(16,32,46,.05);padding:15px;margin-top:16px;">
+              <div style="display:flex;align-items:center;gap:13px;margin-bottom:15px;">
+                <span style="{{ pdm.scoreCircleStyle }}">{{ pdm.scoreBig }}</span>
+                <div><div style="font-size:14.5px;font-weight:700;">Story Score</div><div style="font-size:12px;color:#64707f;margin-top:2px;">{{ pdm.scoreLabel }}</div></div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:10px;">
+                <sc-for list="{{ pdm.dims }}" as="d" hint-placeholder-count="5">
+                  <div>
+                    <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;"><span style="color:#475262;font-weight:500;">{{ d.name }}</span><span style="font-family:'Geist Mono',monospace;color:#64707f;">{{ d.val }}</span></div>
+                    <div style="height:6px;background:#eef1f5;border-radius:999px;overflow:hidden;"><span style="{{ d.barStyle }}"></span></div>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="margin-top:14px;padding-top:12px;border-top:1px solid #eef1f5;">
+                <div style="font-family:'Geist Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#9aa4b2;margin-bottom:6px;">Begründung</div>
+                <p style="margin:0;font-size:12.5px;line-height:1.55;color:#475262;">{{ pdm.reasoning }}</p>
+              </div>
+            </div>
+
+            <div style="background:#f6f9ff;border:1px solid #d3e2ff;border-radius:14px;padding:15px;margin-top:14px;">
+              <div style="display:flex;align-items:center;gap:6px;font-family:'Geist Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#0047bb;margin-bottom:9px;"><i class="ph-fill ph-lightning" style="font-size:12px;"></i>Pitch-Vorschlag</div>
+              <p style="margin:0;font-size:14px;line-height:1.55;color:#16202e;font-weight:500;">{{ pdm.pitch }}</p>
+              <div style="margin-top:11px;font-size:12.5px;color:#475262;line-height:1.5;"><span style="font-weight:600;color:#0047bb;">Blickwinkel:</span> {{ pdm.angle }}</div>
+              <div style="margin-top:5px;font-size:12.5px;color:#475262;line-height:1.5;"><span style="font-weight:600;color:#0047bb;">Zielgruppe:</span> {{ pdm.audience }}</div>
+            </div>
+
+            <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;box-shadow:0 1px 2px rgba(16,32,46,.05);padding:15px;margin-top:14px;">
+              <div style="display:flex;align-items:center;gap:7px;font-size:14px;font-weight:600;margin-bottom:9px;"><i class="ph-duotone ph-book-open-text" style="font-size:17px;color:#0047bb;"></i>Zusammenfassung</div>
+              <p style="margin:0;font-size:13.5px;line-height:1.6;color:#333d4c;">{{ pdm.summaryDe }}</p>
+            </div>
+
+            <div style="background:linear-gradient(160deg,#0047bb,#00337f);border-radius:14px;padding:18px 18px 15px;color:#fff;position:relative;overflow:hidden;margin-top:14px;">
+              <i class="ph-fill ph-flower-lotus" style="position:absolute;right:14px;top:12px;font-size:34px;color:rgba(255,255,255,.12);"></i>
+              <div style="font-family:'Geist Mono',monospace;font-size:9.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:#9cc0ff;margin-bottom:10px;">Haiku</div>
+              <div style="display:flex;flex-direction:column;gap:4px;">
+                <sc-for list="{{ pdm.haikuLines }}" as="h" hint-placeholder-count="3"><div style="font-size:16px;font-weight:500;line-height:1.4;">{{ h.line }}</div></sc-for>
+              </div>
+              <div style="margin-top:13px;font-family:'Geist Mono',monospace;font-size:10px;color:rgba(255,255,255,.6);display:flex;align-items:center;gap:5px;"><i class="ph ph-sparkle" style="font-size:11px;"></i>{{ pdm.model }}</div>
+            </div>
+
+            <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;box-shadow:0 1px 2px rgba(16,32,46,.05);overflow:hidden;margin-top:14px;">
+              <div style="display:flex;align-items:center;gap:7px;padding:14px 15px 11px;border-bottom:1px solid #eef1f5;"><i class="ph-duotone ph-users-three" style="font-size:17px;color:#0047bb;"></i><span style="font-size:14px;font-weight:600;">Autor:innen</span><span style="font-size:11.5px;color:#9aa4b2;">({{ pdm.authorsCount }}) · {{ pdm.authorsBreak }}</span></div>
+              <div style="padding:5px 10px 8px;">
+                <sc-for list="{{ pdm.authors }}" as="a" hint-placeholder-count="3">
+                  <div style="display:flex;align-items:center;gap:10px;padding:8px 6px;">
+                    <span style="{{ a.avatarStyle }}">{{ a.initials }}</span>
+                    <div style="flex:1;min-width:0;"><div style="{{ a.nameStyle }}">{{ a.name }}</div><sc-if value="{{ a.hasRole }}" hint-placeholder-val="{{ false }}"><div style="font-size:11px;color:#9aa4b2;margin-top:1px;">{{ a.role }}</div></sc-if></div>
+                    <sc-if value="{{ a.ext }}" hint-placeholder-val="{{ false }}"><span style="font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:#9aa4b2;background:#f1f3f6;padding:2px 6px;border-radius:5px;">Ext</span></sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+
+            <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;box-shadow:0 1px 2px rgba(16,32,46,.05);padding:15px;margin-top:14px;">
+              <div style="display:flex;align-items:center;gap:7px;font-size:14px;font-weight:600;margin-bottom:10px;"><i class="ph-duotone ph-file-text" style="font-size:17px;color:#0047bb;"></i>Anreicherung</div>
+              <div style="font-family:'Geist Mono',monospace;font-size:9.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#9aa4b2;margin-bottom:5px;">Abstract</div>
+              <p style="margin:0 0 13px;font-size:13px;line-height:1.6;color:#333d4c;">{{ pdm.abstract }}</p>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                <sc-for list="{{ pdm.keywords }}" as="k" hint-placeholder-count="4"><span style="font-size:11px;font-weight:500;color:#475262;background:#eef1f5;padding:3px 9px;border-radius:999px;">{{ k.word }}</span></sc-for>
+              </div>
+            </div>
+          </div>
+          <div style="position:absolute;left:0;right:0;bottom:0;background:#fff;border-top:1px solid #e2e6ec;padding:12px 14px;display:flex;gap:9px;">
+            <button style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:7px;border:none;background:#0047bb;color:#fff;font-family:inherit;font-size:14px;font-weight:600;padding:13px;border-radius:11px;cursor:pointer;"><i class="ph-bold ph-kanban" style="font-size:15px;"></i>Ins Board</button>
+            <button style="display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid #cbd2dc;background:#fff;color:#64707f;font-family:inherit;font-size:14px;font-weight:600;padding:13px 18px;border-radius:11px;cursor:pointer;">Verwerfen</button>
+          </div>
+        </div>
+      </sc-if>
+
     </div>
   </div>
 
@@ -548,6 +962,148 @@ const VBOARDS0 = [
 ];
 const ARCH0 = [ { name:'Redaktionsklausur 2025', count:54 }, { name:'Website Relaunch 2024', count:88 } ];
 
+// ===== Toolkit data (Dashboard / Publikationen / Veranstaltungen) =====
+const MONO = "'Geist Mono',monospace";
+const MONTHS_DE = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+const WEEKDAYS_DE = ['Mo','Di','Mi','Do','Fr','Sa','So'];
+function scoreBadge(pct, big){
+  const c = pct >= 70 ? { fg:'#0047bb', bg:'#eef4ff' } : pct >= 40 ? { fg:'#b45309', bg:'#fdf1e3' } : { fg:'#64707f', bg:'#eef1f5' };
+  return { display:'inline-flex', alignItems:'center', justifyContent:'center', fontFamily:MONO, fontSize: big ? '13px' : '12px', fontWeight:600, color:c.fg, background:c.bg, padding: big ? '6px 10px' : '5px 9px', borderRadius:'8px', flexShrink:0 };
+}
+function evBand(score){
+  if(score >= 70) return { bar:'#0047bb', tint:'#eef4ff', text:'#1e3a8a' };
+  if(score >= 40) return { bar:'#f59e0b', tint:'#fef4e2', text:'#92620c' };
+  return { bar:'#ea580c', tint:'#fdeee3', text:'#9a3412' };
+}
+const PUBS = [
+  { title:'Fehlertolerante Qubits in photonischen Netzwerken', meta:'M. Aigner · IQOQI Innsbruck', venue:'Nature Physics', flagship:true, type:'Journal Article', date:'28.06.', score:91, pm:false, flagged:true, pitch:'Quantencomputer rücken näher an den Alltag: Fehlerkorrektur mit Licht statt Kälte.' },
+  { title:'Exoplanet-Atmosphären: Wasserdampf auf TOI-270 d', meta:'L. Fossati · IWF Graz', venue:'Science', flagship:true, type:'Journal Article', date:'22.06.', score:88, pm:true, flagged:false, pitch:'JWST-Daten zeigen Wasserdampf und Methan auf einem Sub-Neptun.' },
+  { title:'Neue Wirkstoffklasse gegen antibiotikaresistente Keime', meta:'S. Novak · IMBA', venue:'Cell', flagship:true, type:'Journal Article', date:'15.06.', score:86, pm:false, flagged:true, pitch:'Peptid-Wirkstoff umgeht drei häufige Resistenzmechanismen.' },
+  { title:'Bronzezeitliche Handelsrouten im Ostalpenraum', meta:'K. Hofer · ÖAI', venue:'Antiquity', flagship:false, type:'Journal Article', date:'19.06.', score:84, pm:false, flagged:false, pitch:'Isotopenanalysen belegen Zinnhandel über die Alpen 1.000 Jahre früher.' },
+  { title:'Gletscherschmelze im Ötztal: die 20-Jahres-Bilanz', meta:'R. Prinz · IGF Innsbruck', venue:'The Cryosphere', flagship:false, type:'Journal Article', date:'11.06.', score:82, pm:true, flagged:false, pitch:'38 % Volumenverlust seit 2006, Kipppunkt für zwei Zungen.' },
+  { title:'KI liest mittelalterliche Handschriften', meta:'B. Steiner · IMAFO', venue:'DSH', flagship:false, type:'Journal Article', date:'05.06.', score:78, pm:false, flagged:false, pitch:'Transformer entziffert gotische Kursive mit 96 % Genauigkeit.' },
+  { title:'Mikroplastik in alpinen Seen: neue Eintragspfade', meta:'J. Weiss · ÖAW-Umwelt', venue:'ES&T', flagship:false, type:'Journal Article', date:'02.06.', score:75, pm:false, flagged:false, pitch:'Ferntransport über die Atmosphäre schlägt lokalen Tourismus.' },
+  { title:'Demografischer Wandel in Österreichs Gemeinden', meta:'T. Sobotka · VID', venue:'Population Studies', flagship:false, type:'Working Paper', date:'27.05.', score:71, pm:false, flagged:false, pitch:'Jede dritte Gemeinde schrumpft, Speckgürtel wachsen zweistellig.' },
+];
+const DASH_TASKS = [
+  { title:'Jahresbericht 2025 · Pressegespräch', due:'28. Jun', overdue:true, color:'#2563eb' },
+  { title:'Symposium KI und Ethik', due:'30. Jun', overdue:true, color:'#ea580c' },
+  { title:'Screen-Content Juli · Foyer', due:'1. Jul', overdue:true, color:'#16a34a' },
+  { title:'Preisverleihung ÖAW · Coverage', due:'morgen', overdue:false, color:'#ea580c' },
+];
+const DIMS = [ ['Zugänglichkeit',62], ['Gesell. Relevanz',58], ['Neuigkeitswert',54], ['Storytelling',49], ['Aktualität',44] ];
+const KEYWORDS = [ ['Quantenphysik',24], ['Klimawandel',21], ['KI',19], ['Archäologie',14], ['Demografie',11], ['Weltraum',10], ['Medizin',9], ['Gletscher',6] ];
+// Per-publication detail (index-aligned to PUBS)
+const PUB_EXTRA = [
+  { doi:'10.1038/s41567-026-02391-7', oa:'Hybrid Open Access', peer:true, popsci:false, model:'claude-haiku-4-20260401', cost:0.0071, words:6820,
+    insts:['IQOQI Innsbruck','Institut für Experimentalphysik'],
+    authors:[ {n:'Miriam Aigner',oeaw:true,role:'Erstautorin',mail:'miriam.aigner@oeaw.ac.at'}, {n:'Rainer Blatt',oeaw:true,role:'Korrespondenz'}, {n:'Chen Wei',oeaw:false}, {n:'Sofia Marchetti',oeaw:false} ],
+    dims:[88,82,94,78,86],
+    angle:'Vom Labor zur Anwendung — warum Fehlerkorrektur mit Licht den Quantencomputer alltagstauglicher macht.',
+    audience:'Überregionale Tagesmedien, Wissenschaftsressorts, Tech-Fachpresse',
+    reasoning:'Sehr hoher Neuigkeitswert bei starker Anschlussfähigkeit an die laufende Quanten-Debatte. Ergebnis ist ohne Fachjargon erklärbar, bildstarke Laboraufnahmen liegen vor. Flagship-Venue erhöht Zitierfähigkeit.',
+    abstract:'Wir demonstrieren fehlertolerante logische Qubits in einem rein photonischen Netzwerk und zeigen, dass Fehlerkorrektur ohne kryogene Kühlung skalierbar bleibt. Der Ansatz senkt die technische Einstiegshürde für praxistaugliche Quantenprozessoren erheblich.',
+    summaryDe:'Ein Innsbrucker Team hat gezeigt, dass sich Rechenfehler in Quantencomputern mit Lichtteilchen statt mit aufwendiger Kühlung korrigieren lassen — ein möglicher Wendepunkt auf dem Weg zu praktisch nutzbaren Quantenrechnern.',
+    haiku:['Licht statt tiefer Kälte —','ein Qubit trägt den Fehler fort,','Rechnen wird robust.'],
+    keywords:['Quantencomputing','Fehlerkorrektur','Photonik','Qubit','Skalierbarkeit'] },
+
+  { doi:'10.1126/science.adn8842', oa:'Green Open Access', peer:true, popsci:false, model:'claude-haiku-4-20260401', cost:0.0064, words:5410,
+    insts:['IWF Graz','Institut für Weltraumforschung'],
+    authors:[ {n:'Luca Fossati',oeaw:true,role:'Erstautor',mail:'luca.fossati@oeaw.ac.at'}, {n:'Anna Steindl',oeaw:true}, {n:'James Whitfield',oeaw:false} ],
+    dims:[84,80,88,82,79],
+    angle:'Ein Sub-Neptun mit Wasserdampf: Wie Graz an der Suche nach lebensfreundlichen Welten mitschreibt.',
+    audience:'Wissenschaftsressorts, Astronomie-Interessierte, Schulen',
+    reasoning:'Weltraumthemen mit Wasser-Bezug haben hohe Publikumsresonanz. JWST-Bezug sorgt für Aktualität, Grazer Beteiligung macht es zur regionalen Eigenleistung. PM bereits in Vorbereitung.',
+    abstract:'JWST-Transmissionsspektroskopie weist Wasserdampf und Methan in der Atmosphäre des Sub-Neptun TOI-270 d nach. Die Zusammensetzung deutet auf eine wasserstoffreiche Hülle über einem möglichen Ozean hin.',
+    summaryDe:'Mit dem James-Webb-Teleskop wurde auf einem fernen Planeten Wasserdampf nachgewiesen. Grazer Forschende waren an der Auswertung beteiligt.',
+    haiku:['Fernes blaues Glimmen —','im Spektrum wohnt der Wasserdampf,','ein Ozean vielleicht.'],
+    keywords:['Exoplaneten','JWST','Atmosphäre','Wasserdampf','Astrophysik'] },
+
+  { doi:'10.1016/j.cell.2026.05.019', oa:'Closed Access', peer:true, popsci:false, model:'claude-haiku-4-20260401', cost:0.0069, words:6120,
+    insts:['IMBA','Institut für Molekulare Biotechnologie'],
+    authors:[ {n:'Sonja Novak',oeaw:true,role:'Erstautorin',mail:'sonja.novak@oeaw.ac.at'}, {n:'Petra Lang',oeaw:true}, {n:'David Osei',oeaw:false} ],
+    dims:[80,90,84,74,82],
+    angle:'Hoffnung gegen Antibiotika-Resistenz — ein Wirkstoff, der drei Fluchtwege der Keime zugleich blockiert.',
+    audience:'Gesundheitsressorts, Tagesmedien, medizinische Fachpresse',
+    reasoning:'Antibiotikaresistenz ist ein gesellschaftlich hochrelevantes Dauerthema. Konkreter Wirkstoff mit geplanter klinischer Phase gibt eine greifbare Story. Sensible Kommunikation nötig, keine Heilsversprechen.',
+    abstract:'Eine neue Peptid-Wirkstoffklasse überwindet drei der häufigsten Resistenzmechanismen gramnegativer Keime gleichzeitig. In präklinischen Modellen zeigt sich Wirksamkeit ohne nennenswerte Toxizität.',
+    summaryDe:'Ein Wiener Team hat eine neue Substanzklasse entwickelt, die gegen mehrfach resistente Bakterien wirkt. Erste klinische Tests sind geplant.',
+    haiku:['Der Keim sucht die Flucht —','drei Türen fallen leise zu,','die Wunde wird still.'],
+    keywords:['Antibiotikaresistenz','Peptide','Wirkstoff','Mikrobiologie','präklinisch'] },
+
+  { doi:'10.15184/aqy.2026.71', oa:'Gold Open Access', peer:true, popsci:false, model:'claude-haiku-4-20260401', cost:0.0058, words:4980,
+    insts:['ÖAI','Österreichisches Archäologisches Institut'],
+    authors:[ {n:'Katharina Hofer',oeaw:true,role:'Erstautorin',mail:'katharina.hofer@oeaw.ac.at'}, {n:'Georg Reiter',oeaw:true} ],
+    dims:[82,72,80,78,64],
+    angle:'Der Alpen-Zinnhandel ist 1.000 Jahre älter als gedacht — was Isotope über frühe Netzwerke verraten.',
+    audience:'Kultur- und Wissenschaftsressorts, Geschichtsinteressierte',
+    reasoning:'Überraschender Zeitsprung ist eine klassische „Aha"-Story. Regionaler Bezug zum Ostalpenraum, gute Bebilderung durch Fundstücke möglich. Aktualitätsdruck gering.',
+    abstract:'Blei- und Zinnisotopenanalysen bronzezeitlicher Artefakte belegen überregionalen Zinnhandel über die Ostalpen bereits im frühen 3. Jahrtausend v. Chr. — deutlich früher als bisher angenommen.',
+    summaryDe:'Neue Analysen zeigen, dass über die Alpen schon vor über 4.000 Jahren mit Zinn gehandelt wurde — viel früher als gedacht.',
+    haiku:['Zinn wandert bergwärts —','vor viertausend stillen Jahren','klingt schon ein Markt auf.'],
+    keywords:['Bronzezeit','Handelsrouten','Isotopenanalyse','Ostalpen','Archäometrie'] },
+
+  { doi:'10.5194/tc-20-2026', oa:'Gold Open Access', peer:true, popsci:false, model:'claude-haiku-4-20260401', cost:0.0061, words:5230,
+    insts:['IGF Innsbruck','Institut für Interdisziplinäre Gebirgsforschung'],
+    authors:[ {n:'Rainer Prinz',oeaw:true,role:'Erstautor',mail:'rainer.prinz@oeaw.ac.at'}, {n:'Elke Moser',oeaw:true} ],
+    dims:[80,78,72,76,74],
+    angle:'20 Jahre Messreihe, 38 Prozent weg — der Ötztal-Gletscher als Klima-Chronik zum Anfassen.',
+    audience:'Tagesmedien, Klima- und Umweltressorts, regionale Medien',
+    reasoning:'Längste durchgehende Messreihe Österreichs liefert belastbare, bildstarke Klima-Story mit Kipppunkt-Narrativ. Hohe Aktualität in Sommermonaten, PM in Vorbereitung.',
+    abstract:'Die 20-jährige Massenbilanzreihe im Ötztal dokumentiert einen Volumenverlust von 38 % seit 2006. Für zwei Gletscherzungen wird ein irreversibler Kipppunkt erreicht.',
+    summaryDe:'Österreichs längste Gletscher-Messreihe zeigt einen dramatischen Eisverlust im Ötztal. Zwei Zungen sind nicht mehr zu retten.',
+    haiku:['Zwanzig Sommer zählt','das Eis — und schweigt nun leiser,','ein Drittel ist fort.'],
+    keywords:['Gletscher','Klimawandel','Massenbilanz','Ötztal','Kryosphäre'] },
+
+  { doi:'10.1093/llc/fqae026', oa:'Green Open Access', peer:true, popsci:false, model:'claude-haiku-4-20260401', cost:0.0055, words:4610,
+    insts:['IMAFO','Institut für Mittelalterforschung'],
+    authors:[ {n:'Bernhard Steiner',oeaw:true,role:'Erstautor',mail:'bernhard.steiner@oeaw.ac.at'}, {n:'Yuki Tanaka',oeaw:false} ],
+    dims:[76,66,82,70,68],
+    angle:'KI liest, was jahrhundertelang unlesbar war — 40.000 Seiten mittelalterlicher Handschriften erschlossen.',
+    audience:'Wissenschafts- und Kulturressorts, Digital-Interessierte',
+    reasoning:'Starke „KI trifft Geschichte"-Erzählung mit konkretem Nutzwert (durchsuchbare Archive). Anschlussfähig an KI-Debatte, Bildmaterial aus Handschriften verfügbar.',
+    abstract:'Ein feinabgestimmtes Transformer-Modell transkribiert gotische Kursive mit 96 % Zeichengenauigkeit und erschließt erstmals rund 40.000 bislang undurchsuchbare Handschriftenseiten.',
+    summaryDe:'Ein KI-Modell entziffert mittelalterliche Handschriften fast fehlerfrei und macht große Archivbestände erstmals durchsuchbar.',
+    haiku:['Gotische Schleifen —','die Maschine liest geduldig,','Archive erwachen.'],
+    keywords:['Digital Humanities','Handschriften','KI','Transkription','Mediävistik'] },
+
+  { doi:'10.1021/acs.est.6b01427', oa:'Hybrid Open Access', peer:true, popsci:false, model:'claude-haiku-4-20260401', cost:0.0059, words:5040,
+    insts:['ÖAW-Umweltforschung'],
+    authors:[ {n:'Julia Weiss',oeaw:true,role:'Erstautorin',mail:'julia.weiss@oeaw.ac.at'}, {n:'Marco Bauer',oeaw:true} ],
+    dims:[76,74,70,68,72],
+    angle:'Mikroplastik kommt aus der Luft — warum abgelegene Bergseen belasteter sind als gedacht.',
+    audience:'Umweltressorts, regionale Medien, Tourismusbranche',
+    reasoning:'Kontraintuitives Ergebnis (Ferntransport schlägt lokalen Tourismus) trägt die Story. Umweltrelevanz hoch, Aktualität mittel. Sachliche Einordnung nötig.',
+    abstract:'Sedimentanalysen alpiner Seen zeigen, dass atmosphärischer Ferntransport mehr Mikroplastik einträgt als lokaler Tourismus. Die Partikelzusammensetzung verweist auf entfernte Quellen.',
+    summaryDe:'In abgelegenen Bergseen sammelt sich mehr Mikroplastik an, als der Tourismus vor Ort erklären kann — der Wind trägt es aus der Ferne herbei.',
+    haiku:['Der Wind trägt den Rest','vergangener Dinge bergauf —','klarer See, nicht rein.'],
+    keywords:['Mikroplastik','Alpenseen','Ferntransport','Umwelt','Sediment'] },
+
+  { doi:'10.1080/00324728.2026.2201', oa:'Green Open Access', peer:false, popsci:false, model:'claude-haiku-4-20260401', cost:0.0052, words:4380,
+    insts:['VID','Institut für Demographie'],
+    authors:[ {n:'Tomáš Sobotka',oeaw:true,role:'Erstautor',mail:'tomas.sobotka@oeaw.ac.at'}, {n:'Lena Vogl',oeaw:true} ],
+    dims:[72,76,64,66,70],
+    angle:'Jede dritte Gemeinde schrumpft: eine interaktive Landkarte der demografischen Zukunft Österreichs.',
+    audience:'Innenpolitik- und Regionalressorts, Kommunen',
+    reasoning:'Regionalisierbare Daten erlauben lokale Anknüpfung in jeder Redaktion. Working Paper (noch nicht peer-reviewed) — Einordnung als Projektion kommunizieren.',
+    abstract:'Kleinräumige Bevölkerungsprojektionen bis 2050 zeigen, dass rund ein Drittel der österreichischen Gemeinden schrumpft, während Speckgürtel zweistellig wachsen.',
+    summaryDe:'Eine neue Projektion zeigt, wie sich Österreichs Gemeinden bis 2050 entwickeln: Abwanderung im ländlichen Raum, Wachstum rund um die Städte.',
+    haiku:['Dörfer werden still,','die Ränder der Stadt gedeihn —','Karten atmen um.'],
+    keywords:['Demografie','Bevölkerung','Projektion','Gemeinden','Migration'] },
+];
+function pubDims(i){ const e = PUB_EXTRA[i]; const names = DIMS.map(d => d[0]); return e.dims.map((v,j) => [names[j], v]); }
+
+const EVENTS0 = [
+  { id:'e1', date:'2026-07-04', day:'04', mon:'Jul', wd:'Sa', title:'Preisverleihung der Akademiepreise 2026', venue:'Festsaal ÖAW, Wien · 18:00', score:88, mainNews:true, reasons:['Prominente Preisträger:innen','Bildstark'], decision:'pitched', upcoming:true },
+  { id:'e2', date:'2026-07-10', day:'10', mon:'Jul', wd:'Fr', title:'Symposium: KI und Ethik in der Forschung', venue:'Theatersaal ÖAW, Wien · 09:00', score:82, mainNews:true, reasons:['Aktualität','Interdisziplinär'], decision:'open', upcoming:true },
+  { id:'e3', date:'2026-07-16', day:'16', mon:'Jul', wd:'Do', title:'Vortrag: Quantentechnologie in Europa', venue:'IQOQI Innsbruck · 17:00', score:74, mainNews:false, reasons:['Publikumsnah','Anschluss an PM'], decision:'open', upcoming:true },
+  { id:'e4', date:'2026-07-22', day:'22', mon:'Jul', wd:'Mi', title:'Buchpräsentation: Die Akademie 1847–2027', venue:'Bibliothek ÖAW, Wien · 19:00', score:58, mainNews:false, reasons:['Nischenpublikum'], decision:'rejected', upcoming:true },
+  { id:'e5', date:'2026-07-30', day:'30', mon:'Jul', wd:'Do', title:'Workshop: Digital Humanities Methoden', venue:'ACDH, Wien · 10:00', score:65, mainNews:false, reasons:['Fachpublikum'], decision:'open', upcoming:true },
+  { id:'e6', date:'2026-09-25', day:'25', mon:'Sep', wd:'Fr', title:'Lange Nacht der Forschung 2026', venue:'Campus Akademie, Wien · 17:00', score:95, mainNews:true, reasons:['Größtes Publikumsevent','Alle Kanäle'], decision:'pitched', upcoming:true },
+  { id:'e7', date:'2026-06-12', day:'12', mon:'Jun', wd:'Fr', title:'Sommerfest der Akademie', venue:'Innenhof ÖAW · 18:00', score:52, mainNews:false, reasons:['Intern'], decision:'rejected', upcoming:false },
+  { id:'e8', date:'2026-06-05', day:'05', mon:'Jun', wd:'Fr', title:'Panel: Wissenschaftskommunikation im Wandel', venue:'Presseclub Concordia · 11:00', score:77, mainNews:false, reasons:['Medienpartner vor Ort'], decision:'pitched', upcoming:false },
+];
+
 function parseDate(iso){ const [y,m,d] = iso.split('-').map(Number); return new Date(y, m-1, d); }
 function fmtDue(iso, completed){
   if(!iso) return { has:false };
@@ -574,6 +1130,11 @@ class Component extends DCLogic {
     userAction:null,
     reveal:{ open:false, title:'', sub:'', pw:'' }, copyReveal:false,
     warn:{ open:false, name:'', count:'' },
+    // toolkit screens
+    dashPeriod:'month',
+    pubSearch:'', pubPreset:'all', pubSel:null,
+    evTab:'upcoming', evMainNews:false, evMode:'agenda', evMonth:6, evYear:2026, evSel:null, evDay:'2026-07-04',
+    events: EVENTS0.slice(),
   };
 
   updateCard(id, fn){ this.setState(s => ({ cards: s.cards.map(c => c.id === id ? fn(c) : c) })); }
@@ -600,6 +1161,8 @@ class Component extends DCLogic {
     const ios = s.device === 'ios';
     const segOn = { display:'inline-flex', alignItems:'center', gap:'6px', border:'none', fontFamily:'inherit', fontSize:'12.5px', fontWeight:600, padding:'6px 13px', borderRadius:'7px', cursor:'pointer', background:'#0047bb', color:'#fff' };
     const segOff = { display:'inline-flex', alignItems:'center', gap:'6px', border:'none', fontFamily:'inherit', fontSize:'12.5px', fontWeight:600, padding:'6px 13px', borderRadius:'7px', cursor:'pointer', background:'transparent', color:'#64707f' };
+    const vsOn = { display:'inline-flex', alignItems:'center', gap:'5px', border:'none', fontFamily:'inherit', fontSize:'12px', fontWeight:600, padding:'6px 10px', borderRadius:'7px', cursor:'pointer', background:'#0047bb', color:'#fff' };
+    const vsOff = { display:'inline-flex', alignItems:'center', gap:'5px', border:'none', fontFamily:'inherit', fontSize:'12px', fontWeight:600, padding:'6px 10px', borderRadius:'7px', cursor:'pointer', background:'transparent', color:'#64707f' };
 
     const counts = {}; CH.forEach(c => counts[c.id] = 0);
     s.cards.forEach(c => counts[c.ch]++);
@@ -642,17 +1205,29 @@ class Component extends DCLogic {
     return {
       ...this.buildOverview(),
       ...this.buildVerwaltung(),
+      ...this.buildDashM(),
+      ...this.buildPubsM(),
+      ...this.buildEventsM(),
       // view routing
       isBoard: s.view === 'board', isOverview: s.view === 'overview', isVerwaltung: s.view === 'verwaltung',
+      isDash: s.view === 'dashboard', isPubs: s.view === 'pubs', isEvents: s.view === 'events',
       setBoard: () => this.setState({ view:'board' }),
       setOverview: () => this.setState({ view:'overview' }),
       setVerwaltung: () => this.setState({ view:'verwaltung' }),
+      setDash: () => this.setState({ view:'dashboard' }),
+      setPubs: () => this.setState({ view:'pubs' }),
+      setEvents: () => this.setState({ view:'events' }),
+      goBoard: () => this.setState({ view:'board' }),
+      goPubs: () => this.setState({ view:'pubs' }),
       goOverview: () => this.setState({ view:'overview', switcherOpen:false }),
-      vsBoard: s.view === 'board' ? segOn : segOff,
-      vsOverview: s.view === 'overview' ? segOn : segOff,
-      vsVerw: s.view === 'verwaltung' ? segOn : segOff,
+      vsDash: s.view === 'dashboard' ? vsOn : vsOff,
+      vsPubs: s.view === 'pubs' ? vsOn : vsOff,
+      vsEvents: s.view === 'events' ? vsOn : vsOff,
+      vsBoard: s.view === 'board' ? vsOn : vsOff,
+      vsOverview: s.view === 'overview' ? vsOn : vsOff,
+      vsVerw: s.view === 'verwaltung' ? vsOn : vsOff,
       navItems: [
-        { label:'Dashboard', iconClass:'ph ph-chart-bar', style:{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'3px', color:'#9aa4b2', cursor:'pointer', border:'none', background:'transparent', fontFamily:'inherit' }, weight:'500', onTap:()=>{} },
+        { label:'Dashboard', iconClass: (s.view==='dashboard'||s.view==='pubs'||s.view==='events') ? 'ph-fill ph-chart-bar' : 'ph ph-chart-bar', style:{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'3px', color:(s.view==='dashboard'||s.view==='pubs'||s.view==='events')?'#0047bb':'#9aa4b2', cursor:'pointer', border:'none', background:'transparent', fontFamily:'inherit' }, weight:'500', onTap:()=>this.setState({ view:'dashboard' }) },
         { label:'Board', iconClass: (s.view==='board'||s.view==='overview') ? 'ph-fill ph-kanban' : 'ph ph-kanban', style:{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'3px', color:(s.view==='board'||s.view==='overview')?'#0047bb':'#9aa4b2', cursor:'pointer', border:'none', background:'transparent', fontFamily:'inherit' }, weight:(s.view==='board'||s.view==='overview')?'600':'500', onTap:()=>this.setState({ view:'board' }) },
         { label:'Triage', iconClass:'ph ph-clipboard-text', style:{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'3px', color:'#9aa4b2', cursor:'pointer', border:'none', background:'transparent', fontFamily:'inherit' }, weight:'500', onTap:()=>{} },
         { label:'Mehr', iconClass: s.view==='verwaltung' ? 'ph-fill ph-gear-six' : 'ph ph-dots-three-outline', style:{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'3px', color:s.view==='verwaltung'?'#0047bb':'#9aa4b2', cursor:'pointer', border:'none', background:'transparent', fontFamily:'inherit' }, weight:s.view==='verwaltung'?'600':'500', onTap:()=>this.setState({ view:'verwaltung' }) },
@@ -723,6 +1298,193 @@ class Component extends DCLogic {
       ovArchOpen: s.archOpen, ovToggleArch: () => this.setState({ archOpen: !s.archOpen }),
       ovArchChevron: s.archOpen ? 'ph ph-caret-down' : 'ph ph-caret-right', ovArchCount: ARCH0.length,
       ovArch: ARCH0.map(a => ({ name:a.name, meta: a.count + ' Karten' })),
+    };
+  }
+
+  setEvDecision(id, d){ this.setState(s => ({ events: s.events.map(e => e.id === id ? { ...e, decision:d } : e) })); }
+
+  buildDashM(){
+    const s = this.state;
+    const vsOn = { border:'none', fontFamily:'inherit', fontSize:'12px', fontWeight:600, padding:'7px 13px', borderRadius:'8px', cursor:'pointer', background:'#0047bb', color:'#fff', whiteSpace:'nowrap', flexShrink:0 };
+    const vsOff = { border:'1px solid #e2e6ec', fontFamily:'inherit', fontSize:'12px', fontWeight:600, padding:'7px 13px', borderRadius:'8px', cursor:'pointer', background:'#fff', color:'#64707f', whiteSpace:'nowrap', flexShrink:0 };
+    const periods = [ ['week','7 Tage'], ['month','2 Monate'], ['year','Jahr'], ['all','Alle'] ];
+    const dashPeriods = periods.map(([id,label]) => ({ label, onSelect: () => this.setState({ dashPeriod:id }), style: s.dashPeriod===id ? vsOn : vsOff }));
+    const poolLabel = { week:'41 im Pool', month:'187 im Pool', year:'2.204 im Pool', all:'9.812 im Pool' }[s.dashPeriod];
+    const topCount = { week:4, month:5, year:6, all:6 }[s.dashPeriod];
+
+    const dashTasks = DASH_TASKS.map(t => ({ title:t.title, due:t.due,
+      dotStyle:{ width:'8px', height:'8px', borderRadius:'2px', background:t.color, flexShrink:0 },
+      dueStyle:{ fontFamily:MONO, fontSize:'11px', fontWeight:500, color: t.overdue?'#dc2626':'#64707f', background: t.overdue?'#fdeaea':'#eef1f5', padding:'2px 7px', borderRadius:'6px', flexShrink:0 } }));
+
+    const statDefs = [
+      { icon:'ph-duotone ph-book-open', c:'#0047bb', bg:'#eef4ff', value:'12.480', label:'Publikationen · 68 % peer-reviewed' },
+      { icon:'ph-duotone ph-chart-bar', c:'#0047bb', bg:'#eef4ff', value:'9.812', label:'analysiert · 79 % des Bestands' },
+      { icon:'ph-duotone ph-trend-up', c:'#059669', bg:'#e7f7ef', value:'214', label:'hohes Story-Potenzial · Ø 58 %' },
+      { icon:'ph-duotone ph-push-pin', c:'#d97706', bg:'#fdf1e3', value:'12', label:'für Triage geflaggt' },
+    ];
+    const dashStats = statDefs.map(d => ({ icon:d.icon, value:d.value, label:d.label,
+      iconWrap:{ width:'32px', height:'32px', borderRadius:'9px', background:d.bg, color:d.c, display:'inline-flex', alignItems:'center', justifyContent:'center' } }));
+
+    const dashTop = PUBS.slice(0, topCount).map((p,i) => ({ rank:i+1, title:p.title, meta:p.meta, score:p.score + ' %',
+      rankStyle:{ width:24, height:24, borderRadius:999, background: i<3?'#0047bb':'#eef1f5', color: i<3?'#fff':'#64707f', fontFamily:MONO, fontSize:11.5, fontWeight:600, display:'inline-flex', alignItems:'center', justifyContent:'center', flexShrink:0, marginTop:1 },
+      scoreStyle: scoreBadge(p.score, false) }));
+
+    const dashDims = DIMS.map(([name,val]) => ({ name, val: val+' %', barStyle:{ display:'block', height:'100%', width: val+'%', background:'#0047bb', borderRadius:'999px' } }));
+    const maxK = KEYWORDS[0][1];
+    const dashKeywords = KEYWORDS.map(([word,n]) => ({ word, style:{ fontSize: (11 + Math.round(n/maxK*4)) + 'px', fontWeight:500, color: n > 15 ? '#0047bb' : '#475262', background: n > 15 ? '#eef4ff' : '#eef1f5', padding:'3px 9px', borderRadius:'999px' } }));
+
+    return { dashPeriods, poolLabel, dashTasks, dashStats, dashTop, dashDims, dashKeywords };
+  }
+
+  buildPubsM(){
+    const s = this.state;
+    const presetDefs = [
+      { id:'all', label:'Alle', icon:'ph ph-rows' },
+      { id:'high', label:'Hohes Potenzial', icon:'ph ph-trend-up' },
+      { id:'flagship', label:'Flagship', icon:'ph ph-crown-simple' },
+      { id:'pm', label:'Mit PM', icon:'ph ph-newspaper' },
+      { id:'flagged', label:'Geflaggt', icon:'ph ph-push-pin' },
+    ];
+    const pubPresets = presetDefs.map(pr => ({ label:pr.label, icon:pr.icon, onSelect: () => this.setState({ pubPreset:pr.id }),
+      style:{ display:'inline-flex', alignItems:'center', gap:'6px', border:'1px solid ' + (s.pubPreset===pr.id?'#0047bb':'#cbd2dc'), background: s.pubPreset===pr.id?'#eef4ff':'#fff', color: s.pubPreset===pr.id?'#0047bb':'#64707f', fontFamily:'inherit', fontSize:'12.5px', fontWeight:600, padding:'0 13px', height:'34px', borderRadius:'999px', cursor:'pointer', whiteSpace:'nowrap', flexShrink:0 } }));
+    const q = s.pubSearch.trim().toLowerCase();
+    const pubRows = PUBS.map((p,idx)=>({p,idx})).filter(({p}) => {
+      if(q && !(p.title.toLowerCase().includes(q) || p.meta.toLowerCase().includes(q))) return false;
+      if(s.pubPreset==='high') return p.score >= 80;
+      if(s.pubPreset==='flagship') return p.flagship;
+      if(s.pubPreset==='pm') return p.pm;
+      if(s.pubPreset==='flagged') return p.flagged;
+      return true;
+    }).map(({p,idx}) => ({ title:p.title, meta:p.meta, venue:p.venue, flagship:p.flagship, plainVenue:!p.flagship, type:p.type, pitch:p.pitch, score:p.score+' %', scoreStyle:scoreBadge(p.score,true), hasPm:p.pm, flagged:p.flagged, onOpen: () => this.setState({ pubSel:idx }) }));
+    return { pubSearch:s.pubSearch, onPubSearch:(e)=>this.setState({ pubSearch:e.target.value }), pubPresets, pubRows, pubsEmpty: pubRows.length===0, pubsFooter: pubRows.length + ' von 12.480 · Story Score absteigend', ...this.buildPubDetailM() };
+  }
+
+  evCard(e, agenda){
+    const b = evBand(e.score);
+    return { title:e.title, venue:e.venue, score:e.score+' %', scoreStyle: scoreBadge(e.score, false), mainNews:e.mainNews,
+      wrapStyle:{ background:'#fff', border:'1px solid #e2e6ec', borderLeft:'3px solid ' + b.bar, borderRadius:'13px', padding:'13px 14px', marginBottom:'10px', boxShadow:'0 1px 2px rgba(16,32,46,.05)', cursor:'pointer' },
+      open: e.decision==='open', pitched: e.decision==='pitched', rejected: e.decision==='rejected',
+      onOpen: () => this.setState({ evSel:e.id }),
+      onPitch: (ev) => { if(ev) ev.stopPropagation(); this.setEvDecision(e.id,'pitched'); },
+      onReject: (ev) => { if(ev) ev.stopPropagation(); this.setEvDecision(e.id,'rejected'); },
+      onReopen: (ev) => { if(ev) ev.stopPropagation(); this.setEvDecision(e.id,'open'); },
+      decLabelShow: e.decision !== 'open',
+      decLabel: e.decision==='pitched' ? 'Im Board' : 'Verworfen',
+      decIcon: e.decision==='pitched' ? 'ph-bold ph-kanban' : 'ph-bold ph-x',
+      decStyle:{ display:'inline-flex', alignItems:'center', gap:'5px', fontSize:'11px', fontWeight:600, padding:'3px 9px', borderRadius:'999px', color: e.decision==='pitched'?'#059669':'#9aa4b2', background: e.decision==='pitched'?'#e7f7ef':'#f1f3f6' },
+    };
+  }
+
+  buildPubDetailM(){
+    const i = this.state.pubSel;
+    const pubDetailOpen = i !== null && i !== undefined;
+    if(!pubDetailOpen) return { pubDetailOpen:false, pdm:{} };
+    const p = PUBS[i]; const e = PUB_EXTRA[i]; const pct = p.score;
+    const band = pct >= 70 ? { fg:'#0047bb', bg:'#eef4ff' } : pct >= 40 ? { fg:'#b45309', bg:'#fdf1e3' } : { fg:'#64707f', bg:'#eef1f5' };
+    const scoreLabel = pct >= 80 ? 'Sehr hohes Story-Potenzial' : pct >= 60 ? 'Hohes Story-Potenzial' : pct >= 40 ? 'Mittleres Potenzial' : 'Geringes Potenzial';
+    const badgeTint = { blue:{c:'#0047bb',b:'#eef4ff'}, emerald:{c:'#0f7a4d',b:'#e7f7ef'}, amber:{c:'#92620c',b:'#fdf1e3'} };
+    const tb = (color, icon, text) => ({ text, icon, style:{ display:'inline-flex', alignItems:'center', gap:'5px', fontSize:'11px', fontWeight:600, color:badgeTint[color].c, background:badgeTint[color].b, padding:'4px 9px', borderRadius:'999px' } });
+    const badges = [];
+    if(e.peer) badges.push(tb('blue','ph-fill ph-shield-check','Peer-reviewed'));
+    if(e.popsci) badges.push(tb('amber','ph-fill ph-megaphone-simple','Popular Science'));
+    badges.push(tb('emerald','ph-fill ph-lock-open', e.oa));
+    if(p.pm) badges.push(tb('emerald','ph-fill ph-newspaper','ÖAW-PM'));
+    if(p.flagged) badges.push(tb('amber','ph-fill ph-push-pin','Geflaggt'));
+    const authors = e.authors.map(a => ({ name:a.n, ext:!a.oeaw, role:a.role||'', hasRole:!!a.role,
+      nameStyle:{ fontSize:'13.5px', fontWeight:600, color: a.oeaw ? '#0047bb' : '#16202e' },
+      avatarStyle:{ width:30, height:30, borderRadius:999, background: a.oeaw ? '#0047bb' : '#cbd2dc', color:'#fff', fontSize:11, fontWeight:600, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 },
+      initials: a.n.split(/\s+/).slice(0,2).map(w => w[0]).join('') }));
+    const oeawN = e.authors.filter(a => a.oeaw).length, extN = e.authors.length - oeawN;
+    const dims = pubDims(i).map(([name,val]) => ({ name, val: val + ' %', barStyle:{ display:'block', height:'100%', width: val + '%', background:'#0047bb', borderRadius:'999px' } }));
+    return { pubDetailOpen, closePubDetail: () => this.setState({ pubSel:null }), pdm:{
+      title:p.title, meta:p.meta, venue:p.venue, flagship:p.flagship, plainVenue:!p.flagship, type:p.type, date:p.date + '2026',
+      doi:e.doi, badges,
+      scoreBig: pct + '%', scoreLabel,
+      scoreCircleStyle:{ width:58, height:58, borderRadius:999, background:band.bg, color:band.fg, fontFamily:MONO, fontSize:18, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 },
+      pitch:p.pitch, angle:e.angle, audience:e.audience, reasoning:e.reasoning, summaryDe:e.summaryDe, abstract:e.abstract,
+      haikuLines: e.haiku.map(l => ({ line:l })), model:e.model,
+      authors, authorsCount: e.authors.length, authorsBreak: oeawN && extN ? (oeawN + ' ÖAW, ' + extN + ' extern') : (oeawN ? 'alle ÖAW' : 'alle extern'),
+      dims, keywords: e.keywords.map(k => ({ word:k })), insts: e.insts.map(x => ({ name:x })),
+    } };
+  }
+
+  buildEventsM(){
+    const s = this.state;
+    const segOn = { flex:1, display:'inline-flex', alignItems:'center', justifyContent:'center', gap:'6px', border:'none', fontFamily:'inherit', fontSize:'13px', fontWeight:600, padding:'8px', borderRadius:'8px', cursor:'pointer', background:'#fff', color:'#0047bb', boxShadow:'0 1px 2px rgba(16,32,46,.1)' };
+    const segOff = { flex:1, display:'inline-flex', alignItems:'center', justifyContent:'center', gap:'6px', border:'none', fontFamily:'inherit', fontSize:'13px', fontWeight:600, padding:'8px', borderRadius:'8px', cursor:'pointer', background:'transparent', color:'#64707f' };
+    const agenda = s.evMode === 'agenda';
+
+    const tabOn = { display:'inline-flex', alignItems:'center', gap:'6px', border:'1px solid #0047bb', background:'#eef4ff', color:'#0047bb', fontFamily:'inherit', fontSize:'12.5px', fontWeight:600, padding:'0 12px', height:'34px', borderRadius:'9px', cursor:'pointer' };
+    const tabOff = { display:'inline-flex', alignItems:'center', gap:'6px', border:'1px solid #cbd2dc', background:'#fff', color:'#64707f', fontFamily:'inherit', fontSize:'12.5px', fontWeight:600, padding:'0 12px', height:'34px', borderRadius:'9px', cursor:'pointer' };
+    const cOn = { fontFamily:MONO, fontSize:'11px', fontWeight:500, background:'#dbe7ff', color:'#0047bb', padding:'1px 7px', borderRadius:'999px' };
+    const cOff = { fontFamily:MONO, fontSize:'11px', fontWeight:500, background:'#eef1f5', color:'#9aa4b2', padding:'1px 7px', borderRadius:'999px' };
+
+    const upC = s.events.filter(e => e.upcoming).length, pastC = s.events.filter(e => !e.upcoming).length;
+
+    // agenda grouping
+    const filtered = s.events.filter(e => (s.evTab==='upcoming') === e.upcoming && (!s.evMainNews || e.mainNews)).sort((a,b) => a.date < b.date ? -1 : 1);
+    const groupsMap = [];
+    filtered.forEach(e => {
+      let g = groupsMap.find(x => x.date === e.date);
+      if(!g){ g = { date:e.date, day:e.wd, label: parseInt(e.day) + '. ' + MONTHS_DE[parseInt(e.date.slice(5,7))-1], events:[] }; groupsMap.push(g); }
+      g.events.push(this.evCard(e, true));
+    });
+
+    // mini month grid
+    const y = s.evYear, m = s.evMonth;
+    const byDate = {}; s.events.forEach(e => { (byDate[e.date] = byDate[e.date] || []).push(e); });
+    const iso = (d) => d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    const first = new Date(y, m, 1); const startMon = (first.getDay() + 6) % 7;
+    const gridStart = new Date(y, m, 1 - startMon); const todayIso = '2026-07-03';
+    const miniWeeks = [];
+    for(let w = 0; w < 6; w++){
+      const days = [];
+      for(let d = 0; d < 7; d++){
+        const cur = new Date(gridStart.getFullYear(), gridStart.getMonth(), gridStart.getDate() + w*7 + d);
+        const key = iso(cur); const inMonth = cur.getMonth() === m; const isToday = key === todayIso; const isSel = key === s.evDay;
+        const evs = byDate[key] || [];
+        const dots = evs.slice(0,3).map(e => { const b = evBand(e.score); return { width:'5px', height:'5px', borderRadius:'999px', background:b.bar, display:'block' }; });
+        days.push({ num: cur.getDate(),
+          onTap: () => this.setState({ evDay:key }),
+          cellStyle:{ minHeight:'44px', padding:'5px 0 3px', textAlign:'center', cursor:'pointer', borderRight:'1px solid #f1f3f6', borderBottom:'1px solid #f1f3f6', background: isSel ? '#eef4ff' : (inMonth ? '#fff' : '#fbfcfd') },
+          numStyle:{ display:'inline-flex', alignItems:'center', justifyContent:'center', width:'22px', height:'22px', borderRadius:'999px', fontFamily:MONO, fontSize:'11.5px', fontWeight: (isToday||isSel) ? 700 : 500, color: isToday ? '#fff' : (isSel ? '#0047bb' : (inMonth ? '#333d4c' : '#c0c7d1')), background: isToday ? '#0047bb' : 'transparent' },
+          dots });
+      }
+      miniWeeks.push({ days });
+    }
+    const selEvents = (byDate[s.evDay] || []).map(e => this.evCard(e, false));
+    const selD = new Date(s.evDay + 'T00:00:00');
+    const selDayLabel = WEEKDAYS_DE[(selD.getDay()+6)%7] + ', ' + selD.getDate() + '. ' + MONTHS_DE[selD.getMonth()] + ' ' + selD.getFullYear();
+
+    // event sheet
+    const se = s.events.find(e => e.id === s.evSel);
+    let es = {};
+    if(se){ const b = evBand(se.score);
+      es = { title:se.title, venue:se.venue, score:se.score+' %', reasons:se.reasons,
+        dateLabel: parseInt(se.day) + '. ' + MONTHS_DE[parseInt(se.date.slice(5,7))-1] + ' ' + se.date.slice(0,4),
+        headStyle:{ display:'flex', alignItems:'center', gap:'9px', padding:'14px 16px', background:b.tint, borderRadius:'22px 22px 0 0' },
+        scoreStyle:{ display:'inline-flex', alignItems:'center', justifyContent:'center', fontFamily:MONO, fontSize:'13px', fontWeight:600, color:b.text, background:'#fff', padding:'6px 11px', borderRadius:'9px' },
+        open: se.decision==='open', pitched: se.decision==='pitched', rejected: se.decision==='rejected',
+        onPitch: () => this.setEvDecision(se.id,'pitched'), onReject: () => this.setEvDecision(se.id,'rejected'), onReopen: () => this.setEvDecision(se.id,'open') };
+    }
+
+    return {
+      evAgendaMode: agenda, evMonthMode: !agenda,
+      setEvAgenda: () => this.setState({ evMode:'agenda' }), setEvMonth: () => this.setState({ evMode:'month' }),
+      evAgendaTab: agenda ? segOn : segOff, evMonthTab: !agenda ? segOn : segOff,
+      onEvUpcoming: () => this.setState({ evTab:'upcoming' }), onEvPast: () => this.setState({ evTab:'past' }),
+      evUpTab: s.evTab==='upcoming' ? tabOn : tabOff, evPastTab: s.evTab==='past' ? tabOn : tabOff,
+      evUpCount: upC, evPastCount: pastC,
+      evUpCountStyle: s.evTab==='upcoming' ? cOn : cOff, evPastCountStyle: s.evTab==='past' ? cOn : cOff,
+      toggleEvMain: () => this.setState({ evMainNews: !s.evMainNews }),
+      evMainStyle:{ display:'inline-flex', alignItems:'center', gap:'6px', border:'1px solid ' + (s.evMainNews?'#0047bb':'#cbd2dc'), background: s.evMainNews?'#0047bb':'#fff', color: s.evMainNews?'#fff':'#64707f', fontFamily:'inherit', fontSize:'12px', fontWeight:600, padding:'0 12px', height:'34px', borderRadius:'9px', cursor:'pointer' },
+      evGroups: groupsMap, evEmpty: filtered.length === 0,
+      miniWeekdays: WEEKDAYS_DE, miniWeeks,
+      onMonthPrev: () => { let mm = m-1, yy = y; if(mm<0){ mm=11; yy--; } this.setState({ evMonth:mm, evYear:yy }); },
+      onMonthNext: () => { let mm = m+1, yy = y; if(mm>11){ mm=0; yy++; } this.setState({ evMonth:mm, evYear:yy }); },
+      evMonthLabel: MONTHS_DE[m] + ' ' + y,
+      selDayLabel, selDayEvents: selEvents, selDayEmpty: selEvents.length === 0,
+      evSheetOpen: !!se, es, closeEvSheet: () => this.setState({ evSel:null }),
     };
   }
 
@@ -859,4 +1621,3 @@ class Component extends DCLogic {
 </script>
 </body>
 </html>
-
