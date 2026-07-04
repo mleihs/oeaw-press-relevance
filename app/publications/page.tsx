@@ -39,8 +39,10 @@ export default async function PublicationsPage({ searchParams }: PageProps) {
 
   return (
     <div className="space-y-4">
-      {/* Header: Titel + Bestandszahl + Export (Comp Z. 192–198) */}
-      <div className="flex flex-wrap items-end justify-between gap-4">
+      {/* Header: Titel + Bestandszahl + Export (Comp Z. 192–198). Mobil
+          ausgeblendet wie beim Dashboard (M3) — der blaue App-Header mit
+          Titel + Export-Knopf folgt in Phase M2. */}
+      <div className="hidden md:flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-ink">
             Publikationen
@@ -63,7 +65,12 @@ export default async function PublicationsPage({ searchParams }: PageProps) {
 
       <FiltersBar total={data.total} hidden={data.total_hidden} />
 
-      <PipelineActions />
+      {/* Pipeline-Trigger (Anreichern/Analysieren) bleibt Desktop-only — der
+          Mobile-Mock hat ihn nicht, und Batch-Pipelines startet man nicht am
+          Telefon (vetobar). */}
+      <div className="hidden md:block">
+        <PipelineActions />
+      </div>
 
       <PublicationList
         publications={data.publications}

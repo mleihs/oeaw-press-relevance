@@ -116,6 +116,20 @@ der Pill (unser Pitch legt keine Karte automatisch an).
 + Monat|Woche-Sub-Segment (Comp Z. 254–257/316–319) wurde NICHT gemacht — die
 bestehende Liste|Woche|Monat-Leiste bleibt.
 
+## NEU aus Remote-Mock 2026-07-04 (Toolkit-Redesign.dc.html, Commit dabb11a)
+Der Desktop-Mock wurde remote weiterentwickelt (774→1030 Zeilen) und ist ins
+Repo übernommen. **OFFEN als eigener Desktop-Schnitt (nach Mobile-Phasen oder
+parallel):**
+- **Publikations-Detailansicht** (Mock remote Z. 214–352, `isPubDetail`):
+  Zurück-Link, Header (Titel, „Ins Board", Pin, Badges/DOI), 2-Spalten —
+  links Pitch-Vorschlag (Blickwinkel/Zielgruppe), Zusammenfassung, Haiku-Karte,
+  Autor:innen, externe Anreicherung; rechts sticky Relevanz-Analyse (Score-
+  Kreis, 5 Dimensions-Balken, Begründung, Modell/Kosten) + Redaktions-
+  entscheidung (Pitchen/Verwerfen). Betrifft `app/publications/[id]`.
+- **Dashboard-Umbau:** Kachelgrid 3→1 Spalte (nur noch Board-Kachel; Triage-/
+  PM-Kachel im Mock gestrichen); Pub-Zeilen klicken auf die Publikation
+  (bei uns bereits so gebaut — Dashboard-Kacheln ggf. angleichen, vetobar).
+
 ## Status Commits (2026-07-04)
 - `c532111` feat(design): Toolkit-Redesign Views 1–3 (Desktop) — **committet**
   (nicht mehr „UNCOMMITTED", trotz obiger Alt-Formulierungen im Doc).
@@ -176,8 +190,26 @@ ClipboardCheck/Kanban).
   ScoreDistribution + keine PM-Kachel (Mobile-Mock hat beide nicht; PM via
   Hamburger erreichbar). Verifiziert Playwright 390×844 (kein H-Overflow,
   scrollWidth=390); tsc0/eslint0.
-- **M4 Publikationen mobil** — Suche + Preset-Chips (x-scroll) + gestapelte
-  Karten (Score-Badge + Titel + Meta + Pitch + Chip-Reihe). Mock Z. 360–412.
+- **M4 Publikationen mobil** ✅ FERTIG 2026-07-04 (Playwright 390×844 verifiziert:
+  kein H-Overflow, Chip→`?flagged=true`, „Alle"-Reset, Suche→`?q=`; Desktop 1440
+  unverändert; tsc0/eslint0/21 Filter-Tests grün) — Mock Z. 360–412:
+  `filters-bar.tsx` in Desktop-Layer (`hidden md:flex`) + Mobile-Layer
+  (`md:hidden`: eigenes Such-Input `#publications-search-mobile`, teilt
+  Debounce/State mit Desktop, + 5 Schnellfilter-Chips x-scroll im
+  M3-Bleed-Muster). Schnellfilter = single-select auf bestehende URL-Felder
+  (Alle=Reset · Hohes Potenzial=`minScore:70` · Eigen-Highlights=`maHl`+
+  `showAll` · Mit PM=`pressReleased:yes` · Geflaggt=`flagged`), aktiver Chip
+  rein aus Filterwerten abgeleitet; Chip-Wechsel resettet PRESET_FIELDS +
+  Quick-Felder, Modifier überleben (applyPreset-Semantik). `publication-list.tsx`:
+  Desktop-Karte `hidden md:block`, mobil gestapelte Einzelkarten (PressScoreBadge
+  + Titel + Autor·Institut + Pitch clamp-2 + Chip-Reihe: Flagship-Krone-Pill
+  bzw. Venue-Text/Typ/PM/„Geflaggt"-statisch) + zentrierter Mono-Count-Footer
+  mit prev/next. `page.tsx`: h1-Header + PipelineActions `hidden md:*`.
+  `lib/icons.ts` + `Rows`. **Abweichungen (vetobar):** Mock-Chip „Flagship" →
+  „Eigen-Highlights" (kein Flagship-Listen-Filter im Backend, nur Journal-Tier);
+  Score-Badge = PressScoreBadge-Pill (wie Desktop-View-2-Abweichung, N/A-Grund);
+  Footer paginiert statt Mock-Gesamtcount; Show-All/Filter-Sheet/ActiveFilters
+  bleiben Desktop-only; Flag-Pin mobil statischer Chip (Toggle auf Detail-Page).
 - **M5 Veranstaltungen mobil** — **Agenda-Modus** (Tag-Gruppen + Titel/Venue/
   Score + full-width Pitchen/Verwerfen UNTER dem Titel; gepitcht→„Im Board",
   verworfen→„Verworfen"+Zurück) UND **Kompakt-Monatskalender** (7-Spalten-Grid

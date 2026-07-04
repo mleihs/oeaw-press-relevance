@@ -1,7 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight, Newspaper, Search } from '@/lib/icons';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Crown,
+  Newspaper,
+  Pin,
+  Search,
+} from '@/lib/icons';
 import { PressScoreBadge } from '@/components/score-bar';
 import { VenueLine } from '@/components/venue-line';
 import { FlagshipBadge } from '@/components/flagship-badge';
@@ -14,6 +21,8 @@ import {
 } from '@/lib/shared/publication-display';
 import { formatPubDate, pubDateTitle } from '@/lib/shared/format-pub-date';
 import { enrichmentReason } from '@/lib/shared/enrichment-reason';
+import { canonicalName } from '@/lib/shared/venue-registry';
+import { journalTier } from '@/lib/shared/journal-tier';
 import type { PublicationListItem } from '@/lib/server/publications/list';
 
 // Kartengrund nach Design System §5 (Elevation-1) — identisch zu Dashboard, damit
@@ -69,16 +78,133 @@ export function PublicationList({
   nextHref,
   hasFilters,
 }: PublicationListProps) {
+  const emptyLabel = hasFilters
+    ? 'Keine Publikationen für diese Filter'
+    : 'Keine Publikationen';
   return (
-    <div className={CARD}>
+    <>
+    {/* ── Mobile-Layer (< md) — Mock Board-Mobile.dc.html Z. 386–410 (M4):
+        gestapelte Einzelkarten statt einer Karte mit Trennzeilen. Score-Badge
+        = PressScoreBadge (System-Konsistenz + N/A-Grund, wie Desktop-
+        Abweichung dokumentiert); „Geflaggt" ist hier ein statischer Chip
+        (Mock) — der interaktive Pin lebt auf der Detail-Page. Footer =
+        Count-Mono + prev/next (der Mock filtert clientseitig ohne Seiten). */}
+    <div className="md:hidden">
+      {publications.length === 0 ? (
+        <div className="rounded-[14px] border-[1.5px] border-dashed border-line-strong px-4 py-[34px] text-center">
+          <Search aria-hidden className="mx-auto h-7 w-7 text-line-strong" />
+          <div className="mt-2.5 text-[13.5px] text-ink-subtle">{emptyLabel}</div>
+        </div>
+      ) : (
+        publications.map((pub) => {
+          const naReason = naReasonFor(pub);
+          const institute = displayInstitute(pub);
+          const typeLabel =
+            pub.publication_type || pub.publication_type_lookup?.name_de;
+          const venueRaw = pub.enriched_journal?.trim();
+          const venue = venueRaw ? canonicalName(venueRaw) : null;
+          const isFlagship = venue ? journalTier(venue) === 'top' : false;
+          const isFlagged = (pub.flag_notes ?? []).length > 0;
+          return (
+            <Link
+              key={pub.id}
+              href={`/publications/${pub.id}`}
+              className="mb-2.5 block rounded-[13px] border border-line bg-surface px-3.5 py-[13px] shadow-[0_1px_2px_rgba(16,32,46,.05)] transition-colors active:bg-canvas"
+            >
+              <div className="flex items-start gap-[11px]">
+                <PressScoreBadge
+                  score={pub.press_score}
+                  analysisStatus={pub.analysis_status}
+                  enrichmentStatus={pub.enrichment_status}
+                  naReason={naReason}
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-semibold leading-[1.35] text-ink">
+                    {displayTitle(pub.original_title || pub.title, pub.citation)}
+                  </div>
+                  <div className="mt-1 text-xs text-ink-subtle">
+                    {displayAuthor(pub)}
+                    {institute ? ` · ${institute}` : ''}
+                  </div>
+                </div>
+              </div>
+              {pub.pitch_suggestion && (
+                <p className="mt-[9px] line-clamp-2 text-[12.5px] leading-[1.45] text-ink-soft">
+                  {pub.pitch_suggestion}
+                </p>
+              )}
+              <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+                {venue &&
+                  (isFlagship ? (
+                    <span className="inline-flex max-w-[55vw] items-center gap-1 rounded-full bg-brand-50 px-2 py-[3px] text-[10.5px] font-semibold text-brand">
+                      <Crown
+                        aria-hidden
+                        weight="fill"
+                        className="h-[11px] w-[11px] shrink-0"
+                      />
+                      <span className="truncate">{venue}</span>
+                    </span>
+                  ) : (
+                    <span className="max-w-[45vw] truncate text-[11px] text-ink-muted">
+                      {venue}
+                    </span>
+                  ))}
+                {typeLabel && (
+                  <span className="rounded-full bg-fill px-2 py-[3px] text-[10.5px] font-semibold text-ink-subtle">
+                    {typeLabel}
+                  </span>
+                )}
+                <span className="flex-1" />
+                {pub.press_release && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-success-tint px-2 py-[3px] text-[10.5px] font-semibold text-success">
+                    <Newspaper
+                      aria-hidden
+                      weight="bold"
+                      className="h-[11px] w-[11px]"
+                    />
+                    PM
+                  </span>
+                )}
+                {isFlagged && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-warning-tint px-2 py-[3px] text-[10.5px] font-semibold text-warning-ink">
+                    <Pin
+                      aria-hidden
+                      weight="fill"
+                      className="h-[11px] w-[11px]"
+                    />
+                    Geflaggt
+                  </span>
+                )}
+              </div>
+            </Link>
+          );
+        })
+      )}
+      <div className="flex items-center justify-center gap-3 pb-0.5 pt-1.5">
+        {totalPages > 1 && (
+          <PagerLink href={prevHref} label="Vorige Seite">
+            <ChevronLeft className="h-4 w-4" />
+          </PagerLink>
+        )}
+        <span className="font-mono text-[11px] text-ink-muted">
+          {total > 0
+            ? `${rangeStart}–${rangeEnd} von ${total.toLocaleString('de-AT')}`
+            : '0 Publikationen'}
+        </span>
+        {totalPages > 1 && (
+          <PagerLink href={nextHref} label="Nächste Seite">
+            <ChevronRight className="h-4 w-4" />
+          </PagerLink>
+        )}
+      </div>
+    </div>
+
+    {/* ── Desktop-Layer (≥ md) — unverändert ── */}
+    <div className={`hidden md:block ${CARD}`}>
       {publications.length === 0 ? (
         <div className="px-4 py-11 text-center">
           <Search aria-hidden className="mx-auto h-7 w-7 text-line-strong" />
-          <div className="mt-2.5 text-[13.5px] text-ink-subtle">
-            {hasFilters
-              ? 'Keine Publikationen für diese Filter'
-              : 'Keine Publikationen'}
-          </div>
+          <div className="mt-2.5 text-[13.5px] text-ink-subtle">{emptyLabel}</div>
         </div>
       ) : (
         publications.map((pub) => {
@@ -187,6 +313,7 @@ export function PublicationList({
         <InfoBubble id="press_score" size="sm" />
       </div>
     </div>
+    </>
   );
 }
 

@@ -133,6 +133,7 @@ export {
   ArrowsClockwise as RefreshCcw,
   ArrowsClockwise as RefreshCw,
   ArrowCounterClockwise as RotateCcw,
+  Rows as Rows,
   FloppyDisk as Save,
   MagnifyingGlass as Search,
   MagnifyingGlass as SearchIcon,

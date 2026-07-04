@@ -1,9 +1,19 @@
 'use client';
 
 import { useCallback, useRef, useState } from 'react';
-import { RotateCcw, Search } from '@/lib/icons';
+import {
+  Crown,
+  Newspaper,
+  Pin,
+  RotateCcw,
+  Rows,
+  Search,
+  TrendingUp,
+  type LucideIcon,
+} from '@/lib/icons';
 import { Input } from '@/components/ui/input';
 import { InfoBubble } from '@/components/info-bubble';
+import { cn } from '@/lib/shared/utils';
 import { useKeyboardShortcuts } from '@/lib/client/hooks/use-keyboard-shortcuts';
 import { useFilters } from '../use-filters';
 import {
@@ -24,6 +34,20 @@ interface Props {
   total: number;
   hidden: number;
 }
+
+// Mobile-Schnellfilter (Mock Board-Mobile.dc.html Z. 378–384): Ein-Feld-Filter
+// als single-select Chip-Reihe — kein zweites Preset-System, jeder Chip setzt
+// genau ein bestehendes URL-Filterfeld. Abweichung vom Mock (vetobar):
+// „Flagship" → „Eigen-Highlights" (maHl) — Flagship ist ein reines
+// Journal-Tier-Konzept ohne Listen-Filter im Backend.
+type QuickKey = 'all' | 'high' | 'mahl' | 'pm' | 'flagged';
+const QUICK_CHIPS: Array<{ key: QuickKey; label: string; Icon: LucideIcon }> = [
+  { key: 'all', label: 'Alle', Icon: Rows },
+  { key: 'high', label: 'Hohes Potenzial', Icon: TrendingUp },
+  { key: 'mahl', label: 'Eigen-Highlights', Icon: Crown },
+  { key: 'pm', label: 'Mit PM', Icon: Newspaper },
+  { key: 'flagged', label: 'Geflaggt', Icon: Pin },
+];
 
 // Single client island wrapping the filter UI: nuqs state + search debounce +
 // preset state machine + keyboard shortcuts + the existing sub-components
@@ -145,9 +169,95 @@ export function FiltersBar({ total, hidden }: Props) {
     },
   });
 
+  // Welcher Schnellfilter-Chip ist aktiv? Reine Ableitung aus den URL-Feldern
+  // (Prioritätskette), damit auch via Filter-Sheet/Desktop gesetzte Werte den
+  // richtigen Chip markieren. Kein eigener State.
+  const quickActive: QuickKey = filters.flagged
+    ? 'flagged'
+    : filters.pressReleased === 'yes'
+      ? 'pm'
+      : filters.maHl
+        ? 'mahl'
+        : filters.minScore >= 70
+          ? 'high'
+          : 'all';
+
+  // Single-select wie im Mock: Chip-Wechsel setzt das Preset-Territorium +
+  // die Quick-Felder zurück und wendet dann genau das eine Feld an. Modifier
+  // (Suche, Institute, Datum, …) überleben — dieselbe Semantik wie applyPreset.
+  const applyQuick = useCallback(
+    (key: QuickKey) => {
+      const patch: Partial<FilterValues> = {
+        page: 1,
+        preset: 'custom',
+        flagged: false,
+        pressReleased: 'any',
+      };
+      for (const f of PRESET_FIELDS) setField(patch, f, FILTER_DEFAULTS[f]);
+      if (key === 'high') patch.minScore = 70;
+      if (key === 'mahl') {
+        // Wie das Desktop-Preset „Eigen-Highlights": ohne showAll wären viele
+        // kuratierte Highlights (nicht default-eligible) unsichtbar.
+        patch.maHl = true;
+        patch.showAll = true;
+      }
+      if (key === 'pm') patch.pressReleased = 'yes';
+      if (key === 'flagged') patch.flagged = true;
+      setFilters(patch);
+    },
+    [setFilters],
+  );
+
   return (
     <div className="space-y-3">
-        <div className="flex flex-col lg:flex-row lg:items-center gap-3">
+      {/* ── Mobile-Layer (< md) — Mock Z. 373–384: Suche + Schnellfilter-Chips.
+          Show-All-Toggle/Filter-Sheet/Active-Filters bleiben Desktop (Mock hat
+          sie nicht; via Chips gesetzte Filter sind am Chip selbst sichtbar). */}
+      <div className="space-y-2.5 md:hidden">
+        <div className="flex h-10 items-center gap-2 rounded-[10px] border border-line-strong bg-surface px-[11px]">
+          <Search aria-hidden className="h-4 w-4 shrink-0 text-ink-muted" />
+          <label htmlFor="publications-search-mobile" className="sr-only">
+            Publikationen suchen
+          </label>
+          <input
+            id="publications-search-mobile"
+            value={searchInput}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            placeholder="Titel, Autor:in, Zusammenfassung…"
+            className="min-w-0 flex-1 border-none bg-transparent text-sm text-ink outline-none placeholder:text-ink-muted"
+          />
+        </div>
+        {/* x-scroll bis an den Viewport-Rand (main hat px-4) — Muster wie die
+            Perioden-Chips des Mobile-Dashboards (M3). */}
+        <div
+          role="group"
+          aria-label="Schnellfilter"
+          className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          <div className="flex min-w-max gap-[7px]">
+            {QUICK_CHIPS.map(({ key, label, Icon }) => (
+              <button
+                key={key}
+                type="button"
+                aria-pressed={quickActive === key}
+                onClick={() => applyQuick(key)}
+                className={cn(
+                  'inline-flex h-[34px] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-[13px] text-[12.5px] font-semibold transition-colors',
+                  quickActive === key
+                    ? 'border-brand bg-brand-50 text-brand'
+                    : 'border-line-strong bg-surface text-ink-subtle',
+                )}
+              >
+                <Icon aria-hidden className="h-[13px] w-[13px]" />
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Desktop-Layer (≥ md) — unverändert ── */}
+      <div className="hidden md:flex flex-col lg:flex-row lg:items-center gap-3">
           <div className="relative w-full lg:max-w-xs inline-flex items-center gap-1">
             <div className="relative flex-1">
               <Search aria-hidden className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/70" />
@@ -189,7 +299,9 @@ export function FiltersBar({ total, hidden }: Props) {
           </div>
         </div>
 
+      <div className="hidden md:block">
         <ActiveFilters filters={filters} setFilters={setFilters} lookups={lookups} />
+      </div>
     </div>
   );
 }
