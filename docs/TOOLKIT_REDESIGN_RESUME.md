@@ -348,11 +348,24 @@ Spalte** = Pitch/Zusammenfassung/Haiku/Autor:innen/Enrichment + Zusatzkarten
 (Press-Release/Press-Referenz/Projekte). Mobile-M6c-Reihenfolge via
 `max-md:-order-*` erhalten (Header→rechte Spalte→linke Spalte). „Analyse"-Titel
 → „Relevanz-Analyse". In-Browser verifiziert (analysierte Pub, sticky rechts ok).
-**OFFENE POLITUR (nächste Schritte):** Header-Buttons an Comp (Ins Board =
-blau-gefüllt m. Kanban-Icon, Pin = amber-umrandete Box); Pitch-Karte Mock-Blau
-(`#f6f9ff`/Border), Haiku-Karte Mock-Gradient (M6c ließ sie Desktop-Stil),
-Autor:innen-Avatare (Initialen-Kreise wie Comp Z. 264–281), „Zurück zu
-Publikationen"-Link statt/neben Breadcrumb; Score-Kreis-Styling ggf. an Comp.
+**PUB-DETAIL-POLITUR DONE (Commit `c1d407b`, lokal, NICHT gepusht):** Alle
+offenen Politur-Punkte umgesetzt + in-Browser verifiziert (analysierte Pub
+„Ancient DNA…Avar", Score 82%):
+- Header-Buttons: „Ins Board" blau-gefüllt (`variant="default"`), Flag-Pin in
+  umrandeter Quadrat-Box (`border-line-strong bg-surface rounded-[9px]`).
+- „Zurück zu Publikationen"-Link ersetzt Breadcrumb: `breadcrumb.tsx` komplett
+  auf Back-Link umgeschrieben (ArrowLeft), error/not-found erben mit.
+- Pitch-Karte Mock-Blau `#f6f9ff`/`#d3e2ff` + Lightning-Icon + Mono-Label,
+  Blickwinkel/Zielgruppe-Labels jetzt `text-brand` fett.
+- Haiku = Gradient-Karte: neue `HaikuBlock`-Prop `variant="gradient"`
+  (Verlauf brand-500→700, Lotus-Wasserzeichen, Mono-Label, weiße Zeilen).
+  Serif-Default bleibt für die Publikations-Tabelle. `FlowerLotus` in
+  `lib/icons.ts` ergänzt.
+- Autor:innen-Initialen-Avatare (32px Kreis, brand=ÖAW / grau=extern).
+- Score-Kreis 72px, Geist Mono 22px.
+- **Bugfix nebenbei:** Haiku-Wortabstände kollabierten („ZweiDoerferimTal"),
+  weil der trailing Space IM `inline-block`-Span am Box-Rand wegfiel — Space
+  jetzt als Textnode ZWISCHEN den Wort-Spans. Gilt für beide Varianten.
 
 **Kalender Monat/Woche — KEIN Styling-Bug:** Chips (`calendar-event-chip.tsx`)
 bilden Comp-`scoreBadge`-Bänder bereits 1:1 ab (Tint-Box + 3px-Bar + Titel + %
