@@ -253,14 +253,54 @@ ClipboardCheck/Kanban).
   Pitch→Im Board→Zurück-Roundtrip; Tages-Tap; Monats-Nav; Desktop 1440
   unverändert inkl. Schedule-X); tsc0/eslint0/583 Tests. Damit ist der
   §M1-Befund (~200px H-Overflow der Desktop-Tabelle) mobil behoben.
-- **M6 Detail-Bottom-Sheets** — Card-/Event-/Publikations-Detail auf Mobile als
-  von-unten-Sheet (statt Desktop-Modal): Grabber/Caret-Down-Close, Meta-Rows,
-  Checkliste, Kommentare. Mock Z. 549–850. Größte Phase; ggf. weiter splitten.
+- **M6 Detail-Bottom-Sheets** ✅ FERTIG 2026-07-04, in 3 Teilschnitten
+  (Commits `9f5c34b`/`180fc52`/`22371b8`; je Schnitt tsc0/eslint0/583 Tests +
+  Playwright 390×844 + Desktop-1440-Gegenprobe). Vorab `npx shadcn add drawer`
+  (vaul) — `components/ui/drawer.tsx`, angepasst: cn-Import `lib/shared/utils`,
+  Bottom-Radius 22px, Mock-Grabber (38×4 bg-line), Overlay `rgba(13,36,80,.35)`,
+  neue `grabber`-Prop zum Ausblenden.
+  - **M6a Card-Sheet** (`9f5c34b`, Mock Z. 549): KEIN vaul — der bestehende
+    Radix-`CardModal` wird per CSS responsive zum Bottom-Sheet (<md:
+    `inset-x-0 bottom-0 top-[14px] rounded-t-[22px]` + slide-from-bottom;
+    md+: unverändert zentriert+Zoom). Schließen-Button als direktes
+    Header-Kind mit `md:order-last`: mobil Caret-Down links (Mock), Desktop
+    X rechts; „Verschieben"-Label mobil versteckt (icon-only), sonst
+    sprengt der Header 390px. Abweichungen: Meta-Reihenfolge bleibt
+    (Sidebar-Felder unterm Content, Mock hat sie unterm Titel); Titel-Input
+    wrappt nicht (Input, kein Textarea). BEFUND (vorbestehend, nicht M6):
+    dnd-kit-Hydration-Mismatch `DndDescribedBy-N` in CardChip (instabiler
+    globaler Zähler, dev „1 Issue"-Badge auf /board/[slug]).
+  - **M6b Event-Detail-Sheet** (`180fc52`, Mock Z. 758–795): neues
+    `mobile-event-card.tsx` (Client) bündelt M5-Agenda-Karte + Sheet;
+    AGENDA_BAR/AGENDA_CARD/eventScoreBand dorthin VERSCHOBEN (aus
+    events-agenda; Grund: Server-Comps dürfen keine Nicht-Component-Exports
+    aus 'use client'-Modulen ziehen → Schnitt so gelegt, dass Agenda (Server,
+    kriegt Map!) nur die Komponente importiert). Titel-Tap öffnet vaul-Drawer:
+    band-getinteter Header (brand-50/warning-tint/soon-tint/fill) + Mono-Datum
+    + X, Titel (=Link zur Detail-Page) + ScoreReasonBadge, Venue,
+    Institut/Sprach-Chips, `EventAgendaActions` (Pitch-Roundtrip im Sheet
+    in-Browser verifiziert). Kompakt-Kalender-Tagesliste nutzt dieselbe Karte
+    (`statusOnly`-Pill, Aktionen im Sheet). Abweichung: Mock-Reason-Chips →
+    Institut/Sprache (keine strukturierten Reasons; Reasoning im Score-Popover).
+  - **M6c Pub-Detail** (`22371b8`, Mock Z. 797–890): full-screen Page (kein
+    Sheet, Route existiert). Neuer geteilter `components/mobile-detail-header.tsx`
+    (Zurück-Pfeil + Titel + Aktions-Slot, M2-Bleed, md:hidden — auch für
+    künftige Event-Detail-Mobile nutzbar); auf /publications/[id] mit Flag-Pin
+    rechts (weiße Box), Breadcrumb Desktop-only (AUSSERHALB space-y wg.
+    §M2-Gotcha → page-Container entkoppelt). detail-client: Root `space-y-6`
+    → `flex flex-col gap-6` + `max-md:-order-*` für die Mock-Reihenfolge
+    (Header→Analyse→Pitch→Toolbar→Rest) OHNE Desktop-DOM-Änderung; sticky
+    „Ins Board"-Bar über der Bottom-Nav (`bottom: calc(3.5rem + safe-area)`;
+    CreateCardButton hat jetzt className/wrapperClassName). Abweichungen
+    (vetobar): DecisionToolbar bleibt mobil (statt Mock-Verwerfen in der Bar);
+    PM-Querverweis/Press-Referenz/Projekte in DOM-Reihenfolge; Haiku-Karte
+    behält Desktop-Stil (kein Mock-Gradient).
 
-**Empfehlung:** M1 zuerst (self-contained, hoher Signalwert, geringes Risiko),
-dann M3 als erste komplette Screen-Umsetzung zur Validierung des `md:`-Split-
-Musters, dann M4/M5, M2 (Header) mitziehen, M6 zuletzt. Mechanisch genug für
-einen **Fable-Lauf** — der Plan ist deterministisch, Vorlage + Tokens liegen fest.
+**ALLE MOBILE-PHASEN M1–M6 FERTIG (2026-07-04).** Nächster Schritt:
+**Push-Abstimmung mit dem User** für `b34523c..HEAD` (M1–M6 + Remote-Mock-
+Update), danach optional der offene Desktop-Schnitt (Pub-Detailansicht
+Desktop-Mock Z. 214–352 + Dashboard-Kachelgrid, s. §NEU oben) und der
+visuelle Sweep aus dem Rollout-Doc.
 
 ## Verifikation
 Dev-Server läuft (`npm run dev`, Port 3000). In-Browser prüfen (MCP-Tab, oder
