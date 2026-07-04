@@ -39,6 +39,7 @@ import {
 } from '@/components/ui/sheet';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { AvatarMenu } from '@/components/avatar-menu';
+import { DevUserSwitcher } from '@/components/dev-user-switcher';
 import { CommandMenuButton } from '@/components/command/command-menu-button';
 import { openCommandMenu, openCheatSheet } from '@/lib/client/commands/controller';
 
@@ -308,6 +309,7 @@ export function Nav() {
             />
           </div>
           <ThemeToggle />
+          <DevUserSwitcher />
           <AvatarMenu />
 
           {/* Mobile hamburger sheet */}
