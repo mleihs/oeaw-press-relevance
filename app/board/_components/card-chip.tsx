@@ -6,6 +6,7 @@ import { CheckCircle2, ListChecks, ListTree, MessageCircle, Paperclip } from '@/
 import { cn } from '@/lib/shared/utils';
 import type { BoardLabel, BoardMember, CardChip as CardChipT } from '@/lib/shared/board';
 import { dueState } from '../_lib/due';
+import { displayNameOf } from '../_lib/people';
 import { BoardAvatar } from './board-avatar';
 import { DueBadge } from './due-badge';
 import { LabelPill } from './label-pill';
@@ -52,10 +53,15 @@ export function CardChip({
     card.subtask_total > 0 ||
     card.comment_count > 0 ||
     card.attachment_count > 0 ||
+    card.assignee_id !== null ||
     card.watcher_ids.length > 0;
 
-  const shownWatchers = card.watcher_ids.slice(0, 3);
-  const extraWatchers = card.watcher_ids.length - shownWatchers.length;
+  // Zuständige:n am Chip zeigen (MeisterTask zeigt das Assignee-Avatar auf der
+  // Karte). Beobachter bleiben als kleiner Stack davor, sind hier aber leer.
+  const assignee = card.assignee_id ? members.get(card.assignee_id) : undefined;
+  const watchersOnly = card.watcher_ids.filter((id) => id !== card.assignee_id);
+  const shownWatchers = watchersOnly.slice(0, 3);
+  const extraWatchers = watchersOnly.length - shownWatchers.length;
 
   return (
     <div
@@ -120,16 +126,27 @@ export function CardChip({
           {card.attachment_count > 0 && (
             <MetaBadge icon={Paperclip} label={String(card.attachment_count)} />
           )}
-          {card.watcher_ids.length > 0 && (
+          {(assignee || watchersOnly.length > 0) && (
             <span className="ml-auto flex items-center pl-2">
               {shownWatchers.map((id, i) => (
-                <span key={id} style={{ marginLeft: i === 0 ? 0 : -7 }} className="ring-2 ring-surface rounded-full">
+                <span key={id} style={{ marginLeft: i === 0 ? 0 : -7 }} className="rounded-full opacity-70 ring-2 ring-surface">
                   <BoardAvatar member={members.get(id)} size={22} />
                 </span>
               ))}
               {extraWatchers > 0 && (
                 <span className="ml-[-7px] inline-flex h-[22px] w-[22px] items-center justify-center rounded-full bg-fill text-ink-subtle ring-2 ring-surface font-mono text-[9.5px] font-semibold">
                   +{extraWatchers}
+                </span>
+              )}
+              {/* Assignee als primäres, betontes Avatar rechts (Ring in
+                  Kanalfarbe hebt ihn von Beobachtern ab). */}
+              {assignee && (
+                <span
+                  title={displayNameOf(assignee)}
+                  style={{ marginLeft: shownWatchers.length || extraWatchers > 0 ? -7 : 0, boxShadow: `0 0 0 2px ${accent}` }}
+                  className="rounded-full ring-2 ring-surface"
+                >
+                  <BoardAvatar member={assignee} size={22} />
                 </span>
               )}
             </span>
