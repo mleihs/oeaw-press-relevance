@@ -8,6 +8,8 @@ import {
   listPublications,
 } from '@/lib/server/publications/list';
 import { PAGE_SIZE } from './_constants';
+import { BookOpen } from '@/lib/icons';
+import { MobileScreenHeader } from '@/components/mobile-screen-header';
 import { ExportDropdown } from './_components/export-dropdown';
 import { FiltersBar } from './_components/filters-bar';
 import { PipelineActions } from './_components/pipeline-actions';
@@ -38,10 +40,19 @@ export default async function PublicationsPage({ searchParams }: PageProps) {
       : '';
 
   return (
+    <>
+    {/* Blauer App-Header (M2) — bewusst außerhalb des space-y-Containers,
+        damit dessen strukturelle `* + *`-Margins den Desktop-Fluss nicht
+        verschieben. Export bleibt Desktop-only (Mock-Export-Knopf vetobar
+        weggelassen — Downloads startet man nicht am Telefon). */}
+    <MobileScreenHeader
+      icon={<BookOpen size={16} weight="fill" />}
+      title="Publikationen"
+      sub={`${data.total.toLocaleString('de-AT')} Publikationen · Story Score`}
+    />
     <div className="space-y-4">
       {/* Header: Titel + Bestandszahl + Export (Comp Z. 192–198). Mobil
-          ausgeblendet wie beim Dashboard (M3) — der blaue App-Header mit
-          Titel + Export-Knopf folgt in Phase M2. */}
+          trägt der blaue App-Header (M2) Titel + Count. */}
       <div className="hidden md:flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-ink">
@@ -84,5 +95,6 @@ export default async function PublicationsPage({ searchParams }: PageProps) {
         hasFilters={hasFilters}
       />
     </div>
+    </>
   );
 }

@@ -1,4 +1,5 @@
 import { CalendarDays } from '@/lib/icons';
+import { MobileScreenHeader } from '@/components/mobile-screen-header';
 import {
   DEFAULT_EVENTS_SORT,
   filtersForEventsTab,
@@ -137,6 +138,14 @@ export default async function EventsPage({
   const mobileMonth = calWindow?.view === 'month';
 
   return (
+    <>
+    {/* Blauer App-Header (M2); Subzeile = Mock-Wortlaut (Z. 423). Außerhalb
+        des space-y-Containers, damit der Desktop-Fluss unverändert bleibt. */}
+    <MobileScreenHeader
+      icon={<CalendarDays size={16} weight="fill" />}
+      title="Veranstaltungen"
+      sub="Bewerten · pitchen · ins Board"
+    />
     <div className="space-y-6">
       <div className="hidden md:block">
         <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -242,5 +251,6 @@ export default async function EventsPage({
         )}
       </div>
     </div>
+    </>
   );
 }

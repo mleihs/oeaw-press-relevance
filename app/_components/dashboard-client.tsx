@@ -13,6 +13,7 @@ import {
   TrendingUp,
 } from '@/lib/icons';
 import { PressScoreBadge } from '@/components/score-bar';
+import { MobileScreenHeader } from '@/components/mobile-screen-header';
 import { InfoBubble } from '@/components/info-bubble';
 import { CapybaraEmpty } from '@/components/capybara-logo';
 import { VenueLine } from '@/components/venue-line';
@@ -77,7 +78,13 @@ function useHydrated(): boolean {
 function useGreeting(name: string | null) {
   const hydrated = useHydrated();
   const who = name ? `, ${name}` : '';
-  if (!hydrated) return { line: `Willkommen zurück${who}`, date: null as string | null };
+  if (!hydrated) {
+    return {
+      line: `Willkommen zurück${who}`,
+      date: null as string | null,
+      shortDate: null as string | null,
+    };
+  }
   const now = new Date();
   return {
     line: `${greetingFor(now.getHours())}${who}`,
@@ -86,6 +93,12 @@ function useGreeting(name: string | null) {
       day: 'numeric',
       month: 'long',
       year: 'numeric',
+    }),
+    // Kompaktform für die Mono-Subzeile des mobilen App-Headers (M2).
+    shortDate: now.toLocaleDateString('de-AT', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'long',
     }),
   };
 }
@@ -123,19 +136,31 @@ export function DashboardClient({ data, period, sortBy, boardCards }: DashboardC
     `${flaggedCount} Publikationen geflaggt`,
   ].filter(Boolean);
 
+  // Mono-Subzeile des mobilen App-Headers (Mock: „Fr, 3. Juli · Stand 06:30").
+  const mobileSub = [greeting.shortDate, webdbAsOf ? `WebDB-Stand ${webdbAsOf}` : null]
+    .filter(Boolean)
+    .join(' · ');
+
   if (stats.total === 0) {
     return (
-      <div className={`${CARD} border-dashed py-6`}>
-        <CapybaraEmpty
-          message="Noch keine Publikationen"
-          submessage="Importieren Sie zuerst einen WebDB-Datenbankabzug, um zu starten."
+      <>
+        <MobileScreenHeader
+          icon={<BarChart3 size={16} weight="fill" />}
+          title={greeting.line}
+          sub={greeting.shortDate}
         />
-        <div className="mt-4 flex justify-center">
-          <Button asChild>
-            <Link href="/upload">Zum WebDB-Import</Link>
-          </Button>
+        <div className={`${CARD} border-dashed py-6`}>
+          <CapybaraEmpty
+            message="Noch keine Publikationen"
+            submessage="Importieren Sie zuerst einen WebDB-Datenbankabzug, um zu starten."
+          />
+          <div className="mt-4 flex justify-center">
+            <Button asChild>
+              <Link href="/upload">Zum WebDB-Import</Link>
+            </Button>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
@@ -156,6 +181,13 @@ export function DashboardClient({ data, period, sortBy, boardCards }: DashboardC
 
   return (
     <>
+    {/* Blauer App-Header (M2) — nur mobil; Desktop behält den <h1>-Gruß. */}
+    <MobileScreenHeader
+      icon={<BarChart3 size={16} weight="fill" />}
+      title={greeting.line}
+      sub={mobileSub}
+    />
+
     {/* ── Desktop-Layer (≥ md) ─────────────────────────────────────────── */}
     <div className="hidden space-y-4 md:block">
       {/* Header: Gruß + Perioden-Tabs */}
@@ -343,7 +375,7 @@ export function DashboardClient({ data, period, sortBy, boardCards }: DashboardC
     </div>
 
     {/* ── Mobile-Layer (< md) — Mock Board-Mobile.dc.html Z. 263–358 (M3) ──
-        Gruß/blauer App-Header folgt in Phase M2; Score-Verteilung hat der
+        Gruß trägt der blaue App-Header oben (M2); Score-Verteilung hat der
         Mobile-Mock bewusst nicht. */}
     <div className="space-y-3.5 md:hidden">
       {/* Perioden-Chips, x-scroll bis an den Viewport-Rand (main hat px-4) */}
