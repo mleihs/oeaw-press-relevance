@@ -64,15 +64,20 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
       : null;
 
   return (
-    <div className="space-y-6">
+    // flex-col + gap statt space-y: erlaubt die Mobile-Reihenfolge (M6c, Mock
+    // Z. 811ff: Score → Pitch zuerst) rein über order-Klassen, ohne die
+    // Desktop-DOM-Ordnung anzufassen. max-md:pb-16 räumt die Sticky-Bar frei.
+    <div className="flex flex-col gap-6 max-md:pb-16">
       {/* Header */}
-      <div className="space-y-3">
+      <div className="space-y-3 max-md:-order-6">
         <div className="flex flex-wrap items-start gap-2">
-          <h1 className="text-2xl font-bold leading-tight flex-1">{titleForDisplay}</h1>
-          <div className="mt-0.5 shrink-0">
+          <h1 className="text-xl md:text-2xl font-bold leading-tight flex-1">{titleForDisplay}</h1>
+          {/* Mobil wandern „Ins Board" in die Sticky-Bar und der Flag-Pin in
+              den blauen Detail-Header (page.tsx) — hier Desktop-only. */}
+          <div className="mt-0.5 shrink-0 hidden md:block">
             <CreateCardButton source={publicationToCardSource(pub, titleForDisplay)} />
           </div>
-          <div className="mt-0.5 shrink-0">
+          <div className="mt-0.5 shrink-0 hidden md:block">
             <PublicationFlag pubId={pub.id} flagNotes={pub.flag_notes ?? []} decision={pub.decision} />
           </div>
           {isMaHighlighted && (
@@ -250,8 +255,10 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
         </div>
       </div>
 
-      {/* Decision-Toolbar */}
-      <DecisionToolbar pub={pub} />
+      {/* Decision-Toolbar — mobil hinter Score + Pitch einsortiert */}
+      <div className="max-md:-order-3">
+        <DecisionToolbar pub={pub} />
+      </div>
 
       {/* ÖAW-Pressemitteilung (cross-reference zur TYPO3-news) */}
       {pub.press_release && (
@@ -312,9 +319,9 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
       {/* Press-Referenz (semantic SPECTER2-similarity, lazy own query). */}
       <PressReferenceCard pubId={pub.id} abstractLooksGerman={abstractLooksGerman} />
 
-      {/* Pitch */}
+      {/* Pitch — mobil an zweiter Stelle nach der Analyse */}
       {hasAnalysis && pub.pitch_suggestion && (
-        <Card className="border-brand/20 bg-brand/[0.02]">
+        <Card className="border-brand/20 bg-brand/[0.02] max-md:-order-4">
           <CardContent className="p-5">
             <h3 className="text-xs font-medium text-brand uppercase mb-2 inline-flex items-center gap-1">
               Pitch-Vorschlag
@@ -564,9 +571,9 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
         </Card>
       )}
 
-      {/* Analysis card */}
+      {/* Analysis card — mobil direkt nach dem Header (Mock: Score zuerst) */}
       {hasAnalysis && (
-        <Card className="border-brand/20">
+        <Card className="border-brand/20 max-md:-order-5">
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <Brain className="h-4 w-4 text-brand" />
@@ -670,6 +677,22 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
           )}
         </CardContent>
       </Card>
+
+      {/* Sticky Mobile-Aktionsleiste über der Bottom-Tab-Nav (Mock Z. 886).
+          Nur „Ins Board" — Verwerfen/Pitchen laufen über die DecisionToolbar
+          oben (mit Rationale/Snooze), die mobil erhalten bleibt (vetobar). */}
+      <div
+        className="fixed inset-x-0 z-30 border-t border-line bg-surface px-3.5 py-2.5 md:hidden"
+        style={{ bottom: 'calc(3.5rem + env(safe-area-inset-bottom))' }}
+      >
+        <CreateCardButton
+          source={publicationToCardSource(pub, titleForDisplay)}
+          size="default"
+          variant="default"
+          wrapperClassName="flex w-full"
+          className="flex-1"
+        />
+      </div>
     </div>
   );
 }
