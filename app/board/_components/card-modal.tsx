@@ -6,6 +6,7 @@ import { Dialog as DialogPrimitive } from 'radix-ui';
 import {
   X,
   Check,
+  ChevronDown,
   CheckCircle2,
   ListChecks,
   ListTree,
@@ -130,7 +131,10 @@ export function CardModal({
             if (t instanceof HTMLTextAreaElement) e.preventDefault();
             else if (t instanceof HTMLInputElement && t.dataset.dirty === 'true') e.preventDefault();
           }}
-          className="fixed left-1/2 top-1/2 z-50 flex max-h-[calc(100vh-2rem)] w-[calc(100%-2rem)] max-w-[840px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl bg-card shadow-2xl outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
+          // <md: Bottom-Sheet nach Mock (Card-Sheet, Board-Mobile Z. 549) —
+          // Full-Height ab 14px, oben gerundet, Slide von unten. md+: das
+          // bisherige zentrierte Modal (Zoom-Animation nur dort).
+          className="fixed inset-x-0 bottom-0 top-[14px] z-50 flex flex-col overflow-hidden rounded-t-[22px] bg-card shadow-2xl outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 max-md:data-[state=open]:slide-in-from-bottom-[40%] max-md:data-[state=closed]:slide-out-to-bottom-[40%] md:inset-x-auto md:bottom-auto md:left-1/2 md:top-1/2 md:max-h-[calc(100vh-2rem)] md:w-[calc(100%-2rem)] md:max-w-[840px] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-2xl md:data-[state=closed]:zoom-out-95 md:data-[state=open]:zoom-in-95"
         >
           {/* Zugänglicher Dialogtitel (der sichtbare Titel ist ein editierbares
               Input-Feld, kein Heading) — Radix verdrahtet aria-labelledby. */}
@@ -143,9 +147,21 @@ export function CardModal({
             <>
               {/* Header */}
               <div
-                className="flex shrink-0 items-center gap-2 border-b px-5 py-4"
+                className="flex shrink-0 items-center gap-2 border-b px-4 py-3 md:px-5 md:py-4"
                 style={{ backgroundColor: `${accent}14` }}
               >
+                {/* Mobil steht der Schließen-Caret links (Mock Card-Sheet),
+                    auf Desktop bleibt das X rechts außen (md:order-last). */}
+                <DialogPrimitive.Close asChild>
+                  <button
+                    type="button"
+                    aria-label="Schließen"
+                    className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground hover:text-foreground md:order-last"
+                  >
+                    <ChevronDown className="h-[18px] w-[18px] md:hidden" />
+                    <X className="hidden h-4 w-4 md:block" />
+                  </button>
+                </DialogPrimitive.Close>
                 {column && (
                   <ChannelIcon name={column.name} className="h-[18px] w-[18px]" style={{ color: accent }} />
                 )}
@@ -166,15 +182,6 @@ export function CardModal({
                     }}
                   />
                   <CompleteButton card={card} onDone={applyCard} />
-                  <DialogPrimitive.Close asChild>
-                    <button
-                      type="button"
-                      aria-label="Schließen"
-                      className="flex h-[34px] w-[34px] items-center justify-center rounded-md bg-muted text-muted-foreground hover:text-foreground"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </DialogPrimitive.Close>
                 </div>
               </div>
 

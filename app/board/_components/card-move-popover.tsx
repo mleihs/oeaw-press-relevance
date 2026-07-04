@@ -59,7 +59,9 @@ export function CardMovePopover({
           type="button"
           className="inline-flex h-9 items-center gap-1.5 rounded-md border border-input bg-card px-3 text-[13px] font-medium text-foreground hover:bg-muted"
         >
-          <ArrowRightToLine className="h-4 w-4" /> Verschieben
+          <ArrowRightToLine className="h-4 w-4" />
+          {/* Mobil (Sheet-Header, M6a) reicht das Icon — Platz ist knapp. */}
+          <span className="hidden md:inline">Verschieben</span>
         </button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-64 p-2">
