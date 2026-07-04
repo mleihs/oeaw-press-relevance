@@ -173,9 +173,30 @@ ClipboardCheck/Kanban).
   **BEFUND für M5:** /events (Desktop-Layer) hat ~200px Horizontal-Overflow
   auf 390px (Status-Pill-Leiste, scrollWidth 590) — auf echten Geräten störend;
   wird durch die M5-Agenda ersetzt, bis dahin bekannt.
-- **M2 Per-Screen Mobile-Header** — kompakter blauer App-Header (Icon+Titel+
-  Sub+Avatar) statt der Desktop-`<h1>`-Blöcke, nur `md:hidden`. Als shared
-  `components/mobile-screen-header.tsx`, pro Screen mit passendem Icon/Sub.
+- **M2 Per-Screen Mobile-Header** ✅ FERTIG 2026-07-04 (Commit `179d3a3`) —
+  shared `components/mobile-screen-header.tsx` (Client): blauer App-Header
+  `md:hidden` mit `-mx-4 -mt-6 mb-3.5`-Bleed (schließt bündig an die Top-Nav
+  an), 52px-Zeile = Icon-Box (`bg-white/15`, Phosphor `weight="fill"` 16px) +
+  `<h1>`-Titel + Mono-Subzeile (`text-[10px] text-white/65`) + statischer
+  Initialen-Avatar (`useCurrentUser`+`userInitials`, Mock-Hex
+  `bg-[#9cc0ff] text-[#00337f]`; Lade-Platzhalter gegen Layout-Shift; Gate-User
+  ohne Session → kein Avatar). Einbau: Dashboard (Gruß `greeting.line` +
+  Kurzdatum·WebDB-Stand via neuem `shortDate` in `useGreeting`; auch im
+  Empty-State), Publikationen (`BookOpen`, „X Publikationen · Story Score"),
+  Veranstaltungen (`CalendarDays`, Mock-Sub „Bewerten · pitchen · ins Board").
+  **Gotchas:** (1) Header IMMER außerhalb der `space-y`-Container platzieren —
+  deren strukturelle `* + *`-Margins zählen display:none-Geschwister mit und
+  würden den Desktop-Fluss verschieben; (2) Icon als gerendertes Element
+  (`icon={<BookOpen …/>}`) übergeben, NICHT als Komponente — Server-Pages
+  (Pubs/Events) können Funktionen nicht über die Client-Grenze reichen (RSC-
+  Serialisierung). **Abweichungen (vetobar):** iOS-Statusbar = Mock-Chrome,
+  nicht gebaut; Pubs-Export-Knopf des Mocks bleibt Desktop-only; Dashboard-
+  Header einheitlich 52px/16px statt Mock-17px-Sondergröße; Avatar statisch
+  (Konto-Menü lebt weiter im Top-Nav-`AvatarMenu` — Doppel-Avatar Top-Nav +
+  App-Header bewusst, da die Top-Leiste mobil bleibt). Verifiziert Playwright
+  390×844 als Dev-User via `/api/dev/switch-user` (Titel/Sub/Avatar-Initialen,
+  Header y=56/w=390, kein H-Overflow auf allen 3 Screens; Desktop 1440 Header
+  unsichtbar; Konsole fehlerfrei); tsc0/eslint0/583 Tests.
 - **M3 Dashboard mobil** ✅ FERTIG 2026-07-04 — `dashboard-client.tsx`:
   Desktop-Stack in `hidden md:block` gewrappt (Vorher/Nachher-Screenshot
   1440×900 byte-identisch), darunter `md:hidden`-Stack nach Mock Z. 263–358:
