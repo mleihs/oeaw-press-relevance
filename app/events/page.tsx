@@ -23,6 +23,10 @@ import {
 import { type EventsFilterState } from './_lib/build-events-url';
 import { EventsTabsNav } from './_components/events-tabs-nav';
 import { EventsTable } from './_components/events-table';
+import { EventsAgenda } from './_components/events-agenda';
+import { EventsMobileControls } from './_components/events-mobile-controls';
+import { MobileMonthCalendar } from './_components/mobile-month-calendar';
+import { buildEventsUrl } from './_lib/build-events-url';
 import { EventsViewSwitcher } from './_components/events-view-switcher';
 import { EventsFilterBar } from './_components/events-filter-bar';
 import { CalendarNav } from './_components/calendar-nav';
@@ -99,9 +103,11 @@ export default async function EventsPage({
   ]);
 
   // „Im Board · Karte öffnen"-Deep-Links für gepitchte Events (Comp Z. 292).
-  // Nur in der Liste; ein Batch-Query statt eines Client-Lookups pro Zeile.
+  // Ein Batch-Query statt eines Client-Lookups pro Zeile. Auch für die
+  // Wochen-Ansicht: deren Events laufen mobil durch die Agenda (M5), die die
+  // Deep-Links in der Aktionsreihe zeigt.
   const boardCardHrefs = new Map<string, string>();
-  if (!calWindow) {
+  if (!calWindow || calWindow.view === 'week') {
     const cards = await getCardsForEvents(
       list.events.filter((e) => e.decision === 'pitch').map((e) => e.id),
     );
@@ -126,9 +132,13 @@ export default async function EventsPage({
       }
     : null;
 
+  // Mobil (M5) gibt es nur Agenda (Liste + Woche) und Kompakt-Monatskalender;
+  // der Moduswechsel läuft über dieselben ?view=-URLs wie der Desktop-Switcher.
+  const mobileMonth = calWindow?.view === 'month';
+
   return (
     <div className="space-y-6">
-      <div>
+      <div className="hidden md:block">
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <CalendarDays className="h-6 w-6 text-emerald-600" />
           Veranstaltungen
@@ -139,7 +149,7 @@ export default async function EventsPage({
         </p>
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="hidden gap-3 md:flex md:items-center md:justify-between">
         <EventsTabsNav
           activeTab={activeTab}
           stats={overview.stats}
@@ -155,7 +165,7 @@ export default async function EventsPage({
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="hidden gap-3 md:flex md:items-center md:justify-between">
         <EventsViewSwitcher
           activeView={calView ?? 'list'}
           tab={activeTab}
@@ -173,15 +183,17 @@ export default async function EventsPage({
         )}
       </div>
 
-      <EventsFilterBar
-        q={search}
-        band={band}
-        institute={institute}
-        institutes={institutes}
-      />
+      <div className="hidden md:block">
+        <EventsFilterBar
+          q={search}
+          band={band}
+          institute={institute}
+          institutes={institutes}
+        />
+      </div>
 
       {calWindow ? (
-        <div className="space-y-3">
+        <div className="hidden space-y-3 md:block">
           {summary && <CalendarLegend summary={summary} />}
           <EventsCalendarLoader
             events={list.events}
@@ -190,8 +202,45 @@ export default async function EventsPage({
           />
         </div>
       ) : (
-        <EventsTable rows={list.events} boardCardHrefs={boardCardHrefs} />
+        <div className="hidden md:block">
+          <EventsTable rows={list.events} boardCardHrefs={boardCardHrefs} />
+        </div>
       )}
+
+      {/* ── Mobile-Layer (M5): Agenda + Kompakt-Monatskalender ── */}
+      <div className="space-y-3 md:hidden">
+        <EventsMobileControls
+          activeTab={activeTab}
+          stats={overview.stats}
+          main={includeMainNews}
+          monthMode={mobileMonth}
+          anchor={calWindow?.anchor ?? null}
+          filters={filters}
+        />
+        {mobileMonth && calWindow ? (
+          <MobileMonthCalendar
+            key={calWindow.anchor}
+            events={list.events}
+            window={calWindow}
+            prevHref={buildEventsUrl({
+              tab: activeTab,
+              main: includeMainNews,
+              ...filters,
+              view: 'month',
+              date: calWindow.prevAnchor,
+            })}
+            nextHref={buildEventsUrl({
+              tab: activeTab,
+              main: includeMainNews,
+              ...filters,
+              view: 'month',
+              date: calWindow.nextAnchor,
+            })}
+          />
+        ) : (
+          <EventsAgenda rows={list.events} boardCardHrefs={boardCardHrefs} />
+        )}
+      </div>
     </div>
   );
 }

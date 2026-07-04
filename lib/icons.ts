@@ -47,6 +47,7 @@ export {
   CalendarDots as CalendarDays,
   Calendar as CalendarIcon,
   CalendarBlank as CalendarRange,
+  CalendarX as CalendarX,
   Camera as Camera,
   Check as Check,
   CheckCircle as CheckCircle2,
@@ -167,5 +168,6 @@ export {
   X as X,
   XCircle as XCircle,
   X as XIcon,
+  Lightning as Zap,
   MagnifyingGlassPlus as ZoomIn,
 } from "@phosphor-icons/react/dist/ssr";
