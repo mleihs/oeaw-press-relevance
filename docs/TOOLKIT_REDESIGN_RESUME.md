@@ -135,7 +135,8 @@ parallel):**
   (nicht mehr „UNCOMMITTED", trotz obiger Alt-Formulierungen im Doc).
 - `13bce79` chore(dev): Dev-User-Switcher · `cbb23d3` docs(ops): OPS-Log.
 - `2c3f487` feat(events): „Im Board · Karte öffnen"-Deep-Link (View-3-Punkt b).
-- **Noch NICHT gepusht** (Vercel+Coolib) — vor dem Push mit User abstimmen.
+- **GEPUSHT 2026-07-04** (`8a8f4b4..6320bc5` → Vercel+Coolify auto-deploy),
+  inkl. aller Mobile-Phasen M1–M6 (User-Go im Chat).
 
 ## MOBILE — Voller Native-Shell (User-Entscheidung 2026-07-04, mehrere Sitzungen)
 **Scope-Entscheidung:** Nicht nur responsive Desktop-Inhalte, sondern die
@@ -296,11 +297,11 @@ ClipboardCheck/Kanban).
     PM-Querverweis/Press-Referenz/Projekte in DOM-Reihenfolge; Haiku-Karte
     behält Desktop-Stil (kein Mock-Gradient).
 
-**ALLE MOBILE-PHASEN M1–M6 FERTIG (2026-07-04).** Nächster Schritt:
-**Push-Abstimmung mit dem User** für `b34523c..HEAD` (M1–M6 + Remote-Mock-
-Update), danach optional der offene Desktop-Schnitt (Pub-Detailansicht
-Desktop-Mock Z. 214–352 + Dashboard-Kachelgrid, s. §NEU oben) und der
-visuelle Sweep aus dem Rollout-Doc.
+**ALLE MOBILE-PHASEN M1–M6 FERTIG (2026-07-04) + GEPUSHT** (`b34523c..6320bc5`
+auf origin/main → Vercel+Coolify). Nächste Schritte (Reihenfolge lt. User):
+1. Desktop-Schnitt aus dem Remote-Mock (Pub-Detailansicht Z. 214–352 +
+   Dashboard-Kachelgrid, s. §NEU oben);
+2. visueller Sweep gegen Prod (aus dem Rollout-Doc).
 
 ## Verifikation
 Dev-Server läuft (`npm run dev`, Port 3000). In-Browser prüfen (MCP-Tab, oder
