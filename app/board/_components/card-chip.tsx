@@ -5,6 +5,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { CheckCircle2, ListChecks, ListTree, MessageCircle, Paperclip } from '@/lib/icons';
 import { cn } from '@/lib/shared/utils';
 import type { BoardLabel, BoardMember, CardChip as CardChipT } from '@/lib/shared/board';
+import { dueState } from '../_lib/due';
 import { BoardAvatar } from './board-avatar';
 import { DueBadge } from './due-badge';
 import { LabelPill } from './label-pill';
@@ -42,6 +43,9 @@ export function CardChip({
     id: card.id,
   });
   const completed = card.completed_at !== null;
+  // Offen & vor heute → rote Hervorhebung der ganzen Karte (MeisterTask-Stil:
+  // rosa Karte + rotes Datum). Erledigte gelten nie als überfällig.
+  const overdue = dueState(card.due_at, card.completed_at) === 'overdue';
   const hasMeta =
     card.due_at ||
     card.checklist_total > 0 ||
@@ -73,7 +77,10 @@ export function CardChip({
         opacity: isDragging ? 0.4 : completed ? 0.62 : 1,
       }}
       className={cn(
-        'cursor-pointer rounded-[10px] border border-line bg-surface px-[13px] py-3 shadow-card transition-[border-color,box-shadow] hover:border-line-strong hover:shadow-card-hover',
+        'cursor-pointer rounded-[10px] border px-[13px] py-3 shadow-card transition-[border-color,box-shadow] hover:shadow-card-hover',
+        overdue
+          ? 'border-danger/30 bg-danger-tint hover:border-danger/50'
+          : 'border-line bg-surface hover:border-line-strong',
       )}
     >
       {cardLabels.length > 0 && (
@@ -88,7 +95,9 @@ export function CardChip({
         {completed && <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success" />}
         <div
           className={cn(
-            'text-[13.5px] font-semibold leading-snug',
+            // min-w-0 + break-words: lange, ungebrochene Tokens (URLs als Titel)
+            // brechen um statt über den Kartenrand zu laufen.
+            'min-w-0 flex-1 break-words text-[13.5px] font-semibold leading-snug',
             completed ? 'text-ink-muted line-through' : 'text-ink-heading',
           )}
         >

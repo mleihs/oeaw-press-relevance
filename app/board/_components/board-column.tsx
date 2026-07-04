@@ -34,8 +34,8 @@ export function BoardColumn({
         <ChannelIcon name={column.name} className="h-[15px] w-[15px]" style={{ color: column.color }} />
         <span className="text-[13.5px] font-semibold text-foreground">{column.name}</span>
         <span
-          className="rounded-full px-1.5 py-0.5 font-mono text-[11.5px]"
-          style={{ backgroundColor: '#eef1f5', color: '#64707f' }}
+          className="rounded-full px-1.5 py-0.5 font-mono text-[11.5px] font-medium"
+          style={{ backgroundColor: `${column.color}1f`, color: column.color }}
         >
           {cards.length}
         </span>
@@ -57,7 +57,10 @@ export function BoardColumn({
           'flex min-h-[120px] flex-1 flex-col gap-2.5 rounded-xl p-1.5 transition-colors',
         )}
         style={{
-          backgroundColor: isOver ? '#e7eefb' : '#eef1f5',
+          // Body dezent in der Kanalfarbe getönt (Alpha über den Canvas →
+          // theme-aware in beiden Modi) statt flachem Hardcoded-Grau. Gibt
+          // jedem Kanal eine ruhige Farbzone (MeisterTask-Idee, dezenter).
+          backgroundColor: isOver ? `${column.color}26` : `${column.color}12`,
           outline: isOver ? `2px dashed ${column.color}` : undefined,
           outlineOffset: isOver ? -2 : undefined,
         }}
