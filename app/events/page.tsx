@@ -12,6 +12,8 @@ import {
   type EventsSortOrder,
   type EventsTab,
 } from '@/lib/server/events/list';
+import { getCardsForEvents } from '@/lib/server/board';
+import { cardDeepLink } from '@/lib/shared/board';
 import { SCORE_BAND_HIGH } from '@/lib/shared/constants';
 import { isEventsBand, type EventsBand } from '@/lib/shared/events-filter';
 import {
@@ -96,6 +98,18 @@ export default async function EventsPage({
         }),
   ]);
 
+  // „Im Board · Karte öffnen"-Deep-Links für gepitchte Events (Comp Z. 292).
+  // Nur in der Liste; ein Batch-Query statt eines Client-Lookups pro Zeile.
+  const boardCardHrefs = new Map<string, string>();
+  if (!calWindow) {
+    const cards = await getCardsForEvents(
+      list.events.filter((e) => e.decision === 'pitch').map((e) => e.id),
+    );
+    for (const [eventId, ref] of cards) {
+      boardCardHrefs.set(eventId, cardDeepLink(ref));
+    }
+  }
+
   const summary: CalendarSummary | null = calWindow
     ? {
         total: list.events.length,
@@ -176,7 +190,7 @@ export default async function EventsPage({
           />
         </div>
       ) : (
-        <EventsTable rows={list.events} />
+        <EventsTable rows={list.events} boardCardHrefs={boardCardHrefs} />
       )}
     </div>
   );

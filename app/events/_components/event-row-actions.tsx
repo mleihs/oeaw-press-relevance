@@ -1,8 +1,9 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Loader2, Check, X, RotateCcw } from '@/lib/icons';
+import { Loader2, Check, X, RotateCcw, Kanban } from '@/lib/icons';
 import { toast } from 'sonner';
 import type { Decision } from '@/lib/shared/types';
 import { getApiHeaders } from '@/lib/client/stores/settings-store';
@@ -12,6 +13,8 @@ import { getDecisionLabel } from '@/components/decision-badge';
 interface Props {
   eventId: string;
   current: Decision;
+  /** Deep-Link zur Board-Karte, falls das (gepitchte) Event eine hat. */
+  boardCardHref?: string;
 }
 
 /**
@@ -21,7 +24,7 @@ interface Props {
  * <EventDecisionButtons>). Entschiedene Events zeigen einen Status-Pill +
  * Zurücksetzen. Hold/undecided über den Flag-Popover bleiben unberührt.
  */
-export function EventRowActions({ eventId, current }: Props) {
+export function EventRowActions({ eventId, current, boardCardHref }: Props) {
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -88,11 +91,23 @@ export function EventRowActions({ eventId, current }: Props) {
 
   return (
     <div className="flex items-center justify-end gap-1.5">
-      <span
-        className={`inline-flex items-center rounded-lg px-3 py-2 text-xs font-semibold ${pill.cls}`}
-      >
-        {pill.label}
-      </span>
+      {current === 'pitch' && boardCardHref ? (
+        // Gepitcht + hat Board-Karte → Deep-Link statt „Übernommen"-Pill
+        // (Comp Z. 292). Ohne Karte bleibt es beim Status-Pill.
+        <Link
+          href={boardCardHref}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-success-tint px-3 py-2 text-xs font-semibold text-success transition hover:brightness-95"
+        >
+          <Kanban className="h-3.5 w-3.5" />
+          Im Board · Karte öffnen
+        </Link>
+      ) : (
+        <span
+          className={`inline-flex items-center rounded-lg px-3 py-2 text-xs font-semibold ${pill.cls}`}
+        >
+          {pill.label}
+        </span>
+      )}
       <button
         type="button"
         disabled={busy}

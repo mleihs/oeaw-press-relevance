@@ -103,10 +103,18 @@ Datum). **Nav** (Tabs/View-Switcher/Filterbar) war schon Comp-konform (Segmented
 **Bewusste Abweichung:** kein per-Event „Main News"-Star (es gibt KEIN
 Pro-Event-Feld; `includeMainNews` ist ein Ordner-Filter) — weggelassen. „Seite/
 Suche"-Extern-Link aus der Zeile entfernt (Detail-Page trägt ihn).
+**Board-Deeplink „Im Board · Karte öffnen"** für gepitchte Events (Comp Z. 292)
+✅ DONE 2026-07-04 (in-Browser verifiziert): neuer Batch-Query
+`getCardsForEvents` (queries.ts, `sql.param(...)::uuid[]` wg. ANY-Array-Prod-Bug)
+resolved die Board-Karte server-seitig (ein Query, kein Client-Wasserfall);
+`page.tsx` baut die eventId→href-Map (nur Liste), `events-table` reicht sie
+durch, `event-row-actions` zeigt bei gepitcht+Karte den grünen Deep-Link
+(`bg-success-tint`/Kanban-Icon) statt „Übernommen"-Pill. **Abweichung vom Comp:**
+Reset-Button bleibt auch bei gepitcht (Comp lässt ihn weg); ohne Karte bleibt
+der Pill (unser Pitch legt keine Karte automatisch an).
 **OFFEN/optional:** Nav-Restrukturierung Tabelle|Kalender-Segment nach oben-rechts
 + Monat|Woche-Sub-Segment (Comp Z. 254–257/316–319) wurde NICHT gemacht — die
-bestehende Liste|Woche|Monat-Leiste bleibt; Board-Deeplink „Im Board · Karte
-öffnen" für gepitchte Events (Comp Z. 292) offen.
+bestehende Liste|Woche|Monat-Leiste bleibt.
 
 ## Verifikation
 Dev-Server läuft (`npm run dev`, Port 3000). In-Browser prüfen (MCP-Tab, oder

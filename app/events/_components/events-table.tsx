@@ -9,6 +9,8 @@ import type { Event } from '@/lib/shared/types';
 
 interface Props {
   rows: Event[];
+  /** eventId → Board-Karten-Deep-Link, nur für gepitchte Events (Comp Z. 292). */
+  boardCardHrefs: Map<string, string>;
 }
 
 // Kartengrund — identisch zu Dashboard/Publikationen (Design System §5).
@@ -31,7 +33,7 @@ const DATE_BLOCK: Record<ScoreBand, string> = {
  * Pitchen/Verwerfen. Der Flag-Pin (Notizen + voller Entscheidungs-Popover inkl.
  * „Warten") bleibt als sekundäre Affordanz erhalten.
  */
-export function EventsTable({ rows }: Props) {
+export function EventsTable({ rows, boardCardHrefs }: Props) {
   if (rows.length === 0) {
     return (
       <div className={CARD}>
@@ -48,13 +50,23 @@ export function EventsTable({ rows }: Props) {
   return (
     <div className={CARD}>
       {rows.map((event) => (
-        <EventRowView key={event.id} event={event} />
+        <EventRowView
+          key={event.id}
+          event={event}
+          boardCardHref={boardCardHrefs.get(event.id)}
+        />
       ))}
     </div>
   );
 }
 
-function EventRowView({ event }: { event: Event }) {
+function EventRowView({
+  event,
+  boardCardHref,
+}: {
+  event: Event;
+  boardCardHref?: string;
+}) {
   const scored =
     event.analysis_status === 'analyzed' && event.event_score !== null;
   const band: ScoreBand = scored ? getScoreBand(event.event_score) : 'none';
@@ -122,7 +134,11 @@ function EventRowView({ event }: { event: Event }) {
 
       {/* Aktionen */}
       <div className="flex w-[230px] shrink-0 items-center justify-end gap-2">
-        <EventRowActions eventId={event.id} current={event.decision} />
+        <EventRowActions
+          eventId={event.id}
+          current={event.decision}
+          boardCardHref={boardCardHref}
+        />
         <EventFlag
           eventId={event.id}
           flagNotes={event.flag_notes}
