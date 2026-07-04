@@ -28,14 +28,31 @@ export function BoardColumn({
 
   return (
     <section className="flex w-[296px] shrink-0 flex-col">
-      {/* Header */}
-      <div className="flex items-center gap-2 px-1 pb-2.5 pt-0.5">
-        <span className="h-2.5 w-2.5 rounded-[3px]" style={{ backgroundColor: column.color }} />
-        <ChannelIcon name={column.name} className="h-[15px] w-[15px]" style={{ color: column.color }} />
-        <span className="text-[13.5px] font-semibold text-foreground">{column.name}</span>
+      {/* Header — getönter Kanal-Balken statt flacher Zeile. Hintergrund =
+          Kanalfarbe dezent (color-mix über den Canvas → theme-aware); Name +
+          Icon mischen die Kanalfarbe mit dem Vordergrund, damit auch helle
+          Kanalfarben (Gelb) auf der Tönung kontrastreich lesbar bleiben. */}
+      <div
+        className="mb-2 flex items-center gap-2 rounded-[10px] px-2.5 py-2"
+        style={{ backgroundColor: `color-mix(in srgb, ${column.color} 20%, transparent)` }}
+      >
+        <ChannelIcon
+          name={column.name}
+          className="h-[15px] w-[15px] shrink-0"
+          style={{ color: `color-mix(in srgb, ${column.color} 72%, var(--foreground))` }}
+        />
         <span
-          className="rounded-full px-1.5 py-0.5 font-mono text-[11.5px] font-medium"
-          style={{ backgroundColor: `${column.color}1f`, color: column.color }}
+          className="min-w-0 flex-1 truncate text-[13px] font-bold tracking-tight"
+          style={{ color: `color-mix(in srgb, ${column.color} 60%, var(--foreground))` }}
+        >
+          {column.name}
+        </span>
+        <span
+          className="rounded-full px-1.5 py-0.5 font-mono text-[11px] font-semibold"
+          style={{
+            backgroundColor: `color-mix(in srgb, ${column.color} 30%, transparent)`,
+            color: `color-mix(in srgb, ${column.color} 68%, var(--foreground))`,
+          }}
         >
           {cards.length}
         </span>
@@ -44,7 +61,8 @@ export function BoardColumn({
           onClick={onAddCard}
           aria-label="Karte in diesem Kanal"
           title="Karte in diesem Kanal"
-          className="ml-auto flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground/70 transition-colors hover:bg-muted hover:text-foreground"
+          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition-colors hover:bg-black/5 dark:hover:bg-white/10"
+          style={{ color: `color-mix(in srgb, ${column.color} 55%, var(--foreground))` }}
         >
           <Plus className="h-[15px] w-[15px]" />
         </button>
