@@ -56,7 +56,7 @@
       </div>
 
       <!-- ROW 1: actionable -->
-      <div style="display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:16px;margin-bottom:16px;">
+      <div style="display:grid;grid-template-columns:1fr;gap:16px;margin-bottom:16px;">
         <!-- Redaktionsboard tile (NEW) -->
         <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;box-shadow:0 1px 2px rgba(16,32,46,.05);overflow:hidden;display:flex;flex-direction:column;">
           <div style="display:flex;align-items:center;gap:9px;padding:14px 16px 11px;">
@@ -76,35 +76,6 @@
           <a href="Redaktionsboard.dc.html" style="display:flex;align-items:center;gap:7px;padding:11px 16px;border-top:1px solid #eef1f5;text-decoration:none;color:#0047bb;font-size:12.5px;font-weight:600;" style-hover="background:#f7f8fa;">Zum Board<span style="flex:1;"></span><i class="ph ph-arrow-right" style="font-size:14px;"></i></a>
         </div>
 
-        <!-- Triage tile -->
-        <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;box-shadow:0 1px 2px rgba(16,32,46,.05);padding:14px 16px;display:flex;flex-direction:column;">
-          <div style="display:flex;align-items:center;gap:9px;">
-            <span style="width:30px;height:30px;border-radius:8px;background:#fdf1e3;color:#d97706;display:flex;align-items:center;justify-content:center;"><i class="ph-duotone ph-clipboard-text" style="font-size:17px;"></i></span>
-            <div style="font-size:14px;font-weight:600;">Triage</div>
-          </div>
-          <div style="margin-top:14px;display:flex;align-items:baseline;gap:8px;">
-            <span style="font-family:'Geist Mono',monospace;font-size:30px;font-weight:600;letter-spacing:-0.02em;">12</span>
-            <span style="font-size:13px;color:#64707f;">geflaggte Publikationen</span>
-          </div>
-          <div style="margin-top:5px;font-size:12.5px;color:#64707f;">5 neue Events warten auf Bewertung</div>
-          <span style="flex:1;"></span>
-          <button style="margin-top:14px;display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid #f0d9ad;background:#fdf6ea;color:#92620c;font-family:inherit;font-size:12.5px;font-weight:600;padding:9px;border-radius:9px;cursor:pointer;width:100%;"><i class="ph ph-push-pin" style="font-size:14px;"></i>Zur Triage-Sitzung</button>
-        </div>
-
-        <!-- PM tile -->
-        <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;box-shadow:0 1px 2px rgba(16,32,46,.05);padding:14px 16px;display:flex;flex-direction:column;">
-          <div style="display:flex;align-items:center;gap:9px;">
-            <span style="width:30px;height:30px;border-radius:8px;background:#e7f7ef;color:#059669;display:flex;align-items:center;justify-content:center;"><i class="ph-duotone ph-newspaper" style="font-size:17px;"></i></span>
-            <div style="font-size:14px;font-weight:600;">Pressemitteilungen</div>
-          </div>
-          <div style="margin-top:14px;display:flex;align-items:baseline;gap:8px;">
-            <span style="font-family:'Geist Mono',monospace;font-size:30px;font-weight:600;letter-spacing:-0.02em;">3</span>
-            <span style="font-size:13px;color:#64707f;">diese Woche erschienen</span>
-          </div>
-          <div style="margin-top:5px;font-size:12.5px;color:#64707f;">2 Orphans ohne DOI-Match</div>
-          <span style="flex:1;"></span>
-          <button style="margin-top:14px;display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid #b8e2cc;background:#effaf3;color:#0f7a4d;font-family:inherit;font-size:12.5px;font-weight:600;padding:9px;border-radius:9px;cursor:pointer;width:100%;"><i class="ph ph-newspaper" style="font-size:14px;"></i>PMs ansehen</button>
-        </div>
       </div>
 
       <!-- ROW 2: stats -->
@@ -135,7 +106,7 @@
           </div>
           <div style="padding:6px 8px 8px;">
             <sc-for list="{{ topPubs }}" as="p" hint-placeholder-count="5">
-              <div onClick="{{ goPubs }}" style="display:flex;align-items:flex-start;gap:12px;padding:11px 10px;border-radius:10px;cursor:pointer;" style-hover="background:#f7f8fa;">
+              <div onClick="{{ p.onOpen }}" style="display:flex;align-items:flex-start;gap:12px;padding:11px 10px;border-radius:10px;cursor:pointer;" style-hover="background:#f7f8fa;">
                 <span style="{{ p.rankStyle }}">{{ p.rank }}</span>
                 <div style="flex:1;min-width:0;">
                   <div style="font-size:13.5px;font-weight:600;color:#16202e;line-height:1.35;">{{ p.title }}</div>
@@ -213,7 +184,7 @@
       <!-- list -->
       <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;box-shadow:0 1px 2px rgba(16,32,46,.05);overflow:hidden;">
         <sc-for list="{{ pubRows }}" as="p" hint-placeholder-count="6">
-          <div style="display:flex;align-items:flex-start;gap:14px;padding:15px 18px;border-bottom:1px solid #eef1f5;cursor:pointer;" style-hover="background:#f7f8fa;">
+          <div style="display:flex;align-items:flex-start;gap:14px;padding:15px 18px;border-bottom:1px solid #eef1f5;cursor:pointer;" onClick="{{ p.onOpen }}" style-hover="background:#f7f8fa;">
             <span style="{{ p.scoreStyle }}">{{ p.score }}</span>
             <div style="flex:1;min-width:0;">
               <div style="font-size:14px;font-weight:600;color:#16202e;line-height:1.35;">{{ p.title }}</div>
@@ -240,6 +211,145 @@
           <span style="font-family:'Geist Mono',monospace;font-size:11.5px;color:#9aa4b2;">{{ pubsFooter }}</span>
           <span style="flex:1;"></span>
           <button style="display:inline-flex;align-items:center;gap:6px;border:1px solid #cbd2dc;background:#fff;color:#475262;font-family:inherit;font-size:12px;font-weight:600;padding:7px 12px;border-radius:8px;cursor:pointer;">Mehr laden</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ================= PUBLIKATION DETAIL ================= -->
+    <sc-if value="{{ isPubDetail }}" hint-placeholder-val="{{ false }}">
+      <div onClick="{{ backToPubs }}" style="display:inline-flex;align-items:center;gap:7px;color:#64707f;font-size:13px;font-weight:500;cursor:pointer;margin-bottom:16px;" style-hover="color:#0047bb;"><i class="ph ph-arrow-left" style="font-size:15px;"></i>Zurück zu Publikationen</div>
+
+      <!-- header -->
+      <div style="margin-bottom:18px;">
+        <div style="display:flex;align-items:flex-start;gap:14px;">
+          <h1 style="margin:0;flex:1;font-size:25px;font-weight:700;letter-spacing:-0.015em;line-height:1.25;">{{ pd.title }}</h1>
+          <div style="display:flex;gap:8px;flex-shrink:0;">
+            <button style="display:inline-flex;align-items:center;gap:7px;border:none;background:#0047bb;color:#fff;font-family:inherit;font-size:13px;font-weight:600;padding:9px 14px;border-radius:9px;cursor:pointer;"><i class="ph-bold ph-kanban" style="font-size:15px;"></i>Ins Board</button>
+            <button style="width:38px;height:38px;border:1px solid #cbd2dc;background:#fff;color:#92620c;border-radius:9px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;"><i class="ph-fill ph-push-pin" style="font-size:16px;"></i></button>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:9px;margin-top:10px;flex-wrap:wrap;font-size:13.5px;">
+          <span style="font-weight:600;color:#0047bb;">{{ pd.meta }}</span>
+          <span style="color:#cbd2dc;">|</span>
+          <span style="color:#475262;">{{ pd.date }}</span>
+          <span style="color:#cbd2dc;">|</span>
+          <span style="color:#64707f;">{{ pd.type }}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:7px;margin-top:12px;flex-wrap:wrap;">
+          <sc-if value="{{ pd.flagship }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;color:#0047bb;background:#eef4ff;padding:4px 10px;border-radius:999px;"><i class="ph-fill ph-crown-simple" style="font-size:12px;"></i>{{ pd.venue }}</span></sc-if>
+          <sc-for list="{{ pd.badges }}" as="b" hint-placeholder-count="3">
+            <span style="{{ b.style }}"><i class="{{ b.icon }}" style="font-size:12px;"></i>{{ b.text }}</span>
+          </sc-for>
+        </div>
+        <div style="display:flex;align-items:center;gap:7px;margin-top:12px;flex-wrap:wrap;">
+          <i class="ph ph-buildings" style="font-size:15px;color:#9aa4b2;"></i>
+          <sc-for list="{{ pd.insts }}" as="o" hint-placeholder-count="2">
+            <span style="font-size:12px;font-weight:500;color:#475262;background:#eef1f5;padding:3px 9px;border-radius:7px;">{{ o.name }}</span>
+          </sc-for>
+          <span style="color:#cbd2dc;margin:0 2px;">·</span>
+          <a href="{{ pd.doiUrl }}" style="display:inline-flex;align-items:center;gap:5px;font-size:12.5px;color:#0047bb;text-decoration:none;font-weight:500;">DOI: {{ pd.doi }}<i class="ph ph-arrow-square-out" style="font-size:13px;"></i></a>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1.65fr 1fr;gap:16px;align-items:start;">
+        <!-- LEFT column -->
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <!-- Pitch -->
+          <div style="background:#f6f9ff;border:1px solid #d3e2ff;border-radius:14px;padding:18px 20px;">
+            <div style="display:flex;align-items:center;gap:7px;font-family:'Geist Mono',monospace;font-size:10.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#0047bb;margin-bottom:10px;"><i class="ph-fill ph-lightning" style="font-size:13px;"></i>Pitch-Vorschlag</div>
+            <p style="margin:0;font-size:15px;line-height:1.55;color:#16202e;font-weight:500;">{{ pd.pitch }}</p>
+            <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px;">
+              <div style="font-size:13px;color:#475262;line-height:1.5;"><span style="font-weight:600;color:#0047bb;">Blickwinkel:</span> {{ pd.angle }}</div>
+              <div style="font-size:13px;color:#475262;line-height:1.5;"><span style="font-weight:600;color:#0047bb;">Zielgruppe:</span> {{ pd.audience }}</div>
+            </div>
+          </div>
+
+          <!-- Summary -->
+          <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;box-shadow:0 1px 2px rgba(16,32,46,.05);padding:18px 20px;">
+            <div style="display:flex;align-items:center;gap:8px;font-size:14.5px;font-weight:600;margin-bottom:11px;"><i class="ph-duotone ph-book-open-text" style="font-size:18px;color:#0047bb;"></i>Zusammenfassung</div>
+            <p style="margin:0;font-size:14px;line-height:1.65;color:#333d4c;">{{ pd.summaryDe }}</p>
+          </div>
+
+          <!-- Haiku -->
+          <div style="background:linear-gradient(160deg,#0047bb,#00337f);border-radius:14px;padding:22px 24px;color:#fff;position:relative;overflow:hidden;">
+            <i class="ph-fill ph-flower-lotus" style="position:absolute;right:16px;top:14px;font-size:40px;color:rgba(255,255,255,.12);"></i>
+            <div style="font-family:'Geist Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:#9cc0ff;margin-bottom:12px;">Haiku</div>
+            <div style="display:flex;flex-direction:column;gap:5px;">
+              <sc-for list="{{ pd.haikuLines }}" as="h" hint-placeholder-count="3">
+                <div style="font-size:18px;font-weight:500;line-height:1.4;letter-spacing:-0.01em;">{{ h.line }}</div>
+              </sc-for>
+            </div>
+            <div style="margin-top:16px;font-family:'Geist Mono',monospace;font-size:10.5px;color:rgba(255,255,255,.6);display:flex;align-items:center;gap:6px;"><i class="ph ph-sparkle" style="font-size:12px;"></i>{{ pd.model }}</div>
+          </div>
+
+          <!-- Authors -->
+          <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;box-shadow:0 1px 2px rgba(16,32,46,.05);overflow:hidden;">
+            <div style="display:flex;align-items:center;gap:8px;padding:16px 20px 13px;border-bottom:1px solid #eef1f5;">
+              <i class="ph-duotone ph-users-three" style="font-size:18px;color:#0047bb;"></i><span style="font-size:14.5px;font-weight:600;">Autor:innen</span>
+              <span style="font-size:12.5px;color:#9aa4b2;">({{ pd.authorsCount }}) · {{ pd.authorsBreak }}</span>
+            </div>
+            <div style="padding:6px 12px 10px;">
+              <sc-for list="{{ pd.authors }}" as="a" hint-placeholder-count="3">
+                <div style="display:flex;align-items:center;gap:11px;padding:9px 8px;">
+                  <span style="{{ a.avatarStyle }}">{{ a.initials }}</span>
+                  <div style="flex:1;min-width:0;">
+                    <div style="{{ a.nameStyle }}">{{ a.name }}</div>
+                    <sc-if value="{{ a.hasRole }}" hint-placeholder-val="{{ false }}"><div style="font-size:11.5px;color:#9aa4b2;margin-top:1px;">{{ a.role }}</div></sc-if>
+                  </div>
+                  <sc-if value="{{ a.ext }}" hint-placeholder-val="{{ false }}"><span style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:#9aa4b2;background:#f1f3f6;padding:2px 7px;border-radius:6px;">Ext</span></sc-if>
+                  <sc-if value="{{ a.hasMail }}" hint-placeholder-val="{{ false }}"><a href="mailto:{{ a.mail }}" style="width:30px;height:30px;border-radius:8px;color:#9aa4b2;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;" style-hover="color:#0047bb;background:#eef4ff;"><i class="ph ph-envelope-simple" style="font-size:15px;"></i></a></sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <!-- Enrichment / Abstract -->
+          <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;box-shadow:0 1px 2px rgba(16,32,46,.05);padding:18px 20px;">
+            <div style="display:flex;align-items:center;gap:8px;font-size:14.5px;font-weight:600;margin-bottom:12px;"><i class="ph-duotone ph-file-text" style="font-size:18px;color:#0047bb;"></i>Externe Anreicherung</div>
+            <div style="font-family:'Geist Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#9aa4b2;margin-bottom:6px;">Abstract</div>
+            <p style="margin:0 0 14px;font-size:13.5px;line-height:1.6;color:#333d4c;">{{ pd.abstract }}</p>
+            <div style="font-family:'Geist Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#9aa4b2;margin-bottom:8px;">Schlagwörter</div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;">
+              <sc-for list="{{ pd.keywords }}" as="k" hint-placeholder-count="4">
+                <span style="font-size:11.5px;font-weight:500;color:#475262;background:#eef1f5;padding:3px 9px;border-radius:999px;">{{ k.word }}</span>
+              </sc-for>
+            </div>
+            <div style="margin-top:14px;padding-top:12px;border-top:1px solid #eef1f5;font-family:'Geist Mono',monospace;font-size:11px;color:#9aa4b2;">{{ pd.words }}</div>
+          </div>
+        </div>
+
+        <!-- RIGHT column -->
+        <div style="display:flex;flex-direction:column;gap:16px;position:sticky;top:78px;">
+          <!-- Score analysis -->
+          <div style="background:#fff;border:1px solid #d3e2ff;border-radius:14px;box-shadow:0 1px 2px rgba(16,32,46,.05);padding:18px 20px;">
+            <div style="display:flex;align-items:center;gap:8px;font-size:14.5px;font-weight:600;margin-bottom:16px;"><i class="ph-duotone ph-brain" style="font-size:18px;color:#0047bb;"></i>Relevanz-Analyse</div>
+            <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;">
+              <span style="{{ pd.scoreCircleStyle }}">{{ pd.scoreBig }}</span>
+              <div><div style="font-size:15px;font-weight:700;">Story Score</div><div style="font-size:12.5px;color:#64707f;margin-top:2px;">{{ pd.scoreLabel }}</div></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:11px;">
+              <sc-for list="{{ pd.dims }}" as="d" hint-placeholder-count="5">
+                <div>
+                  <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;"><span style="color:#475262;font-weight:500;">{{ d.name }}</span><span style="font-family:'Geist Mono',monospace;color:#64707f;">{{ d.val }}</span></div>
+                  <div style="height:6px;background:#eef1f5;border-radius:999px;overflow:hidden;"><span style="{{ d.barStyle }}"></span></div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="margin-top:16px;padding-top:14px;border-top:1px solid #eef1f5;">
+              <div style="font-family:'Geist Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#9aa4b2;margin-bottom:6px;">Begründung</div>
+              <p style="margin:0;font-size:13px;line-height:1.6;color:#475262;">{{ pd.reasoning }}</p>
+            </div>
+            <div style="margin-top:14px;font-family:'Geist Mono',monospace;font-size:10.5px;color:#9aa4b2;display:flex;align-items:center;gap:6px;"><i class="ph ph-sparkle" style="font-size:12px;"></i>{{ pd.model }} · {{ pd.cost }}</div>
+          </div>
+
+          <!-- Decision -->
+          <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;box-shadow:0 1px 2px rgba(16,32,46,.05);padding:16px 18px;">
+            <div style="font-size:13px;font-weight:600;margin-bottom:11px;">Redaktionsentscheidung</div>
+            <div style="display:flex;gap:8px;">
+              <button style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:7px;border:none;background:#0047bb;color:#fff;font-family:inherit;font-size:13px;font-weight:600;padding:11px;border-radius:10px;cursor:pointer;"><i class="ph-bold ph-lightning" style="font-size:14px;"></i>Pitchen</button>
+              <button style="display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid #cbd2dc;background:#fff;color:#64707f;font-family:inherit;font-size:13px;font-weight:600;padding:11px 16px;border-radius:10px;cursor:pointer;">Verwerfen</button>
+            </div>
+          </div>
         </div>
       </div>
     </sc-if>
@@ -496,10 +606,110 @@ const DIST = [4,7,12,16,15,11,8,5];
 const DIMS = [ ['Zugänglichkeit',62], ['Gesell. Relevanz',58], ['Neuigkeitswert',54], ['Storytelling',49], ['Aktualität',44] ];
 const KEYWORDS = [ ['Quantenphysik',24], ['Klimawandel',21], ['KI',19], ['Archäologie',14], ['Demografie',11], ['Weltraum',10], ['Medizin',9], ['Digital Humanities',8], ['Mikroplastik',6], ['Gletscher',6] ];
 
+// Per-publication detail (index-aligned to PUBS)
+const PUB_EXTRA = [
+  { doi:'10.1038/s41567-026-02391-7', oa:'Hybrid Open Access', peer:true, popsci:false, model:'claude-haiku-4-20260401', cost:0.0071, words:6820,
+    insts:['IQOQI Innsbruck','Institut für Experimentalphysik'],
+    authors:[ {n:'Miriam Aigner',oeaw:true,role:'Erstautorin',mail:'miriam.aigner@oeaw.ac.at'}, {n:'Rainer Blatt',oeaw:true,role:'Korrespondenz'}, {n:'Chen Wei',oeaw:false}, {n:'Sofia Marchetti',oeaw:false} ],
+    dims:[88,82,94,78,86],
+    angle:'Vom Labor zur Anwendung — warum Fehlerkorrektur mit Licht den Quantencomputer alltagstauglicher macht.',
+    audience:'Überregionale Tagesmedien, Wissenschaftsressorts, Tech-Fachpresse',
+    reasoning:'Sehr hoher Neuigkeitswert bei starker Anschlussfähigkeit an die laufende Quanten-Debatte. Ergebnis ist ohne Fachjargon erklärbar, bildstarke Laboraufnahmen liegen vor. Flagship-Venue erhöht Zitierfähigkeit.',
+    abstract:'Wir demonstrieren fehlertolerante logische Qubits in einem rein photonischen Netzwerk und zeigen, dass Fehlerkorrektur ohne kryogene Kühlung skalierbar bleibt. Der Ansatz senkt die technische Einstiegshürde für praxistaugliche Quantenprozessoren erheblich.',
+    summaryDe:'Ein Innsbrucker Team hat gezeigt, dass sich Rechenfehler in Quantencomputern mit Lichtteilchen statt mit aufwendiger Kühlung korrigieren lassen — ein möglicher Wendepunkt auf dem Weg zu praktisch nutzbaren Quantenrechnern.',
+    haiku:['Licht statt tiefer Kälte —','ein Qubit trägt den Fehler fort,','Rechnen wird robust.'],
+    keywords:['Quantencomputing','Fehlerkorrektur','Photonik','Qubit','Skalierbarkeit'] },
+
+  { doi:'10.1126/science.adn8842', oa:'Green Open Access', peer:true, popsci:false, model:'claude-haiku-4-20260401', cost:0.0064, words:5410,
+    insts:['IWF Graz','Institut für Weltraumforschung'],
+    authors:[ {n:'Luca Fossati',oeaw:true,role:'Erstautor',mail:'luca.fossati@oeaw.ac.at'}, {n:'Anna Steindl',oeaw:true}, {n:'James Whitfield',oeaw:false} ],
+    dims:[84,80,88,82,79],
+    angle:'Ein Sub-Neptun mit Wasserdampf: Wie Graz an der Suche nach lebensfreundlichen Welten mitschreibt.',
+    audience:'Wissenschaftsressorts, Astronomie-Interessierte, Schulen',
+    reasoning:'Weltraumthemen mit Wasser-Bezug haben hohe Publikumsresonanz. JWST-Bezug sorgt für Aktualität, Grazer Beteiligung macht es zur regionalen Eigenleistung. PM bereits in Vorbereitung.',
+    abstract:'JWST-Transmissionsspektroskopie weist Wasserdampf und Methan in der Atmosphäre des Sub-Neptun TOI-270 d nach. Die Zusammensetzung deutet auf eine wasserstoffreiche Hülle über einem möglichen Ozean hin.',
+    summaryDe:'Mit dem James-Webb-Teleskop wurde auf einem fernen Planeten Wasserdampf nachgewiesen. Grazer Forschende waren an der Auswertung beteiligt.',
+    haiku:['Fernes blaues Glimmen —','im Spektrum wohnt der Wasserdampf,','ein Ozean vielleicht.'],
+    keywords:['Exoplaneten','JWST','Atmosphäre','Wasserdampf','Astrophysik'] },
+
+  { doi:'10.1016/j.cell.2026.05.019', oa:'Closed Access', peer:true, popsci:false, model:'claude-haiku-4-20260401', cost:0.0069, words:6120,
+    insts:['IMBA','Institut für Molekulare Biotechnologie'],
+    authors:[ {n:'Sonja Novak',oeaw:true,role:'Erstautorin',mail:'sonja.novak@oeaw.ac.at'}, {n:'Petra Lang',oeaw:true}, {n:'David Osei',oeaw:false} ],
+    dims:[80,90,84,74,82],
+    angle:'Hoffnung gegen Antibiotika-Resistenz — ein Wirkstoff, der drei Fluchtwege der Keime zugleich blockiert.',
+    audience:'Gesundheitsressorts, Tagesmedien, medizinische Fachpresse',
+    reasoning:'Antibiotikaresistenz ist ein gesellschaftlich hochrelevantes Dauerthema. Konkreter Wirkstoff mit geplanter klinischer Phase gibt eine greifbare Story. Sensible Kommunikation nötig, keine Heilsversprechen.',
+    abstract:'Eine neue Peptid-Wirkstoffklasse überwindet drei der häufigsten Resistenzmechanismen gramnegativer Keime gleichzeitig. In präklinischen Modellen zeigt sich Wirksamkeit ohne nennenswerte Toxizität.',
+    summaryDe:'Ein Wiener Team hat eine neue Substanzklasse entwickelt, die gegen mehrfach resistente Bakterien wirkt. Erste klinische Tests sind geplant.',
+    haiku:['Der Keim sucht die Flucht —','drei Türen fallen leise zu,','die Wunde wird still.'],
+    keywords:['Antibiotikaresistenz','Peptide','Wirkstoff','Mikrobiologie','präklinisch'] },
+
+  { doi:'10.15184/aqy.2026.71', oa:'Gold Open Access', peer:true, popsci:false, model:'claude-haiku-4-20260401', cost:0.0058, words:4980,
+    insts:['ÖAI','Österreichisches Archäologisches Institut'],
+    authors:[ {n:'Katharina Hofer',oeaw:true,role:'Erstautorin',mail:'katharina.hofer@oeaw.ac.at'}, {n:'Georg Reiter',oeaw:true} ],
+    dims:[82,72,80,78,64],
+    angle:'Der Alpen-Zinnhandel ist 1.000 Jahre älter als gedacht — was Isotope über frühe Netzwerke verraten.',
+    audience:'Kultur- und Wissenschaftsressorts, Geschichtsinteressierte',
+    reasoning:'Überraschender Zeitsprung ist eine klassische „Aha"-Story. Regionaler Bezug zum Ostalpenraum, gute Bebilderung durch Fundstücke möglich. Aktualitätsdruck gering.',
+    abstract:'Blei- und Zinnisotopenanalysen bronzezeitlicher Artefakte belegen überregionalen Zinnhandel über die Ostalpen bereits im frühen 3. Jahrtausend v. Chr. — deutlich früher als bisher angenommen.',
+    summaryDe:'Neue Analysen zeigen, dass über die Alpen schon vor über 4.000 Jahren mit Zinn gehandelt wurde — viel früher als gedacht.',
+    haiku:['Zinn wandert bergwärts —','vor viertausend stillen Jahren','klingt schon ein Markt auf.'],
+    keywords:['Bronzezeit','Handelsrouten','Isotopenanalyse','Ostalpen','Archäometrie'] },
+
+  { doi:'10.5194/tc-20-2026', oa:'Gold Open Access', peer:true, popsci:false, model:'claude-haiku-4-20260401', cost:0.0061, words:5230,
+    insts:['IGF Innsbruck','Institut für Interdisziplinäre Gebirgsforschung'],
+    authors:[ {n:'Rainer Prinz',oeaw:true,role:'Erstautor',mail:'rainer.prinz@oeaw.ac.at'}, {n:'Elke Moser',oeaw:true} ],
+    dims:[80,78,72,76,74],
+    angle:'20 Jahre Messreihe, 38 Prozent weg — der Ötztal-Gletscher als Klima-Chronik zum Anfassen.',
+    audience:'Tagesmedien, Klima- und Umweltressorts, regionale Medien',
+    reasoning:'Längste durchgehende Messreihe Österreichs liefert belastbare, bildstarke Klima-Story mit Kipppunkt-Narrativ. Hohe Aktualität in Sommermonaten, PM in Vorbereitung.',
+    abstract:'Die 20-jährige Massenbilanzreihe im Ötztal dokumentiert einen Volumenverlust von 38 % seit 2006. Für zwei Gletscherzungen wird ein irreversibler Kipppunkt erreicht.',
+    summaryDe:'Österreichs längste Gletscher-Messreihe zeigt einen dramatischen Eisverlust im Ötztal. Zwei Zungen sind nicht mehr zu retten.',
+    haiku:['Zwanzig Sommer zählt','das Eis — und schweigt nun leiser,','ein Drittel ist fort.'],
+    keywords:['Gletscher','Klimawandel','Massenbilanz','Ötztal','Kryosphäre'] },
+
+  { doi:'10.1093/llc/fqae026', oa:'Green Open Access', peer:true, popsci:false, model:'claude-haiku-4-20260401', cost:0.0055, words:4610,
+    insts:['IMAFO','Institut für Mittelalterforschung'],
+    authors:[ {n:'Bernhard Steiner',oeaw:true,role:'Erstautor',mail:'bernhard.steiner@oeaw.ac.at'}, {n:'Yuki Tanaka',oeaw:false} ],
+    dims:[76,66,82,70,68],
+    angle:'KI liest, was jahrhundertelang unlesbar war — 40.000 Seiten mittelalterlicher Handschriften erschlossen.',
+    audience:'Wissenschafts- und Kulturressorts, Digital-Interessierte',
+    reasoning:'Starke „KI trifft Geschichte"-Erzählung mit konkretem Nutzwert (durchsuchbare Archive). Anschlussfähig an KI-Debatte, Bildmaterial aus Handschriften verfügbar.',
+    abstract:'Ein feinabgestimmtes Transformer-Modell transkribiert gotische Kursive mit 96 % Zeichengenauigkeit und erschließt erstmals rund 40.000 bislang undurchsuchbare Handschriftenseiten.',
+    summaryDe:'Ein KI-Modell entziffert mittelalterliche Handschriften fast fehlerfrei und macht große Archivbestände erstmals durchsuchbar.',
+    haiku:['Gotische Schleifen —','die Maschine liest geduldig,','Archive erwachen.'],
+    keywords:['Digital Humanities','Handschriften','KI','Transkription','Mediävistik'] },
+
+  { doi:'10.1021/acs.est.6b01427', oa:'Hybrid Open Access', peer:true, popsci:false, model:'claude-haiku-4-20260401', cost:0.0059, words:5040,
+    insts:['ÖAW-Umweltforschung'],
+    authors:[ {n:'Julia Weiss',oeaw:true,role:'Erstautorin',mail:'julia.weiss@oeaw.ac.at'}, {n:'Marco Bauer',oeaw:true} ],
+    dims:[76,74,70,68,72],
+    angle:'Mikroplastik kommt aus der Luft — warum abgelegene Bergseen belasteter sind als gedacht.',
+    audience:'Umweltressorts, regionale Medien, Tourismusbranche',
+    reasoning:'Kontraintuitives Ergebnis (Ferntransport schlägt lokalen Tourismus) trägt die Story. Umweltrelevanz hoch, Aktualität mittel. Sachliche Einordnung nötig.',
+    abstract:'Sedimentanalysen alpiner Seen zeigen, dass atmosphärischer Ferntransport mehr Mikroplastik einträgt als lokaler Tourismus. Die Partikelzusammensetzung verweist auf entfernte Quellen.',
+    summaryDe:'In abgelegenen Bergseen sammelt sich mehr Mikroplastik an, als der Tourismus vor Ort erklären kann — der Wind trägt es aus der Ferne herbei.',
+    haiku:['Der Wind trägt den Rest','vergangener Dinge bergauf —','klarer See, nicht rein.'],
+    keywords:['Mikroplastik','Alpenseen','Ferntransport','Umwelt','Sediment'] },
+
+  { doi:'10.1080/00324728.2026.2201', oa:'Green Open Access', peer:false, popsci:false, model:'claude-haiku-4-20260401', cost:0.0052, words:4380,
+    insts:['VID','Institut für Demographie'],
+    authors:[ {n:'Tomáš Sobotka',oeaw:true,role:'Erstautor',mail:'tomas.sobotka@oeaw.ac.at'}, {n:'Lena Vogl',oeaw:true} ],
+    dims:[72,76,64,66,70],
+    angle:'Jede dritte Gemeinde schrumpft: eine interaktive Landkarte der demografischen Zukunft Österreichs.',
+    audience:'Innenpolitik- und Regionalressorts, Kommunen',
+    reasoning:'Regionalisierbare Daten erlauben lokale Anknüpfung in jeder Redaktion. Working Paper (noch nicht peer-reviewed) — Einordnung als Projektion kommunizieren.',
+    abstract:'Kleinräumige Bevölkerungsprojektionen bis 2050 zeigen, dass rund ein Drittel der österreichischen Gemeinden schrumpft, während Speckgürtel zweistellig wachsen.',
+    summaryDe:'Eine neue Projektion zeigt, wie sich Österreichs Gemeinden bis 2050 entwickeln: Abwanderung im ländlichen Raum, Wachstum rund um die Städte.',
+    haiku:['Dörfer werden still,','die Ränder der Stadt gedeihn —','Karten atmen um.'],
+    keywords:['Demografie','Bevölkerung','Projektion','Gemeinden','Migration'] },
+];
+function pubDims(i){ const e = PUB_EXTRA[i]; const names = DIMS.map(d => d[0]); return e.dims.map((v,j) => [names[j], v]); }
+
 class Component extends DCLogic {
   state = {
     view:'dashboard', period:'month',
-    pubSearch:'', preset:'all',
+    pubSearch:'', preset:'all', pubSel:null,
     eventTab:'upcoming', mainNewsOnly:false,
     eventsMode:'table', calY:2026, calM:6, calSel:null, calView:'month', calWeekRef:'2026-07-03',
     events: EVENTS.slice(),
@@ -529,6 +739,7 @@ class Component extends DCLogic {
     const topPubs = PUBS.slice(0, topCount).map((p,i) => ({
       rank: i+1, title:p.title, meta:p.meta, venue:p.venue, flagship:p.flagship, plainVenue:!p.flagship,
       pitch:p.pitch, score:p.score + ' %',
+      onOpen: () => this.setState({ view:'pubs', pubSel:i }),
       rankStyle:{ width:26, height:26, borderRadius:999, background: i<3?'#0047bb':'#eef1f5', color: i<3?'#fff':'#64707f', fontFamily:MONO, fontSize:12, fontWeight:600, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, marginTop:2 },
       scoreStyle: scoreBadge(p.score, true),
     }));
@@ -563,17 +774,17 @@ class Component extends DCLogic {
       style:{ display:'inline-flex', alignItems:'center', gap:'6px', border:'1px solid ' + (s.preset===pr.id?'#0047bb':'#cbd2dc'), background: s.preset===pr.id?'#eef4ff':'#fff', color: s.preset===pr.id?'#0047bb':'#64707f', fontFamily:'inherit', fontSize:'12.5px', fontWeight:600, padding:'0 12px', height:'38px', borderRadius:'9px', cursor:'pointer' },
     }));
     const q = s.pubSearch.trim().toLowerCase();
-    const pubRows = PUBS.filter(p => {
+    const pubRows = PUBS.map((p,idx) => ({ p, idx })).filter(({p}) => {
       if(q && !(p.title.toLowerCase().includes(q) || p.meta.toLowerCase().includes(q))) return false;
       if(s.preset==='high') return p.score >= 80;
       if(s.preset==='flagship') return p.flagship;
       if(s.preset==='pm') return p.pm;
       if(s.preset==='flagged') return p.flagged;
       return true;
-    }).map(p => ({
+    }).map(({p,idx}) => ({
       title:p.title, meta:p.meta, venue:p.venue, flagship:p.flagship, plainVenue:!p.flagship,
       type:p.type, date:p.date, pitch:p.pitch, score:p.score+' %', scoreStyle:scoreBadge(p.score,true),
-      hasPm:p.pm, flagged:p.flagged,
+      hasPm:p.pm, flagged:p.flagged, onOpen: () => this.setState({ pubSel:idx }),
     }));
 
     // ===== Events view =====
@@ -596,8 +807,11 @@ class Component extends DCLogic {
 
     return {
       navTabs,
-      isDash: s.view==='dashboard', isPubs: s.view==='pubs', isEvents: s.view==='events',
-      goPubs: () => this.setState({ view:'pubs' }),
+      isDash: s.view==='dashboard', isPubs: s.view==='pubs' && s.pubSel===null, isEvents: s.view==='events',
+      isPubDetail: s.view==='pubs' && s.pubSel!==null,
+      goPubs: () => this.setState({ view:'pubs', pubSel:null }),
+      backToPubs: () => this.setState({ pubSel:null }),
+      ...this.buildPubDetail(),
 
       dashSub: 'Freitag, 3. Juli 2026 · WebDB-Stand heute 06:30 · 4 Karten fällig, 12 Publikationen geflaggt',
       periodTabs, periodLabel,
@@ -637,6 +851,48 @@ class Component extends DCLogic {
   }
 
   modeSeg(on){ return { display:'inline-flex', alignItems:'center', gap:'6px', border:'none', fontFamily:'inherit', fontSize:'12.5px', fontWeight:600, padding:'7px 13px', borderRadius:'7px', cursor:'pointer', background: on?'#fff':'transparent', color: on?'#0047bb':'#64707f', boxShadow: on?'0 1px 2px rgba(16,32,46,.1)':'none' }; }
+
+  buildPubDetail(){
+    const i = this.state.pubSel;
+    if(i === null || i === undefined) return { pd:{} };
+    const p = PUBS[i]; const e = PUB_EXTRA[i]; const pct = p.score;
+    const band = pct >= 70 ? { fg:'#0047bb', bg:'#eef4ff' } : pct >= 40 ? { fg:'#b45309', bg:'#fdf1e3' } : { fg:'#64707f', bg:'#eef1f5' };
+    const scoreLabel = pct >= 80 ? 'Sehr hohes Story-Potenzial' : pct >= 60 ? 'Hohes Story-Potenzial' : pct >= 40 ? 'Mittleres Potenzial' : 'Geringes Potenzial';
+    const badgeTint = { blue:{c:'#0047bb',b:'#eef4ff'}, emerald:{c:'#0f7a4d',b:'#e7f7ef'}, amber:{c:'#92620c',b:'#fdf1e3'}, slate:{c:'#475262',b:'#eef1f5'} };
+    const tb = (color, icon, text) => ({ text, icon, style:{ display:'inline-flex', alignItems:'center', gap:'5px', fontSize:'11.5px', fontWeight:600, color:badgeTint[color].c, background:badgeTint[color].b, padding:'4px 10px', borderRadius:'999px' } });
+    const badges = [];
+    if(e.peer) badges.push(tb('blue','ph-fill ph-shield-check','Peer-reviewed'));
+    if(e.popsci) badges.push(tb('amber','ph-fill ph-megaphone-simple','Popular Science'));
+    badges.push(tb('emerald','ph-fill ph-lock-open', e.oa));
+    if(p.pm) badges.push(tb('emerald','ph-fill ph-newspaper','ÖAW-PM erschienen'));
+    if(p.flagged) badges.push(tb('amber','ph-fill ph-push-pin','Für Triage geflaggt'));
+
+    const authors = e.authors.map(a => ({
+      name:a.n, oeaw:!!a.oeaw, ext:!a.oeaw, role:a.role || '', hasRole:!!a.role, mail:a.mail || '', hasMail:!!a.mail,
+      nameStyle:{ fontSize:'13.5px', fontWeight:600, color: a.oeaw ? '#0047bb' : '#16202e' },
+      avatarStyle:{ width:32, height:32, borderRadius:999, background: a.oeaw ? '#0047bb' : '#cbd2dc', color:'#fff', fontSize:11.5, fontWeight:600, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 },
+      initials: a.n.split(/\s+/).slice(0,2).map(w => w[0]).join(''),
+    }));
+    const oeawN = e.authors.filter(a => a.oeaw).length, extN = e.authors.length - oeawN;
+
+    const dims = pubDims(i).map(([name,val]) => ({ name, val: val + ' %', barStyle:{ display:'block', height:'100%', width: val + '%', background:'#0047bb', borderRadius:'999px' } }));
+
+    return { pd:{
+      title:p.title, meta:p.meta, venue:p.venue, flagship:p.flagship, plainVenue:!p.flagship, type:p.type, date:p.date,
+      doi:e.doi, doiUrl:'https://doi.org/' + e.doi,
+      badges,
+      scoreBig: pct + '%', scoreLabel,
+      scoreCircleStyle:{ width:72, height:72, borderRadius:999, background:band.bg, color:band.fg, fontFamily:MONO, fontSize:22, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 },
+      pitch:p.pitch, angle:e.angle, audience:e.audience, reasoning:e.reasoning,
+      summaryDe:e.summaryDe, abstract:e.abstract,
+      haikuLines: e.haiku.map(l => ({ line:l })), model:e.model, cost:'$' + e.cost.toFixed(4),
+      authors, authorsCount: e.authors.length, authorsBreak: oeawN && extN ? (oeawN + ' ÖAW, ' + extN + ' extern') : (oeawN ? 'alle ÖAW' : 'alle extern'),
+      dims,
+      keywords: e.keywords.map(k => ({ word:k })),
+      insts: e.insts.map(x => ({ name:x })),
+      words: e.words.toLocaleString('de-AT') + ' Wörter angereicherter Inhalt',
+    } };
+  }
 
   calModal(){
     const e = this.state.events.find(x => x.id === this.state.calSel);
