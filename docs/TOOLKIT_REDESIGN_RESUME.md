@@ -145,10 +145,20 @@ Bottom-Nav aus `components/nav.tsx` `PRIMARY[]` wiederverwenden
 ClipboardCheck/Kanban).
 
 **Phasenplan (in dieser Reihenfolge, je Phase: tsc0/eslint0 + In-Browser + Commit):**
-- **M1 Bottom-Tab-Nav** — neue `components/mobile-bottom-nav.tsx` (`md:hidden`,
-  fixed bottom, 4–5 Tabs aus `PRIMARY`, aktiv nach `usePathname`, „Mehr"→öffnet
-  das bestehende Hamburger-Sheet ODER ein eigenes Sheet). In `app/layout.tsx`
-  einhängen; `<main>` unten `pb-[76px] md:pb-6` gegen Überdeckung. Mock Z. 539.
+- **M1 Bottom-Tab-Nav** ✅ FERTIG 2026-07-04 — `components/mobile-bottom-nav.tsx`
+  (`md:hidden`, fixed bottom z-40, alle 5 PRIMARY-Tabs, aktiv = `text-brand` +
+  Phosphor `weight="fill"`, Label `/events`→„Events" wg. Slot-Breite; kein
+  „Mehr"-Tab — SECONDARY/ADMIN bleiben im Top-Hamburger). `nav.tsx` exportiert
+  `PRIMARY`+`isActiveLink`; `layout.tsx`: `<main>` `pb-[76px] md:pb-6`, Footer
+  `hidden md:block` (läge sonst hinter der Nav). Verifiziert via **Playwright
+  390×844** (MCP-Tab rendert nur Desktop-Breite; Skript-Muster: storageState
+  aus `e2e/.auth/state.json` bzw. Gate-Login wie `e2e/global-setup.ts`,
+  `reducedMotion:'reduce'`; /board braucht CDP-`Page.captureScreenshot` —
+  `page.screenshot` timeoutet dort an Dauer-Repaint. KEIN `isMobile:true`
+  verwenden: kombiniert mit Overflow entstehen Screenshot-Artefakte).
+  **BEFUND für M5:** /events (Desktop-Layer) hat ~200px Horizontal-Overflow
+  auf 390px (Status-Pill-Leiste, scrollWidth 590) — auf echten Geräten störend;
+  wird durch die M5-Agenda ersetzt, bis dahin bekannt.
 - **M2 Per-Screen Mobile-Header** — kompakter blauer App-Header (Icon+Titel+
   Sub+Avatar) statt der Desktop-`<h1>`-Blöcke, nur `md:hidden`. Als shared
   `components/mobile-screen-header.tsx`, pro Screen mit passendem Icon/Sub.

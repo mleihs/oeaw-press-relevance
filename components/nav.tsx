@@ -63,7 +63,7 @@ type NavLink = {
  * touch. Both views read from the same source-of-truth arrays so adding a
  * route is a single-line change.
  */
-const PRIMARY: NavLink[] = [
+export const PRIMARY: NavLink[] = [
   { href: '/',                label: 'Dashboard',       icon: BarChart3 },
   { href: '/publications',    label: 'Publikationen',   icon: BookOpen },
   { href: '/events',          label: 'Veranstaltungen', icon: CalendarDays },
@@ -97,7 +97,7 @@ const ADMIN: NavLink[] = [
   { href: '/upload',   label: 'Import',        icon: Upload },
 ];
 
-function isActiveLink(href: string, pathname: string): boolean {
+export function isActiveLink(href: string, pathname: string): boolean {
   if (href === '/') return pathname === '/';
   if (href === '/researchers') {
     return pathname.startsWith('/researchers') || pathname.startsWith('/persons');
