@@ -19,12 +19,13 @@ import {
   Newspaper,
   MoreHorizontal,
   Copy,
+  Tag,
 } from '@/lib/icons';
 import NextLink from 'next/link';
 import { toast } from 'sonner';
 import { cn } from '@/lib/shared/utils';
 import { QK } from '@/lib/client/query-keys';
-import type { BoardColumn, BoardMember, CardDetail, CardItem } from '@/lib/shared/board';
+import type { BoardColumn, BoardLabel, BoardMember, CardDetail, CardItem } from '@/lib/shared/board';
 import {
   fetchCard,
   patchCardApi,
@@ -36,8 +37,12 @@ import {
   deleteCardApi,
   addWatcherApi,
   removeWatcherApi,
+  addCardLabelApi,
+  removeCardLabelApi,
+  createLabelApi,
 } from '../_lib/api';
 import { cardDeepLink } from '@/lib/shared/board';
+import { LabelPill } from './label-pill';
 import { ChannelIcon } from '../_lib/channels';
 import { PROSE_CLASS } from '../_lib/prose';
 import { formatDateTimeMeta, relativeDay } from '../_lib/due';
@@ -64,6 +69,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -77,15 +83,19 @@ const NONE = '__none__';
 export function CardModal({
   cardId,
   boardSlug,
+  boardId,
   columns,
   members,
+  labels,
   onClose,
   onOpenCard,
 }: {
   cardId: string;
   boardSlug: string;
+  boardId: string;
   columns: BoardColumn[];
   members: BoardMember[];
+  labels: BoardLabel[];
   onClose: () => void;
   onOpenCard: (id: string) => void;
 }) {
@@ -221,6 +231,8 @@ export function CardModal({
                     card={card}
                     members={members}
                     byId={byId}
+                    boardId={boardId}
+                    labels={labels}
                     onPatch={applyCard}
                     onInvalidate={invalidate}
                   />
@@ -786,12 +798,16 @@ function Sidebar({
   card,
   members,
   byId,
+  boardId,
+  labels,
   onPatch,
   onInvalidate,
 }: {
   card: CardDetail;
   members: BoardMember[];
   byId: Map<string, BoardMember>;
+  boardId: string;
+  labels: BoardLabel[];
   onPatch: (c: CardDetail) => void;
   onInvalidate: () => void;
 }) {
@@ -857,6 +873,8 @@ function Sidebar({
         </Select>
       </SidebarField>
 
+      <LabelsField card={card} boardId={boardId} labels={labels} onInvalidate={onInvalidate} />
+
       <SidebarField label="Beobachter">
         <div className="space-y-1.5">
           {card.watcher_ids.map((id) => (
@@ -899,6 +917,100 @@ function Sidebar({
         <div>Geändert · {relativeDay(card.updated_at)}</div>
       </div>
     </div>
+  );
+}
+
+/** Labels/Tags an der Karte: aktuelle als entfernbare Pills + Popover zum
+ *  Hinzufügen vorhandener Board-Labels oder Anlegen eines neuen. Nach jeder
+ *  Mutation `onInvalidate` (Karte + Board neu laden → Chip-Pills + Palette). */
+function LabelsField({
+  card,
+  boardId,
+  labels,
+  onInvalidate,
+}: {
+  card: CardDetail;
+  boardId: string;
+  labels: BoardLabel[];
+  onInvalidate: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState('');
+  const assigned = labels.filter((l) => card.label_ids.includes(l.id));
+  const available = labels.filter((l) => !card.label_ids.includes(l.id));
+
+  const add = useMutation({
+    mutationFn: (labelId: string) => addCardLabelApi(card.id, labelId),
+    onSuccess: onInvalidate,
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const remove = useMutation({
+    mutationFn: (labelId: string) => removeCardLabelApi(card.id, labelId),
+    onSuccess: onInvalidate,
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const create = useMutation({
+    mutationFn: async (name: string) => {
+      const label = await createLabelApi(boardId, name);
+      await addCardLabelApi(card.id, label.id);
+    },
+    onSuccess: () => {
+      setDraft('');
+      onInvalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <SidebarField label="Labels">
+      <div className="flex flex-wrap items-center gap-1.5">
+        {assigned.map((l) => (
+          <LabelPill key={l.id} label={l} onRemove={() => remove.mutate(l.id)} />
+        ))}
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              className="inline-flex items-center gap-1 rounded-md border border-dashed border-input px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground hover:text-foreground"
+            >
+              <Tag className="h-3 w-3" /> Label
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-56 space-y-2 p-2">
+            {available.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {available.map((l) => (
+                  <button key={l.id} type="button" onClick={() => add.mutate(l.id)} disabled={add.isPending}>
+                    <LabelPill label={l} />
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="flex items-center gap-1.5 border-t pt-2">
+              <input
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && draft.trim() && !create.isPending) create.mutate(draft.trim());
+                }}
+                placeholder="Neues Label…"
+                maxLength={60}
+                className="min-w-0 flex-1 border-none bg-transparent text-[13px] outline-none placeholder:text-muted-foreground"
+              />
+              <button
+                type="button"
+                onClick={() => draft.trim() && create.mutate(draft.trim())}
+                disabled={!draft.trim() || create.isPending}
+                aria-label="Label anlegen"
+                className="rounded p-1 text-brand hover:bg-brand/10 disabled:opacity-40"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+            </div>
+          </PopoverContent>
+        </Popover>
+      </div>
+    </SidebarField>
   );
 }
 

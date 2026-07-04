@@ -2,7 +2,7 @@
 
 import { Search, X, AlarmClock, CheckCircle2 } from '@/lib/icons';
 import { cn } from '@/lib/shared/utils';
-import type { BoardColumn, BoardMember } from '@/lib/shared/board';
+import type { BoardColumn, BoardLabel, BoardMember } from '@/lib/shared/board';
 import { EMPTY_FILTERS, hasActiveFilters, type BoardFilters } from '../_lib/filter';
 import { displayNameOf } from '../_lib/people';
 import { Input } from '@/components/ui/input';
@@ -49,11 +49,13 @@ export function BoardFilterBar({
   onChange,
   columns,
   members,
+  labels,
 }: {
   filters: BoardFilters;
   onChange: (f: BoardFilters) => void;
   columns: BoardColumn[];
   members: BoardMember[];
+  labels: BoardLabel[];
 }) {
   const activeMembers = members.filter((m) => !m.disabled_at);
   return (
@@ -114,6 +116,28 @@ export function BoardFilterBar({
           ))}
         </SelectContent>
       </Select>
+
+      {labels.length > 0 && (
+        <Select
+          value={filters.labelId ?? ALL}
+          onValueChange={(v) => onChange({ ...filters, labelId: v === ALL ? null : v })}
+        >
+          <SelectTrigger className="h-9 w-[160px]" aria-label="Label filtern">
+            <SelectValue placeholder="Alle Labels" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL}>Alle Labels</SelectItem>
+            {labels.map((l) => (
+              <SelectItem key={l.id} value={l.id}>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: l.color }} />
+                  {l.name}
+                </span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
 
       <Toggle
         active={filters.onlyOverdue}

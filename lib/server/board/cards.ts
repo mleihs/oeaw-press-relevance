@@ -38,6 +38,7 @@ const CARD_DETAIL_ROW = (cardId: string) => sql<Record<string, unknown>>`
          COALESCE(cm.n, 0) AS comment_count,
          COALESCE(at.n, 0) AS attachment_count,
          COALESCE(w.ids, ARRAY[]::text[]) AS watcher_ids,
+         COALESCE(lb.ids, ARRAY[]::text[]) AS label_ids,
          lower(c.title || ' ' || COALESCE(ci.texts, '')) AS search_text
   FROM cards c
   LEFT JOIN LATERAL (
@@ -52,6 +53,11 @@ const CARD_DETAIL_ROW = (cardId: string) => sql<Record<string, unknown>>`
   LEFT JOIN LATERAL (SELECT count(*)::int AS n FROM card_comments WHERE card_id = c.id) cm ON true
   LEFT JOIN LATERAL (SELECT count(*)::int AS n FROM card_attachments WHERE card_id = c.id) at ON true
   LEFT JOIN LATERAL (SELECT array_agg(user_id::text) AS ids FROM card_watchers WHERE card_id = c.id) w ON true
+  LEFT JOIN LATERAL (
+    SELECT array_agg(cl.label_id::text ORDER BY bl.rank) AS ids
+    FROM card_labels cl JOIN board_labels bl ON bl.id = cl.label_id
+    WHERE cl.card_id = c.id
+  ) lb ON true
   WHERE c.id = ${cardId}
   LIMIT 1`;
 

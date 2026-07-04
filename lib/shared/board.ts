@@ -74,6 +74,23 @@ export interface BoardColumn {
   rank: string;
 }
 
+/** Label/Tag je Board (MeisterTask-Pendant). Karten referenzieren Labels über
+ *  `CardChip.label_ids`; die Palette kommt board-weit in `BoardWithColumns`. */
+export interface BoardLabel {
+  id: string;
+  board_id: string;
+  name: string;
+  /** Hex (#rrggbb) — Chip-Farbe. */
+  color: string;
+  rank: string;
+}
+
+/** Freie Label-Farben für neue Labels (rotieren durch die Palette). */
+export const BOARD_LABEL_SWATCHES = [
+  '#2563eb', '#0d9488', '#7c3aed', '#c026d3', '#ea580c',
+  '#16a34a', '#e11d48', '#0891b2', '#d97706', '#64748b',
+] as const;
+
 /** Karten-Chip im Board (Aggregat-Zähler statt voller Items — die kommen erst
  *  im Modal). `search_text` = kleingeschriebener Titel + alle Item-Texte, damit
  *  Filter (Suche + „Vorname im Checklisten-Text"-Personenmatch) rein im Client
@@ -95,6 +112,9 @@ export interface CardChip {
   subtask_total: number;
   comment_count: number;
   attachment_count: number;
+  /** IDs der an der Karte hängenden Labels (auflösbar über die Board-Palette
+   *  in `BoardWithColumns.labels`). Reihenfolge = Label-Rank. */
+  label_ids: string[];
   search_text: string;
 }
 
@@ -165,6 +185,8 @@ export interface BoardWithColumns {
   board: BoardSummary;
   columns: BoardColumn[];
   cards: CardChip[];
+  /** Label-Palette des Boards (für Chips an Karten + Filter + Picker). */
+  labels: BoardLabel[];
 }
 
 /** Schlanke, board-übergreifende Karten-Referenz (Phase 4): Dashboard-Kachel,

@@ -175,3 +175,15 @@ export const watcherCreateSchema = z.object({
   user_id: uuid,
 });
 export type WatcherCreatePayload = z.infer<typeof watcherCreateSchema>;
+
+export const labelCreateSchema = z.object({
+  board_id: uuid,
+  name: z.string().trim().min(1, 'Name erforderlich.').max(60),
+  color: hexColor.optional(),
+});
+export type LabelCreatePayload = z.infer<typeof labelCreateSchema>;
+
+export const cardLabelSchema = z.object({
+  label_id: uuid,
+});
+export type CardLabelPayload = z.infer<typeof cardLabelSchema>;

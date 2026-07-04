@@ -9,6 +9,8 @@ export interface BoardFilters {
   columnId: string | null;
   /** userId, 'unassigned' oder null (Alle Personen). */
   personId: string | 'unassigned' | null;
+  /** label_id oder null (Alle Labels). */
+  labelId: string | null;
   onlyOverdue: boolean;
   showCompleted: boolean;
 }
@@ -17,6 +19,7 @@ export const EMPTY_FILTERS: BoardFilters = {
   search: '',
   columnId: null,
   personId: null,
+  labelId: null,
   onlyOverdue: false,
   showCompleted: true,
 };
@@ -26,6 +29,7 @@ export function hasActiveFilters(f: BoardFilters): boolean {
     f.search.trim() !== '' ||
     f.columnId !== null ||
     f.personId !== null ||
+    f.labelId !== null ||
     f.onlyOverdue ||
     !f.showCompleted
   );
@@ -42,6 +46,7 @@ export function matchCard(
   firstNameOf: (userId: string) => string | null,
 ): boolean {
   if (f.columnId && card.column_id !== f.columnId) return false;
+  if (f.labelId && !card.label_ids.includes(f.labelId)) return false;
   if (!f.showCompleted && card.completed_at) return false;
   if (f.onlyOverdue && dueState(card.due_at, card.completed_at) !== 'overdue') return false;
 
