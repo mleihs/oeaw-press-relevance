@@ -139,8 +139,25 @@ export function DashboardClient({ data, period, sortBy, boardCards }: DashboardC
     );
   }
 
+  // Stat-Beschriftungen, in Desktop- und Mobile-Layer identisch verwendet.
+  const statLabels = {
+    pubs:
+      stats.peer_reviewed && stats.total
+        ? `Publikationen · ${Math.round((stats.peer_reviewed / stats.total) * 100)} % peer-reviewed`
+        : 'Publikationen',
+    analyzed: stats.total
+      ? `analysiert · ${Math.round((stats.analyzed / stats.total) * 100)} % des Bestands`
+      : 'analysiert',
+    high:
+      stats.avg_score !== null
+        ? `hohes Story-Potenzial · Ø ${Math.round(stats.avg_score * 100)} %`
+        : 'hohes Story-Potenzial',
+  };
+
   return (
-    <div className="space-y-4">
+    <>
+    {/* ── Desktop-Layer (≥ md) ─────────────────────────────────────────── */}
+    <div className="hidden space-y-4 md:block">
       {/* Header: Gruß + Perioden-Tabs */}
       <div className="mb-1 flex flex-wrap items-end justify-between gap-4">
         <div>
@@ -216,30 +233,18 @@ export function DashboardClient({ data, period, sortBy, boardCards }: DashboardC
         <StatTile
           icon={<BookOpen className="h-[21px] w-[21px]" />}
           value={stats.total}
-          label={
-            stats.peer_reviewed && stats.total
-              ? `Publikationen · ${Math.round((stats.peer_reviewed / stats.total) * 100)} % peer-reviewed`
-              : 'Publikationen'
-          }
+          label={statLabels.pubs}
         />
         <StatTile
           icon={<BarChart3 className="h-[21px] w-[21px]" />}
           value={stats.analyzed}
-          label={
-            stats.total
-              ? `analysiert · ${Math.round((stats.analyzed / stats.total) * 100)} % des Bestands`
-              : 'analysiert'
-          }
+          label={statLabels.analyzed}
         />
         <StatTile
           icon={<TrendingUp className="h-[21px] w-[21px]" />}
           iconClass="bg-success-tint text-success"
           value={stats.high_score_count}
-          label={
-            stats.avg_score !== null
-              ? `hohes Story-Potenzial · Ø ${Math.round(stats.avg_score * 100)} %`
-              : 'hohes Story-Potenzial'
-          }
+          label={statLabels.high}
         />
       </div>
 
@@ -336,6 +341,133 @@ export function DashboardClient({ data, period, sortBy, boardCards }: DashboardC
         </div>
       </div>
     </div>
+
+    {/* ── Mobile-Layer (< md) — Mock Board-Mobile.dc.html Z. 263–358 (M3) ──
+        Gruß/blauer App-Header folgt in Phase M2; Score-Verteilung hat der
+        Mobile-Mock bewusst nicht. */}
+    <div className="space-y-3.5 md:hidden">
+      {/* Perioden-Chips, x-scroll bis an den Viewport-Rand (main hat px-4) */}
+      <nav
+        aria-label="Zeitraum"
+        className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        <div className="flex min-w-max gap-[7px]">
+          {DASHBOARD_PERIODS.map((value) => (
+            // Native <a> statt Link — wie bei den Desktop-Tabs oben.
+            <a
+              key={value}
+              href={buildDashboardHref({ period: value, topPubs: topPubsLimit, sortBy })}
+              aria-current={period === value ? 'page' : undefined}
+              className={`shrink-0 whitespace-nowrap rounded-lg px-[13px] py-[7px] text-xs font-semibold transition-colors ${
+                period === value
+                  ? 'bg-brand text-white'
+                  : 'border border-line bg-surface text-ink-subtle'
+              }`}
+            >
+              {PERIOD_LABELS[value]}
+            </a>
+          ))}
+        </div>
+      </nav>
+
+      {/* Board-Kachel (wie Desktop, Karte trägt Fälliges + „Zum Board") */}
+      {boardCards && <BoardTile cards={dueCards} overdueCount={overdueCount} />}
+
+      {/* 2-Spalten-Stat-Grid; 4. Kachel = Triage (Desktop-Aktions-Kachel) */}
+      <div className="grid grid-cols-2 gap-2.5">
+        <MobileStatTile
+          icon={<BookOpen className="h-[18px] w-[18px]" weight="duotone" />}
+          value={stats.total}
+          label={statLabels.pubs}
+        />
+        <MobileStatTile
+          icon={<BarChart3 className="h-[18px] w-[18px]" weight="duotone" />}
+          value={stats.analyzed}
+          label={statLabels.analyzed}
+        />
+        <MobileStatTile
+          icon={<TrendingUp className="h-[18px] w-[18px]" weight="duotone" />}
+          iconClass="bg-success-tint text-success"
+          value={stats.high_score_count}
+          label={statLabels.high}
+        />
+        <MobileStatTile
+          icon={<Pin className="h-[18px] w-[18px]" weight="duotone" />}
+          iconClass="bg-warning-tint text-warning"
+          value={flaggedCount}
+          label="für Triage geflaggt"
+        />
+      </div>
+
+      {/* Top-Storys, kompakte Zeilen (Rang · Titel/Meta · Score) */}
+      <div className={`${CARD} overflow-hidden`}>
+        <div className="flex items-center gap-2 border-b border-line px-[15px] pb-[11px] pt-3.5">
+          <span className="text-sm font-semibold text-ink">Top-Storys</span>
+          <span className="flex-1" />
+          <span className="font-mono text-[10.5px] text-ink-muted">
+            {topPubsTotal.toLocaleString('de-AT')} im Pool
+          </span>
+        </div>
+        <div className="px-[7px] pb-[7px] pt-[5px]">
+          {topPubs.length > 0 ? (
+            topPubs.map((pub, i) => {
+              const institute = displayInstitute(pub);
+              return (
+                <Link
+                  key={pub.id}
+                  href={`/publications/${pub.id}`}
+                  className="flex items-start gap-[11px] rounded-[10px] px-2 py-2.5 transition-colors active:bg-canvas"
+                >
+                  <span
+                    className={`mt-px flex h-6 w-6 shrink-0 items-center justify-center rounded-full font-mono text-[11.5px] font-semibold ${
+                      i < 3 ? 'bg-brand text-white' : 'bg-fill text-ink-subtle'
+                    }`}
+                  >
+                    {i + 1}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[13px] font-semibold leading-[1.35] text-ink">
+                      {displayTitle(pub.title, pub.citation)}
+                    </p>
+                    <p className="mt-0.5 text-[11.5px] text-ink-muted">
+                      {displayAuthor(pub)}
+                      {institute ? ` · ${institute}` : ''}
+                    </p>
+                  </div>
+                  <PressScoreBadge
+                    score={pub.press_score}
+                    analysisStatus={pub.analysis_status}
+                    enrichmentStatus={pub.enrichment_status}
+                  />
+                </Link>
+              );
+            })
+          ) : (
+            <p className="px-2.5 py-8 text-center text-[13px] text-ink-subtle">
+              Keine analysierten Publikationen in diesem Zeitraum.
+            </p>
+          )}
+        </div>
+        <Link
+          href="/publications"
+          className="flex items-center gap-1.5 border-t border-line px-[15px] py-3 text-[12.5px] font-semibold text-brand"
+        >
+          Alle Publikationen
+          <span className="flex-1" />
+          <ArrowRight className="h-3.5 w-3.5" />
+        </Link>
+      </div>
+
+      <DimensionMeans averages={stats.dimension_avgs} />
+
+      {stats.top_keywords.length > 0 && (
+        <div className={`${CARD} p-[15px]`}>
+          <div className="mb-3 text-[13.5px] font-semibold text-ink">Häufige Keywords</div>
+          <KeywordCloud keywords={stats.top_keywords} />
+        </div>
+      )}
+    </div>
+    </>
   );
 }
 
@@ -478,6 +610,31 @@ function StatTile({
         </div>
         <div className="mt-1 text-xs text-ink-subtle">{label}</div>
       </div>
+    </div>
+  );
+}
+
+// Mobile-Variante (Mock Z. 306–314): Icon oben, Wert darunter, 2-Spalten-Grid.
+function MobileStatTile({
+  icon,
+  iconClass = 'bg-brand-50 text-brand',
+  value,
+  label,
+}: {
+  icon: ReactNode;
+  iconClass?: string;
+  value: number;
+  label: string;
+}) {
+  return (
+    <div className={`${CARD} px-3.5 py-[13px]`}>
+      <span className={`inline-flex h-8 w-8 items-center justify-center rounded-[9px] ${iconClass}`}>
+        {icon}
+      </span>
+      <div className="mt-2.5 font-mono text-xl font-semibold leading-[1.1] tracking-[-0.01em] text-ink tabular-nums">
+        {value.toLocaleString('de-AT')}
+      </div>
+      <div className="mt-[3px] text-[11.5px] leading-[1.35] text-ink-subtle">{label}</div>
     </div>
   );
 }

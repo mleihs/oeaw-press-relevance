@@ -162,9 +162,20 @@ ClipboardCheck/Kanban).
 - **M2 Per-Screen Mobile-Header** — kompakter blauer App-Header (Icon+Titel+
   Sub+Avatar) statt der Desktop-`<h1>`-Blöcke, nur `md:hidden`. Als shared
   `components/mobile-screen-header.tsx`, pro Screen mit passendem Icon/Sub.
-- **M3 Dashboard mobil** — `dashboard-client.tsx`: Perioden-Chips (x-scroll) →
-  Board-Kachel → 2-Spalten-Stat-Grid → Top-Storys-Karte → Dimensions → Keywords,
-  einspaltig gestapelt. Mock Z. 263–358.
+- **M3 Dashboard mobil** ✅ FERTIG 2026-07-04 — `dashboard-client.tsx`:
+  Desktop-Stack in `hidden md:block` gewrappt (Vorher/Nachher-Screenshot
+  1440×900 byte-identisch), darunter `md:hidden`-Stack nach Mock Z. 263–358:
+  Perioden-Chips (x-scroll, `-mx-4`-Bleed, aktiv = bg-brand) → `BoardTile`
+  (Desktop-Komponente wiederverwendet; nur angemeldet, Gate-User sieht sie
+  nicht) → 2×2-Stat-Grid (neue `MobileStatTile`: Icon duotone oben, Mono-Wert;
+  4. Kachel = „für Triage geflaggt" ersetzt mobil die Triage-Aktions-Kachel;
+  Labels als `statLabels` extrahiert, beide Layer teilen sie) → Top-Storys
+  kompakt (Rang-Kreis top-3 brand, Autor·Institut, `PressScoreBadge`; ohne
+  Venue/Pitch/Datum wie im Mock) → `DimensionMeans` → Keywords-Karte.
+  Bewusst: kein Gruß-Header mobil (kommt in M2 als blauer App-Header), keine
+  ScoreDistribution + keine PM-Kachel (Mobile-Mock hat beide nicht; PM via
+  Hamburger erreichbar). Verifiziert Playwright 390×844 (kein H-Overflow,
+  scrollWidth=390); tsc0/eslint0.
 - **M4 Publikationen mobil** — Suche + Preset-Chips (x-scroll) + gestapelte
   Karten (Score-Badge + Titel + Meta + Pitch + Chip-Reihe). Mock Z. 360–412.
 - **M5 Veranstaltungen mobil** — **Agenda-Modus** (Tag-Gruppen + Titel/Venue/
