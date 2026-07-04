@@ -210,11 +210,28 @@ ClipboardCheck/Kanban).
   Score-Badge = PressScoreBadge-Pill (wie Desktop-View-2-Abweichung, N/A-Grund);
   Footer paginiert statt Mock-Gesamtcount; Show-All/Filter-Sheet/ActiveFilters
   bleiben Desktop-only; Flag-Pin mobil statischer Chip (Toggle auf Detail-Page).
-- **M5 Veranstaltungen mobil** — **Agenda-Modus** (Tag-Gruppen + Titel/Venue/
-  Score + full-width Pitchen/Verwerfen UNTER dem Titel; gepitcht→„Im Board",
-  verworfen→„Verworfen"+Zurück) UND **Kompakt-Monatskalender** (7-Spalten-Grid
-  mit Punkt-Markern + „ausgewählter Tag"-Liste). Modus-Segment Agenda|Kalender.
-  Mock Z. 414–536. Ersetzt auf Mobile die Desktop-Tabelle/Schedule-X.
+- **M5 Veranstaltungen mobil** ✅ FERTIG 2026-07-04 (Commit `2cb9b93`) —
+  Mock Z. 414–536. Neue Dateien in `app/events/_components/`:
+  `events-agenda.tsx` (Tag-Gruppen „Fr · 4. Juli" nach Wiener Zivildatum via
+  neuem `eventDayKey` in event-format.ts; Karte = 3px-Akzentbalken nach
+  Score-Band + Titel/Venue/`ScoreReasonBadge` + full-width Pitchen/Verwerfen;
+  gepitcht+Karte→„Im Board"-Deep-Link, sonst Status-Pill+„Zurück"),
+  `mobile-month-calendar.tsx` (Client: 7-Spalten-Grid, ≤3 Band-Punkte/Tag,
+  Heute-Kreis, Tages-Tap→Tagesliste mit Decision-Pill; Prev/Next URL-getrieben
+  `?date=`, Auswahl per `key={anchor}` resettet; **handgerollt statt
+  react-day-picker** — Mock-Grid nur gegen Library-Styles erreichbar),
+  `events-mobile-controls.tsx` (Segment Agenda|Kalender über `?view=month` +
+  5 Entscheidungs-Tab-Chips mit Counts + Main-News-Stern, Zero-JS-Links,
+  Bleed-Scroll wie M3/M4). `event-row-actions.tsx`: Mutation als
+  `useDecisionMutation`-Hook + `EventAgendaActions`. `page.tsx`: md:-Split;
+  Board-Deep-Link-Query auch für `view=week` (läuft mobil durch die Agenda).
+  Icons + `CalendarX`/`Zap`. **Abweichungen (vetobar):** Kommend|Vergangen →
+  die 5 bestehenden Tabs (kein Past-Tab im Backend); ScoreReasonBadge statt
+  Mock-Mono-Badge; kein per-Event „Main"-Stern; `?view=week` mobil = Agenda
+  der Woche. Verifiziert Playwright 390×844 (kein H-Overflow Agenda/Monat;
+  Pitch→Im Board→Zurück-Roundtrip; Tages-Tap; Monats-Nav; Desktop 1440
+  unverändert inkl. Schedule-X); tsc0/eslint0/583 Tests. Damit ist der
+  §M1-Befund (~200px H-Overflow der Desktop-Tabelle) mobil behoben.
 - **M6 Detail-Bottom-Sheets** — Card-/Event-/Publikations-Detail auf Mobile als
   von-unten-Sheet (statt Desktop-Modal): Grabber/Caret-Down-Close, Meta-Rows,
   Checkliste, Kommentare. Mock Z. 549–850. Größte Phase; ggf. weiter splitten.
