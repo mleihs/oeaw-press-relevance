@@ -80,6 +80,7 @@ export {
   FileDashed as FileQuestion,
   FileText as FileText,
   Funnel as Filter,
+  FlowerLotus as FlowerLotus,
   FolderOpen as FolderOpen,
   Globe as Globe,
   DotsSixVertical as GripVertical,

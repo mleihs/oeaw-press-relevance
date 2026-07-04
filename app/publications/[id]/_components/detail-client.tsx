@@ -5,7 +5,7 @@ import Link from 'next/link';
 import {
   ExternalLink, FileText, Brain,
   Award, ShieldCheck, Megaphone, Users, Building2, FolderOpen, BookText,
-  Mail, Crown, Newspaper, Info, AlertTriangle,
+  Mail, Crown, Newspaper, Info, AlertTriangle, Zap,
 } from '@/lib/icons';
 import type { PublicationWithRelations } from '@/lib/shared/types';
 import { cn } from '@/lib/shared/utils';
@@ -73,13 +73,14 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
         <div className="flex flex-wrap items-start gap-2">
           <h1 className="text-xl md:text-2xl font-bold leading-tight flex-1">{titleForDisplay}</h1>
           {/* Mobil wandern „Ins Board" in die Sticky-Bar und der Flag-Pin in
-              den blauen Detail-Header (page.tsx) — hier Desktop-only. */}
+              den blauen Detail-Header (page.tsx) — hier Desktop-only. Comp
+              Z. 226–229: Ins Board = blau gefüllt, Pin = umrandete Quadrat-Box. */}
           <div className="mt-0.5 shrink-0 hidden md:block">
-            <CreateCardButton source={publicationToCardSource(pub, titleForDisplay)} />
+            <CreateCardButton source={publicationToCardSource(pub, titleForDisplay)} variant="default" />
           </div>
-          <div className="mt-0.5 shrink-0 hidden md:block">
+          <span className="mt-0.5 hidden h-8 w-8 shrink-0 items-center justify-center rounded-[9px] border border-line-strong bg-surface md:inline-flex">
             <PublicationFlag pubId={pub.id} flagNotes={pub.flag_notes ?? []} decision={pub.decision} />
-          </div>
+          </span>
           {isMaHighlighted && (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -270,7 +271,8 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
             </CardHeader>
             <CardContent className="space-y-5">
               <div className="flex items-center gap-4">
-                <div className={`flex items-center justify-center h-16 w-16 rounded-full text-xl font-bold ${
+                {/* Comp Z. 327 + 885: 72px-Kreis, Geist Mono 22px. */}
+                <div className={`flex items-center justify-center h-[72px] w-[72px] shrink-0 rounded-full font-mono text-[22px] font-bold ${
                   getScoreBandClass(pub.press_score, 'hero')
                 }`}>
                   {pressScorePct}%
@@ -390,16 +392,17 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
 
       {/* Pitch — mobil an zweiter Stelle nach der Analyse */}
       {hasAnalysis && pub.pitch_suggestion && (
-        <Card className="border-brand/20 bg-brand/[0.02] max-md:-order-4">
+        <Card className="border-[#d3e2ff] bg-[#f6f9ff] dark:border-brand/25 dark:bg-brand/[0.08] max-md:-order-4">
           <CardContent className="p-5">
-            <h3 className="text-xs font-medium text-brand uppercase mb-2 inline-flex items-center gap-1">
+            <h3 className="font-mono text-[10.5px] font-semibold uppercase tracking-[0.07em] text-brand mb-2.5 inline-flex items-center gap-1.5">
+              <Zap weight="fill" className="h-3.5 w-3.5" />
               Pitch-Vorschlag
               <InfoBubble id="pitch_suggestion" size="sm" />
             </h3>
-            <p className="text-sm leading-relaxed">{pub.pitch_suggestion}</p>
+            <p className="text-[15px] font-medium leading-relaxed">{pub.pitch_suggestion}</p>
             {pub.suggested_angle && (
               <p className="text-sm text-foreground/80 mt-3">
-                <span className="font-medium text-muted-foreground inline-flex items-center gap-1">
+                <span className="font-semibold text-brand inline-flex items-center gap-1">
                   Blickwinkel:
                   <InfoBubble id="suggested_angle" size="sm" />
                 </span>{' '}
@@ -407,8 +410,8 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
               </p>
             )}
             {pub.target_audience && (
-              <p className="text-sm text-foreground/80 mt-1">
-                <span className="font-medium text-muted-foreground inline-flex items-center gap-1">
+              <p className="text-sm text-foreground/80 mt-1.5">
+                <span className="font-semibold text-brand inline-flex items-center gap-1">
                   Zielgruppe:
                   <InfoBubble id="target_audience" size="sm" />
                 </span>{' '}
@@ -449,13 +452,10 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
         </Card>
       )}
 
-      {/* Haiku — poetic distillation of the content, placed right after the summary */}
+      {/* Haiku — poetic distillation of the content, placed right after the
+          summary. Gradient-Karte nach Comp Z. 274–283 (blauer Verlauf, Lotus). */}
       {pub.haiku && (
-        <Card>
-          <CardContent className="px-5 py-4">
-            <HaikuBlock haiku={pub.haiku} model={pub.llm_model} />
-          </CardContent>
-        </Card>
+        <HaikuBlock haiku={pub.haiku} model={pub.llm_model} variant="gradient" />
       )}
 
       {/* Authors. OEAW-linked persons (external=false) render in brand-blue
@@ -492,9 +492,22 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
               <ul className="divide-y divide-border/60">
                 {pub.authors_resolved.map((a) => {
                   const isOeaw = !a.external;
+                  const initials = `${a.firstname?.[0] ?? ''}${a.lastname?.[0] ?? ''}`.toUpperCase();
                   return (
                     <li key={a.id} className="py-2.5 flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2 min-w-0">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        {/* Initialen-Avatar (Comp Z. 294 + 873): ÖAW = brand,
+                            extern = grau — die Farbcodierung der Namenslinks
+                            als zweites, schneller scanbares Signal. */}
+                        <span
+                          aria-hidden
+                          className={cn(
+                            'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11.5px] font-semibold text-white',
+                            isOeaw ? 'bg-brand' : 'bg-line-strong dark:bg-muted-foreground/40',
+                          )}
+                        >
+                          {initials}
+                        </span>
                         {a.mahighlight && (
                           <Tooltip>
                             <TooltipTrigger asChild>
