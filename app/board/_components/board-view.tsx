@@ -171,7 +171,7 @@ export function BoardView({
 
       <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
         <div className="mt-3 flex gap-3">
-          <div className="flex flex-1 gap-3.5 overflow-x-auto pb-2">
+          <div className="board-texture flex flex-1 gap-3.5 overflow-x-auto rounded-lg pb-2">
             {board.columns.length === 0 ? (
               <EmptyBoardHint isAdmin={isAdmin} />
             ) : (
