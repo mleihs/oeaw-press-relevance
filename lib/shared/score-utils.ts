@@ -34,8 +34,11 @@ export function getScoreBand(score: number | null): ScoreBand {
 // very_low/none = neutral fill. Light appearance is near-identical to the prior
 // amber-100/orange-100/neutral-100 values.
 const BAND_CLASSES: Record<ScoreBandVariant, Record<ScoreBand, string>> = {
+  // Toolkit-Redesign-Comp `scoreBadge`: getönter Kasten, NICHT satt gefüllt —
+  // hoch = hellblau/blau (#eef4ff/#0047bb), mittel = amber-Tint, niedrig/keine
+  // = neutral. So liest das Badge toolkit-weit wie im Entwurf.
   badge: {
-    high: 'bg-brand-500 text-white',
+    high: 'bg-brand-50 text-brand',
     mid: 'bg-warning-tint text-warning-ink',
     low: 'bg-soon-tint text-soon',
     very_low: 'bg-fill text-ink-subtle',

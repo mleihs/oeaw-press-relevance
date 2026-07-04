@@ -67,9 +67,9 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
     // flex-col + gap statt space-y: erlaubt die Mobile-Reihenfolge (M6c, Mock
     // Z. 811ff: Score → Pitch zuerst) rein über order-Klassen, ohne die
     // Desktop-DOM-Ordnung anzufassen. max-md:pb-16 räumt die Sticky-Bar frei.
-    <div className="flex flex-col gap-6 max-md:pb-16">
-      {/* Header */}
-      <div className="space-y-3 max-md:-order-6">
+    <div className="flex flex-col gap-6 max-md:pb-16 md:grid md:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)] md:items-start md:gap-x-4 md:gap-y-6">
+      {/* Header — volle Breite über beiden Spalten (Mock Z. 220–245) */}
+      <div className="space-y-3 max-md:-order-6 md:col-span-2">
         <div className="flex flex-wrap items-start gap-2">
           <h1 className="text-xl md:text-2xl font-bold leading-tight flex-1">{titleForDisplay}</h1>
           {/* Mobil wandern „Ins Board" in die Sticky-Bar und der Flag-Pin in
@@ -255,10 +255,79 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
         </div>
       </div>
 
-      {/* Decision-Toolbar — mobil hinter Score + Pitch einsortiert */}
-      <div className="max-md:-order-3">
-        <DecisionToolbar pub={pub} />
+      {/* ── Rechte Spalte (Mock Z. 305–351): sticky Relevanz-Analyse +
+          Redaktionsentscheidung. Auf < md kollabiert das Grid zur Spalte, die
+          `-order-5` schiebt sie mobil direkt hinter den Header (M6c). ── */}
+      <div className="flex flex-col gap-4 md:col-start-2 md:row-start-2 md:sticky md:top-20 max-md:-order-5">
+        {/* Relevanz-Analyse (Mock Z. 306–341) */}
+        {hasAnalysis && (
+          <Card className="border-brand/30">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Brain className="h-4 w-4 text-brand" />
+                Relevanz-Analyse
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="flex items-center gap-4">
+                <div className={`flex items-center justify-center h-16 w-16 rounded-full text-xl font-bold ${
+                  getScoreBandClass(pub.press_score, 'hero')
+                }`}>
+                  {pressScorePct}%
+                </div>
+                <div>
+                  <p className="font-medium text-lg flex items-center gap-1.5">
+                    Story Score
+                    <InfoBubble id="press_score" size="md" />
+                  </p>
+                  <p className="text-sm text-muted-foreground inline-flex items-center gap-1">
+                    {getScoreBandStoryLabel(pub.press_score)}
+                    <InfoBubble id="score_band" />
+                  </p>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <ScoreBar dimension="public_accessibility" value={pub.public_accessibility} />
+                <ScoreBar dimension="societal_relevance" value={pub.societal_relevance} />
+                <ScoreBar dimension="novelty_factor" value={pub.novelty_factor} />
+                <ScoreBar dimension="storytelling_potential" value={pub.storytelling_potential} />
+                <ScoreBar dimension="media_timeliness" value={pub.media_timeliness} />
+              </div>
+              {pub.reasoning && (
+                <div>
+                  <SectionLabel className="inline-flex items-center gap-1">
+                    Begründung
+                    <InfoBubble id="reasoning" size="sm" />
+                  </SectionLabel>
+                  <p className="text-sm text-foreground/80">{pub.reasoning}</p>
+                </div>
+              )}
+              {pub.llm_model && (
+                <div className="text-xs text-muted-foreground/70 border-t pt-3 inline-flex items-center gap-1">
+                  Modell: {pub.llm_model} | Kosten: ${pub.analysis_cost?.toFixed(4) || '0'}
+                  <InfoBubble id="ai_provenance" />
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Redaktionsentscheidung (Mock Z. 343–350): Pitchen/Verwerfen. Wir
+            behalten die volle DecisionToolbar (Rationale/Snooze) statt der
+            zwei Mock-Buttons — page-eigene Kernfunktion (vetobar). */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm">Redaktionsentscheidung</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <DecisionToolbar pub={pub} />
+          </CardContent>
+        </Card>
       </div>
+
+      {/* ── Linke Spalte (Mock Z. 224–302): Pitch, Zusammenfassung, Haiku,
+          Autor:innen, externe Anreicherung + unsere Zusatz-Karten. ── */}
+      <div className="flex flex-col gap-6 md:col-start-1 md:row-start-2 min-w-0">
 
       {/* ÖAW-Pressemitteilung (cross-reference zur TYPO3-news) */}
       {pub.press_release && (
@@ -571,59 +640,6 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
         </Card>
       )}
 
-      {/* Analysis card — mobil direkt nach dem Header (Mock: Score zuerst) */}
-      {hasAnalysis && (
-        <Card className="border-brand/20 max-md:-order-5">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Brain className="h-4 w-4 text-brand" />
-              Science Propaganda Ninja Analyse
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            <div className="flex items-center gap-4">
-              <div className={`flex items-center justify-center h-16 w-16 rounded-full text-xl font-bold ${
-                getScoreBandClass(pub.press_score, 'hero')
-              }`}>
-                {pressScorePct}%
-              </div>
-              <div>
-                <p className="font-medium text-lg flex items-center gap-1.5">
-                  Story Score
-                  <InfoBubble id="press_score" size="md" />
-                </p>
-                <p className="text-sm text-muted-foreground inline-flex items-center gap-1">
-                  {getScoreBandStoryLabel(pub.press_score)}
-                  <InfoBubble id="score_band" />
-                </p>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <ScoreBar dimension="public_accessibility" value={pub.public_accessibility} />
-              <ScoreBar dimension="societal_relevance" value={pub.societal_relevance} />
-              <ScoreBar dimension="novelty_factor" value={pub.novelty_factor} />
-              <ScoreBar dimension="storytelling_potential" value={pub.storytelling_potential} />
-              <ScoreBar dimension="media_timeliness" value={pub.media_timeliness} />
-            </div>
-            {pub.reasoning && (
-              <div>
-                <SectionLabel className="inline-flex items-center gap-1">
-                  Begründung
-                  <InfoBubble id="reasoning" size="sm" />
-                </SectionLabel>
-                <p className="text-sm text-foreground/80">{pub.reasoning}</p>
-              </div>
-            )}
-            {pub.llm_model && (
-              <div className="text-xs text-muted-foreground/70 border-t pt-3 inline-flex items-center gap-1">
-                Modell: {pub.llm_model} | Kosten: ${pub.analysis_cost?.toFixed(4) || '0'}
-                <InfoBubble id="ai_provenance" />
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
       {/* Enrichment card */}
       <Card>
         <CardHeader className="pb-3">
@@ -677,6 +693,8 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
           )}
         </CardContent>
       </Card>
+      </div>
+      {/* Ende linke Spalte */}
 
       {/* Sticky Mobile-Aktionsleiste über der Bottom-Tab-Nav (Mock Z. 886).
           Nur „Ins Board" — Verwerfen/Pitchen laufen über die DecisionToolbar

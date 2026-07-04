@@ -28,7 +28,8 @@ import { EventsAgenda } from './_components/events-agenda';
 import { EventsMobileControls } from './_components/events-mobile-controls';
 import { MobileMonthCalendar } from './_components/mobile-month-calendar';
 import { buildEventsUrl } from './_lib/build-events-url';
-import { EventsViewSwitcher } from './_components/events-view-switcher';
+import { EventsModeSwitcher } from './_components/events-mode-switcher';
+import { CalendarViewSwitcher } from './_components/calendar-view-switcher';
 import { EventsFilterBar } from './_components/events-filter-bar';
 import { CalendarNav } from './_components/calendar-nav';
 import { CalendarLegend, type CalendarSummary } from './_components/calendar-legend';
@@ -147,62 +148,53 @@ export default async function EventsPage({
       sub="Bewerten · pitchen · ins Board"
     />
     <div className="space-y-6">
-      <div className="hidden md:block">
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <CalendarDays className="h-6 w-6 text-emerald-600" />
-          Veranstaltungen
-        </h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Zukünftige Events aus der ÖAW-WEBDB (TYPO3-News mit Event-Markierung).
-          Liste zur Übernahme in den zentralen Eventkalender.
-        </p>
-      </div>
-
-      <div className="hidden gap-3 md:flex md:items-center md:justify-between">
-        <EventsTabsNav
-          activeTab={activeTab}
-          stats={overview.stats}
-          main={includeMainNews}
-          view={calView}
-          date={calWindow?.anchor ?? null}
-          filters={filters}
-        />
-        <div className="flex items-center gap-4">
-          <MainNewsToggle showMainNews={includeMainNews} />
-          <EventAnalyzeModal />
-          <RefreshButton lastSync={overview.last_synced} />
+      {/* Header + Darstellungs-Umschalter (Toolkit-Redesign.dc.html Z. 359–368):
+          Titel/Untertitel links, Tabelle|Kalender-Segment oben-rechts. */}
+      <div className="hidden gap-4 md:flex md:items-end md:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-ink">
+            Veranstaltungen
+          </h1>
+          <p className="text-muted-foreground text-[13.5px] mt-1.5">
+            Bewerten, pitchen, ins Redaktionsboard übernehmen. Eine Entscheidung
+            wird zur vorbefüllten Karte.
+          </p>
         </div>
-      </div>
-
-      <div className="hidden gap-3 md:flex md:items-center md:justify-between">
-        <EventsViewSwitcher
-          activeView={calView ?? 'list'}
+        <EventsModeSwitcher
+          activeMode={calWindow ? 'calendar' : 'table'}
           tab={activeTab}
           main={includeMainNews}
+          calView={calView}
           date={calWindow?.anchor ?? null}
           filters={filters}
-        />
-        {calWindow && (
-          <CalendarNav
-            window={calWindow}
-            tab={activeTab}
-            main={includeMainNews}
-            filters={filters}
-          />
-        )}
-      </div>
-
-      <div className="hidden md:block">
-        <EventsFilterBar
-          q={search}
-          band={band}
-          institute={institute}
-          institutes={institutes}
         />
       </div>
 
       {calWindow ? (
+        /* KALENDER-Modus (Mock Z. 418–520): Nav + Monat|Woche-Sub-Segment +
+           globale Aktionen in einer Reihe, darunter Legende + Kalender. Die
+           Entscheidungs-Tabs entfallen hier bewusst wie im Mock — der Kalender
+           ist die Überblicks-Ansicht (Band = Füllung, Entscheidung = Rand). */
         <div className="hidden space-y-3 md:block">
+          <div className="flex flex-wrap items-center gap-3">
+            {calWindow && (
+              <CalendarNav
+                window={calWindow}
+                tab={activeTab}
+                main={includeMainNews}
+                filters={filters}
+              />
+            )}
+            <CalendarViewSwitcher
+              window={calWindow}
+              tab={activeTab}
+              main={includeMainNews}
+              filters={filters}
+            />
+            <span className="flex-1" />
+            <EventAnalyzeModal />
+            <RefreshButton lastSync={overview.last_synced} />
+          </div>
           {summary && <CalendarLegend summary={summary} />}
           <EventsCalendarLoader
             events={list.events}
@@ -211,7 +203,30 @@ export default async function EventsPage({
           />
         </div>
       ) : (
-        <div className="hidden md:block">
+        /* TABELLEN-Modus (Mock Z. 370–415): Entscheidungs-Tabs links, globale
+           Aktionen rechts (Main-News/Analysieren/Sync), darunter die
+           Filterleiste und die Karten-Liste. */
+        <div className="hidden space-y-3 md:block">
+          <div className="flex flex-wrap items-center gap-3">
+            <EventsTabsNav
+              activeTab={activeTab}
+              stats={overview.stats}
+              main={includeMainNews}
+              view={null}
+              date={null}
+              filters={filters}
+            />
+            <span className="flex-1" />
+            <MainNewsToggle showMainNews={includeMainNews} />
+            <EventAnalyzeModal />
+            <RefreshButton lastSync={overview.last_synced} />
+          </div>
+          <EventsFilterBar
+            q={search}
+            band={band}
+            institute={institute}
+            institutes={institutes}
+          />
           <EventsTable rows={list.events} boardCardHrefs={boardCardHrefs} />
         </div>
       )}

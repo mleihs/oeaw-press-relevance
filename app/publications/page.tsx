@@ -71,17 +71,16 @@ export default async function PublicationsPage({ searchParams }: PageProps) {
             )}
           </p>
         </div>
-        <ExportDropdown />
+        {/* Kompakte Aktions-Cluster rechts (Comp-Header: Titel links, Buttons
+            rechts). Pipeline-Trigger bleibt Desktop-only — der Mobile-Mock hat
+            ihn nicht, und Batch-Pipelines startet man nicht am Telefon. */}
+        <div className="flex items-center gap-2">
+          <PipelineActions />
+          <ExportDropdown />
+        </div>
       </div>
 
       <FiltersBar total={data.total} hidden={data.total_hidden} />
-
-      {/* Pipeline-Trigger (Anreichern/Analysieren) bleibt Desktop-only — der
-          Mobile-Mock hat ihn nicht, und Batch-Pipelines startet man nicht am
-          Telefon (vetobar). */}
-      <div className="hidden md:block">
-        <PipelineActions />
-      </div>
 
       <PublicationList
         publications={data.publications}

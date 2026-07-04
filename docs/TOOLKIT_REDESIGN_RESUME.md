@@ -84,6 +84,11 @@ URL-getriebene Zero-JS-Pagination bleibt); (3) Spalten-Sort entfällt (Sort lebt
 im Filter-Sheet); (4) **`PipelineActions` (Enrichment/Analyse-Trigger) BLEIBT** —
 im Comp nicht gezeigt, aber page-eigene Kernfunktion; die Dimensions-Ø-Karte
 wurde entfernt (redundant mit Dashboard, Comp hat sie nicht).
+**Feinschliff 2026-07-04:** `PipelineActions` von zwei großen Karten auf zwei
+kompakte Header-Buttons (**Anreichern/Analysieren**, outline) umgestellt und in
+die Kopfzeile neben Export verschoben → Seite fließt jetzt Header→Filter→Liste
+wie im Comp (keine großen Panels oben). Erklärtexte als `title`-Tooltips
+erhalten.
 
 ## View 3 — Veranstaltungen  ✅ FERTIG (Desktop-Tabelle + Kalender-Chip, verifiziert 2026-07-04)
 **Tabelle** `app/events/_components/events-table.tsx` neu als Karten-Liste (wie
@@ -112,9 +117,15 @@ durch, `event-row-actions` zeigt bei gepitcht+Karte den grünen Deep-Link
 (`bg-success-tint`/Kanban-Icon) statt „Übernommen"-Pill. **Abweichung vom Comp:**
 Reset-Button bleibt auch bei gepitcht (Comp lässt ihn weg); ohne Karte bleibt
 der Pill (unser Pitch legt keine Karte automatisch an).
-**OFFEN/optional:** Nav-Restrukturierung Tabelle|Kalender-Segment nach oben-rechts
-+ Monat|Woche-Sub-Segment (Comp Z. 254–257/316–319) wurde NICHT gemacht — die
-bestehende Liste|Woche|Monat-Leiste bleibt.
+**Nav-Restrukturierung ✅ DONE 2026-07-04** (Desktop-Feinschliff-Pass, in-Browser
+verifiziert): Header trägt jetzt oben-rechts ein **Tabelle|Kalender**-Segment
+(neu `events-mode-switcher.tsx`); im Kalender-Modus ein **Monat|Woche**-
+Sub-Segment neben der Datums-Nav (neu `calendar-view-switcher.tsx`). Die alte
+Liste|Woche|Monat-Leiste (`events-view-switcher.tsx`) ist damit ungenutzt.
+Tabellen-Modus = Entscheidungs-Tabs links + Main-News/Analysieren/Sync rechts +
+Filterleiste; Kalender-Modus = Datums-Nav + Monat|Woche + Analysieren/Sync +
+Legende (Entscheidungs-Tabs entfallen im Kalender wie im Comp). Untertitel auf
+Comp-Wortlaut, h1-Icon entfernt (wie /publications). tsc0/eslint0/583 Tests.
 
 ## NEU aus Remote-Mock 2026-07-04 (Toolkit-Redesign.dc.html, Commit dabb11a)
 Der Desktop-Mock wurde remote weiterentwickelt (774→1030 Zeilen) und ist ins
@@ -302,6 +313,61 @@ auf origin/main → Vercel+Coolify). Nächste Schritte (Reihenfolge lt. User):
 1. Desktop-Schnitt aus dem Remote-Mock (Pub-Detailansicht Z. 214–352 +
    Dashboard-Kachelgrid, s. §NEU oben);
 2. visueller Sweep gegen Prod (aus dem Rollout-Doc).
+
+## DESKTOP-FEINSCHLIFF-PASS 2026-07-04 (Fable-Session) — LOKAL, NICHT committet→jetzt committet
+Auf User-Feedback („entsprechen nicht den Designvorgaben") Desktop /events +
+/publications näher an `Toolkit-Redesign.dc.html` gezogen. Alles tsc0/eslint0/
+583 Tests grün, in-Browser verifiziert. **Entscheidung des Users: „Layout
+angleichen, Funktionen behalten"** (nicht strikt — Analysieren/Sync/Filter
+bleiben, nur verlagert).
+
+**Events-Nav restrukturiert (DONE):** neue `events-mode-switcher.tsx`
+(Tabelle|Kalender, oben-rechts im Header) + `calendar-view-switcher.tsx`
+(Monat|Woche, im Kalender-Modus neben der Datums-Nav). `events-view-switcher.tsx`
+(alt Liste|Woche|Monat) damit ungenutzt. page.tsx: Tabellen-Modus = Tabs links +
+Main-News/Analysieren/Sync rechts + Filterleiste; Kalender-Modus = Datums-Nav +
+Monat|Woche + Analysieren/Sync + Legende (keine Tabs im Kalender, wie Comp).
+h1-Icon weg, Untertitel = Comp-Wortlaut.
+
+**Publikationen (DONE):** (1) `pipeline-actions.tsx` von 2 großen Karten →
+2 kompakte Header-Buttons (Anreichern/Analysieren, neben Export) → Seite fließt
+Header→Filter→Liste wie Comp. (2) `preset-bar.tsx` InfoBubbles je Chip entfernt
+(Comp-Filterleiste ist clean). (3) **Score-Badge (`components/score-bar.tsx` +
+`lib/shared/score-utils.ts`) toolkit-weit an Comp `scoreBadge` angeglichen:**
+Mono-Quadrat statt Pille (rounded-[7px], Geist Mono, `min-w-[44px]` zentriert →
+alle gleich groß), High-Band `bg-brand-50 text-brand` (hellblau/blau, NICHT
+mehr satt `bg-brand-500 text-white`). Gilt app-weit (Dashboard/Events/Liste),
+Dashboard gegengeprüft ok. N/A-Pille bleibt fürs N/A-Handling.
+
+**Pub-Detailansicht 2-Spalten-Rebuild (STRUKTUR DONE, Politur offen):**
+`detail-client.tsx` von Single-Column-Stack → `md:grid grid-cols-[1.65fr_1fr]`.
+Header `md:col-span-2`; **rechte Spalte sticky** (`md:col-start-2 md:sticky
+md:top-20`) = Relevanz-Analyse (Score-Kreis + 5 Dim-Bars + Begründung +
+Modell/Kosten) + Redaktionsentscheidung (DecisionToolbar in Karte); **linke
+Spalte** = Pitch/Zusammenfassung/Haiku/Autor:innen/Enrichment + Zusatzkarten
+(Press-Release/Press-Referenz/Projekte). Mobile-M6c-Reihenfolge via
+`max-md:-order-*` erhalten (Header→rechte Spalte→linke Spalte). „Analyse"-Titel
+→ „Relevanz-Analyse". In-Browser verifiziert (analysierte Pub, sticky rechts ok).
+**OFFENE POLITUR (nächste Schritte):** Header-Buttons an Comp (Ins Board =
+blau-gefüllt m. Kanban-Icon, Pin = amber-umrandete Box); Pitch-Karte Mock-Blau
+(`#f6f9ff`/Border), Haiku-Karte Mock-Gradient (M6c ließ sie Desktop-Stil),
+Autor:innen-Avatare (Initialen-Kreise wie Comp Z. 264–281), „Zurück zu
+Publikationen"-Link statt/neben Breadcrumb; Score-Kreis-Styling ggf. an Comp.
+
+**Kalender Monat/Woche — KEIN Styling-Bug:** Chips (`calendar-event-chip.tsx`)
+bilden Comp-`scoreBadge`-Bänder bereits 1:1 ab (Tint-Box + 3px-Bar + Titel + %
++ Decision-Icon). Wirken grau/ausgewaschen, weil **lokal alle Events unbewertet**
+sind (Legende „0 hochrelevant · N unbewertet") → alles fällt ins `none`-Band.
+Auf PROD (Events gescort) rendert derselbe Code die Bandfarben = Design.
+Optionen für lokale Farbprüfung: Prod-Event-Scores → lokale DB kopieren
+(`local-dev-db-from-prod`-Muster) ODER lokal „Analysieren".
+
+**NÄCHSTE SCHRITTE (fresh-session tauglich):** (1) Pub-Detail-Politur (s. o.);
+(2) Events-Kalender lokal einfärben (Prod-Scores ziehen) falls visuell zu prüfen;
+(3) Commit ist erfolgt (siehe git log) — noch NICHT gepusht (Push mit User
+abstimmen); (4) visueller Sweep. Cross-cutting offen: Top-Nav-Marke „Science
+Propaganda Ninja" + „Mehr"-Menü vs. Comp-cleaner „ÖAW Presse"-Leiste (User
+gezeigt via Board-Mock-Screenshot — separat entscheiden).
 
 ## Verifikation
 Dev-Server läuft (`npm run dev`, Port 3000). In-Browser prüfen (MCP-Tab, oder
