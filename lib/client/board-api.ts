@@ -10,6 +10,7 @@ import type {
   CardDetail,
   CardItem,
   CardItemKind,
+  BoardLabel,
 } from '@/lib/shared/board';
 import type { InitialItemPayload } from '@/lib/shared/board-schemas';
 
@@ -69,6 +70,23 @@ export const patchColumnApi = (
 ) => send<{ column: BoardColumn }>(`/api/board/columns/${id}`, 'PATCH', patch).then((r) => r.column);
 export const deleteColumnApi = (id: string) =>
   send<{ ok: true }>(`/api/board/columns/${id}`, 'DELETE');
+
+// --- Labels ---
+export const createLabelApi = (boardId: string, name: string, color?: string) =>
+  send<{ label: BoardLabel }>(`/api/board/boards/${boardId}/labels`, 'POST', {
+    board_id: boardId,
+    name,
+    color,
+  }).then((r) => r.label);
+export const deleteLabelApi = (labelId: string) =>
+  send<{ ok: true }>(`/api/board/labels/${labelId}`, 'DELETE');
+export const addCardLabelApi = (cardId: string, labelId: string) =>
+  send<{ ok: true }>(`/api/board/cards/${cardId}/labels`, 'POST', { label_id: labelId });
+export const removeCardLabelApi = (cardId: string, labelId: string) =>
+  send<{ ok: true }>(
+    `/api/board/cards/${cardId}/labels?label_id=${encodeURIComponent(labelId)}`,
+    'DELETE',
+  );
 
 // --- Cards ---
 export const createCardApi = (payload: {

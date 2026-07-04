@@ -252,3 +252,18 @@ durch Egress-402 blockiert (Memory `prod-supabase-free-tier-500mb`).
   in der Hilfe) + eslint auf echten Nullstand (--max-warnings=0). tsc0/eslint0/
   vitest583/build grün, CSS-Emission verifiziert. Committed + deployt
   (Vercel + Coolify); visueller Sweep bleibt der offene Rest.
+- 2026-07-03 (EOD): **A–D + Review-Fixes + Lint-Nullstand DEPLOYED &
+  LIVE-VERIFIZIERT.** main ff-gemerged (`b65f174→80d3fd9`, 5 Commits) + gepusht;
+  Vercel `--prod` Ready; Coolify-Branch `chore/coolify-dockerfile` gemerged
+  (Lockfile-Konflikt → main-Version, `ff3eea4`) + API-Deploy (uuid
+  `cbt2tdcwf10ia0prqk8r45bm`, Tunnel lokal **8088**→VPS:8000 — lokal 8000 ist
+  belegt); Container healthy, Prod-CSS trägt die neuen Tokens nachweislich
+  (`state-warning-line:#5a471a` im Chunk). **NÄCHSTER SCHRITT (morgen):
+  visueller Regressions-Sweep** aller Screens light+dark gegen Prod/Dev
+  (Chrome-Extension nötig); Gegencheck-Punkte: Pin=amber-500-fill,
+  Decision-Icons sichtbar, Dropdown-Radio-Punkt, Hilfe-Karten-Icons, dunkle
+  Warning-/Danger-Borders. Danach Rest-D-Checkboxen (Per-Screen-Politur →
+  Board-Rest-Hex → Chart-Hex → Feature-Sweeps). Bewusst uncommitted im Tree:
+  5 alte Screenshots (nach Sweep neu machen) + docs/OPS_2026-07-02.md
+  (User-Entscheid); Branch `design/rollout-phase-a-b` ist in main aufgegangen
+  → kann gelöscht werden.

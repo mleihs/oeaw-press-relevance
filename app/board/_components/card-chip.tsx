@@ -4,9 +4,10 @@ import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { CheckCircle2, ListChecks, ListTree, MessageCircle, Paperclip } from '@/lib/icons';
 import { cn } from '@/lib/shared/utils';
-import type { BoardMember, CardChip as CardChipT } from '@/lib/shared/board';
+import type { BoardLabel, BoardMember, CardChip as CardChipT } from '@/lib/shared/board';
 import { BoardAvatar } from './board-avatar';
 import { DueBadge } from './due-badge';
+import { LabelPill } from './label-pill';
 
 function MetaBadge({
   icon: Icon,
@@ -27,13 +28,16 @@ export function CardChip({
   card,
   accent,
   members,
+  labels,
   onOpen,
 }: {
   card: CardChipT;
   accent: string;
   members: Map<string, BoardMember>;
+  labels: Map<string, BoardLabel>;
   onOpen: () => void;
 }) {
+  const cardLabels = card.label_ids.map((id) => labels.get(id)).filter((l): l is BoardLabel => !!l);
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: card.id,
   });
@@ -72,6 +76,14 @@ export function CardChip({
         'cursor-pointer rounded-[10px] border border-line bg-surface px-[13px] py-3 shadow-card transition-[border-color,box-shadow] hover:border-line-strong hover:shadow-card-hover',
       )}
     >
+      {cardLabels.length > 0 && (
+        <div className="mb-2 flex flex-wrap gap-1">
+          {cardLabels.map((l) => (
+            <LabelPill key={l.id} label={l} />
+          ))}
+        </div>
+      )}
+
       <div className="flex items-start gap-1.5">
         {completed && <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success" />}
         <div

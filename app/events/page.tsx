@@ -1,7 +1,7 @@
 import { CalendarDays } from '@/lib/icons';
+import { MobileScreenHeader } from '@/components/mobile-screen-header';
 import {
   DEFAULT_EVENTS_SORT,
-  EVENTS_SORT_VALUES,
   filtersForEventsTab,
   getEventsOverview,
   getUpcomingInstitutes,
@@ -13,16 +13,23 @@ import {
   type EventsSortOrder,
   type EventsTab,
 } from '@/lib/server/events/list';
+import { getCardsForEvents } from '@/lib/server/board';
+import { cardDeepLink } from '@/lib/shared/board';
 import { SCORE_BAND_HIGH } from '@/lib/shared/constants';
 import { isEventsBand, type EventsBand } from '@/lib/shared/events-filter';
 import {
   computeCalendarWindow,
   isCalendarView,
 } from './_lib/calendar-range';
-import { buildEventsUrl, type EventsFilterState } from './_lib/build-events-url';
+import { type EventsFilterState } from './_lib/build-events-url';
 import { EventsTabsNav } from './_components/events-tabs-nav';
 import { EventsTable } from './_components/events-table';
-import { EventsViewSwitcher } from './_components/events-view-switcher';
+import { EventsAgenda } from './_components/events-agenda';
+import { EventsMobileControls } from './_components/events-mobile-controls';
+import { MobileMonthCalendar } from './_components/mobile-month-calendar';
+import { buildEventsUrl } from './_lib/build-events-url';
+import { EventsModeSwitcher } from './_components/events-mode-switcher';
+import { CalendarViewSwitcher } from './_components/calendar-view-switcher';
 import { EventsFilterBar } from './_components/events-filter-bar';
 import { CalendarNav } from './_components/calendar-nav';
 import { CalendarLegend, type CalendarSummary } from './_components/calendar-legend';
@@ -35,32 +42,6 @@ import { EventAnalyzeModal } from './_components/event-analyze-modal';
 // (decision badges, flag-popovers) that mutates and must reflect immediately,
 // not after a 60-second ISR window.
 export const dynamic = 'force-dynamic';
-
-// Pre-computes the toggle href for each sortable column (functions can't cross
-// the RSC → Client boundary). Same column → flip order; new column → asc.
-// `tab` and `main` are preserved so a sort never resets the active view. Sorting
-// only applies to the list, so these intentionally omit the calendar `view`.
-function buildSortHrefs(
-  activeTab: EventsTab,
-  includeMainNews: boolean,
-  sort: EventsSort,
-  order: EventsSortOrder,
-  filters: EventsFilterState,
-): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const col of EVENTS_SORT_VALUES) {
-    const next: EventsSortOrder =
-      sort === col ? (order === 'asc' ? 'desc' : 'asc') : 'asc';
-    out[col] = buildEventsUrl({
-      tab: activeTab,
-      main: includeMainNews,
-      ...filters,
-      sort: col,
-      order: next,
-    });
-  }
-  return out;
-}
 
 export default async function EventsPage({
   searchParams,
@@ -123,7 +104,19 @@ export default async function EventsPage({
         }),
   ]);
 
-  const sortHrefs = buildSortHrefs(activeTab, includeMainNews, sortBy, sortOrder, filters);
+  // „Im Board · Karte öffnen"-Deep-Links für gepitchte Events (Comp Z. 292).
+  // Ein Batch-Query statt eines Client-Lookups pro Zeile. Auch für die
+  // Wochen-Ansicht: deren Events laufen mobil durch die Agenda (M5), die die
+  // Deep-Links in der Aktionsreihe zeigt.
+  const boardCardHrefs = new Map<string, string>();
+  if (!calWindow || calWindow.view === 'week') {
+    const cards = await getCardsForEvents(
+      list.events.filter((e) => e.decision === 'pitch').map((e) => e.id),
+    );
+    for (const [eventId, ref] of cards) {
+      boardCardHrefs.set(eventId, cardDeepLink(ref));
+    }
+  }
 
   const summary: CalendarSummary | null = calWindow
     ? {
@@ -141,62 +134,67 @@ export default async function EventsPage({
       }
     : null;
 
+  // Mobil (M5) gibt es nur Agenda (Liste + Woche) und Kompakt-Monatskalender;
+  // der Moduswechsel läuft über dieselben ?view=-URLs wie der Desktop-Switcher.
+  const mobileMonth = calWindow?.view === 'month';
+
   return (
+    <>
+    {/* Blauer App-Header (M2); Subzeile = Mock-Wortlaut (Z. 423). Außerhalb
+        des space-y-Containers, damit der Desktop-Fluss unverändert bleibt. */}
+    <MobileScreenHeader
+      icon={<CalendarDays size={16} weight="fill" />}
+      title="Veranstaltungen"
+      sub="Bewerten · pitchen · ins Board"
+    />
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <CalendarDays className="h-6 w-6 text-emerald-600" />
-          Veranstaltungen
-        </h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Zukünftige Events aus der ÖAW-WEBDB (TYPO3-News mit Event-Markierung).
-          Liste zur Übernahme in den zentralen Eventkalender.
-        </p>
-      </div>
-
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <EventsTabsNav
-          activeTab={activeTab}
-          stats={overview.stats}
-          main={includeMainNews}
-          view={calView}
-          date={calWindow?.anchor ?? null}
-          filters={filters}
-        />
-        <div className="flex items-center gap-4">
-          <MainNewsToggle showMainNews={includeMainNews} />
-          <EventAnalyzeModal />
-          <RefreshButton lastSync={overview.last_synced} />
+      {/* Header + Darstellungs-Umschalter (Toolkit-Redesign.dc.html Z. 359–368):
+          Titel/Untertitel links, Tabelle|Kalender-Segment oben-rechts. */}
+      <div className="hidden gap-4 md:flex md:items-end md:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-ink">
+            Veranstaltungen
+          </h1>
+          <p className="text-muted-foreground text-[13.5px] mt-1.5">
+            Bewerten, pitchen, ins Redaktionsboard übernehmen. Eine Entscheidung
+            wird zur vorbefüllten Karte.
+          </p>
         </div>
-      </div>
-
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <EventsViewSwitcher
-          activeView={calView ?? 'list'}
+        <EventsModeSwitcher
+          activeMode={calWindow ? 'calendar' : 'table'}
           tab={activeTab}
           main={includeMainNews}
+          calView={calView}
           date={calWindow?.anchor ?? null}
           filters={filters}
         />
-        {calWindow && (
-          <CalendarNav
-            window={calWindow}
-            tab={activeTab}
-            main={includeMainNews}
-            filters={filters}
-          />
-        )}
       </div>
 
-      <EventsFilterBar
-        q={search}
-        band={band}
-        institute={institute}
-        institutes={institutes}
-      />
-
       {calWindow ? (
-        <div className="space-y-3">
+        /* KALENDER-Modus (Mock Z. 418–520): Nav + Monat|Woche-Sub-Segment +
+           globale Aktionen in einer Reihe, darunter Legende + Kalender. Die
+           Entscheidungs-Tabs entfallen hier bewusst wie im Mock — der Kalender
+           ist die Überblicks-Ansicht (Band = Füllung, Entscheidung = Rand). */
+        <div className="hidden space-y-3 md:block">
+          <div className="flex flex-wrap items-center gap-3">
+            {calWindow && (
+              <CalendarNav
+                window={calWindow}
+                tab={activeTab}
+                main={includeMainNews}
+                filters={filters}
+              />
+            )}
+            <CalendarViewSwitcher
+              window={calWindow}
+              tab={activeTab}
+              main={includeMainNews}
+              filters={filters}
+            />
+            <span className="flex-1" />
+            <EventAnalyzeModal />
+            <RefreshButton lastSync={overview.last_synced} />
+          </div>
           {summary && <CalendarLegend summary={summary} />}
           <EventsCalendarLoader
             events={list.events}
@@ -205,13 +203,69 @@ export default async function EventsPage({
           />
         </div>
       ) : (
-        <EventsTable
-          rows={list.events}
-          sortBy={sortBy}
-          sortOrder={sortOrder}
-          sortHrefs={sortHrefs}
-        />
+        /* TABELLEN-Modus (Mock Z. 370–415): Entscheidungs-Tabs links, globale
+           Aktionen rechts (Main-News/Analysieren/Sync), darunter die
+           Filterleiste und die Karten-Liste. */
+        <div className="hidden space-y-3 md:block">
+          <div className="flex flex-wrap items-center gap-3">
+            <EventsTabsNav
+              activeTab={activeTab}
+              stats={overview.stats}
+              main={includeMainNews}
+              view={null}
+              date={null}
+              filters={filters}
+            />
+            <span className="flex-1" />
+            <MainNewsToggle showMainNews={includeMainNews} />
+            <EventAnalyzeModal />
+            <RefreshButton lastSync={overview.last_synced} />
+          </div>
+          <EventsFilterBar
+            q={search}
+            band={band}
+            institute={institute}
+            institutes={institutes}
+          />
+          <EventsTable rows={list.events} boardCardHrefs={boardCardHrefs} />
+        </div>
       )}
+
+      {/* ── Mobile-Layer (M5): Agenda + Kompakt-Monatskalender ── */}
+      <div className="space-y-3 md:hidden">
+        <EventsMobileControls
+          activeTab={activeTab}
+          stats={overview.stats}
+          main={includeMainNews}
+          monthMode={mobileMonth}
+          anchor={calWindow?.anchor ?? null}
+          filters={filters}
+        />
+        {mobileMonth && calWindow ? (
+          <MobileMonthCalendar
+            key={calWindow.anchor}
+            events={list.events}
+            window={calWindow}
+            prevHref={buildEventsUrl({
+              tab: activeTab,
+              main: includeMainNews,
+              ...filters,
+              view: 'month',
+              date: calWindow.prevAnchor,
+            })}
+            nextHref={buildEventsUrl({
+              tab: activeTab,
+              main: includeMainNews,
+              ...filters,
+              view: 'month',
+              date: calWindow.nextAnchor,
+            })}
+          />
+        ) : (
+          <EventsAgenda rows={list.events} boardCardHrefs={boardCardHrefs} />
+        )}
+      </div>
     </div>
+    </>
   );
 }

@@ -6,6 +6,7 @@ import { Dialog as DialogPrimitive } from 'radix-ui';
 import {
   X,
   Check,
+  ChevronDown,
   CheckCircle2,
   ListChecks,
   ListTree,
@@ -16,12 +17,15 @@ import {
   Pencil,
   CalendarDays,
   Newspaper,
+  MoreHorizontal,
+  Copy,
+  Tag,
 } from '@/lib/icons';
 import NextLink from 'next/link';
 import { toast } from 'sonner';
 import { cn } from '@/lib/shared/utils';
 import { QK } from '@/lib/client/query-keys';
-import type { BoardColumn, BoardMember, CardDetail, CardItem } from '@/lib/shared/board';
+import type { BoardColumn, BoardLabel, BoardMember, CardDetail, CardItem } from '@/lib/shared/board';
 import {
   fetchCard,
   patchCardApi,
@@ -30,9 +34,15 @@ import {
   deleteItemApi,
   convertItemApi,
   moveCardApi,
+  deleteCardApi,
   addWatcherApi,
   removeWatcherApi,
+  addCardLabelApi,
+  removeCardLabelApi,
+  createLabelApi,
 } from '../_lib/api';
+import { cardDeepLink } from '@/lib/shared/board';
+import { LabelPill } from './label-pill';
 import { ChannelIcon } from '../_lib/channels';
 import { PROSE_CLASS } from '../_lib/prose';
 import { formatDateTimeMeta, relativeDay } from '../_lib/due';
@@ -59,21 +69,33 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 
 const NONE = '__none__';
 
 export function CardModal({
   cardId,
   boardSlug,
+  boardId,
   columns,
   members,
+  labels,
   onClose,
   onOpenCard,
 }: {
   cardId: string;
   boardSlug: string;
+  boardId: string;
   columns: BoardColumn[];
   members: BoardMember[];
+  labels: BoardLabel[];
   onClose: () => void;
   onOpenCard: (id: string) => void;
 }) {
@@ -130,7 +152,10 @@ export function CardModal({
             if (t instanceof HTMLTextAreaElement) e.preventDefault();
             else if (t instanceof HTMLInputElement && t.dataset.dirty === 'true') e.preventDefault();
           }}
-          className="fixed left-1/2 top-1/2 z-50 flex max-h-[calc(100vh-2rem)] w-[calc(100%-2rem)] max-w-[840px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl bg-card shadow-2xl outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
+          // <md: Bottom-Sheet nach Mock (Card-Sheet, Board-Mobile Z. 549) —
+          // Full-Height ab 14px, oben gerundet, Slide von unten. md+: das
+          // bisherige zentrierte Modal (Zoom-Animation nur dort).
+          className="fixed inset-x-0 bottom-0 top-[14px] z-50 flex flex-col overflow-hidden rounded-t-[22px] bg-card shadow-2xl outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 max-md:data-[state=open]:slide-in-from-bottom-[40%] max-md:data-[state=closed]:slide-out-to-bottom-[40%] md:inset-x-auto md:bottom-auto md:left-1/2 md:top-1/2 md:max-h-[calc(100vh-2rem)] md:w-[calc(100%-2rem)] md:max-w-[840px] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-2xl md:data-[state=closed]:zoom-out-95 md:data-[state=open]:zoom-in-95"
         >
           {/* Zugänglicher Dialogtitel (der sichtbare Titel ist ein editierbares
               Input-Feld, kein Heading) — Radix verdrahtet aria-labelledby. */}
@@ -143,9 +168,21 @@ export function CardModal({
             <>
               {/* Header */}
               <div
-                className="flex shrink-0 items-center gap-2 border-b px-5 py-4"
+                className="flex shrink-0 items-center gap-2 border-b px-4 py-3 md:px-5 md:py-4"
                 style={{ backgroundColor: `${accent}14` }}
               >
+                {/* Mobil steht der Schließen-Caret links (Mock Card-Sheet),
+                    auf Desktop bleibt das X rechts außen (md:order-last). */}
+                <DialogPrimitive.Close asChild>
+                  <button
+                    type="button"
+                    aria-label="Schließen"
+                    className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground hover:text-foreground md:order-last"
+                  >
+                    <ChevronDown className="h-[18px] w-[18px] md:hidden" />
+                    <X className="hidden h-4 w-4 md:block" />
+                  </button>
+                </DialogPrimitive.Close>
                 {column && (
                   <ChannelIcon name={column.name} className="h-[18px] w-[18px]" style={{ color: accent }} />
                 )}
@@ -166,15 +203,12 @@ export function CardModal({
                     }}
                   />
                   <CompleteButton card={card} onDone={applyCard} />
-                  <DialogPrimitive.Close asChild>
-                    <button
-                      type="button"
-                      aria-label="Schließen"
-                      className="flex h-[34px] w-[34px] items-center justify-center rounded-md bg-muted text-muted-foreground hover:text-foreground"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </DialogPrimitive.Close>
+                  <CardActionsMenu
+                    card={card}
+                    boardSlug={boardSlug}
+                    onDeleted={onClose}
+                    onInvalidate={invalidate}
+                  />
                 </div>
               </div>
 
@@ -197,6 +231,8 @@ export function CardModal({
                     card={card}
                     members={members}
                     byId={byId}
+                    boardId={boardId}
+                    labels={labels}
                     onPatch={applyCard}
                     onInvalidate={invalidate}
                   />
@@ -232,6 +268,102 @@ function CompleteButton({ card, onDone }: { card: CardDetail; onDone: (c: CardDe
       <CheckCircle2 className="h-4 w-4" />
       {completed ? 'Abgeschlossen' : 'Abschließen'}
     </button>
+  );
+}
+
+/** „…"-Überlaufmenü im Modal-Header (MeisterTask-Pendant: Verschieben/
+ *  Duplizieren/Abschließen/Löschen …). Verschieben + Abschließen stehen bei uns
+ *  als eigene Header-Buttons; hier die Aktionen ohne primären Platz: Deep-Link
+ *  kopieren und die Karte löschen (bisher gab es dafür gar keinen UI-Pfad). */
+function CardActionsMenu({
+  card,
+  boardSlug,
+  onDeleted,
+  onInvalidate,
+}: {
+  card: CardDetail;
+  boardSlug: string;
+  onDeleted: () => void;
+  onInvalidate: () => void;
+}) {
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const copyLink = async () => {
+    const url = `${window.location.origin}${cardDeepLink({ board_slug: boardSlug, id: card.id })}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success('Link kopiert');
+    } catch {
+      toast.error('Link konnte nicht kopiert werden');
+    }
+  };
+
+  const del = useMutation({
+    mutationFn: () => deleteCardApi(card.id),
+    onSuccess: () => {
+      setConfirmOpen(false);
+      toast.success('Karte gelöscht');
+      onInvalidate();
+      onDeleted();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            aria-label="Weitere Aktionen"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-input bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <MoreHorizontal className="h-4 w-4" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuItem onSelect={() => void copyLink()}>
+            <Copy className="h-4 w-4" />
+            Link kopieren
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            variant="destructive"
+            onSelect={(e) => {
+              e.preventDefault();
+              setConfirmOpen(true);
+            }}
+          >
+            <Trash2 className="h-4 w-4" />
+            Karte löschen
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <Dialog open={confirmOpen} onOpenChange={(o) => !o && setConfirmOpen(false)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Karte löschen?</DialogTitle>
+            <DialogDescription>
+              „{card.title}" wird endgültig gelöscht, inklusive Checkliste,
+              Kommentaren und Anhängen. Das lässt sich nicht rückgängig machen.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setConfirmOpen(false)} disabled={del.isPending}>
+              Abbrechen
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => del.mutate()}
+              disabled={del.isPending}
+            >
+              <Trash2 className="mr-1 h-4 w-4" /> Löschen
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -666,12 +798,16 @@ function Sidebar({
   card,
   members,
   byId,
+  boardId,
+  labels,
   onPatch,
   onInvalidate,
 }: {
   card: CardDetail;
   members: BoardMember[];
   byId: Map<string, BoardMember>;
+  boardId: string;
+  labels: BoardLabel[];
   onPatch: (c: CardDetail) => void;
   onInvalidate: () => void;
 }) {
@@ -737,6 +873,8 @@ function Sidebar({
         </Select>
       </SidebarField>
 
+      <LabelsField card={card} boardId={boardId} labels={labels} onInvalidate={onInvalidate} />
+
       <SidebarField label="Beobachter">
         <div className="space-y-1.5">
           {card.watcher_ids.map((id) => (
@@ -779,6 +917,100 @@ function Sidebar({
         <div>Geändert · {relativeDay(card.updated_at)}</div>
       </div>
     </div>
+  );
+}
+
+/** Labels/Tags an der Karte: aktuelle als entfernbare Pills + Popover zum
+ *  Hinzufügen vorhandener Board-Labels oder Anlegen eines neuen. Nach jeder
+ *  Mutation `onInvalidate` (Karte + Board neu laden → Chip-Pills + Palette). */
+function LabelsField({
+  card,
+  boardId,
+  labels,
+  onInvalidate,
+}: {
+  card: CardDetail;
+  boardId: string;
+  labels: BoardLabel[];
+  onInvalidate: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState('');
+  const assigned = labels.filter((l) => card.label_ids.includes(l.id));
+  const available = labels.filter((l) => !card.label_ids.includes(l.id));
+
+  const add = useMutation({
+    mutationFn: (labelId: string) => addCardLabelApi(card.id, labelId),
+    onSuccess: onInvalidate,
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const remove = useMutation({
+    mutationFn: (labelId: string) => removeCardLabelApi(card.id, labelId),
+    onSuccess: onInvalidate,
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const create = useMutation({
+    mutationFn: async (name: string) => {
+      const label = await createLabelApi(boardId, name);
+      await addCardLabelApi(card.id, label.id);
+    },
+    onSuccess: () => {
+      setDraft('');
+      onInvalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <SidebarField label="Labels">
+      <div className="flex flex-wrap items-center gap-1.5">
+        {assigned.map((l) => (
+          <LabelPill key={l.id} label={l} onRemove={() => remove.mutate(l.id)} />
+        ))}
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              className="inline-flex items-center gap-1 rounded-md border border-dashed border-input px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground hover:text-foreground"
+            >
+              <Tag className="h-3 w-3" /> Label
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-56 space-y-2 p-2">
+            {available.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {available.map((l) => (
+                  <button key={l.id} type="button" onClick={() => add.mutate(l.id)} disabled={add.isPending}>
+                    <LabelPill label={l} />
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="flex items-center gap-1.5 border-t pt-2">
+              <input
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && draft.trim() && !create.isPending) create.mutate(draft.trim());
+                }}
+                placeholder="Neues Label…"
+                maxLength={60}
+                className="min-w-0 flex-1 border-none bg-transparent text-[13px] outline-none placeholder:text-muted-foreground"
+              />
+              <button
+                type="button"
+                onClick={() => draft.trim() && create.mutate(draft.trim())}
+                disabled={!draft.trim() || create.isPending}
+                aria-label="Label anlegen"
+                className="rounded p-1 text-brand hover:bg-brand/10 disabled:opacity-40"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+            </div>
+          </PopoverContent>
+        </Popover>
+      </div>
+    </SidebarField>
   );
 }
 

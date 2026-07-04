@@ -3,7 +3,7 @@
 import { useDroppable } from '@dnd-kit/core';
 import { Plus } from '@/lib/icons';
 import { cn } from '@/lib/shared/utils';
-import type { BoardColumn as BoardColumnT, BoardMember, CardChip as CardChipT } from '@/lib/shared/board';
+import type { BoardColumn as BoardColumnT, BoardLabel, BoardMember, CardChip as CardChipT } from '@/lib/shared/board';
 import { ChannelIcon } from '../_lib/channels';
 import { CardChip } from './card-chip';
 
@@ -11,6 +11,7 @@ export function BoardColumn({
   column,
   cards,
   members,
+  labels,
   isDragging,
   onOpenCard,
   onAddCard,
@@ -18,6 +19,7 @@ export function BoardColumn({
   column: BoardColumnT;
   cards: CardChipT[];
   members: Map<string, BoardMember>;
+  labels: Map<string, BoardLabel>;
   isDragging: boolean;
   onOpenCard: (id: string) => void;
   onAddCard: () => void;
@@ -66,6 +68,7 @@ export function BoardColumn({
             card={card}
             accent={column.color}
             members={members}
+            labels={labels}
             onOpen={() => onOpenCard(card.id)}
           />
         ))}

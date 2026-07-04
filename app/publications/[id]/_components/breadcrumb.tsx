@@ -1,23 +1,19 @@
 import Link from 'next/link';
-import { ChevronRight } from '@/lib/icons';
+import { ArrowLeft } from '@/lib/icons';
 
-// Server-renderable breadcrumb shared by the RSC page, the not-found
-// fallback, and the error fallback. Three identical inline copies before
-// extraction; collapses to one place per the same A1/pilot pattern that
-// produced `back-link.tsx` for `/persons/[id]`. `title` is optional so the
-// error/not-found surfaces can render a parent-only crumb.
-export function PublicationBreadcrumb({ title }: { title?: string }) {
+// Server-renderable back-link shared by the RSC page, the not-found
+// fallback, and the error fallback (three identical inline copies before
+// extraction). Ursprünglich ein Breadcrumb (Publikationen › Titel); mit dem
+// Toolkit-Redesign auf den Comp-„Zurück zu Publikationen"-Link umgestellt
+// (Toolkit-Redesign.dc.html Z. 220) — der Titel steht ohnehin als h1 darunter.
+export function PublicationBreadcrumb(_props: { title?: string }) {
   return (
-    <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-sm text-muted-foreground">
-      <Link href="/publications" className="hover:text-brand transition-colors">
-        Publikationen
-      </Link>
-      {title && (
-        <>
-          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/70" />
-          <span className="text-foreground truncate max-w-[300px]">{title}</span>
-        </>
-      )}
-    </nav>
+    <Link
+      href="/publications"
+      className="inline-flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground transition-colors hover:text-brand"
+    >
+      <ArrowLeft className="h-[15px] w-[15px]" />
+      Zurück zu Publikationen
+    </Link>
   );
 }

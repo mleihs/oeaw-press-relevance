@@ -90,13 +90,13 @@ function EventChip({
         aria-label={ariaLabel}
       >
         {Bar}
-        {dec && <dec.Icon className={cn('h-2.5 w-2.5 shrink-0', dec.cls)} aria-hidden />}
-        <span className="truncate font-medium">{title}</span>
+        <span className="min-w-0 flex-1 truncate font-medium">{title}</span>
         {pct && (
-          <span className="ml-auto shrink-0 pl-0.5 text-[10px] font-semibold opacity-70 tabular-nums">
+          <span className="shrink-0 pl-0.5 text-[10px] font-semibold opacity-70 tabular-nums">
             {pct}
           </span>
         )}
+        {dec && <dec.Icon className={cn('h-2.5 w-2.5 shrink-0', dec.cls)} aria-hidden />}
       </div>
     );
   }

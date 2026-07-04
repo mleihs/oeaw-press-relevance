@@ -10,6 +10,7 @@ import type {
 } from '@/lib/shared/board';
 import { slugifyBoardName } from '@/lib/shared/board';
 import { BoardNotFoundError, isUniqueViolation } from './errors';
+import { listBoardLabels } from './labels';
 import { nextBoardRank } from './rank-util';
 import {
   boardSummaryFromRow,
@@ -73,6 +74,7 @@ async function listCardChips(boardId: string): Promise<CardChip[]> {
            COALESCE(cm.n, 0) AS comment_count,
            COALESCE(at.n, 0) AS attachment_count,
            COALESCE(w.ids, ARRAY[]::text[]) AS watcher_ids,
+           COALESCE(lb.ids, ARRAY[]::text[]) AS label_ids,
            lower(c.title || ' ' || COALESCE(ci.texts, '')) AS search_text
     FROM cards c
     LEFT JOIN LATERAL (
@@ -87,6 +89,11 @@ async function listCardChips(boardId: string): Promise<CardChip[]> {
     LEFT JOIN LATERAL (SELECT count(*)::int AS n FROM card_comments WHERE card_id = c.id) cm ON true
     LEFT JOIN LATERAL (SELECT count(*)::int AS n FROM card_attachments WHERE card_id = c.id) at ON true
     LEFT JOIN LATERAL (SELECT array_agg(user_id::text) AS ids FROM card_watchers WHERE card_id = c.id) w ON true
+    LEFT JOIN LATERAL (
+      SELECT array_agg(cl.label_id::text ORDER BY bl.rank) AS ids
+      FROM card_labels cl JOIN board_labels bl ON bl.id = cl.label_id
+      WHERE cl.card_id = c.id
+    ) lb ON true
     WHERE c.board_id = ${boardId}
     ORDER BY c.column_id, c.rank`);
   return [...rows].map(cardChipFromRow);
@@ -99,11 +106,12 @@ export async function getBoardWithColumns(
 ): Promise<BoardWithColumns> {
   const board = await getBoardSummary(userId, slug);
   if (!board) throw new BoardNotFoundError();
-  const [columns, cards] = await Promise.all([
+  const [columns, cards, labels] = await Promise.all([
     listColumns(board.id),
     listCardChips(board.id),
+    listBoardLabels(board.id),
   ]);
-  return { board, columns, cards };
+  return { board, columns, cards, labels };
 }
 
 // --- Writes ---------------------------------------------------------------

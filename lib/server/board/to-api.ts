@@ -62,6 +62,7 @@ export function cardChipFromRow(r: Record<string, unknown>): CardChip {
     subtask_total: Number(r.subtask_total ?? 0),
     comment_count: Number(r.comment_count ?? 0),
     attachment_count: Number(r.attachment_count ?? 0),
+    label_ids: ((r.label_ids as string[] | null) ?? []).filter(Boolean),
     search_text: (r.search_text as string | null) ?? '',
   };
 }

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import {
   ExternalLink, FileText, Brain,
   Award, ShieldCheck, Megaphone, Users, Building2, FolderOpen, BookText,
-  Mail, Crown, Newspaper, Info, AlertTriangle,
+  Mail, Crown, Newspaper, Info, AlertTriangle, Zap,
 } from '@/lib/icons';
 import type { PublicationWithRelations } from '@/lib/shared/types';
 import { cn } from '@/lib/shared/utils';
@@ -64,17 +64,23 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
       : null;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="space-y-3">
+    // flex-col + gap statt space-y: erlaubt die Mobile-Reihenfolge (M6c, Mock
+    // Z. 811ff: Score → Pitch zuerst) rein über order-Klassen, ohne die
+    // Desktop-DOM-Ordnung anzufassen. max-md:pb-16 räumt die Sticky-Bar frei.
+    <div className="flex flex-col gap-6 max-md:pb-16 md:grid md:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)] md:items-start md:gap-x-4 md:gap-y-6">
+      {/* Header — volle Breite über beiden Spalten (Mock Z. 220–245) */}
+      <div className="space-y-3 max-md:-order-6 md:col-span-2">
         <div className="flex flex-wrap items-start gap-2">
-          <h1 className="text-2xl font-bold leading-tight flex-1">{titleForDisplay}</h1>
-          <div className="mt-0.5 shrink-0">
-            <CreateCardButton source={publicationToCardSource(pub, titleForDisplay)} />
+          <h1 className="text-xl md:text-2xl font-bold leading-tight flex-1">{titleForDisplay}</h1>
+          {/* Mobil wandern „Ins Board" in die Sticky-Bar und der Flag-Pin in
+              den blauen Detail-Header (page.tsx) — hier Desktop-only. Comp
+              Z. 226–229: Ins Board = blau gefüllt, Pin = umrandete Quadrat-Box. */}
+          <div className="mt-0.5 shrink-0 hidden md:block">
+            <CreateCardButton source={publicationToCardSource(pub, titleForDisplay)} variant="default" />
           </div>
-          <div className="mt-0.5 shrink-0">
+          <span className="mt-0.5 hidden h-8 w-8 shrink-0 items-center justify-center rounded-[9px] border border-line-strong bg-surface md:inline-flex">
             <PublicationFlag pubId={pub.id} flagNotes={pub.flag_notes ?? []} decision={pub.decision} />
-          </div>
+          </span>
           {isMaHighlighted && (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -250,8 +256,80 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
         </div>
       </div>
 
-      {/* Decision-Toolbar */}
-      <DecisionToolbar pub={pub} />
+      {/* ── Rechte Spalte (Mock Z. 305–351): sticky Relevanz-Analyse +
+          Redaktionsentscheidung. Auf < md kollabiert das Grid zur Spalte, die
+          `-order-5` schiebt sie mobil direkt hinter den Header (M6c). ── */}
+      <div className="flex flex-col gap-4 md:col-start-2 md:row-start-2 md:sticky md:top-20 max-md:-order-5">
+        {/* Relevanz-Analyse (Mock Z. 306–341) */}
+        {hasAnalysis && (
+          <Card className="border-brand/30">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Brain className="h-4 w-4 text-brand" />
+                Relevanz-Analyse
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="flex items-center gap-4">
+                {/* Comp Z. 327 + 885: 72px-Kreis, Geist Mono 22px. */}
+                <div className={`flex items-center justify-center h-[72px] w-[72px] shrink-0 rounded-full font-mono text-[22px] font-bold ${
+                  getScoreBandClass(pub.press_score, 'hero')
+                }`}>
+                  {pressScorePct}%
+                </div>
+                <div>
+                  <p className="font-medium text-lg flex items-center gap-1.5">
+                    Story Score
+                    <InfoBubble id="press_score" size="md" />
+                  </p>
+                  <p className="text-sm text-muted-foreground inline-flex items-center gap-1">
+                    {getScoreBandStoryLabel(pub.press_score)}
+                    <InfoBubble id="score_band" />
+                  </p>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <ScoreBar dimension="public_accessibility" value={pub.public_accessibility} />
+                <ScoreBar dimension="societal_relevance" value={pub.societal_relevance} />
+                <ScoreBar dimension="novelty_factor" value={pub.novelty_factor} />
+                <ScoreBar dimension="storytelling_potential" value={pub.storytelling_potential} />
+                <ScoreBar dimension="media_timeliness" value={pub.media_timeliness} />
+              </div>
+              {pub.reasoning && (
+                <div>
+                  <SectionLabel className="inline-flex items-center gap-1">
+                    Begründung
+                    <InfoBubble id="reasoning" size="sm" />
+                  </SectionLabel>
+                  <p className="text-sm text-foreground/80">{pub.reasoning}</p>
+                </div>
+              )}
+              {pub.llm_model && (
+                <div className="text-xs text-muted-foreground/70 border-t pt-3 inline-flex items-center gap-1">
+                  Modell: {pub.llm_model} | Kosten: ${pub.analysis_cost?.toFixed(4) || '0'}
+                  <InfoBubble id="ai_provenance" />
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Redaktionsentscheidung (Mock Z. 343–350): Pitchen/Verwerfen. Wir
+            behalten die volle DecisionToolbar (Rationale/Snooze) statt der
+            zwei Mock-Buttons — page-eigene Kernfunktion (vetobar). */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm">Redaktionsentscheidung</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <DecisionToolbar pub={pub} />
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* ── Linke Spalte (Mock Z. 224–302): Pitch, Zusammenfassung, Haiku,
+          Autor:innen, externe Anreicherung + unsere Zusatz-Karten. ── */}
+      <div className="flex flex-col gap-6 md:col-start-1 md:row-start-2 min-w-0">
 
       {/* ÖAW-Pressemitteilung (cross-reference zur TYPO3-news) */}
       {pub.press_release && (
@@ -312,18 +390,19 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
       {/* Press-Referenz (semantic SPECTER2-similarity, lazy own query). */}
       <PressReferenceCard pubId={pub.id} abstractLooksGerman={abstractLooksGerman} />
 
-      {/* Pitch */}
+      {/* Pitch — mobil an zweiter Stelle nach der Analyse */}
       {hasAnalysis && pub.pitch_suggestion && (
-        <Card className="border-brand/20 bg-brand/[0.02]">
+        <Card className="border-[#d3e2ff] bg-[#f6f9ff] dark:border-brand/25 dark:bg-brand/[0.08] max-md:-order-4">
           <CardContent className="p-5">
-            <h3 className="text-xs font-medium text-brand uppercase mb-2 inline-flex items-center gap-1">
+            <h3 className="font-mono text-[10.5px] font-semibold uppercase tracking-[0.07em] text-brand mb-2.5 inline-flex items-center gap-1.5">
+              <Zap weight="fill" className="h-3.5 w-3.5" />
               Pitch-Vorschlag
               <InfoBubble id="pitch_suggestion" size="sm" />
             </h3>
-            <p className="text-sm leading-relaxed">{pub.pitch_suggestion}</p>
+            <p className="text-[15px] font-medium leading-relaxed">{pub.pitch_suggestion}</p>
             {pub.suggested_angle && (
               <p className="text-sm text-foreground/80 mt-3">
-                <span className="font-medium text-muted-foreground inline-flex items-center gap-1">
+                <span className="font-semibold text-brand inline-flex items-center gap-1">
                   Blickwinkel:
                   <InfoBubble id="suggested_angle" size="sm" />
                 </span>{' '}
@@ -331,8 +410,8 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
               </p>
             )}
             {pub.target_audience && (
-              <p className="text-sm text-foreground/80 mt-1">
-                <span className="font-medium text-muted-foreground inline-flex items-center gap-1">
+              <p className="text-sm text-foreground/80 mt-1.5">
+                <span className="font-semibold text-brand inline-flex items-center gap-1">
                   Zielgruppe:
                   <InfoBubble id="target_audience" size="sm" />
                 </span>{' '}
@@ -373,13 +452,10 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
         </Card>
       )}
 
-      {/* Haiku — poetic distillation of the content, placed right after the summary */}
+      {/* Haiku — poetic distillation of the content, placed right after the
+          summary. Gradient-Karte nach Comp Z. 274–283 (blauer Verlauf, Lotus). */}
       {pub.haiku && (
-        <Card>
-          <CardContent className="px-5 py-4">
-            <HaikuBlock haiku={pub.haiku} model={pub.llm_model} />
-          </CardContent>
-        </Card>
+        <HaikuBlock haiku={pub.haiku} model={pub.llm_model} variant="gradient" />
       )}
 
       {/* Authors. OEAW-linked persons (external=false) render in brand-blue
@@ -416,9 +492,22 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
               <ul className="divide-y divide-border/60">
                 {pub.authors_resolved.map((a) => {
                   const isOeaw = !a.external;
+                  const initials = `${a.firstname?.[0] ?? ''}${a.lastname?.[0] ?? ''}`.toUpperCase();
                   return (
                     <li key={a.id} className="py-2.5 flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2 min-w-0">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        {/* Initialen-Avatar (Comp Z. 294 + 873): ÖAW = brand,
+                            extern = grau — die Farbcodierung der Namenslinks
+                            als zweites, schneller scanbares Signal. */}
+                        <span
+                          aria-hidden
+                          className={cn(
+                            'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11.5px] font-semibold text-white',
+                            isOeaw ? 'bg-brand' : 'bg-line-strong dark:bg-muted-foreground/40',
+                          )}
+                        >
+                          {initials}
+                        </span>
                         {a.mahighlight && (
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -564,59 +653,6 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
         </Card>
       )}
 
-      {/* Analysis card */}
-      {hasAnalysis && (
-        <Card className="border-brand/20">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Brain className="h-4 w-4 text-brand" />
-              Science Propaganda Ninja Analyse
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            <div className="flex items-center gap-4">
-              <div className={`flex items-center justify-center h-16 w-16 rounded-full text-xl font-bold ${
-                getScoreBandClass(pub.press_score, 'hero')
-              }`}>
-                {pressScorePct}%
-              </div>
-              <div>
-                <p className="font-medium text-lg flex items-center gap-1.5">
-                  Story Score
-                  <InfoBubble id="press_score" size="md" />
-                </p>
-                <p className="text-sm text-muted-foreground inline-flex items-center gap-1">
-                  {getScoreBandStoryLabel(pub.press_score)}
-                  <InfoBubble id="score_band" />
-                </p>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <ScoreBar dimension="public_accessibility" value={pub.public_accessibility} />
-              <ScoreBar dimension="societal_relevance" value={pub.societal_relevance} />
-              <ScoreBar dimension="novelty_factor" value={pub.novelty_factor} />
-              <ScoreBar dimension="storytelling_potential" value={pub.storytelling_potential} />
-              <ScoreBar dimension="media_timeliness" value={pub.media_timeliness} />
-            </div>
-            {pub.reasoning && (
-              <div>
-                <SectionLabel className="inline-flex items-center gap-1">
-                  Begründung
-                  <InfoBubble id="reasoning" size="sm" />
-                </SectionLabel>
-                <p className="text-sm text-foreground/80">{pub.reasoning}</p>
-              </div>
-            )}
-            {pub.llm_model && (
-              <div className="text-xs text-muted-foreground/70 border-t pt-3 inline-flex items-center gap-1">
-                Modell: {pub.llm_model} | Kosten: ${pub.analysis_cost?.toFixed(4) || '0'}
-                <InfoBubble id="ai_provenance" />
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
       {/* Enrichment card */}
       <Card>
         <CardHeader className="pb-3">
@@ -670,6 +706,24 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
           )}
         </CardContent>
       </Card>
+      </div>
+      {/* Ende linke Spalte */}
+
+      {/* Sticky Mobile-Aktionsleiste über der Bottom-Tab-Nav (Mock Z. 886).
+          Nur „Ins Board" — Verwerfen/Pitchen laufen über die DecisionToolbar
+          oben (mit Rationale/Snooze), die mobil erhalten bleibt (vetobar). */}
+      <div
+        className="fixed inset-x-0 z-30 border-t border-line bg-surface px-3.5 py-2.5 md:hidden"
+        style={{ bottom: 'calc(3.5rem + env(safe-area-inset-bottom))' }}
+      >
+        <CreateCardButton
+          source={publicationToCardSource(pub, titleForDisplay)}
+          size="default"
+          variant="default"
+          wrapperClassName="flex w-full"
+          className="flex-1"
+        />
+      </div>
     </div>
   );
 }

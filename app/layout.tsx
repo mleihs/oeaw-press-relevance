@@ -4,6 +4,7 @@ import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { RootProvider } from "fumadocs-ui/provider/next";
 import "./globals.css";
 import { Nav } from "@/components/nav";
+import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { CommandMenu } from "@/components/command/command-menu";
 import { Toaster } from "@/components/ui/sonner";
 import { PasswordGate } from "@/components/password-gate";
@@ -61,10 +62,14 @@ export default function RootLayout({
                 <PasswordGate>
                   <Nav />
                   <CommandMenu />
-                  <main className="mx-auto max-w-7xl w-full px-4 py-6 flex-1">
+                  <main className="mx-auto max-w-7xl w-full px-4 pt-6 pb-[76px] md:pb-6 flex-1">
                     {children}
                   </main>
-                  <footer className="border-t bg-background/50 mt-auto">
+                  <MobileBottomNav />
+                  {/* Native-Shell (Mobile): kein Web-Footer — er läge hinter der
+                      fixen Bottom-Nav; Einstellungen sind dort via Tabs/Sheet
+                      erreichbar. */}
+                  <footer className="hidden md:block border-t bg-background/50 mt-auto">
                     <div className="mx-auto max-w-7xl px-4 py-4 flex items-center justify-between text-xs text-muted-foreground">
                       <span>Science Propaganda Ninja 0.1</span>
                       <div className="flex items-center gap-4">

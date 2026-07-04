@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { Kanban, ArrowUpRight } from '@/lib/icons';
+import { cn } from '@/lib/shared/utils';
 import { QK } from '@/lib/client/query-keys';
 import { cardDeepLink } from '@/lib/shared/board';
 import { fetchCardsForSourceApi } from '@/lib/client/board-api';
@@ -21,10 +22,17 @@ export function CreateCardButton({
   source,
   size = 'sm',
   variant = 'outline',
+  className,
+  wrapperClassName,
 }: {
   source: CardSource;
   size?: 'sm' | 'default';
   variant?: 'outline' | 'default' | 'ghost';
+  /** Klassen für den „Ins Board"-Button selbst (z. B. flex-1 in der
+   *  Mobile-Sticky-Bar, M6c). */
+  className?: string;
+  /** Klassen für den umschließenden Container (Default inline-flex). */
+  wrapperClassName?: string;
 }) {
   const [open, setOpen] = useState(false);
   const sourceId = source.sourceEventId ?? source.sourcePublicationId;
@@ -43,7 +51,7 @@ export function CreateCardButton({
   const existing = existingQ.data ?? [];
 
   return (
-    <div className="inline-flex items-center gap-2">
+    <div className={cn('inline-flex items-center gap-2', wrapperClassName)}>
       {existing.length > 0 && (
         <Button asChild size={size} variant="ghost" className="text-muted-foreground">
           <Link href={cardDeepLink(existing[0])} title={existing[0].title}>
@@ -52,7 +60,7 @@ export function CreateCardButton({
           </Link>
         </Button>
       )}
-      <Button size={size} variant={variant} onClick={() => setOpen(true)}>
+      <Button size={size} variant={variant} className={className} onClick={() => setOpen(true)}>
         <Kanban className="mr-1.5 h-4 w-4" />
         Ins Board
       </Button>

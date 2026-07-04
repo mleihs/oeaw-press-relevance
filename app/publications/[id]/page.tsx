@@ -5,6 +5,8 @@ import { getPublicationById } from '@/lib/server/publications/fetch';
 import { displayTitle } from '@/lib/shared/publication-display';
 import { PublicationBreadcrumb } from './_components/breadcrumb';
 import { PublicationDetailClient } from './_components/detail-client';
+import { MobileDetailHeader } from '@/components/mobile-detail-header';
+import { PublicationFlag } from '@/components/publication-flag';
 
 // React.cache dedupes the fetch across generateMetadata + the page render in
 // the same request, so the title metadata costs no extra query.
@@ -54,13 +56,32 @@ export default async function PublicationDetailPage({
     && !/\b(the|and|of|are|with|this|that)\b/.test(abstractText);
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <PublicationBreadcrumb title={titleForDisplay} />
-      <PublicationDetailClient
-        pub={pub}
-        titleForDisplay={titleForDisplay}
-        abstractLooksGerman={abstractLooksGerman}
+    <>
+      {/* M6c: blauer Mobile-Header mit Zurück + Flag-Pin (Mock Z. 800–810).
+          Außerhalb des Content-Containers wegen des -mx/-mt-Bleeds. */}
+      <MobileDetailHeader
+        backHref="/publications"
+        title="Publikation"
+        right={
+          <span className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-white/85">
+            <PublicationFlag
+              pubId={pub.id}
+              flagNotes={pub.flag_notes ?? []}
+              decision={pub.decision}
+            />
+          </span>
+        }
       />
-    </div>
+      <div className="max-w-4xl mx-auto">
+        <div className="hidden md:block mb-6">
+          <PublicationBreadcrumb title={titleForDisplay} />
+        </div>
+        <PublicationDetailClient
+          pub={pub}
+          titleForDisplay={titleForDisplay}
+          abstractLooksGerman={abstractLooksGerman}
+        />
+      </div>
+    </>
   );
 }

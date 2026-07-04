@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { and, desc, eq } from 'drizzle-orm';
-import { db, boards, boardColumns, cards, cardItems } from '@/lib/server/db';
+import { db, boards, boardColumns, cards, cardItems, boardLabels } from '@/lib/server/db';
 import { rankBetween } from '@/lib/shared/rank';
 import { isUniqueViolation } from './errors';
 
@@ -50,6 +50,16 @@ export async function nextItemRank(cardId: string): Promise<string> {
     .from(cardItems)
     .where(eq(cardItems.cardId, cardId))
     .orderBy(desc(cardItems.rank))
+    .limit(1);
+  return rankBetween(row?.rank ?? null, null);
+}
+
+export async function nextLabelRank(boardId: string): Promise<string> {
+  const [row] = await db
+    .select({ rank: boardLabels.rank })
+    .from(boardLabels)
+    .where(eq(boardLabels.boardId, boardId))
+    .orderBy(desc(boardLabels.rank))
     .limit(1);
   return rankBetween(row?.rank ?? null, null);
 }

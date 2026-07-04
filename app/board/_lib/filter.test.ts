@@ -7,7 +7,7 @@ function chip(over: Partial<CardChip>): CardChip {
     id: 'c', board_id: 'b', column_id: 'col1', title: 'T', link_url: null,
     rank: 'm', due_at: null, completed_at: null, assignee_id: null, watcher_ids: [],
     checklist_done: 0, checklist_total: 0, subtask_done: 0, subtask_total: 0,
-    comment_count: 0, attachment_count: 0, search_text: 't',
+    comment_count: 0, attachment_count: 0, label_ids: [], search_text: 't',
     ...over,
   };
 }

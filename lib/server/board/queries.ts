@@ -108,3 +108,28 @@ export async function getCardsForSource(source: {
     ORDER BY c.created_at DESC`);
   return [...rows].map(cardRefFromRow);
 }
+
+/** Batch-Variante von {@link getCardsForSource} für Event-Listen: liefert je
+ *  Event die neueste Board-Karte (falls vorhanden) als Map. Ein Query statt
+ *  eines Client-Wasserfalls pro Zeile — für den „Im Board · Karte öffnen"-
+ *  Deep-Link an gepitchten Events (/events Liste). `sql.param(...)::uuid[]`
+ *  wegen des Drizzle-ANY(array)-Prod-Bugs über den Supabase-Pooler. */
+export async function getCardsForEvents(
+  eventIds: string[],
+): Promise<Map<string, BoardCardRef>> {
+  const out = new Map<string, BoardCardRef>();
+  if (eventIds.length === 0) return out;
+  const rows = await db.execute<Record<string, unknown>>(sql`
+    SELECT ${CARD_REF_COLUMNS}, c.source_event_id
+    FROM cards c
+    JOIN boards b ON b.id = c.board_id AND b.archived_at IS NULL
+    JOIN board_columns col ON col.id = c.column_id
+    WHERE c.source_event_id = ANY(${sql.param(eventIds)}::uuid[])
+    ORDER BY c.created_at DESC`);
+  // created_at DESC → erste gesehene Karte je Event ist die neueste.
+  for (const r of rows) {
+    const eventId = r.source_event_id as string | null;
+    if (eventId && !out.has(eventId)) out.set(eventId, cardRefFromRow(r));
+  }
+  return out;
+}

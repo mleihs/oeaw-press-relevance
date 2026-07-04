@@ -999,3 +999,32 @@ export const userBoardFavorites = pgTable("user_board_favorites", {
 	primaryKey({ columns: [table.userId, table.boardId], name: "user_board_favorites_pkey" }),
 	pgPolicy("authenticated_select", { as: "permissive", for: "select", to: ["authenticated"], using: sql`true` }),
 ]);
+
+export const boardLabels = pgTable("board_labels", {
+	id: uuid().defaultRandom().primaryKey().notNull(),
+	boardId: uuid("board_id").notNull(),
+	name: text().notNull(),
+	color: text().default('#64748b').notNull(),
+	rank: text().notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+	index("idx_board_labels_board").using("btree", table.boardId.asc().nullsLast().op("uuid_ops"), table.rank.asc().nullsLast().op("text_ops")),
+	foreignKey({ columns: [table.boardId], foreignColumns: [boards.id], name: "board_labels_board_id_fkey" }).onDelete("cascade"),
+	unique("board_labels_board_rank_key").on(table.boardId, table.rank),
+	check("board_labels_name_check", sql`btrim(name) <> ''::text`),
+	check("board_labels_color_check", sql`color ~ '^#[0-9a-fA-F]{6}$'`),
+	check("board_labels_rank_check", sql`rank ~ '^[a-z]*[b-z]$'`),
+	pgPolicy("authenticated_select", { as: "permissive", for: "select", to: ["authenticated"], using: sql`true` }),
+]);
+
+export const cardLabels = pgTable("card_labels", {
+	cardId: uuid("card_id").notNull(),
+	labelId: uuid("label_id").notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+	index("idx_card_labels_label").using("btree", table.labelId.asc().nullsLast().op("uuid_ops")),
+	foreignKey({ columns: [table.cardId], foreignColumns: [cards.id], name: "card_labels_card_id_fkey" }).onDelete("cascade"),
+	foreignKey({ columns: [table.labelId], foreignColumns: [boardLabels.id], name: "card_labels_label_id_fkey" }).onDelete("cascade"),
+	primaryKey({ columns: [table.cardId, table.labelId], name: "card_labels_pkey" }),
+	pgPolicy("authenticated_select", { as: "permissive", for: "select", to: ["authenticated"], using: sql`true` }),
+]);

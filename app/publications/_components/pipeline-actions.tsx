@@ -4,16 +4,15 @@ import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Brain, Sparkles } from '@/lib/icons';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { EnrichmentModal } from '@/components/enrichment-modal';
 import { AnalysisModal } from '@/components/analysis-modal';
-import { InfoBubble } from '@/components/info-bubble';
 
 // Triggers the two batch ETL pipelines (enrichment + analyse) the press
-// editorial team runs from this page. The modals are pre-existing controlled
-// dialogs; `router.refresh()` replaces the legacy
-// `queryClient.invalidateQueries([PUBS_QUERY_KEY])` invalidation pattern —
-// for the RSC page, refreshing forces a server-side re-fetch of the list.
+// editorial team runs from this page. Rendered as a compact button cluster in
+// the page header (Toolkit-Redesign-Comp: header → filter → list, keine großen
+// Panels), statt der früheren zwei Karten. Die Modals sind bestehende
+// kontrollierte Dialoge; `router.refresh()` erzwingt einen Server-Re-Fetch der
+// Liste für die RSC-Seite.
 export function PipelineActions() {
   const router = useRouter();
   const [enrichOpen, setEnrichOpen] = useState(false);
@@ -22,39 +21,25 @@ export function PipelineActions() {
 
   return (
     <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Card>
-          <CardContent className="p-4 flex items-center justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-2 text-base font-medium">
-                <Sparkles className="h-4 w-4 text-brand" /> Enrichment
-                <InfoBubble id="pipeline_enrichment" size="sm" />
-              </div>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Metadaten aus CrossRef + OpenAlex anreichern.
-              </p>
-            </div>
-            <Button onClick={() => setEnrichOpen(true)} size="sm">
-              Starten
-            </Button>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 flex items-center justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-2 text-base font-medium">
-                <Brain className="h-4 w-4 text-brand" /> Analyse
-                <InfoBubble id="pipeline_analysis" size="sm" />
-              </div>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                LLM-Bewertung über OpenRouter.
-              </p>
-            </div>
-            <Button onClick={() => setAnalysisOpen(true)} size="sm">
-              Starten
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="flex items-center gap-2">
+        <Button
+          onClick={() => setEnrichOpen(true)}
+          size="sm"
+          variant="outline"
+          title="Metadaten aus CrossRef + OpenAlex anreichern"
+        >
+          <Sparkles className="h-4 w-4" />
+          Anreichern
+        </Button>
+        <Button
+          onClick={() => setAnalysisOpen(true)}
+          size="sm"
+          variant="outline"
+          title="LLM-Bewertung über OpenRouter"
+        >
+          <Brain className="h-4 w-4" />
+          Analysieren
+        </Button>
       </div>
       <EnrichmentModal
         open={enrichOpen}

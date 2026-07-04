@@ -122,9 +122,12 @@ export function PressScoreBadge({ score, variant = 'badge', analysisStatus, enri
   const pct = Math.round(score * 100);
   const bgColor = getScoreBandClass(score, variant);
 
+  // Mono-Quadrat statt Pille (Toolkit-Redesign-Comp `scoreBadge`): getönte Box
+  // mit Radius 7px, Geist Mono, band-gefärbt — toolkit-weit dasselbe Badge in
+  // Liste/Detail/Dashboard/Events.
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold ${bgColor}`}
+      className={`inline-flex min-w-[44px] items-center justify-center rounded-[7px] px-[9px] py-[3px] font-mono text-xs font-semibold tabular-nums ${bgColor}`}
       aria-label={`${ariaLabel}: ${pct}%`}
     >
       {pct}%

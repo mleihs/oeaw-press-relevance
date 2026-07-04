@@ -31,6 +31,43 @@ export const eventTimeFmt = new Intl.DateTimeFormat('de-AT', {
   minute: '2-digit',
 });
 
+// Day-of-month + short month for the calendar-style date block (Toolkit-Redesign
+// events table). Pinned to Europe/Vienna like the other event formatters.
+export const eventDayFmt = new Intl.DateTimeFormat('de-AT', {
+  timeZone: EVENT_TZ,
+  day: 'numeric',
+});
+
+export const eventMonFmt = new Intl.DateTimeFormat('de-AT', {
+  timeZone: EVENT_TZ,
+  month: 'short',
+});
+
+// Mobile agenda (M5): group headers show "Fr · 4. Juli" per Vienna civil day.
+export const eventWeekdayShortFmt = new Intl.DateTimeFormat('de-AT', {
+  timeZone: EVENT_TZ,
+  weekday: 'short',
+});
+
+export const eventDayMonthLongFmt = new Intl.DateTimeFormat('de-AT', {
+  timeZone: EVENT_TZ,
+  day: 'numeric',
+  month: 'long',
+});
+
+// en-CA renders YYYY-MM-DD → a sortable Vienna civil-day key for grouping
+// events into agenda days / calendar cells without Date-object TZ pitfalls.
+const eventDayKeyFmt = new Intl.DateTimeFormat('en-CA', {
+  timeZone: EVENT_TZ,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+
+export function eventDayKey(d: Date): string {
+  return eventDayKeyFmt.format(d);
+}
+
 /** Civil-day equality (local timezone). Used to collapse same-day end
  *  times to "start – end" instead of a full date range. */
 export function isSameLocalDay(a: Date, b: Date): boolean {

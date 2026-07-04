@@ -11,5 +11,6 @@ export * from './watchers';
 export * from './comments';
 export * from './attachments';
 export * from './members';
+export * from './labels';
 export * from './errors';
 export * from './errors-http';

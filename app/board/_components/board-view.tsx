@@ -56,6 +56,10 @@ export function BoardView({
   const board = data ?? initialData;
   useBoardRealtime(board.board.id, slug);
   const byId = useMemo(() => membersById(members), [members]);
+  const labelsById = useMemo(
+    () => new Map((board.labels ?? []).map((l) => [l.id, l])),
+    [board.labels],
+  );
   const resolveFirstName = useMemo(
     () => (userId: string) => firstNameOf(byId.get(userId)),
     [byId],
@@ -162,6 +166,7 @@ export function BoardView({
         onChange={setFilters}
         columns={board.columns}
         members={members}
+        labels={board.labels ?? []}
       />
 
       <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
@@ -176,6 +181,7 @@ export function BoardView({
                   column={col}
                   cards={cardsByColumn.get(col.id) ?? []}
                   members={byId}
+                  labels={labelsById}
                   isDragging={draggingId !== null}
                   onOpenCard={setOpenCardId}
                   onAddCard={() => setQuickCreateColumn(col.id)}
@@ -199,8 +205,10 @@ export function BoardView({
         <CardModal
           cardId={openCardId}
           boardSlug={slug}
+          boardId={board.board.id}
           columns={board.columns}
           members={members}
+          labels={board.labels ?? []}
           onClose={() => setOpenCardId(null)}
           onOpenCard={setOpenCardId}
         />
