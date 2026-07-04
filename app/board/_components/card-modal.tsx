@@ -17,6 +17,8 @@ import {
   Pencil,
   CalendarDays,
   Newspaper,
+  MoreHorizontal,
+  Copy,
 } from '@/lib/icons';
 import NextLink from 'next/link';
 import { toast } from 'sonner';
@@ -31,9 +33,11 @@ import {
   deleteItemApi,
   convertItemApi,
   moveCardApi,
+  deleteCardApi,
   addWatcherApi,
   removeWatcherApi,
 } from '../_lib/api';
+import { cardDeepLink } from '@/lib/shared/board';
 import { ChannelIcon } from '../_lib/channels';
 import { PROSE_CLASS } from '../_lib/prose';
 import { formatDateTimeMeta, relativeDay } from '../_lib/due';
@@ -60,6 +64,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 
 const NONE = '__none__';
 
@@ -182,6 +193,12 @@ export function CardModal({
                     }}
                   />
                   <CompleteButton card={card} onDone={applyCard} />
+                  <CardActionsMenu
+                    card={card}
+                    boardSlug={boardSlug}
+                    onDeleted={onClose}
+                    onInvalidate={invalidate}
+                  />
                 </div>
               </div>
 
@@ -239,6 +256,102 @@ function CompleteButton({ card, onDone }: { card: CardDetail; onDone: (c: CardDe
       <CheckCircle2 className="h-4 w-4" />
       {completed ? 'Abgeschlossen' : 'Abschließen'}
     </button>
+  );
+}
+
+/** „…"-Überlaufmenü im Modal-Header (MeisterTask-Pendant: Verschieben/
+ *  Duplizieren/Abschließen/Löschen …). Verschieben + Abschließen stehen bei uns
+ *  als eigene Header-Buttons; hier die Aktionen ohne primären Platz: Deep-Link
+ *  kopieren und die Karte löschen (bisher gab es dafür gar keinen UI-Pfad). */
+function CardActionsMenu({
+  card,
+  boardSlug,
+  onDeleted,
+  onInvalidate,
+}: {
+  card: CardDetail;
+  boardSlug: string;
+  onDeleted: () => void;
+  onInvalidate: () => void;
+}) {
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const copyLink = async () => {
+    const url = `${window.location.origin}${cardDeepLink({ board_slug: boardSlug, id: card.id })}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success('Link kopiert');
+    } catch {
+      toast.error('Link konnte nicht kopiert werden');
+    }
+  };
+
+  const del = useMutation({
+    mutationFn: () => deleteCardApi(card.id),
+    onSuccess: () => {
+      setConfirmOpen(false);
+      toast.success('Karte gelöscht');
+      onInvalidate();
+      onDeleted();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            aria-label="Weitere Aktionen"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-input bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <MoreHorizontal className="h-4 w-4" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuItem onSelect={() => void copyLink()}>
+            <Copy className="h-4 w-4" />
+            Link kopieren
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            variant="destructive"
+            onSelect={(e) => {
+              e.preventDefault();
+              setConfirmOpen(true);
+            }}
+          >
+            <Trash2 className="h-4 w-4" />
+            Karte löschen
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <Dialog open={confirmOpen} onOpenChange={(o) => !o && setConfirmOpen(false)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Karte löschen?</DialogTitle>
+            <DialogDescription>
+              „{card.title}" wird endgültig gelöscht, inklusive Checkliste,
+              Kommentaren und Anhängen. Das lässt sich nicht rückgängig machen.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setConfirmOpen(false)} disabled={del.isPending}>
+              Abbrechen
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => del.mutate()}
+              disabled={del.isPending}
+            >
+              <Trash2 className="mr-1 h-4 w-4" /> Löschen
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
