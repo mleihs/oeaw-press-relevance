@@ -18,6 +18,7 @@ import { writeActivity } from './activity';
 import { renderCardMarkdown } from './markdown';
 import { loadComments } from './comments';
 import { loadAttachments } from './attachments';
+import { loadReferences } from './references';
 
 /** ISO/Datums-String -> timestamptz-tauglicher ISO oder null. */
 function normalizeDue(value: string | null | undefined): string | null | undefined {
@@ -100,12 +101,13 @@ async function loadActivity(cardId: string) {
 }
 
 export async function getCardDetail(cardId: string): Promise<CardDetail> {
-  const [row, items, comments, attachments, activity] = await Promise.all([
+  const [row, items, comments, attachments, activity, references] = await Promise.all([
     loadChipRow(cardId),
     loadItems(cardId),
     loadComments(cardId),
     loadAttachments(cardId),
     loadActivity(cardId),
+    loadReferences(cardId),
   ]);
   const descriptionMd = (row.description_md as string | null) ?? null;
   return {
@@ -123,6 +125,7 @@ export async function getCardDetail(cardId: string): Promise<CardDetail> {
     comments,
     attachments,
     activity,
+    references,
   };
 }
 

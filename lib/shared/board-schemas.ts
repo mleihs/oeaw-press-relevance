@@ -199,3 +199,14 @@ export const cardLabelSchema = z.object({
   label_id: uuid,
 });
 export type CardLabelPayload = z.infer<typeof cardLabelSchema>;
+
+// --- Smart-Objekt-Referenzen (BOARD_SMART_OBJECTS.md) ----------------------
+
+// Referenz anlegen: intern per ID (Picker liefert sie), YouTube per URL/ID
+// (Paste ODER Eigenkanal-Picker — der schickt die watch-URL).
+export const referenceCreateSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('event'), id: uuid }),
+  z.object({ kind: z.literal('publication'), id: uuid }),
+  z.object({ kind: z.literal('youtube'), url: z.string().trim().min(1, 'URL erforderlich.').max(2048) }),
+]);
+export type ReferenceCreatePayload = z.infer<typeof referenceCreateSchema>;

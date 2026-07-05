@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { eq } from 'drizzle-orm';
-import { db, users, boards, cards, events, publications } from '@/lib/server/db';
+import { eq, sql } from 'drizzle-orm';
+import { db, users, boards, cards, events, publications, externalObjects } from '@/lib/server/db';
 import { slugifyBoardName } from '@/lib/shared/board';
 import {
   listBoards,
@@ -30,8 +30,10 @@ import {
   BoardForbiddenError,
   ColumnNotEmptyError,
   ItemAlreadyConvertedError,
+  ReferenceTargetError,
   isUniqueViolation,
 } from './errors';
+import { addReference, loadReferences, removeReference } from './references';
 import { MAX_ATTACHMENT_BYTES } from '@/lib/shared/board';
 import type { CurrentUser } from '@/lib/shared/types';
 
@@ -461,6 +463,79 @@ describe.skipIf(!isLocal)('board server lifecycle (lokaler Stack)', () => {
     } finally {
       await db.delete(cards).where(eq(cards.boardId, board.id));
       await db.delete(boards).where(eq(boards.id, board.id));
+    }
+  });
+
+  it('Smart-Objekt-Referenzen: add (idempotent) / load / bidirektional / remove + Orphan-GC', async () => {
+    const [u] = await db.select().from(users).limit(1);
+    const [ev] = await db.select().from(events).limit(1);
+    const [pub] = await db.select().from(publications).limit(1);
+    if (!ev || !pub) return; // lokale DB ohne Fixtures -> nichts zu prüfen
+    const board = await createBoard('Referenzen Smoke Board');
+    try {
+      const col = await createColumn(board.id, 'Kanal');
+      const card = await createCard(u.id, { column_id: col.id, title: 'zzrefsmoke' });
+
+      // Event verknüpfen; zweiter Add desselben Ziels ist idempotent.
+      let refs = await addReference(u.id, card.id, { kind: 'event', id: ev.id });
+      refs = await addReference(u.id, card.id, { kind: 'event', id: ev.id });
+      expect(refs.filter((r) => r.kind === 'event')).toHaveLength(1);
+      const evRef = refs.find((r) => r.kind === 'event');
+      expect(evRef && evRef.kind === 'event' && evRef.title).toBe(ev.title);
+
+      // Publikation dazu; CardDetail trägt beide, Reihenfolge = created_at.
+      refs = await addReference(u.id, card.id, { kind: 'publication', id: pub.id });
+      expect(refs.map((r) => r.kind)).toEqual(['event', 'publication']);
+      const detail = await getCardDetail(card.id);
+      expect(detail.references.map((r) => r.kind)).toEqual(['event', 'publication']);
+      expect(detail.activity.filter((a) => a.verb === 'reference_added')).toHaveLength(2);
+
+      // Bidirektional: die Karte taucht ohne source_*_id am Event/der Pub auf.
+      const forEvent = await getCardsForSource({ eventId: ev.id });
+      expect(forEvent.map((c) => c.id)).toContain(card.id);
+      const forPub = await getCardsForSource({ publicationId: pub.id });
+      expect(forPub.map((c) => c.id)).toContain(card.id);
+
+      // Nicht-existentes Ziel -> ReferenceTargetError (400er-Pfad).
+      await expect(
+        addReference(u.id, card.id, { kind: 'event', id: '00000000-0000-0000-0000-000000000000' }),
+      ).rejects.toBeInstanceOf(ReferenceTargetError);
+
+      // Externes Objekt (Registry-Zeile direkt, ohne Netz) + Link; Remove der
+      // letzten Referenz räumt das verwaiste Objekt mit weg.
+      const [obj] = await db
+        .insert(externalObjects)
+        .values({
+          provider: 'youtube',
+          externalId: 'zzRefSmoke01',
+          url: 'https://www.youtube.com/watch?v=zzRefSmoke01',
+          snapshot: { title: 'Smoke-Video', channel_title: 'ÖAW' },
+        })
+        .returning({ id: externalObjects.id });
+      await db.execute(
+        sql`INSERT INTO card_references (card_id, object_id, created_by)
+            VALUES (${card.id}, ${obj.id}, ${u.id})`,
+      );
+      refs = await loadReferences(card.id);
+      const ytRef = refs.find((r) => r.kind === 'youtube');
+      expect(ytRef && ytRef.kind === 'youtube' && ytRef.snapshot.title).toBe('Smoke-Video');
+
+      refs = await removeReference(u.id, card.id, ytRef!.id);
+      expect(refs.find((r) => r.id === ytRef!.id)).toBeUndefined();
+      const orphan = await db
+        .select({ id: externalObjects.id })
+        .from(externalObjects)
+        .where(eq(externalObjects.id, obj.id));
+      expect(orphan).toHaveLength(0);
+
+      // Event-Referenz lösen -> Rück-Lookup leer (Karte hat keine source_*_id).
+      await removeReference(u.id, card.id, refs.find((r) => r.kind === 'event')!.id);
+      const forEventAfter = await getCardsForSource({ eventId: ev.id });
+      expect(forEventAfter.map((c) => c.id)).not.toContain(card.id);
+    } finally {
+      await db.delete(cards).where(eq(cards.boardId, board.id));
+      await db.delete(boards).where(eq(boards.id, board.id));
+      await db.delete(externalObjects).where(eq(externalObjects.externalId, 'zzRefSmoke01'));
     }
   });
 

@@ -11,9 +11,12 @@ import type {
   CardDetail,
   CardItem,
   CardItemKind,
+  CardReference,
   BoardLabel,
+  ReferenceTargetSuggestion,
+  YoutubePickerVideo,
 } from '@/lib/shared/board';
-import type { InitialItemPayload } from '@/lib/shared/board-schemas';
+import type { InitialItemPayload, ReferenceCreatePayload } from '@/lib/shared/board-schemas';
 
 // Client-Fetch-Helfer fürs Board. Same-origin (Origin-Header) -> passiert die
 // CSRF-Prüfung in withApiError. Wirft mit der Server-Fehlermeldung.
@@ -203,6 +206,41 @@ export const deleteAttachmentApi = (id: string) =>
   send<{ ok: true }>(`/api/board/attachments/${id}`, 'DELETE');
 /** Same-origin Proxy-URL für Download/Inline-Ansicht eines Anhangs. */
 export const attachmentUrl = (id: string) => `/api/board/attachments/${id}`;
+
+// --- Smart-Objekt-Referenzen ---
+// Alle Mutationen antworten mit der vollständigen Referenzliste der Karte
+// (eine Quelle der Wahrheit für die Modal-Sektion, kein Client-Merge).
+export const addReferenceApi = (cardId: string, payload: ReferenceCreatePayload) =>
+  send<{ references: CardReference[] }>(
+    `/api/board/cards/${cardId}/references`,
+    'POST',
+    payload,
+  ).then((r) => r.references);
+export const removeReferenceApi = (cardId: string, refId: string) =>
+  send<{ references: CardReference[] }>(
+    `/api/board/cards/${cardId}/references/${refId}`,
+    'DELETE',
+  ).then((r) => r.references);
+export const refreshReferenceApi = (cardId: string, refId: string) =>
+  send<{ references: CardReference[] }>(
+    `/api/board/cards/${cardId}/references/${refId}/refresh`,
+    'POST',
+  ).then((r) => r.references);
+/** Picker-Suche über Events/Publikationen (Titel-Substring, neueste zuerst). */
+export const searchReferenceTargetsApi = (kind: 'event' | 'publication', q: string) =>
+  send<{ suggestions: ReferenceTargetSuggestion[] }>(
+    `/api/board/references/search?kind=${kind}&q=${encodeURIComponent(q)}`,
+    'GET',
+  ).then((r) => r.suggestions);
+/** Eigenkanal-Videos für den YouTube-Tab (configured=false → nur URL-Paste). */
+export const fetchYoutubeVideosApi = (q: string) =>
+  send<{ configured: boolean; videos: YoutubePickerVideo[] }>(
+    `/api/board/connectors/youtube/videos?q=${encodeURIComponent(q)}`,
+    'GET',
+  );
+/** Same-origin Proxy-URL des Thumbnails eines externen Objekts. */
+export const objectThumbnailUrl = (objectId: string) =>
+  `/api/board/objects/${objectId}/thumbnail`;
 
 // --- Watchers ---
 export const addWatcherApi = (cardId: string, userId: string) =>

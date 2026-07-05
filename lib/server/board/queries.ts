@@ -117,8 +117,9 @@ export async function listArchivedCards(boardId: string): Promise<ArchivedCard[]
 }
 
 /** „Liegt im Board?": Karten, die aus einem bestimmten Event/einer Publikation
- *  angelegt wurden (source_event_id / source_publication_id). Für die
- *  „Im Board"-Anzeige an Event-Cockpit und Publikations-Detail. */
+ *  angelegt wurden (source_event_id / source_publication_id) ODER es als
+ *  Smart-Objekt referenzieren (card_references). Für die „Im Board"-Anzeige
+ *  an Event-Cockpit und Publikations-Detail. */
 export async function getCardsForSource(source: {
   eventId?: string;
   publicationId?: string;
@@ -126,8 +127,10 @@ export async function getCardsForSource(source: {
   const { eventId, publicationId } = source;
   if (!eventId && !publicationId) return [];
   const cond = eventId
-    ? sql`c.source_event_id = ${eventId}`
-    : sql`c.source_publication_id = ${publicationId}`;
+    ? sql`(c.source_event_id = ${eventId} OR EXISTS (
+        SELECT 1 FROM card_references r WHERE r.card_id = c.id AND r.event_id = ${eventId}))`
+    : sql`(c.source_publication_id = ${publicationId} OR EXISTS (
+        SELECT 1 FROM card_references r WHERE r.card_id = c.id AND r.publication_id = ${publicationId}))`;
   const rows = await db.execute<Record<string, unknown>>(sql`
     SELECT ${CARD_REF_COLUMNS}
     FROM cards c
@@ -139,25 +142,34 @@ export async function getCardsForSource(source: {
 }
 
 /** Batch-Variante von {@link getCardsForSource} für Event-Listen: liefert je
- *  Event die neueste Board-Karte (falls vorhanden) als Map. Ein Query statt
- *  eines Client-Wasserfalls pro Zeile — für den „Im Board · Karte öffnen"-
- *  Deep-Link an gepitchten Events (/events Liste). `sql.param(...)::uuid[]`
- *  wegen des Drizzle-ANY(array)-Prod-Bugs über den Supabase-Pooler. */
+ *  Event die neueste Board-Karte (falls vorhanden) als Map — Herkunft
+ *  (source_event_id) UND Smart-Objekt-Referenzen (card_references) zählen.
+ *  Ein Query statt eines Client-Wasserfalls pro Zeile — für den „Im Board ·
+ *  Karte öffnen"-Deep-Link an gepitchten Events (/events Liste).
+ *  `sql.param(...)::uuid[]` wegen des Drizzle-ANY(array)-Prod-Bugs über den
+ *  Supabase-Pooler. */
 export async function getCardsForEvents(
   eventIds: string[],
 ): Promise<Map<string, BoardCardRef>> {
   const out = new Map<string, BoardCardRef>();
   if (eventIds.length === 0) return out;
   const rows = await db.execute<Record<string, unknown>>(sql`
-    SELECT ${CARD_REF_COLUMNS}, c.source_event_id
-    FROM cards c
+    SELECT ${CARD_REF_COLUMNS}, m.event_id
+    FROM (
+      SELECT id AS card_id, source_event_id AS event_id FROM cards
+      WHERE source_event_id = ANY(${sql.param(eventIds)}::uuid[])
+      UNION
+      SELECT card_id, event_id FROM card_references
+      WHERE event_id = ANY(${sql.param(eventIds)}::uuid[])
+    ) m
+    JOIN cards c ON c.id = m.card_id
     JOIN boards b ON b.id = c.board_id AND b.archived_at IS NULL
     JOIN board_columns col ON col.id = c.column_id
-    WHERE c.source_event_id = ANY(${sql.param(eventIds)}::uuid[]) AND c.archived_at IS NULL
+    WHERE c.archived_at IS NULL
     ORDER BY c.created_at DESC`);
   // created_at DESC → erste gesehene Karte je Event ist die neueste.
   for (const r of rows) {
-    const eventId = r.source_event_id as string | null;
+    const eventId = r.event_id as string | null;
     if (eventId && !out.has(eventId)) out.set(eventId, cardRefFromRow(r));
   }
   return out;

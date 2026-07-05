@@ -27,7 +27,14 @@ import NextLink from 'next/link';
 import { toast } from 'sonner';
 import { cn } from '@/lib/shared/utils';
 import { QK } from '@/lib/client/query-keys';
-import type { BoardColumn, BoardLabel, BoardMember, CardDetail, CardItem } from '@/lib/shared/board';
+import type {
+  BoardColumn,
+  BoardLabel,
+  BoardMember,
+  CardDetail,
+  CardItem,
+  CardReference,
+} from '@/lib/shared/board';
 import {
   fetchCard,
   patchCardApi,
@@ -53,6 +60,7 @@ import { BoardAvatar } from './board-avatar';
 import { displayNameOf, membersById } from '../_lib/people';
 import { CommentActivityStrand } from './comment-strand';
 import { AttachmentsSection } from './attachments-section';
+import { ReferencesSection } from './references-section';
 import { CardMovePopover } from './card-move-popover';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -122,6 +130,15 @@ export function CardModal({
     qc.setQueryData(QK.card(cardId), updated);
     qc.invalidateQueries({ queryKey: ['board'] });
     qc.invalidateQueries({ queryKey: QK.boards });
+  };
+  // Referenz-Mutationen antworten mit der vollen Referenzliste: sofort in den
+  // Cache schreiben (kein Flackern), dann invalidieren (Activity-Strand trägt
+  // reference_added/removed nach).
+  const applyReferences = (references: CardReference[]) => {
+    qc.setQueryData<CardDetail>(QK.card(cardId), (old) =>
+      old ? { ...old, references } : old,
+    );
+    qc.invalidateQueries({ queryKey: QK.card(cardId) });
   };
 
   const column = card ? columns.find((c) => c.id === card.column_id) : undefined;
@@ -233,6 +250,7 @@ export function CardModal({
                     members={byId}
                     onPatch={applyCard}
                     onInvalidate={invalidate}
+                    onReferences={applyReferences}
                     onOpenCard={onOpenCard}
                     columns={columns}
                   />
@@ -408,6 +426,7 @@ function MainColumn({
   members,
   onPatch,
   onInvalidate,
+  onReferences,
   onOpenCard,
   columns,
 }: {
@@ -415,6 +434,7 @@ function MainColumn({
   members: Map<string, BoardMember>;
   onPatch: (c: CardDetail) => void;
   onInvalidate: () => void;
+  onReferences: (references: CardReference[]) => void;
   onOpenCard: (id: string) => void;
   columns: BoardColumn[];
 }) {
@@ -497,6 +517,8 @@ function MainColumn({
         onOpenCard={onOpenCard}
         columns={columns}
       />
+
+      <ReferencesSection card={card} onReferences={onReferences} />
 
       <AttachmentsSection card={card} onInvalidate={onInvalidate} />
 
