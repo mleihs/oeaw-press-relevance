@@ -21,7 +21,9 @@ export const EMPTY_FILTERS: BoardFilters = {
   personId: null,
   labelId: null,
   onlyOverdue: false,
-  showCompleted: true,
+  // Erledigte per Default AUSblenden (wie MeisterTask): das Board zeigt zuerst
+  // nur offene Arbeit; „Erledigte zeigen" holt sie durchgestrichen zurück.
+  showCompleted: false,
 };
 
 export function hasActiveFilters(f: BoardFilters): boolean {
@@ -31,7 +33,8 @@ export function hasActiveFilters(f: BoardFilters): boolean {
     f.personId !== null ||
     f.labelId !== null ||
     f.onlyOverdue ||
-    !f.showCompleted
+    // Default ist jetzt „ausgeblendet"; Abweichung = Erledigte EINgeblendet.
+    f.showCompleted
   );
 }
 

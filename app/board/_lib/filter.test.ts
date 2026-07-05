@@ -71,9 +71,9 @@ describe('personCounts', () => {
 });
 
 describe('hasActiveFilters', () => {
-  it('leerer Default ist inaktiv, showCompleted=false zählt als aktiv', () => {
+  it('leerer Default ist inaktiv, showCompleted=true zählt als aktiv', () => {
     expect(hasActiveFilters(EMPTY_FILTERS)).toBe(false);
-    expect(hasActiveFilters({ ...EMPTY_FILTERS, showCompleted: false })).toBe(true);
+    expect(hasActiveFilters({ ...EMPTY_FILTERS, showCompleted: true })).toBe(true);
     expect(hasActiveFilters({ ...EMPTY_FILTERS, search: 'x' })).toBe(true);
   });
 });
