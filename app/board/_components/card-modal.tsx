@@ -44,6 +44,7 @@ import {
   createLabelApi,
 } from '../_lib/api';
 import { cardDeepLink } from '@/lib/shared/board';
+import { useBoardAppearance } from '@/lib/client/hooks/use-board-appearance';
 import { LabelPill } from './label-pill';
 import { ChannelIcon } from '../_lib/channels';
 import { PROSE_CLASS } from '../_lib/prose';
@@ -133,6 +134,12 @@ export function CardModal({
   // das innere Layer, ein Klick darin gilt nicht als „außerhalb". Der
   // Text-Auswahl-Drag-Fehlschluss entfällt, weil Radix nur bei pointerdown
   // *außerhalb* des Contents schließt.
+  // Kanalband + Erscheinungsbild-Tokens am Modal (portaliert → erbt sonst nichts).
+  const [appearance] = useBoardAppearance();
+  // Gesättigtes Kanalband wie die neuen Spaltenköpfe (Richtung Schwarz vertieft,
+  // damit weiße Schrift auch auf hellen Kanalfarben trägt).
+  const bandBg = `color-mix(in srgb, ${accent} 82%, #06121f)`;
+
   return (
     <DialogPrimitive.Root open onOpenChange={(o) => !o && onClose()}>
       <DialogPrimitive.Portal>
@@ -141,6 +148,7 @@ export function CardModal({
           style={{ backgroundColor: 'rgba(13,36,80,.42)' }}
         />
         <DialogPrimitive.Content
+          data-board-appearance={appearance}
           // Ohne gerenderte Description sonst eine Radix-Warnung; wir haben keine.
           aria-describedby={undefined}
           // Escape in einem Textarea (Beschreibung, Kommentar) bricht nur das
@@ -168,10 +176,11 @@ export function CardModal({
             <div className="p-10 text-center text-sm text-muted-foreground">Lädt…</div>
           ) : (
             <>
-              {/* Header */}
+              {/* Header — gesättigtes Kanalband (wie die Spaltenköpfe): solide
+                  Kanalfarbe, weiße Icons/Labels. Trägt Farbe + Identität. */}
               <div
-                className="flex shrink-0 items-center gap-2 border-b px-4 py-3 md:px-5 md:py-4"
-                style={{ backgroundColor: `${accent}14` }}
+                className="flex shrink-0 items-center gap-2 px-4 py-3 md:px-5 md:py-4"
+                style={{ backgroundColor: bandBg }}
               >
                 {/* Mobil steht der Schließen-Caret links (Mock Card-Sheet),
                     auf Desktop bleibt das X rechts außen (md:order-last). */}
@@ -179,19 +188,16 @@ export function CardModal({
                   <button
                     type="button"
                     aria-label="Schließen"
-                    className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground hover:text-foreground md:order-last"
+                    className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-md bg-white/15 text-white hover:bg-white/25 md:order-last"
                   >
                     <ChevronDown className="h-[18px] w-[18px] md:hidden" />
                     <X className="hidden h-4 w-4 md:block" />
                   </button>
                 </DialogPrimitive.Close>
                 {column && (
-                  <ChannelIcon name={column.name} className="h-[18px] w-[18px]" style={{ color: accent }} />
+                  <ChannelIcon name={column.name} className="h-[18px] w-[18px] text-white" />
                 )}
-                <span
-                  className="rounded-md border bg-card px-2 py-0.5 text-[12.5px] font-semibold"
-                  style={{ borderColor: `${accent}33`, color: accent }}
-                >
+                <span className="rounded-md bg-white/20 px-2 py-0.5 text-[12.5px] font-semibold text-white">
                   {column?.name ?? 'Kanal'}
                 </span>
                 <div className="ml-auto flex items-center gap-2">
