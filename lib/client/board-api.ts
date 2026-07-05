@@ -72,6 +72,11 @@ export const deleteColumnApi = (id: string) =>
   send<{ ok: true }>(`/api/board/columns/${id}`, 'DELETE');
 export const sortColumnApi = (id: string, by: 'due' | 'title' | 'created') =>
   send<{ ok: true }>(`/api/board/columns/${id}/sort`, 'POST', { by });
+/** Kanal für den aktuellen Nutzer ausblenden / wieder einblenden (per-User). */
+export const hideColumnApi = (id: string) =>
+  send<{ ok: true }>(`/api/board/columns/${id}/hidden`, 'POST');
+export const unhideColumnApi = (id: string) =>
+  send<{ ok: true }>(`/api/board/columns/${id}/hidden`, 'DELETE');
 
 // --- Labels ---
 export const createLabelApi = (boardId: string, name: string, color?: string) =>

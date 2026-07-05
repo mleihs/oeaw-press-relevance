@@ -1000,6 +1000,18 @@ export const userBoardFavorites = pgTable("user_board_favorites", {
 	pgPolicy("authenticated_select", { as: "permissive", for: "select", to: ["authenticated"], using: sql`true` }),
 ]);
 
+export const userHiddenColumns = pgTable("user_hidden_columns", {
+	userId: uuid("user_id").notNull(),
+	columnId: uuid("column_id").notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+	index("idx_user_hidden_columns_user").using("btree", table.userId.asc().nullsLast().op("uuid_ops")),
+	foreignKey({ columns: [table.userId], foreignColumns: [users.id], name: "user_hidden_columns_user_id_fkey" }).onDelete("cascade"),
+	foreignKey({ columns: [table.columnId], foreignColumns: [boardColumns.id], name: "user_hidden_columns_column_id_fkey" }).onDelete("cascade"),
+	primaryKey({ columns: [table.userId, table.columnId], name: "user_hidden_columns_pkey" }),
+	pgPolicy("authenticated_select", { as: "permissive", for: "select", to: ["authenticated"], using: sql`true` }),
+]);
+
 export const boardLabels = pgTable("board_labels", {
 	id: uuid().defaultRandom().primaryKey().notNull(),
 	boardId: uuid("board_id").notNull(),

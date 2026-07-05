@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
-import { Plus, MoreHorizontal, Pencil, Trash2, ArrowLeft, ArrowRight, ArrowUpDown, CalendarDays, List, Clock } from '@/lib/icons';
+import { Plus, MoreHorizontal, Pencil, Trash2, ArrowLeft, ArrowRight, ArrowUpDown, CalendarDays, List, Clock, EyeOff } from '@/lib/icons';
 import { cn } from '@/lib/shared/utils';
 import type { BoardColumn as BoardColumnT, BoardLabel, BoardMember, CardChip as CardChipT } from '@/lib/shared/board';
 import { BOARD_COLUMN_SWATCHES } from '@/lib/shared/board';
@@ -33,6 +33,7 @@ export function BoardColumn({
   onRecolor,
   onMove,
   onSort,
+  onHide,
   onDelete,
 }: {
   column: BoardColumnT;
@@ -48,6 +49,7 @@ export function BoardColumn({
   onRecolor: (id: string, color: string) => void;
   onMove: (id: string, dir: 'left' | 'right') => void;
   onSort: (id: string, by: 'due' | 'title' | 'created') => void;
+  onHide: (id: string) => void;
   onDelete: (id: string) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: column.id });
@@ -171,6 +173,10 @@ export function BoardColumn({
             <DropdownMenuItem disabled={isLast} onSelect={() => onMove(column.id, 'right')}>
               <ArrowRight className="h-4 w-4" />
               Nach rechts verschieben
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => onHide(column.id)}>
+              <EyeOff className="h-4 w-4" />
+              Für mich ausblenden
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem variant="destructive" onSelect={() => onDelete(column.id)}>

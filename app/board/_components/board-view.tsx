@@ -11,12 +11,12 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus } from '@/lib/icons';
+import { Plus, Eye, EyeOff } from '@/lib/icons';
 import { toast } from 'sonner';
 import { QK } from '@/lib/client/query-keys';
 import { rankBetween, compareRank } from '@/lib/shared/rank';
 import type { BoardMember, BoardWithColumns, CardChip } from '@/lib/shared/board';
-import { fetchBoardView, fetchMembers, moveCardApi, patchColumnApi, deleteColumnApi, sortColumnApi } from '../_lib/api';
+import { fetchBoardView, fetchMembers, moveCardApi, patchColumnApi, deleteColumnApi, sortColumnApi, hideColumnApi, unhideColumnApi } from '../_lib/api';
 import { useBoardRealtime } from '../_lib/use-board-realtime';
 import { EMPTY_FILTERS, matchCard, type BoardFilters } from '../_lib/filter';
 import { firstNameOf, membersById } from '../_lib/people';
@@ -139,7 +139,25 @@ export function BoardView({
     return map;
   }, [board, filters, resolveFirstName]);
 
-  const firstColumnId = board.columns[0]?.id ?? null;
+  // Per-User ausgeblendete Kanäle (Feature „Für mich ausblenden"): aus der
+  // gerenderten Liste filtern; die Spalten-Daten bleiben aber im Board-Load
+  // (für die „N ausgeblendet"-Leiste zum Wiedereinblenden). Verschieben/„Karte
+  // anlegen"-Ziel arbeiten auf der SICHTBAREN Liste, damit sie dem entsprechen,
+  // was der Nutzer sieht.
+  const hiddenSet = useMemo(
+    () => new Set(board.hidden_column_ids ?? []),
+    [board.hidden_column_ids],
+  );
+  const visibleColumns = useMemo(
+    () => board.columns.filter((c) => !hiddenSet.has(c.id)),
+    [board.columns, hiddenSet],
+  );
+  const hiddenColumns = useMemo(
+    () => board.columns.filter((c) => hiddenSet.has(c.id)),
+    [board.columns, hiddenSet],
+  );
+
+  const firstColumnId = visibleColumns[0]?.id ?? null;
 
   // Inline-Spaltenverwaltung (Umbenennen/Farbe/Löschen) direkt am Kanalkopf —
   // dieselben Endpunkte wie die Board-Verwaltung in den Einstellungen. Alle
@@ -161,7 +179,7 @@ export function BoardView({
   // Nachbarn seiner Zielposition (dieselbe before_id/after_id-Mechanik wie das
   // Drag-Reorder in der Board-Verwaltung) und laden dann neu.
   const moveColumn = (id: string, dir: 'left' | 'right') => {
-    const cols = board.columns;
+    const cols = visibleColumns;
     const i = cols.findIndex((c) => c.id === id);
     if (i < 0) return;
     let beforeId: string | null;
@@ -188,6 +206,12 @@ export function BoardView({
         toast.success('Neu angeordnet.');
       })
       .catch((e: Error) => toast.error(e.message));
+
+  // Kanal nur für den aktuellen Nutzer aus-/einblenden (per-User).
+  const hideColumn = (id: string) =>
+    hideColumnApi(id).then(invalidateBoard).catch((e: Error) => toast.error(e.message));
+  const showColumn = (id: string) =>
+    unhideColumnApi(id).then(invalidateBoard).catch((e: Error) => toast.error(e.message));
 
   return (
     <div className="flex flex-col">
@@ -217,13 +241,36 @@ export function BoardView({
         labels={board.labels ?? []}
       />
 
+      {hiddenColumns.length > 0 && (
+        <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+          <EyeOff className="h-3.5 w-3.5" />
+          <span>{hiddenColumns.length} ausgeblendet:</span>
+          {hiddenColumns.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => showColumn(c.id)}
+              title={`„${c.name}" wieder anzeigen`}
+              className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/10"
+              style={{
+                backgroundColor: `color-mix(in srgb, ${c.color} 18%, transparent)`,
+                color: `color-mix(in srgb, ${c.color} 62%, var(--foreground))`,
+              }}
+            >
+              {c.name}
+              <Eye className="h-3 w-3" aria-hidden />
+            </button>
+          ))}
+        </div>
+      )}
+
       <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
         <div className="mt-3 flex gap-3">
           <div className="board-texture flex flex-1 gap-3.5 overflow-x-auto rounded-lg pb-2">
             {board.columns.length === 0 ? (
               <EmptyBoardHint isAdmin={isAdmin} />
             ) : (
-              board.columns.map((col, i) => (
+              visibleColumns.map((col, i) => (
                 <BoardColumn
                   key={col.id}
                   column={col}
@@ -232,13 +279,14 @@ export function BoardView({
                   labels={labelsById}
                   isDragging={draggingId !== null}
                   isFirst={i === 0}
-                  isLast={i === board.columns.length - 1}
+                  isLast={i === visibleColumns.length - 1}
                   onOpenCard={setOpenCardId}
                   onAddCard={() => setQuickCreateColumn(col.id)}
                   onRename={renameColumn}
                   onRecolor={recolorColumn}
                   onMove={moveColumn}
                   onSort={sortColumn}
+                  onHide={hideColumn}
                   onDelete={deleteColumn}
                 />
               ))

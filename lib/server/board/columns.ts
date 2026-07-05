@@ -1,7 +1,7 @@
 import 'server-only';
 
-import { eq, sql } from 'drizzle-orm';
-import { db, boardColumns, cards } from '@/lib/server/db';
+import { and, eq, sql } from 'drizzle-orm';
+import { db, boardColumns, cards, userHiddenColumns } from '@/lib/server/db';
 import type { BoardColumn } from '@/lib/shared/board';
 import { BOARD_COLUMN_SWATCHES } from '@/lib/shared/board';
 import { initialRanks } from '@/lib/shared/rank';
@@ -154,6 +154,44 @@ export async function sortColumnCards(columnId: string, by: ColumnSortKey): Prom
     await tx.execute(bulk(ids.map((id, i) => ({ id, rank: temps[i] }))));
     await tx.execute(bulk(ids.map((id, i) => ({ id, rank: finals[i] }))));
   });
+}
+
+// --- Per-User-Sichtbarkeit („Für mich ausblenden") ------------------------
+
+/** Kanal für den aktuellen Nutzer ausblenden (idempotent). */
+export async function hideColumn(userId: string, columnId: string): Promise<void> {
+  await loadColumn(columnId); // 404 wenn Kanal nicht existiert
+  await db
+    .insert(userHiddenColumns)
+    .values({ userId, columnId })
+    .onConflictDoNothing();
+}
+
+/** Kanal für den aktuellen Nutzer wieder einblenden (idempotent). */
+export async function unhideColumn(userId: string, columnId: string): Promise<void> {
+  await db
+    .delete(userHiddenColumns)
+    .where(
+      and(
+        eq(userHiddenColumns.userId, userId),
+        eq(userHiddenColumns.columnId, columnId),
+      ),
+    );
+}
+
+/** IDs der Kanäle EINES Boards, die der Nutzer für sich ausgeblendet hat. */
+export async function listHiddenColumnIds(
+  userId: string,
+  boardId: string,
+): Promise<string[]> {
+  const rows = await db
+    .select({ columnId: userHiddenColumns.columnId })
+    .from(userHiddenColumns)
+    .innerJoin(boardColumns, eq(boardColumns.id, userHiddenColumns.columnId))
+    .where(
+      and(eq(userHiddenColumns.userId, userId), eq(boardColumns.boardId, boardId)),
+    );
+  return rows.map((r) => r.columnId);
 }
 
 /**

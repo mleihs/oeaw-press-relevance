@@ -9,6 +9,7 @@ import type {
   CardChip,
 } from '@/lib/shared/board';
 import { slugifyBoardName } from '@/lib/shared/board';
+import { listHiddenColumnIds } from './columns';
 import { BoardNotFoundError, isUniqueViolation } from './errors';
 import { listBoardLabels } from './labels';
 import { nextBoardRank } from './rank-util';
@@ -106,12 +107,13 @@ export async function getBoardWithColumns(
 ): Promise<BoardWithColumns> {
   const board = await getBoardSummary(userId, slug);
   if (!board) throw new BoardNotFoundError();
-  const [columns, cards, labels] = await Promise.all([
+  const [columns, cards, labels, hiddenColumnIds] = await Promise.all([
     listColumns(board.id),
     listCardChips(board.id),
     listBoardLabels(board.id),
+    listHiddenColumnIds(userId, board.id),
   ]);
-  return { board, columns, cards, labels };
+  return { board, columns, cards, labels, hidden_column_ids: hiddenColumnIds };
 }
 
 // --- Writes ---------------------------------------------------------------

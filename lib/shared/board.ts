@@ -187,6 +187,10 @@ export interface BoardWithColumns {
   cards: CardChip[];
   /** Label-Palette des Boards (für Chips an Karten + Filter + Picker). */
   labels: BoardLabel[];
+  /** IDs der Kanäle, die der aktuelle Nutzer für sich ausgeblendet hat
+   *  (per-User, user_hidden_columns). Der Client rendert sie nicht, zeigt
+   *  aber eine „N ausgeblendet"-Leiste zum Wiedereinblenden. */
+  hidden_column_ids: string[];
 }
 
 /** Schlanke, board-übergreifende Karten-Referenz (Phase 4): Dashboard-Kachel,
