@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
-import { Plus, MoreHorizontal, Pencil, Trash2 } from '@/lib/icons';
+import { Plus, MoreHorizontal, Pencil, Trash2, ArrowLeft, ArrowRight } from '@/lib/icons';
 import { cn } from '@/lib/shared/utils';
 import type { BoardColumn as BoardColumnT, BoardLabel, BoardMember, CardChip as CardChipT } from '@/lib/shared/board';
 import { BOARD_COLUMN_SWATCHES } from '@/lib/shared/board';
@@ -25,10 +25,13 @@ export function BoardColumn({
   members,
   labels,
   isDragging,
+  isFirst,
+  isLast,
   onOpenCard,
   onAddCard,
   onRename,
   onRecolor,
+  onMove,
   onDelete,
 }: {
   column: BoardColumnT;
@@ -36,10 +39,13 @@ export function BoardColumn({
   members: Map<string, BoardMember>;
   labels: Map<string, BoardLabel>;
   isDragging: boolean;
+  isFirst: boolean;
+  isLast: boolean;
   onOpenCard: (id: string) => void;
   onAddCard: () => void;
   onRename: (id: string, name: string) => void;
   onRecolor: (id: string, color: string) => void;
+  onMove: (id: string, dir: 'left' | 'right') => void;
   onDelete: (id: string) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: column.id });
@@ -136,6 +142,14 @@ export function BoardColumn({
                 </div>
               </DropdownMenuSubContent>
             </DropdownMenuSub>
+            <DropdownMenuItem disabled={isFirst} onSelect={() => onMove(column.id, 'left')}>
+              <ArrowLeft className="h-4 w-4" />
+              Nach links verschieben
+            </DropdownMenuItem>
+            <DropdownMenuItem disabled={isLast} onSelect={() => onMove(column.id, 'right')}>
+              <ArrowRight className="h-4 w-4" />
+              Nach rechts verschieben
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem variant="destructive" onSelect={() => onDelete(column.id)}>
               <Trash2 className="h-4 w-4" />

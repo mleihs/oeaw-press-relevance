@@ -156,6 +156,30 @@ export function BoardView({
   const deleteColumn = (id: string) =>
     deleteColumnApi(id).then(invalidateBoard).catch((e: Error) => toast.error(e.message));
 
+  // Kanal um eine Position verschieben (Menüpunkte am Kanalkopf). board.columns
+  // kommt rank-sortiert vom Server; wir setzen den Kanal zwischen die beiden
+  // Nachbarn seiner Zielposition (dieselbe before_id/after_id-Mechanik wie das
+  // Drag-Reorder in der Board-Verwaltung) und laden dann neu.
+  const moveColumn = (id: string, dir: 'left' | 'right') => {
+    const cols = board.columns;
+    const i = cols.findIndex((c) => c.id === id);
+    if (i < 0) return;
+    let beforeId: string | null;
+    let afterId: string | null;
+    if (dir === 'left') {
+      if (i === 0) return;
+      beforeId = cols[i - 2]?.id ?? null; // linker Nachbar der Zielposition (kleinerer Rank)
+      afterId = cols[i - 1].id; // die Spalte, über die wir springen
+    } else {
+      if (i === cols.length - 1) return;
+      beforeId = cols[i + 1].id;
+      afterId = cols[i + 2]?.id ?? null;
+    }
+    patchColumnApi(id, { before_id: beforeId, after_id: afterId })
+      .then(invalidateBoard)
+      .catch((e: Error) => toast.error(e.message));
+  };
+
   return (
     <div className="flex flex-col">
       {/* Toolbar */}
@@ -190,7 +214,7 @@ export function BoardView({
             {board.columns.length === 0 ? (
               <EmptyBoardHint isAdmin={isAdmin} />
             ) : (
-              board.columns.map((col) => (
+              board.columns.map((col, i) => (
                 <BoardColumn
                   key={col.id}
                   column={col}
@@ -198,10 +222,13 @@ export function BoardView({
                   members={byId}
                   labels={labelsById}
                   isDragging={draggingId !== null}
+                  isFirst={i === 0}
+                  isLast={i === board.columns.length - 1}
                   onOpenCard={setOpenCardId}
                   onAddCard={() => setQuickCreateColumn(col.id)}
                   onRename={renameColumn}
                   onRecolor={recolorColumn}
+                  onMove={moveColumn}
                   onDelete={deleteColumn}
                 />
               ))
