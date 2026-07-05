@@ -1,0 +1,258 @@
+<title>Mehr Tiefe fürs Board · ÖAW Redaktionsboard</title>
+<style>
+  :root {
+    --canvas:#f7f8fa; --surface:#ffffff; --fill:#eef1f5; --line:#e2e6ec; --line-strong:#cbd2dc;
+    --ink:#16202e; --ink-heading:#212b38; --ink-strong:#333d4c; --ink-soft:#475262;
+    --ink-subtle:#64707f; --ink-muted:#9aa4b2;
+    --brand:#0047bb; --brand-strong:#00337f; --brand-tint:#eef4ff;
+    --success:#059669; --danger:#dc2626; --danger-tint:#fdeaea;
+    --trough:#e7ebf1;                 /* neutrale, leicht eingesenkte Mulde – DUNKLER als die Karten */
+    --stage:#eef1f5; --tex:rgba(16,32,46,.04);
+    --sh-card:0 1px 3px rgba(16,32,46,.06), 0 4px 12px rgba(16,32,46,.09);
+    --ch:#0d9488;                     /* Demo-Kanal PM/Presse (Teal) */
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --canvas:#0e141b; --surface:#1a232e; --fill:#232e3a; --line:#2a3542; --line-strong:#3a4757;
+      --ink:#f0f3f7; --ink-heading:#e4e9ef; --ink-strong:#cdd5df; --ink-soft:#b4bdc9;
+      --ink-subtle:#9aa4b2; --ink-muted:#7c8794;
+      --brand:#85a6ff; --brand-strong:#b8ccff; --brand-tint:#12233f;
+      --success:#34d399; --danger:#f87171; --danger-tint:#331515;
+      --trough:#0c1219;               /* dunkler als die Karten (#1a232e) */
+      --stage:#121a23; --tex:rgba(255,255,255,.045);
+      --sh-card:0 1px 3px rgba(0,0,0,.4), 0 6px 16px rgba(0,0,0,.45);
+    }
+  }
+  :root[data-theme="light"]{
+    --canvas:#f7f8fa; --surface:#ffffff; --fill:#eef1f5; --line:#e2e6ec; --line-strong:#cbd2dc;
+    --ink:#16202e; --ink-heading:#212b38; --ink-strong:#333d4c; --ink-soft:#475262;
+    --ink-subtle:#64707f; --ink-muted:#9aa4b2;
+    --brand:#0047bb; --brand-strong:#00337f; --brand-tint:#eef4ff;
+    --success:#059669; --danger:#dc2626; --danger-tint:#fdeaea;
+    --trough:#e7ebf1; --stage:#eef1f5; --tex:rgba(16,32,46,.04);
+    --sh-card:0 1px 3px rgba(16,32,46,.06), 0 4px 12px rgba(16,32,46,.09);
+  }
+  :root[data-theme="dark"]{
+    --canvas:#0e141b; --surface:#1a232e; --fill:#232e3a; --line:#2a3542; --line-strong:#3a4757;
+    --ink:#f0f3f7; --ink-heading:#e4e9ef; --ink-strong:#cdd5df; --ink-soft:#b4bdc9;
+    --ink-subtle:#9aa4b2; --ink-muted:#7c8794;
+    --brand:#85a6ff; --brand-strong:#b8ccff; --brand-tint:#12233f;
+    --success:#34d399; --danger:#f87171; --danger-tint:#331515;
+    --trough:#0c1219; --stage:#121a23; --tex:rgba(255,255,255,.045);
+    --sh-card:0 1px 3px rgba(0,0,0,.4), 0 6px 16px rgba(0,0,0,.45);
+  }
+
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--canvas); color:var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing:antialiased; line-height:1.55; }
+  .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  .wrap { max-width:1180px; margin:0 auto; padding:56px 24px 96px; }
+
+  .eyebrow { font-size:11.5px; letter-spacing:.14em; text-transform:uppercase; font-weight:700; color:var(--brand); display:inline-flex; align-items:center; gap:8px; }
+  .eyebrow::before { content:""; width:20px; height:2px; background:var(--brand); border-radius:2px; }
+  h1 { font-size:clamp(28px,4.4vw,40px); line-height:1.08; letter-spacing:-.02em; font-weight:800; color:var(--ink-heading); margin:16px 0 0; text-wrap:balance; max-width:20ch; }
+  .dek { margin:16px 0 0; max-width:64ch; font-size:16.5px; color:var(--ink-soft); }
+  .dek b { color:var(--ink-strong); font-weight:650; }
+
+  /* insight banner */
+  .insight { margin-top:28px; display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+  @media (max-width:760px){ .insight { grid-template-columns:1fr; } }
+  .ins { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:15px 16px; box-shadow:var(--sh-card); }
+  .ins .n { font-family:ui-monospace,Menlo,monospace; font-size:11px; font-weight:700; color:var(--brand); letter-spacing:.04em; }
+  .ins h4 { margin:6px 0 4px; font-size:14px; font-weight:700; color:var(--ink-heading); }
+  .ins p { margin:0; font-size:12.5px; color:var(--ink-subtle); line-height:1.5; }
+
+  section { margin-top:56px; }
+  .sec-head { display:flex; align-items:center; gap:13px; margin-bottom:6px; flex-wrap:wrap; }
+  .sec-num { font-size:13px; font-weight:800; color:#fff; background:var(--brand); border-radius:9px; width:30px; height:30px; display:grid; place-items:center; flex:none; }
+  h2 { font-size:21px; font-weight:750; letter-spacing:-.01em; color:var(--ink-heading); margin:0; }
+  .plus-tag { font-size:10.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--brand); background:var(--brand-tint); padding:3px 9px; border-radius:999px; }
+  .sec-sub { margin:0 0 20px 43px; color:var(--ink-subtle); font-size:14px; max-width:72ch; }
+  .sec-sub b { color:var(--ink-soft); font-weight:650; }
+
+  .stage { background:var(--stage); border:1px solid var(--line); border-radius:16px; padding:24px; width:300px; max-width:100%;
+    background-image: repeating-linear-gradient(45deg, var(--tex) 0 1px, transparent 1px 12px); }
+
+  /* ===== COLUMN ===== */
+  .col { display:flex; flex-direction:column; }
+  .col-head { display:flex; align-items:center; gap:8px; padding:8px 11px; border-radius:11px; margin-bottom:10px;
+    background: color-mix(in srgb, var(--ch) 16%, transparent); }
+  .col-head .ic { color: color-mix(in srgb, var(--ch) 72%, var(--ink)); display:flex; }
+  .col-head .nm { font-size:12.5px; font-weight:700; color: color-mix(in srgb, var(--ch) 58%, var(--ink)); flex:1; min-width:0; }
+  .col-head .ct { font-family:ui-monospace,Menlo,monospace; font-size:10.5px; font-weight:700; padding:1px 7px; border-radius:999px;
+    background: color-mix(in srgb, var(--ch) 28%, transparent); color: color-mix(in srgb, var(--ch) 66%, var(--ink)); }
+  .col-head .dots { color: color-mix(in srgb, var(--ch) 52%, var(--ink)); opacity:.85; display:flex; }
+
+  /* today's board: channel-tinted body (flach), 3px stripe cards */
+  .lane { display:flex; flex-direction:column; gap:9px; padding:8px 8px 12px; border-radius:12px; }
+  .lane-tint { background: color-mix(in srgb, var(--ch) 9%, transparent); }
+  .lane-trough { background:var(--trough); box-shadow: inset 0 1px 2px rgba(16,32,46,.08); }
+
+  .card { position:relative; background:var(--surface); border-radius:10px; padding:11px 12px; }
+  .card.flat { border:1px solid var(--line); box-shadow:0 1px 2px rgba(16,32,46,.05); }
+  .card.float { border:none; border-radius:12px; box-shadow:var(--sh-card); }
+  .card .strip { position:absolute; left:0; top:8px; bottom:8px; width:3px; border-radius:3px; background:var(--ch); }
+  .ctitle { font-size:12.5px; font-weight:650; color:var(--ink-heading); line-height:1.34; }
+  .card.stripe .ctitle, .card.stripe .cmeta { padding-left:6px; }
+  .cmeta { display:flex; flex-wrap:wrap; gap:5px; margin-top:9px; align-items:center; }
+  .mb { display:inline-flex; align-items:center; gap:4px; font-family:ui-monospace,Menlo,monospace; font-size:10px; font-weight:600;
+    color:var(--ink-soft); background:var(--fill); padding:2px 6px; border-radius:6px; }
+  .mb.over { color:var(--danger); background:var(--danger-tint); }
+  .pill { display:inline-flex; align-items:center; font-size:9.5px; font-weight:700; letter-spacing:.02em; color:#fff; padding:2px 7px; border-radius:999px; }
+
+  /* avatar overlapping the corner (MeisterTask) */
+  .av { width:20px; height:20px; border-radius:999px; display:grid; place-items:center; font-size:8.5px; font-weight:700; color:#fff; margin-left:auto;
+    box-shadow:0 0 0 2px var(--surface); }
+  .av-corner { position:absolute; top:-7px; right:-6px; margin:0; box-shadow:0 0 0 2.5px var(--surface), 0 1px 3px rgba(16,32,46,.25); }
+
+  /* saturated header (Level B) */
+  .head-solid { background:var(--ch); margin-bottom:10px; padding:9px 12px; border-radius:11px; box-shadow:0 1px 2px rgba(16,32,46,.14); }
+  .head-solid .ic, .head-solid .nm { color:#fff; }
+  .head-solid .nm { font-weight:700; }
+  .head-solid .ct { background:rgba(255,255,255,.22); color:#fff; }
+  .head-solid .dots { color:rgba(255,255,255,.8); }
+
+  /* functional bits */
+  .puls { display:flex; align-items:center; gap:7px; padding:0 3px 9px; }
+  .puls .track { flex:1; height:4px; border-radius:999px; background: color-mix(in srgb, var(--ch) 22%, var(--line)); overflow:hidden; }
+  .puls .fill { height:100%; border-radius:999px; background:var(--ch); }
+  .puls .pip { display:inline-flex; align-items:center; gap:3px; font-family:ui-monospace,Menlo,monospace; font-size:9.5px; font-weight:700; color:var(--danger); background:var(--danger-tint); padding:1px 6px; border-radius:999px; }
+  .puls .lab { font-family:ui-monospace,Menlo,monospace; font-size:9.5px; color:var(--ink-muted); }
+  .folded { display:flex; align-items:center; gap:6px; padding:8px 10px; border-radius:9px; cursor:pointer;
+    font-size:11.5px; font-weight:600; color:var(--ink-subtle); background: color-mix(in srgb, var(--ink) 5%, transparent); }
+  .folded .chk { color:var(--success); display:flex; }
+  .addfoot { display:flex; align-items:center; gap:8px; padding-top:11px; }
+  .addfoot .disc { width:30px; height:30px; border-radius:999px; background:var(--surface); display:grid; place-items:center;
+    box-shadow:0 2px 6px rgba(16,32,46,.16); color: color-mix(in srgb, var(--ch) 62%, var(--ink)); }
+  .addfoot .lbl { font-size:11.5px; font-weight:600; color:var(--ink-subtle); }
+
+  .rec { margin-top:30px; display:flex; gap:14px; background:var(--surface); border:1px solid var(--line);
+    border-left:3px solid var(--brand); border-radius:12px; padding:16px 18px; box-shadow:var(--sh-card); }
+  .rec svg { color:var(--brand); flex:none; }
+  .rec h4 { margin:0 0 4px; font-size:14px; font-weight:750; color:var(--ink-heading); }
+  .rec p { margin:0; font-size:13.5px; color:var(--ink-soft); }
+  .rec b { color:var(--ink-heading); font-weight:650; }
+
+  footer { margin-top:52px; padding-top:22px; border-top:1px solid var(--line); font-size:12.5px; color:var(--ink-muted); }
+  footer b { color:var(--ink-soft); }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">ÖAW Redaktionsboard · Design-Richtungen</span>
+    <h1>Mehr Tiefe fürs Board</h1>
+    <p class="dek">Unser Board wirkt <b>flach und übersachlich</b>. Ich habe MeisterTask genau analysiert:
+    seine Tiefe kommt <b>nicht</b> aus Deko, sondern aus drei gestapelten Ebenen und einem strengen
+    <b>~80/20 Neutral-zu-Farbe-Verhältnis</b>. Der überraschende Hebel: dem Spaltenkörper Farbe
+    WEGnehmen — MeisterTask lässt weiße Karten auf einer neutralen Mulde schweben, wir tönen die Mulde
+    selbst und verlieren damit den Kontrast.</p>
+
+    <div class="insight">
+      <div class="ins"><div class="n">EBENE 1</div><h4>Wertekontrast</h4><p>Weiße Karte &gt; neutrale, leicht eingesenkte Spaltenmulde &gt; getönter Board-Grund. Drei Helligkeits­stufen = Tiefe, ganz ohne Farbe.</p></div>
+      <div class="ins"><div class="n">EBENE 2</div><h4>Farbe rationiert</h4><p>Kräftige Farbe nur im Kopf, in Tags und Avataren — ~20 % der Fläche. Der Körper bleibt neutral. Laut, wo es beschriftet; ruhig, wo das Auge arbeitet.</p></div>
+      <div class="ins"><div class="n">EBENE 3</div><h4>Weicher Schatten</h4><p>Ein diffuser, neutraler Schatten (kein farbiger, kein harter) + 12-px-Radius. Karten schweben, wirken angreifbar statt gezeichnet.</p></div>
+    </div>
+  </header>
+
+  <!-- 0 Ausgangspunkt -->
+  <section>
+    <div class="sec-head"><span class="sec-num" style="background:var(--ink-muted)">0</span><h2>Ausgangspunkt</h2></div>
+    <p class="sec-sub">Heute: getönte Mulde, flache Karten mit 3-px-Kante und Hairline. Alles liegt auf <b>einer</b> Ebene — die Kanaltönung des Körpers frisst den Karten-Kontrast.</p>
+    <div class="stage">
+      <div class="col">
+        <div class="col-head">
+          <span class="ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h16v4H4zM6 10h12v10H6z" opacity=".9"/></svg></span>
+          <span class="nm">PM / Presse</span><span class="ct">22</span>
+          <span class="dots"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></span>
+        </div>
+        <div class="lane lane-tint">
+          <div class="card flat stripe"><span class="strip"></span><div class="ctitle">SH &amp; PD: Stakeholder informieren</div><div class="cmeta"><span class="mb">☑ 2/5</span><span class="av" style="background:#e11d48">SH</span></div></div>
+          <div class="card flat stripe"><span class="strip"></span><div class="ctitle">Quantenpaper in „PRX Quantum"</div><div class="cmeta"><span class="mb">💬 4</span><span class="av" style="background:#0891b2">MW</span></div></div>
+          <div class="card flat stripe"><span class="strip"></span><div class="ctitle">Verteiler beschicken Teil 2</div><div class="cmeta"><span class="mb over">⏱ überfällig</span></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- A -->
+  <section>
+    <div class="sec-head"><span class="sec-num">A</span><h2>Karten schweben</h2><span class="plus-tag">Ebene 1 + 3</span></div>
+    <p class="sec-sub"><b>Der eine Hebel mit dem größten Effekt.</b> Spaltenmulde wird neutral &amp; leicht eingesenkt (statt kanal­getönt), Karten weiß mit weichem Schatten &amp; 12-px-Radius, ohne Rahmen. Avatar überlappt die Ecke, unten ein schwebender „+"-Kreis. Ruhig, markenkonform, geringstes Risiko. <span style="color:var(--ink-muted)">+ Kanal-Puls, gefaltete Erledigte.</span></p>
+    <div class="stage">
+      <div class="col">
+        <div class="col-head">
+          <span class="ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h16v4H4zM6 10h12v10H6z" opacity=".9"/></svg></span>
+          <span class="nm">PM / Presse</span><span class="ct">22</span>
+          <span class="dots"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></span>
+        </div>
+        <div class="puls"><span class="track"><span class="fill" style="width:58%"></span></span><span class="lab">13/22</span><span class="pip">2 überfällig</span></div>
+        <div class="lane lane-trough">
+          <div class="card float"><div class="ctitle">SH &amp; PD: Stakeholder informieren</div><div class="cmeta"><span class="mb">☑ 2/5</span><span class="av av-corner" style="background:#e11d48">SH</span></div></div>
+          <div class="card float"><div class="ctitle">Quantenpaper in „PRX Quantum"</div><div class="cmeta"><span class="mb">💬 4</span><span class="av av-corner" style="background:#0891b2">MW</span></div></div>
+          <div class="card float"><div class="ctitle">Verteiler beschicken Teil 2</div><div class="cmeta"><span class="mb over">⏱ überfällig</span><span class="av av-corner" style="background:#7c3aed">LP</span></div></div>
+          <div class="folded"><span class="chk"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><circle cx="12" cy="12" r="10"/><path d="m8 12 3 3 5-6"/></svg></span>4 erledigt <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto"><path d="m6 9 6 6 6-6"/></svg></div>
+        </div>
+        <div class="addfoot"><span class="disc"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg></span><span class="lbl">Karte hinzufügen</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- B -->
+  <section>
+    <div class="sec-head"><span class="sec-num">B</span><h2>Gesättigte Kanalköpfe</h2><span class="plus-tag">+ Ebene 2</span></div>
+    <p class="sec-sub">MeisterTasks Farb-DNA: der Kopf wird ein <b>voll gesättigter Kanalbalken</b> mit weißem Icon + weißem Titel; Farbe konzentriert sich dort, in Tags und Avataren (~20 %). Der Körper bleibt die neutrale Mulde aus A. Lebendig &amp; kanalstark — ohne bunt zu werden.</p>
+    <div class="stage">
+      <div class="col">
+        <div class="col-head head-solid">
+          <span class="ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h16v4H4zM6 10h12v10H6z"/></svg></span>
+          <span class="nm">PM / Presse</span><span class="ct">22</span>
+          <span class="dots"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></span>
+        </div>
+        <div class="puls"><span class="track"><span class="fill" style="width:58%"></span></span><span class="lab">13/22</span><span class="pip">2 überfällig</span></div>
+        <div class="lane lane-trough">
+          <div class="card float"><div class="ctitle">Quantenpaper in „PRX Quantum"</div><div class="cmeta"><span class="pill" style="background:#0d9488">Flagship</span><span class="mb">💬 4</span><span class="av av-corner" style="background:#0891b2">MW</span></div></div>
+          <div class="card float"><div class="ctitle">SH &amp; PD: Stakeholder informieren</div><div class="cmeta"><span class="mb">☑ 2/5</span><span class="av av-corner" style="background:#e11d48">SH</span></div></div>
+          <div class="card float"><div class="ctitle">Verteiler beschicken Teil 2</div><div class="cmeta"><span class="mb over">⏱ überfällig</span><span class="av av-corner" style="background:#7c3aed">LP</span></div></div>
+          <div class="folded"><span class="chk"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><circle cx="12" cy="12" r="10"/><path d="m8 12 3 3 5-6"/></svg></span>4 erledigt <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto"><path d="m6 9 6 6 6-6"/></svg></div>
+        </div>
+        <div class="addfoot"><span class="disc"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg></span><span class="lbl">Karte hinzufügen</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- C -->
+  <section>
+    <div class="sec-head"><span class="sec-num">C</span><h2>Hintergrund mit Tiefe</h2><span class="plus-tag">+ Ebene „hinter allem"</span></div>
+    <p class="sec-sub">Die dritte Ebene: der ganze Board-Grund wird ein <b>getöntes Feld</b> (sanfter Mehrfarb-Verlauf aus den Kanalfarben statt flachem Grau) — MeisterTasks „Rainbow"/Foto-Hintergrund, dezent. Darüber schweben Mulde &amp; Karten aus A/B mit noch mehr Kontrast. Volle Tiefe; am weitesten vom kühlen Corporate-Grau.</p>
+    <div class="stage" style="background:linear-gradient(135deg, color-mix(in srgb,#0d9488 16%,var(--canvas)), color-mix(in srgb,#7c3aed 13%,var(--canvas)) 55%, color-mix(in srgb,#e11d48 14%,var(--canvas))); background-image:repeating-linear-gradient(45deg,var(--tex) 0 1px, transparent 1px 12px);">
+      <div class="col">
+        <div class="col-head head-solid">
+          <span class="ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h16v4H4zM6 10h12v10H6z"/></svg></span>
+          <span class="nm">PM / Presse</span><span class="ct">22</span>
+          <span class="dots"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></span>
+        </div>
+        <div class="puls"><span class="track"><span class="fill" style="width:58%"></span></span><span class="lab">13/22</span><span class="pip">2 überfällig</span></div>
+        <div class="lane lane-trough" style="background:color-mix(in srgb, var(--surface) 55%, transparent); backdrop-filter:blur(2px);">
+          <div class="card float"><div class="ctitle">SH &amp; PD: Stakeholder informieren</div><div class="cmeta"><span class="mb">☑ 2/5</span><span class="av av-corner" style="background:#e11d48">SH</span></div></div>
+          <div class="card float"><div class="ctitle">Quantenpaper in „PRX Quantum"</div><div class="cmeta"><span class="mb">💬 4</span><span class="av av-corner" style="background:#0891b2">MW</span></div></div>
+          <div class="card float"><div class="ctitle">Verteiler beschicken Teil 2</div><div class="cmeta"><span class="mb over">⏱ überfällig</span><span class="av av-corner" style="background:#7c3aed">LP</span></div></div>
+          <div class="folded"><span class="chk"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><circle cx="12" cy="12" r="10"/><path d="m8 12 3 3 5-6"/></svg></span>4 erledigt <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left:auto"><path d="m6 9 6 6 6-6"/></svg></div>
+        </div>
+        <div class="addfoot"><span class="disc"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg></span><span class="lbl">Karte hinzufügen</span></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="rec">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"/></svg>
+    <div><h4>Mein Tipp: A + B umsetzen, C als Option</h4>
+    <p><b>A</b> (neutrale Mulde + schwebende Karten) ist der größte Effekt fürs kleinste Diff und bleibt markenkonform. <b>B</b> (gesättigte Köpfe) gibt Kanal-Identität, ohne bunt zu werden — zusammen ist das „MeisterTask-Tiefe, ÖAW-seriös". <b>C</b> (getöntes Board-Feld) ist der optionale Wow-Layer, wenn's wärmer sein darf. Kern-Regel überall: <b>~80 % neutral, ~20 % Farbe</b>.</p></div>
+  </div>
+
+  <footer>
+    Grundlage: Nah-Analyse echter MeisterTask-Boards. Korrektur zur ersten Fassung: MeisterTask nutzt <b>keine</b>
+    Karten-Cover — Farbe kommt aus Kopf, Tags &amp; Avataren. Mockups in ÖAW-Tokens (Marke <span class="mono">#0047bb</span>,
+    Kanal <span class="mono">#0d9488</span>), hell &amp; dunkel; Emoji = echte Phosphor-Icons.
+  </footer>
+</div>
