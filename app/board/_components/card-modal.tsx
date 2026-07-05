@@ -149,6 +149,10 @@ export function CardModal({
         />
         <DialogPrimitive.Content
           data-board-appearance={appearance}
+          // Modalfläche auf dem Board-Karten-Token: neutrales Weiß im Standard,
+          // warmes Papier in „Atmosphäre" (die Sidebar sitzt darauf als
+          // eingesenkte Mulde). Der Kanalband-Kopf trägt die Farbe darüber.
+          style={{ backgroundColor: 'var(--board-card)' }}
           // Ohne gerenderte Description sonst eine Radix-Warnung; wir haben keine.
           aria-describedby={undefined}
           // Escape in einem Textarea (Beschreibung, Kommentar) bricht nur das
@@ -233,7 +237,10 @@ export function CardModal({
                     columns={columns}
                   />
                 </div>
-                <div className="w-full shrink-0 overflow-y-auto border-t bg-muted/30 p-5 md:w-[248px] md:border-l md:border-t-0">
+                <div
+                  className="w-full shrink-0 overflow-y-auto border-t p-5 md:w-[248px] md:border-l md:border-t-0"
+                  style={{ backgroundColor: 'var(--board-trough)' }}
+                >
                   <Sidebar
                     key={card.id}
                     card={card}
@@ -606,6 +613,36 @@ function DescriptionField({
   );
 }
 
+/** Kleiner Fortschritts-Ring für Checkliste/Unteraufgaben: der Blick erfasst den
+ *  Stand sofort (statt nur „3/5"). Fährt in der Sektionsfarbe hoch, springt bei
+ *  Vollständigkeit auf Grün. Track sitzt auf dem Board-Chip-Token (warm in
+ *  „Atmosphäre"). r=15 → Umfang 2πr ≈ 94.25. */
+function ProgressRing({ done, total, color }: { done: number; total: number; color: string }) {
+  const circumference = 2 * Math.PI * 15;
+  const pct = total > 0 ? done / total : 0;
+  const complete = total > 0 && done >= total;
+  return (
+    <span className="ml-auto flex items-center gap-1.5 font-mono text-[11px] text-muted-foreground">
+      <svg viewBox="0 0 36 36" className="h-[22px] w-[22px] -rotate-90" aria-hidden>
+        <circle cx="18" cy="18" r="15" fill="none" stroke="var(--board-chip-bg)" strokeWidth="4" />
+        <circle
+          cx="18"
+          cy="18"
+          r="15"
+          fill="none"
+          stroke={complete ? '#059669' : color}
+          strokeWidth="4"
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={circumference * (1 - pct)}
+          className="transition-[stroke-dashoffset] duration-300 ease-out"
+        />
+      </svg>
+      {done} / {total}
+    </span>
+  );
+}
+
 function ItemSection({
   card,
   kind,
@@ -655,11 +692,7 @@ function ItemSection({
       <div className="mb-2 flex items-center gap-2">
         <Icon className="h-4 w-4" style={{ color: accent }} />
         <span className="text-[13.5px] font-semibold text-foreground">{title}</span>
-        {items.length > 0 && (
-          <span className="font-mono text-[11px] text-muted-foreground">
-            {done} / {items.length}
-          </span>
-        )}
+        {items.length > 0 && <ProgressRing done={done} total={items.length} color={accent} />}
       </div>
       <ul className="space-y-1">
         {items.map((item) => (
