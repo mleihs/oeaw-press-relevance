@@ -280,7 +280,12 @@ export function BoardView({
         </div>
       )}
 
-      <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
+      {/* Stabiles `id` an den DndContext: dnd-kit leitet daraus die
+          aria-describedby-IDs der Draggables ab. Ohne id nutzt es einen
+          nicht-SSR-stabilen Zähler → Server- und Client-HTML divergieren
+          (Hydration-Mismatch an den CardChips). Ein fixes id macht die IDs
+          deterministisch. */}
+      <DndContext id="board-dnd" sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
         <div className="mt-3 flex gap-3">
           <div className="board-texture flex flex-1 gap-3.5 overflow-x-auto rounded-lg pb-2">
             {board.columns.length === 0 ? (
