@@ -16,7 +16,7 @@ import { toast } from 'sonner';
 import { QK } from '@/lib/client/query-keys';
 import { rankBetween, compareRank } from '@/lib/shared/rank';
 import type { BoardMember, BoardWithColumns, CardChip } from '@/lib/shared/board';
-import { fetchBoardView, fetchMembers, moveCardApi } from '../_lib/api';
+import { fetchBoardView, fetchMembers, moveCardApi, patchColumnApi, deleteColumnApi } from '../_lib/api';
 import { useBoardRealtime } from '../_lib/use-board-realtime';
 import { EMPTY_FILTERS, matchCard, type BoardFilters } from '../_lib/filter';
 import { firstNameOf, membersById } from '../_lib/people';
@@ -141,6 +141,21 @@ export function BoardView({
 
   const firstColumnId = board.columns[0]?.id ?? null;
 
+  // Inline-Spaltenverwaltung (Umbenennen/Farbe/Löschen) direkt am Kanalkopf —
+  // dieselben Endpunkte wie die Board-Verwaltung in den Einstellungen. Alle
+  // Member dürfen Spalten bearbeiten (BOARD_PLAN §3.1). Danach Board + Zähler
+  // neu laden.
+  const invalidateBoard = () => {
+    qc.invalidateQueries({ queryKey: QK.board(slug) });
+    qc.invalidateQueries({ queryKey: QK.boards });
+  };
+  const renameColumn = (id: string, name: string) =>
+    patchColumnApi(id, { name }).then(invalidateBoard).catch((e: Error) => toast.error(e.message));
+  const recolorColumn = (id: string, color: string) =>
+    patchColumnApi(id, { color }).then(invalidateBoard).catch((e: Error) => toast.error(e.message));
+  const deleteColumn = (id: string) =>
+    deleteColumnApi(id).then(invalidateBoard).catch((e: Error) => toast.error(e.message));
+
   return (
     <div className="flex flex-col">
       {/* Toolbar */}
@@ -185,6 +200,9 @@ export function BoardView({
                   isDragging={draggingId !== null}
                   onOpenCard={setOpenCardId}
                   onAddCard={() => setQuickCreateColumn(col.id)}
+                  onRename={renameColumn}
+                  onRecolor={recolorColumn}
+                  onDelete={deleteColumn}
                 />
               ))
             )}

@@ -1,11 +1,23 @@
 'use client';
 
+import { useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
-import { Plus } from '@/lib/icons';
+import { Plus, MoreHorizontal, Pencil, Trash2 } from '@/lib/icons';
 import { cn } from '@/lib/shared/utils';
 import type { BoardColumn as BoardColumnT, BoardLabel, BoardMember, CardChip as CardChipT } from '@/lib/shared/board';
+import { BOARD_COLUMN_SWATCHES } from '@/lib/shared/board';
 import { ChannelIcon } from '../_lib/channels';
 import { CardChip } from './card-chip';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+} from '@/components/ui/dropdown-menu';
 
 export function BoardColumn({
   column,
@@ -15,6 +27,9 @@ export function BoardColumn({
   isDragging,
   onOpenCard,
   onAddCard,
+  onRename,
+  onRecolor,
+  onDelete,
 }: {
   column: BoardColumnT;
   cards: CardChipT[];
@@ -23,30 +38,58 @@ export function BoardColumn({
   isDragging: boolean;
   onOpenCard: (id: string) => void;
   onAddCard: () => void;
+  onRename: (id: string, name: string) => void;
+  onRecolor: (id: string, color: string) => void;
+  onDelete: (id: string) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: column.id });
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(column.name);
+
+  const nameColor = `color-mix(in srgb, ${column.color} 60%, var(--foreground))`;
+  const iconColor = `color-mix(in srgb, ${column.color} 72%, var(--foreground))`;
+  const actionColor = `color-mix(in srgb, ${column.color} 55%, var(--foreground))`;
+
+  const commitRename = () => {
+    const next = draft.trim();
+    if (next && next !== column.name) onRename(column.id, next);
+    else setDraft(column.name);
+    setEditing(false);
+  };
 
   return (
     <section className="flex w-[296px] shrink-0 flex-col">
-      {/* Header — getönter Kanal-Balken statt flacher Zeile. Hintergrund =
-          Kanalfarbe dezent (color-mix über den Canvas → theme-aware); Name +
-          Icon mischen die Kanalfarbe mit dem Vordergrund, damit auch helle
-          Kanalfarben (Gelb) auf der Tönung kontrastreich lesbar bleiben. */}
+      {/* Header — getönter Kanal-Balken. Hintergrund = Kanalfarbe dezent
+          (color-mix über den Canvas → theme-aware); Name/Icon/Count mischen die
+          Kanalfarbe mit dem Vordergrund, damit auch helle Farben lesbar sind.
+          Rechts: „…"-Menü (Umbenennen/Farbe/Löschen) + „+" (Karte). */}
       <div
         className="mb-2 flex items-center gap-2 rounded-[10px] px-2.5 py-2"
         style={{ backgroundColor: `color-mix(in srgb, ${column.color} 20%, transparent)` }}
       >
-        <ChannelIcon
-          name={column.name}
-          className="h-[15px] w-[15px] shrink-0"
-          style={{ color: `color-mix(in srgb, ${column.color} 72%, var(--foreground))` }}
-        />
-        <span
-          className="min-w-0 flex-1 truncate text-[13px] font-bold tracking-tight"
-          style={{ color: `color-mix(in srgb, ${column.color} 60%, var(--foreground))` }}
-        >
-          {column.name}
-        </span>
+        <ChannelIcon name={column.name} className="h-[15px] w-[15px] shrink-0" style={{ color: iconColor }} />
+        {editing ? (
+          <input
+            autoFocus
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commitRename}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') commitRename();
+              else if (e.key === 'Escape') { setDraft(column.name); setEditing(false); }
+            }}
+            aria-label="Kanalname"
+            className="min-w-0 flex-1 rounded bg-white/60 px-1 py-0.5 text-[13px] font-bold tracking-tight outline-none dark:bg-black/25"
+            style={{ color: nameColor }}
+          />
+        ) : (
+          <span
+            className="min-w-0 flex-1 truncate text-[13px] font-bold tracking-tight"
+            style={{ color: nameColor }}
+          >
+            {column.name}
+          </span>
+        )}
         <span
           className="rounded-full px-1.5 py-0.5 font-mono text-[11px] font-semibold"
           style={{
@@ -56,13 +99,58 @@ export function BoardColumn({
         >
           {cards.length}
         </span>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              aria-label="Kanaloptionen"
+              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition-colors hover:bg-black/5 dark:hover:bg-white/10"
+              style={{ color: actionColor }}
+            >
+              <MoreHorizontal className="h-[15px] w-[15px]" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem onSelect={() => { setDraft(column.name); setEditing(true); }}>
+              <Pencil className="h-4 w-4" />
+              Umbenennen
+            </DropdownMenuItem>
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <span className="h-3.5 w-3.5 rounded-[3px] ring-1 ring-black/10" style={{ backgroundColor: column.color }} />
+                Farbe ändern
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent className="p-2">
+                <div className="grid grid-cols-5 gap-1.5">
+                  {BOARD_COLUMN_SWATCHES.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => onRecolor(column.id, c)}
+                      className={cn('h-6 w-6 rounded-md', column.color.toLowerCase() === c && 'ring-2 ring-foreground')}
+                      style={{ backgroundColor: c }}
+                      aria-label={c}
+                    />
+                  ))}
+                </div>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem variant="destructive" onSelect={() => onDelete(column.id)}>
+              <Trash2 className="h-4 w-4" />
+              Kanal löschen
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         <button
           type="button"
           onClick={onAddCard}
           aria-label="Karte in diesem Kanal"
           title="Karte in diesem Kanal"
           className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition-colors hover:bg-black/5 dark:hover:bg-white/10"
-          style={{ color: `color-mix(in srgb, ${column.color} 55%, var(--foreground))` }}
+          style={{ color: actionColor }}
         >
           <Plus className="h-[15px] w-[15px]" />
         </button>
