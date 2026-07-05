@@ -105,13 +105,17 @@ export async function patchColumn(
  *   - title:   lower(title) ASC
  *   - created: created_at ASC
  *
- * GOTCHA `unique(column_id, rank)` (nicht deferrable): Bulk-Neuvergabe kann mit
- * noch nicht aktualisierten Bestandsrängen kollidieren. Zwei-Phasen in EINER
- * Transaktion — erst auf Temp-Ränge, die BEWEISBAR über `max(bestehende ∪
- * finale)` liegen (also disjunkt zu beiden), dann auf die finalen Ränge. Weil
- * die Temp-Ränge zu allen Bestands- UND Zielrängen disjunkt sind und die
- * finalen Ränge untereinander eindeutig, kollidiert kein Zwischenzustand —
- * unabhängig von der Update-Reihenfolge innerhalb eines Statements.
+ * GOTCHA `unique(column_id, rank)` (nicht deferrable, NICHT partiell): Bulk-
+ * Neuvergabe kann mit noch nicht aktualisierten Bestandsrängen kollidieren.
+ * Zwei-Phasen in EINER Transaktion — erst auf Temp-Ränge über allem Bestehenden
+ * (also disjunkt), dann auf die finalen Ränge.
+ *
+ * WICHTIG: Die Domäne umfasst ARCHIVIERTE Karten mit. Wir ranken nur die
+ * aktiven neu, aber archivierte behalten ihren Rang und teilen sich die
+ * (volle, nicht partielle) unique(column_id,rank)-Constraint. Würden Temp-/
+ * Zielränge nur gegen die aktiven Karten disjunkt gemacht, könnte ein finaler
+ * Rang auf einem archivierten landen → 23505 → 500. Darum fließen die
+ * archivierten Ränge in die Kollisions-Domäne ein.
  */
 export async function sortColumnCards(columnId: string, by: ColumnSortKey): Promise<void> {
   await loadColumn(columnId); // 404 wenn nicht vorhanden
@@ -130,16 +134,41 @@ export async function sortColumnCards(columnId: string, by: ColumnSortKey): Prom
     WHERE c.column_id = ${columnId} AND c.archived_at IS NULL
     ORDER BY ${orderBy}`);
   const list = [...rows];
-  if (list.length <= 1) return; // 0/1 Karten: nichts umzuordnen
+  if (list.length <= 1) return; // 0/1 aktive Karten: nichts umzuordnen
 
   const ids = list.map((r) => r.id);
-  const current = list.map((r) => r.rank);
-  const finals = initialRanks(list.length);
-  // Temp-Namespace über allem Bestehenden: maxRank ist echtes Präfix jedes
-  // Temp-Rangs ⇒ temp > maxRank ≥ jeder Bestands-/Zielrang (bytewise), also
-  // disjunkt zu beiden. Temp-Seeds sind eindeutig ⇒ Temps untereinander eindeutig.
-  const maxRank = [...current, ...finals].reduce((m, r) => (r > m ? r : m), '');
-  const temps = initialRanks(list.length).map((seed) => maxRank + seed);
+  const activeCurrent = list.map((r) => r.rank);
+
+  // Archivierte Karten behalten ihren Rang, teilen sich aber die
+  // unique(column_id,rank)-Domäne → in die Kollisions-Betrachtung aufnehmen.
+  const archivedRows = await db.execute<{ rank: string }>(sql`
+    SELECT rank FROM cards c
+    WHERE c.column_id = ${columnId} AND c.archived_at IS NOT NULL`);
+  const archivedRanks = [...archivedRows].map((r) => r.rank);
+  const archivedSet = new Set(archivedRanks);
+
+  let finals = initialRanks(list.length);
+  // Würde ein sauberer initialRanks-Wert auf einem (belegten) archivierten Rang
+  // landen, die finalen Ränge komplett über ALLES Bestehende heben — dann
+  // garantiert disjunkt zu den archivierten (die belegt bleiben). Häufiger Fall
+  // (keine archivierten Karten in der Spalte) behält die kurzen initialRanks.
+  if (finals.some((f) => archivedSet.has(f))) {
+    const maxAll = [...activeCurrent, ...archivedRanks, ...finals].reduce(
+      (m, r) => (r > m ? r : m),
+      '',
+    );
+    finals = initialRanks(list.length).map((seed) => maxAll + seed);
+  }
+
+  // Temp-Namespace über der GESAMTEN Domäne (aktiv-aktuell ∪ archiviert ∪
+  // final): maxDomain ist echtes Präfix jedes Temp-Rangs ⇒ temp > maxDomain ≥
+  // jeder dieser Ränge (bytewise), also disjunkt zu allen dreien. Temp-Seeds
+  // eindeutig ⇒ Temps untereinander eindeutig.
+  const maxDomain = [...activeCurrent, ...archivedRanks, ...finals].reduce(
+    (m, r) => (r > m ? r : m),
+    '',
+  );
+  const temps = initialRanks(list.length).map((seed) => maxDomain + seed);
 
   const bulk = (pairs: { id: string; rank: string }[]) => sql`
     UPDATE cards AS c SET rank = v.rank

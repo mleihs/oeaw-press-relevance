@@ -176,24 +176,30 @@ export function BoardView({
   const deleteColumn = (id: string) =>
     deleteColumnApi(id).then(invalidateBoard).catch((e: Error) => toast.error(e.message));
 
-  // Kanal um eine Position verschieben (Menüpunkte am Kanalkopf). board.columns
-  // kommt rank-sortiert vom Server; wir setzen den Kanal zwischen die beiden
-  // Nachbarn seiner Zielposition (dieselbe before_id/after_id-Mechanik wie das
-  // Drag-Reorder in der Board-Verwaltung) und laden dann neu.
+  // Kanal um eine sichtbare Position verschieben (Menüpunkte am Kanalkopf).
+  // Ziel = die sichtbare Nachbar-Spalte, mit der getauscht wird. Die Anker
+  // (before_id/after_id) kommen aber aus der VOLLEN, rank-sortierten Liste
+  // (board.columns inkl. ausgeblendeter) — sonst könnte der Mittelpunkt zweier
+  // SICHTBARER Anker exakt auf dem Rang einer dazwischenliegenden AUSGEBLENDETEN
+  // Spalte landen und die unique(board_id,rank)-Constraint verletzen (→ 409, der
+  // sich mit fixen Ankern nie auflöst). Der Kanal landet unmittelbar vor (left)
+  // bzw. hinter (right) der Zielspalte in der DB-Reihenfolge → visuell genau der
+  // erwartete Tausch. Danach Board neu laden.
   const moveColumn = (id: string, dir: 'left' | 'right') => {
-    const cols = visibleColumns;
-    const i = cols.findIndex((c) => c.id === id);
-    if (i < 0) return;
+    const vi = visibleColumns.findIndex((c) => c.id === id);
+    if (vi < 0) return;
+    const target = dir === 'left' ? visibleColumns[vi - 1] : visibleColumns[vi + 1];
+    if (!target) return; // schon am sichtbaren Rand
+    const without = board.columns.filter((c) => c.id !== id); // volle Ordnung ohne die bewegte Spalte
+    const ti = without.findIndex((c) => c.id === target.id);
     let beforeId: string | null;
     let afterId: string | null;
     if (dir === 'left') {
-      if (i === 0) return;
-      beforeId = cols[i - 2]?.id ?? null; // linker Nachbar der Zielposition (kleinerer Rank)
-      afterId = cols[i - 1].id; // die Spalte, über die wir springen
+      beforeId = without[ti - 1]?.id ?? null; // echter DB-Vorgänger der Zielspalte
+      afterId = target.id;
     } else {
-      if (i === cols.length - 1) return;
-      beforeId = cols[i + 1].id;
-      afterId = cols[i + 2]?.id ?? null;
+      beforeId = target.id;
+      afterId = without[ti + 1]?.id ?? null; // echter DB-Nachfolger der Zielspalte
     }
     patchColumnApi(id, { before_id: beforeId, after_id: afterId })
       .then(invalidateBoard)

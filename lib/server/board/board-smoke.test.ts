@@ -266,6 +266,48 @@ describe.skipIf(!isLocal)('board server lifecycle (lokaler Stack)', () => {
     }
   });
 
+  it('sortColumnCards kollidiert nicht mit dem Rang einer archivierten Karte', async () => {
+    const [u] = await db.select().from(users).limit(1);
+    const uid = u.id;
+    const board = await createBoard('Sort-Archiv Test Board');
+    try {
+      const col = await createColumn(board.id, 'Spalte');
+      const a = await createCard(uid, { column_id: col.id, title: 'Beta' });
+      const b = await createCard(uid, { column_id: col.id, title: 'Alpha' });
+      const c = await createCard(uid, { column_id: col.id, title: 'Gamma' });
+      // Archivierte Karte auf 'j' setzen — genau den Rang, den initialRanks(2)
+      // der ersten aktiven Karte zuweisen würde. Ohne Archiv-Bewusstsein
+      // kollidiert Phase 2 der Bulk-Sortierung darauf (23505).
+      await db
+        .update(cards)
+        .set({ rank: 'j', archivedAt: new Date().toISOString() })
+        .where(eq(cards.id, c.id));
+
+      await expect(sortColumnCards(col.id, 'title')).resolves.toBeUndefined();
+
+      const all = await db
+        .select({ id: cards.id, rank: cards.rank, arch: cards.archivedAt })
+        .from(cards)
+        .where(eq(cards.columnId, col.id));
+      // Keine Rang-Kollision über aktive UND archivierte Karten hinweg.
+      expect(new Set(all.map((r) => r.rank)).size).toBe(all.length);
+      // Aktive Karten alphabetisch: Alpha(b) vor Beta(a).
+      const active = all
+        .filter((r) => r.arch === null)
+        .sort((x, y) => compareRank(x.rank, y.rank));
+      expect(active.map((r) => r.id)).toEqual([b.id, a.id]);
+      // Archivierte Karte behält ihren Rang.
+      expect(all.find((r) => r.id === c.id)?.rank).toBe('j');
+
+      await deleteCard(a.id);
+      await deleteCard(b.id);
+      await deleteCard(c.id);
+      await deleteColumn(col.id);
+    } finally {
+      await db.delete(boards).where(eq(boards.id, board.id));
+    }
+  });
+
   it('Archiv: archivierte Karten fallen aus Board-Load/card_count/Suche, Restore holt sie zurück', async () => {
     const [u] = await db.select().from(users).limit(1);
     const uid = u.id;
