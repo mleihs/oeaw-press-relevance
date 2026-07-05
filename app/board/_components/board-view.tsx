@@ -264,23 +264,24 @@ export function BoardView({
       />
 
       {hiddenColumns.length > 0 && (
-        <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-          <EyeOff className="h-3.5 w-3.5" />
-          <span>{hiddenColumns.length} ausgeblendet:</span>
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+          <EyeOff className="h-3.5 w-3.5 text-ink-muted" />
+          <span className="font-semibold text-ink-soft">Ausgeblendet</span>
           {hiddenColumns.map((c) => (
             <button
               key={c.id}
               type="button"
               onClick={() => showColumn(c.id)}
               title={`„${c.name}" wieder anzeigen`}
-              className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/10"
-              style={{
-                backgroundColor: `color-mix(in srgb, ${c.color} 18%, transparent)`,
-                color: `color-mix(in srgb, ${c.color} 62%, var(--foreground))`,
-              }}
+              className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface py-1 pl-2.5 pr-1 text-[11.5px] font-semibold text-ink-strong shadow-card transition-colors hover:border-line-strong"
             >
+              {/* Swatch trägt die Kanalfarbe, der Chip bleibt neutral (lesbarer
+                  als ein voll getönter Chip); das Auge signalisiert „einblenden". */}
+              <span className="h-2 w-2 rounded-[3px]" style={{ backgroundColor: c.color }} aria-hidden />
               {c.name}
-              <Eye className="h-3 w-3" aria-hidden />
+              <span className="flex h-[18px] w-[18px] items-center justify-center rounded-full bg-fill text-ink-subtle">
+                <Eye className="h-2.5 w-2.5" aria-hidden />
+              </span>
             </button>
           ))}
         </div>
