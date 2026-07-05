@@ -78,6 +78,15 @@ export const columnPatchSchema = z
   );
 export type ColumnPatchPayload = z.infer<typeof columnPatchSchema>;
 
+/** Einmaliges Neu-Anordnen aller Karten einer Spalte (kein Sortiermodus):
+ *  nach Fälligkeit, alphabetisch oder nach Erstelldatum. */
+export const COLUMN_SORT_KEYS = ['due', 'title', 'created'] as const;
+export type ColumnSortKey = (typeof COLUMN_SORT_KEYS)[number];
+export const columnSortSchema = z.object({
+  by: z.enum(COLUMN_SORT_KEYS),
+});
+export type ColumnSortPayload = z.infer<typeof columnSortSchema>;
+
 // --- Cards ----------------------------------------------------------------
 
 // Ein initiales Checklisten-/Unteraufgaben-Item beim Karten-Anlegen (Triage:

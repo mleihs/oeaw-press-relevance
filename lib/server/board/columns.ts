@@ -4,7 +4,8 @@ import { eq, sql } from 'drizzle-orm';
 import { db, boardColumns, cards } from '@/lib/server/db';
 import type { BoardColumn } from '@/lib/shared/board';
 import { BOARD_COLUMN_SWATCHES } from '@/lib/shared/board';
-import type { ColumnPatchPayload } from '@/lib/shared/board-schemas';
+import { initialRanks } from '@/lib/shared/rank';
+import type { ColumnPatchPayload, ColumnSortKey } from '@/lib/shared/board-schemas';
 import {
   BoardConflictError,
   ColumnNotEmptyError,
@@ -90,6 +91,69 @@ export async function patchColumn(
     .limit(1);
   if (!fresh) throw new ColumnNotFoundError();
   return columnRowToApi(fresh);
+}
+
+/**
+ * Alle Karten einer Spalte einmalig neu anordnen (kein persistenter
+ * Sortiermodus): nach Fälligkeit, alphabetisch oder Erstelldatum. Danach
+ * behalten die Karten ihre neue manuelle Reihenfolge (frische fraktionale
+ * Ranks in Sortierreihenfolge).
+ *
+ * Die Sortierung passiert in SQL, damit sie exakt der `ORDER BY rank`-Ordnung
+ * des Boards entspricht (Spalte COLLATE "C"; keine JS-Datumsparsing-Fallen):
+ *   - due:     due_at ASC, NULLs ans Ende, dann created_at/id als stabiler Tiebreak
+ *   - title:   lower(title) ASC
+ *   - created: created_at ASC
+ *
+ * GOTCHA `unique(column_id, rank)` (nicht deferrable): Bulk-Neuvergabe kann mit
+ * noch nicht aktualisierten Bestandsrängen kollidieren. Zwei-Phasen in EINER
+ * Transaktion — erst auf Temp-Ränge, die BEWEISBAR über `max(bestehende ∪
+ * finale)` liegen (also disjunkt zu beiden), dann auf die finalen Ränge. Weil
+ * die Temp-Ränge zu allen Bestands- UND Zielrängen disjunkt sind und die
+ * finalen Ränge untereinander eindeutig, kollidiert kein Zwischenzustand —
+ * unabhängig von der Update-Reihenfolge innerhalb eines Statements.
+ */
+export async function sortColumnCards(columnId: string, by: ColumnSortKey): Promise<void> {
+  await loadColumn(columnId); // 404 wenn nicht vorhanden
+
+  const orderBy =
+    by === 'due'
+      ? sql`c.due_at ASC NULLS LAST, c.created_at ASC, c.id ASC`
+      : by === 'title'
+        ? sql`lower(c.title) ASC, c.created_at ASC, c.id ASC`
+        : sql`c.created_at ASC, c.id ASC`;
+
+  // NB: sobald das Archiv (Feature 4) existiert, MUSS hier `AND c.archived_at
+  // IS NULL` ergänzt werden — archivierte Karten liegen außerhalb der
+  // Board-Ordnung und dürfen keine sichtbaren Ranks bekommen.
+  const rows = await db.execute<{ id: string; rank: string }>(sql`
+    SELECT id, rank FROM cards c
+    WHERE c.column_id = ${columnId}
+    ORDER BY ${orderBy}`);
+  const list = [...rows];
+  if (list.length <= 1) return; // 0/1 Karten: nichts umzuordnen
+
+  const ids = list.map((r) => r.id);
+  const current = list.map((r) => r.rank);
+  const finals = initialRanks(list.length);
+  // Temp-Namespace über allem Bestehenden: maxRank ist echtes Präfix jedes
+  // Temp-Rangs ⇒ temp > maxRank ≥ jeder Bestands-/Zielrang (bytewise), also
+  // disjunkt zu beiden. Temp-Seeds sind eindeutig ⇒ Temps untereinander eindeutig.
+  const maxRank = [...current, ...finals].reduce((m, r) => (r > m ? r : m), '');
+  const temps = initialRanks(list.length).map((seed) => maxRank + seed);
+
+  const bulk = (pairs: { id: string; rank: string }[]) => sql`
+    UPDATE cards AS c SET rank = v.rank
+    FROM (VALUES ${sql.join(
+      pairs.map((p) => sql`(${p.id}::uuid, ${p.rank}::text)`),
+      sql`, `,
+    )}) AS v(id, rank)
+    WHERE c.id = v.id`;
+
+  await db.transaction(async (tx) => {
+    await tx.execute(bulk(ids.map((id, i) => ({ id, rank: temps[i] }))));
+    await tx.execute(bulk(ids.map((id, i) => ({ id, rank: finals[i] }))));
+  });
 }
 
 /**

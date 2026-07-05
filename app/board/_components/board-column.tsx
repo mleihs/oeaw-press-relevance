@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
-import { Plus, MoreHorizontal, Pencil, Trash2, ArrowLeft, ArrowRight } from '@/lib/icons';
+import { Plus, MoreHorizontal, Pencil, Trash2, ArrowLeft, ArrowRight, ArrowUpDown, CalendarDays, List, Clock } from '@/lib/icons';
 import { cn } from '@/lib/shared/utils';
 import type { BoardColumn as BoardColumnT, BoardLabel, BoardMember, CardChip as CardChipT } from '@/lib/shared/board';
 import { BOARD_COLUMN_SWATCHES } from '@/lib/shared/board';
@@ -32,6 +32,7 @@ export function BoardColumn({
   onRename,
   onRecolor,
   onMove,
+  onSort,
   onDelete,
 }: {
   column: BoardColumnT;
@@ -46,6 +47,7 @@ export function BoardColumn({
   onRename: (id: string, name: string) => void;
   onRecolor: (id: string, color: string) => void;
   onMove: (id: string, dir: 'left' | 'right') => void;
+  onSort: (id: string, by: 'due' | 'title' | 'created') => void;
   onDelete: (id: string) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: column.id });
@@ -122,6 +124,26 @@ export function BoardColumn({
               <Pencil className="h-4 w-4" />
               Umbenennen
             </DropdownMenuItem>
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <ArrowUpDown className="h-4 w-4" />
+                Aufgaben anordnen
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent>
+                <DropdownMenuItem onSelect={() => onSort(column.id, 'due')}>
+                  <CalendarDays className="h-4 w-4" />
+                  Nach Fälligkeit
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => onSort(column.id, 'title')}>
+                  <List className="h-4 w-4" />
+                  Alphabetisch
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => onSort(column.id, 'created')}>
+                  <Clock className="h-4 w-4" />
+                  Nach Erstelldatum
+                </DropdownMenuItem>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
             <DropdownMenuSub>
               <DropdownMenuSubTrigger>
                 <span className="h-3.5 w-3.5 rounded-[3px] ring-1 ring-black/10" style={{ backgroundColor: column.color }} />

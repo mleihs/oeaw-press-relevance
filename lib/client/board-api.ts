@@ -70,6 +70,8 @@ export const patchColumnApi = (
 ) => send<{ column: BoardColumn }>(`/api/board/columns/${id}`, 'PATCH', patch).then((r) => r.column);
 export const deleteColumnApi = (id: string) =>
   send<{ ok: true }>(`/api/board/columns/${id}`, 'DELETE');
+export const sortColumnApi = (id: string, by: 'due' | 'title' | 'created') =>
+  send<{ ok: true }>(`/api/board/columns/${id}/sort`, 'POST', { by });
 
 // --- Labels ---
 export const createLabelApi = (boardId: string, name: string, color?: string) =>

@@ -16,7 +16,7 @@ import { toast } from 'sonner';
 import { QK } from '@/lib/client/query-keys';
 import { rankBetween, compareRank } from '@/lib/shared/rank';
 import type { BoardMember, BoardWithColumns, CardChip } from '@/lib/shared/board';
-import { fetchBoardView, fetchMembers, moveCardApi, patchColumnApi, deleteColumnApi } from '../_lib/api';
+import { fetchBoardView, fetchMembers, moveCardApi, patchColumnApi, deleteColumnApi, sortColumnApi } from '../_lib/api';
 import { useBoardRealtime } from '../_lib/use-board-realtime';
 import { EMPTY_FILTERS, matchCard, type BoardFilters } from '../_lib/filter';
 import { firstNameOf, membersById } from '../_lib/people';
@@ -180,6 +180,15 @@ export function BoardView({
       .catch((e: Error) => toast.error(e.message));
   };
 
+  // Karten der Spalte einmalig neu anordnen (Fälligkeit/alphabetisch/Erstelldatum).
+  const sortColumn = (id: string, by: 'due' | 'title' | 'created') =>
+    sortColumnApi(id, by)
+      .then(() => {
+        invalidateBoard();
+        toast.success('Neu angeordnet.');
+      })
+      .catch((e: Error) => toast.error(e.message));
+
   return (
     <div className="flex flex-col">
       {/* Toolbar */}
@@ -229,6 +238,7 @@ export function BoardView({
                   onRename={renameColumn}
                   onRecolor={recolorColumn}
                   onMove={moveColumn}
+                  onSort={sortColumn}
                   onDelete={deleteColumn}
                 />
               ))

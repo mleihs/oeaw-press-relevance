@@ -9,7 +9,8 @@ import {
   setBoardFavorite,
   getBoardWithColumns,
 } from './boards';
-import { createColumn, deleteColumn } from './columns';
+import { createColumn, deleteColumn, sortColumnCards } from './columns';
+import { RANK_PATTERN, compareRank } from '@/lib/shared/rank';
 import {
   createCard,
   patchCard,
@@ -217,6 +218,49 @@ describe.skipIf(!isLocal)('board server lifecycle (lokaler Stack)', () => {
       await deleteColumn(colB.id);
     } finally {
       // Aufräumen, auch wenn eine Assertion oben scheitert.
+      await db.delete(boards).where(eq(boards.id, board.id));
+    }
+  });
+
+  it('sortColumnCards ordnet nach Fälligkeit/Titel/Erstelldatum kollisionsfrei neu', async () => {
+    const [u] = await db.select().from(users).limit(1);
+    const uid = u.id;
+    const board = await createBoard('Sort Test Board');
+    try {
+      const col = await createColumn(board.id, 'Sortierspalte');
+      // Bewusst in einer Reihenfolge anlegen, die weder Titel- noch
+      // Fälligkeits-Sortierung entspricht (created-Reihenfolge = Anlege-Reihenfolge).
+      const c1 = await createCard(uid, { column_id: col.id, title: 'Banane', due_at: '2026-07-10' });
+      const c2 = await createCard(uid, { column_id: col.id, title: 'Apfel' }); // due null
+      const c3 = await createCard(uid, { column_id: col.id, title: 'Clementine', due_at: '2026-07-05' });
+      const c4 = await createCard(uid, { column_id: col.id, title: 'Dattel', due_at: '2026-07-20' });
+
+      const rankOrder = async (): Promise<string[]> => {
+        const rows = await db
+          .select({ id: cards.id, rank: cards.rank })
+          .from(cards)
+          .where(eq(cards.columnId, col.id));
+        // Ranks müssen gültig (rank.ts-Invariante) und eindeutig sein.
+        expect(rows.every((r) => RANK_PATTERN.test(r.rank))).toBe(true);
+        expect(new Set(rows.map((r) => r.rank)).size).toBe(rows.length);
+        return [...rows].sort((a, b) => compareRank(a.rank, b.rank)).map((r) => r.id);
+      };
+
+      await sortColumnCards(col.id, 'due'); // asc, NULLs ans Ende
+      expect(await rankOrder()).toEqual([c3.id, c1.id, c4.id, c2.id]);
+
+      await sortColumnCards(col.id, 'title'); // Apfel, Banane, Clementine, Dattel
+      expect(await rankOrder()).toEqual([c2.id, c1.id, c3.id, c4.id]);
+
+      await sortColumnCards(col.id, 'created'); // Anlege-Reihenfolge
+      expect(await rankOrder()).toEqual([c1.id, c2.id, c3.id, c4.id]);
+
+      await deleteCard(c1.id);
+      await deleteCard(c2.id);
+      await deleteCard(c3.id);
+      await deleteCard(c4.id);
+      await deleteColumn(col.id);
+    } finally {
       await db.delete(boards).where(eq(boards.id, board.id));
     }
   });
