@@ -17,8 +17,9 @@ import {
   moveCard,
   getCardDetail,
   deleteCard,
+  archiveCompletedInColumn,
 } from './cards';
-import { getBoardDashboardCards, searchCards, getCardsForSource } from './queries';
+import { getBoardDashboardCards, searchCards, getCardsForSource, listArchivedCards } from './queries';
 import { addItem, patchItem, convertItemToCard } from './items';
 import { addWatcher } from './watchers';
 import { addComment, editComment, deleteComment } from './comments';
@@ -259,6 +260,58 @@ describe.skipIf(!isLocal)('board server lifecycle (lokaler Stack)', () => {
       await deleteCard(c2.id);
       await deleteCard(c3.id);
       await deleteCard(c4.id);
+      await deleteColumn(col.id);
+    } finally {
+      await db.delete(boards).where(eq(boards.id, board.id));
+    }
+  });
+
+  it('Archiv: archivierte Karten fallen aus Board-Load/card_count/Suche, Restore holt sie zurück', async () => {
+    const [u] = await db.select().from(users).limit(1);
+    const uid = u.id;
+    const board = await createBoard('Archiv Test Board');
+    try {
+      const col = await createColumn(board.id, 'Erledigt-Spalte');
+      const done1 = await createCard(uid, { column_id: col.id, title: 'Archiv-Kandidat Alpha' });
+      const done2 = await createCard(uid, { column_id: col.id, title: 'Archiv-Kandidat Beta' });
+      const open = await createCard(uid, { column_id: col.id, title: 'Bleibt offen Gamma' });
+      await patchCard(uid, done1.id, { completed: true });
+      await patchCard(uid, done2.id, { completed: true });
+
+      // Bulk-Archivierung erfasst nur die erledigten (nicht die offene) Karte.
+      const n = await archiveCompletedInColumn(uid, col.id);
+      expect(n).toBe(2);
+
+      // Board-Load + card_count schließen archivierte Karten aus (keine
+      // Geisterkarten in den Zählern).
+      const full = await getBoardWithColumns(uid, board.slug);
+      expect(full.cards.map((c) => c.id)).toEqual([open.id]);
+      expect(full.board.card_count).toBe(1);
+      const summary = (await listBoards(uid)).find((b) => b.id === board.id);
+      expect(summary?.card_count).toBe(1);
+
+      // Board-übergreifende Suche findet die archivierte Karte NICHT mehr.
+      expect((await searchCards('Archiv-Kandidat Alpha')).some((c) => c.id === done1.id)).toBe(false);
+      // Die offene ist weiter auffindbar.
+      expect((await searchCards('Bleibt offen Gamma')).some((c) => c.id === open.id)).toBe(true);
+
+      // Archiv-Ansicht listet beide, neueste zuerst; Detail bleibt öffenbar.
+      const archived = await listArchivedCards(board.id);
+      expect(archived.map((c) => c.id).sort()).toEqual([done1.id, done2.id].sort());
+      expect(archived[0].column_name).toBe('Erledigt-Spalte');
+      const detail = await getCardDetail(done1.id);
+      expect(detail.activity.map((a) => a.verb)).toContain('archived');
+
+      // Wiederherstellen bringt die Karte zurück ins Board (+ Activity).
+      const restored = await patchCard(uid, done1.id, { archived: false });
+      expect(restored.activity.map((a) => a.verb)).toContain('unarchived');
+      const afterRestore = await getBoardWithColumns(uid, board.slug);
+      expect(afterRestore.cards.map((c) => c.id).sort()).toEqual([open.id, done1.id].sort());
+      expect(afterRestore.board.card_count).toBe(2);
+
+      await deleteCard(done1.id);
+      await deleteCard(done2.id);
+      await deleteCard(open.id);
       await deleteColumn(col.id);
     } finally {
       await db.delete(boards).where(eq(boards.id, board.id));

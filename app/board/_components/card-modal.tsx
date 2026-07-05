@@ -20,6 +20,8 @@ import {
   MoreHorizontal,
   Copy,
   Tag,
+  Archive,
+  RotateCcw,
 } from '@/lib/icons';
 import NextLink from 'next/link';
 import { toast } from 'sonner';
@@ -309,6 +311,23 @@ function CardActionsMenu({
     onError: (e: Error) => toast.error(e.message),
   });
 
+  // Archivieren/Wiederherstellen (Feature 4): archivieren nimmt die Karte aus
+  // dem Board (Modal schließt); wiederherstellen holt sie in ihren Kanal zurück.
+  const isArchived = card.archived_at !== null;
+  const archive = useMutation({
+    mutationFn: () => patchCardApi(card.id, { archived: !isArchived }),
+    onSuccess: () => {
+      onInvalidate();
+      if (isArchived) {
+        toast.success('Wiederhergestellt.');
+      } else {
+        toast.success('Archiviert.');
+        onDeleted();
+      }
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   return (
     <>
       <DropdownMenu>
@@ -325,6 +344,10 @@ function CardActionsMenu({
           <DropdownMenuItem onSelect={() => void copyLink()}>
             <Copy className="h-4 w-4" />
             Link kopieren
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => archive.mutate()}>
+            {isArchived ? <RotateCcw className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
+            {isArchived ? 'Wiederherstellen' : 'Archivieren'}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem

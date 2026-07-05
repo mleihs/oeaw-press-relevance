@@ -1,4 +1,5 @@
 import type {
+  ArchivedCard,
   BoardCardRef,
   BoardColumn,
   BoardMember,
@@ -136,8 +137,19 @@ export const patchCardApi = (
     due_at?: string | null;
     assignee_id?: string | null;
     completed?: boolean;
+    archived?: boolean;
   },
 ) => send<{ card: CardDetail }>(`/api/board/cards/${id}`, 'PATCH', patch).then((r) => r.card);
+/** Alle erledigten Karten einer Spalte archivieren. Liefert die Anzahl. */
+export const archiveCompletedApi = (columnId: string) =>
+  send<{ archived: number }>(`/api/board/columns/${columnId}/archive-completed`, 'POST').then(
+    (r) => r.archived,
+  );
+/** Archivierte Karten eines Boards (Archiv-Ansicht). */
+export const fetchArchivedCards = (boardId: string) =>
+  send<{ cards: ArchivedCard[] }>(`/api/board/boards/${boardId}/archive`, 'GET').then(
+    (r) => r.cards,
+  );
 export const moveCardApi = (id: string, columnId: string) =>
   send<{ card: CardDetail }>(`/api/board/cards/${id}/move`, 'POST', {
     column_id: columnId,

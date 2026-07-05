@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
-import { Plus, MoreHorizontal, Pencil, Trash2, ArrowLeft, ArrowRight, ArrowUpDown, CalendarDays, List, Clock, EyeOff } from '@/lib/icons';
+import { Plus, MoreHorizontal, Pencil, Trash2, ArrowLeft, ArrowRight, ArrowUpDown, CalendarDays, List, Clock, EyeOff, Archive } from '@/lib/icons';
 import { cn } from '@/lib/shared/utils';
 import type { BoardColumn as BoardColumnT, BoardLabel, BoardMember, CardChip as CardChipT } from '@/lib/shared/board';
 import { BOARD_COLUMN_SWATCHES } from '@/lib/shared/board';
@@ -34,6 +34,7 @@ export function BoardColumn({
   onMove,
   onSort,
   onHide,
+  onArchiveCompleted,
   onDelete,
 }: {
   column: BoardColumnT;
@@ -50,6 +51,7 @@ export function BoardColumn({
   onMove: (id: string, dir: 'left' | 'right') => void;
   onSort: (id: string, by: 'due' | 'title' | 'created') => void;
   onHide: (id: string) => void;
+  onArchiveCompleted: (id: string) => void;
   onDelete: (id: string) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: column.id });
@@ -179,6 +181,10 @@ export function BoardColumn({
               Für mich ausblenden
             </DropdownMenuItem>
             <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={() => onArchiveCompleted(column.id)}>
+              <Archive className="h-4 w-4" />
+              Abgeschlossene archivieren
+            </DropdownMenuItem>
             <DropdownMenuItem variant="destructive" onSelect={() => onDelete(column.id)}>
               <Trash2 className="h-4 w-4" />
               Kanal löschen

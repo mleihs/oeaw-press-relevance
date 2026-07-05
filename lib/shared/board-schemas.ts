@@ -129,6 +129,9 @@ export const cardPatchSchema = z
     due_at: dueAtField.optional(),
     assignee_id: uuid.nullable().optional(),
     completed: z.boolean().optional(),
+    // Archiv (Feature 4): true = archivieren (aus dem Board raus, erhalten),
+    // false = wiederherstellen. Unabhängig von `completed`.
+    archived: z.boolean().optional(),
   })
   .refine((v) => Object.keys(v).length > 0, { message: 'Leerer Patch.' });
 export type CardPatchPayload = z.infer<typeof cardPatchSchema>;

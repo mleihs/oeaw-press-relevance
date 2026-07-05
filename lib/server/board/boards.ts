@@ -26,7 +26,7 @@ import {
  */
 const BOARD_SELECT = (userId: string) => sql`
   SELECT b.id, b.name, b.slug, b.rank, b.archived_at,
-    (SELECT count(*) FROM cards c WHERE c.board_id = b.id)::int AS card_count,
+    (SELECT count(*) FROM cards c WHERE c.board_id = b.id AND c.archived_at IS NULL)::int AS card_count,
     (SELECT max(a.created_at) FROM card_activity a
        JOIN cards c2 ON c2.id = a.card_id WHERE c2.board_id = b.id) AS last_activity_at,
     EXISTS(SELECT 1 FROM user_board_favorites f
@@ -95,7 +95,7 @@ async function listCardChips(boardId: string): Promise<CardChip[]> {
       FROM card_labels cl JOIN board_labels bl ON bl.id = cl.label_id
       WHERE cl.card_id = c.id
     ) lb ON true
-    WHERE c.board_id = ${boardId}
+    WHERE c.board_id = ${boardId} AND c.archived_at IS NULL
     ORDER BY c.column_id, c.rank`);
   return [...rows].map(cardChipFromRow);
 }

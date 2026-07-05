@@ -39,6 +39,8 @@ export const ACTIVITY_VERBS = [
   'item_unchecked',
   'attachment_added',
   'comment_added',
+  'archived',
+  'unarchived',
 ] as const;
 export type ActivityVerb = (typeof ACTIVITY_VERBS)[number];
 
@@ -164,6 +166,10 @@ export interface CardActivityEntry {
 
 /** Volle Karte fürs Modal. */
 export interface CardDetail extends CardChip {
+  /** Archiviert-Zeitpunkt (Feature 4) oder null = aktiv. Der Board-Chip trägt
+   *  ihn nicht (archivierte Karten sind aus dem Board raus); im Detail steht er,
+   *  damit ein per Deep-Link/Archiv geöffnetes Modal „Wiederherstellen" zeigt. */
+  archived_at: string | null;
   description_md: string | null;
   /** Server-gerendertes, gesäubertes HTML aus description_md (Markdown →
    *  marked → sanitize-html). Client rendert nur diese Ausgabe. */
@@ -205,6 +211,19 @@ export interface BoardCardRef {
   due_at: string | null;
   completed_at: string | null;
   created_at: string;
+}
+
+/** Archivierte Karte in der Archiv-Ansicht eines Boards (Feature 4). Trägt den
+ *  Herkunfts-Kanal (Name + Farbe) und den Archivierungszeitpunkt. */
+export interface ArchivedCard {
+  id: string;
+  title: string;
+  column_id: string;
+  column_name: string;
+  column_color: string;
+  due_at: string | null;
+  completed_at: string | null;
+  archived_at: string;
 }
 
 /** Deep-Link zu einer Karte (öffnet das Modal via ?card=-Query). */

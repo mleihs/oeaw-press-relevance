@@ -123,12 +123,11 @@ export async function sortColumnCards(columnId: string, by: ColumnSortKey): Prom
         ? sql`lower(c.title) ASC, c.created_at ASC, c.id ASC`
         : sql`c.created_at ASC, c.id ASC`;
 
-  // NB: sobald das Archiv (Feature 4) existiert, MUSS hier `AND c.archived_at
-  // IS NULL` ergänzt werden — archivierte Karten liegen außerhalb der
+  // NUR aktive Karten neu ranken — archivierte liegen außerhalb der
   // Board-Ordnung und dürfen keine sichtbaren Ranks bekommen.
   const rows = await db.execute<{ id: string; rank: string }>(sql`
     SELECT id, rank FROM cards c
-    WHERE c.column_id = ${columnId}
+    WHERE c.column_id = ${columnId} AND c.archived_at IS NULL
     ORDER BY ${orderBy}`);
   const list = [...rows];
   if (list.length <= 1) return; // 0/1 Karten: nichts umzuordnen

@@ -885,6 +885,7 @@ export const cards = pgTable("cards", {
 	rank: text().notNull(),
 	dueAt: timestamp("due_at", { withTimezone: true, mode: 'string' }),
 	completedAt: timestamp("completed_at", { withTimezone: true, mode: 'string' }),
+	archivedAt: timestamp("archived_at", { withTimezone: true, mode: 'string' }),
 	createdBy: uuid("created_by").notNull(),
 	assigneeId: uuid("assignee_id"),
 	convertedFromItemId: uuid("converted_from_item_id"),
@@ -894,7 +895,7 @@ export const cards = pgTable("cards", {
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 }, (table) => [
-	index("idx_cards_board_col_rank").using("btree", table.boardId.asc().nullsLast().op("uuid_ops"), table.columnId.asc().nullsLast().op("uuid_ops"), table.rank.asc().nullsLast().op("text_ops")),
+	index("idx_cards_active").using("btree", table.boardId.asc().nullsLast().op("uuid_ops"), table.columnId.asc().nullsLast().op("uuid_ops"), table.rank.asc().nullsLast().op("text_ops")).where(sql`(archived_at IS NULL)`),
 	index("idx_cards_due").using("btree", table.dueAt.asc().nullsLast().op("timestamptz_ops")).where(sql`(due_at IS NOT NULL AND completed_at IS NULL)`),
 	index("idx_cards_assignee").using("btree", table.assigneeId.asc().nullsLast().op("uuid_ops")).where(sql`(assignee_id IS NOT NULL)`),
 	index("idx_cards_source_event").using("btree", table.sourceEventId.asc().nullsLast().op("uuid_ops")).where(sql`(source_event_id IS NOT NULL)`),

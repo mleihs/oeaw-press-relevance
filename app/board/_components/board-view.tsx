@@ -11,12 +11,12 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Eye, EyeOff } from '@/lib/icons';
+import { Plus, Eye, EyeOff, Archive } from '@/lib/icons';
 import { toast } from 'sonner';
 import { QK } from '@/lib/client/query-keys';
 import { rankBetween, compareRank } from '@/lib/shared/rank';
 import type { BoardMember, BoardWithColumns, CardChip } from '@/lib/shared/board';
-import { fetchBoardView, fetchMembers, moveCardApi, patchColumnApi, deleteColumnApi, sortColumnApi, hideColumnApi, unhideColumnApi } from '../_lib/api';
+import { fetchBoardView, fetchMembers, moveCardApi, patchColumnApi, deleteColumnApi, sortColumnApi, hideColumnApi, unhideColumnApi, archiveCompletedApi } from '../_lib/api';
 import { useBoardRealtime } from '../_lib/use-board-realtime';
 import { EMPTY_FILTERS, matchCard, type BoardFilters } from '../_lib/filter';
 import { firstNameOf, membersById } from '../_lib/people';
@@ -27,6 +27,7 @@ import { BoardFilterBar } from './board-filter-bar';
 import { PeopleBar } from './people-bar';
 import { CardModal } from './card-modal';
 import { QuickCreateDialog } from './quick-create-dialog';
+import { ArchiveModal } from './archive-modal';
 
 export function BoardView({
   slug,
@@ -70,6 +71,7 @@ export function BoardView({
   // aus Dashboard-Kachel, ⌘K-Suche und der „Im Board"-Anzeige an Event/Pub.
   const [openCardId, setOpenCardId] = useQueryState('card');
   const [quickCreateColumn, setQuickCreateColumn] = useState<string | null>(null);
+  const [showArchive, setShowArchive] = useState(false);
   const [draggingId, setDraggingId] = useState<string | null>(null);
 
   const sensors = useSensors(
@@ -213,6 +215,15 @@ export function BoardView({
   const showColumn = (id: string) =>
     unhideColumnApi(id).then(invalidateBoard).catch((e: Error) => toast.error(e.message));
 
+  // Alle erledigten Karten einer Spalte archivieren.
+  const archiveCompleted = (id: string) =>
+    archiveCompletedApi(id)
+      .then((n) => {
+        invalidateBoard();
+        toast.success(n === 0 ? 'Keine erledigten Karten.' : `${n} archiviert.`);
+      })
+      .catch((e: Error) => toast.error(e.message));
+
   return (
     <div className="flex flex-col">
       {/* Toolbar */}
@@ -224,13 +235,18 @@ export function BoardView({
           cardCount={board.board.card_count}
           columnCount={board.columns.length}
         />
-        <Button
-          size="sm"
-          disabled={!firstColumnId}
-          onClick={() => setQuickCreateColumn(firstColumnId)}
-        >
-          <Plus className="mr-1 h-4 w-4" /> Karte anlegen
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => setShowArchive(true)}>
+            <Archive className="mr-1 h-4 w-4" /> Archiv
+          </Button>
+          <Button
+            size="sm"
+            disabled={!firstColumnId}
+            onClick={() => setQuickCreateColumn(firstColumnId)}
+          >
+            <Plus className="mr-1 h-4 w-4" /> Karte anlegen
+          </Button>
+        </div>
       </div>
 
       <BoardFilterBar
@@ -287,6 +303,7 @@ export function BoardView({
                   onMove={moveColumn}
                   onSort={sortColumn}
                   onHide={hideColumn}
+                  onArchiveCompleted={archiveCompleted}
                   onDelete={deleteColumn}
                 />
               ))
@@ -322,6 +339,13 @@ export function BoardView({
           columns={board.columns}
           boardSlug={slug}
           onClose={() => setQuickCreateColumn(null)}
+        />
+      )}
+      {showArchive && (
+        <ArchiveModal
+          boardId={board.board.id}
+          boardSlug={slug}
+          onClose={() => setShowArchive(false)}
         />
       )}
     </div>

@@ -2,7 +2,7 @@ import 'server-only';
 
 import { sql } from 'drizzle-orm';
 import { db } from '@/lib/server/db';
-import type { BoardCardRef, BoardDashboardCards } from '@/lib/shared/board';
+import type { ArchivedCard, BoardCardRef, BoardDashboardCards } from '@/lib/shared/board';
 import { toIso } from './to-api';
 
 /**
@@ -34,10 +34,14 @@ function cardRefFromRow(r: Record<string, unknown>): BoardCardRef {
 /** Dashboard-Kachel: überfällige + demnächst fällige (offene) + zuletzt
  *  angelegte Karten. Je Gruppe begrenzt. */
 export async function getBoardDashboardCards(perGroup = 6): Promise<BoardDashboardCards> {
+  // Archivierte Karten (Feature 4) sind aus allen board-übergreifenden Listen
+  // raus — als JOIN-Bedingung, damit die nachgelagerten WHERE-Klauseln der
+  // einzelnen Dashboard-Queries unverändert greifen.
   const base = sql`
     FROM cards c
     JOIN boards b ON b.id = c.board_id AND b.archived_at IS NULL
-    JOIN board_columns col ON col.id = c.column_id`;
+    JOIN board_columns col ON col.id = c.column_id
+    AND c.archived_at IS NULL`;
 
   // Fälligkeit ist ein reiner Kalendertag (due_at = UTC-Mitternacht, normalizeDue).
   // Gegen den Tagesanfang vergleichen (nicht `now()`), damit eine heute fällige
@@ -77,14 +81,39 @@ export async function searchCards(query: string, limit = 8): Promise<BoardCardRe
     FROM cards c
     JOIN boards b ON b.id = c.board_id AND b.archived_at IS NULL
     JOIN board_columns col ON col.id = c.column_id
-    WHERE lower(c.title) LIKE ${pattern} ESCAPE '\\'
-       OR EXISTS (
-         SELECT 1 FROM card_items i
-         WHERE i.card_id = c.id AND lower(i.text) LIKE ${pattern} ESCAPE '\\'
-       )
+    WHERE c.archived_at IS NULL
+      AND (
+        lower(c.title) LIKE ${pattern} ESCAPE '\\'
+        OR EXISTS (
+          SELECT 1 FROM card_items i
+          WHERE i.card_id = c.id AND lower(i.text) LIKE ${pattern} ESCAPE '\\'
+        )
+      )
     ORDER BY (c.completed_at IS NOT NULL), c.updated_at DESC
     LIMIT ${limit}`);
   return [...rows].map(cardRefFromRow);
+}
+
+/** Archiv-Ansicht eines Boards: alle archivierten Karten mit Herkunfts-Kanal,
+ *  neueste zuerst (nach Archivierungszeitpunkt). */
+export async function listArchivedCards(boardId: string): Promise<ArchivedCard[]> {
+  const rows = await db.execute<Record<string, unknown>>(sql`
+    SELECT c.id, c.title, c.due_at, c.completed_at, c.archived_at,
+           col.id AS column_id, col.name AS column_name, col.color AS column_color
+    FROM cards c
+    JOIN board_columns col ON col.id = c.column_id
+    WHERE c.board_id = ${boardId} AND c.archived_at IS NOT NULL
+    ORDER BY c.archived_at DESC`);
+  return [...rows].map((r) => ({
+    id: r.id as string,
+    title: r.title as string,
+    column_id: r.column_id as string,
+    column_name: r.column_name as string,
+    column_color: r.column_color as string,
+    due_at: toIso(r.due_at),
+    completed_at: toIso(r.completed_at),
+    archived_at: toIso(r.archived_at) ?? new Date(0).toISOString(),
+  }));
 }
 
 /** „Liegt im Board?": Karten, die aus einem bestimmten Event/einer Publikation
@@ -104,7 +133,7 @@ export async function getCardsForSource(source: {
     FROM cards c
     JOIN boards b ON b.id = c.board_id AND b.archived_at IS NULL
     JOIN board_columns col ON col.id = c.column_id
-    WHERE ${cond}
+    WHERE ${cond} AND c.archived_at IS NULL
     ORDER BY c.created_at DESC`);
   return [...rows].map(cardRefFromRow);
 }
@@ -124,7 +153,7 @@ export async function getCardsForEvents(
     FROM cards c
     JOIN boards b ON b.id = c.board_id AND b.archived_at IS NULL
     JOIN board_columns col ON col.id = c.column_id
-    WHERE c.source_event_id = ANY(${sql.param(eventIds)}::uuid[])
+    WHERE c.source_event_id = ANY(${sql.param(eventIds)}::uuid[]) AND c.archived_at IS NULL
     ORDER BY c.created_at DESC`);
   // created_at DESC → erste gesehene Karte je Event ist die neueste.
   for (const r of rows) {
