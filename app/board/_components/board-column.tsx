@@ -58,9 +58,14 @@ export function BoardColumn({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(column.name);
 
-  const nameColor = `color-mix(in srgb, ${column.color} 60%, var(--foreground))`;
-  const iconColor = `color-mix(in srgb, ${column.color} 72%, var(--foreground))`;
-  const actionColor = `color-mix(in srgb, ${column.color} 55%, var(--foreground))`;
+  // Board-Tiefe (A+B): gesättigter Kanalkopf = solide, leicht vertiefte
+  // Kanalfarbe (Richtung Schwarz gemischt, damit weiße Schrift auch auf hellen
+  // Kanalfarben wie Amber trägt) mit weißen Labels/Icons. Farbe konzentriert
+  // sich im Kopf (~20%-Regel); der Spaltenkörper bleibt neutral.
+  const headBg = `color-mix(in srgb, ${column.color} 82%, #06121f)`;
+  const nameColor = '#ffffff';
+  const iconColor = 'rgba(255,255,255,.95)';
+  const actionColor = 'rgba(255,255,255,.82)';
 
   const commitRename = () => {
     const next = draft.trim();
@@ -71,13 +76,12 @@ export function BoardColumn({
 
   return (
     <section className="flex w-[296px] shrink-0 flex-col">
-      {/* Header — getönter Kanal-Balken. Hintergrund = Kanalfarbe dezent
-          (color-mix über den Canvas → theme-aware); Name/Icon/Count mischen die
-          Kanalfarbe mit dem Vordergrund, damit auch helle Farben lesbar sind.
-          Rechts: „…"-Menü (Umbenennen/Farbe/Löschen) + „+" (Karte). */}
+      {/* Header — gesättigter Kanal-Balken (Board-Tiefe B): solide Kanalfarbe,
+          weiße Schrift/Icons, dezenter Schlagschatten. Kräftige Farbe genau
+          hier, während der Spaltenkörper neutral bleibt. Rechts: „…"-Menü + „+". */}
       <div
-        className="mb-2 flex items-center gap-2 rounded-[10px] px-2.5 py-2"
-        style={{ backgroundColor: `color-mix(in srgb, ${column.color} 20%, transparent)` }}
+        className="mb-2 flex items-center gap-2 rounded-[10px] px-2.5 py-2 shadow-[0_1px_2px_rgba(16,32,46,.16)]"
+        style={{ backgroundColor: headBg }}
       >
         <ChannelIcon name={column.name} className="h-[15px] w-[15px] shrink-0" style={{ color: iconColor }} />
         {editing ? (
@@ -91,7 +95,7 @@ export function BoardColumn({
               else if (e.key === 'Escape') { setDraft(column.name); setEditing(false); }
             }}
             aria-label="Kanalname"
-            className="min-w-0 flex-1 rounded bg-white/60 px-1 py-0.5 text-[13px] font-bold tracking-tight outline-none dark:bg-black/25"
+            className="min-w-0 flex-1 rounded bg-white/25 px-1 py-0.5 text-[13px] font-bold tracking-tight outline-none placeholder:text-white/60"
             style={{ color: nameColor }}
           />
         ) : (
@@ -103,11 +107,8 @@ export function BoardColumn({
           </span>
         )}
         <span
-          className="rounded-full px-1.5 py-0.5 font-mono text-[11px] font-semibold"
-          style={{
-            backgroundColor: `color-mix(in srgb, ${column.color} 30%, transparent)`,
-            color: `color-mix(in srgb, ${column.color} 68%, var(--foreground))`,
-          }}
+          className="rounded-full bg-white/22 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-white"
+          style={{ backgroundColor: 'rgba(255,255,255,.22)' }}
         >
           {cards.length}
         </span>
@@ -117,7 +118,7 @@ export function BoardColumn({
             <button
               type="button"
               aria-label="Kanaloptionen"
-              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition-colors hover:bg-black/5 dark:hover:bg-white/10"
+              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition-colors hover:bg-white/15"
               style={{ color: actionColor }}
             >
               <MoreHorizontal className="h-[15px] w-[15px]" />
@@ -197,24 +198,26 @@ export function BoardColumn({
           onClick={onAddCard}
           aria-label="Karte in diesem Kanal"
           title="Karte in diesem Kanal"
-          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition-colors hover:bg-black/5 dark:hover:bg-white/10"
+          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition-colors hover:bg-white/15"
           style={{ color: actionColor }}
         >
           <Plus className="h-[15px] w-[15px]" />
         </button>
       </div>
 
-      {/* Body */}
+      {/* Body — neutrale, leicht eingesenkte Mulde (Board-Tiefe A). Der
+          Wertekontrast (weiße Karte > neutrale Mulde) erzeugt die Tiefe; die
+          Kanalfarbe sitzt jetzt im Kopf, nicht in der Zone. Farbe/Schatten der
+          Mulde kommen aus den Erscheinungsbild-Tokens; beim Drüberziehen ein
+          Hauch Kanalfarbe zur Rückmeldung. */}
       <div
         ref={setNodeRef}
-        className={cn(
-          'flex min-h-[120px] flex-1 flex-col gap-2.5 rounded-xl p-1.5 transition-colors',
-        )}
+        className={cn('flex min-h-[120px] flex-1 flex-col gap-2.5 rounded-xl p-2 transition-colors')}
         style={{
-          // Body dezent in der Kanalfarbe getönt (Alpha über den Canvas →
-          // theme-aware in beiden Modi) statt flachem Hardcoded-Grau. Gibt
-          // jedem Kanal eine ruhige Farbzone (MeisterTask-Idee, dezenter).
-          backgroundColor: isOver ? `${column.color}26` : `${column.color}12`,
+          background: isOver
+            ? `color-mix(in srgb, ${column.color} 15%, var(--board-trough))`
+            : 'var(--board-trough)',
+          boxShadow: 'var(--board-trough-shadow)',
           outline: isOver ? `2px dashed ${column.color}` : undefined,
           outlineOffset: isOver ? -2 : undefined,
         }}

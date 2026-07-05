@@ -20,6 +20,7 @@ import { fetchBoardView, fetchMembers, moveCardApi, patchColumnApi, deleteColumn
 import { useBoardRealtime } from '../_lib/use-board-realtime';
 import { EMPTY_FILTERS, matchCard, type BoardFilters } from '../_lib/filter';
 import { firstNameOf, membersById } from '../_lib/people';
+import { useBoardAppearance } from '@/lib/client/hooks/use-board-appearance';
 import { Button } from '@/components/ui/button';
 import { BoardSwitcher } from './board-switcher';
 import { BoardColumn } from './board-column';
@@ -73,6 +74,7 @@ export function BoardView({
   const [quickCreateColumn, setQuickCreateColumn] = useState<string | null>(null);
   const [showArchive, setShowArchive] = useState(false);
   const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [appearance] = useBoardAppearance();
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -294,7 +296,10 @@ export function BoardView({
           deterministisch. */}
       <DndContext id="board-dnd" sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
         <div className="mt-3 flex gap-3">
-          <div className="board-texture flex flex-1 gap-3.5 overflow-x-auto rounded-lg pb-2">
+          <div
+            data-board-appearance={appearance}
+            className="board-texture flex flex-1 gap-3.5 overflow-x-auto rounded-lg pb-2"
+          >
             {board.columns.length === 0 ? (
               <EmptyBoardHint isAdmin={isAdmin} />
             ) : (

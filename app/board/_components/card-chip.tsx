@@ -19,7 +19,12 @@ function MetaBadge({
   label: string;
 }) {
   return (
-    <span className="inline-flex items-center gap-1 rounded-md bg-fill px-1.5 py-0.5 font-mono text-[11px] font-medium text-ink-soft">
+    <span
+      className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-mono text-[11px] font-medium"
+      // Chip-Farben aus den Erscheinungsbild-Tokens: kühles Grau im Standard,
+      // warmes Beige in „Atmosphäre" (sonst kühle Chips auf warmen Karten).
+      style={{ backgroundColor: 'var(--board-chip-bg)', color: 'var(--board-chip-ink)' }}
+    >
       <Icon className="h-3 w-3" />
       {label}
     </span>
@@ -79,15 +84,15 @@ export function CardChip({
       }}
       style={{
         transform: CSS.Translate.toString(transform),
-        borderLeft: `3px solid ${accent}`,
+        // Board-Tiefe: Karte schwebt über der Mulde (Schatten/Rand/Radius via
+        // .board-card + Erscheinungsbild-Tokens). Kein 3px-Streifen mehr — die
+        // Kanalfarbe sitzt im Spaltenkopf; Identität an der Karte trägt der
+        // Assignee-Ring. Überfällig bleibt rot getönt.
+        background: overdue ? 'var(--danger-tint)' : 'var(--board-card)',
+        borderColor: overdue ? 'var(--danger-line)' : undefined,
         opacity: isDragging ? 0.4 : completed ? 0.62 : 1,
       }}
-      className={cn(
-        'cursor-pointer rounded-[10px] border px-[13px] py-3 shadow-card transition-[border-color,box-shadow] hover:shadow-card-hover',
-        overdue
-          ? 'border-danger/30 bg-danger-tint hover:border-danger/50'
-          : 'border-line bg-surface hover:border-line-strong',
-      )}
+      className={cn('board-card cursor-pointer px-[13px] py-3')}
     >
       {cardLabels.length > 0 && (
         <div className="mb-2 flex flex-wrap gap-1">
@@ -104,8 +109,11 @@ export function CardChip({
             // min-w-0 + break-words: lange, ungebrochene Tokens (URLs als Titel)
             // brechen um statt über den Kartenrand zu laufen.
             'min-w-0 flex-1 break-words text-[13.5px] font-semibold leading-snug',
-            completed ? 'text-ink-muted line-through' : 'text-ink-heading',
+            completed && 'text-ink-muted line-through',
           )}
+          // Ink aus dem Erscheinungsbild-Token (Slate im Standard, warm in
+          // „Atmosphäre"); erledigte Karten bleiben gedämpft/durchgestrichen.
+          style={completed ? undefined : { color: 'var(--board-card-ink)' }}
         >
           {card.title}
         </div>
