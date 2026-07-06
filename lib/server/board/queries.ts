@@ -16,7 +16,8 @@ import { toIso } from './to-api';
 /** Gemeinsame Projektion cards -> BoardCardRef (mit Board-/Spaltennamen). */
 const CARD_REF_COLUMNS = sql`
   c.id, c.title, c.due_at, c.completed_at, c.created_at,
-  b.slug AS board_slug, b.name AS board_name, col.name AS column_name`;
+  b.slug AS board_slug, b.name AS board_name, col.name AS column_name,
+  col.color AS column_color`;
 
 function cardRefFromRow(r: Record<string, unknown>): BoardCardRef {
   return {
@@ -25,6 +26,7 @@ function cardRefFromRow(r: Record<string, unknown>): BoardCardRef {
     board_slug: r.board_slug as string,
     board_name: r.board_name as string,
     column_name: (r.column_name as string | null) ?? null,
+    column_color: (r.column_color as string | null) ?? null,
     due_at: toIso(r.due_at),
     completed_at: toIso(r.completed_at),
     created_at: toIso(r.created_at) ?? new Date(0).toISOString(),

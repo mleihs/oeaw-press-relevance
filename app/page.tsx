@@ -1,4 +1,5 @@
 import { getDashboardData } from '@/lib/server/dashboard/fetch';
+import { getSocialDashboardData } from '@/lib/server/social/dashboard';
 import { getBoardDashboardCards } from '@/lib/server/board';
 import { getCurrentUser } from '@/lib/server/auth/require';
 import {
@@ -35,7 +36,10 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   const topPubsLimit = parseTopPubsLimit(sp.topPubs);
   const sortBy = parseSortBy(sp.sortBy);
 
-  const data = await getDashboardData(period, topPubsLimit, sortBy);
+  const [data, socialData] = await Promise.all([
+    getDashboardData(period, topPubsLimit, sortBy),
+    getSocialDashboardData(),
+  ]);
 
   // Board-Kachel nur für angemeldete Nutzer (Board ist auth-gated). Bewusst
   // NICHT in getDashboardData: das Gate hängt an getCurrentUser() (liest
@@ -50,6 +54,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       period={period}
       sortBy={sortBy}
       boardCards={boardCards}
+      socialData={socialData}
     />
   );
 }

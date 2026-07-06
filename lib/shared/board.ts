@@ -298,6 +298,8 @@ export interface BoardCardRef {
   board_slug: string;
   board_name: string;
   column_name: string | null;
+  /** Kanalfarbe (board_columns.color) — Farb-Punkt der Dashboard-Kachel. */
+  column_color: string | null;
   due_at: string | null;
   completed_at: string | null;
   created_at: string;

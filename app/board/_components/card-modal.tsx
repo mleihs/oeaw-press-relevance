@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Dialog as DialogPrimitive } from 'radix-ui';
 import {
@@ -59,6 +59,13 @@ import { formatDateTimeMeta, relativeDay } from '../_lib/due';
 import { BoardAvatar } from './board-avatar';
 import { displayNameOf, membersById } from '../_lib/people';
 import { CommentActivityStrand } from './comment-strand';
+import { AssignButton } from './assign-button';
+import {
+  CelebrationOverlay,
+  CompletionBanner,
+  fireCelebrationConfetti,
+  prefersReducedMotion,
+} from './celebration';
 import { AttachmentsSection } from './attachments-section';
 import { ReferencesSection } from './references-section';
 import { CardMovePopover } from './card-move-popover';
@@ -153,6 +160,19 @@ export function CardModal({
   // *außerhalb* des Contents schließt.
   // Kanalband + Erscheinungsbild-Tokens am Modal (portaliert → erbt sonst nichts).
   const [appearance] = useBoardAppearance();
+  // Abschluss-Celebration (Design Board-Celebration §1a): Badge-Overlay 1,5 s
+  // + Konfetti; reduced-motion überspringt beides (Kopf/Banner wechseln sofort).
+  const [celebrating, setCelebrating] = useState(false);
+  const celebrateTimer = useRef<number | undefined>(undefined);
+  const contentRef = useRef<HTMLDivElement>(null);
+  useEffect(() => () => window.clearTimeout(celebrateTimer.current), []);
+  const celebrate = () => {
+    if (prefersReducedMotion()) return;
+    void fireCelebrationConfetti(contentRef.current);
+    setCelebrating(true);
+    window.clearTimeout(celebrateTimer.current);
+    celebrateTimer.current = window.setTimeout(() => setCelebrating(false), 1500);
+  };
   // Gesättigtes Kanalband wie die neuen Spaltenköpfe (Richtung Schwarz vertieft,
   // damit weiße Schrift auch auf hellen Kanalfarben trägt).
   const bandBg = `color-mix(in srgb, ${accent} 82%, #06121f)`;
@@ -165,6 +185,7 @@ export function CardModal({
           style={{ backgroundColor: 'rgba(13,36,80,.42)' }}
         />
         <DialogPrimitive.Content
+          ref={contentRef}
           data-board-appearance={appearance}
           // Modalfläche auf dem Board-Karten-Token: neutrales Weiß im Standard,
           // warmes Papier in „Atmosphäre" (die Sidebar sitzt darauf als
@@ -197,52 +218,98 @@ export function CardModal({
             <div className="p-10 text-center text-sm text-muted-foreground">Lädt…</div>
           ) : (
             <>
-              {/* Header — gesättigtes Kanalband (wie die Spaltenköpfe): solide
-                  Kanalfarbe, weiße Icons/Labels. Trägt Farbe + Identität. */}
-              <div
-                className="flex shrink-0 items-center gap-2 px-4 py-3 md:px-5 md:py-4"
-                style={{ backgroundColor: bandBg }}
-              >
-                {/* Mobil steht der Schließen-Caret links (Mock Card-Sheet),
-                    auf Desktop bleibt das X rechts außen (md:order-last). */}
-                <DialogPrimitive.Close asChild>
-                  <button
-                    type="button"
-                    aria-label="Schließen"
-                    className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-md bg-white/15 text-white hover:bg-white/25 md:order-last"
-                  >
-                    <ChevronDown className="h-[18px] w-[18px] md:hidden" />
-                    <X className="hidden h-4 w-4 md:block" />
-                  </button>
-                </DialogPrimitive.Close>
-                {column && (
-                  <ChannelIcon name={column.name} className="h-[18px] w-[18px] text-white" />
-                )}
-                <span className="rounded-md bg-white/20 px-2 py-0.5 text-[12.5px] font-semibold text-white">
-                  {column?.name ?? 'Kanal'}
-                </span>
-                <div className="ml-auto flex items-center gap-2">
-                  <CardMovePopover
-                    card={card}
-                    currentSlug={boardSlug}
-                    columns={columns}
-                    onMove={async (columnId) => {
-                      const updated = await moveCardApi(cardId, columnId);
-                      applyCard(updated);
-                    }}
-                  />
-                  <CompleteButton card={card} onDone={applyCard} />
-                  <CardActionsMenu
-                    card={card}
-                    boardSlug={boardSlug}
-                    onDeleted={onClose}
-                    onInvalidate={invalidate}
-                  />
+              {card.completed_at ? (
+                <>
+                  {/* Abgeschlossen-Kopf (Design Board-Celebration): grüner Kopf
+                      mit Häkchen-Badge + „von {Person}", rechts „Wieder öffnen".
+                      Ersetzt das Kanalband, solange die Karte abgeschlossen ist. */}
+                  <div className="flex shrink-0 items-center gap-2 border-b border-[#bbf0d3] bg-[#eafaf1] px-4 py-3 md:px-5">
+                    <DialogPrimitive.Close asChild>
+                      <button
+                        type="button"
+                        aria-label="Schließen"
+                        className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-md bg-white/70 text-emerald-600 hover:bg-white md:order-last md:bg-[#d6f3e3] md:hover:bg-[#c3ecd6]"
+                      >
+                        <ChevronDown className="h-[18px] w-[18px] md:hidden" />
+                        <X className="hidden h-4 w-4 md:block" />
+                      </button>
+                    </DialogPrimitive.Close>
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white shadow-[0_3px_10px_rgba(16,185,129,.45)]">
+                      <Check weight="bold" className="h-5 w-5" />
+                    </span>
+                    <div className="min-w-0">
+                      <div className="text-[15px] font-bold leading-tight tracking-tight text-emerald-900">
+                        Abgeschlossen
+                      </div>
+                      <CompleterLine card={card} byId={byId} />
+                    </div>
+                    <div className="ml-auto flex items-center gap-2">
+                      <CompleteButton card={card} onDone={applyCard} onCompleted={celebrate} />
+                      <CardActionsMenu
+                        card={card}
+                        boardSlug={boardSlug}
+                        onDeleted={onClose}
+                        onInvalidate={invalidate}
+                      />
+                    </div>
+                  </div>
+                  <CompletionBanner card={card} byId={byId} />
+                </>
+              ) : (
+                /* Header — gesättigtes Kanalband (wie die Spaltenköpfe): solide
+                   Kanalfarbe, weiße Icons/Labels. Trägt Farbe + Identität. */
+                <div
+                  className="flex shrink-0 items-center gap-2 px-4 py-3 md:px-5 md:py-4"
+                  style={{ backgroundColor: bandBg }}
+                >
+                  {/* Mobil steht der Schließen-Caret links (Mock Card-Sheet),
+                      auf Desktop bleibt das X rechts außen (md:order-last). */}
+                  <DialogPrimitive.Close asChild>
+                    <button
+                      type="button"
+                      aria-label="Schließen"
+                      className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-md bg-white/15 text-white hover:bg-white/25 md:order-last"
+                    >
+                      <ChevronDown className="h-[18px] w-[18px] md:hidden" />
+                      <X className="hidden h-4 w-4 md:block" />
+                    </button>
+                  </DialogPrimitive.Close>
+                  {column && (
+                    <ChannelIcon name={column.name} className="h-[18px] w-[18px] text-white" />
+                  )}
+                  <span className="rounded-md bg-white/20 px-2 py-0.5 text-[12.5px] font-semibold text-white">
+                    {column?.name ?? 'Kanal'}
+                  </span>
+                  <div className="ml-auto flex items-center gap-2">
+                    <AssignButton card={card} members={members} byId={byId} onPatch={applyCard} />
+                    <CardMovePopover
+                      card={card}
+                      currentSlug={boardSlug}
+                      columns={columns}
+                      onMove={async (columnId) => {
+                        const updated = await moveCardApi(cardId, columnId);
+                        applyCard(updated);
+                      }}
+                    />
+                    <CompleteButton card={card} onDone={applyCard} onCompleted={celebrate} />
+                    <CardActionsMenu
+                      card={card}
+                      boardSlug={boardSlug}
+                      onDeleted={onClose}
+                      onInvalidate={invalidate}
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {/* Body */}
-              <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+              {/* Body — abgeschlossen: gedimmt + inaktiv (Design), „Wieder
+                  öffnen" im Kopf hebt das wieder auf. */}
+              <div
+                className={cn(
+                  'flex min-h-0 flex-1 flex-col transition-[opacity,filter] duration-300 md:flex-row',
+                  card.completed_at && 'pointer-events-none opacity-50 grayscale-[.25]',
+                )}
+              >
                 <div className="flex-1 overflow-y-auto p-6">
                   <MainColumn
                     key={card.id}
@@ -271,6 +338,7 @@ export function CardModal({
                   />
                 </div>
               </div>
+              {celebrating && <CelebrationOverlay />}
             </>
           )}
         </DialogPrimitive.Content>
@@ -279,28 +347,69 @@ export function CardModal({
   );
 }
 
-function CompleteButton({ card, onDone }: { card: CardDetail; onDone: (c: CardDetail) => void }) {
+function CompleteButton({
+  card,
+  onDone,
+  onCompleted,
+}: {
+  card: CardDetail;
+  onDone: (c: CardDetail) => void;
+  /** Feuert nur beim Übergang offen → abgeschlossen (Celebration). */
+  onCompleted: () => void;
+}) {
   const completed = card.completed_at !== null;
   const m = useMutation({
     mutationFn: () => patchCardApi(card.id, { completed: !completed }),
-    onSuccess: onDone,
+    onSuccess: (updated) => {
+      onDone(updated);
+      if (!completed) onCompleted();
+    },
     onError: (e: Error) => toast.error(e.message),
   });
+  if (completed) {
+    return (
+      <button
+        type="button"
+        onClick={() => m.mutate()}
+        disabled={m.isPending}
+        className="inline-flex h-9 items-center gap-1.5 rounded-md border border-emerald-500/40 bg-white px-3 text-[13px] font-semibold text-emerald-600 transition-colors hover:bg-emerald-50"
+      >
+        <RotateCcw className="h-4 w-4" />
+        <span className="max-md:hidden">Wieder öffnen</span>
+        <span className="md:hidden">Öffnen</span>
+      </button>
+    );
+  }
   return (
     <button
       type="button"
       onClick={() => m.mutate()}
       disabled={m.isPending}
-      className={cn(
-        'inline-flex h-9 items-center gap-1.5 rounded-md border px-3 text-[13px] font-medium transition-colors',
-        completed
-          ? 'border-transparent bg-emerald-50 text-emerald-700'
-          : 'border-input bg-card text-foreground hover:bg-muted',
-      )}
+      className="inline-flex h-9 items-center gap-1.5 rounded-md border border-input bg-card px-3 text-[13px] font-medium text-foreground transition-colors hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-600"
     >
       <CheckCircle2 className="h-4 w-4" />
-      {completed ? 'Abgeschlossen' : 'Abschließen'}
+      Abschließen
     </button>
+  );
+}
+
+/** „von {Avatar} {Name}" im Abgeschlossen-Kopf. Die abschließende Person kommt
+ *  aus dem Aktivitätslog (letzter 'completed'-Eintrag); Fallback: Zuständige*r,
+ *  dann Ersteller*in. */
+function CompleterLine({ card, byId }: { card: CardDetail; byId: Map<string, BoardMember> }) {
+  const completedEntry = [...card.activity]
+    .reverse()
+    .find((a) => a.verb === 'completed');
+  const completer =
+    byId.get(completedEntry?.actor_id ?? '') ??
+    byId.get(card.assignee_id ?? '') ??
+    byId.get(card.created_by);
+  if (!completer) return null;
+  return (
+    <div className="mt-0.5 flex items-center gap-1.5 text-xs text-emerald-600">
+      von <BoardAvatar member={completer} size={18} />
+      <span className="truncate font-semibold">{displayNameOf(completer)}</span>
+    </div>
   );
 }
 

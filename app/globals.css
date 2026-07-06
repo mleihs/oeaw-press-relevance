@@ -587,3 +587,30 @@
   50% { transform: translateY(-10px); }
 }
 .auth-float { animation: auth-float 5s ease-in-out infinite; }
+
+/* ===== Board-Abschluss-Celebration (app/board/_components/celebration.tsx)
+   Design: docs/design/claude-design/Board-Celebration.dc.html. Der globale
+   prefers-reduced-motion-Reset (oben) neutralisiert alle Animationen. */
+@keyframes bc-badge {
+  0% { transform: scale(0) rotate(-25deg); opacity: 0; }
+  55% { transform: scale(1.18) rotate(4deg); opacity: 1; }
+  75% { transform: scale(.94) rotate(0deg); }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+@keyframes bc-ring {
+  0% { transform: scale(.35); opacity: .65; }
+  100% { transform: scale(2.9); opacity: 0; }
+}
+@keyframes bc-glow {
+  0% { transform: scale(.4); opacity: 0; }
+  30% { opacity: .9; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+@keyframes bc-draw {
+  from { stroke-dashoffset: 42; }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes bc-banner {
+  from { transform: translateY(-12px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
