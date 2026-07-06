@@ -430,7 +430,7 @@
     </p>
     <div class="chips">
       <span class="chip"><b>Fr–Mo</b> · 3.–6. Juli 2026</span>
-      <span class="chip"><b>60+</b> Commits</span>
+      <span class="chip"><b>85+</b> Commits</span>
       <span class="chip"><b>5</b> Arbeitsstränge</span>
       <span class="chip">Board · Design · Mobile · Infrastruktur</span>
     </div>
@@ -486,13 +486,15 @@
       </div>
       <div class="day">
         <div class="dh"><span class="wd">Montag</span><span class="dt">06. Jul</span></div>
-        <div class="sub">Unter der Haube: eigene Infrastruktur</div>
+        <div class="sub">Eigene Infrastruktur, neuer Name &amp; Board-Endspurt</div>
         <ul>
           <li><span class="b">›</span>Umzug der Datenbank auf ein selbst-gehostetes Supabase</li>
           <li><span class="b">›</span>Weg vom Cloud-Free-Tier (500-MB-Grenze, gedeckelter Egress)</li>
-          <li><span class="b">›</span>Konsolidiert mit dem eigenen Bild-Speicher auf demselben Server</li>
-          <li><span class="b">›</span>Social Media neu nach Design-Mock, inkl. neuem Aktualisierungs-Modell</li>
-          <li><span class="b">›</span>Profilbilder aus MeisterTask für das ganze Team übernommen</li>
+          <li><span class="b">›</span>Social Media neu nach Design-Mock; Profilbilder aus MeisterTask fürs ganze Team</li>
+          <li><span class="b">›</span>Die App heißt jetzt „ÖAW Presse" — mit neuem Anmelde-Screen</li>
+          <li><span class="b">›</span>Dashboard neu gebaut: Redaktions-Cockpit + Social-Trends-Modul</li>
+          <li><span class="b">›</span>Board auf MeisterTask-Niveau: Drag-and-drop, Emoji-Reaktionen, @-Erwähnungen; dazu Anhang-Vorschau</li>
+          <li><span class="b">›</span>Aufräumen unter der Haube: Code-Review-Durchgang, Typen &amp; DB-Schema pro Fachdomäne gegliedert</li>
         </ul>
       </div>
     </div>
@@ -708,6 +710,31 @@
           bleiben aber im Archiv-Modal auffindbar. Rang-Kollisionen mit archivierten Karten
           sind sauber gelöst.</p>
         <span class="tag">Karten-Archiv</span>
+      </div>
+      <div class="feature">
+        <div class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9h14M5 15h14"/><path d="M9 5l-4 4 4 4" opacity=".0"/><circle cx="8" cy="9" r=".5"/><circle cx="8" cy="15" r=".5"/><path d="M12 3v3M12 18v3"/></svg></div>
+        <h3>Karten frei anordnen</h3>
+        <p>Karten lassen sich per Drag-and-drop innerhalb eines Kanals umsortieren und
+          zwischen Kanälen verschieben — die Reihenfolge bleibt für alle im Team
+          gespeichert. Neu am Montag.</p>
+        <span class="tag">Drag-and-drop</span>
+      </div>
+      <div class="feature">
+        <div class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 14s1.2 1.8 3.5 1.8 3.5-1.8 3.5-1.8M9 9.5h.01M15 9.5h.01"/></svg></div>
+        <h3>Gleichauf mit MeisterTask</h3>
+        <p>Emoji-Reaktionen mit Picker, @-Erwähnungen in Kommentaren (machen automatisch
+          zum Beobachter), Kalender-Auswahl fürs Fälligkeitsdatum, die alte
+          MeisterTask-Historie an den importierten Karten — dazu eine Vorschau für PDF-
+          und Word-Anhänge direkt an der Karte, die MeisterTask so nicht bietet.</p>
+        <span class="tag">MT-Parität · Montag</span>
+      </div>
+      <div class="feature">
+        <div class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L19 8l-3.5 3.4.8 4.9L12 14l-4.3 2.3.8-4.9L5 8l5.1-.4z"/></svg></div>
+        <h3>Kleiner Feiermoment</h3>
+        <p>Wird die letzte Checklisten-Aufgabe erledigt, feiert die Karte kurz mit — und
+          ein prominenter Zuweisen-Button im Karten-Modal macht die Übergabe an
+          Kolleg:innen zum Ein-Klick-Schritt.</p>
+        <span class="tag">Abschluss-Celebration</span>
       </div>
     </div>
   </div>
@@ -1160,9 +1187,12 @@
     <div class="section-head reveal">
       <div class="eyebrow"><span class="dot"></span>06 · Dashboard</div>
       <h2>Der Morgenblick: was heute zählt.</h2>
-      <p>Das Dashboard wurde umgebaut: eine Redaktionsboard-Kachel mit den fälligen Karten
-        steht jetzt oben, darunter Kennzahlen und die Verteilung der Story-Scores — der
-        Einstieg in den Redaktionstag auf einer Fläche.</p>
+      <p>Das Dashboard wurde am Montag komplett neu gebaut: eine Redaktionsboard-Kachel
+        mit den fälligen Karten steht jetzt oben, darunter Kennzahlen, die Verteilung der
+        Story-Scores — und neu ein <b>Social-Trends-Modul</b>, das die Bewegung der
+        ÖAW-Kanäle seit dem letzten Lagebild direkt auf die Startfläche holt. Der
+        Einstieg in den Redaktionstag auf einer Fläche, jetzt durchgängig in der neuen
+        Designsprache (die erklärenden Info-Punkte an den Kennzahlen sind geblieben).</p>
     </div>
 
     <div class="ba screens reveal">
@@ -1504,6 +1534,34 @@
           Backslash-Trick) wurde noch am Freitag geschlossen — bevor irgendetwas davon
           in Betrieb ging.</p>
         <span class="tag">Härtung</span>
+      </div>
+      <div class="feature">
+        <div class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4v16M10 4v10M16 4v14M22 4v8"/></svg></div>
+        <h3>„ÖAW Presse" — neuer Name, neuer Empfang</h3>
+        <p>Die App heißt jetzt schlicht <b>ÖAW Presse</b>. Passwort-Gate und Anmeldung
+          wurden zu einem Screen in der neuen Designsprache vereinheitlicht — bewusst
+          immer hell, mit direktem Draht zur Administration statt Self-Service-Reset.</p>
+        <span class="tag">Neu am Montag</span>
+      </div>
+      <div class="feature">
+        <div class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M3.5 20c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><path d="M16 8h5M18.5 5.5v5"/></svg></div>
+        <h3>Support-Blick für Admins</h3>
+        <p>Administrator:innen können sich testweise als andere Nutzer:innen anmelden,
+          um deren Sicht zu prüfen — mit sauberem Rückweg zur eigenen Identität und
+          nachvollziehbarer Herkunft.</p>
+        <span class="tag">Nutzer-Switcher</span>
+      </div>
+    </div>
+
+    <div class="callout reveal" style="margin-top:34px;">
+      <div class="ci"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4 9 20M6 8l-4 4 4 4M18 8l4 4-4 4"/></svg></div>
+      <div>
+        <h3>Aufgeräumt unter der Haube</h3>
+        <p>Zum Abschluss des Wochenendes lief ein Code-Review-Durchgang über den gesamten
+          Stand: Klartext-Zugangsdaten wurden aus den internen Notizen entfernt, die
+          zentralen Typ- und Datenbank-Definitionen pro Fachdomäne gegliedert und eine
+          Reihe von Architektur-Quick-Wins umgesetzt — damit das Tempo der letzten Tage
+          nicht auf Kosten der Wartbarkeit geht.</p>
       </div>
     </div>
 
