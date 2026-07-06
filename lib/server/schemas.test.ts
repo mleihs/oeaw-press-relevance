@@ -1,12 +1,18 @@
 import { describe, it, expect } from 'vitest';
 import { idParamSchema } from './schemas';
 
-describe('idParamSchema (drizzle-zod, derived from publications.id)', () => {
+describe('idParamSchema (Postgres-uuid-Semantik: 8-4-4-4-12 hex)', () => {
   it('accepts a real gen_random_uuid() v4 id', () => {
-    // shape every id the app ever issues (RFC-4122 v4, variant 8/9/a/b)
     expect(
       idParamSchema.safeParse({
         id: '3f2504e0-4f89-41d3-9a0c-0305e82c3301',
+      }).success,
+    ).toBe(true);
+  });
+  it('accepts non-RFC hex uuids (MT-Import stableUuid, gültige pg-uuids)', () => {
+    expect(
+      idParamSchema.safeParse({
+        id: 'dca78c17-866a-ab87-f3a7-8b6537be2aa6',
       }).success,
     ).toBe(true);
   });

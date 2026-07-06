@@ -40,12 +40,17 @@ export const ALLOWED_ATTACHMENT_TYPES = new Set<string>([
 ]);
 
 /** Inhaltstypen, die die Download-Route inline ausliefern darf (alles andere
- *  erzwingt Content-Disposition: attachment). Nur unkritische Rasterbilder. */
+ *  erzwingt Content-Disposition: attachment). Unkritische Rasterbilder plus
+ *  PDF: die Anhang-Vorschau (attachment-preview.tsx) rendert PDFs im
+ *  same-origin <iframe> über den nativen Browser-Viewer — der ist gesandboxt
+ *  (kein DOM-/Cookie-Zugriff für eingebettetes PDF-Skripting), und `nosniff`
+ *  bleibt gesetzt. */
 export const INLINE_ATTACHMENT_TYPES = new Set<string>([
   'image/png',
   'image/jpeg',
   'image/gif',
   'image/webp',
+  'application/pdf',
 ]);
 
 /** Endung -> Inhaltstyp (Teilmenge von ALLOWED_ATTACHMENT_TYPES). Fallback,

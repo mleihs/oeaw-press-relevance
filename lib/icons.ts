@@ -150,6 +150,7 @@ export {
   Shield as Shield,
   ShieldCheck as ShieldCheck,
   SlidersHorizontal as SlidersHorizontal,
+  Smiley as Smile,
   Sparkle as Sparkles,
   Timer as Timer,
   Square as Square,

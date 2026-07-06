@@ -1,9 +1,4 @@
 import { z } from 'zod';
-import { createSelectSchema } from 'drizzle-zod';
-// Import the table definition directly (not the @/lib/server/db barrel)
-// so this module pulls only drizzle-orm/pg-core, never the postgres()
-// client — keeps it connection-free and unit-testable.
-import { publications } from '@/lib/server/db/schema';
 
 /**
  * Server-only input schemas derived from the Drizzle table layer
@@ -23,17 +18,19 @@ import { publications } from '@/lib/server/db/schema';
  */
 
 /**
- * `[id]` path-param UUID, derived from the publications PK column so it
- * stays in sync with the DB type. drizzle-zod maps pg `uuid()` to zod v4's
- * native `z.uuid()` (RFC-4122 variant-checked) — stricter than the prior
- * hand-rolled `/^[0-9a-f]{8}-.../i` regex, but every id the app issues is
- * a `gen_random_uuid()` v4, so legitimate traffic is unaffected; only a
- * hand-crafted non-RFC hex string flips from a downstream 404 to a clean
- * 400. `persons.id` is the same pg `uuid()` type, so this one schema
- * covers every `[id]` route (publications + persons).
+ * `[id]` path-param UUID. Bewusst NICHT mehr drizzle-zods `z.uuid()`
+ * (RFC-4122 variant-checked): der MeisterTask-Import leitet Attachment-Ids
+ * deterministisch aus MT-Ids ab (stableUuid, import-meistertask-
+ * attachments.mjs) — gültige Postgres-uuids, aber ohne RFC-Versions-Bits.
+ * z.uuid() beantwortete deren Download/Vorschau mit 400 (2026-07-06).
+ * Validiert wird daher genau die Postgres-Semantik: 8-4-4-4-12 Hex.
+ * (`persons.id` ist derselbe pg-uuid-Typ, dieses eine Schema deckt alle
+ * `[id]`-Routen ab.)
  */
 export const idParamSchema = z.object({
-  id: createSelectSchema(publications).shape.id,
+  id: z
+    .string()
+    .regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, 'Invalid UUID'),
 });
 
 export type IdParam = z.infer<typeof idParamSchema>;

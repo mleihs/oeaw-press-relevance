@@ -19,17 +19,18 @@ import { Check, ChevronDown, Search, UserPlus, UserMinus } from '@/lib/icons';
 export function AssignButton({
   card,
   members,
-  byId,
   onPatch,
 }: {
   card: CardDetail;
   members: BoardMember[];
-  byId: Map<string, BoardMember>;
   onPatch: (c: CardDetail) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
-  const assignee = card.assignee_id ? byId.get(card.assignee_id) : undefined;
+  // Aus members ableitbar — kein byId-Prop nötig (Cleanup-Backlog 2026-07-06).
+  const assignee = card.assignee_id
+    ? members.find((m) => m.id === card.assignee_id)
+    : undefined;
 
   const patch = useMutation({
     mutationFn: (assigneeId: string | null) => patchCardApi(card.id, { assignee_id: assigneeId }),

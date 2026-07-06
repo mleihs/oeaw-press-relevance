@@ -19,8 +19,8 @@ import { EmptyState } from '@/components/empty-state';
 import { Button } from '@/components/ui/button';
 import { SearchX } from '@/lib/icons';
 import { socialAccent, SOCIAL_ACCENTS } from './social-accents';
+import { formatCompact } from '@/lib/shared/format-compact';
 
-const compact = new Intl.NumberFormat('de-AT', { notation: 'compact', maximumFractionDigits: 1 });
 
 /** Anzahl „Top-Post"-Flame-Badges (Mock `hot`): die interaktionsstärksten
  *  Posts des Fensters. */
@@ -187,7 +187,7 @@ export function SocialDashboard({
         const last = posts.map((p) => p.posted_at).filter(Boolean).sort().at(-1) ?? null;
         const meta = [
           `${posts.length} Posts`,
-          likes > 0 ? `${compact.format(likes)} Likes` : null,
+          likes > 0 ? `${formatCompact(likes)} Likes` : null,
           last ? `zuletzt vor ${formatDistanceToNow(new Date(last), { locale: de })}` : null,
         ].filter(Boolean).join(' · ');
         return {
