@@ -11,9 +11,9 @@ export const POST = withApiError(async (
 ) => {
   const user = await requireUser();
   const { id } = validateParams(await params, idParamSchema);
-  const { column_id } = await validateBody(req, cardMoveSchema);
+  const { column_id, before_id, after_id } = await validateBody(req, cardMoveSchema);
   try {
-    const card = await moveCard(user.id, id, column_id);
+    const card = await moveCard(user.id, id, column_id, before_id ?? null, after_id ?? null);
     return NextResponse.json({ card });
   } catch (err) {
     const res = boardErrorToResponse(err);

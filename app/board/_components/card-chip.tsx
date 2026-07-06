@@ -1,6 +1,6 @@
 'use client';
 
-import { useDraggable } from '@dnd-kit/core';
+import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { CheckCircle2, ListChecks, ListTree, MessageCircle, Paperclip } from '@/lib/icons';
 import { cn } from '@/lib/shared/utils';
@@ -45,7 +45,10 @@ export function CardChip({
   onOpen: () => void;
 }) {
   const cardLabels = card.label_ids.map((id) => labels.get(id)).filter((l): l is BoardLabel => !!l);
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+  // useSortable statt useDraggable: macht die Karte zugleich zum Drop-Ziel,
+  // damit Umsortieren innerhalb der Spalte (und positioniertes Einfügen
+  // spaltenübergreifend) funktioniert. SortableContext liefert board-column.
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: card.id,
   });
   const completed = card.completed_at !== null;
@@ -84,6 +87,7 @@ export function CardChip({
       }}
       style={{
         transform: CSS.Translate.toString(transform),
+        transition,
         // Board-Tiefe: Karte schwebt über der Mulde (Schatten/Rand/Radius via
         // .board-card + Erscheinungsbild-Tokens). Kein 3px-Streifen mehr — die
         // Kanalfarbe sitzt im Spaltenkopf; Identität an der Karte trägt der

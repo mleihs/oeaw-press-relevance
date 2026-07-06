@@ -6,8 +6,8 @@ import { rankBetween } from '@/lib/shared/rank';
 import { deleteObjects } from '@/lib/server/storage/s3';
 import type { CardChip, CardDetail } from '@/lib/shared/board';
 import type { CardCreatePayload, CardPatchPayload } from '@/lib/shared/board-schemas';
-import { CardNotFoundError, ColumnNotFoundError } from './errors';
-import { nextCardRank, withRankRetry } from './rank-util';
+import { BoardConflictError, CardNotFoundError, ColumnNotFoundError } from './errors';
+import { cardRankBetween, nextCardRank, withRankRetry } from './rank-util';
 import {
   activityRowToApi,
   cardChipFromRow,
@@ -269,16 +269,22 @@ export async function archiveCompletedInColumn(
   return ids.length;
 }
 
-/** Move = Kanal-/Board-Wechsel. Zielspalte impliziert Zielboard; Karte ans Ende
- *  der Zielspalte. Bei Rank-Kollision retry (§3.2). Same-column = no-op. */
+/** Move = Kanal-/Board-Wechsel ODER Umsortieren per Drag-and-drop. Zielspalte
+ *  impliziert Zielboard. Ohne Nachbarn (before/after) geht die Karte ans Ende
+ *  der Zielspalte (Move-Popover; same-column dann no-op). Mit Nachbarn wird
+ *  der Rank dazwischen gebildet (cardRankBetween) — auch innerhalb derselben
+ *  Spalte. Bei Rank-Kollision retry (§3.2); veraltete Nachbarn → 409. */
 export async function moveCard(
   userId: string,
   cardId: string,
   toColumnId: string,
+  beforeId: string | null = null,
+  afterId: string | null = null,
 ): Promise<CardDetail> {
   const [before] = await db.select().from(cards).where(eq(cards.id, cardId)).limit(1);
   if (!before) throw new CardNotFoundError();
-  if (before.columnId === toColumnId) return getCardDetail(cardId);
+  const positioned = beforeId !== null || afterId !== null;
+  if (before.columnId === toColumnId && !positioned) return getCardDetail(cardId);
 
   const [target] = await db
     .select({ boardId: boardColumns.boardId })
@@ -287,20 +293,33 @@ export async function moveCard(
     .limit(1);
   if (!target) throw new ColumnNotFoundError();
 
-  await withRankRetry(async () => {
-    const rank = await nextCardRank(toColumnId);
-    await db
-      .update(cards)
-      .set({ columnId: toColumnId, boardId: target.boardId, rank })
-      .where(eq(cards.id, cardId));
-  });
+  try {
+    await withRankRetry(async () => {
+      const rank = positioned
+        ? await cardRankBetween(toColumnId, beforeId, afterId)
+        : await nextCardRank(toColumnId);
+      await db
+        .update(cards)
+        .set({ columnId: toColumnId, boardId: target.boardId, rank })
+        .where(eq(cards.id, cardId));
+    });
+  } catch (err) {
+    // RangeError aus rankBetween: die Nachbar-IDs sind veraltet (parallele
+    // Umsortierung) — Konflikt statt 500, der Client lädt das Board neu.
+    if (err instanceof RangeError) throw new BoardConflictError();
+    throw err;
+  }
 
-  await writeActivity(cardId, userId, 'moved', {
-    from_column_id: before.columnId,
-    to_column_id: toColumnId,
-    from_board_id: before.boardId,
-    to_board_id: target.boardId,
-  });
+  // Reines Umsortieren innerhalb der Spalte ist kein 'moved'-Ereignis —
+  // das Aktivitätslog bliebe sonst voller Rausch-Einträge.
+  if (before.columnId !== toColumnId) {
+    await writeActivity(cardId, userId, 'moved', {
+      from_column_id: before.columnId,
+      to_column_id: toColumnId,
+      from_board_id: before.boardId,
+      to_board_id: target.boardId,
+    });
+  }
 
   return getCardDetail(cardId);
 }

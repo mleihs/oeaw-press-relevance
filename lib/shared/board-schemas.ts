@@ -139,6 +139,11 @@ export type CardPatchPayload = z.infer<typeof cardPatchSchema>;
 // Move = Kanal-/Board-Wechsel: die Zielspalte impliziert das Zielboard.
 export const cardMoveSchema = z.object({
   column_id: uuid,
+  // Reorder per Drag-and-drop: zwischen diese beiden Nachbarn der Zielspalte
+  // setzen (Client liefert die IDs aus dem Drop). null/absent = offenes Ende;
+  // beide absent = ans Spaltenende (bisheriges Verhalten des Move-Popovers).
+  before_id: uuid.nullish(),
+  after_id: uuid.nullish(),
 });
 export type CardMovePayload = z.infer<typeof cardMoveSchema>;
 

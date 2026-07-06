@@ -75,6 +75,28 @@ export async function columnRankBetween(
   return rankBetween(prev, next);
 }
 
+/** Karten-Pendant zu columnRankBetween: Rank zwischen zwei Nachbar-Karten der
+ *  Zielspalte (null = offenes Ende). Wirft RangeError bei veralteten Nachbarn
+ *  (prev >= next) — der Aufrufer übersetzt das in einen 409. */
+export async function cardRankBetween(
+  columnId: string,
+  beforeId: string | null | undefined,
+  afterId: string | null | undefined,
+): Promise<string> {
+  const prev = beforeId ? await cardRankOf(columnId, beforeId) : null;
+  const next = afterId ? await cardRankOf(columnId, afterId) : null;
+  return rankBetween(prev, next);
+}
+
+async function cardRankOf(columnId: string, id: string): Promise<string | null> {
+  const [row] = await db
+    .select({ rank: cards.rank })
+    .from(cards)
+    .where(and(eq(cards.columnId, columnId), eq(cards.id, id)))
+    .limit(1);
+  return row?.rank ?? null;
+}
+
 async function columnRankOf(boardId: string, id: string): Promise<string | null> {
   const [row] = await db
     .select({ rank: boardColumns.rank })

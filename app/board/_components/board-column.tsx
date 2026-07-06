@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { Plus, MoreHorizontal, Pencil, Trash2, ArrowLeft, ArrowRight, ArrowUpDown, CalendarDays, List, Clock, EyeOff, Archive } from '@/lib/icons';
 import { cn } from '@/lib/shared/utils';
 import type { BoardColumn as BoardColumnT, BoardLabel, BoardMember, CardChip as CardChipT } from '@/lib/shared/board';
@@ -222,16 +223,18 @@ export function BoardColumn({
           outlineOffset: isOver ? -2 : undefined,
         }}
       >
-        {cards.map((card) => (
-          <CardChip
-            key={card.id}
-            card={card}
-            accent={column.color}
-            members={members}
-            labels={labels}
-            onOpen={() => onOpenCard(card.id)}
-          />
-        ))}
+        <SortableContext items={cards.map((c) => c.id)} strategy={verticalListSortingStrategy}>
+          {cards.map((card) => (
+            <CardChip
+              key={card.id}
+              card={card}
+              accent={column.color}
+              members={members}
+              labels={labels}
+              onOpen={() => onOpenCard(card.id)}
+            />
+          ))}
+        </SortableContext>
         {cards.length === 0 && !isDragging && (
           <div className="flex h-20 items-center justify-center rounded-[10px] border border-dashed border-border text-xs text-muted-foreground">
             Keine Karten

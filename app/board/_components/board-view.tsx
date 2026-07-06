@@ -5,6 +5,7 @@ import { useQueryState } from 'nuqs';
 import {
   DndContext,
   PointerSensor,
+  closestCorners,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -81,23 +82,42 @@ export function BoardView({
   );
 
   const move = useMutation({
-    mutationFn: ({ cardId, columnId }: { cardId: string; columnId: string }) =>
-      moveCardApi(cardId, columnId),
-    onMutate: async ({ cardId, columnId }) => {
+    mutationFn: ({
+      cardId,
+      columnId,
+      beforeId,
+      afterId,
+    }: {
+      cardId: string;
+      columnId: string;
+      /** Nachbarn an der Zielposition (Drag-and-drop); beide null = ans Ende. */
+      beforeId: string | null;
+      afterId: string | null;
+    }) => moveCardApi(cardId, columnId, { beforeId, afterId }),
+    onMutate: async ({ cardId, columnId, beforeId, afterId }) => {
       await qc.cancelQueries({ queryKey: QK.board(slug) });
       const prev = qc.getQueryData<BoardWithColumns>(QK.board(slug));
       qc.setQueryData<BoardWithColumns>(QK.board(slug), (old) => {
         if (!old) return old;
-        const targetRanks = old.cards
-          .filter((c) => c.column_id === columnId)
-          .map((c) => c.rank)
-          .sort(compareRank);
-        const last = targetRanks[targetRanks.length - 1] ?? null;
+        // Rank optimistisch zwischen die Nachbarn legen (wie der Server);
+        // ohne Nachbarn ans Spaltenende.
+        const rankOf = (id: string | null) =>
+          id ? (old.cards.find((c) => c.id === id)?.rank ?? null) : null;
+        let prevRank = rankOf(beforeId);
+        let nextRank = rankOf(afterId);
+        if (!beforeId && !afterId) {
+          const targetRanks = old.cards
+            .filter((c) => c.column_id === columnId && c.id !== cardId)
+            .map((c) => c.rank)
+            .sort(compareRank);
+          prevRank = targetRanks[targetRanks.length - 1] ?? null;
+          nextRank = null;
+        }
         let optimisticRank: string;
         try {
-          optimisticRank = rankBetween(last, null);
+          optimisticRank = rankBetween(prevRank, nextRank);
         } catch {
-          optimisticRank = last ?? 'm';
+          optimisticRank = prevRank ?? 'm';
         }
         return {
           ...old,
@@ -118,19 +138,6 @@ export function BoardView({
     },
   });
 
-  function onDragStart(e: DragStartEvent) {
-    setDraggingId(String(e.active.id));
-  }
-  function onDragEnd(e: DragEndEvent) {
-    setDraggingId(null);
-    const cardId = String(e.active.id);
-    const overId = e.over ? String(e.over.id) : null;
-    if (!overId) return;
-    const card = board.cards.find((c) => c.id === cardId);
-    if (!card || card.column_id === overId) return;
-    move.mutate({ cardId, columnId: overId });
-  }
-
   const cardsByColumn = useMemo(() => {
     const map = new Map<string, CardChip[]>();
     for (const col of board.columns) map.set(col.id, []);
@@ -142,6 +149,53 @@ export function BoardView({
     for (const arr of map.values()) arr.sort((a, b) => compareRank(a.rank, b.rank));
     return map;
   }, [board, filters, resolveFirstName]);
+
+  function onDragStart(e: DragStartEvent) {
+    setDraggingId(String(e.active.id));
+  }
+  function onDragEnd(e: DragEndEvent) {
+    setDraggingId(null);
+    const cardId = String(e.active.id);
+    const overId = e.over ? String(e.over.id) : null;
+    if (!overId || overId === cardId) return;
+    const card = board.cards.find((c) => c.id === cardId);
+    if (!card) return;
+
+    const overCard = board.cards.find((c) => c.id === overId);
+    if (!overCard) {
+      // Drop auf die Spaltenfläche (leerer Bereich): ans Ende der Spalte.
+      if (card.column_id === overId) {
+        const list = cardsByColumn.get(overId) ?? [];
+        if (list[list.length - 1]?.id === cardId) return; // schon letzte
+      }
+      move.mutate({ cardId, columnId: overId, beforeId: null, afterId: null });
+      return;
+    }
+
+    // Drop über einer Karte: Einfügeposition aus der SICHTBAREN Liste der
+    // Zielspalte ableiten (Filter aktiv → Ranks kommen trotzdem konsistent
+    // vom Server, der gegen die volle Spalte rechnet). Innerhalb derselben
+    // Spalte nach unten heißt „hinter die over-Karte", sonst „davor" —
+    // das entspricht der Sortable-Verschiebe-Semantik.
+    const columnId = overCard.column_id;
+    const list = (cardsByColumn.get(columnId) ?? []).filter((c) => c.id !== cardId);
+    const fullList = cardsByColumn.get(columnId) ?? [];
+    const oldIdx = fullList.findIndex((c) => c.id === cardId);
+    const overIdxFull = fullList.findIndex((c) => c.id === overId);
+    const movingDown = oldIdx !== -1 && oldIdx < overIdxFull;
+    const overIdx = list.findIndex((c) => c.id === overId);
+    const insertIdx = movingDown ? overIdx + 1 : overIdx;
+
+    const beforeId = list[insertIdx - 1]?.id ?? null;
+    const afterId = list[insertIdx]?.id ?? null;
+    // No-op: Karte landet direkt an ihrer alten Position.
+    if (card.column_id === columnId) {
+      const prevNeighbor = fullList[oldIdx - 1]?.id ?? null;
+      const nextNeighbor = fullList[oldIdx + 1]?.id ?? null;
+      if (beforeId === prevNeighbor && afterId === nextNeighbor) return;
+    }
+    move.mutate({ cardId, columnId, beforeId, afterId });
+  }
 
   // Per-User ausgeblendete Kanäle (Feature „Für mich ausblenden"): aus der
   // gerenderten Liste filtern; die Spalten-Daten bleiben aber im Board-Load
@@ -294,7 +348,13 @@ export function BoardView({
           nicht-SSR-stabilen Zähler → Server- und Client-HTML divergieren
           (Hydration-Mismatch an den CardChips). Ein fixes id macht die IDs
           deterministisch. */}
-      <DndContext id="board-dnd" sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
+      <DndContext
+        id="board-dnd"
+        sensors={sensors}
+        collisionDetection={closestCorners}
+        onDragStart={onDragStart}
+        onDragEnd={onDragEnd}
+      >
         <div className="mt-3 flex gap-3">
           <div
             data-board-appearance={appearance}

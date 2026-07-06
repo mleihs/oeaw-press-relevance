@@ -153,9 +153,15 @@ export const fetchArchivedCards = (boardId: string) =>
   send<{ cards: ArchivedCard[] }>(`/api/board/boards/${boardId}/archive`, 'GET').then(
     (r) => r.cards,
   );
-export const moveCardApi = (id: string, columnId: string) =>
+export const moveCardApi = (
+  id: string,
+  columnId: string,
+  neighbors?: { beforeId?: string | null; afterId?: string | null },
+) =>
   send<{ card: CardDetail }>(`/api/board/cards/${id}/move`, 'POST', {
     column_id: columnId,
+    before_id: neighbors?.beforeId ?? null,
+    after_id: neighbors?.afterId ?? null,
   }).then((r) => r.card);
 export const deleteCardApi = (id: string) =>
   send<{ ok: true }>(`/api/board/cards/${id}`, 'DELETE');
