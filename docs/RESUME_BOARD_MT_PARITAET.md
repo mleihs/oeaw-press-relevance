@@ -50,6 +50,29 @@ Popover mit `components/ui/calendar` (react-day-picker v9 ist installiert;
 NICHT auf v10 bumpen, siehe Memory audit-remediation-plan). Mit „Entfernen"-
 Aktion für due=null. Gleiches Muster ggf. auch im Quick-Create-Dialog.
 
+## OFFEN 3c: Dokument-Vorschau für Anhänge (User-Wunsch, Deep-Research angefragt)
+Angehängte Dokumente (Word, PDF, … — attachments-section.tsx, MinIO-Storage,
+erlaubt laut Upload-Hinweis: PDF, Office, Text, Bild, max 4 MB) sollen eine
+**Vorschau VOR dem Download** bekommen. User bat explizit um **Deep-Web-
+Research** zu fertigen Lösungen und danach eine „fancy/feine" Implementierung.
+Recherche-Fragen:
+- Fertige Viewer: PDF → pdf.js / react-pdf (@wojtekmaj) / pdf-embed;
+  Office (docx/xlsx/pptx) → Browser-nativ NICHT möglich, Optionen:
+  mammoth.js (docx→HTML, nur Text-Layout), SheetJS (xlsx→Tabelle),
+  LibreOffice-Konvertierung serverseitig (docx→PDF via gotenberg/
+  libreoffice-Container auf dem VPS? Coolify-Service denkbar) oder
+  Client-Viewer wie @cyntler/react-doc-viewer (bündelt mehrere Renderer).
+  Microsoft-Office-Online-Viewer/Google-Docs-Viewer scheiden vermutlich aus
+  (Datei müsste öffentlich erreichbar sein — MinIO ist intern, Datenschutz!).
+- Welche Formate lohnen sich wirklich? (Bestand prüfen: SELECT content_type,
+  count(*) FROM card_attachments GROUP BY 1.) Bilder haben schon Thumbnails?
+  (prüfen — attachments-section).
+- UX: Klick auf Anhang → Vorschau-Modal/Lightbox (Muster image-quickview.tsx
+  bei /social) mit Download-Button; Fallback „keine Vorschau verfügbar".
+- Bundle: Viewer NUR dynamisch laden (pdf.js ist groß); Proxy-Route für
+  MinIO-Streams existiert (Anhänge laufen schon über eine Download-Route —
+  prüfen ob Range-Requests für pdf.js nötig/da sind).
+
 ## OFFEN 4 (aus dem Bug-Hunt-Review, bewusst NICHT gefixt — Cleanup-Backlog)
 Nur Wartbarkeit, keine Bugs; bei Gelegenheit:
 - AuthScreen: doppelte Fehler/Shake-Logik (login vs. gate) → useShakeError-Hook;
