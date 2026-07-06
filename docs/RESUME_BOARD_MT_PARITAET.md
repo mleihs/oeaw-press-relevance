@@ -42,6 +42,14 @@ MT-Dump (created_by/created_at stehen in mt-*.json? prüfen); (b) MT-GraphQL
 `workflow` / events erneut ziehen (Browser-Session-Weg, siehe Memory
 `meistertask-import`). Erst klären, ob dem User (a) reicht.
 
+## OFFEN 3b: Fälligkeits-Feld als shadcn Date Picker (User-Wunsch)
+Das native `<input type="date">` (tt.mm.jjjj) in der Karten-Sidebar
+(card-modal.tsx §SidebarField „Fälligkeit") durch das shadcn-Date-Picker-Muster
+ersetzen: Button mit formatiertem Datum (de-AT, z. B. „14. Juli 2026") +
+Popover mit `components/ui/calendar` (react-day-picker v9 ist installiert;
+NICHT auf v10 bumpen, siehe Memory audit-remediation-plan). Mit „Entfernen"-
+Aktion für due=null. Gleiches Muster ggf. auch im Quick-Create-Dialog.
+
 ## OFFEN 4 (aus dem Bug-Hunt-Review, bewusst NICHT gefixt — Cleanup-Backlog)
 Nur Wartbarkeit, keine Bugs; bei Gelegenheit:
 - AuthScreen: doppelte Fehler/Shake-Logik (login vs. gate) → useShakeError-Hook;
