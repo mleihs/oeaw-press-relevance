@@ -60,6 +60,7 @@ import { BoardAvatar } from './board-avatar';
 import { displayNameOf, membersById } from '../_lib/people';
 import { CommentActivityStrand } from './comment-strand';
 import { AssignButton } from './assign-button';
+import { DueDatePicker } from './due-date-picker';
 import {
   CelebrationOverlay,
   CompletionBanner,
@@ -69,7 +70,6 @@ import {
 import { AttachmentsSection } from './attachments-section';
 import { ReferencesSection } from './references-section';
 import { CardMovePopover } from './card-move-popover';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import {
@@ -281,7 +281,7 @@ export function CardModal({
                     {column?.name ?? 'Kanal'}
                   </span>
                   <div className="ml-auto flex items-center gap-2">
-                    <AssignButton card={card} members={members} byId={byId} onPatch={applyCard} />
+                    <AssignButton card={card} members={members} onPatch={applyCard} />
                     <CardMovePopover
                       card={card}
                       currentSlug={boardSlug}
@@ -971,12 +971,7 @@ function ConvertDialog({
             <label className="mb-1 block font-mono text-[10.5px] uppercase tracking-wider text-muted-foreground">
               Fälligkeit (optional)
             </label>
-            <Input
-              type="date"
-              value={dueAt}
-              onChange={(e) => setDueAt(e.target.value)}
-              aria-label="Fälligkeitsdatum"
-            />
+            <DueDatePicker value={dueAt} onChange={setDueAt} />
           </div>
         </div>
         <DialogFooter>
@@ -1010,12 +1005,9 @@ function Sidebar({
   onInvalidate: () => void;
 }) {
   const activeMembers = members.filter((m) => !m.disabled_at);
-  // UTC-Datumsteil (das Datum wird als UTC-Mitternacht gespeichert). Lokaler
-  // Editier-Zustand + Commit erst onBlur — ein `type=date` feuert onChange
-  // während der Tastatureingabe mit leeren Zwischenwerten (Sidebar wird per
-  // key={card.id} remountet, daher initialisiert `due` frisch pro Karte).
+  // UTC-Datumsteil (das Datum wird als UTC-Mitternacht gespeichert). Der
+  // Picker committet direkt bei Auswahl — kein lokaler Editier-Zustand nötig.
   const dueValue = card.due_at ? new Date(card.due_at).toISOString().slice(0, 10) : '';
-  const [due, setDue] = useState(dueValue);
 
   const patchDue = useMutation({
     mutationFn: (v: string) => patchCardApi(card.id, { due_at: v || null }),
@@ -1043,15 +1035,11 @@ function Sidebar({
   return (
     <div className="space-y-5">
       <SidebarField label="Fälligkeit">
-        <Input
-          type="date"
-          value={due}
-          onChange={(e) => setDue(e.target.value)}
-          onBlur={() => {
-            if (due !== dueValue) patchDue.mutate(due);
+        <DueDatePicker
+          value={dueValue}
+          onChange={(v) => {
+            if (v !== dueValue) patchDue.mutate(v);
           }}
-          aria-label="Fälligkeitsdatum"
-          className="h-9"
         />
       </SidebarField>
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { renderCardMarkdown } from './markdown';
+import { extractMentionNames, renderCardMarkdown } from './markdown';
 
 describe('renderCardMarkdown', () => {
   it('renders basic markdown formatting', () => {
@@ -61,6 +61,49 @@ describe('renderCardMarkdown', () => {
     const html = renderCardMarkdown('[x](data:text/html,<script>alert(1)</script>)');
     expect(html).not.toContain('data:');
     expect(html).not.toContain('<script');
+  });
+
+  // --- @-Mentions ---------------------------------------------------------
+
+  it('renders @[Name] tokens as highlighted mention spans', () => {
+    const html = renderCardMarkdown('Hallo @[Phuong Nguyen], bitte übernehmen.');
+    expect(html).toContain('<span class="mention">@Phuong Nguyen</span>');
+    expect(html).not.toContain('@[');
+  });
+
+  it('escapes HTML in mention names', () => {
+    const html = renderCardMarkdown('@[<img src=x onerror=alert(1)>]');
+    expect(html).not.toContain('<img');
+    expect(html).toContain('&lt;img');
+  });
+
+  it('does not format markdown inside mention names', () => {
+    const html = renderCardMarkdown('@[A*B*C]');
+    expect(html).toContain('<span class="mention">@A*B*C</span>');
+    expect(html).not.toContain('<em>');
+  });
+
+  it('leaves normal markdown links untouched (@[x](url) is a link)', () => {
+    const html = renderCardMarkdown('@[klick](https://oeaw.ac.at)');
+    expect(html).not.toContain('class="mention"');
+    expect(html).toContain('href="https://oeaw.ac.at"');
+  });
+
+  it('user-typed mention spans are stripped (only the pipeline may emit them)', () => {
+    const html = renderCardMarkdown('<span class="mention">@Fake</span>');
+    expect(html).not.toContain('<span');
+    expect(html).toContain('@Fake');
+  });
+
+  it('typed placeholder chars cannot spoof mentions', () => {
+    const html = renderCardMarkdown('\uE0000\uE001 und @[Echt]');
+    expect(html).toContain('<span class="mention">@Echt</span>');
+    expect((html.match(/class="mention"/g) ?? []).length).toBe(1);
+  });
+
+  it('extractMentionNames dedupes and trims', () => {
+    expect(extractMentionNames('@[ Anna ] und @[Anna] und @[Ben]')).toEqual(['Anna', 'Ben']);
+    expect(extractMentionNames('kein mention @[x](https://a.b)')).toEqual([]);
   });
 
   it('strips <iframe>/<style> and other disallowed tags but keeps text', () => {

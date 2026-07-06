@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { Pencil, Trash2, Send } from '@/lib/icons';
 import { toast } from 'sonner';
@@ -20,6 +20,8 @@ import { relativeDay } from '../_lib/due';
 import { PROSE_CLASS } from '../_lib/prose';
 import { BoardAvatar } from './board-avatar';
 import { ActivityIcon, activityPhrase } from './activity-line';
+import { MentionTextarea } from './mention-textarea';
+import { EmojiPickerButton } from './emoji-picker-button';
 
 // Ein Strang aus Kommentaren + Aktivität (MeisterTask-Stil). comment_added-
 // Aktivitätszeilen werden ausgeblendet — dort steht der Kommentar selbst.
@@ -65,7 +67,7 @@ export function CommentActivityStrand({
     <div className="border-t pt-4">
       <div className="mb-3 text-[13.5px] font-semibold text-foreground">Kommentare & Aktivität</div>
 
-      <Composer cardId={card.id} onAdded={onInvalidate} />
+      <Composer cardId={card.id} members={members} onAdded={onInvalidate} />
 
       <ul className="mt-4 space-y-3">
         {entries.map((e) =>
@@ -103,8 +105,33 @@ export function CommentActivityStrand({
   );
 }
 
-function Composer({ cardId, onAdded }: { cardId: string; onAdded: () => void }) {
+function Composer({
+  cardId,
+  members,
+  onAdded,
+}: {
+  cardId: string;
+  members: Map<string, BoardMember>;
+  onAdded: () => void;
+}) {
   const [body, setBody] = useState('');
+  const memberList = useMemo(() => [...members.values()], [members]);
+  const taRef = useRef<HTMLTextAreaElement | null>(null);
+
+  // Emoji an der Cursor-Position einfügen (ersetzt eine etwaige Selektion);
+  // ohne Fokus-Historie ans Ende. Fokus + Caret danach wiederherstellen.
+  const insertAtCursor = (snippet: string) => {
+    const el = taRef.current;
+    const start = el?.selectionStart ?? body.length;
+    const end = el?.selectionEnd ?? body.length;
+    setBody(body.slice(0, start) + snippet + body.slice(end));
+    requestAnimationFrame(() => {
+      if (!el) return;
+      el.focus();
+      const pos = start + snippet.length;
+      el.setSelectionRange(pos, pos);
+    });
+  };
   const add = useMutation({
     mutationFn: (value: string) => addCommentApi(cardId, value),
     onSuccess: () => {
@@ -121,9 +148,11 @@ function Composer({ cardId, onAdded }: { cardId: string; onAdded: () => void }) 
 
   return (
     <div className="rounded-lg border bg-card p-2">
-      <Textarea
+      <MentionTextarea
         value={body}
-        onChange={(e) => setBody(e.target.value)}
+        onValueChange={setBody}
+        members={memberList}
+        textareaRef={taRef}
         onKeyDown={(e) => {
           // Enter sendet, Shift+Enter = Zeilenumbruch. IME-Komposition (z. B.
           // Umlaut-Deadkeys) nicht abfangen.
@@ -137,10 +166,11 @@ function Composer({ cardId, onAdded }: { cardId: string; onAdded: () => void }) 
             e.currentTarget.blur();
           }
         }}
-        placeholder="Kommentar schreiben… (Markdown, Enter sendet, ⇧↵ neue Zeile)"
+        placeholder="Kommentar schreiben… (Markdown, @ erwähnt, Enter sendet, ⇧↵ neue Zeile)"
         className="min-h-[64px] resize-y border-none bg-transparent p-1 text-[13.5px] leading-relaxed shadow-none focus-visible:ring-0"
       />
-      <div className="mt-1 flex justify-end">
+      <div className="mt-1 flex items-center justify-between">
+        <EmojiPickerButton onPick={insertAtCursor} />
         <Button size="sm" onClick={submit} disabled={!body.trim() || add.isPending}>
           <Send className="mr-1 h-3.5 w-3.5" /> Kommentar
         </Button>

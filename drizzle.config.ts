@@ -2,10 +2,11 @@ import { defineConfig } from 'drizzle-kit';
 
 // Drizzle is a query-builder, not a migration tool in this setup. Supabase
 // migrations under supabase/migrations/ remain the schema source of truth.
-// `npx drizzle-kit introspect` reads the live Postgres schema and writes
-// lib/server/db/schema.ts. See OSS_READINESS_PLAN.md §7.3 + §7.9.
+// The schema is hand-mirrored per domain in lib/server/db/schema/*.ts (do
+// NOT run db:introspect — it renames existing relations and would overwrite
+// the split). See OSS_READINESS_PLAN.md §7.3 + §7.9.
 export default defineConfig({
-  schema: './lib/server/db/schema.ts',
+  schema: './lib/server/db/schema/index.ts',
   out: './drizzle',
   dialect: 'postgresql',
   dbCredentials: {

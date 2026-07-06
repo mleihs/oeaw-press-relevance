@@ -15,6 +15,7 @@ import {
 import { cn } from '@/lib/shared/utils';
 import type { CardDetail, CardReference } from '@/lib/shared/board';
 import { formatVideoDuration } from '@/lib/shared/board';
+import { formatCompact } from '@/lib/shared/format-compact';
 import { ScoreBadge } from '@/components/score-bar';
 import { removeReferenceApi, refreshReferenceApi, objectThumbnailUrl } from '../_lib/api';
 import { AddReferencePopover } from './add-reference-popover';
@@ -28,7 +29,6 @@ function formatDate(iso: string | null): string {
   });
 }
 
-const VIEWS_FORMAT = new Intl.NumberFormat('de-AT', { notation: 'compact' });
 
 /** Smart-Objekte der Karte (BOARD_SMART_OBJECTS.md): Events/Publikationen als
  *  Live-Chips mit Score, YouTube-Videos als Thumbnail-Kacheln mit Dauer/Views.
@@ -152,7 +152,7 @@ function YoutubeRow({
   const s = reference.snapshot;
   const meta = [
     s.channel_title,
-    s.view_count != null ? `${VIEWS_FORMAT.format(s.view_count)} Aufrufe` : null,
+    s.view_count != null ? `${formatCompact(s.view_count)} Aufrufe` : null,
     s.published_at ? formatDate(s.published_at) : null,
   ].filter(Boolean);
   return (

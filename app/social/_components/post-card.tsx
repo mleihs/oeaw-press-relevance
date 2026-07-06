@@ -12,8 +12,8 @@ import type { SocialPost } from '@/lib/shared/types';
 import { cn } from '@/lib/shared/utils';
 import { PostImage } from './post-image';
 import { TagChip } from './social-filter-context';
+import { formatCompact } from '@/lib/shared/format-compact';
 
-const compact = new Intl.NumberFormat('de-AT', { notation: 'compact', maximumFractionDigits: 1 });
 
 export interface PostCardChannel {
   handle: string;
@@ -107,7 +107,7 @@ export function PostCard({
                 aria-label={`${post.like_count} Likes`}
               >
                 <Heart className="h-3 w-3 text-rose-500" weight="fill" aria-hidden />
-                <span aria-hidden className="font-mono">{compact.format(post.like_count)}</span>
+                <span aria-hidden className="font-mono">{formatCompact(post.like_count)}</span>
               </span>
             )}
             {post.comment_count != null && (
@@ -116,7 +116,7 @@ export function PostCard({
                 aria-label={`${post.comment_count} Kommentare`}
               >
                 <MessageCircle className="h-3 w-3 text-ink-soft" weight="fill" aria-hidden />
-                <span aria-hidden className="font-mono">{compact.format(post.comment_count)}</span>
+                <span aria-hidden className="font-mono">{formatCompact(post.comment_count)}</span>
               </span>
             )}
           </div>

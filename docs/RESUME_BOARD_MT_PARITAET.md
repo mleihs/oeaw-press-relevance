@@ -1,111 +1,104 @@
-# Resume: Board MeisterTask-Parität — offene Punkte nach dem 2026-07-06-Marathon
+# Resume: Board MeisterTask-Parität
 
-**Stand:** 2026-07-06 Abend. Diese Datei = Einstieg nach Context-Clear.
-Trigger-Satz: „arbeite docs/RESUME_BOARD_MT_PARITAET.md ab".
+**Stand: 2026-07-06 Nacht — ALLE Kernpunkte dieses Dokuments sind ERLEDIGT**
+(Session „arbeite docs/RESUME_BOARD_MT_PARITAET.md ab"). Diese Datei bleibt als
+Protokoll + Rest-Backlog.
 
-## Was heute alles ERLEDIGT + deployed wurde (nicht erneut anfassen)
-Commits `16eb4b8`…`9f62cc7` auf main (Vercel) + Merges auf `chore/coolify-dockerfile`
-(Coolify baut NUR diesen Branch — vor jedem Coolify-Deploy main hineinmergen!):
-Login-/Gate-Redesign (AuthScreen, immer hell), Umbenennung „ÖAW Presse",
-Board-Celebration + Zuweisen-Button, Dashboard-Redesign mit verdrahtetem
-Social-Trends-Modul, Karten-DnD-Sortierung (inkl. Konflikt-Semantik before/after),
-Bug-Hunt-Fixes (7312a66), Board volle Breite + Kanal-Scroll + Überfällig-Label +
-Team-Leiste nach Vorkommen (9f62cc7), item_added-Aktivität, Beobachter-Select-Fix.
-Details: Memory `board-celebration-dashboard-shipped` + git log.
+## ERLEDIGT in dieser Session (in-Browser verifiziert gegen :3005-Prod-Build)
 
-## OFFEN 1: Emoji-Picker für Kommentare (User-Wunsch, Deep-Research angefragt)
-MeisterTask hat ein Emoticon-Menü am Kommentarfeld (comment-strand.tsx).
-User will eine VORGEFERTIGTE, styl-bare Komponente; er bat explizit um
-**Deep-Web-Research** vor der Entscheidung. Kandidaten für die Recherche:
-- **frimousse** (Liveblocks, 2025): headless/composable Emoji-Picker für React,
-  shadcn-kompatibel, klein — vermutlich der beste Fit fürs Designsystem.
-- emoji-mart: Klassiker, mächtig, Styling via CSS-Vars (eigenes Shadow-DOM-Look&Feel).
-- emoji-picker-react: populär, Theme-Props, weniger frei stylbar.
-Kriterien: Bundle-Größe (Kommentarfeld ist im Board-Bundle → dynamic import!),
-Tailwind-/Token-Styling, deutsche Suche/Locale, Wartung. Danach: Button neben
-dem Kommentar-Submit (comment-strand.tsx), Insert an Cursor-Position.
+### 1. Emoji-Picker für Kommentare → **frimousse** (Deep-Research bestätigt)
+Research-Ergebnis: frimousse (Liveblocks) klar vorn — headless/unstyled (voll
+Token-stylebar), dependency-frei, virtualisiert, offizielle shadcn-Registry,
+Emoji-Daten zur Laufzeit (emojibase, nicht im Bundle), `locale="de"` (deutsche
+Suche verifiziert: „rakete" → 🚀). emoji-mart stale (04/2024, Shadow-DOM),
+emoji-picker-react 75 kB gzip + de-Suche erst seit v17 (01/2026).
+Implementiert: `emoji-picker-button.tsx` (Popover, next/dynamic) +
+`emoji-picker-panel.tsx` (frimousse, Designsystem-Token), Insert an
+Cursor-Position im Composer (comment-strand.tsx).
 
-## OFFEN 2: @-Mentions in Kommentaren (User-Wunsch)
-Wie MeisterTask: `@` im Kommentarfeld → Autocomplete über Board-Member
-(BoardAvatar + Name), Mention im gerenderten Kommentar hervorheben.
-Backend: Kommentar-Markdown-Pipeline (lib/server/board/markdown.ts) müsste
-Mentions parsen/sanitizen; optional mentioned-User als Beobachter hinzufügen
-(MT-Verhalten) oder späteres Notification-Konzept. Editor-seitig reicht v1:
-Popover-Autocomplete im Textarea (Trigger `@`, Filter wie assign-button.tsx).
+### 2. @-Mentions in Kommentaren
+Token `@[Anzeigename]` (id-los, lesbar im Textarea). Server: markdown.ts
+rendert `<span class="mention">` über Private-Use-Platzhalter NACH sanitize
+(nicht einschleusbar, 7 neue Tests); comments.ts fügt erwähnte aktive Member
+als Beobachter hinzu (MT-Verhalten, Namens-Match). Client:
+`mention-textarea.tsx` — `@`-Autocomplete-Panel (Filter wie assign-button,
+Pfeile/Enter/Tab/Escape, mousedown-Select). Styling: PROSE_CLASS
+`.mention`-Pill (brand-50).
 
-## OFFEN 3: MT-Aktivitätshistorie („Phuong erstellte die Aufgabe")
-Unser Log erfasst nur, was in UNSERER App passiert; `item_added` gibt es seit
-heute. Für importierte MT-Karten fehlt die Historie, weil der MT-Import keine
-Activity geschrieben hat und MTs eigener Verlauf nicht exportiert wurde.
-Optionen: (a) Import-Nachtrag: synthetische `created`-Activity je Karte aus dem
-MT-Dump (created_by/created_at stehen in mt-*.json? prüfen); (b) MT-GraphQL
-`workflow` / events erneut ziehen (Browser-Session-Weg, siehe Memory
-`meistertask-import`). Erst klären, ob dem User (a) reicht.
+### 3. MT-Aktivitätshistorie („X hat die Karte angelegt")
+`scripts/backfill-created-activity.mjs` (idempotent): (1) repariert
+cards.created_at aus dem MT-Dump (Import hatte die IMPORT-Zeit geschrieben;
+Dump hat echte Zeiten je Task via meistertask_task_id); (2) synthetisiert
+`created`-Activity aus cards.created_by/created_at (payload.backfilled).
+Lokal gelaufen: 292 Karten, Zeiten 2024–2026, echte Attribution
+(cards.created_by war korrekt importiert). **Beim Prod-Import mitlaufen
+lassen** (`DATABASE_URL=… node scripts/backfill-created-activity.mjs`).
+Hinweis: Task-Ersteller steht NICHT im MT-Export-JSON — die Attribution kommt
+aus cards.created_by; MTs voller Event-Verlauf (Moves etc.) wäre nur via
+GraphQL-Browser-Session nachziehbar (bewusst nicht gemacht).
 
-## OFFEN 3b: Fälligkeits-Feld als shadcn Date Picker (User-Wunsch)
-Das native `<input type="date">` (tt.mm.jjjj) in der Karten-Sidebar
-(card-modal.tsx §SidebarField „Fälligkeit") durch das shadcn-Date-Picker-Muster
-ersetzen: Button mit formatiertem Datum (de-AT, z. B. „14. Juli 2026") +
-Popover mit `components/ui/calendar` (react-day-picker v9 ist installiert;
-NICHT auf v10 bumpen, siehe Memory audit-remediation-plan). Mit „Entfernen"-
-Aktion für due=null. Gleiches Muster ggf. auch im Quick-Create-Dialog.
+### 4. Fälligkeit als shadcn Date-Picker
+`due-date-picker.tsx`: Button mit de-AT-Label („15. Juli 2026", Intl de-AT)
++ Popover-Calendar (react-day-picker v9 `deAT`-Locale, NICHT v10) + zwei
+„Entfernen"-Wege (X am Button, Fußzeile im Popover). Ersetzt beide
+`<input type="date">` (Sidebar „Fälligkeit" + ConvertDialog). Wire-Format
+unverändert 'YYYY-MM-DD'/''.
 
-## OFFEN 3c: Dokument-Vorschau für Anhänge (User-Wunsch, Deep-Research angefragt)
-Angehängte Dokumente (Word, PDF, … — attachments-section.tsx, MinIO-Storage,
-erlaubt laut Upload-Hinweis: PDF, Office, Text, Bild, max 4 MB) sollen eine
-**Vorschau VOR dem Download** bekommen. User bat explizit um **Deep-Web-
-Research** zu fertigen Lösungen und danach eine „fancy/feine" Implementierung.
-Recherche-Fragen:
-- Fertige Viewer: PDF → pdf.js / react-pdf (@wojtekmaj) / pdf-embed;
-  Office (docx/xlsx/pptx) → Browser-nativ NICHT möglich, Optionen:
-  mammoth.js (docx→HTML, nur Text-Layout), SheetJS (xlsx→Tabelle),
-  LibreOffice-Konvertierung serverseitig (docx→PDF via gotenberg/
-  libreoffice-Container auf dem VPS? Coolify-Service denkbar) oder
-  Client-Viewer wie @cyntler/react-doc-viewer (bündelt mehrere Renderer).
-  Microsoft-Office-Online-Viewer/Google-Docs-Viewer scheiden vermutlich aus
-  (Datei müsste öffentlich erreichbar sein — MinIO ist intern, Datenschutz!).
-- Welche Formate lohnen sich wirklich? (Bestand prüfen: SELECT content_type,
-  count(*) FROM card_attachments GROUP BY 1.) Bilder haben schon Thumbnails?
-  (prüfen — attachments-section).
-- UX: Klick auf Anhang → Vorschau-Modal/Lightbox (Muster image-quickview.tsx
-  bei /social) mit Download-Button; Fallback „keine Vorschau verfügbar".
-- Bundle: Viewer NUR dynamisch laden (pdf.js ist groß); Proxy-Route für
-  MinIO-Streams existiert (Anhänge laufen schon über eine Download-Route —
-  prüfen ob Range-Requests für pdf.js nötig/da sind).
+### 5. Dokument-Vorschau für Anhänge (Deep-Research bestätigt)
+Research: keine externen Viewer (Google/MS = Datenschutz-No-Go;
+react-doc-viewer nutzt MS-iframe + wackelige Wartung → raus). Architektur je
+Format in `attachment-preview.tsx` (Modal mit Download-Button):
+- Bild → `<img>`; PDF → same-origin `<iframe>` nativer Viewer (0 KB Bundle,
+  ≤ 4 MB, kein Range nötig; `application/pdf` neu in INLINE_ATTACHMENT_TYPES,
+  Begründung im Code); DOCX → mammoth.js dynamic import (semantische
+  Näherung) + eigener DOM-Sanitizer; text/* → `<pre>`; Rest (legacy .doc,
+  xlsx, pptx, zip) → Fallback mit Download.
+- Klick auf Bild-Kachel/Dateiname öffnet die Vorschau (attachments-section).
+- **Ausbau-Option:** pixeltreue Office-Vorschau via Gotenberg/LibreOffice-
+  Container (Coolify-Service; LibreOffice serialisiert Konversionen,
+  restartet sich selbst) — bewusst nicht v1.
+- **Nebenbei-Bugfix:** idParamSchema (lib/server/schemas.ts) validierte
+  RFC-4122 — MT-importierte Attachment-Ids (stableUuid, gültige pg-uuids ohne
+  Versions-Bits) bekamen 400; Download/Vorschau dieser Anhänge war NIE
+  erreichbar. Jetzt Postgres-Semantik (8-4-4-4-12 hex).
 
-## OFFEN 4 (aus dem Bug-Hunt-Review, bewusst NICHT gefixt — Cleanup-Backlog)
-Nur Wartbarkeit, keine Bugs; bei Gelegenheit:
-- AuthScreen: doppelte Fehler/Shake-Logik (login vs. gate) → useShakeError-Hook;
-  Hell-Palette als ~15 Hex-Literale statt Token-Scope (.auth-light mit CSS-Vars).
-- 4. Kompakt-Zahlenformatierer (formatK in dashboard-client) vs. Intl-compact in
-  post-card/social-dashboard/references-section → nach lib/shared extrahieren.
-- AvatarStack-Komponente extrahieren (card-chip Beobachter + celebration Banner).
-- cardRankBetween/columnRankBetween generisch zusammenführen (rank-util).
-- Social-Pool-Aufbau (Backfill via post_ids) dupliziert in social/page.tsx und
-  social/dashboard.ts → loadThemePool()-Helper.
-- assign-button: byId-Prop droppen (aus members ableitbar).
+### 6. Cleanup-Backlog (teilweise)
+- formatK + 3× Intl-compact → `lib/shared/format-compact.ts` (einheitlich
+  „1,5k"; post-card/social-dashboard/references-section zeigten vorher „Tsd.").
+- assign-button: byId-Prop gedroppt (aus members abgeleitet).
+- rank-util: columnRankBetween/cardRankBetween → gemeinsamer
+  neighborRankBetween-Kern (Staleness-Semantik parametrisiert, unverändert).
+
+## REST-Backlog (bewusst offen, nur Wartbarkeit)
+- AuthScreen: useShakeError-Hook + Hell-Palette als Token-Scope (.auth-light).
+- AvatarStack extrahieren (card-chip Beobachter + celebration Banner).
+- Social-Pool-Aufbau → loadThemePool()-Helper (social/page.tsx + dashboard.ts).
 - onDragEnd: Index-Buchhaltung auf dnd-kit `sortable`-Eventdaten umstellen.
-- Social-Dashboard: schmale Select statt voller Post-Rows (Cache mildert das).
-- AKZEPTIERTES RISIKO (dokumentieren, nicht fixen ohne User): /api/auth/login ist
-  gate-öffentlich (bewusst, Ein-Schritt-Login); Schutz = Rate-Limit 5/min/IP
-  (in-memory, pro Instanz). Bei Bedarf härter: Turnstile o. Ä.
+- Social-Dashboard: schmale Select statt voller Post-Rows.
+- AKZEPTIERTES RISIKO (dokumentiert, nicht fixen ohne User): /api/auth/login
+  gate-öffentlich; Schutz = Rate-Limit 5/min/IP (in-memory, pro Instanz).
 
-## OFFEN 5 (ältere Punkte aus früheren Sessions)
-- Board Canvas-Sync (Memory board-visual-depth), YOUTUBE_CHANNEL_ID-Env in
-  Vercel/Coolify, MT-Import nach Prod + Phase 5 MeisterTask-Ablösung
-  (docs/BOARD_PLAN.md), Board-Mitgliedschaften pro Board falls die
-  Team-Leisten-Trennung nach Vorkommen nicht reicht.
+## Ältere offene Punkte (unverändert)
+- Board Canvas-Sync (Memory board-visual-depth); YOUTUBE_CHANNEL_ID-Env in
+  Vercel/Coolify; MT-Import nach Prod + Phase 5 MT-Ablösung (BOARD_PLAN.md)
+  — **dabei backfill-created-activity.mjs mitlaufen lassen**;
+  Board-Mitgliedschaften pro Board, falls Team-Leiste nach Vorkommen nicht
+  reicht.
 
-## Arbeits-Gotchas (heute gelernt)
-- **Coolify baut `chore/coolify-dockerfile`**, nicht main. Tunnel: `ssh -fNL
-  8088:127.0.0.1:8000 metaspots` (stirbt bei pkill-Aufräumern gern mit!).
-- **Playwright-Verify:** Login über die API (`ctx.request.post /api/auth/login`)
-  + `addInitScript(sessionStorage storyscout-auth-marker=1)`, NICHT den
-  Klick-Flow — seit der persönliche Login voll navigiert, unterbricht ein
-  goto() die laufende Navigation und lässt Next-Streams „geparkt" zurück
-  (Symptom: Inhalt als body-Kind statt in <main>, Screenshots hängen).
-- Lokaler Test-User authtest.tmp@oeaw.ac.at / tmp-test-9911 (public.users
-  disabled_at gesetzt — vor Tests auf NULL, danach wieder disablen);
-  card_activity ist append-only → User nicht löschbar.
-- Für in-Browser-Tests eigenen `npm start`-Build auf :3005 fahren; der
-  User-Dev-Server auf :3000 gehört dem User.
+## Arbeits-Gotchas (gültig geblieben + neu)
+- **Coolify baut `chore/coolify-dockerfile`**, nicht main — vor jedem
+  Coolify-Deploy main hineinmergen. Tunnel: `ssh -fNL 8088:127.0.0.1:8000
+  metaspots` (stirbt bei pkill-Aufräumern gern mit!).
+- **Playwright-Verify:** Login über die API (`ctx.request.post
+  /api/auth/login` — braucht `origin`/`referer`-Header!) +
+  `addInitScript(sessionStorage storyscout-auth-marker=1)`, NICHT den
+  Klick-Flow (goto() unterbricht die Login-Navigation, Next-Streams hängen).
+- Lokaler Test-User authtest.tmp@oeaw.ac.at / tmp-test-9911 (disabled_at vor
+  Tests auf NULL, danach wieder setzen); card_activity ist append-only →
+  Verify-Spuren nur mit `ALTER TABLE … DISABLE TRIGGER
+  trg_card_activity_no_delete` (lokal!) löschbar.
+- Für in-Browser-Tests eigenen `npm start`-Build auf :3005; :3000 gehört dem
+  User. Headless-Chromium rendert PDF-iframes NICHT (kein Viewer) — Header
+  prüfen statt Screenshot.
+- Emoji-Daten kommen zur Laufzeit von emojibase (jsdelivr-CDN) — nur
+  Metadaten, keine Nutzerdaten; offline zeigt das Panel „Lädt…".

@@ -92,7 +92,7 @@ Sobald das Design da ist: wie /social extrahieren + umsetzen.
 ## Live-Verify (gate→login), pro Deployment
 ```
 BASE=https://oeaw-press-tool.metaspots.net   # oder https://oeaw-press-relevance.vercel.app
-curl -sS -c /tmp/cj -X POST "$BASE/api/auth/gate"  -H 'Content-Type: application/json' -H "Origin: $BASE" -H "Referer: $BASE/" --data '{"password":"movefastandbreakthings"}'
-curl -sS -b /tmp/cj -X POST "$BASE/api/auth/login" -H 'Content-Type: application/json' -H "Origin: $BASE" -H "Referer: $BASE/" --data '{"email":"matthias.leihs@oeaw.ac.at","password":"TESTIT12"}'
+curl -sS -c /tmp/cj -X POST "$BASE/api/auth/gate"  -H 'Content-Type: application/json' -H "Origin: $BASE" -H "Referer: $BASE/" --data '{"password":"<redacted>"}'
+curl -sS -b /tmp/cj -X POST "$BASE/api/auth/login" -H 'Content-Type: application/json' -H "Origin: $BASE" -H "Referer: $BASE/" --data '{"email":"matthias.leihs@oeaw.ac.at","password":"<redacted>"}'
 ```
-(matthias.leihs@oeaw.ac.at / TESTIT12 — das gmail-Konto existiert nicht mehr.)
+(matthias.leihs@oeaw.ac.at / &lt;redacted&gt; — das gmail-Konto existiert nicht mehr.)

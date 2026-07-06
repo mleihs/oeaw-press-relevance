@@ -64,36 +64,48 @@ export async function nextLabelRank(boardId: string): Promise<string> {
   return rankBetween(row?.rank ?? null, null);
 }
 
+/** Gemeinsamer Kern für Rank-zwischen-Nachbarn (Cleanup-Backlog 2026-07-06):
+ *  `rankOf` löst eine Nachbar-Id im Geltungsbereich auf (null = nicht/nicht
+ *  mehr dort). `requireNeighbors` steuert die Staleness-Semantik: true wirft
+ *  RangeError, wenn ein ANGEGEBENER Nachbar fehlt — sonst zählt er still als
+ *  offenes Ende. */
+async function neighborRankBetween(
+  rankOf: (id: string) => Promise<string | null>,
+  beforeId: string | null | undefined,
+  afterId: string | null | undefined,
+  requireNeighbors: boolean,
+): Promise<string> {
+  const [prev, next] = await Promise.all([
+    beforeId ? rankOf(beforeId) : Promise.resolve(null),
+    afterId ? rankOf(afterId) : Promise.resolve(null),
+  ]);
+  if (requireNeighbors && ((beforeId && prev === null) || (afterId && next === null))) {
+    throw new RangeError('Nachbar nicht mehr im Geltungsbereich');
+  }
+  return rankBetween(prev, next);
+}
+
 /** Rank zwischen zwei Spalten-Nachbarn (Reorder in der Verwaltung). */
 export async function columnRankBetween(
   boardId: string,
   beforeId: string | null | undefined,
   afterId: string | null | undefined,
 ): Promise<string> {
-  const prev = beforeId ? await columnRankOf(boardId, beforeId) : null;
-  const next = afterId ? await columnRankOf(boardId, afterId) : null;
-  return rankBetween(prev, next);
+  return neighborRankBetween((id) => columnRankOf(boardId, id), beforeId, afterId, false);
 }
 
-/** Karten-Pendant zu columnRankBetween: Rank zwischen zwei Nachbar-Karten der
- *  Zielspalte (null = offenes Ende). Wirft RangeError bei veralteten Nachbarn:
- *  sowohl wenn prev >= next als auch wenn ein ANGEGEBENER Nachbar nicht (mehr)
- *  in der Zielspalte steht (parallel verschoben/archiviert) — sonst landete
- *  die Karte still am offenen Ende statt beim 409, den der Aufrufer daraus
- *  macht (Client lädt das Board neu). */
+/** Karten-Pendant: Rank zwischen zwei Nachbar-Karten der Zielspalte (null =
+ *  offenes Ende). Wirft RangeError bei veralteten Nachbarn: sowohl wenn
+ *  prev >= next als auch wenn ein ANGEGEBENER Nachbar nicht (mehr) in der
+ *  Zielspalte steht (parallel verschoben/archiviert) — sonst landete die Karte
+ *  still am offenen Ende statt beim 409, den der Aufrufer daraus macht
+ *  (Client lädt das Board neu). */
 export async function cardRankBetween(
   columnId: string,
   beforeId: string | null | undefined,
   afterId: string | null | undefined,
 ): Promise<string> {
-  const [prev, next] = await Promise.all([
-    beforeId ? cardRankOf(columnId, beforeId) : Promise.resolve(null),
-    afterId ? cardRankOf(columnId, afterId) : Promise.resolve(null),
-  ]);
-  if ((beforeId && prev === null) || (afterId && next === null)) {
-    throw new RangeError('Nachbar-Karte nicht mehr in der Zielspalte');
-  }
-  return rankBetween(prev, next);
+  return neighborRankBetween((id) => cardRankOf(columnId, id), beforeId, afterId, true);
 }
 
 async function cardRankOf(columnId: string, id: string): Promise<string | null> {

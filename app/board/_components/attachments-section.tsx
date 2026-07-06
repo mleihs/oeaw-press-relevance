@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import {
   Paperclip,
@@ -12,11 +12,12 @@ import {
   Loader2,
 } from '@/lib/icons';
 import { toast } from 'sonner';
-import type { CardDetail } from '@/lib/shared/board';
+import type { CardAttachment, CardDetail } from '@/lib/shared/board';
 import { MAX_ATTACHMENT_BYTES } from '@/lib/shared/board';
 import { useCurrentUser } from '@/lib/client/hooks/use-current-user';
 import { Button } from '@/components/ui/button';
 import { uploadAttachmentApi, deleteAttachmentApi, attachmentUrl } from '../_lib/api';
+import { AttachmentPreviewModal, hasPreview } from './attachment-preview';
 
 const MAX_MB = (MAX_ATTACHMENT_BYTES / (1024 * 1024)).toFixed(0);
 
@@ -44,6 +45,7 @@ export function AttachmentsSection({
 }) {
   const { user, isAdmin } = useCurrentUser();
   const inputRef = useRef<HTMLInputElement>(null);
+  const [preview, setPreview] = useState<CardAttachment | null>(null);
 
   const upload = useMutation({
     mutationFn: (file: File) => uploadAttachmentApi(card.id, file),
@@ -88,12 +90,12 @@ export function AttachmentsSection({
         <div className="mb-2 flex flex-wrap gap-2">
           {images.map((a) => (
             <div key={a.id} className="group/thumb relative">
-              <a
-                href={attachmentUrl(a.id)}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                type="button"
+                onClick={() => setPreview(a)}
                 className="block h-[62px] w-[92px] overflow-hidden rounded-lg border shadow-sm transition-shadow hover:shadow-md"
                 title={a.filename}
+                aria-label={`„${a.filename}" ansehen`}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -102,7 +104,7 @@ export function AttachmentsSection({
                   loading="lazy"
                   className="h-full w-full object-cover"
                 />
-              </a>
+              </button>
               {canRemove(a.uploaded_by) && (
                 <button
                   type="button"
@@ -130,14 +132,27 @@ export function AttachmentsSection({
                 style={{ backgroundColor: 'var(--board-chip-bg)' }}
               >
                 <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <a
-                  href={attachmentUrl(a.id)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="min-w-0 flex-1 truncate text-[13px] text-foreground hover:text-brand hover:underline"
-                >
-                  {a.filename}
-                </a>
+                {/* Klick = Vorschau (wenn möglich), Download bleibt eigener
+                    Button rechts. Ohne Vorschau bleibt der Name ein
+                    Download-Link wie bisher. */}
+                {hasPreview(a) ? (
+                  <button
+                    type="button"
+                    onClick={() => setPreview(a)}
+                    className="min-w-0 flex-1 truncate text-left text-[13px] text-foreground hover:text-brand hover:underline"
+                  >
+                    {a.filename}
+                  </button>
+                ) : (
+                  <a
+                    href={attachmentUrl(a.id)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="min-w-0 flex-1 truncate text-[13px] text-foreground hover:text-brand hover:underline"
+                  >
+                    {a.filename}
+                  </a>
+                )}
                 <span className="shrink-0 font-mono text-[11px] text-muted-foreground">
                   {formatBytes(a.size_bytes)}
                 </span>
@@ -192,6 +207,10 @@ export function AttachmentsSection({
           max. {MAX_MB} MB · PDF, Office, Text, Bild
         </span>
       </div>
+
+      {preview && (
+        <AttachmentPreviewModal attachment={preview} onClose={() => setPreview(null)} />
+      )}
     </div>
   );
 }
