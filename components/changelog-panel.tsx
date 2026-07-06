@@ -162,12 +162,12 @@ export function ChangelogPanel({ className }: Props) {
             'group relative inline-flex items-center gap-2 rounded-full',
             'border border-border/80 bg-card px-4 py-2',
             'text-sm font-medium text-foreground',
-            'shadow-[0_2px_18px_-10px_rgba(0,71,187,0.28)]',
+            'shadow-[0_2px_18px_-10px_color-mix(in_srgb,var(--brand-500)_28%,transparent)]',
             'transition-[box-shadow,border-color] duration-300',
-            'hover:border-brand/30 hover:shadow-[0_6px_28px_-8px_rgba(0,71,187,0.4)]',
+            'hover:border-brand/30 hover:shadow-[0_6px_28px_-8px_color-mix(in_srgb,var(--brand-500)_40%,transparent)]',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40',
             attention &&
-              'border-brand/40 shadow-[0_4px_24px_-6px_rgba(0,71,187,0.45)]',
+              'border-brand/40 shadow-[0_4px_24px_-6px_color-mix(in_srgb,var(--brand-500)_45%,transparent)]',
             className,
           )}
         >
@@ -241,7 +241,7 @@ export function ChangelogPanel({ className }: Props) {
           'w-full sm:max-w-[480px]',
           'gap-0 p-0',
           'bg-card border-l border-border/80',
-          'shadow-[-24px_0_64px_-16px_rgba(0,71,187,0.25)]',
+          'shadow-[-24px_0_64px_-16px_color-mix(in_srgb,var(--brand-500)_25%,transparent)]',
           '[&>button]:top-5 [&>button]:right-5 [&>button]:z-20',
         )}
       >
@@ -337,9 +337,9 @@ function HeroCard({
         'bg-gradient-to-br from-brand/[0.08] via-purple-500/[0.06] to-brand/[0.04]',
         'dark:from-brand/[0.18] dark:via-purple-500/[0.12] dark:to-brand/[0.06]',
         'border border-brand/20 dark:border-brand/30',
-        'shadow-[0_8px_32px_-12px_rgba(0,71,187,0.25)]',
+        'shadow-[0_8px_32px_-12px_color-mix(in_srgb,var(--brand-500)_25%,transparent)]',
         'transition-shadow duration-300',
-        'hover:shadow-[0_14px_40px_-12px_rgba(0,71,187,0.4)]',
+        'hover:shadow-[0_14px_40px_-12px_color-mix(in_srgb,var(--brand-500)_40%,transparent)]',
       )}
     >
       <motion.div
