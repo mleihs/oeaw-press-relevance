@@ -57,7 +57,8 @@ export default async function SocialPage() {
             <Radar className="h-6 w-6 text-brand" /> Social Media
           </h1>
           <p className="text-muted-foreground">
-            Themen-Lagebild aus beobachteten Social-Media-Kanälen.
+            Lagebild der ÖAW-Kanäle auf Instagram, geclustert nach Themen und Kanälen.
+            Monitoring, keine Veröffentlichung.
           </p>
           <CostSummary cost={cost} />
         </div>

@@ -1,21 +1,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Search, X } from '@/lib/icons';
+import { Search, X, Layers, Radio } from '@/lib/icons';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { VirtualizedMultiSelect } from '@/components/ui/virtualized-multi-select';
 import type { SocialSort } from '@/lib/shared/social-filter';
 import { cn } from '@/lib/shared/utils';
 import { useSocialFilter } from './social-filter-context';
+import type { SocialView } from './social-views';
 
 // Time-range presets as a segmented control (4 options → segmented is ideal;
 // all choices visible, one tap). null = Alle (whole lookback window).
@@ -31,13 +25,62 @@ export interface ChannelOption {
   label: string;
 }
 
+/** Segmentierte Steuerung im Mock-Stil (bg-fill-Mulde, aktives Segment weiß
+ *  mit Schatten und brand-Text). */
+function Segmented<T extends string>({
+  value,
+  onChange,
+  options,
+  ariaLabel,
+}: {
+  value: T;
+  onChange: (v: T) => void;
+  options: { value: T; label: string; icon?: ReactNodeIcon }[];
+  ariaLabel: string;
+}) {
+  return (
+    <div
+      role="radiogroup"
+      aria-label={ariaLabel}
+      className="inline-flex shrink-0 items-center gap-0.5 rounded-[9px] bg-fill p-[3px]"
+    >
+      {options.map((o) => {
+        const on = value === o.value;
+        const Icon = o.icon;
+        return (
+          <button
+            key={o.value}
+            type="button"
+            role="radio"
+            aria-checked={on}
+            onClick={() => onChange(o.value)}
+            className={cn(
+              'inline-flex items-center gap-1.5 rounded-[7px] px-3 py-1.5 text-xs font-semibold transition-all',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+              on
+                ? 'bg-surface text-brand shadow-[0_1px_2px_rgba(16,32,46,.1)] dark:bg-input/40 dark:text-brand-300'
+                : 'text-ink-subtle hover:text-foreground',
+            )}
+          >
+            {Icon && <Icon className="h-3.5 w-3.5" />}
+            {o.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+type ReactNodeIcon = React.ComponentType<{ className?: string }>;
+
 /**
- * Search + faceted filter toolbar for the section (shadcn data-table-toolbar
- * pattern). Instant client-side filtering with a debounced search input,
- * virtualized channel facet (scales to many channels), sort, removable active
- * chips, a result count, and a reset action.
+ * Toolbar im Mock-Layout: Ansicht-Umschalter (Themen | Nach Kanal) links,
+ * Suche in der Mitte, Sortierung (Neueste | Beliebteste) rechts — darunter die
+ * Facetten-Zeile (Kanal-Auswahl, Zeitraum, aktive Chips, Zähler, Reset).
+ * Instant client-side filtering with a debounced search input.
  */
 export function SocialToolbar({
+  view,
+  onView,
   query,
   onQuery,
   channelOptions,
@@ -50,6 +93,8 @@ export function SocialToolbar({
   resultCount,
   onClearAll,
 }: {
+  view: SocialView;
+  onView: (v: SocialView) => void;
   query: string;
   onQuery: (q: string) => void;
   channelOptions: ChannelOption[];
@@ -88,13 +133,23 @@ export function SocialToolbar({
 
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2.5">
+        <Segmented
+          value={view}
+          onChange={onView}
+          ariaLabel="Ansicht wählen"
+          options={[
+            { value: 'themen', label: 'Themen', icon: Layers },
+            { value: 'kanaele', label: 'Nach Kanal', icon: Radio },
+          ]}
+        />
+
         <div className="relative min-w-[200px] flex-1">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
           <Input
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="Suche in Themen, Posts, Schlagworten …"
+            placeholder="Posts, Themen, @Kanäle durchsuchen …"
             aria-label="Social-Media durchsuchen"
             className="pl-8 pr-8"
           />
@@ -110,6 +165,18 @@ export function SocialToolbar({
           )}
         </div>
 
+        <Segmented
+          value={sort}
+          onChange={onSort}
+          ariaLabel="Sortierung"
+          options={[
+            { value: 'recent', label: 'Neueste' },
+            { value: 'engaged', label: 'Beliebteste' },
+          ]}
+        />
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
         <VirtualizedMultiSelect
           items={channelOptions.map((o) => ({ value: o.value, label: o.label }))}
           value={selectedChannels}
@@ -117,21 +184,11 @@ export function SocialToolbar({
           placeholder="Alle Kanäle"
           searchPlaceholder="Kanal suchen …"
           emptyMessage="Kein Kanal"
-          triggerClassName="w-[180px]"
+          triggerClassName="h-7 w-[160px] text-xs"
         />
 
-        <Select value={sort} onValueChange={(v) => onSort(v as SocialSort)}>
-          <SelectTrigger className="w-[170px]" aria-label="Sortierung">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="recent">Neueste zuerst</SelectItem>
-            <SelectItem value="engaged">Meiste Interaktion</SelectItem>
-          </SelectContent>
-        </Select>
-
         {/* Single-select → radiogroup semantics (not aria-pressed toggles). */}
-        <div className="inline-flex items-center rounded-md border p-0.5" role="radiogroup" aria-label="Zeitraum">
+        <div className="inline-flex items-center rounded-md border border-line p-0.5" role="radiogroup" aria-label="Zeitraum">
           {RANGES.map((r) => {
             const checked = range === r.val;
             return (
@@ -163,10 +220,8 @@ export function SocialToolbar({
             );
           })}
         </div>
-      </div>
 
-      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-        <span className="tabular-nums">{resultCount} {resultCount === 1 ? 'Post' : 'Posts'}</span>
+        <span className="font-mono tabular-nums">{resultCount} {resultCount === 1 ? 'Post' : 'Posts'}</span>
         {selectedChannels.map((v) => (
           <Badge key={v} variant="secondary" className="gap-1 font-normal">
             @{labelFor(v)}

@@ -99,5 +99,6 @@ export function memberRowToApi(row: typeof users.$inferSelect): BoardMember {
     email: row.email,
     role: row.role as UserRole,
     disabled_at: row.disabledAt,
+    avatar_url: row.avatarKey ? `/api/users/${row.id}/avatar` : null,
   };
 }

@@ -1,7 +1,6 @@
 'use client';
 
 import { createContext, useContext, type ReactNode } from 'react';
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/shared/utils';
 
 /**
@@ -42,12 +41,15 @@ export function TagChip({ tag, className }: { tag: string; className?: string })
   const { activeTags, toggleTag } = useSocialFilter();
   const active = activeTags.some((t) => t.toLowerCase() === tag.toLowerCase());
 
+  // Mock Toolkit-Redesign: Keyword-Chips als blaue #-Pills auf brand-Tint.
+  const chip = cn(
+    'rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors',
+    active ? 'bg-brand-500 text-white' : 'bg-brand-500/10 text-brand-700 dark:text-brand-300',
+    className,
+  );
+
   if (!toggleTag) {
-    return (
-      <Badge variant="secondary" className={cn('text-[10px] font-normal', className)}>
-        {tag}
-      </Badge>
-    );
+    return <span className={chip}>#{tag}</span>;
   }
 
   return (
@@ -58,18 +60,13 @@ export function TagChip({ tag, className }: { tag: string; className?: string })
         e.stopPropagation();
         toggleTag(tag);
       }}
-      className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className={cn(
+        chip,
+        'cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+        !active && 'hover:bg-brand-500/20',
+      )}
     >
-      <Badge
-        variant={active ? 'default' : 'secondary'}
-        className={cn(
-          'cursor-pointer text-[10px] font-normal transition-colors',
-          !active && 'hover:bg-brand/15 hover:text-brand',
-          className,
-        )}
-      >
-        {tag}
-      </Badge>
+      #{tag}
     </button>
   );
 }

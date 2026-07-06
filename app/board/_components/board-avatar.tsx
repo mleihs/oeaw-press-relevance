@@ -1,10 +1,13 @@
 'use client';
 
+import { useState } from 'react';
 import { cn } from '@/lib/shared/utils';
 import type { BoardMember } from '@/lib/shared/board';
 import { colorForUser, initialsOf } from '../_lib/people';
 
-/** Runder Initialen-Avatar in der stabilen Personenfarbe (Design Book). */
+/** Runder Avatar: Profilbild (users.avatar_key via Proxy) wenn vorhanden,
+ *  sonst Initialen in der stabilen Personenfarbe (Design Book). Bild-Fehler
+ *  (fehlendes Objekt, ausgeloggt) fallen still auf Initialen zurück. */
 export function BoardAvatar({
   member,
   size = 28,
@@ -17,10 +20,12 @@ export function BoardAvatar({
   ring?: boolean;
 }) {
   const color = member ? colorForUser(member.id) : '#9aa4b2';
+  const [imgFailed, setImgFailed] = useState(false);
+  const showImg = Boolean(member?.avatar_url) && !imgFailed;
   return (
     <span
       className={cn(
-        'inline-flex shrink-0 items-center justify-center rounded-full font-semibold text-white select-none',
+        'inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full font-semibold text-white select-none',
         className,
       )}
       style={{
@@ -33,7 +38,21 @@ export function BoardAvatar({
       title={member?.display_name ?? member?.email ?? undefined}
       aria-hidden
     >
-      {initialsOf(member)}
+      {showImg ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={member!.avatar_url!}
+          alt=""
+          width={size}
+          height={size}
+          loading="lazy"
+          decoding="async"
+          onError={() => setImgFailed(true)}
+          className="h-full w-full object-cover"
+        />
+      ) : (
+        initialsOf(member)
+      )}
     </span>
   );
 }

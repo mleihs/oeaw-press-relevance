@@ -14,6 +14,9 @@ export const users = pgTable("users", {
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	disabledAt: timestamp("disabled_at", { withTimezone: true, mode: 'string' }),
+	// Storage-Key des Profilbilds (MinIO, z.B. 'avatars/<id>.jpg'); Anzeige
+	// über den Proxy /api/users/[id]/avatar. Import: scripts/import-meistertask-avatars.mjs
+	avatarKey: text("avatar_key"),
 }, (table) => [
 	index("idx_users_email").using("btree", table.email.asc().nullsLast().op("text_ops")),
 	unique("users_email_key").on(table.email),
