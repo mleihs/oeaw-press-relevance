@@ -145,7 +145,7 @@ export function EntityFlag({
             >
               <StateIcon weight={visuals.iconWeight} className={iconSize} />
               {totalCount > 1 && !visuals.tooltip && (
-                <span className="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[14px] h-[14px] px-1 rounded-full bg-amber-500 text-white text-[9px] font-semibold leading-none">
+                <span className="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[14px] h-[14px] px-1 rounded-full bg-amber-500 text-white text-3xs font-semibold leading-none">
                   {totalCount}
                 </span>
               )}
@@ -174,7 +174,7 @@ export function EntityFlag({
             <h4 className="text-sm font-semibold">Flag</h4>
             <InfoBubble id={infoBubbleId} size="sm" />
             {totalCount > 0 && (
-              <span className="ml-auto text-[10px] text-muted-foreground">
+              <span className="ml-auto text-2xs text-muted-foreground">
                 {totalCount} Flag{totalCount > 1 ? 's' : ''}
               </span>
             )}
@@ -182,14 +182,14 @@ export function EntityFlag({
 
           {others.length > 0 && (
             <div className="space-y-1.5 border-b pb-3">
-              <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              <p className="text-2xs font-medium uppercase tracking-wide text-muted-foreground">
                 Andere
               </p>
               {others.map((n, i) => (
                 <div key={`${n.by}-${i}`} className="text-xs">
                   <div className="flex items-baseline gap-2">
                     <span className="font-medium text-foreground/90">{n.by}</span>
-                    <span className="text-[10px] text-muted-foreground/70">{formatRelative(n.at)}</span>
+                    <span className="text-2xs text-muted-foreground/70">{formatRelative(n.at)}</span>
                   </div>
                   {n.note && <p className="text-foreground/80 mt-0.5 whitespace-pre-wrap">{n.note}</p>}
                 </div>
@@ -199,10 +199,10 @@ export function EntityFlag({
 
           <div className="space-y-2">
             <div className="flex items-baseline justify-between">
-              <label htmlFor={`flag-note-${entityId}`} className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              <label htmlFor={`flag-note-${entityId}`} className="text-2xs font-medium uppercase tracking-wide text-muted-foreground">
                 Deine Notiz
               </label>
-              <span className="text-[10px] text-muted-foreground/70">
+              <span className="text-2xs text-muted-foreground/70">
                 als <span className="font-medium">{reviewerName.trim() || DEFAULT_REVIEWER_NAME}</span>
               </span>
             </div>
@@ -215,7 +215,7 @@ export function EntityFlag({
               disabled={busy}
             />
             {!reviewerName.trim() && (
-              <p className="text-[10px] text-amber-600 dark:text-amber-400">
+              <p className="text-2xs text-amber-600 dark:text-amber-400">
                 Kein Name in den Einstellungen, daher wird der Eintrag als „{DEFAULT_REVIEWER_NAME}" gespeichert.
               </p>
             )}

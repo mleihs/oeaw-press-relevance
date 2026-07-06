@@ -273,7 +273,7 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
                   {Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2, '0')}
                 </span>
                 {analysisEta && (
-                  <span className="text-[10px] text-muted-foreground/70 block">
+                  <span className="text-2xs text-muted-foreground/70 block">
                     Restzeit: {analysisEta}
                   </span>
                 )}
@@ -315,7 +315,7 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
                           {isSelected && <Check className="h-2.5 w-2.5" />}
                         </span>
                         <span className="font-medium text-sm flex-1">{m.label}</span>
-                        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
+                        <span className={`text-2xs font-medium px-1.5 py-0.5 rounded ${
                           isSelected ? 'bg-background/20 text-background' : `${tier.bg} ${tier.text}`
                         }`}>
                           {tier.label}
@@ -334,7 +334,7 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
                         {m.description}
                       </p>
                       {costFor100 > 0 && (
-                        <p className={`text-[10px] mt-0.5 pl-6 ${
+                        <p className={`text-2xs mt-0.5 pl-6 ${
                           isSelected ? 'text-background/40' : 'text-muted-foreground/50'
                         }`}>
                           ~${costFor100.toFixed(4)} pro 100 Publikationen

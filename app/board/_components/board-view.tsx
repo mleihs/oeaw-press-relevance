@@ -335,7 +335,7 @@ export function BoardView({
               type="button"
               onClick={() => showColumn(c.id)}
               title={`„${c.name}" wieder anzeigen`}
-              className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface py-1 pl-2.5 pr-1 text-[11.5px] font-semibold text-ink-strong shadow-card transition-colors hover:border-line-strong"
+              className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface py-1 pl-2.5 pr-1 text-xs font-semibold text-ink-strong shadow-card transition-colors hover:border-line-strong"
             >
               {/* Swatch trägt die Kanalfarbe, der Chip bleibt neutral (lesbarer
                   als ein voll getönter Chip); das Auge signalisiert „einblenden". */}

@@ -66,7 +66,7 @@ export function EventDecisionButtons({ eventId, current }: Props) {
 
   return (
     <div className="border-t pt-3">
-      <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-2">
+      <p className="text-2xs font-medium uppercase tracking-wide text-muted-foreground mb-2">
         Status
       </p>
       <div className="flex flex-wrap items-center gap-1.5">

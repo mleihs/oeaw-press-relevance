@@ -166,30 +166,45 @@ fehlende Typografie-Skala, Credentials in Docs (OSS-Blocker).
       (→ Schatten verschwindet, unsichtbare Regression). Braucht Browser-Verify
       → gehört zu Gruppe F, nicht in den „ohne visuelles Risiko"-Schnitt.
 
-### Gruppe F — Design-Pass mit Browser-Verify (Opus, eigene Session)
+### Gruppe F — Design-Pass mit Browser-Verify (Opus, eigene Session) — DONE 2026-07-06
 
-- [ ] **F1 Type-Scale einführen.** Definition (verbindlich, in `app/globals.css`
-      als `@theme`-Tokens):
-      | Token | px | ersetzt |
-      |---|---|---|
-      | `text-3xs` | 9px/12px | `text-[9px]`, `text-[9.5px]` |
-      | `text-2xs` | 10px/14px | `text-[10px]`, `text-[10.5px]`, `text-[11px]` (Labels) |
-      | `text-xs` (Tailwind) | 12px | `text-[11.5px]`, `text-[12px]`, `text-[12.5px]` |
-      | `text-sm` (Tailwind) | 14px | `text-[13px]`, `text-[13.5px]` |
-      Sweep screen-weise (337 Stellen), pro Screen visueller Check (Playwright-Login
-      via API, nicht Klick-Flow!). Halbe Pixel auf die nächste Stufe runden.
-- [ ] **F2** `components/auth/auth-screen.tsx`: 65 Hex-Stellen sind 1:1-Duplikate
-      existierender Tokens (`#f7f8fa`=--n-canvas, `#16202e`=--n-ink, …) → auf
-      Tokens umstellen (bewusste Form-Abweichung 46px-Felder bleibt).
-- [ ] **F3** Die restlichen der 88 light-only-Palette-Stellen dark-fähig machen
-      (enrichment-modal, user-management-card, review/page, detail-client, …).
-- [ ] **F4** (optional) `decision-badge`/`tint-badge` auf State-Tokens mappen
-      (green→success, blue→info); kategoriale Token-Gruppe lt. DESIGN_ROLLOUT.md.
-- [ ] **F5** (aus E3 verschoben) `components/changelog-panel.tsx`: die
-      `rgba(0,71,187,…)`-Marken-Schatten auf `color-mix(in srgb,
-      var(--brand-500) …%, transparent)` umstellen (rgb(0,71,187) == `--brand-500`).
-      Wert-identisch NUR wenn Tailwind die Arbitrary-`shadow-[…]` mit color-mix
-      generiert — im Browser gegenprüfen (Tailwind verwirft Unparsbares still).
+- [x] **F1 Type-Scale (DONE, Commit ef0db10).** `text-3xs` (9px/12px) +
+      `text-2xs` (10px/14px) als `@theme`-Tokens; Sweep aller 330 Stellen
+      (87 Dateien) lt. Tabelle: 9/9.5→3xs, 10/10.5/11→2xs, 11.5/12/12.5→xs,
+      13/13.5→sm. Alle Screens in Chrome gegengeprüft (Dashboard, Pubs+Detail,
+      Events Liste/Kalender/Modal/Detail, Board+Karten-Modal, Social, PRs,
+      Researchers+Beeswarm, Person, Settings, Review, Login, ⌘K).
+      **Gotcha:** Turbopack-Persistent-Cache überlebt Dev-Server-Restarts und
+      serviert stale `@theme`-Builds → bei Token-Änderungen `.next` löschen.
+      Bewusst NICHT angefasst: text-[14px+] (keine Skalen-Stufe definiert).
+- [x] **F2 (DONE, Commit f2cd4a2).** auth-screen: 23 exakte Token-Duplikate +
+      3 Nächste-Nachbarn auf Tokens; auth-field/auth-btn-primary auf var()/
+      color-mix. Neu `.force-light` (globals.css): die ÖAW-Rohwerte-Sektion
+      hängt an `:root, .force-light` (SSOT) — der Screen bleibt auch bei
+      html.dark 1:1 light (in-Browser mit erzwungenem dark verifiziert).
+      Bewusst behalten: Amber-Papier-Palette, #9cc0ff-Dekor, 46px-Feldform.
+- [x] **F3 (DONE, Commit 305421a).** Die tatsächlich brechenden Stellen waren
+      konzentriert (viele Dateien hatten schon dark:-Varianten): celebration-
+      Banner, board-management-Löschwarnung, assign-button, card-modal-
+      Abschließen-Buttons, enrichment-modal, user-management-Icons, review-
+      Icons, publication-table-Indikatoren, references-section. dark
+      in-Browser + Playwright-Fullpage (review, press-releases) verifiziert.
+      Mid-tone-500er-Akzente bewusst ohne dark:-Variante (lesbar auf dark).
+- [x] **F4 (DONE, Commit 72185bd).** DECISION_VARIANTS auf State-Tokens
+      (pitch→success, hold→info=ÖAW-Blau), dark-Lifts emerald-300/brand-300;
+      Kalender-Legende + Event-Chips mitgezogen. `tint-badge` bewusst NICHT
+      gemappt — kategoriale Identitätsfarben (DESIGN_ROLLOUT.md), als
+      Kommentar in der Datei dokumentiert.
+- [x] **F5 (DONE, Commit 57ce4a8).** changelog-panel: alle 6 rgba(0,71,187,α)-
+      Schatten → `color-mix(in_srgb,var(--brand-500)_α%,transparent)`;
+      Tailwind generiert die Utility (mit @supports-Guard), computed-Style
+      im Browser wert-identisch bestätigt. Hinweis: ChangelogPanel ist seit
+      dem Toolkit-Redesign (c532111) ohne Consumer — geparkter Code.
+
+**Nebenfunde am Weg (2026-07-06):** `app/api/researchers/{top,distribution}`
+lieferten PG numeric/bigint als String (TS-Typ log) → Verteilungs-Ansicht
+crashte (`metric_value.toFixed`), Rangliste latent bei sum_score. Fix:
+Koerzierung an der API-Boundary (Commit 7c072fb).
 
 ### Gruppe G — OSS-Track (eigene Planung, nicht „Fixes")
 

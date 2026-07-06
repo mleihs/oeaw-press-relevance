@@ -258,7 +258,7 @@ function Metric({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="rounded-lg border bg-muted/30 px-2 py-1.5">
       <div className="text-sm font-semibold tabular-nums text-foreground">{value}</div>
-      <div className="text-[10px] text-muted-foreground">{label}</div>
+      <div className="text-2xs text-muted-foreground">{label}</div>
     </div>
   );
 }

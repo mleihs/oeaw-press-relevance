@@ -333,7 +333,7 @@ function MobilePublicationCard({
             </p>
           )}
           {pub.haiku && (
-            <p className="text-[11px] text-muted-foreground italic mt-1 line-clamp-1">
+            <p className="text-2xs text-muted-foreground italic mt-1 line-clamp-1">
               {pub.haiku.replace(/\n/g, ' / ')}
             </p>
           )}
@@ -349,7 +349,7 @@ function MobilePublicationCard({
       <div className="flex flex-wrap items-center gap-1.5 mt-2">
         <DecisionBadge decision={pub.decision} />
         {pub.publication_type && (
-          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+          <Badge variant="outline" className="text-2xs px-1.5 py-0">
             {pub.publication_type}
           </Badge>
         )}
@@ -363,7 +363,7 @@ function MobilePublicationCard({
                 window.open(pub.press_release!.url, '_blank', 'noopener');
               }}
               aria-label="ÖAW-Pressemitteilung öffnen"
-              className="inline-flex items-center rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300 px-1.5 py-0.5 text-[10px] font-medium gap-0.5"
+              className="inline-flex items-center rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300 px-1.5 py-0.5 text-2xs font-medium gap-0.5"
             >
               <Newspaper className="h-2.5 w-2.5" /> Press-Release
             </button>
@@ -374,20 +374,20 @@ function MobilePublicationCard({
         )}
         {pub.peer_reviewed && (
           <Tooltip><TooltipTrigger asChild>
-            <span className="inline-flex items-center rounded-full bg-blue-100 text-blue-800 dark:bg-blue-500/15 dark:text-blue-300 px-1.5 py-0.5 text-[10px] font-medium gap-0.5">
+            <span className="inline-flex items-center rounded-full bg-blue-100 text-blue-800 dark:bg-blue-500/15 dark:text-blue-300 px-1.5 py-0.5 text-2xs font-medium gap-0.5">
               <ShieldCheck className="h-2.5 w-2.5" /> PR
             </span>
           </TooltipTrigger><TooltipContent>Peer-reviewed</TooltipContent></Tooltip>
         )}
         {pub.popular_science && (
           <Tooltip><TooltipTrigger asChild>
-            <span className="inline-flex items-center rounded-full bg-purple-100 text-purple-800 dark:bg-purple-500/15 dark:text-purple-300 px-1.5 py-0.5 text-[10px] font-medium gap-0.5">
+            <span className="inline-flex items-center rounded-full bg-purple-100 text-purple-800 dark:bg-purple-500/15 dark:text-purple-300 px-1.5 py-0.5 text-2xs font-medium gap-0.5">
               <Megaphone className="h-2.5 w-2.5" /> PS
             </span>
           </TooltipTrigger><TooltipContent>Popular Science</TooltipContent></Tooltip>
         )}
         {pub.published_at && (
-          <span className="text-[10px] text-muted-foreground/70">{pub.published_at.slice(0, 4)}</span>
+          <span className="text-2xs text-muted-foreground/70">{pub.published_at.slice(0, 4)}</span>
         )}
         {pub.orgunits && pub.orgunits.length > 0 && (
           <span className="inline-flex items-center gap-1">
@@ -530,12 +530,12 @@ function PublicationRow({
             </Link>
             {pub.peer_reviewed && (
               <Tooltip><TooltipTrigger asChild>
-                <ShieldCheck className="h-3 w-3 text-blue-600 shrink-0" />
+                <ShieldCheck className="h-3 w-3 text-blue-600 shrink-0 dark:text-blue-400" />
               </TooltipTrigger><TooltipContent>Peer-reviewed</TooltipContent></Tooltip>
             )}
             {pub.popular_science && (
               <Tooltip><TooltipTrigger asChild>
-                <Megaphone className="h-3 w-3 text-purple-600 shrink-0" />
+                <Megaphone className="h-3 w-3 text-purple-600 shrink-0 dark:text-purple-400" />
               </TooltipTrigger><TooltipContent>Popular Science</TooltipContent></Tooltip>
             )}
             {pub.press_release && (
@@ -545,7 +545,7 @@ function PublicationRow({
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
-                  className="text-emerald-600 hover:text-emerald-700 shrink-0"
+                  className="text-emerald-600 hover:text-emerald-700 shrink-0 dark:text-emerald-400 dark:hover:text-emerald-300"
                   aria-label={`ÖAW-Pressemitteilung: ${pub.press_release.paper_title ?? pub.press_release.news_title ?? ''}`}
                 >
                   <Newspaper className="h-3 w-3" />
@@ -688,7 +688,7 @@ function ModelBadge({ model }: { model: string | null }) {
   return (
     <span
       title={model}
-      className="inline-flex items-center rounded px-1 py-0.5 text-[10px] font-medium leading-none bg-indigo-50 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-300"
+      className="inline-flex items-center rounded px-1 py-0.5 text-2xs font-medium leading-none bg-indigo-50 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-300"
     >
       {short}
     </span>
@@ -702,7 +702,7 @@ function SourceBadges({ sources }: { sources: string }) {
         <span
           key={src}
           title={src}
-          className={`inline-flex items-center rounded px-1 py-0.5 text-[10px] font-medium leading-none ${SOURCE_COLOR[src] || 'bg-muted text-muted-foreground'}`}
+          className={`inline-flex items-center rounded px-1 py-0.5 text-2xs font-medium leading-none ${SOURCE_COLOR[src] || 'bg-muted text-muted-foreground'}`}
         >
           {SOURCE_SHORT[src] || src}
         </span>
@@ -734,7 +734,7 @@ function OrgunitChips({
             <TooltipTrigger asChild>
               <span
                 className={cn(
-                  'inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium',
+                  'inline-flex items-center rounded px-1.5 py-0.5 text-2xs font-medium',
                   // Derived (author-affiliation): dashed border + italic +
                   // muted background. Visually flags that this isn't a direct
                   // WebDB attribution — see the orgunit_chip InfoBubble for
@@ -756,7 +756,7 @@ function OrgunitChips({
         );
       })}
       {overflow > 0 && (
-        <span className="inline-flex items-center rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+        <span className="inline-flex items-center rounded bg-muted px-1.5 py-0.5 text-2xs font-medium text-muted-foreground">
           +{overflow}
         </span>
       )}

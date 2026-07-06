@@ -195,7 +195,7 @@ export function InfoBubble({
           <p className="text-sm font-medium text-foreground">{expl.title}</p>
 
           {expl.formula && (
-            <div className="rounded bg-muted px-2 py-1.5 font-mono text-[10.5px] leading-snug text-foreground/90">
+            <div className="rounded bg-muted px-2 py-1.5 font-mono text-2xs leading-snug text-foreground/90">
               {expl.formula}
             </div>
           )}
@@ -203,13 +203,13 @@ export function InfoBubble({
           <div className="space-y-1.5 text-foreground/80">{expl.body}</div>
 
           {expl.example && (
-            <div className="rounded border border-dashed border-border bg-muted/40 px-2.5 py-1.5 text-[11px] text-foreground/80">
+            <div className="rounded border border-dashed border-border bg-muted/40 px-2.5 py-1.5 text-2xs text-foreground/80">
               {expl.example}
             </div>
           )}
 
           {expl.note && (
-            <div className="rounded bg-amber-50/60 dark:bg-amber-500/[0.08] px-2.5 py-1.5 text-[11px] text-amber-900 dark:text-amber-200">
+            <div className="rounded bg-amber-50/60 dark:bg-amber-500/[0.08] px-2.5 py-1.5 text-2xs text-amber-900 dark:text-amber-200">
               {expl.note}
             </div>
           )}
@@ -218,7 +218,7 @@ export function InfoBubble({
             <Link
               href={link.hash ? `${link.path}#${link.hash}` : link.path}
               onClick={(e) => e.stopPropagation()}
-              className="inline-block pt-0.5 text-[11px] font-medium text-brand/80 hover:text-brand hover:underline transition-colors"
+              className="inline-block pt-0.5 text-2xs font-medium text-brand/80 hover:text-brand hover:underline transition-colors"
             >
               Mehr im Hilfe-Center →
             </Link>

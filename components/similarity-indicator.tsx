@@ -46,7 +46,7 @@ export function SimilarityIndicator({ similarity }: SimilarityIndicatorProps) {
       <TooltipTrigger asChild>
         <span
           className={cn(
-            'inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ring-1 ring-inset tabular-nums',
+            'inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-2xs font-semibold ring-1 ring-inset tabular-nums',
             b.classes,
           )}
           aria-label={`Press-Similarity: ${pct}% (${b.label})`}

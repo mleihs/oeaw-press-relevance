@@ -2,6 +2,10 @@ import type { ReactNode } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/shared/utils';
 
+// Bewusst KEINE State-Tokens (Fixplan F4 geprüft): die Keys sind kategoriale
+// Identitätsfarben (Quelle/Typ → Farbe), kein semantischer Zustand — siehe
+// DESIGN_ROLLOUT.md „Kategoriale Identitätsfarben". Eine eigene kategoriale
+// Token-Gruppe bleibt dem Design-System-Ausbau vorbehalten.
 const TINT_CLASSES = {
   green:   'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-300',
   amber:   'bg-amber-100 text-amber-900 dark:bg-amber-500/15 dark:text-amber-300',

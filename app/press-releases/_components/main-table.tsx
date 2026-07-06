@@ -79,7 +79,7 @@ function PressReleaseRow({
       <td className="p-3 whitespace-nowrap text-xs text-muted-foreground">
         {pr.released_at ?? '–'}
         <div className="mt-0.5">
-          <Badge variant="outline" className="text-[10px] uppercase">
+          <Badge variant="outline" className="text-2xs uppercase">
             {pr.lang ?? '?'}
           </Badge>
         </div>
@@ -103,7 +103,7 @@ function PressReleaseRow({
             <span className="text-sm italic text-muted-foreground line-clamp-2 leading-snug">
               {titleText ?? 'Kein Pub-Match'}
             </span>
-            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300 px-1.5 py-0.5 text-[10px] font-medium ring-1 ring-inset ring-amber-200 dark:ring-amber-500/30">
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300 px-1.5 py-0.5 text-2xs font-medium ring-1 ring-inset ring-amber-200 dark:ring-amber-500/30">
               {/* The amber chip carries the visual "alert" affordance
                   on its own; a leading AlertCircle icon plus a trailing
                   InfoBubble both rendered as small circular shapes in

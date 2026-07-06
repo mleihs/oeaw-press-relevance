@@ -24,7 +24,7 @@ export function CommandMenuButton() {
     >
       <Search className="h-4 w-4" />
       <span className="hidden lg:inline">Suchen</span>
-      <kbd className="hidden lg:inline-flex items-center rounded border border-white/20 bg-white/10 px-1.5 py-0.5 text-[10px] font-medium text-white/80">
+      <kbd className="hidden lg:inline-flex items-center rounded border border-white/20 bg-white/10 px-1.5 py-0.5 text-2xs font-medium text-white/80">
         {mac ? '⌘' : 'Strg'} K
       </kbd>
     </button>

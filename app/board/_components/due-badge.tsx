@@ -23,7 +23,7 @@ export function DueBadge({
   const Icon = state === 'overdue' ? AlarmClock : Clock;
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-mono text-[11px] font-medium ${STYLES[state]}`}
+      className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-mono text-2xs font-medium ${STYLES[state]}`}
     >
       <Icon className="h-3 w-3" />
       {formatDueLabel(dueAt)}

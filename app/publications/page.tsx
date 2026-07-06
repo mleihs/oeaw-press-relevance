@@ -59,7 +59,7 @@ export default async function PublicationsPage({ searchParams }: PageProps) {
             Publikationen
           </h1>
           <p
-            className="mt-1.5 text-[13.5px] text-ink-subtle"
+            className="mt-1.5 text-sm text-ink-subtle"
             role="status"
             aria-live="polite"
           >

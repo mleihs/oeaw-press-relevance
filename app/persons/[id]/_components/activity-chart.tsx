@@ -48,7 +48,7 @@ export function ActivityChart({ data }: ActivityChartProps) {
             Bewertete Publikationen, gestapelt nach Press-Score-Band.
           </p>
         </div>
-        <div className="flex items-center gap-3 text-[10px] uppercase tracking-wider text-muted-foreground">
+        <div className="flex items-center gap-3 text-2xs uppercase tracking-wider text-muted-foreground">
           <span className="inline-flex items-center gap-1.5">
             <span className="inline-block h-2 w-2 rounded-sm" style={{ backgroundColor: BAND_COLORS.high }} />
             ≥ 70 %

@@ -22,29 +22,34 @@ import type { Decision } from '@/lib/shared/types';
  * up automatically — no Tailwind-token-drift between badge and button.
  */
 export const DECISION_VARIANTS = {
+  // Farben hängen an den State-Tokens (Fixplan F4): pitch=success, hold=info
+  // (= ÖAW-Blau). Die Tints (bg-*-tint) flippen in dark über die Token-
+  // Overrides in globals.css; die State-Textfarben bleiben dort light-Werte,
+  // deshalb heben dark:-Lifts auf die Familien-Nachbarn (emerald-300/-400,
+  // brand-300) — gleiche Konvention wie badge.tsx info/success.
   pitch: {
     Icon: Check,
     label: 'Pitch',
-    accentBorder: 'border-l-green-500 dark:border-l-green-400',
+    accentBorder: 'border-l-success dark:border-l-emerald-400',
     badgePill:
-      'bg-green-100 text-green-800 ring-green-200 dark:bg-green-500/15 dark:text-green-300 dark:ring-green-500/30',
+      'bg-success-tint text-success ring-success/25 dark:text-emerald-300 dark:ring-success/40',
     largeButton: {
-      active: 'bg-green-600 text-white hover:bg-green-700',
-      idle: 'border-green-300 text-green-700 hover:bg-green-50 dark:border-green-500/30 dark:text-green-300 dark:hover:bg-green-500/15',
+      active: 'bg-success text-white hover:bg-success/90',
+      idle: 'border-success/40 text-success hover:bg-success-tint dark:text-emerald-300',
     },
-    iconButton: 'text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-500/15',
+    iconButton: 'text-success hover:bg-success-tint dark:text-emerald-400',
   },
   hold: {
     Icon: Pause,
     label: 'Hold',
-    accentBorder: 'border-l-blue-500 dark:border-l-blue-400',
+    accentBorder: 'border-l-info dark:border-l-brand-300',
     badgePill:
-      'bg-blue-100 text-blue-800 ring-blue-200 dark:bg-blue-500/15 dark:text-blue-300 dark:ring-blue-500/30',
+      'bg-info-tint text-info ring-info/25 dark:text-brand-300 dark:ring-info/40',
     largeButton: {
-      active: 'bg-blue-600 text-white hover:bg-blue-700',
-      idle: 'border-blue-300 text-blue-700 hover:bg-blue-50 dark:border-blue-500/30 dark:text-blue-300 dark:hover:bg-blue-500/15',
+      active: 'bg-info text-white hover:bg-info/90',
+      idle: 'border-info/40 text-info hover:bg-info-tint dark:border-brand-300/30 dark:text-brand-300',
     },
-    iconButton: 'text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-500/15',
+    iconButton: 'text-info hover:bg-info-tint dark:text-brand-300',
   },
   skip: {
     Icon: XIcon,
@@ -79,7 +84,7 @@ export function DecisionBadge({ decision }: DecisionBadgeProps) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ring-1 ring-inset',
+        'inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-2xs font-semibold ring-1 ring-inset',
         v.badgePill,
       )}
       aria-label={`Entscheidung: ${v.label}`}

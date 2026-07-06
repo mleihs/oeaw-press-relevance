@@ -32,7 +32,7 @@ function Toggle({
       type="button"
       onClick={onClick}
       className={cn(
-        'inline-flex h-9 items-center gap-1.5 rounded-md border px-3 text-[13px] font-medium transition-colors',
+        'inline-flex h-9 items-center gap-1.5 rounded-md border px-3 text-sm font-medium transition-colors',
         active
           ? 'border-brand bg-brand text-white'
           : 'border-input bg-background text-muted-foreground hover:text-foreground',
@@ -156,7 +156,7 @@ export function BoardFilterBar({
         <button
           type="button"
           onClick={() => onChange(EMPTY_FILTERS)}
-          className="text-[13px] font-medium text-muted-foreground hover:text-foreground"
+          className="text-sm font-medium text-muted-foreground hover:text-foreground"
         >
           Zurücksetzen
         </button>

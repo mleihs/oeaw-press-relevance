@@ -114,7 +114,7 @@ export function BoardManagementCard() {
 
         {archived.length > 0 && (
           <div className="rounded-lg border">
-            <div className="px-3 py-2 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+            <div className="px-3 py-2 font-mono text-2xs uppercase tracking-wider text-muted-foreground">
               Archiviert
             </div>
             <div className="divide-y">
@@ -152,7 +152,7 @@ function BoardRow({ board, isAdmin }: { board: BoardSummary; isAdmin: boolean })
         >
           <ChevronDown className={cn('h-4 w-4 text-muted-foreground transition-transform', open && 'rotate-180')} />
           <span className="font-medium text-foreground">{board.name}</span>
-          <span className="font-mono text-[11px] text-muted-foreground">{board.card_count} Karten</span>
+          <span className="font-mono text-2xs text-muted-foreground">{board.card_count} Karten</span>
         </button>
         {isAdmin && (
           <button
@@ -295,7 +295,7 @@ function ColumnEditor({ board }: { board: BoardSummary }) {
         >
           <div className="w-full max-w-sm rounded-2xl bg-card p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-2 flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-600">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-300">
                 <AlertTriangle className="h-4 w-4" />
               </span>
               <span className="font-semibold text-foreground">Spalte enthält Karten</span>
@@ -381,11 +381,11 @@ function ColumnRow({
         onBlur={() => name.trim() && name !== column.name && onRename(name.trim())}
         className="flex-1 rounded bg-transparent px-1 py-0.5 text-sm text-foreground outline-none hover:bg-muted focus:bg-muted"
       />
-      <span className="font-mono text-[11px] text-muted-foreground">{cardCount}</span>
+      <span className="font-mono text-2xs text-muted-foreground">{cardCount}</span>
       <button
         type="button"
         onClick={onDelete}
-        className="rounded p-1 text-muted-foreground hover:bg-red-50 hover:text-red-600"
+        className="rounded p-1 text-muted-foreground hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/15 dark:hover:text-red-300"
         aria-label="Spalte löschen"
       >
         <Trash2 className="h-3.5 w-3.5" />

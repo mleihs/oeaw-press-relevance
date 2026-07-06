@@ -17,7 +17,7 @@ export function LabelPill({
 }) {
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-semibold leading-none ${className ?? ''}`}
+      className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-2xs font-semibold leading-none ${className ?? ''}`}
       style={{ backgroundColor: `${label.color}22`, color: label.color }}
     >
       <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: label.color }} />

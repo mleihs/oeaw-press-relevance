@@ -39,7 +39,7 @@ export function MobileScreenHeader({
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-base font-semibold leading-[1.05]">{title}</h1>
           {sub && (
-            <p className="mt-px truncate font-mono text-[10px] text-white/65">{sub}</p>
+            <p className="mt-px truncate font-mono text-2xs text-white/65">{sub}</p>
           )}
         </div>
         {isLoading ? (

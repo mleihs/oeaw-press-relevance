@@ -47,8 +47,8 @@ const DECISION: Record<
   Exclude<Decision, 'undecided'>,
   { cls: string; Icon: LucideIcon; label: string }
 > = {
-  pitch: { cls: 'text-green-600 dark:text-green-400', Icon: Check, label: 'Pitch' },
-  hold: { cls: 'text-blue-600 dark:text-blue-400', Icon: Pause, label: 'Hold' },
+  pitch: { cls: 'text-success dark:text-emerald-400', Icon: Check, label: 'Pitch' },
+  hold: { cls: 'text-info dark:text-brand-300', Icon: Pause, label: 'Hold' },
   skip: { cls: 'text-muted-foreground', Icon: XIcon, label: 'Skip' },
 };
 
@@ -82,7 +82,7 @@ function EventChip({
     return (
       <div
         className={cn(
-          'relative flex w-full cursor-pointer items-center gap-1 overflow-hidden rounded-[5px] py-0.5 pr-1 pl-2 text-[11px] leading-tight',
+          'relative flex w-full cursor-pointer items-center gap-1 overflow-hidden rounded-[5px] py-0.5 pr-1 pl-2 text-2xs leading-tight',
           b.tint,
           b.text,
         )}
@@ -92,7 +92,7 @@ function EventChip({
         {Bar}
         <span className="min-w-0 flex-1 truncate font-medium">{title}</span>
         {pct && (
-          <span className="shrink-0 pl-0.5 text-[10px] font-semibold opacity-70 tabular-nums">
+          <span className="shrink-0 pl-0.5 text-2xs font-semibold opacity-70 tabular-nums">
             {pct}
           </span>
         )}
@@ -119,8 +119,8 @@ function EventChip({
             aria-hidden
           />
         )}
-        <span className="line-clamp-2 pr-3 text-[11px] font-semibold">{title}</span>
-        <span className="truncate text-[10px] font-medium opacity-70 tabular-nums">
+        <span className="line-clamp-2 pr-3 text-2xs font-semibold">{title}</span>
+        <span className="truncate text-2xs font-medium opacity-70 tabular-nums">
           {_timeLabel}
           {pct && ` · ${pct}`}
         </span>
@@ -132,7 +132,7 @@ function EventChip({
   return (
     <div
       className={cn(
-        'relative flex w-full cursor-pointer items-center gap-1.5 overflow-hidden rounded-md py-1 pr-2 pl-2.5 text-[11px] leading-tight',
+        'relative flex w-full cursor-pointer items-center gap-1.5 overflow-hidden rounded-md py-1 pr-2 pl-2.5 text-2xs leading-tight',
         b.tint,
         b.text,
       )}
@@ -141,7 +141,7 @@ function EventChip({
     >
       {Bar}
       <span className="truncate font-semibold">{title}</span>
-      <span className="ml-auto shrink-0 text-[10px] font-medium opacity-70 tabular-nums">
+      <span className="ml-auto shrink-0 text-2xs font-medium opacity-70 tabular-nums">
         {_timeLabel}
         {pct && ` · ${pct}`}
       </span>

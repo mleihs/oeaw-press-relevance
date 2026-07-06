@@ -55,7 +55,7 @@ export function EventAnalysisCard({ event }: { event: Event }) {
           )}
 
           {event.llm_model && (
-            <div className="flex items-center gap-1 border-t pt-3 text-[11px] text-muted-foreground/70">
+            <div className="flex items-center gap-1 border-t pt-3 text-2xs text-muted-foreground/70">
               <span>Modell: {event.llm_model}</span>
               {event.analysis_cost != null && <span>· Kosten: ${event.analysis_cost.toFixed(4)}</span>}
               {event.analyzed_at && <span>· {eventDateFmt.format(new Date(event.analyzed_at))}</span>}

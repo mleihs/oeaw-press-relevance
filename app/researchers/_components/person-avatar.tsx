@@ -13,7 +13,7 @@ interface PersonAvatarProps {
 }
 
 const SIZES = {
-  sm: 'h-8 w-8 text-[10px]',
+  sm: 'h-8 w-8 text-2xs',
   md: 'h-10 w-10 text-xs',
   lg: 'h-14 w-14 text-sm',
   xl: 'h-24 w-24 text-xl',

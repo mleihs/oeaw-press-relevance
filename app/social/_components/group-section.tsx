@@ -153,7 +153,7 @@ export function GroupSection({
               {item.badge === 'count' ? (
                 <span
                   className={cn(
-                    'flex h-9 w-9 shrink-0 items-center justify-center rounded-[9px] font-mono text-[13px] font-bold',
+                    'flex h-9 w-9 shrink-0 items-center justify-center rounded-[9px] font-mono text-sm font-bold',
                     a.badge,
                   )}
                 >
@@ -178,11 +178,11 @@ export function GroupSection({
                   <p className="mt-0.5 text-xs leading-relaxed text-ink-subtle">{item.description}</p>
                 )}
                 {item.metaMono && (
-                  <p className="mt-1 truncate font-mono text-[11px] text-ink-soft">{item.metaMono}</p>
+                  <p className="mt-1 truncate font-mono text-2xs text-ink-soft">{item.metaMono}</p>
                 )}
               </div>
               {item.badge === 'avatar' && (
-                <span className="shrink-0 rounded-full bg-fill px-2 py-0.5 font-mono text-[11px] font-medium text-ink-subtle">
+                <span className="shrink-0 rounded-full bg-fill px-2 py-0.5 font-mono text-2xs font-medium text-ink-subtle">
                   {item.count} {item.count === 1 ? 'Post' : 'Posts'}
                 </span>
               )}

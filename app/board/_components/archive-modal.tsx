@@ -104,7 +104,7 @@ export function ArchiveModal({
             <Archive className="h-4 w-4 text-brand" />
             Archiv
             {hasCards && (
-              <span className="ml-0.5 rounded-full bg-brand/10 px-2 py-0.5 font-mono text-[11px] font-bold text-brand">
+              <span className="ml-0.5 rounded-full bg-brand/10 px-2 py-0.5 font-mono text-2xs font-bold text-brand">
                 {cards.length}
               </span>
             )}
@@ -123,7 +123,7 @@ export function ArchiveModal({
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Im Archiv suchen…"
               aria-label="Im Archiv suchen"
-              className="w-full bg-transparent text-[12.5px] text-ink outline-none placeholder:text-ink-muted"
+              className="w-full bg-transparent text-xs text-ink outline-none placeholder:text-ink-muted"
             />
           </div>
         )}
@@ -141,7 +141,7 @@ export function ArchiveModal({
             groups.map((g) => (
               <div key={g.columnId}>
                 <div
-                  className="flex items-center gap-2 px-1 pb-1.5 pt-3.5 text-[11px] font-bold uppercase tracking-wider"
+                  className="flex items-center gap-2 px-1 pb-1.5 pt-3.5 text-2xs font-bold uppercase tracking-wider"
                   style={{ color: `color-mix(in srgb, ${g.color} 62%, var(--foreground))` }}
                 >
                   <span className="h-2 w-2 rounded-[3px]" style={{ backgroundColor: g.color }} />
@@ -187,8 +187,8 @@ function ArchivedRow({
         aria-hidden
       />
       <div className="min-w-0 flex-1">
-        <div className="truncate text-[13px] font-semibold text-ink-heading">{card.title}</div>
-        <div className="mt-1 flex items-center gap-1.5 text-[11px] text-ink-subtle">
+        <div className="truncate text-sm font-semibold text-ink-heading">{card.title}</div>
+        <div className="mt-1 flex items-center gap-1.5 text-2xs text-ink-subtle">
           {card.completed_at && (
             <span className="inline-flex items-center gap-1 font-medium text-success">
               <CheckCircle2 className="h-3 w-3" />
@@ -205,7 +205,7 @@ function ArchivedRow({
         type="button"
         onClick={onRestore}
         disabled={pending}
-        className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-brand/10 px-2.5 py-1.5 text-[11.5px] font-semibold text-brand transition-colors hover:bg-brand hover:text-white disabled:opacity-50"
+        className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-brand/10 px-2.5 py-1.5 text-xs font-semibold text-brand transition-colors hover:bg-brand hover:text-white disabled:opacity-50"
       >
         <RotateCcw className="h-3.5 w-3.5" />
         Zurückholen
@@ -220,7 +220,7 @@ function EmptyArchive() {
       <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-fill text-ink-muted">
         <Archive className="h-5 w-5" />
       </span>
-      <b className="text-[13.5px] font-semibold text-ink-strong">Noch nichts archiviert</b>
+      <b className="text-sm font-semibold text-ink-strong">Noch nichts archiviert</b>
       <span className="max-w-[32ch] text-xs text-ink-subtle">
         Erledigte Karten wandern per „Abgeschlossene archivieren" hierher und
         halten so die Kanäle aufgeräumt, ohne dass etwas gelöscht wird.

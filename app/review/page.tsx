@@ -137,14 +137,14 @@ export default function ReviewPage() {
             explId="triage_flagged"
           />
           <CountCard
-            icon={<Sparkles className="h-4 w-4 text-emerald-600" />}
+            icon={<Sparkles className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />}
             label="Frisch (Score ≥ 70%)"
             count={counts.fresh}
             tone="emerald"
             explId="triage_fresh"
           />
           <CountCard
-            icon={<Crown className="h-4 w-4 text-blue-600" />}
+            icon={<Crown className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
             label="ÖAW-Highlights"
             count={counts.mahl}
             tone="blue"
@@ -278,7 +278,7 @@ function DecisionTab({ value, count }: { value: Decision; count: number }) {
     <TabsTrigger value={value} className="gap-2">
       <Icon className="h-4 w-4" />
       {config.label}
-      <Badge variant="secondary" className="ml-0.5 text-[10px] px-1.5 py-0 tabular-nums">
+      <Badge variant="secondary" className="ml-0.5 text-2xs px-1.5 py-0 tabular-nums">
         {count}
       </Badge>
     </TabsTrigger>

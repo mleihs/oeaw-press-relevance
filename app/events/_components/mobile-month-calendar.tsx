@@ -141,7 +141,7 @@ export function MobileMonthCalendar({
           {WEEKDAYS.map((wd) => (
             <div
               key={wd}
-              className="py-[7px] text-center font-mono text-[9.5px] font-semibold uppercase tracking-[0.04em] text-ink-muted"
+              className="py-[7px] text-center font-mono text-3xs font-semibold uppercase tracking-[0.04em] text-ink-muted"
             >
               {wd}
             </div>
@@ -170,7 +170,7 @@ export function MobileMonthCalendar({
                 >
                   <span
                     className={cn(
-                      'inline-flex h-[22px] w-[22px] items-center justify-center rounded-full font-mono text-[11.5px]',
+                      'inline-flex h-[22px] w-[22px] items-center justify-center rounded-full font-mono text-xs',
                       isToday || isSel ? 'font-bold' : 'font-medium',
                       isToday
                         ? 'bg-brand text-white'
@@ -200,7 +200,7 @@ export function MobileMonthCalendar({
 
       {/* Liste des ausgewählten Tags */}
       <div className="mt-3.5">
-        <div className="px-1 pb-[9px] pt-0.5 font-mono text-[11px] font-semibold text-ink-soft">
+        <div className="px-1 pb-[9px] pt-0.5 font-mono text-2xs font-semibold text-ink-soft">
           {dayLabelFmt.format(ymdToUtcDate(selected))}
         </div>
         {selEvents.length === 0 ? (
@@ -210,7 +210,7 @@ export function MobileMonthCalendar({
               weight="duotone"
               className="mx-auto h-6 w-6 text-line-strong"
             />
-            <div className="mt-[7px] text-[12.5px] text-ink-muted">
+            <div className="mt-[7px] text-xs text-ink-muted">
               Keine Veranstaltung an diesem Tag
             </div>
           </div>

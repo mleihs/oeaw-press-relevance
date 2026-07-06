@@ -43,8 +43,8 @@ export function CalendarLegend({ summary }: { summary: CalendarSummary }) {
         <Swatch className="bg-orange-500" label="Niedrig" />
         <Swatch className="bg-muted-foreground/40" label="Unbewertet" />
         <span className="ml-1 font-medium text-foreground/70">Status:</span>
-        <IconItem Icon={Check} className="text-green-600 dark:text-green-400" label="Pitch" />
-        <IconItem Icon={Pause} className="text-blue-600 dark:text-blue-400" label="Hold" />
+        <IconItem Icon={Check} className="text-success dark:text-emerald-400" label="Pitch" />
+        <IconItem Icon={Pause} className="text-info dark:text-brand-300" label="Hold" />
         <IconItem Icon={XIcon} className="text-muted-foreground" label="Skip" />
       </div>
 

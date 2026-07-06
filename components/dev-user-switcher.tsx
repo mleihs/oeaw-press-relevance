@@ -146,12 +146,12 @@ function UserSwitcherInner() {
                   <span className="truncate font-medium">{userLabel(u)}</span>
                   <RoleTag role={u.role} />
                   {u.id === originAdminId && (
-                    <span className="shrink-0 text-[10px] uppercase text-amber-600 dark:text-amber-400">
+                    <span className="shrink-0 text-2xs uppercase text-amber-600 dark:text-amber-400">
                       du
                     </span>
                   )}
                   {u.disabledAt && (
-                    <span className="shrink-0 text-[10px] uppercase text-red-500">
+                    <span className="shrink-0 text-2xs uppercase text-red-500">
                       deaktiviert
                     </span>
                   )}
@@ -170,7 +170,7 @@ function RoleTag({ role }: { role: UserRole }) {
   return (
     <span
       className={cn(
-        'shrink-0 rounded px-1 text-[10px] font-medium uppercase',
+        'shrink-0 rounded px-1 text-2xs font-medium uppercase',
         role === 'admin' ? 'bg-brand/10 text-brand' : 'bg-muted text-muted-foreground',
       )}
     >

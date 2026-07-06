@@ -16,7 +16,7 @@ export function Briefing({ narrative }: { narrative: string }) {
       <div className="min-w-0 space-y-1">
         <p className="flex flex-wrap items-center gap-2 text-sm font-bold text-brand-700 dark:text-brand-300">
           Lagebild
-          <span className="rounded-full bg-surface px-2 py-px font-mono text-[10px] font-medium text-brand-400 dark:bg-brand-500/15 dark:text-brand-300">
+          <span className="rounded-full bg-surface px-2 py-px font-mono text-2xs font-medium text-brand-400 dark:bg-brand-500/15 dark:text-brand-300">
             KI-Zusammenfassung
           </span>
           <InfoBubble id="social_briefing" />

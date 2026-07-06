@@ -200,7 +200,7 @@ export function BoardColumn({
 
         {/* Zähler ganz rechts außen (User-Wunsch), hinter „…" und „+". */}
         <span
-          className="shrink-0 rounded-full px-1.5 py-0.5 font-mono text-[11px] font-semibold text-white"
+          className="shrink-0 rounded-full px-1.5 py-0.5 font-mono text-2xs font-semibold text-white"
           style={{ backgroundColor: 'rgba(255,255,255,.22)' }}
         >
           {cards.length}

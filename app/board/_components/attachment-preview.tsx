@@ -92,7 +92,7 @@ function DocxPreview({ url }: { url: string }) {
   if (error) return <PreviewFallback note={error} url={url} />;
   if (html === null) {
     return (
-      <div className="flex h-full items-center justify-center gap-2 text-[13px] text-muted-foreground">
+      <div className="flex h-full items-center justify-center gap-2 text-sm text-muted-foreground">
         <Loader2 className="h-4 w-4 animate-spin" /> Dokument wird aufbereitet…
       </div>
     );
@@ -129,13 +129,13 @@ function TextPreview({ url }: { url: string }) {
   if (error) return <PreviewFallback note={error} url={url} />;
   if (text === null) {
     return (
-      <div className="flex h-full items-center justify-center gap-2 text-[13px] text-muted-foreground">
+      <div className="flex h-full items-center justify-center gap-2 text-sm text-muted-foreground">
         <Loader2 className="h-4 w-4 animate-spin" /> Lädt…
       </div>
     );
   }
   return (
-    <pre className="h-full overflow-auto rounded-lg border bg-muted p-4 font-mono text-[12.5px] leading-relaxed text-foreground">
+    <pre className="h-full overflow-auto rounded-lg border bg-muted p-4 font-mono text-xs leading-relaxed text-foreground">
       {text}
     </pre>
   );
@@ -147,7 +147,7 @@ function PreviewFallback({ note, url }: { note: string; url: string }) {
       <span className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
         <FileIcon className="h-5 w-5 text-muted-foreground" />
       </span>
-      <p className="max-w-[36ch] text-[13.5px] text-muted-foreground">{note}</p>
+      <p className="max-w-[36ch] text-sm text-muted-foreground">{note}</p>
       <Button asChild size="sm" variant="outline">
         <a href={url} target="_blank" rel="noopener noreferrer">
           <Download className="mr-1 h-3.5 w-3.5" /> Herunterladen

@@ -65,7 +65,7 @@ export function CommentActivityStrand({
 
   return (
     <div className="border-t pt-4">
-      <div className="mb-3 text-[13.5px] font-semibold text-foreground">Kommentare & Aktivität</div>
+      <div className="mb-3 text-sm font-semibold text-foreground">Kommentare & Aktivität</div>
 
       <Composer cardId={card.id} members={members} onAdded={onInvalidate} />
 
@@ -83,7 +83,7 @@ export function CommentActivityStrand({
           ) : (
             <li
               key={`a-${e.activity.id}`}
-              className="flex items-start gap-2 text-[13px] text-muted-foreground"
+              className="flex items-start gap-2 text-sm text-muted-foreground"
             >
               <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted">
                 <ActivityIcon verb={e.activity.verb} className="h-3.5 w-3.5" />
@@ -98,7 +98,7 @@ export function CommentActivityStrand({
           ),
         )}
         {entries.length === 0 && (
-          <li className="text-[13px] text-muted-foreground">Noch keine Kommentare oder Aktivität.</li>
+          <li className="text-sm text-muted-foreground">Noch keine Kommentare oder Aktivität.</li>
         )}
       </ul>
     </div>
@@ -167,7 +167,7 @@ function Composer({
           }
         }}
         placeholder="Kommentar schreiben… (Markdown, @ erwähnt, Enter sendet, ⇧↵ neue Zeile)"
-        className="min-h-[64px] resize-y border-none bg-transparent p-1 text-[13.5px] leading-relaxed shadow-none focus-visible:ring-0"
+        className="min-h-[64px] resize-y border-none bg-transparent p-1 text-sm leading-relaxed shadow-none focus-visible:ring-0"
       />
       <div className="mt-1 flex items-center justify-between">
         <EmojiPickerButton onPick={insertAtCursor} />
@@ -231,8 +231,8 @@ function CommentRow({
         style={{ backgroundColor: 'var(--board-chip-bg)' }}
       >
         <div className="flex items-center gap-2">
-          <span className="text-[13px] font-medium text-foreground">{displayNameOf(member)}</span>
-          <span className="text-[11.5px] text-muted-foreground">
+          <span className="text-sm font-medium text-foreground">{displayNameOf(member)}</span>
+          <span className="text-xs text-muted-foreground">
             {relativeDay(comment.created_at)}
             {comment.edited_at ? ' · bearbeitet' : ''}
           </span>
@@ -282,7 +282,7 @@ function CommentRow({
                   commitEdit();
                 }
               }}
-              className="min-h-[64px] resize-y text-[13.5px] leading-relaxed"
+              className="min-h-[64px] resize-y text-sm leading-relaxed"
             />
             <div className="mt-1.5 flex items-center gap-2">
               <Button size="sm" onClick={commitEdit} disabled={!draft.trim() || edit.isPending}>

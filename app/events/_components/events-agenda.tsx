@@ -25,7 +25,7 @@ export function EventsAgenda({ rows, boardCardHrefs }: Props) {
     return (
       <div className="rounded-[14px] border-[1.5px] border-dashed border-line-strong px-4 py-[34px] text-center">
         <CalendarX aria-hidden className="mx-auto h-7 w-7 text-line-strong" />
-        <div className="mt-2.5 text-[13.5px] text-ink-subtle">
+        <div className="mt-2.5 text-sm text-ink-subtle">
           Keine Veranstaltungen
         </div>
       </div>
@@ -60,10 +60,10 @@ export function EventsAgenda({ rows, boardCardHrefs }: Props) {
       {groups.map((group) => (
         <div key={group.key}>
           <div className="flex items-center gap-2 px-1 pb-[9px] pt-1.5">
-            <span className="font-mono text-[11px] font-semibold text-brand">
+            <span className="font-mono text-2xs font-semibold text-brand">
               {group.day}
             </span>
-            <span className="text-[12.5px] font-semibold text-ink-soft">
+            <span className="text-xs font-semibold text-ink-soft">
               {group.label}
             </span>
             <span aria-hidden className="h-px flex-1 bg-line" />

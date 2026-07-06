@@ -79,7 +79,7 @@ export function PressReleasesTabsNav({
             >
               <Icon className="h-4 w-4" />
               {label}
-              <Badge variant="secondary" className="ml-0.5 text-[10px] px-1.5 py-0 tabular-nums">
+              <Badge variant="secondary" className="ml-0.5 text-2xs px-1.5 py-0 tabular-nums">
                 {stats[statsKey]}
               </Badge>
             </Link>

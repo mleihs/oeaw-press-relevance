@@ -131,7 +131,7 @@ export function MentionTextarea({
           aria-label="Mitglied erwähnen"
           className="absolute left-0 top-full z-50 mt-1 w-[280px] overflow-hidden rounded-lg border bg-popover shadow-md"
         >
-          <div className="px-3 pb-0.5 pt-2 font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+          <div className="px-3 pb-0.5 pt-2 font-mono text-2xs font-semibold uppercase tracking-wider text-muted-foreground/70">
             Erwähnen
           </div>
           <div className="max-h-[204px] overflow-y-auto p-1.5">
@@ -155,7 +155,7 @@ export function MentionTextarea({
                 )}
               >
                 <BoardAvatar member={m} size={24} />
-                <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-foreground">
+                <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
                   {displayNameOf(m)}
                 </span>
               </button>

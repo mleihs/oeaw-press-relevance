@@ -160,7 +160,7 @@ export function BeeswarmView({ points, loading, metric }: BeeswarmViewProps) {
             return (
               <g key={t}>
                 <line x1={x} x2={x} y1={HEIGHT - 16} y2={HEIGHT - 8} className="stroke-muted-foreground/40" />
-                <text x={x} y={HEIGHT - 0} textAnchor="middle" className="fill-muted-foreground text-[10px]">
+                <text x={x} y={HEIGHT - 0} textAnchor="middle" className="fill-muted-foreground text-2xs">
                   {metric === 'avg_score' ? `${Math.round(t * 100)}%` : t.toFixed(metric === 'sum_score' ? 1 : 0)}
                 </text>
               </g>
@@ -229,7 +229,7 @@ export function BeeswarmView({ points, loading, metric }: BeeswarmViewProps) {
                       <span>{n.pubs_total} Pubs</span>
                     </div>
                     {n.is_member && (
-                      <p className="mt-1 inline-flex rounded-sm bg-brand/10 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider text-brand">
+                      <p className="mt-1 inline-flex rounded-sm bg-brand/10 px-1.5 py-0.5 text-3xs font-medium uppercase tracking-wider text-brand">
                         ÖAW-Mitglied
                       </p>
                     )}
@@ -242,7 +242,7 @@ export function BeeswarmView({ points, loading, metric }: BeeswarmViewProps) {
 
         {/* Legend */}
         {sektionLegend.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-muted-foreground">
+          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-2xs text-muted-foreground">
             {sektionLegend.map(([s, n]) => (
               <span key={s} className="inline-flex items-center gap-1.5">
                 <span

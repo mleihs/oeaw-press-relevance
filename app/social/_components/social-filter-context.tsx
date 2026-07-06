@@ -43,7 +43,7 @@ export function TagChip({ tag, className }: { tag: string; className?: string })
 
   // Mock Toolkit-Redesign: Keyword-Chips als blaue #-Pills auf brand-Tint.
   const chip = cn(
-    'rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors',
+    'rounded-full px-2 py-0.5 text-2xs font-medium transition-colors',
     active ? 'bg-brand-500 text-white' : 'bg-brand-500/10 text-brand-700 dark:text-brand-300',
     className,
   );

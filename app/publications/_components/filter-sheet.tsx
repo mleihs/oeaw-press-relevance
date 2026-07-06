@@ -294,7 +294,7 @@ function Oestat6Facet({ filters, setFilters, lookups }: Props) {
           type="button"
           onClick={() => setActiveSuper('all')}
           className={cn(
-            'rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors',
+            'rounded-md border px-2 py-0.5 text-2xs font-medium transition-colors',
             activeSuper === 'all'
               ? 'bg-foreground text-background border-foreground'
               : 'bg-card text-foreground border-border hover:border-muted-foreground/50',
@@ -308,7 +308,7 @@ function Oestat6Facet({ filters, setFilters, lookups }: Props) {
             type="button"
             onClick={() => setActiveSuper(d)}
             className={cn(
-              'rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors',
+              'rounded-md border px-2 py-0.5 text-2xs font-medium transition-colors',
               activeSuper === d
                 ? 'bg-foreground text-background border-foreground'
                 : 'bg-card text-foreground border-border hover:border-muted-foreground/50',

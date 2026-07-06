@@ -218,7 +218,7 @@ export function DecisionToolbar({ pub, inSession = false, onDecided }: DecisionT
         )}
 
         <div className="ml-auto flex items-center gap-1.5">
-          <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground font-medium">
+          <span className="inline-flex items-center gap-1 text-2xs text-muted-foreground font-medium">
             Snooze:
             <InfoBubble id="decision_snooze" size="sm" />
           </span>
@@ -254,7 +254,7 @@ export function DecisionToolbar({ pub, inSession = false, onDecided }: DecisionT
       </div>
 
       {pub.snooze_until && (
-        <div className="text-[11px] text-muted-foreground">
+        <div className="text-2xs text-muted-foreground">
           Snoozed bis <span className="font-medium">{pub.snooze_until}</span>
         </div>
       )}
@@ -265,7 +265,7 @@ export function DecisionToolbar({ pub, inSession = false, onDecided }: DecisionT
             variant="ghost"
             size="sm"
             onClick={() => setRationaleOpen((v) => !v)}
-            className="h-7 px-2 text-[11px] text-muted-foreground hover:text-foreground"
+            className="h-7 px-2 text-2xs text-muted-foreground hover:text-foreground"
           >
             <MessageSquarePlus className="h-3.5 w-3.5 mr-1" />
             {rationaleOpen ? 'Notiz ausblenden' : rationale ? 'Notiz bearbeiten' : 'Notiz hinzufügen'}
@@ -273,7 +273,7 @@ export function DecisionToolbar({ pub, inSession = false, onDecided }: DecisionT
           <InfoBubble id="decision_rationale" size="sm" />
         </span>
         {!rationaleOpen && rationale && (
-          <p className="text-[11px] text-foreground/80 mt-1.5 line-clamp-1 flex-1 min-w-0 truncate">
+          <p className="text-2xs text-foreground/80 mt-1.5 line-clamp-1 flex-1 min-w-0 truncate">
             {rationale}
           </p>
         )}
@@ -344,7 +344,7 @@ function SnoozeButton({
           size="sm"
           disabled={disabled}
           onClick={() => onPick(isoDate)}
-          className="h-7 px-2 text-[11px] text-foreground/80"
+          className="h-7 px-2 text-2xs text-foreground/80"
         >
           {label}
         </Button>

@@ -77,7 +77,7 @@ export function AddReferencePopover({
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="inline-flex items-center gap-1 rounded-md border border-dashed border-input px-2 py-1 text-[12px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+          className="inline-flex items-center gap-1 rounded-md border border-dashed border-input px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
         >
           <Plus className="h-3.5 w-3.5" /> Objekt verknüpfen
         </button>
@@ -90,7 +90,7 @@ export function AddReferencePopover({
               type="button"
               onClick={() => switchTab(key)}
               className={cn(
-                'inline-flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-[12px] font-medium transition-colors',
+                'inline-flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors',
                 tab === key
                   ? 'bg-brand/10 text-brand'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground',
@@ -111,7 +111,7 @@ export function AddReferencePopover({
             placeholder={
               tab === 'youtube' ? 'YouTube-URL einfügen oder Titel suchen…' : 'Titel suchen…'
             }
-            className="min-w-0 flex-1 border-none bg-transparent text-[13px] text-foreground outline-none placeholder:text-muted-foreground"
+            className="min-w-0 flex-1 border-none bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
           />
         </div>
 
@@ -181,8 +181,8 @@ function InternalTab({
               )}
             >
               <div className="min-w-0 flex-1">
-                <div className="truncate text-[13px] text-foreground">{s.title}</div>
-                <div className="font-mono text-[10.5px] text-muted-foreground">
+                <div className="truncate text-sm text-foreground">{s.title}</div>
+                <div className="font-mono text-2xs text-muted-foreground">
                   {formatDate(s.date)}
                   {isLinked && ' · bereits verknüpft'}
                 </div>
@@ -232,7 +232,7 @@ function YoutubeTab({
           type="button"
           disabled={pending}
           onClick={() => onPick(q.trim())}
-          className="flex w-full items-center gap-2 rounded-md bg-brand/10 px-2 py-2 text-left text-[13px] font-medium text-brand transition-colors hover:bg-brand/15"
+          className="flex w-full items-center gap-2 rounded-md bg-brand/10 px-2 py-2 text-left text-sm font-medium text-brand transition-colors hover:bg-brand/15"
         >
           <Play className="h-4 w-4 shrink-0" />
           <span className="min-w-0 flex-1 truncate">„{q.trim().slice(0, 44)}" verknüpfen</span>
@@ -249,7 +249,7 @@ function YoutubeTab({
 
       {data?.configured && data.videos.length > 0 && (
         <>
-          <div className="px-2 pt-1 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+          <div className="px-2 pt-1 font-mono text-2xs uppercase tracking-wider text-muted-foreground">
             Eigener Kanal
           </div>
           <ul>
@@ -281,10 +281,10 @@ function YoutubeTab({
                       </span>
                     )}
                     <div className="min-w-0 flex-1">
-                      <div className="line-clamp-2 text-[12.5px] leading-snug text-foreground">
+                      <div className="line-clamp-2 text-xs leading-snug text-foreground">
                         {v.title}
                       </div>
-                      <div className="font-mono text-[10.5px] text-muted-foreground">
+                      <div className="font-mono text-2xs text-muted-foreground">
                         {formatDate(v.published_at)}
                         {isLinked && ' · bereits verknüpft'}
                       </div>
@@ -301,5 +301,5 @@ function YoutubeTab({
 }
 
 function EmptyHint({ text }: { text: string }) {
-  return <div className="px-2 py-3 text-center text-[12.5px] text-muted-foreground">{text}</div>;
+  return <div className="px-2 py-3 text-center text-xs text-muted-foreground">{text}</div>;
 }

@@ -250,7 +250,7 @@ export function DashboardClient({ data, period, sortBy, boardCards, socialData }
             <InfoBubble id="top10_panel" size="sm" />
             <span className="flex-1" />
             {topPubsTotal > topPubs.length && (
-              <span className="font-mono text-[11.5px] text-ink-muted">
+              <span className="font-mono text-xs text-ink-muted">
                 {topPubsTotal.toLocaleString('de-AT')} im Pool
               </span>
             )}
@@ -265,11 +265,11 @@ export function DashboardClient({ data, period, sortBy, boardCards, socialData }
                     href={`/publications/${pub.id}`}
                     className="group flex items-start gap-3 rounded-[10px] px-2.5 py-[11px] transition-colors hover:bg-canvas"
                   >
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand text-[11px] font-bold text-white">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand text-2xs font-bold text-white">
                       {i + 1}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="text-[13.5px] font-semibold leading-[1.35] text-ink group-hover:text-brand">
+                      <p className="text-sm font-semibold leading-[1.35] text-ink group-hover:text-brand">
                         {displayTitle(pub.title, pub.citation)}
                       </p>
                       <div className="mt-1 flex flex-wrap items-center gap-2">
@@ -280,7 +280,7 @@ export function DashboardClient({ data, period, sortBy, boardCards, socialData }
                         <FlagshipBadge journal={pub.enriched_journal} />
                         {pub.published_at && (
                           <span
-                            className="font-mono text-[10.5px] text-ink-muted"
+                            className="font-mono text-2xs text-ink-muted"
                             title={pubDateTitle(pub.published_at)}
                           >
                             {formatPubDate(pub.published_at)}
@@ -289,7 +289,7 @@ export function DashboardClient({ data, period, sortBy, boardCards, socialData }
                       </div>
                       <VenueLine journal={pub.enriched_journal} />
                       {pub.pitch_suggestion && (
-                        <p className="mt-1 line-clamp-2 text-[12.5px] leading-[1.45] text-ink-soft">
+                        <p className="mt-1 line-clamp-2 text-xs leading-[1.45] text-ink-soft">
                           {pub.pitch_suggestion}
                         </p>
                       )}
@@ -303,14 +303,14 @@ export function DashboardClient({ data, period, sortBy, boardCards, socialData }
                 );
               })
             ) : (
-              <p className="px-2.5 py-8 text-center text-[13.5px] text-ink-subtle">
+              <p className="px-2.5 py-8 text-center text-sm text-ink-subtle">
                 Keine analysierten Publikationen in diesem Zeitraum.
               </p>
             )}
           </div>
           <Link
             href="/publications"
-            className="flex items-center gap-1.5 border-t border-line px-[18px] py-3 text-[12.5px] font-semibold text-brand transition-colors hover:bg-canvas"
+            className="flex items-center gap-1.5 border-t border-line px-[18px] py-3 text-xs font-semibold text-brand transition-colors hover:bg-canvas"
           >
             Alle Publikationen
             <span className="flex-1" />
@@ -324,7 +324,7 @@ export function DashboardClient({ data, period, sortBy, boardCards, socialData }
           <DimensionMeans averages={stats.dimension_avgs} />
           {stats.top_keywords.length > 0 && (
             <div className={`${CARD} px-[18px] py-4`}>
-              <div className="mb-3 flex items-center gap-1.5 text-[13.5px] font-semibold text-ink">
+              <div className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-ink">
                 Häufige Keywords
                 <InfoBubble id="top_keywords" size="sm" />
               </div>
@@ -423,7 +423,7 @@ export function DashboardClient({ data, period, sortBy, boardCards, socialData }
         <div className="flex items-center gap-2 border-b border-line px-[15px] pb-[11px] pt-3.5">
           <span className="text-sm font-semibold text-ink">Top-Storys</span>
           <span className="flex-1" />
-          <span className="font-mono text-[10.5px] text-ink-muted">
+          <span className="font-mono text-2xs text-ink-muted">
             {topPubsTotal.toLocaleString('de-AT')} im Pool
           </span>
         </div>
@@ -438,17 +438,17 @@ export function DashboardClient({ data, period, sortBy, boardCards, socialData }
                   className="flex items-start gap-[11px] rounded-[10px] px-2 py-2.5 transition-colors active:bg-canvas"
                 >
                   <span
-                    className={`mt-px flex h-6 w-6 shrink-0 items-center justify-center rounded-full font-mono text-[11.5px] font-semibold ${
+                    className={`mt-px flex h-6 w-6 shrink-0 items-center justify-center rounded-full font-mono text-xs font-semibold ${
                       i < 3 ? 'bg-brand text-white' : 'bg-fill text-ink-subtle'
                     }`}
                   >
                     {i + 1}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-[13px] font-semibold leading-[1.35] text-ink">
+                    <p className="text-sm font-semibold leading-[1.35] text-ink">
                       {displayTitle(pub.title, pub.citation)}
                     </p>
-                    <p className="mt-0.5 text-[11.5px] text-ink-muted">
+                    <p className="mt-0.5 text-xs text-ink-muted">
                       {displayAuthor(pub)}
                       {institute ? ` · ${institute}` : ''}
                     </p>
@@ -462,14 +462,14 @@ export function DashboardClient({ data, period, sortBy, boardCards, socialData }
               );
             })
           ) : (
-            <p className="px-2.5 py-8 text-center text-[13px] text-ink-subtle">
+            <p className="px-2.5 py-8 text-center text-sm text-ink-subtle">
               Keine analysierten Publikationen in diesem Zeitraum.
             </p>
           )}
         </div>
         <Link
           href="/publications"
-          className="flex items-center gap-1.5 border-t border-line px-[15px] py-3 text-[12.5px] font-semibold text-brand"
+          className="flex items-center gap-1.5 border-t border-line px-[15px] py-3 text-xs font-semibold text-brand"
         >
           Alle Publikationen
           <span className="flex-1" />
@@ -481,7 +481,7 @@ export function DashboardClient({ data, period, sortBy, boardCards, socialData }
 
       {stats.top_keywords.length > 0 && (
         <div className={`${CARD} p-[15px]`}>
-          <div className="mb-3 flex items-center gap-1.5 text-[13.5px] font-semibold text-ink">
+          <div className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-ink">
             Häufige Keywords
             <InfoBubble id="top_keywords" size="sm" />
           </div>
@@ -505,12 +505,12 @@ function BoardTile({ cards, overdueCount }: { cards: BoardCardRef[]; overdueCoun
         </span>
         <div className="min-w-0 flex-1">
           <div className="text-sm font-bold tracking-tight text-ink">Redaktionsboard</div>
-          <div className="mt-px font-mono text-[10.5px] text-[#6f8bbf]">
+          <div className="mt-px font-mono text-2xs text-[#6f8bbf]">
             Überfällig &amp; demnächst fällig
           </div>
         </div>
         {overdueCount > 0 && (
-          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-danger-tint px-2 py-[3px] font-mono text-[11px] font-semibold text-destructive">
+          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-danger-tint px-2 py-[3px] font-mono text-2xs font-semibold text-destructive">
             <AlarmClock weight="bold" className="h-3 w-3" />
             {overdueCount} überfällig
           </span>
@@ -528,19 +528,19 @@ function BoardTile({ cards, overdueCount }: { cards: BoardCardRef[]; overdueCoun
                 className="h-2.5 w-2.5 shrink-0 rounded-[3px]"
                 style={{ background: c.column_color ?? '#64748b' }}
               />
-              <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-ink">
+              <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink">
                 {c.title}
               </span>
               <DueLabel dueAt={c.due_at} />
             </Link>
           ))
         ) : (
-          <p className="px-2 py-6 text-center text-[12.5px] text-ink-muted">Nichts Fälliges.</p>
+          <p className="px-2 py-6 text-center text-xs text-ink-muted">Nichts Fälliges.</p>
         )}
       </div>
       <Link
         href="/board"
-        className="flex items-center gap-1.5 border-t border-line px-4 py-3 text-[12.5px] font-semibold text-brand transition-colors hover:bg-canvas"
+        className="flex items-center gap-1.5 border-t border-line px-4 py-3 text-xs font-semibold text-brand transition-colors hover:bg-canvas"
       >
         Zum Board
         <span className="flex-1" />
@@ -556,7 +556,7 @@ function DueLabel({ dueAt }: { dueAt: string | null }) {
   const overdue = due < new Date();
   return (
     <span
-      className={`shrink-0 font-mono text-[11px] ${overdue ? 'text-destructive' : 'text-warning'}`}
+      className={`shrink-0 font-mono text-2xs ${overdue ? 'text-destructive' : 'text-warning'}`}
     >
       {due.toLocaleDateString('de-AT', { day: 'numeric', month: 'short' })}
     </span>
@@ -572,7 +572,7 @@ function DeltaChip({ pct, small }: { pct: number | null; small?: boolean }) {
   return (
     <span
       className={`inline-flex shrink-0 items-center gap-1 rounded-full font-mono font-semibold ${
-        small ? 'px-[7px] py-0.5 text-[11px]' : 'px-2 py-[3px] text-[11px]'
+        small ? 'px-[7px] py-0.5 text-2xs' : 'px-2 py-[3px] text-2xs'
       } ${up ? 'bg-success-tint text-success' : 'bg-danger-tint text-destructive'}`}
     >
       <Icon weight="bold" className="h-3 w-3" />
@@ -611,7 +611,7 @@ function SocialTrendsTile({ data }: { data: SocialDashboardData }) {
         </span>
         <div className="min-w-0 flex-1">
           <div className="text-sm font-bold tracking-tight text-ink">Social-Media-Trends</div>
-          <div className="mt-px font-mono text-[10.5px] text-[#9a7fb5]">
+          <div className="mt-px font-mono text-2xs text-[#9a7fb5]">
             Instagram · {data.channel_count} Kanäle · {data.window_days} Tage
           </div>
         </div>
@@ -619,7 +619,7 @@ function SocialTrendsTile({ data }: { data: SocialDashboardData }) {
       </div>
 
       <div className="flex-1 px-2.5 pb-1 pt-2">
-        <div className="px-1.5 pb-[7px] pt-0.5 font-mono text-[9.5px] font-semibold uppercase tracking-wider text-ink-muted">
+        <div className="px-1.5 pb-[7px] pt-0.5 font-mono text-3xs font-semibold uppercase tracking-wider text-ink-muted">
           Trend-Themen
         </div>
         {data.themes.map((t) => {
@@ -632,8 +632,8 @@ function SocialTrendsTile({ data }: { data: SocialDashboardData }) {
             >
               <span className={`h-2.5 w-2.5 shrink-0 rounded-[3px] ${accent.dot}`} />
               <div className="min-w-0 flex-1">
-                <div className="truncate text-[13px] font-semibold text-ink">{t.name}</div>
-                <div className="mt-px font-mono text-[10.5px] text-ink-muted">
+                <div className="truncate text-sm font-semibold text-ink">{t.name}</div>
+                <div className="mt-px font-mono text-2xs text-ink-muted">
                   {t.post_count} {t.post_count === 1 ? 'Post' : 'Posts'} · {formatCompact(t.likes)} Likes
                 </div>
               </div>
@@ -646,7 +646,7 @@ function SocialTrendsTile({ data }: { data: SocialDashboardData }) {
 
       {data.top_post && (
         <div className="mx-2.5 mb-2.5 border-t border-line pt-2">
-          <div className="px-1.5 pb-1.5 font-mono text-[9.5px] font-semibold uppercase tracking-wider text-ink-muted">
+          <div className="px-1.5 pb-1.5 font-mono text-3xs font-semibold uppercase tracking-wider text-ink-muted">
             Stärkster Post
           </div>
           <Link
@@ -659,10 +659,10 @@ function SocialTrendsTile({ data }: { data: SocialDashboardData }) {
               <InstagramLogo weight="fill" className="h-[18px] w-[18px]" />
             </span>
             <div className="min-w-0 flex-1">
-              <div className="truncate text-[12.5px] font-semibold leading-[1.3] text-ink">
+              <div className="truncate text-xs font-semibold leading-[1.3] text-ink">
                 {data.top_post.topic}
               </div>
-              <div className="mt-0.5 font-mono text-[10.5px] text-ink-muted">
+              <div className="mt-0.5 font-mono text-2xs text-ink-muted">
                 {data.top_post.handle}
               </div>
             </div>
@@ -671,7 +671,7 @@ function SocialTrendsTile({ data }: { data: SocialDashboardData }) {
                 <Heart weight="fill" className="h-[13px] w-[13px]" />
                 {formatCompact(data.top_post.likes)}
               </span>
-              <span className="inline-flex items-center gap-1 font-mono text-[10.5px] text-ink-muted">
+              <span className="inline-flex items-center gap-1 font-mono text-2xs text-ink-muted">
                 <MessageCircle className="h-[11px] w-[11px]" />
                 {data.top_post.comments.toLocaleString('de-AT')}
               </span>
@@ -682,7 +682,7 @@ function SocialTrendsTile({ data }: { data: SocialDashboardData }) {
 
       <Link
         href="/social"
-        className="flex items-center gap-1.5 border-t border-line px-4 py-3 text-[12.5px] font-semibold text-brand transition-colors hover:bg-canvas"
+        className="flex items-center gap-1.5 border-t border-line px-4 py-3 text-xs font-semibold text-brand transition-colors hover:bg-canvas"
       >
         Zum Social-Media-Lagebild
         <span className="flex-1" />
@@ -746,7 +746,7 @@ function MobileStatTile({
       <div className="mt-2.5 font-mono text-xl font-semibold leading-[1.1] tracking-[-0.01em] text-ink tabular-nums">
         {value.toLocaleString('de-AT')}
       </div>
-      <div className="mt-[3px] text-[11.5px] leading-[1.35] text-ink-subtle">{label}</div>
+      <div className="mt-[3px] text-xs leading-[1.35] text-ink-subtle">{label}</div>
     </div>
   );
 }
@@ -773,11 +773,11 @@ function ScoreDistribution({ buckets }: { buckets: number[] }) {
   return (
     <div className={`${CARD} px-[18px] py-4`}>
       <div className="mb-3.5 flex items-baseline justify-between">
-        <span className="inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-ink">
+        <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink">
           Score-Verteilung
           <InfoBubble id="score_distribution_chart" size="sm" />
         </span>
-        <span className="font-mono text-[11px] text-ink-muted">analysierte Pubs</span>
+        <span className="font-mono text-2xs text-ink-muted">analysierte Pubs</span>
       </div>
       <div className="flex h-[74px] items-end gap-1">
         {buckets.map((v, i) => (
@@ -789,7 +789,7 @@ function ScoreDistribution({ buckets }: { buckets: number[] }) {
           />
         ))}
       </div>
-      <div className="mt-[7px] flex justify-between font-mono text-[10.5px] text-ink-muted">
+      <div className="mt-[7px] flex justify-between font-mono text-2xs text-ink-muted">
         <span>0 %</span>
         <span>Story Score</span>
         <span>100 %</span>
@@ -806,7 +806,7 @@ function DimensionMeans({ averages }: { averages: Record<string, number> }) {
   if (rows.length === 0) return null;
   return (
     <div className={`${CARD} px-[18px] py-4`}>
-      <div className="mb-3 flex items-center gap-1.5 text-[13.5px] font-semibold text-ink">
+      <div className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-ink">
         Dimensions-Mittelwerte
         <InfoBubble id="dimensions_profile" size="sm" />
       </div>

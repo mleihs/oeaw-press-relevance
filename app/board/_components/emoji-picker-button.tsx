@@ -10,7 +10,7 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover
 const EmojiPickerPanel = dynamic(() => import('./emoji-picker-panel'), {
   ssr: false,
   loading: () => (
-    <div className="flex h-[340px] w-[276px] items-center justify-center text-[13px] text-muted-foreground">
+    <div className="flex h-[340px] w-[276px] items-center justify-center text-sm text-muted-foreground">
       Lädt…
     </div>
   ),

@@ -55,7 +55,7 @@ export function ThemeChips({
               {t.title}
               <span
                 className={cn(
-                  'rounded-full px-1.5 py-px font-mono text-[10px] font-semibold',
+                  'rounded-full px-1.5 py-px font-mono text-2xs font-semibold',
                   active ? 'bg-surface' : 'bg-fill text-ink-soft',
                 )}
               >
