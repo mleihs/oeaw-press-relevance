@@ -6,12 +6,17 @@ import {
   ArrowRight,
   BarChart3,
   BookOpen,
-  ClipboardCheck,
+  AlarmClock,
+  Heart,
+  InstagramLogo,
   Kanban,
-  Newspaper,
+  MessageCircle,
   Pin,
+  TrendingDown,
   TrendingUp,
 } from '@/lib/icons';
+import { socialAccent } from '@/app/social/_components/social-accents';
+import type { SocialDashboardData, SocialDashboardTheme } from '@/lib/server/social/dashboard';
 import { PressScoreBadge } from '@/components/score-bar';
 import { MobileScreenHeader } from '@/components/mobile-screen-header';
 import { InfoBubble } from '@/components/info-bubble';
@@ -109,17 +114,17 @@ interface DashboardClientProps {
   sortBy: SortBy;
   /** Board-Karten-Kachel (null wenn nicht angemeldet — Board ist auth-gated). */
   boardCards: BoardDashboardCards | null;
+  /** Social-Trends-Karte (null solange kein Themen-Snapshot existiert). */
+  socialData: SocialDashboardData | null;
 }
 
-export function DashboardClient({ data, period, sortBy, boardCards }: DashboardClientProps) {
+export function DashboardClient({ data, period, sortBy, boardCards, socialData }: DashboardClientProps) {
   const {
     stats,
     topPubs,
     topPubsTotal,
     topPubsLimit,
     flaggedCount,
-    pressReleasedCount,
-    orphansCount,
     webdbAsOf,
   } = data;
   const { user } = useCurrentUser();
@@ -219,66 +224,15 @@ export function DashboardClient({ data, period, sortBy, boardCards }: DashboardC
         </nav>
       </div>
 
-      {/* Row 1 — actionable tiles */}
-      <div
-        className={`grid gap-4 ${boardCards ? 'md:grid-cols-[1.25fr_1fr_1fr]' : 'md:grid-cols-2'}`}
-      >
-        {boardCards && (
-          <BoardTile cards={dueCards} overdueCount={overdueCount} />
-        )}
-
-        <ActionTile
-          icon={<ClipboardCheck className="h-[17px] w-[17px]" />}
-          iconClass="bg-warning-tint text-warning"
-          title="Triage"
-          value={flaggedCount}
-          unit="geflaggte Publikationen"
-          note="Zum Pitchen markiert, in der Sichtung zu entscheiden"
-          button={{
-            href: '/review',
-            label: 'Zur Triage-Sitzung',
-            icon: <Pin weight="fill" className="h-3.5 w-3.5" />,
-            class:
-              'border border-[#f0d9ad] bg-warning-tint text-warning-ink hover:brightness-[0.98]',
-          }}
-        />
-
-        <ActionTile
-          icon={<Newspaper className="h-[17px] w-[17px]" />}
-          iconClass="bg-success-tint text-success"
-          title="Pressemitteilungen"
-          value={pressReleasedCount}
-          unit="mit ÖAW-Pressemitteilung"
-          note={orphansCount > 0 ? `${orphansCount} Orphans ohne DOI-Match` : 'alle DOI-gematcht'}
-          button={{
-            href: '/press-releases',
-            label: 'PMs ansehen',
-            icon: <Newspaper className="h-3.5 w-3.5" />,
-            class:
-              'border border-[#b8e2cc] bg-success-tint text-success hover:brightness-[0.98]',
-          }}
-        />
-      </div>
-
-      {/* Row 2 — stat tiles */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <StatTile
-          icon={<BookOpen className="h-[21px] w-[21px]" />}
-          value={stats.total}
-          label={statLabels.pubs}
-        />
-        <StatTile
-          icon={<BarChart3 className="h-[21px] w-[21px]" />}
-          value={stats.analyzed}
-          label={statLabels.analyzed}
-        />
-        <StatTile
-          icon={<TrendingUp className="h-[21px] w-[21px]" />}
-          iconClass="bg-success-tint text-success"
-          value={stats.high_score_count}
-          label={statLabels.high}
-        />
-      </div>
+      {/* Row 1 — Social-Trends + Redaktionsboard (Design Toolkit-Redesign
+          §Dashboard 2026-07-06). Fehlt eine Hälfte (kein Snapshot / nicht
+          angemeldet), nimmt die andere die volle Breite. */}
+      {(socialData || boardCards) && (
+        <div className={`grid items-stretch gap-4 ${socialData && boardCards ? 'lg:grid-cols-2' : ''}`}>
+          {socialData && <SocialTrendsTile data={socialData} />}
+          {boardCards && <BoardTile cards={dueCards} overdueCount={overdueCount} />}
+        </div>
+      )}
 
       {/* Row 3 — top storys + analytics */}
       <div className="grid items-start gap-4 lg:grid-cols-[1.6fr_1fr]">
@@ -372,6 +326,26 @@ export function DashboardClient({ data, period, sortBy, boardCards }: DashboardC
           )}
         </div>
       </div>
+
+      {/* Row 4 — Bestand (Design: ganz unten) */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <StatTile
+          icon={<BookOpen className="h-[21px] w-[21px]" />}
+          value={stats.total}
+          label={statLabels.pubs}
+        />
+        <StatTile
+          icon={<BarChart3 className="h-[21px] w-[21px]" />}
+          value={stats.analyzed}
+          label={statLabels.analyzed}
+        />
+        <StatTile
+          icon={<TrendingUp className="h-[21px] w-[21px]" />}
+          iconClass="bg-success-tint text-success"
+          value={stats.high_score_count}
+          label={statLabels.high}
+        />
+      </div>
     </div>
 
     {/* ── Mobile-Layer (< md) — Mock Board-Mobile.dc.html Z. 263–358 (M3) ──
@@ -404,6 +378,9 @@ export function DashboardClient({ data, period, sortBy, boardCards }: DashboardC
 
       {/* Board-Kachel (wie Desktop, Karte trägt Fälliges + „Zum Board") */}
       {boardCards && <BoardTile cards={dueCards} overdueCount={overdueCount} />}
+
+      {/* Social-Trends (Mock Board-Mobile §Dashboard 2026-07-06) */}
+      {socialData && <SocialTrendsTile data={socialData} />}
 
       {/* 2-Spalten-Stat-Grid; 4. Kachel = Triage (Desktop-Aktions-Kachel) */}
       <div className="grid grid-cols-2 gap-2.5">
@@ -506,31 +483,37 @@ export function DashboardClient({ data, period, sortBy, boardCards }: DashboardC
 // ─── Aktions-Kacheln ───────────────────────────────────────────────────────
 
 function BoardTile({ cards, overdueCount }: { cards: BoardCardRef[]; overdueCount: number }) {
-  const shown = cards.slice(0, 4);
+  const shown = cards.slice(0, 5);
   return (
     <div className={`${CARD} flex flex-col overflow-hidden`}>
-      <div className="flex items-center gap-2.5 px-4 pb-3 pt-3.5">
-        <span className="flex h-[30px] w-[30px] items-center justify-center rounded-lg bg-brand-50 text-brand">
-          <Kanban className="h-[17px] w-[17px]" weight="duotone" />
+      <div className="flex items-center gap-[11px] border-b border-line bg-[linear-gradient(120deg,#eef4ff,#f8fbff)] px-4 pb-[13px] pt-[15px] dark:bg-none">
+        <span className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[10px] bg-brand text-white shadow-[0_3px_10px_rgba(0,71,187,.3)]">
+          <Kanban className="h-[19px] w-[19px]" weight="duotone" />
         </span>
-        <div className="flex-1 text-sm font-semibold text-ink">Redaktionsboard</div>
+        <div className="min-w-0 flex-1">
+          <div className="text-sm font-bold tracking-tight text-ink">Redaktionsboard</div>
+          <div className="mt-px font-mono text-[10.5px] text-[#6f8bbf]">
+            Überfällig &amp; demnächst fällig
+          </div>
+        </div>
         {overdueCount > 0 && (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#fdeaea] px-2 py-[3px] font-mono text-[11px] font-medium text-destructive">
+          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#fdeaea] px-2 py-[3px] font-mono text-[11px] font-semibold text-destructive">
+            <AlarmClock weight="bold" className="h-3 w-3" />
             {overdueCount} überfällig
           </span>
         )}
       </div>
-      <div className="flex-1 px-2">
+      <div className="flex-1 px-2 py-1.5">
         {shown.length > 0 ? (
           shown.map((c) => (
             <Link
               key={c.id}
               href={cardDeepLink(c)}
-              className="flex items-center gap-2.5 rounded-[9px] px-2 py-2 transition-colors hover:bg-canvas"
+              className="flex items-center gap-[11px] rounded-[10px] px-2 py-[9px] transition-colors hover:bg-canvas"
             >
               <span
-                className="h-2 w-2 shrink-0 rounded-full"
-                style={{ background: c.due_at && new Date(c.due_at) < new Date() ? '#dc2626' : '#d97706' }}
+                className="h-2.5 w-2.5 shrink-0 rounded-[3px]"
+                style={{ background: c.column_color ?? '#64748b' }}
               />
               <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-ink">
                 {c.title}
@@ -544,7 +527,7 @@ function BoardTile({ cards, overdueCount }: { cards: BoardCardRef[]; overdueCoun
       </div>
       <Link
         href="/board"
-        className="flex items-center gap-1.5 border-t border-line px-4 py-[11px] text-[12.5px] font-semibold text-brand transition-colors hover:bg-canvas"
+        className="flex items-center gap-1.5 border-t border-line px-4 py-3 text-[12.5px] font-semibold text-brand transition-colors hover:bg-canvas"
       >
         Zum Board
         <span className="flex-1" />
@@ -567,52 +550,135 @@ function DueLabel({ dueAt }: { dueAt: string | null }) {
   );
 }
 
-interface ActionTileButton {
-  href: string;
-  label: string;
-  icon: ReactNode;
-  class: string;
+// ─── Social-Media-Trends (Design Toolkit-Redesign §Dashboard 2026-07-06) ───
+
+function formatK(n: number): string {
+  if (n >= 1000) return (n / 1000).toFixed(1).replace('.', ',') + 'k';
+  return n.toLocaleString('de-AT');
 }
 
-function ActionTile({
-  icon,
-  iconClass,
-  title,
-  value,
-  unit,
-  note,
-  button,
-}: {
-  icon: ReactNode;
-  iconClass: string;
-  title: string;
-  value: number;
-  unit: string;
-  note: string;
-  button: ActionTileButton;
-}) {
+function DeltaChip({ pct, small }: { pct: number | null; small?: boolean }) {
+  if (pct === null) return null;
+  const up = pct >= 0;
+  const Icon = up ? TrendingUp : TrendingDown;
   return (
-    <div className={`${CARD} flex flex-col p-4`}>
-      <div className="flex items-center gap-2.5">
-        <span className={`flex h-[30px] w-[30px] items-center justify-center rounded-lg ${iconClass}`}>
-          {icon}
+    <span
+      className={`inline-flex shrink-0 items-center gap-1 rounded-full font-mono font-semibold ${
+        small ? 'px-[7px] py-0.5 text-[11px]' : 'px-2 py-[3px] text-[11px]'
+      } ${up ? 'bg-success-tint text-success' : 'bg-[#fdeaea] text-destructive'}`}
+    >
+      <Icon weight="bold" className="h-3 w-3" />
+      {up ? '+' : ''}
+      {pct} %
+    </span>
+  );
+}
+
+function ThemeSparkline({ theme }: { theme: SocialDashboardTheme }) {
+  const accent = socialAccent(theme.accent_index);
+  const max = Math.max(1, ...theme.spark);
+  return (
+    <span aria-hidden className="flex h-[22px] shrink-0 items-end gap-0.5">
+      {theme.spark.map((v, i) => (
+        <span
+          key={i}
+          className={`block w-1 rounded-[2px] ${accent.dot}`}
+          style={{
+            height: `${Math.max(2, Math.round((v / max) * 22))}px`,
+            opacity: 0.35 + 0.65 * (i / (theme.spark.length - 1)),
+          }}
+        />
+      ))}
+    </span>
+  );
+}
+
+function SocialTrendsTile({ data }: { data: SocialDashboardData }) {
+  const topAccent = data.top_post ? socialAccent(data.top_post.accent_index) : null;
+  return (
+    <div className={`${CARD} flex flex-col overflow-hidden`}>
+      <div className="flex items-center gap-[11px] border-b border-line bg-[linear-gradient(120deg,#fbf1ff,#eef4ff_52%,#eafaf4)] px-4 pb-[13px] pt-[15px] dark:bg-none">
+        <span className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[10px] bg-[linear-gradient(135deg,#7a3ab4,#c13584_52%,#f0842e)] text-white shadow-[0_3px_10px_rgba(193,53,132,.32)]">
+          <InstagramLogo weight="fill" className="h-[19px] w-[19px]" />
         </span>
-        <div className="text-sm font-semibold text-ink">{title}</div>
+        <div className="min-w-0 flex-1">
+          <div className="text-sm font-bold tracking-tight text-ink">Social-Media-Trends</div>
+          <div className="mt-px font-mono text-[10.5px] text-[#9a7fb5]">
+            Instagram · {data.channel_count} Kanäle · {data.window_days} Tage
+          </div>
+        </div>
+        <DeltaChip pct={data.delta_pct} />
       </div>
-      <div className="mt-3.5 flex items-baseline gap-2">
-        <span className="font-mono text-[30px] font-semibold tracking-[-0.02em] text-ink tabular-nums">
-          {value.toLocaleString('de-AT')}
-        </span>
-        <span className="text-[13px] text-ink-subtle">{unit}</span>
+
+      <div className="flex-1 px-2.5 pb-1 pt-2">
+        <div className="px-1.5 pb-[7px] pt-0.5 font-mono text-[9.5px] font-semibold uppercase tracking-wider text-ink-muted">
+          Trend-Themen
+        </div>
+        {data.themes.map((t) => {
+          const accent = socialAccent(t.accent_index);
+          return (
+            <Link
+              key={t.name}
+              href="/social"
+              className="flex items-center gap-[11px] rounded-[10px] px-1.5 py-2 transition-colors hover:bg-canvas"
+            >
+              <span className={`h-2.5 w-2.5 shrink-0 rounded-[3px] ${accent.dot}`} />
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-[13px] font-semibold text-ink">{t.name}</div>
+                <div className="mt-px font-mono text-[10.5px] text-ink-muted">
+                  {t.post_count} {t.post_count === 1 ? 'Post' : 'Posts'} · {formatK(t.likes)} Likes
+                </div>
+              </div>
+              <ThemeSparkline theme={t} />
+              <DeltaChip pct={t.delta_pct} small />
+            </Link>
+          );
+        })}
       </div>
-      <div className="mt-1 text-[12.5px] text-ink-subtle">{note}</div>
-      <span className="flex-1" />
+
+      {data.top_post && (
+        <div className="mx-2.5 mb-2.5 border-t border-line pt-2">
+          <div className="px-1.5 pb-1.5 font-mono text-[9.5px] font-semibold uppercase tracking-wider text-ink-muted">
+            Stärkster Post
+          </div>
+          <Link
+            href="/social"
+            className="flex items-center gap-[11px] rounded-[10px] px-1.5 py-2 transition-colors hover:bg-canvas"
+          >
+            <span
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-white ${topAccent?.avatar ?? 'bg-brand'}`}
+            >
+              <InstagramLogo weight="fill" className="h-[18px] w-[18px]" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-[12.5px] font-semibold leading-[1.3] text-ink">
+                {data.top_post.topic}
+              </div>
+              <div className="mt-0.5 font-mono text-[10.5px] text-ink-muted">
+                {data.top_post.handle}
+              </div>
+            </div>
+            <div className="flex shrink-0 flex-col items-end gap-0.5">
+              <span className="inline-flex items-center gap-1 font-mono text-xs font-semibold text-[#e1306c]">
+                <Heart weight="fill" className="h-[13px] w-[13px]" />
+                {formatK(data.top_post.likes)}
+              </span>
+              <span className="inline-flex items-center gap-1 font-mono text-[10.5px] text-ink-muted">
+                <MessageCircle className="h-[11px] w-[11px]" />
+                {data.top_post.comments.toLocaleString('de-AT')}
+              </span>
+            </div>
+          </Link>
+        </div>
+      )}
+
       <Link
-        href={button.href}
-        className={`mt-3.5 inline-flex w-full items-center justify-center gap-1.5 rounded-[9px] px-3 py-2.5 text-[12.5px] font-semibold transition ${button.class}`}
+        href="/social"
+        className="flex items-center gap-1.5 border-t border-line px-4 py-3 text-[12.5px] font-semibold text-brand transition-colors hover:bg-canvas"
       >
-        {button.icon}
-        {button.label}
+        Zum Social-Media-Lagebild
+        <span className="flex-1" />
+        <ArrowRight className="h-3.5 w-3.5" />
       </Link>
     </div>
   );

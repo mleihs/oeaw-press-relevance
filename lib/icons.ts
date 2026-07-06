@@ -160,6 +160,7 @@ export {
   Tag as Tags,
   Terminal as Terminal,
   Trash as Trash2,
+  TrendDown as TrendingDown,
   TrendUp as TrendingUp,
   Warning as TriangleAlert,
   Warning as TriangleAlertIcon,
