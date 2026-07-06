@@ -84,16 +84,17 @@ fehlende Typografie-Skala, Credentials in Docs (OSS-Blocker).
       Feature-Dateien umziehen (mechanisch; nur nötig für den echten Paketschnitt,
       nicht für die Whole-App-OSS-Variante).
 
-### Gruppe C — Quick Wins Architektur (Opus Medium) — DONE bis auf C2 (Commit 1a54f6a)
+### Gruppe C — Quick Wins Architektur (Opus Medium) — DONE (C1–C6; C2 Commit s. u.)
 
 - [x] **C1 (hinfällig)** Der ungenutzte `Input`-Import in card-modal.tsx war durch
       die parallele Board-Arbeit bereits entfernt — nichts zu tun.
-- [ ] **C2 (DEFERRED)** `eslint-plugin-boundaries` auf v7 + die 7 Legacy-Selektoren
-      in `eslint.config.mjs` auf Objekt-Syntax migrieren (Migrationsguide:
-      jsboundaries.dev v5-to-v6/v7). **Zurückgestellt:** braucht package.json-Bump
-      + package-lock-Regen, die mit paralleler Board-Arbeit (frimousse/mammoth)
-      kollidierten (Lock nicht partiell stageable). Nachziehen, sobald der
-      Working-Tree sauber ist. Lint gibt bis dahin die bekannte Legacy-Warnung.
+- [x] **C2 (DONE, 2026-07-06)** `eslint-plugin-boundaries` 6.0.2 → 7.0.1 gebumpt
+      und die 7 Legacy-Selektoren in `eslint.config.mjs` auf Objekt-Syntax
+      migriert. v7 benennt zusätzlich `rules` → `policies` um; beide Warnungen
+      (legacy-Selektor + `rules`-Deprecation) sind jetzt still. Neue Form:
+      `from: { element: { type } }` / `allow: { to: { element: { types: [...] } } }`.
+      Enforcement empirisch verifiziert (Probe-Datei `lib/client → lib/server`
+      wird weiterhin als Error gefangen). Lint jetzt 0 Warnungen / 0 Fehler.
 - [x] **C3 (DONE)** `import 'server-only'` auf 25 weitere `lib/server/**`-Module
       (jetzt 54/117). Ausgeschlossen: die 64 script-erreichbaren Module (transitiver
       Import-Graph ab `scripts/` berechnet — tsx/Node wirft bei `server-only`).
