@@ -177,10 +177,17 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+}
 
-  /* ── ÖAW Design System — Rohwerte (Spiegel von DESIGN_SYSTEM.md §2/§5) ──
-     Additiv & non-breaking: brechen nichts, bis Komponenten sie konsumieren
-     (Phase B+, docs/DESIGN_ROLLOUT.md). @theme-Mappings oben. */
+/* ── ÖAW Design System — Rohwerte (Spiegel von DESIGN_SYSTEM.md §2/§5) ──
+   Additiv & non-breaking: brechen nichts, bis Komponenten sie konsumieren
+   (Phase B+, docs/DESIGN_ROLLOUT.md). @theme-Mappings oben.
+   Selektorliste statt nur :root: `.force-light` pinnt einen Teilbaum auf die
+   Light-Rohwerte, auch wenn html.dark aktiv ist (Element-eigene Custom
+   Properties schlagen geerbte). Konsument: AuthScreen (bewusst light-only,
+   Fixplan F2). */
+:root,
+.force-light {
   /* Marke — ÖAW-Blau (500 = #0047bb) */
   --brand-50: #eef4ff;  --brand-100: #dbe7ff; --brand-200: #b8ccff;
   --brand-300: #85a6ff; --brand-400: #4b78ee; --brand-500: #0047bb;
@@ -533,7 +540,7 @@
 }
 .auth-field:focus-within {
   border-color: var(--brand-500);
-  box-shadow: 0 0 0 3px rgba(0, 71, 187, .13);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-500) 13%, transparent);
 }
 .auth-field input {
   flex: 1;
@@ -543,9 +550,9 @@
   background: transparent;
   font-family: inherit;
   font-size: 14.5px;
-  color: #16202e;
+  color: var(--n-ink);
 }
-.auth-field input::placeholder { color: #9aa4b2; }
+.auth-field input::placeholder { color: var(--n-ink-muted); }
 
 .auth-btn-primary {
   display: inline-flex;
@@ -561,7 +568,7 @@
   font-size: 14.5px;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 8px 20px rgba(0, 71, 187, .26);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--brand-500) 26%, transparent);
   transition: background .15s;
 }
 .auth-btn-primary:hover { background: var(--brand-600); }
