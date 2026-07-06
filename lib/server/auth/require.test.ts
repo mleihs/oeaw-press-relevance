@@ -16,6 +16,7 @@ function row(overrides: Partial<UserRow> = {}): UserRow {
     createdAt: '2026-07-03T10:00:00Z',
     updatedAt: '2026-07-03T10:00:00Z',
     disabledAt: null as string | null,
+    avatarKey: null as string | null,
     ...overrides,
   };
 }

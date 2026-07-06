@@ -54,6 +54,8 @@ export interface BoardMember {
   email: string;
   role: UserRole;
   disabled_at: string | null;
+  /** Proxy-URL des Profilbilds (/api/users/[id]/avatar) oder null → Initialen. */
+  avatar_url: string | null;
 }
 
 /** Kachel in der Board-Übersicht + Zeile im Switcher. */
