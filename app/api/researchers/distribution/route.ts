@@ -15,7 +15,7 @@ export const GET = withApiError(async (req: NextRequest) => {
   const limit = Math.min(q.limit, 1000);
 
   // See researchers/top route for the sql.param + cast rationale.
-  const points = (await db.execute(
+  const rows = (await db.execute(
     sql`SELECT * FROM researcher_distribution(
       ${q.since}::date,
       ${q.metric},
@@ -30,5 +30,14 @@ export const GET = withApiError(async (req: NextRequest) => {
       ${q.exclude_outreach}
     )`,
   )) as unknown as DistributionPoint[];
+  // PG `numeric`/`bigint` erreichen JS als String — der TS-Typ verspricht
+  // number und der Client ruft .toFixed (Beeswarm crashte bei sum_score).
+  // An der API-Boundary koerzieren statt im Client.
+  const points = rows.map((r) => ({
+    ...r,
+    metric_value: Number(r.metric_value),
+    pubs_total: Number(r.pubs_total),
+    count_high: Number(r.count_high),
+  }));
   return NextResponse.json({ points });
 });

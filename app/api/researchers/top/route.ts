@@ -34,5 +34,19 @@ export const GET = withApiError(async (req: NextRequest) => {
       ${q.exclude_outreach}
     )`,
   )) as unknown as TopResearcherRow[];
-  return NextResponse.json({ rows });
+  // PG `numeric`/`bigint` erreichen JS als String — der TS-Typ verspricht
+  // number und die Clients rufen .toFixed (Leaderboard/Podium bei sum_score).
+  // An der API-Boundary koerzieren statt in jedem Consumer.
+  const coerced = rows.map((r) => ({
+    ...r,
+    rank_now: Number(r.rank_now),
+    delta_count_high: Number(r.delta_count_high),
+    count_high: Number(r.count_high),
+    sum_score: Number(r.sum_score),
+    avg_score: Number(r.avg_score),
+    weighted_avg: Number(r.weighted_avg),
+    pubs_total: Number(r.pubs_total),
+    self_highlight_count: Number(r.self_highlight_count),
+  }));
+  return NextResponse.json({ rows: coerced });
 });
