@@ -76,15 +76,15 @@ export function BoardColumn({
   };
 
   return (
-    <section className="flex w-[296px] shrink-0 flex-col">
+    <section className="flex max-h-full w-[296px] shrink-0 flex-col">
       {/* Header — gesättigter Kanal-Balken (Board-Tiefe B): solide Kanalfarbe,
           weiße Schrift/Icons, dezenter Schlagschatten. Kräftige Farbe genau
           hier, während der Spaltenkörper neutral bleibt. Rechts: „…"-Menü + „+". */}
       <div
-        className="mb-2 flex items-center gap-2 rounded-[10px] px-2.5 py-2 shadow-[0_1px_2px_rgba(16,32,46,.16)]"
+        className="mb-2 flex items-center gap-2 rounded-[10px] px-3 py-2.5 shadow-[0_1px_2px_rgba(16,32,46,.16)]"
         style={{ backgroundColor: headBg }}
       >
-        <ChannelIcon name={column.name} className="h-[15px] w-[15px] shrink-0" style={{ color: iconColor }} />
+        <ChannelIcon name={column.name} className="h-[18px] w-[18px] shrink-0" style={{ color: iconColor }} />
         {editing ? (
           <input
             autoFocus
@@ -96,12 +96,12 @@ export function BoardColumn({
               else if (e.key === 'Escape') { setDraft(column.name); setEditing(false); }
             }}
             aria-label="Kanalname"
-            className="min-w-0 flex-1 rounded bg-white/25 px-1 py-0.5 text-[13px] font-bold tracking-tight outline-none placeholder:text-white/60"
+            className="min-w-0 flex-1 rounded bg-white/25 px-1 py-0.5 text-[14.5px] font-bold tracking-tight outline-none placeholder:text-white/60"
             style={{ color: nameColor }}
           />
         ) : (
           <span
-            className="min-w-0 flex-1 truncate text-[13px] font-bold tracking-tight"
+            className="min-w-0 flex-1 truncate text-[14.5px] font-bold tracking-tight"
             style={{ color: nameColor }}
           >
             {column.name}
@@ -213,7 +213,11 @@ export function BoardColumn({
           Hauch Kanalfarbe zur Rückmeldung. */}
       <div
         ref={setNodeRef}
-        className={cn('flex min-h-[120px] flex-1 flex-col gap-2.5 rounded-xl p-2 transition-colors')}
+        // min-h-0 + overflow-y-auto: die Kartenliste scrollt PRO KANAL
+        // (MeisterTask), statt die Seite in die Länge zu ziehen.
+        className={cn(
+          'flex min-h-[120px] flex-1 flex-col gap-2.5 overflow-y-auto rounded-xl p-2 transition-colors',
+        )}
         style={{
           background: isOver
             ? `color-mix(in srgb, ${column.color} 15%, var(--board-trough))`

@@ -26,11 +26,15 @@ export default async function BoardSlugPage({
   if (!data) notFound();
 
   return (
-    <BoardView
-      slug={slug}
-      initialData={data}
-      members={members}
-      isAdmin={user.role === 'admin'}
-    />
+    // Full-bleed-Marker: hebt via main:has(.full-bleed) die max-w-7xl-
+    // Begrenzung des globalen <main> auf (volle Breite wie MeisterTask).
+    <div className="full-bleed">
+      <BoardView
+        slug={slug}
+        initialData={data}
+        members={members}
+        isAdmin={user.role === 'admin'}
+      />
+    </div>
   );
 }
