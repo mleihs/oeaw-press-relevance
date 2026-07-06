@@ -79,8 +79,8 @@ describe.skipIf(!isLocal)('board server lifecycle (lokaler Stack)', () => {
       });
       expect(card.search_text).toContain('testkarte');
 
-      const it1 = await addItem({ card_id: card.id, kind: 'checklist', text: 'Fotos anfragen' });
-      const it2 = await addItem({ card_id: card.id, kind: 'subtask', text: 'Folge 12: Meroë' });
+      const it1 = await addItem(uid, { card_id: card.id, kind: 'checklist', text: 'Fotos anfragen' });
+      const it2 = await addItem(uid, { card_id: card.id, kind: 'subtask', text: 'Folge 12: Meroë' });
       await patchItem(uid, it1.id, { done: true });
 
       const d1 = await getCardDetail(card.id);
@@ -545,7 +545,7 @@ describe.skipIf(!isLocal)('board server lifecycle (lokaler Stack)', () => {
     try {
       const col = await createColumn(board.id, 'A');
       const card = await createCard(u.id, { column_id: col.id, title: 'K' });
-      const item = await addItem({ card_id: card.id, kind: 'subtask', text: 'Folge' });
+      const item = await addItem(u.id, { card_id: card.id, kind: 'subtask', text: 'Folge' });
       const first = await convertItemToCard(u.id, item.id, { column_id: col.id });
       await expect(
         convertItemToCard(u.id, item.id, { column_id: col.id }),

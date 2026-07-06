@@ -5,10 +5,10 @@ import { addItem, boardErrorToResponse } from '@/lib/server/board';
 import { itemCreateSchema } from '@/lib/shared/board-schemas';
 
 export const POST = withApiError(async (req: NextRequest) => {
-  await requireUser();
+  const user = await requireUser();
   const payload = await validateBody(req, itemCreateSchema);
   try {
-    const item = await addItem(payload);
+    const item = await addItem(user.id, payload);
     return NextResponse.json({ item }, { status: 201 });
   } catch (err) {
     const res = boardErrorToResponse(err);

@@ -6,7 +6,7 @@ import { rankBetween } from '@/lib/shared/rank';
 import { deleteObjects } from '@/lib/server/storage/s3';
 import type { CardChip, CardDetail } from '@/lib/shared/board';
 import type { CardCreatePayload, CardPatchPayload } from '@/lib/shared/board-schemas';
-import { BoardConflictError, CardNotFoundError, ColumnNotFoundError } from './errors';
+import { BoardConflictError, CardNotFoundError, ColumnNotFoundError, isUniqueViolation } from './errors';
 import { cardRankBetween, nextCardRank, withRankRetry } from './rank-util';
 import {
   activityRowToApi,
@@ -294,19 +294,27 @@ export async function moveCard(
   if (!target) throw new ColumnNotFoundError();
 
   try {
-    await withRankRetry(async () => {
-      const rank = positioned
-        ? await cardRankBetween(toColumnId, beforeId, afterId)
-        : await nextCardRank(toColumnId);
+    if (positioned) {
+      // KEIN withRankRetry: cardRankBetween ist für feste Nachbarn
+      // deterministisch — ein Retry ergäbe denselben kollidierenden Rank
+      // (Kontrakt in rank-util.ts). Kollision/veraltete Nachbarn → 409,
+      // der Client lädt das Board neu (Muster wie patchColumn).
+      const rank = await cardRankBetween(toColumnId, beforeId, afterId);
       await db
         .update(cards)
         .set({ columnId: toColumnId, boardId: target.boardId, rank })
         .where(eq(cards.id, cardId));
-    });
+    } else {
+      await withRankRetry(async () => {
+        const rank = await nextCardRank(toColumnId);
+        await db
+          .update(cards)
+          .set({ columnId: toColumnId, boardId: target.boardId, rank })
+          .where(eq(cards.id, cardId));
+      });
+    }
   } catch (err) {
-    // RangeError aus rankBetween: die Nachbar-IDs sind veraltet (parallele
-    // Umsortierung) — Konflikt statt 500, der Client lädt das Board neu.
-    if (err instanceof RangeError) throw new BoardConflictError();
+    if (err instanceof RangeError || isUniqueViolation(err)) throw new BoardConflictError();
     throw err;
   }
 

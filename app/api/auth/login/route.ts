@@ -8,7 +8,7 @@ import { evaluateUserRow } from '@/lib/server/auth/require';
 import { IMPERSONATION_COOKIE } from '@/lib/server/auth/impersonation';
 import { db, users } from '@/lib/server/db';
 import { eq } from 'drizzle-orm';
-import { tokenize, GATE_COOKIE_OPTIONS } from '@/lib/server/gate';
+import { GATE_COOKIE_OPTIONS } from '@/lib/server/gate';
 import { GATE_COOKIE_NAME } from '@/lib/shared/gate';
 
 // Supabase-Auth-Login (Identität HINTER dem Passwort-Gate — das Gate
@@ -56,7 +56,10 @@ export const POST = withApiError(async (req: NextRequest) => {
   // Persönlicher Login ist strikt stärker als das gemeinsame Übergangs-
   // Passwort: das Gate-Cookie wird mitgesetzt, damit der vereinheitlichte
   // Anmelde-Screen (AuthScreen am Gate) mit einem Schritt durchkommt.
-  // GATE_PASSWORD ist per env-Validator garantiert (lib/server/env.ts).
-  res.cookies.set(GATE_COOKIE_NAME, tokenize(process.env.GATE_PASSWORD!), GATE_COOKIE_OPTIONS);
+  // Cookie-Wert = GATE_TOKEN (genau der Wert, gegen den der Proxy vergleicht)
+  // statt tokenize(GATE_PASSWORD): sonst sperrt eine Env-Drift zwischen den
+  // beiden Variablen jeden persönlichen Login in eine Redirect-Schleife
+  // (Review-Fund). GATE_TOKEN ist per env-Validator garantiert.
+  res.cookies.set(GATE_COOKIE_NAME, process.env.GATE_TOKEN!, GATE_COOKIE_OPTIONS);
   return res;
 });

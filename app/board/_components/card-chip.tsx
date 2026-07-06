@@ -2,7 +2,7 @@
 
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { CheckCircle2, ListChecks, ListTree, MessageCircle, Paperclip } from '@/lib/icons';
+import { AlarmClock, CheckCircle2, ListChecks, ListTree, MessageCircle, Paperclip } from '@/lib/icons';
 import { cn } from '@/lib/shared/utils';
 import type { BoardLabel, BoardMember, CardChip as CardChipT } from '@/lib/shared/board';
 import { dueState } from '../_lib/due';
@@ -98,6 +98,14 @@ export function CardChip({
       }}
       className={cn('board-card cursor-pointer px-[13px] py-3')}
     >
+      {/* Überfällig klar benennen statt nur rosa Tönung (MeisterTask
+          schreibt es wörtlich über die Karte — User-Wunsch 2026-07-06). */}
+      {overdue && (
+        <div className="mb-1.5 flex items-center gap-1 font-mono text-[10px] font-bold uppercase tracking-wider text-danger">
+          <AlarmClock weight="fill" className="h-3 w-3" />
+          Überfällig
+        </div>
+      )}
       {cardLabels.length > 0 && (
         <div className="mb-2 flex flex-wrap gap-1">
           {cardLabels.map((l) => (
@@ -141,7 +149,7 @@ export function CardChip({
           {(assignee || watchersOnly.length > 0) && (
             <span className="ml-auto flex items-center pl-2">
               {shownWatchers.map((id, i) => (
-                <span key={id} style={{ marginLeft: i === 0 ? 0 : -7 }} className="rounded-full opacity-70 ring-2 ring-surface">
+                <span key={id} style={{ marginLeft: i === 0 ? 0 : -7 }} className="flex rounded-full opacity-70 ring-2 ring-surface">
                   <BoardAvatar member={members.get(id)} size={22} />
                 </span>
               ))}
@@ -156,7 +164,10 @@ export function CardChip({
                 <span
                   title={displayNameOf(assignee)}
                   style={{ marginLeft: shownWatchers.length || extraWatchers > 0 ? -7 : 0, boxShadow: `0 0 0 2px ${accent}` }}
-                  className="rounded-full ring-2 ring-surface"
+                  // `flex` statt inline: eine Inline-Box wächst um den
+                  // Baseline-Descender unter dem Avatar — der Ring wird oval
+                  // und unten bleibt ein Spalt (User-Report 2026-07-06).
+                  className="flex rounded-full ring-2 ring-surface"
                 >
                   <BoardAvatar member={assignee} size={22} />
                 </span>

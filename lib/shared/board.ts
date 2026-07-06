@@ -35,6 +35,7 @@ export const ACTIVITY_VERBS = [
   'due_cleared',
   'assignee_set',
   'assignee_cleared',
+  'item_added',
   'item_checked',
   'item_unchecked',
   'attachment_added',

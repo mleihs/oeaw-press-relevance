@@ -160,7 +160,7 @@ export function CompletionBanner({
             <span
               key={m.id}
               title={displayNameOf(m)}
-              className="relative rounded-full shadow-sm"
+              className="relative flex rounded-full shadow-sm"
               style={{ marginLeft: i ? -11 : 0, zIndex: 20 - i }}
             >
               <BoardAvatar
