@@ -178,7 +178,7 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex overflow-y-auto bg-[#f7f8fa] dark:bg-background">
+    <div className="fixed inset-0 z-50 flex overflow-y-auto bg-[#f7f8fa] text-[#16202e]" style={{ colorScheme: 'light' }}>
       <BrandPanel />
 
       {/* ===== Formular-Panel ===== */}
@@ -193,7 +193,7 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
           {mode === 'signin' && (
             <div className="auth-rise">
               <h2 className="text-[25px] font-bold tracking-tight">Willkommen zurück</h2>
-              <p className="mb-6 mt-2 text-sm text-muted-foreground">
+              <p className="mb-6 mt-2 text-sm text-[#64707f]">
                 Melde dich mit deinem ÖAW-Redaktionszugang an.
               </p>
 
@@ -201,7 +201,7 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
                 <div
                   key={errNonce}
                   role="alert"
-                  className="auth-shake mb-4 flex items-center gap-2 rounded-[10px] border border-red-200 bg-red-50 px-3 py-2.5 text-[13px] font-medium text-red-600 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400"
+                  className="auth-shake mb-4 flex items-center gap-2 rounded-[10px] border border-red-200 bg-red-50 px-3 py-2.5 text-[13px] font-medium text-red-600"
                 >
                   <AlertCircle weight="fill" className="h-4 w-4 shrink-0" />
                   {error}
@@ -212,12 +212,12 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
                 <div>
                   <label
                     htmlFor="auth-email"
-                    className="mb-1.5 block text-xs font-semibold text-foreground/80"
+                    className="mb-1.5 block text-xs font-semibold text-[#475262]"
                   >
                     E-Mail-Adresse
                   </label>
                   <div className="auth-field">
-                    <Mail className="h-[17px] w-[17px] shrink-0 text-muted-foreground/60" />
+                    <Mail className="h-[17px] w-[17px] shrink-0 text-[#9aa4b2]" />
                     <input
                       ref={emailRef}
                       id="auth-email"
@@ -235,7 +235,7 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
 
                 <div>
                   <div className="mb-1.5 flex items-center justify-between">
-                    <label htmlFor="auth-password" className="text-xs font-semibold text-foreground/80">
+                    <label htmlFor="auth-password" className="text-xs font-semibold text-[#475262]">
                       Passwort
                     </label>
                     <button
@@ -247,7 +247,7 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
                     </button>
                   </div>
                   <div className="auth-field">
-                    <LockKeyhole className="h-[17px] w-[17px] shrink-0 text-muted-foreground/60" />
+                    <LockKeyhole className="h-[17px] w-[17px] shrink-0 text-[#9aa4b2]" />
                     <input
                       id="auth-password"
                       type={showPw ? 'text' : 'password'}
@@ -263,7 +263,7 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
                       type="button"
                       onClick={() => setShowPw((v) => !v)}
                       aria-label={showPw ? 'Passwort verbergen' : 'Passwort anzeigen'}
-                      className="flex p-1 text-muted-foreground/60 hover:text-foreground/70"
+                      className="flex p-1 text-[#9aa4b2] hover:text-[#475262]"
                     >
                       {showPw ? <EyeOff className="h-[18px] w-[18px]" /> : <Eye className="h-[18px] w-[18px]" />}
                     </button>
@@ -285,7 +285,7 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
                 </button>
               </form>
 
-              <div className="mt-5 flex items-start gap-2 border-t border-border/60 pt-4 text-xs leading-relaxed text-muted-foreground/80">
+              <div className="mt-5 flex items-start gap-2 border-t border-[#eef1f5] pt-4 text-xs leading-relaxed text-[#9aa4b2]">
                 <Info className="mt-0.5 h-[15px] w-[15px] shrink-0" />
                 <span>
                   Zugänge vergibt die Kommunikationsleitung. Es gibt keinen Self-Service, bei
@@ -296,23 +296,23 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
               {variant === 'gate' && (
                 <>
                   <div className="my-5 flex items-center gap-3">
-                    <span className="h-px flex-1 bg-border" />
-                    <span className="text-[11px] font-semibold tracking-wide text-muted-foreground/70">
+                    <span className="h-px flex-1 bg-[#e5e9ef]" />
+                    <span className="text-[11px] font-semibold tracking-wide text-[#9aa4b2]">
                       ODER ÜBERGANGSWEISE
                     </span>
-                    <span className="h-px flex-1 bg-border" />
+                    <span className="h-px flex-1 bg-[#e5e9ef]" />
                   </div>
 
-                  <div className="rounded-[13px] border-[1.5px] border-[#e3ddc8] bg-[#fdfbf3] p-4 dark:border-amber-500/25 dark:bg-amber-500/[0.06]">
+                  <div className="rounded-[13px] border-[1.5px] border-[#e3ddc8] bg-[#fdfbf3] p-4">
                     <div className="mb-2 flex items-center gap-2.5">
-                      <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[9px] bg-[#fbf0d6] text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
+                      <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[9px] bg-[#fbf0d6] text-amber-700">
                         <Key weight="duotone" className="h-[17px] w-[17px]" />
                       </span>
-                      <div className="text-[13.5px] font-bold text-[#8a5a12] dark:text-amber-300">
+                      <div className="text-[13.5px] font-bold text-[#8a5a12]">
                         Übergangszugang
                       </div>
                     </div>
-                    <p className="mb-3 text-xs leading-relaxed text-[#7d6a45] dark:text-amber-200/70">
+                    <p className="mb-3 text-xs leading-relaxed text-[#7d6a45]">
                       Bis zur vollständigen Umstellung ist ein gemeinsames Übergangs-Passwort aktiv.
                       Es gibt Zugriff auf alle Bereiche{' '}
                       <span className="font-semibold">außer das Redaktionsboard</span>.
@@ -322,7 +322,7 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
                       <div
                         key={gateNonce}
                         role="alert"
-                        className="auth-shake mb-3 flex items-center gap-2 rounded-[9px] border border-red-200 bg-red-50 px-2.5 py-2 text-xs font-medium text-red-600 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400"
+                        className="auth-shake mb-3 flex items-center gap-2 rounded-[9px] border border-red-200 bg-red-50 px-2.5 py-2 text-xs font-medium text-red-600"
                       >
                         <AlertCircle weight="fill" className="h-[15px] w-[15px] shrink-0" />
                         {gateError}
@@ -330,8 +330,8 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
                     )}
 
                     <form onSubmit={handleGate}>
-                      <div className="auth-field mb-3 h-11 border-[#e0d7bc] dark:border-amber-500/25">
-                        <Password className="h-4 w-4 shrink-0 text-[#b89a5e] dark:text-amber-400/70" />
+                      <div className="auth-field mb-3 h-11 border-[#e0d7bc]">
+                        <Password className="h-4 w-4 shrink-0 text-[#b89a5e]" />
                         <input
                           type={showGatePw ? 'text' : 'password'}
                           aria-label="Gemeinsames Übergangs-Passwort"
@@ -347,7 +347,7 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
                           type="button"
                           onClick={() => setShowGatePw((v) => !v)}
                           aria-label={showGatePw ? 'Passwort verbergen' : 'Passwort anzeigen'}
-                          className="flex p-1 text-[#b89a5e] hover:text-[#8a5a12] dark:text-amber-400/70"
+                          className="flex p-1 text-[#b89a5e] hover:text-[#8a5a12]"
                         >
                           {showGatePw ? <EyeOff className="h-[17px] w-[17px]" /> : <Eye className="h-[17px] w-[17px]" />}
                         </button>
@@ -381,17 +381,17 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
               <button
                 type="button"
                 onClick={() => setMode('signin')}
-                className="mb-5 flex items-center gap-1.5 text-[13px] font-semibold text-muted-foreground hover:text-brand"
+                className="mb-5 flex items-center gap-1.5 text-[13px] font-semibold text-[#64707f] hover:text-brand"
               >
                 <ArrowLeft className="h-[15px] w-[15px]" />
                 Zurück zur Anmeldung
               </button>
 
-              <span className="mb-4 flex h-[46px] w-[46px] items-center justify-center rounded-[13px] bg-brand-50 text-brand dark:bg-brand-500/15">
+              <span className="mb-4 flex h-[46px] w-[46px] items-center justify-center rounded-[13px] bg-[#eef4ff] text-brand">
                 <Key weight="duotone" className="h-6 w-6" />
               </span>
               <h2 className="text-2xl font-bold tracking-tight">Passwort zurücksetzen</h2>
-              <p className="mb-6 mt-2 text-sm leading-relaxed text-muted-foreground">
+              <p className="mb-6 mt-2 text-sm leading-relaxed text-[#64707f]">
                 Gib deine ÖAW-Adresse ein. Die Administration setzt dein Passwort zurück und
                 übergibt dir persönlich ein neues Initialpasswort. Einen Self-Service-Reset gibt
                 es bewusst nicht.
@@ -401,12 +401,12 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
                 <div>
                   <label
                     htmlFor="auth-fw-email"
-                    className="mb-1.5 block text-xs font-semibold text-foreground/80"
+                    className="mb-1.5 block text-xs font-semibold text-[#475262]"
                   >
                     E-Mail-Adresse
                   </label>
                   <div className="auth-field">
-                    <Mail className="h-[17px] w-[17px] shrink-0 text-muted-foreground/60" />
+                    <Mail className="h-[17px] w-[17px] shrink-0 text-[#9aa4b2]" />
                     <input
                       id="auth-fw-email"
                       type="email"
@@ -427,20 +427,20 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
 
           {mode === 'forgot-sent' && (
             <div className="auth-rise py-2 text-center">
-              <span className="auth-pop inline-flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400">
+              <span className="auth-pop inline-flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
                 <CheckCircle2 weight="fill" className="h-9 w-9" />
               </span>
               <h2 className="mt-5 text-[22px] font-bold tracking-tight">Anfrage vorbereitet</h2>
-              <p className="mt-2.5 text-sm leading-relaxed text-muted-foreground">
+              <p className="mt-2.5 text-sm leading-relaxed text-[#64707f]">
                 Dein E-Mail-Programm wurde mit der Anfrage an{' '}
-                <span className="font-semibold text-foreground">{ADMIN_CONTACT_EMAIL}</span>{' '}
+                <span className="font-semibold text-[#16202e]">{ADMIN_CONTACT_EMAIL}</span>{' '}
                 geöffnet, einfach absenden. Die Kommunikationsleitung meldet sich mit einem neuen
                 Initialpasswort.
               </p>
               <button
                 type="button"
                 onClick={() => setMode('signin')}
-                className="mt-6 w-full rounded-[11px] border-[1.5px] border-border bg-card px-3 py-3 text-sm font-semibold text-foreground/80 transition-colors hover:bg-muted"
+                className="mt-6 w-full rounded-[11px] border-[1.5px] border-[#cbd2dc] bg-white px-3 py-3 text-sm font-semibold text-[#475262] transition-colors hover:bg-[#f2f4f7]"
               >
                 Zur Anmeldung
               </button>
