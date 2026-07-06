@@ -6,6 +6,10 @@ import {
   type PublicationListItem,
 } from '@/lib/server/publications/list';
 import { publicationsRepo } from '@/lib/server/repos/publications';
+import {
+  fetchPublicationDashboardStats,
+  type PublicationDashboardStats,
+} from '@/lib/server/publications/dashboard-stats';
 import { countOrphans } from '@/lib/server/press-releases/list';
 import {
   DIMENSION_SORT_MAP,
@@ -29,46 +33,15 @@ function publishedAfter(period: DashboardPeriod): string | null {
   return d.toISOString().slice(0, 10);
 }
 
-// JSONB payload shape returned by the `publication_dashboard_stats(...)`
-// SQL function (supabase/migrations/20260505000002). All fields optional —
-// the SQL function builds the object conditionally and this wrapper fills
-// in defaults at the boundary.
-type StatsPayload = {
-  total?: number;
-  enriched?: number;
-  partial?: number;
-  with_abstract?: number;
-  analyzed?: number;
-  peer_reviewed?: number;
-  popular_science?: number;
-  bilingual_summary?: number;
-  avg_score?: number | null;
-  high_score_count?: number;
-  score_distribution?: number[];
-  dimension_avgs?: Record<string, number>;
-  top_keywords?: { word: string; count: number }[];
-};
-
-export type DashboardStats = {
-  total: number;
-  enriched: number;
-  partial: number;
-  with_abstract: number;
-  analyzed: number;
-  peer_reviewed: number;
-  popular_science: number;
-  bilingual_summary: number;
-  avg_score: number | null;
-  high_score_count: number;
-  score_distribution: number[];
+// The base stats (fetch + defaulting) are shared with /api/publications/stats;
+// the dashboard adds the press-similarity histogram on top.
+export type DashboardStats = PublicationDashboardStats & {
   /** Histogram of `press_similarity` in 10 buckets across the meaningful
    *  SPECTER2 band [SIMILARITY_RANGE_MIN, SIMILARITY_RANGE_MAX]. Feeds the
    *  mirror histogram, which lives alongside the joint scatter (the
    *  histogram shows each metric's marginal shape; the scatter shows how
    *  they relate). */
   similarity_distribution: number[];
-  dimension_avgs: Record<string, number>;
-  top_keywords: { word: string; count: number }[];
 };
 
 // Press-similarity histogram. 10 equal-width buckets across the meaningful
@@ -156,29 +129,11 @@ async function getWebdbAsOf(): Promise<string | null> {
 }
 
 async function getStats(defaultEligible: boolean): Promise<DashboardStats> {
-  const [statsRows, similarityBuckets] = await Promise.all([
-    db.execute<{ stats: StatsPayload | null }>(
-      sql`SELECT publication_dashboard_stats(${defaultEligible}) AS stats`,
-    ),
+  const [base, similarityBuckets] = await Promise.all([
+    fetchPublicationDashboardStats(defaultEligible),
     getSimilarityDistribution(),
   ]);
-  const stats = statsRows[0]?.stats ?? {};
-  return {
-    total: stats.total || 0,
-    enriched: stats.enriched || 0,
-    partial: stats.partial || 0,
-    with_abstract: stats.with_abstract || 0,
-    analyzed: stats.analyzed || 0,
-    peer_reviewed: stats.peer_reviewed || 0,
-    popular_science: stats.popular_science || 0,
-    bilingual_summary: stats.bilingual_summary || 0,
-    avg_score: stats.avg_score ?? null,
-    high_score_count: stats.high_score_count || 0,
-    score_distribution: stats.score_distribution ?? new Array(10).fill(0),
-    similarity_distribution: similarityBuckets,
-    dimension_avgs: stats.dimension_avgs ?? {},
-    top_keywords: stats.top_keywords ?? [],
-  };
+  return { ...base, similarity_distribution: similarityBuckets };
 }
 
 // Eligible-pub counts for all four dashboard periods in ONE conditional-

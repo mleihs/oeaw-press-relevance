@@ -5,10 +5,10 @@ import { requireUser } from '@/lib/server/auth/require';
 import {
   addAttachment,
   MAX_ATTACHMENT_BYTES,
-  boardErrorToResponse,
+  withBoardErrors,
 } from '@/lib/server/board';
 
-export const POST = withApiError(async (
+export const POST = withApiError(withBoardErrors(async (
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) => {
@@ -40,16 +40,10 @@ export const POST = withApiError(async (
   }
 
   const bytes = await file.arrayBuffer();
-  try {
-    const attachment = await addAttachment(user.id, id, {
-      filename: file.name,
-      contentType: file.type,
-      bytes,
-    });
-    return NextResponse.json({ attachment });
-  } catch (err) {
-    const res = boardErrorToResponse(err);
-    if (res) return res;
-    throw err;
-  }
-});
+  const attachment = await addAttachment(user.id, id, {
+    filename: file.name,
+    contentType: file.type,
+    bytes,
+  });
+  return NextResponse.json({ attachment });
+}));

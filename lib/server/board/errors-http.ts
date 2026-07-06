@@ -53,3 +53,25 @@ export function boardErrorToResponse(err: unknown): Response | null {
   }
   return null;
 }
+
+/**
+ * Wraps a board route handler so domain errors map to their HTTP status and
+ * everything else rethrows (to `withApiError` → 500). Replaces the repeated
+ *   try { … } catch (err) { const r = boardErrorToResponse(err); if (r) return r; throw err; }
+ * boilerplate in every board route. Compose it INSIDE `withApiError` so the
+ * CSRF/validation/auth handling still wraps it:
+ *   export const PATCH = withApiError(withBoardErrors(async (req, ctx) => { … }));
+ */
+export function withBoardErrors<Args extends unknown[]>(
+  handler: (...args: Args) => Promise<Response> | Response,
+): (...args: Args) => Promise<Response> {
+  return async (...args: Args) => {
+    try {
+      return await handler(...args);
+    } catch (err) {
+      const res = boardErrorToResponse(err);
+      if (res) return res;
+      throw err;
+    }
+  };
+}

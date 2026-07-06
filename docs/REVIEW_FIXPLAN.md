@@ -113,23 +113,36 @@ fehlende Typografie-Skala, Credentials in Docs (OSS-Blocker).
       Typen und `DEFAULT_EVENTS_SORT`) aus `events/list.ts` nach
       `lib/shared/events-filter.ts` verschoben; alle Importstellen umgezogen.
 
-### Gruppe D — Dedup (Opus Medium)
+### Gruppe D — Dedup (Opus Medium) — DONE 2026-07-06
 
-- [ ] **D1** `withBoardAuth`-Wrapper für die 5 identischen Preambles in
-      `app/api/board/{cards,columns,items,comments}/[id]/**` (+ labels/watchers/hidden).
-- [ ] **D2** Gemeinsame Handler-Factory für `app/api/events/[id]/flag` ↔
-      `app/api/publications/[id]/flag` (2 Klone à ~15 Z.).
-- [ ] **D3** Geteilte Error-Komponente für `app/{press-releases,publications,researchers}/error.tsx`.
-- [ ] **D4** `lib/client/hooks/use-info-bubbles.ts` ↔ `use-keyboard-shortcuts-enabled.ts`
-      (29-Z.-Klon) → generischer `useLocalStorageFlag`.
-- [ ] **D5** Stats-Klone: `app/api/publications/stats/route.ts` ↔
-      `lib/server/dashboard/fetch.ts:36-52,166-177` → gemeinsame Funktion in
-      `lib/server/publications/`.
-- [ ] **D6** SSE-Batch-Klon (größter, 31 Z.): `lib/server/analysis/batch.ts:134-164`
-      ↔ `lib/server/events/analyze.ts:137-165` → gemeinsamer Batch-Loop-Helper.
-- [ ] **D7** Query-Logik aus Report-Routen in Feature-Module:
-      `app/api/dev/switch-user`, `app/api/export/csv`, `app/api/webdb/status`,
-      `app/api/publications/[id]/similar-pressed`.
+- [x] **D1** `withBoardErrors`-HOF (statt des geplanten `withBoardAuth` — die
+      echte Duplikation war die 6-Zeilen-`boardErrorToResponse`-try/catch, nicht
+      die requireUser-Preamble; ein Auth-Wrapper hätte die variierenden
+      Handler-Signaturen erzwungen). In `lib/server/board/errors-http.ts`, per
+      Barrel exportiert. 25 Board-Routen / 30 Handler auf
+      `withApiError(withBoardErrors(async …))` umgestellt, try/catch entfernt.
+      Bewusst NICHT umgestellt: `attachments/[id]` GET (scoped mid-function catch,
+      kein mechanisches Match) — behält `boardErrorToResponse`.
+- [x] **D2** `createFlagRoute(deps)`-Factory in `lib/server/flag-route.ts`; beide
+      Flag-Routen (events/publications) sind jetzt 10-Zeilen-`export const
+      { POST, DELETE } = createFlagRoute({ setFlag, clearFlag, isNotFound })`.
+- [x] **D3** `components/route-error.tsx` (`RouteError`); die drei list-page
+      `error.tsx` sind dünne Wrapper.
+- [x] **D4** `makeLocalStorageFlag(key, eventName)` in
+      `lib/client/hooks/use-local-storage-flag.ts`; beide Hooks delegieren
+      (keyboard-Hook exportiert zusätzlich `read` als imperativen Reader).
+- [x] **D5** `fetchPublicationDashboardStats(defaultEligible)` +
+      `PublicationDashboardStats` in `lib/server/publications/dashboard-stats.ts`;
+      stats-Route + dashboard/fetch nutzen es (Dashboard = Basis + similarity_distribution).
+- [x] **D6** `sseBatchHooks(emit)` + `emitBatchComplete(emit, result)` in
+      `lib/server/llm-batch.ts`; analysis/batch + events/analyze nutzen sie.
+- [x] **D7** Query-Logik in Feature-Module: `lib/server/webdb/status.ts`
+      (`getWebdbStatus`), `lib/server/publications/similar-pressed.ts`
+      (`getSimilarPressed`), `lib/server/publications/export.ts`
+      (`fetchAnalyzedExportRows`), `lib/server/auth/user-switcher.ts`
+      (`authorizeUserSwitch` + `listSwitchableUsers`). Die vier Routen sind jetzt
+      dünne HTTP-Adapter (CSV-Formatierung + switch-user-Session-Cookie-Flow
+      bleiben request/response-gebunden in der Route).
 
 ### Gruppe E — Design-System-Fixes ohne visuelles Risiko (Opus Medium)
 

@@ -1,30 +1,12 @@
 'use client';
 
-import { ApiErrorCard } from '@/components/api-error-card';
-import { Button } from '@/components/ui/button';
+import { RouteError } from '@/components/route-error';
 
 // error.tsx must be a Client Component (it receives an error prop + a reset
-// callback). The pilot pattern (persons/publications detail pages) wraps a
-// breadcrumb plus ApiErrorCard. List pages have no parent to navigate back
-// to, so the card alone — with a retry wired to Next's `reset()`.
-export default function PressReleasesError({
-  error,
-  reset,
-}: {
+// callback). Body shared with /publications and /researchers via RouteError.
+export default function PressReleasesError(props: {
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  return (
-    <div className="space-y-4">
-      <ApiErrorCard
-        title="Fehler beim Laden"
-        message={error.message}
-        action={
-          <Button size="sm" variant="outline" onClick={reset}>
-            Nochmal versuchen
-          </Button>
-        }
-      />
-    </div>
-  );
+  return <RouteError {...props} />;
 }

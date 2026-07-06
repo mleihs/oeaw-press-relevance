@@ -3,7 +3,12 @@ import { and, eq, gte, inArray } from 'drizzle-orm';
 import { db, publications, descNullsLast } from '@/lib/server/db';
 import { analyzePublications } from './analyze';
 import { calculatePressScore } from './score';
-import { runLLMBatch, preflightBalance } from '@/lib/server/llm-batch';
+import {
+  runLLMBatch,
+  preflightBalance,
+  sseBatchHooks,
+  emitBatchComplete,
+} from '@/lib/server/llm-batch';
 import type { AnalysisResult } from '@/lib/shared/types';
 import type { PublicationForPrompt } from './prompts';
 import { publicationToApi } from '../publications/to-api';
@@ -134,32 +139,8 @@ export async function runAnalysisBatch(
         .set({ analysisStatus: 'failed' })
         .where(inArray(publications.id, batch.map((p) => p.id)));
     },
-    hooks: {
-      onBatchStart: (p) =>
-        emit('progress', {
-          processed: p.processed,
-          total: p.total,
-          current_title: p.batch[0].title,
-          batch_index: p.batchIndex,
-          total_batches: p.totalBatches,
-          tokens_used: p.tokensUsed,
-          cost: p.cost,
-        }),
-      onError: (e) => emit('error', { message: e.message, batch_start: e.batchStartIndex, fatal: e.fatal }),
-      onCancelled: (p) => emit('cancelled', { processed: p.processed, successful: p.successful, total: p.total }),
-    },
+    hooks: sseBatchHooks<PublicationForPrompt>(emit),
   });
 
-  // Original behaviour: emit 'complete' on normal/fatal end, but NOT on abort
-  // (the 'cancelled' event already fired from the hook).
-  if (!result.cancelled) {
-    emit('complete', {
-      processed: result.processed,
-      total: result.total,
-      successful: result.successful,
-      failed: result.failed,
-      tokens_used: result.tokensUsed,
-      cost: result.cost,
-    });
-  }
+  emitBatchComplete(emit, result);
 }
