@@ -47,8 +47,8 @@ const DECISION: Record<
   Exclude<Decision, 'undecided'>,
   { cls: string; Icon: LucideIcon; label: string }
 > = {
-  pitch: { cls: 'text-green-600 dark:text-green-400', Icon: Check, label: 'Pitch' },
-  hold: { cls: 'text-blue-600 dark:text-blue-400', Icon: Pause, label: 'Hold' },
+  pitch: { cls: 'text-success dark:text-emerald-400', Icon: Check, label: 'Pitch' },
+  hold: { cls: 'text-info dark:text-brand-300', Icon: Pause, label: 'Hold' },
   skip: { cls: 'text-muted-foreground', Icon: XIcon, label: 'Skip' },
 };
 
