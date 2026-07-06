@@ -144,17 +144,27 @@ fehlende Typografie-Skala, Credentials in Docs (OSS-Blocker).
       dünne HTTP-Adapter (CSV-Formatierung + switch-user-Session-Cookie-Flow
       bleiben request/response-gebunden in der Route).
 
-### Gruppe E — Design-System-Fixes ohne visuelles Risiko (Opus Medium)
+### Gruppe E — Design-System-Fixes ohne visuelles Risiko (Opus Medium) — DONE 2026-07-06 (E3-Changelog → F verschoben)
 
-- [ ] **E1** `components/ui/virtualized-multi-select.tsx` Z.193-318: neutral-Grauskala
-      → semantische Tokens (muted/border/foreground); einzige Grauskala-Datei im
-      ui-Kit, in Dark kaputt. Konsumenten: publications/filter-sheet, social-toolbar.
-- [ ] **E2** `SOURCE_BADGE_CLASSES` (`lib/shared/constants.ts:124-132`) dark-fähig
-      (dokumentierter offener Dark-Bug, siehe DESIGN_ROLLOUT.md).
-- [ ] **E3** Wert-identische Ersetzungen (0 visuelle Änderung):
-      `app/_components/dashboard-client.tsx:512,580` `bg-[#fdeaea]` → `bg-danger-tint`;
-      `components/changelog-panel.tsx:165-244` `rgba(0,71,187,…)` →
-      `var(--brand-500)`/color-mix.
+- [x] **E1** `components/ui/virtualized-multi-select.tsx`: neutral-Grauskala →
+      semantische Tokens. `text-neutral-500`→`text-muted-foreground`,
+      `hover:text-neutral-900`→`hover:text-foreground`, GroupHeader
+      `bg-neutral-50 border-neutral-100`→`bg-muted border-border`, RowItem
+      `hover:bg-neutral-100`+`bg-neutral-50(checked)`→`hover:bg-accent`+`bg-accent`
+      (command.tsx-Idiom), Checkbox-off `border-neutral-300 bg-white`→
+      `border-input bg-background`. Brand-Fill (checked) unverändert.
+- [x] **E2** `SOURCE_BADGE_CLASSES` (`lib/shared/constants.ts`) dark-fähig — je
+      Quelle additiv `dark:bg-<c>-500/15 dark:text-<c>-300` (tint-badge-Konvention);
+      Light 1:1 unverändert.
+- [x] **E3 (Teil)** `app/_components/dashboard-client.tsx` (2×) `bg-[#fdeaea]` →
+      `bg-danger-tint` (Token = #fdeaea light / #331515 dark → light-identisch,
+      dark-gefixt).
+- [ ] **E3 (Rest) → verschoben nach F:** `components/changelog-panel.tsx`
+      `rgba(0,71,187,…)`-Schatten → `color-mix(in srgb, var(--brand-500) …%, transparent)`.
+      Grund: color-mix in Tailwind-Arbitrary-`shadow-[…]` ist im Repo bisher
+      NICHT verwendet; unparsbare Arbitrary-Values verwirft Tailwind still
+      (→ Schatten verschwindet, unsichtbare Regression). Braucht Browser-Verify
+      → gehört zu Gruppe F, nicht in den „ohne visuelles Risiko"-Schnitt.
 
 ### Gruppe F — Design-Pass mit Browser-Verify (Opus, eigene Session)
 
@@ -175,6 +185,11 @@ fehlende Typografie-Skala, Credentials in Docs (OSS-Blocker).
       (enrichment-modal, user-management-card, review/page, detail-client, …).
 - [ ] **F4** (optional) `decision-badge`/`tint-badge` auf State-Tokens mappen
       (green→success, blue→info); kategoriale Token-Gruppe lt. DESIGN_ROLLOUT.md.
+- [ ] **F5** (aus E3 verschoben) `components/changelog-panel.tsx`: die
+      `rgba(0,71,187,…)`-Marken-Schatten auf `color-mix(in srgb,
+      var(--brand-500) …%, transparent)` umstellen (rgb(0,71,187) == `--brand-500`).
+      Wert-identisch NUR wenn Tailwind die Arbitrary-`shadow-[…]` mit color-mix
+      generiert — im Browser gegenprüfen (Tailwind verwirft Unparsbares still).
 
 ### Gruppe G — OSS-Track (eigene Planung, nicht „Fixes")
 

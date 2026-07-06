@@ -121,14 +121,16 @@ export const SOURCE_LABELS: Record<string, string> = {
   webdb_summary: 'WebDB',
 };
 
+// Dark variants mirror the tint-badge convention (bg-<c>-500/15 + text-<c>-300)
+// so the badges stay legible on the dark canvas; light mode is unchanged.
 export const SOURCE_BADGE_CLASSES: Record<string, string> = {
-  crossref: 'bg-violet-100 text-violet-700',
-  openalex: 'bg-sky-100 text-sky-700',
-  unpaywall: 'bg-emerald-100 text-emerald-700',
-  semantic_scholar: 'bg-orange-100 text-orange-700',
-  pdf: 'bg-rose-100 text-rose-700',
-  csv: 'bg-teal-100 text-teal-700',
-  webdb_summary: 'bg-indigo-100 text-indigo-700',
+  crossref: 'bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300',
+  openalex: 'bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300',
+  unpaywall: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300',
+  semantic_scholar: 'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300',
+  pdf: 'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300',
+  csv: 'bg-teal-100 text-teal-700 dark:bg-teal-500/15 dark:text-teal-300',
+  webdb_summary: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300',
 };
 
 export const SOURCE_DESCRIPTIONS: Record<string, string> = {
