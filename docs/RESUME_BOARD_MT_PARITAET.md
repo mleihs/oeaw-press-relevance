@@ -104,7 +104,7 @@ Nur Wartbarkeit, keine Bugs; bei Gelegenheit:
   Klick-Flow — seit der persönliche Login voll navigiert, unterbricht ein
   goto() die laufende Navigation und lässt Next-Streams „geparkt" zurück
   (Symptom: Inhalt als body-Kind statt in <main>, Screenshots hängen).
-- Lokaler Test-User authtest.tmp@oeaw.ac.at / tmp-test-9911 (public.users
+- Lokaler Test-User authtest.tmp@oeaw.ac.at / &lt;redacted&gt; (public.users
   disabled_at gesetzt — vor Tests auf NULL, danach wieder disablen);
   card_activity ist append-only → User nicht löschbar.
 - Für in-Browser-Tests eigenen `npm start`-Build auf :3005 fahren; der

@@ -181,9 +181,9 @@ Production hat aktuell NULL Env-Vars. Alle 13 müssen gesetzt werden.
 ### Sicher gleich wie lokal (aus `.env.local`)
 
 ```
-GATE_PASSWORD=movefastandbreakthings
-GATE_TOKEN=902c557df7cb32b8ef3ba8bdf05370f1312de1a0494216c220759f9b1bef8f50
-MEISTERTASK_API_TOKEN=e53bTB6CzsgwqDn91GdT-2AifjU84ynVcFGdI5lMkNw
+GATE_PASSWORD=<redacted>
+GATE_TOKEN=<redacted>
+MEISTERTASK_API_TOKEN=<redacted>
 MEISTERTASK_PROJECT_ID=9147401
 MEISTERTASK_DEFAULT_SECTION_ID=37295389
 MEISTERTASK_HIGH_LABEL_ID=12284892
@@ -202,7 +202,7 @@ SUPABASE_SERVICE_ROLE_KEY=<Production-service-role-Key aus Supabase-Studio → P
 OPENROUTER_API_KEY=<Production OpenRouter Key, ggf. derselbe wie lokal>
 ```
 
-**Hinweis:** `GATE_PASSWORD` bleibt für Production temporär gleich wie lokal (`movefastandbreakthings`). Production ist erstmal nur ein Build-Test-Target, keine echte Pressestelle-Nutzung. Wenn das später real wird: rotieren.
+**Hinweis:** `GATE_PASSWORD` bleibt für Production temporär gleich wie lokal (`<redacted>`). Production ist erstmal nur ein Build-Test-Target, keine echte Pressestelle-Nutzung. Wenn das später real wird: rotieren.
 
 ### Set-Befehl pattern
 

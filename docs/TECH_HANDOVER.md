@@ -164,7 +164,7 @@ HANDOVER.md-Vorgängerantworten oder `git log` für die Architektur-Antwort):
 **Re-login Auth-Cookie:**
 ```bash
 curl -c /tmp/cookies.txt -X POST -H "Content-Type: application/json" \
-  -d '{"password":"movefastandbreakthings"}' \
+  -d '{"password":"<redacted>"}' \
   http://localhost:3000/api/auth/gate
 ```
 
