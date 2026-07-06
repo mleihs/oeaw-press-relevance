@@ -40,7 +40,7 @@ export function CoauthorBlock({ coauthors }: CoauthorBlockProps) {
                   {c.firstname} {c.lastname}
                 </p>
                 {c.oestat3_name_de && (
-                  <p className="truncate text-[10px] text-muted-foreground/70">{c.oestat3_name_de}</p>
+                  <p className="truncate text-2xs text-muted-foreground/70">{c.oestat3_name_de}</p>
                 )}
               </div>
               <span className="text-xs tabular-nums text-muted-foreground/70">{c.shared_pubs}×</span>

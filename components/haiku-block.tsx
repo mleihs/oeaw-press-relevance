@@ -68,7 +68,7 @@ export function HaikuBlock({ haiku, model, variant = 'default' }: HaikuBlockProp
           aria-hidden
           className="absolute right-4 top-3.5 h-10 w-10 text-white/[0.12]"
         />
-        <p className="mb-3 inline-flex items-center gap-1 font-mono text-[10px] font-semibold uppercase tracking-[0.09em] text-brand-300">
+        <p className="mb-3 inline-flex items-center gap-1 font-mono text-2xs font-semibold uppercase tracking-[0.09em] text-brand-300">
           Haiku
           <InfoBubble id="haiku_block" />
         </p>
@@ -76,7 +76,7 @@ export function HaikuBlock({ haiku, model, variant = 'default' }: HaikuBlockProp
           {renderLines('text-lg font-medium leading-snug tracking-tight')}
         </div>
         {model && (
-          <p className="mt-4 inline-flex items-center gap-1.5 font-mono text-[10.5px] text-white/60">
+          <p className="mt-4 inline-flex items-center gap-1.5 font-mono text-2xs text-white/60">
             <Sparkles className="h-3 w-3" />
             {model.split('/').pop()}
           </p>
@@ -91,7 +91,7 @@ export function HaikuBlock({ haiku, model, variant = 'default' }: HaikuBlockProp
       className="my-2 grid grid-cols-1 gap-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-end"
     >
       <div>
-        <p className="mb-4 inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+        <p className="mb-4 inline-flex items-center gap-1 text-2xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
           Haiku
           <InfoBubble id="haiku_block" />
         </p>
@@ -102,7 +102,7 @@ export function HaikuBlock({ haiku, model, variant = 'default' }: HaikuBlockProp
           {renderLines('')}
         </div>
       </div>
-      <div className="hidden border-l border-border pl-4 text-right text-[10px] uppercase tracking-[0.14em] text-muted-foreground/70 md:block">
+      <div className="hidden border-l border-border pl-4 text-right text-2xs uppercase tracking-[0.14em] text-muted-foreground/70 md:block">
         <p>5 · 7 · 5</p>
         {model && <p className="mt-1 normal-case tracking-normal text-muted-foreground/70">{model.split('/').pop()}</p>}
       </div>

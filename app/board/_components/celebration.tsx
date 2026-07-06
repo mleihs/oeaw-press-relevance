@@ -136,7 +136,7 @@ export function CompletionBanner({
           <Timer weight="bold" className="h-[17px] w-[17px]" />
         </span>
         <div>
-          <div className="font-mono text-[10px] font-semibold uppercase tracking-wider text-emerald-600">
+          <div className="font-mono text-2xs font-semibold uppercase tracking-wider text-emerald-600">
             Benötigte Zeit
           </div>
           <div className="text-sm font-bold text-emerald-900">
@@ -146,7 +146,7 @@ export function CompletionBanner({
       </div>
       <div className="flex items-center gap-3">
         <div className="text-right">
-          <div className="font-mono text-[10px] font-semibold uppercase tracking-wider text-emerald-600">
+          <div className="font-mono text-2xs font-semibold uppercase tracking-wider text-emerald-600">
             Mitwirkende
           </div>
           <div className="text-sm font-bold text-emerald-900">
@@ -172,7 +172,7 @@ export function CompletionBanner({
           ))}
           {extra > 0 && (
             <span
-              className="relative z-0 flex h-[30px] w-[30px] items-center justify-center rounded-full border-2 border-[#f0fdf4] bg-emerald-200 text-[11px] font-bold text-emerald-800 shadow-sm"
+              className="relative z-0 flex h-[30px] w-[30px] items-center justify-center rounded-full border-2 border-[#f0fdf4] bg-emerald-200 text-2xs font-bold text-emerald-800 shadow-sm"
               style={{ marginLeft: -11 }}
             >
               +{extra}

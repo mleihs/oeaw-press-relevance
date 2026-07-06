@@ -56,7 +56,7 @@ export function DueDatePicker({
           type="button"
           aria-label="Fälligkeitsdatum"
           className={cn(
-            'flex h-9 w-full items-center gap-2 rounded-md border border-input bg-transparent px-3 text-left text-[13.5px] transition-colors hover:border-brand-200 hover:bg-brand-50/70',
+            'flex h-9 w-full items-center gap-2 rounded-md border border-input bg-transparent px-3 text-left text-sm transition-colors hover:border-brand-200 hover:bg-brand-50/70',
             open && 'border-brand-200 bg-brand-50/70',
             selected ? 'text-foreground' : 'text-muted-foreground',
             className,
@@ -110,7 +110,7 @@ export function DueDatePicker({
               onChange('');
               setOpen(false);
             }}
-            className="flex w-full items-center justify-center gap-1.5 border-t px-3 py-2 text-[13px] font-medium text-muted-foreground transition-colors hover:text-red-600"
+            className="flex w-full items-center justify-center gap-1.5 border-t px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-red-600"
           >
             <X className="h-3.5 w-3.5" /> Fälligkeit entfernen
           </button>

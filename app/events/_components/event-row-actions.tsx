@@ -140,7 +140,7 @@ export function EventAgendaActions({ eventId, current, boardCardHref }: Props) {
   const busy = mutation.isPending;
   const spin = <Loader2 className="h-3.5 w-3.5 animate-spin" />;
   const backBtn =
-    'inline-flex items-center justify-center rounded-[9px] border border-line-strong bg-surface px-3.5 py-[9px] text-[12.5px] font-semibold text-ink-subtle transition active:bg-canvas disabled:opacity-60';
+    'inline-flex items-center justify-center rounded-[9px] border border-line-strong bg-surface px-3.5 py-[9px] text-xs font-semibold text-ink-subtle transition active:bg-canvas disabled:opacity-60';
 
   if (current === 'undecided') {
     return (
@@ -149,7 +149,7 @@ export function EventAgendaActions({ eventId, current, boardCardHref }: Props) {
           type="button"
           disabled={busy}
           onClick={() => mutation.mutate('pitch')}
-          className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-[9px] bg-brand py-[9px] text-[12.5px] font-semibold text-white transition active:brightness-110 disabled:opacity-60"
+          className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-[9px] bg-brand py-[9px] text-xs font-semibold text-white transition active:brightness-110 disabled:opacity-60"
         >
           {busy && mutation.variables === 'pitch' ? spin : <Zap weight="bold" className="h-3.5 w-3.5" />}
           Pitchen
@@ -179,14 +179,14 @@ export function EventAgendaActions({ eventId, current, boardCardHref }: Props) {
       {current === 'pitch' && boardCardHref ? (
         <Link
           href={boardCardHref}
-          className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-[9px] bg-success-tint py-[9px] text-[12.5px] font-semibold text-success transition active:brightness-95"
+          className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-[9px] bg-success-tint py-[9px] text-xs font-semibold text-success transition active:brightness-95"
         >
           <Kanban weight="bold" className="h-3.5 w-3.5" />
           Im Board
         </Link>
       ) : (
         <span
-          className={`inline-flex flex-1 items-center justify-center rounded-[9px] py-[9px] text-[12.5px] font-semibold ${pill.cls}`}
+          className={`inline-flex flex-1 items-center justify-center rounded-[9px] py-[9px] text-xs font-semibold ${pill.cls}`}
         >
           {pill.label}
         </span>

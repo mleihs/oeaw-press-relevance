@@ -93,7 +93,7 @@ export function PublicationList({
       {publications.length === 0 ? (
         <div className="rounded-[14px] border-[1.5px] border-dashed border-line-strong px-4 py-[34px] text-center">
           <Search aria-hidden className="mx-auto h-7 w-7 text-line-strong" />
-          <div className="mt-2.5 text-[13.5px] text-ink-subtle">{emptyLabel}</div>
+          <div className="mt-2.5 text-sm text-ink-subtle">{emptyLabel}</div>
         </div>
       ) : (
         publications.map((pub) => {
@@ -129,14 +129,14 @@ export function PublicationList({
                 </div>
               </div>
               {pub.pitch_suggestion && (
-                <p className="mt-[9px] line-clamp-2 text-[12.5px] leading-[1.45] text-ink-soft">
+                <p className="mt-[9px] line-clamp-2 text-xs leading-[1.45] text-ink-soft">
                   {pub.pitch_suggestion}
                 </p>
               )}
               <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
                 {venue &&
                   (isFlagship ? (
-                    <span className="inline-flex max-w-[55vw] items-center gap-1 rounded-full bg-brand-50 px-2 py-[3px] text-[10.5px] font-semibold text-brand">
+                    <span className="inline-flex max-w-[55vw] items-center gap-1 rounded-full bg-brand-50 px-2 py-[3px] text-2xs font-semibold text-brand">
                       <Crown
                         aria-hidden
                         weight="fill"
@@ -145,18 +145,18 @@ export function PublicationList({
                       <span className="truncate">{venue}</span>
                     </span>
                   ) : (
-                    <span className="max-w-[45vw] truncate text-[11px] text-ink-muted">
+                    <span className="max-w-[45vw] truncate text-2xs text-ink-muted">
                       {venue}
                     </span>
                   ))}
                 {typeLabel && (
-                  <span className="rounded-full bg-fill px-2 py-[3px] text-[10.5px] font-semibold text-ink-subtle">
+                  <span className="rounded-full bg-fill px-2 py-[3px] text-2xs font-semibold text-ink-subtle">
                     {typeLabel}
                   </span>
                 )}
                 <span className="flex-1" />
                 {pub.press_release && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-success-tint px-2 py-[3px] text-[10.5px] font-semibold text-success">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-success-tint px-2 py-[3px] text-2xs font-semibold text-success">
                     <Newspaper
                       aria-hidden
                       weight="bold"
@@ -166,7 +166,7 @@ export function PublicationList({
                   </span>
                 )}
                 {isFlagged && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-warning-tint px-2 py-[3px] text-[10.5px] font-semibold text-warning-ink">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-warning-tint px-2 py-[3px] text-2xs font-semibold text-warning-ink">
                     <Pin
                       aria-hidden
                       weight="fill"
@@ -186,7 +186,7 @@ export function PublicationList({
             <ChevronLeft className="h-4 w-4" />
           </PagerLink>
         )}
-        <span className="font-mono text-[11px] text-ink-muted">
+        <span className="font-mono text-2xs text-ink-muted">
           {total > 0
             ? `${rangeStart}–${rangeEnd} von ${total.toLocaleString('de-AT')}`
             : '0 Publikationen'}
@@ -204,7 +204,7 @@ export function PublicationList({
       {publications.length === 0 ? (
         <div className="px-4 py-11 text-center">
           <Search aria-hidden className="mx-auto h-7 w-7 text-line-strong" />
-          <div className="mt-2.5 text-[13.5px] text-ink-subtle">{emptyLabel}</div>
+          <div className="mt-2.5 text-sm text-ink-subtle">{emptyLabel}</div>
         </div>
       ) : (
         publications.map((pub) => {
@@ -230,19 +230,19 @@ export function PublicationList({
                   {displayTitle(pub.original_title || pub.title, pub.citation)}
                 </div>
                 <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
-                  <span className="text-[12.5px] text-ink-subtle">
+                  <span className="text-xs text-ink-subtle">
                     {displayAuthor(pub)}
                     {institute ? ` · ${institute}` : ''}
                   </span>
                   <FlagshipBadge journal={pub.enriched_journal} />
                   {typeLabel && (
-                    <span className="rounded-full bg-fill px-[7px] py-[2px] text-[10.5px] font-semibold text-ink-subtle">
+                    <span className="rounded-full bg-fill px-[7px] py-[2px] text-2xs font-semibold text-ink-subtle">
                       {typeLabel}
                     </span>
                   )}
                   {pub.published_at && (
                     <span
-                      className="font-mono text-[10.5px] text-ink-muted"
+                      className="font-mono text-2xs text-ink-muted"
                       title={pubDateTitle(pub.published_at)}
                     >
                       {formatPubDate(pub.published_at)}
@@ -251,7 +251,7 @@ export function PublicationList({
                 </div>
                 <VenueLine journal={pub.enriched_journal} />
                 {pub.pitch_suggestion && (
-                  <p className="mt-[5px] line-clamp-2 text-[12.5px] leading-[1.45] text-ink-soft">
+                  <p className="mt-[5px] line-clamp-2 text-xs leading-[1.45] text-ink-soft">
                     {pub.pitch_suggestion}
                   </p>
                 )}
@@ -265,7 +265,7 @@ export function PublicationList({
                       pub.press_release.news_title ??
                       'ÖAW-Pressemitteilung'
                     }
-                    className="inline-flex items-center gap-1 rounded-full bg-success-tint px-2 py-[3px] text-[10.5px] font-semibold text-success"
+                    className="inline-flex items-center gap-1 rounded-full bg-success-tint px-2 py-[3px] text-2xs font-semibold text-success"
                   >
                     <Newspaper weight="bold" className="h-[11px] w-[11px]" />
                     PM
@@ -294,7 +294,7 @@ export function PublicationList({
 
       {/* Footer: Count-Mono + Blättern (Zero-JS, URL-getrieben) */}
       <div className="flex items-center gap-3 bg-surface-muted px-[18px] py-3">
-        <span className="font-mono text-[11.5px] text-ink-muted">
+        <span className="font-mono text-xs text-ink-muted">
           {total > 0
             ? `${rangeStart}–${rangeEnd} von ${total.toLocaleString('de-AT')}`
             : '0 Publikationen'}

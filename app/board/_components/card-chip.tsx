@@ -20,7 +20,7 @@ function MetaBadge({
 }) {
   return (
     <span
-      className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-mono text-[11px] font-medium"
+      className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-mono text-2xs font-medium"
       // Chip-Farben aus den Erscheinungsbild-Tokens: kühles Grau im Standard,
       // warmes Beige in „Atmosphäre" (sonst kühle Chips auf warmen Karten).
       style={{ backgroundColor: 'var(--board-chip-bg)', color: 'var(--board-chip-ink)' }}
@@ -101,7 +101,7 @@ export function CardChip({
       {/* Überfällig klar benennen statt nur rosa Tönung (MeisterTask
           schreibt es wörtlich über die Karte — User-Wunsch 2026-07-06). */}
       {overdue && (
-        <div className="mb-1.5 flex items-center gap-1 font-mono text-[10px] font-bold uppercase tracking-wider text-danger">
+        <div className="mb-1.5 flex items-center gap-1 font-mono text-2xs font-bold uppercase tracking-wider text-danger">
           <AlarmClock weight="fill" className="h-3 w-3" />
           Überfällig
         </div>
@@ -120,7 +120,7 @@ export function CardChip({
           className={cn(
             // min-w-0 + break-words: lange, ungebrochene Tokens (URLs als Titel)
             // brechen um statt über den Kartenrand zu laufen.
-            'min-w-0 flex-1 break-words text-[13.5px] font-semibold leading-snug',
+            'min-w-0 flex-1 break-words text-sm font-semibold leading-snug',
             completed && 'text-ink-muted line-through',
           )}
           // Ink aus dem Erscheinungsbild-Token (Slate im Standard, warm in
@@ -154,7 +154,7 @@ export function CardChip({
                 </span>
               ))}
               {extraWatchers > 0 && (
-                <span className="ml-[-7px] inline-flex h-[22px] w-[22px] items-center justify-center rounded-full bg-fill text-ink-subtle ring-2 ring-surface font-mono text-[9.5px] font-semibold">
+                <span className="ml-[-7px] inline-flex h-[22px] w-[22px] items-center justify-center rounded-full bg-fill text-ink-subtle ring-2 ring-surface font-mono text-3xs font-semibold">
                   +{extraWatchers}
                 </span>
               )}

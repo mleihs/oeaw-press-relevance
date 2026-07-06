@@ -409,7 +409,7 @@ function MoreLink({ tone }: { tone: 'hero' | 'item' }) {
         'group-hover:text-brand',
         tone === 'hero'
           ? 'mt-3 gap-1 text-xs text-brand/85 group-hover:gap-1.5'
-          : 'mt-1.5 gap-0.5 text-[11px] text-brand/70 group-hover:gap-1',
+          : 'mt-1.5 gap-0.5 text-2xs text-brand/70 group-hover:gap-1',
       )}
     >
       Mehr im Hilfe-Center
@@ -428,7 +428,7 @@ function CategoryChip({ category }: { category: ChangelogCategory }) {
     <span
       className={cn(
         'inline-flex items-center gap-1 rounded-full px-2 py-0.5',
-        'text-[10px] font-semibold uppercase tracking-wide',
+        'text-2xs font-semibold uppercase tracking-wide',
         meta.chipClass,
       )}
     >

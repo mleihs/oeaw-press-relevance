@@ -21,7 +21,7 @@ function bindingKeys(binding: Binding, mac: boolean): string[] {
 
 function Kbd({ children }: { children: React.ReactNode }) {
   return (
-    <kbd className="inline-flex h-6 min-w-[1.5rem] items-center justify-center rounded border border-border bg-muted px-1.5 text-[11px] font-medium text-muted-foreground">
+    <kbd className="inline-flex h-6 min-w-[1.5rem] items-center justify-center rounded border border-border bg-muted px-1.5 text-2xs font-medium text-muted-foreground">
       {children}
     </kbd>
   );
@@ -43,7 +43,7 @@ function Row({
       <span className="flex items-center gap-1">
         {parts.map((p, i) =>
           p === 'dann' ? (
-            <span key={i} className="px-0.5 text-[11px] text-muted-foreground/70">
+            <span key={i} className="px-0.5 text-2xs text-muted-foreground/70">
               dann
             </span>
           ) : (

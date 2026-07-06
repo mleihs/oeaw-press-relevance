@@ -57,7 +57,7 @@ export function BoardSwitcher({
               {currentName}
               <ChevronDown className="h-4 w-4 text-muted-foreground" />
             </span>
-            <span className="font-mono text-[11px] text-muted-foreground">
+            <span className="font-mono text-2xs text-muted-foreground">
               {cardCount} Karten · {columnCount} Kanäle
             </span>
           </span>
@@ -79,7 +79,7 @@ export function BoardSwitcher({
         <div className="max-h-80 overflow-y-auto p-1.5">
           {favorites.length > 0 && (
             <>
-              <div className="px-2 pb-1 pt-1.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+              <div className="px-2 pb-1 pt-1.5 font-mono text-2xs uppercase tracking-wider text-muted-foreground">
                 Favoriten
               </div>
               {favorites.map((b) => (
@@ -87,7 +87,7 @@ export function BoardSwitcher({
               ))}
             </>
           )}
-          <div className="px-2 pb-1 pt-1.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+          <div className="px-2 pb-1 pt-1.5 font-mono text-2xs uppercase tracking-wider text-muted-foreground">
             Alle Boards
           </div>
           {others.map((b) => (
@@ -132,7 +132,7 @@ function SwitcherRow({
     >
       <span className="h-2.5 w-2.5 shrink-0 rounded-[3px]" style={{ backgroundColor: boardAccent(b.id) }} />
       <span className="min-w-0 flex-1 truncate font-medium text-foreground">{b.name}</span>
-      <span className="font-mono text-[11px] text-muted-foreground">{b.card_count}</span>
+      <span className="font-mono text-2xs text-muted-foreground">{b.card_count}</span>
       {b.is_favorite && <Star className="h-3.5 w-3.5" style={{ fill: '#f59e0b', color: '#f59e0b' }} />}
       {isCurrent && <Check className="h-4 w-4 text-brand" />}
     </Link>

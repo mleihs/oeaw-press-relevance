@@ -207,7 +207,7 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
                 <div
                   key={errNonce}
                   role="alert"
-                  className="auth-shake mb-4 flex items-center gap-2 rounded-[10px] border border-red-200 bg-red-50 px-3 py-2.5 text-[13px] font-medium text-red-600"
+                  className="auth-shake mb-4 flex items-center gap-2 rounded-[10px] border border-red-200 bg-red-50 px-3 py-2.5 text-sm font-medium text-red-600"
                 >
                   <AlertCircle weight="fill" className="h-4 w-4 shrink-0" />
                   {error}
@@ -303,7 +303,7 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
                 <>
                   <div className="my-5 flex items-center gap-3">
                     <span className="h-px flex-1 bg-[#e5e9ef]" />
-                    <span className="text-[11px] font-semibold tracking-wide text-[#9aa4b2]">
+                    <span className="text-2xs font-semibold tracking-wide text-[#9aa4b2]">
                       ODER ÜBERGANGSWEISE
                     </span>
                     <span className="h-px flex-1 bg-[#e5e9ef]" />
@@ -314,7 +314,7 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
                       <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[9px] bg-[#fbf0d6] text-amber-700">
                         <Key weight="duotone" className="h-[17px] w-[17px]" />
                       </span>
-                      <div className="text-[13.5px] font-bold text-[#8a5a12]">
+                      <div className="text-sm font-bold text-[#8a5a12]">
                         Übergangszugang
                       </div>
                     </div>
@@ -361,7 +361,7 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
                       <button
                         type="submit"
                         disabled={gateBusy}
-                        className="flex w-full items-center justify-center gap-2 rounded-[10px] bg-amber-700 px-3 py-2.5 text-[13.5px] font-semibold text-white transition-colors hover:bg-amber-800 disabled:opacity-60"
+                        className="flex w-full items-center justify-center gap-2 rounded-[10px] bg-amber-700 px-3 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-amber-800 disabled:opacity-60"
                       >
                         {gateBusy ? (
                           <>
@@ -387,7 +387,7 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
               <button
                 type="button"
                 onClick={() => setMode('signin')}
-                className="mb-5 flex items-center gap-1.5 text-[13px] font-semibold text-[#64707f] hover:text-brand"
+                className="mb-5 flex items-center gap-1.5 text-sm font-semibold text-[#64707f] hover:text-brand"
               >
                 <ArrowLeft className="h-[15px] w-[15px]" />
                 Zurück zur Anmeldung
@@ -483,7 +483,7 @@ function BrandPanel() {
       </div>
 
       <div className="relative mt-auto">
-        <div className="mb-5 font-mono text-[11.5px] font-medium uppercase tracking-[.16em] text-[#9cc0ff]">
+        <div className="mb-5 font-mono text-xs font-medium uppercase tracking-[.16em] text-[#9cc0ff]">
           Press Relevance Toolkit
         </div>
         <h1 className="max-w-[15ch] text-[40px] font-bold leading-[1.12] tracking-tight">
@@ -513,7 +513,7 @@ function BrandStat({ value, label }: { value: string; label: string }) {
   return (
     <div>
       <div className="font-mono text-[26px] font-semibold tracking-tight">{value}</div>
-      <div className="mt-0.5 text-[12.5px] text-white/65">{label}</div>
+      <div className="mt-0.5 text-xs text-white/65">{label}</div>
     </div>
   );
 }

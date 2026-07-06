@@ -242,7 +242,7 @@ export function FiltersBar({ total, hidden }: Props) {
                 aria-pressed={quickActive === key}
                 onClick={() => applyQuick(key)}
                 className={cn(
-                  'inline-flex h-[34px] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-[13px] text-[12.5px] font-semibold transition-colors',
+                  'inline-flex h-[34px] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-[13px] text-xs font-semibold transition-colors',
                   quickActive === key
                     ? 'border-brand bg-brand-50 text-brand'
                     : 'border-line-strong bg-surface text-ink-subtle',
@@ -282,7 +282,7 @@ export function FiltersBar({ total, hidden }: Props) {
                 type="button"
                 onClick={resetPresetTerritory}
                 title="Voreinstellung des Presets wiederherstellen"
-                className="inline-flex items-center gap-1 rounded-full border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/[0.08] px-2.5 py-1 text-[11px] font-medium text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-500/15 transition-colors"
+                className="inline-flex items-center gap-1 rounded-full border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/[0.08] px-2.5 py-1 text-2xs font-medium text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-500/15 transition-colors"
               >
                 <RotateCcw className="h-3 w-3" />
                 Preset modifiziert · zurücksetzen

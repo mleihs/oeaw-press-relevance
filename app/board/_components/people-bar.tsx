@@ -43,7 +43,7 @@ export function PeopleBar({
 
   return (
     <aside className="hidden w-[76px] shrink-0 flex-col items-center gap-1 border-l border-border pl-2 md:flex">
-      <div className="pb-1 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+      <div className="pb-1 font-mono text-2xs uppercase tracking-wider text-muted-foreground">
         Team
       </div>
 
@@ -66,7 +66,7 @@ export function PeopleBar({
         >
           <UserCircle2 className="h-[19px] w-[19px]" />
         </span>
-        <span className="font-mono text-[11px] text-muted-foreground">{counts.unassigned}</span>
+        <span className="font-mono text-2xs text-muted-foreground">{counts.unassigned}</span>
       </button>
 
       <div className="my-1 h-px w-8 bg-border" />
@@ -94,11 +94,11 @@ export function PeopleBar({
               {showOthers ? (
                 <ChevronUp className="h-3.5 w-3.5" />
               ) : (
-                <span className="flex h-[34px] w-[34px] items-center justify-center rounded-full border border-dashed border-muted-foreground/40 font-mono text-[11px] font-semibold">
+                <span className="flex h-[34px] w-[34px] items-center justify-center rounded-full border border-dashed border-muted-foreground/40 font-mono text-2xs font-semibold">
                   +{others.length}
                 </span>
               )}
-              {!showOthers && <span className="font-mono text-[10px]">Team</span>}
+              {!showOthers && <span className="font-mono text-2xs">Team</span>}
             </button>
             {showOthers &&
               others.map((m) => (
@@ -139,7 +139,7 @@ function PersonButton({
       title={displayNameOf(member)}
     >
       <BoardAvatar member={member} size={34} ring={active} />
-      <span className={cn('font-mono text-[11px]', active ? 'text-brand' : 'text-muted-foreground')}>
+      <span className={cn('font-mono text-2xs', active ? 'text-brand' : 'text-muted-foreground')}>
         {count}
       </span>
     </button>

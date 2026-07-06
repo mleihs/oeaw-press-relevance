@@ -392,7 +392,7 @@ export function EnrichmentModal({
                   {Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2, '0')}
                 </span>
                 {etaText && (
-                  <span className="text-[10px] text-muted-foreground/70 block">
+                  <span className="text-2xs text-muted-foreground/70 block">
                     Restzeit: {etaText}
                   </span>
                 )}
@@ -489,7 +489,7 @@ export function EnrichmentModal({
                   <p className="text-xs text-amber-500 italic">Kein DOI</p>
                 )}
                 {currentPub.hasCsvAbstract && (
-                  <span className="inline-flex items-center rounded bg-blue-100 dark:bg-blue-500/15 px-1.5 py-0.5 text-[10px] font-medium text-blue-700 dark:text-blue-300">
+                  <span className="inline-flex items-center rounded bg-blue-100 dark:bg-blue-500/15 px-1.5 py-0.5 text-2xs font-medium text-blue-700 dark:text-blue-300">
                     CSV abstract
                   </span>
                 )}

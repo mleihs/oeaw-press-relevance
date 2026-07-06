@@ -379,7 +379,7 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
             {pub.press_release.keywords && pub.press_release.keywords.length > 0 && (
               <div className="ml-8 flex flex-wrap gap-1">
                 {pub.press_release.keywords.slice(0, 8).map((k, i) => (
-                  <Badge key={i} variant="secondary" className="text-[10px]">{k}</Badge>
+                  <Badge key={i} variant="secondary" className="text-2xs">{k}</Badge>
                 ))}
               </div>
             )}
@@ -394,7 +394,7 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
       {hasAnalysis && pub.pitch_suggestion && (
         <Card className="border-[#d3e2ff] bg-[#f6f9ff] dark:border-brand/25 dark:bg-brand/[0.08] max-md:-order-4">
           <CardContent className="p-5">
-            <h3 className="font-mono text-[10.5px] font-semibold uppercase tracking-[0.07em] text-brand mb-2.5 inline-flex items-center gap-1.5">
+            <h3 className="font-mono text-2xs font-semibold uppercase tracking-[0.07em] text-brand mb-2.5 inline-flex items-center gap-1.5">
               <Zap weight="fill" className="h-3.5 w-3.5" />
               Pitch-Vorschlag
               <InfoBubble id="pitch_suggestion" size="sm" />
@@ -503,7 +503,7 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
                         <span
                           aria-hidden
                           className={cn(
-                            'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11.5px] font-semibold text-white',
+                            'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white',
                             isOeaw ? 'bg-brand' : 'bg-line-strong dark:bg-muted-foreground/40',
                           )}
                         >
@@ -547,7 +547,7 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
                         {!isOeaw && (
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                              <span className="rounded-md bg-muted px-1.5 py-0.5 text-2xs font-medium uppercase tracking-wider text-muted-foreground">
                                 Ext
                               </span>
                             </TooltipTrigger>
@@ -575,7 +575,7 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
                           </a>
                         )}
                         {a.authorship && (
-                          <Badge variant="outline" className="text-[10px]">{a.authorship}</Badge>
+                          <Badge variant="outline" className="text-2xs">{a.authorship}</Badge>
                         )}
                       </div>
                     </li>
@@ -632,10 +632,10 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
                   <div className="flex items-start gap-2">
                     <p className="font-medium flex-1">{p.title_de || p.title_en}</p>
                     {isActive && (
-                      <TintBadge color="green" className="text-[10px]">aktiv</TintBadge>
+                      <TintBadge color="green" className="text-2xs">aktiv</TintBadge>
                     )}
                     {p.cancelled && (
-                      <TintBadge color="red" className="text-[10px]">abgebrochen</TintBadge>
+                      <TintBadge color="red" className="text-2xs">abgebrochen</TintBadge>
                     )}
                   </div>
                   {p.summary_de && (

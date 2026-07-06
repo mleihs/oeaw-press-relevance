@@ -91,7 +91,7 @@ export function PressReferenceCard({
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5">
-                <h3 className="text-[10px] font-semibold text-purple-700 dark:text-purple-300 uppercase tracking-wider">
+                <h3 className="text-2xs font-semibold text-purple-700 dark:text-purple-300 uppercase tracking-wider">
                   Press-Referenz
                 </h3>
                 <InfoBubble id="press_similarity" size="sm" />
@@ -104,7 +104,7 @@ export function PressReferenceCard({
                 {' '}ähnlich zum historischen Press-Cluster.
               </p>
               {isGerman && (
-                <p className="mt-1.5 flex items-start gap-1 text-[11px] italic text-purple-700/70 dark:text-purple-400/70 leading-snug">
+                <p className="mt-1.5 flex items-start gap-1 text-2xs italic text-purple-700/70 dark:text-purple-400/70 leading-snug">
                   <Info className="h-3 w-3 mt-0.5 shrink-0" aria-hidden />
                   <span>
                     SPECTER2 ist auf englischen Texten trainiert. Deutschsprachige
@@ -118,7 +118,7 @@ export function PressReferenceCard({
           </div>
 
           <div className="ml-1 space-y-0.5">
-            <div className="text-[10px] uppercase tracking-wider text-purple-700/80 dark:text-purple-400/80 font-semibold mb-1">
+            <div className="text-2xs uppercase tracking-wider text-purple-700/80 dark:text-purple-400/80 font-semibold mb-1">
               Ähnlichste gepresste Publikationen
             </div>
             {data.similar.map((s, i) => (

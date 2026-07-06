@@ -45,7 +45,7 @@ export function EventsMobileControls({
   filters: EventsFilterState;
 }) {
   const segBase =
-    'inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-[13px] font-semibold transition-colors';
+    'inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-semibold transition-colors';
   const segActive = 'bg-surface text-brand shadow-[0_1px_2px_rgba(16,32,46,.1)]';
   const segIdle = 'text-ink-subtle';
 
@@ -96,7 +96,7 @@ export function EventsMobileControls({
                   prefetch={false}
                   aria-current={active ? 'page' : undefined}
                   className={cn(
-                    'inline-flex h-[34px] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[9px] border px-3 text-[12.5px] font-semibold transition-colors',
+                    'inline-flex h-[34px] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[9px] border px-3 text-xs font-semibold transition-colors',
                     active
                       ? 'border-brand bg-brand-50 text-brand'
                       : 'border-line-strong bg-surface text-ink-subtle',
@@ -105,7 +105,7 @@ export function EventsMobileControls({
                   {TAB_LABELS[tab]}
                   <span
                     className={cn(
-                      'rounded-full px-[7px] py-px font-mono text-[11px] font-medium',
+                      'rounded-full px-[7px] py-px font-mono text-2xs font-medium',
                       active ? 'bg-brand/10 text-brand' : 'bg-fill text-ink-muted',
                     )}
                   >

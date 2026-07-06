@@ -57,7 +57,7 @@ export function ScoreDistributionChart({ scoreBuckets, similarityBuckets }: Prop
   return (
     <div className="space-y-3" role="presentation">
       {/* Legend */}
-      <div className="flex items-center justify-end gap-4 text-[11px]" aria-hidden="true">
+      <div className="flex items-center justify-end gap-4 text-2xs" aria-hidden="true">
         <span className="inline-flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-sm bg-brand/85" />
           <span className="text-muted-foreground">Story Score (0–100 %)</span>
@@ -77,7 +77,7 @@ export function ScoreDistributionChart({ scoreBuckets, similarityBuckets }: Prop
               <div key={`s-${i}`} className="flex flex-1 flex-col items-center justify-end h-full">
                 {count > 0 && (
                   <span
-                    className={`text-[9px] tabular-nums text-muted-foreground mb-0.5 transition-opacity duration-300 motion-reduce:transition-none ${animated ? 'opacity-100' : 'opacity-0'}`}
+                    className={`text-3xs tabular-nums text-muted-foreground mb-0.5 transition-opacity duration-300 motion-reduce:transition-none ${animated ? 'opacity-100' : 'opacity-0'}`}
                     style={{ transitionDelay: `${i * 40}ms` }}
                   >
                     {count}
@@ -100,7 +100,7 @@ export function ScoreDistributionChart({ scoreBuckets, similarityBuckets }: Prop
           {SCORE_LABELS.map((label, i) => (
             <div
               key={`sl-${i}`}
-              className="flex-1 text-center text-[9px] tabular-nums text-muted-foreground"
+              className="flex-1 text-center text-3xs tabular-nums text-muted-foreground"
             >
               {label}
             </div>
@@ -115,7 +115,7 @@ export function ScoreDistributionChart({ scoreBuckets, similarityBuckets }: Prop
           {SIMILARITY_LABELS.map((label, i) => (
             <div
               key={`pl-${i}`}
-              className="flex-1 text-center text-[9px] tabular-nums text-muted-foreground"
+              className="flex-1 text-center text-3xs tabular-nums text-muted-foreground"
             >
               {label}
             </div>
@@ -137,7 +137,7 @@ export function ScoreDistributionChart({ scoreBuckets, similarityBuckets }: Prop
                 />
                 {count > 0 && (
                   <span
-                    className={`text-[9px] tabular-nums text-muted-foreground mt-0.5 transition-opacity duration-300 motion-reduce:transition-none ${animated ? 'opacity-100' : 'opacity-0'}`}
+                    className={`text-3xs tabular-nums text-muted-foreground mt-0.5 transition-opacity duration-300 motion-reduce:transition-none ${animated ? 'opacity-100' : 'opacity-0'}`}
                     style={{ transitionDelay: `${i * 40}ms` }}
                   >
                     {count}

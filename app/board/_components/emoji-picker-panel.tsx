@@ -72,7 +72,7 @@ export default function EmojiPickerPanel({ onPick }: { onPick: (emoji: string) =
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Emoji suchen…"
-          className="h-8 w-full rounded-md border border-input bg-transparent px-2.5 text-[13px] text-foreground outline-none placeholder:text-muted-foreground/70 focus:border-brand"
+          className="h-8 w-full rounded-md border border-input bg-transparent px-2.5 text-sm text-foreground outline-none placeholder:text-muted-foreground/70 focus:border-brand"
         />
       </div>
       {search === '' && (
@@ -101,10 +101,10 @@ export default function EmojiPickerPanel({ onPick }: { onPick: (emoji: string) =
         onScroll={trackActive}
         className="relative flex-1 outline-none"
       >
-        <EmojiPicker.Loading className="absolute inset-0 flex items-center justify-center text-[13px] text-muted-foreground">
+        <EmojiPicker.Loading className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
           Lädt…
         </EmojiPicker.Loading>
-        <EmojiPicker.Empty className="absolute inset-0 flex items-center justify-center text-[13px] text-muted-foreground">
+        <EmojiPicker.Empty className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
           Keine Treffer.
         </EmojiPicker.Empty>
         <EmojiPicker.List
@@ -112,7 +112,7 @@ export default function EmojiPickerPanel({ onPick }: { onPick: (emoji: string) =
           components={{
             CategoryHeader: ({ category, ...props }) => (
               <div
-                className="bg-popover px-2.5 pb-1 pt-2.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70"
+                className="bg-popover px-2.5 pb-1 pt-2.5 font-mono text-2xs font-semibold uppercase tracking-wider text-muted-foreground/70"
                 {...props}
               >
                 {category.label}

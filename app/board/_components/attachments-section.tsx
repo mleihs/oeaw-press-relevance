@@ -78,9 +78,9 @@ export function AttachmentsSection({
     <div>
       <div className="mb-2 flex items-center gap-2">
         <Paperclip className="h-4 w-4 text-muted-foreground" />
-        <span className="text-[13.5px] font-semibold text-foreground">Anhänge</span>
+        <span className="text-sm font-semibold text-foreground">Anhänge</span>
         {card.attachments.length > 0 && (
-          <span className="font-mono text-[11px] text-muted-foreground">
+          <span className="font-mono text-2xs text-muted-foreground">
             {card.attachments.length}
           </span>
         )}
@@ -139,7 +139,7 @@ export function AttachmentsSection({
                   <button
                     type="button"
                     onClick={() => setPreview(a)}
-                    className="min-w-0 flex-1 truncate text-left text-[13px] text-foreground hover:text-brand hover:underline"
+                    className="min-w-0 flex-1 truncate text-left text-sm text-foreground hover:text-brand hover:underline"
                   >
                     {a.filename}
                   </button>
@@ -148,12 +148,12 @@ export function AttachmentsSection({
                     href={attachmentUrl(a.id)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="min-w-0 flex-1 truncate text-[13px] text-foreground hover:text-brand hover:underline"
+                    className="min-w-0 flex-1 truncate text-sm text-foreground hover:text-brand hover:underline"
                   >
                     {a.filename}
                   </a>
                 )}
-                <span className="shrink-0 font-mono text-[11px] text-muted-foreground">
+                <span className="shrink-0 font-mono text-2xs text-muted-foreground">
                   {formatBytes(a.size_bytes)}
                 </span>
                 <a
@@ -203,7 +203,7 @@ export function AttachmentsSection({
           )}
           {upload.isPending ? 'Lädt hoch…' : 'Datei anhängen'}
         </Button>
-        <span className="text-[11.5px] text-muted-foreground">
+        <span className="text-xs text-muted-foreground">
           max. {MAX_MB} MB · PDF, Office, Text, Bild
         </span>
       </div>

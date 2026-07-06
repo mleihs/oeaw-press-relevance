@@ -277,7 +277,7 @@ export function CardModal({
                   {column && (
                     <ChannelIcon name={column.name} className="h-[18px] w-[18px] text-white" />
                   )}
-                  <span className="rounded-md bg-white/20 px-2 py-0.5 text-[12.5px] font-semibold text-white">
+                  <span className="rounded-md bg-white/20 px-2 py-0.5 text-xs font-semibold text-white">
                     {column?.name ?? 'Kanal'}
                   </span>
                   <div className="ml-auto flex items-center gap-2">
@@ -374,7 +374,7 @@ function CompleteButton({
         type="button"
         onClick={() => m.mutate()}
         disabled={m.isPending}
-        className="inline-flex h-9 items-center gap-1.5 rounded-md border border-emerald-500/40 bg-white px-3 text-[13px] font-semibold text-emerald-600 transition-colors hover:bg-emerald-50"
+        className="inline-flex h-9 items-center gap-1.5 rounded-md border border-emerald-500/40 bg-white px-3 text-sm font-semibold text-emerald-600 transition-colors hover:bg-emerald-50"
       >
         <RotateCcw className="h-4 w-4" />
         <span className="max-md:hidden">Wieder öffnen</span>
@@ -387,7 +387,7 @@ function CompleteButton({
       type="button"
       onClick={() => m.mutate()}
       disabled={m.isPending}
-      className="inline-flex h-9 items-center gap-1.5 rounded-md border border-input bg-card px-3 text-[13px] font-medium text-foreground transition-colors hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-600"
+      className="inline-flex h-9 items-center gap-1.5 rounded-md border border-input bg-card px-3 text-sm font-medium text-foreground transition-colors hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-600"
     >
       <CheckCircle2 className="h-4 w-4" />
       Abschließen
@@ -597,7 +597,7 @@ function MainColumn({
               href={card.link_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-md bg-brand/10 px-2 py-1 text-[13px] font-medium text-brand hover:underline"
+              className="inline-flex items-center gap-1.5 rounded-md bg-brand/10 px-2 py-1 text-sm font-medium text-brand hover:underline"
             >
               <LinkIcon className="h-3.5 w-3.5" />
               {card.link_url.replace(/^https?:\/\//, '').slice(0, 60)}
@@ -658,7 +658,7 @@ function SourceChip({ card }: { card: CardDetail }) {
   return (
     <NextLink
       href={href}
-      className="inline-flex items-center gap-1.5 rounded-md bg-muted px-2 py-1 text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+      className="inline-flex items-center gap-1.5 rounded-md bg-muted px-2 py-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
     >
       <Icon className="h-3.5 w-3.5" />
       {label}
@@ -717,7 +717,7 @@ function DescriptionField({
           }
         }}
         placeholder="Beschreibung als Markdown… ⌘↵ speichert, Esc verwirft"
-        className="min-h-[96px] resize-y text-[13.5px] leading-relaxed"
+        className="min-h-[96px] resize-y text-sm leading-relaxed"
       />
     );
   }
@@ -742,7 +742,7 @@ function DescriptionField({
     <button
       type="button"
       onClick={startEditing}
-      className="text-[13.5px] text-muted-foreground transition-colors hover:text-foreground"
+      className="text-sm text-muted-foreground transition-colors hover:text-foreground"
     >
       Beschreibung hinzufügen…
     </button>
@@ -758,7 +758,7 @@ function ProgressRing({ done, total, color }: { done: number; total: number; col
   const pct = total > 0 ? done / total : 0;
   const complete = total > 0 && done >= total;
   return (
-    <span className="ml-auto flex items-center gap-1.5 font-mono text-[11px] text-muted-foreground">
+    <span className="ml-auto flex items-center gap-1.5 font-mono text-2xs text-muted-foreground">
       <svg viewBox="0 0 36 36" className="h-[22px] w-[22px] -rotate-90" aria-hidden>
         <circle cx="18" cy="18" r="15" fill="none" stroke="var(--board-chip-bg)" strokeWidth="4" />
         <circle
@@ -827,7 +827,7 @@ function ItemSection({
     <div>
       <div className="mb-2 flex items-center gap-2">
         <Icon className="h-4 w-4" style={{ color: accent }} />
-        <span className="text-[13.5px] font-semibold text-foreground">{title}</span>
+        <span className="text-sm font-semibold text-foreground">{title}</span>
         {items.length > 0 && <ProgressRing done={done} total={items.length} color={accent} />}
       </div>
       <ul className="space-y-1">
@@ -847,7 +847,7 @@ function ItemSection({
             </button>
             <span
               className={cn(
-                'flex-1 text-[13.5px] leading-snug',
+                'flex-1 text-sm leading-snug',
                 item.done_at ? 'text-muted-foreground line-through' : 'text-foreground',
               )}
             >
@@ -858,7 +858,7 @@ function ItemSection({
                 <button
                   type="button"
                   onClick={() => onOpenCard(item.converted_card_id!)}
-                  className="rounded bg-brand/10 px-1.5 py-0.5 text-[11px] font-medium text-brand"
+                  className="rounded bg-brand/10 px-1.5 py-0.5 text-2xs font-medium text-brand"
                 >
                   Karte öffnen
                 </button>
@@ -899,7 +899,7 @@ function ItemSection({
             if (e.key === 'Enter' && text.trim() && !add.isPending) add.mutate(text.trim());
           }}
           placeholder={kind === 'subtask' ? 'Unteraufgabe hinzufügen…' : 'Eintrag hinzufügen, Enter zum Speichern…'}
-          className="flex-1 border-none bg-transparent text-[13.5px] text-foreground outline-none placeholder:text-muted-foreground"
+          className="flex-1 border-none bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
         />
       </div>
 
@@ -951,7 +951,7 @@ function ConvertDialog({
         </DialogHeader>
         <div className="space-y-3">
           <div>
-            <label className="mb-1 block font-mono text-[10.5px] uppercase tracking-wider text-muted-foreground">
+            <label className="mb-1 block font-mono text-2xs uppercase tracking-wider text-muted-foreground">
               Ziel-Kanal
             </label>
             <Select value={columnId} onValueChange={setColumnId}>
@@ -968,7 +968,7 @@ function ConvertDialog({
             </Select>
           </div>
           <div>
-            <label className="mb-1 block font-mono text-[10.5px] uppercase tracking-wider text-muted-foreground">
+            <label className="mb-1 block font-mono text-2xs uppercase tracking-wider text-muted-foreground">
               Fälligkeit (optional)
             </label>
             <DueDatePicker value={dueAt} onChange={setDueAt} />
@@ -1066,7 +1066,7 @@ function Sidebar({
           {card.watcher_ids.map((id) => (
             <div key={id} className="flex items-center gap-2">
               <BoardAvatar member={byId.get(id)} size={24} />
-              <span className="flex-1 truncate text-[13px] text-foreground">
+              <span className="flex-1 truncate text-sm text-foreground">
                 {displayNameOf(byId.get(id))}
               </span>
               <button
@@ -1081,7 +1081,7 @@ function Sidebar({
           ))}
           {notWatching.length > 0 && (
             <Select value="" onValueChange={(v) => v && addW.mutate(v)}>
-              <SelectTrigger className="h-8 text-[13px] text-muted-foreground" aria-label="Beobachter hinzufügen">
+              <SelectTrigger className="h-8 text-sm text-muted-foreground" aria-label="Beobachter hinzufügen">
                 <span className="inline-flex items-center gap-1">
                   <Plus className="h-3.5 w-3.5" /> Beobachter
                 </span>
@@ -1101,7 +1101,7 @@ function Sidebar({
         </div>
       </SidebarField>
 
-      <div className="space-y-0.5 border-t pt-4 font-mono text-[11px] text-muted-foreground">
+      <div className="space-y-0.5 border-t pt-4 font-mono text-2xs text-muted-foreground">
         <div>Erstellt · {formatDateTimeMeta(card.created_at)}</div>
         <div>Geändert · {relativeDay(card.updated_at)}</div>
       </div>
@@ -1160,7 +1160,7 @@ function LabelsField({
           <PopoverTrigger asChild>
             <button
               type="button"
-              className="inline-flex items-center gap-1 rounded-md border border-dashed border-input px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground hover:text-foreground"
+              className="inline-flex items-center gap-1 rounded-md border border-dashed border-input px-1.5 py-0.5 text-2xs font-medium text-muted-foreground hover:text-foreground"
             >
               <Tag className="h-3 w-3" /> Label
             </button>
@@ -1184,7 +1184,7 @@ function LabelsField({
                 }}
                 placeholder="Neues Label…"
                 maxLength={60}
-                className="min-w-0 flex-1 border-none bg-transparent text-[13px] outline-none placeholder:text-muted-foreground"
+                className="min-w-0 flex-1 border-none bg-transparent text-sm outline-none placeholder:text-muted-foreground"
               />
               <button
                 type="button"
@@ -1206,7 +1206,7 @@ function LabelsField({
 function SidebarField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <div className="mb-1.5 font-mono text-[10.5px] uppercase tracking-wider text-muted-foreground">
+      <div className="mb-1.5 font-mono text-2xs uppercase tracking-wider text-muted-foreground">
         {label}
       </div>
       {children}

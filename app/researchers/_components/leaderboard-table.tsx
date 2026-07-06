@@ -88,7 +88,7 @@ export function LeaderboardTable({ rows, loading }: LeaderboardTableProps) {
           plain header strip above it. */}
       <div>
         <div
-          className="grid grid-cols-[44px_1fr_180px_200px_72px_80px_28px] items-center gap-x-3 border-b bg-muted/50 px-4 py-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground"
+          className="grid grid-cols-[44px_1fr_180px_200px_72px_80px_28px] items-center gap-x-3 border-b bg-muted/50 px-4 py-2 text-2xs font-medium uppercase tracking-wider text-muted-foreground"
         >
           <div className="inline-flex items-center gap-1">Rang <InfoBubble id="rank" /></div>
           <div>Forscher:in</div>
@@ -135,7 +135,7 @@ export function LeaderboardTable({ rows, loading }: LeaderboardTableProps) {
                       </span>
                       {row.member_type_de && (
                         <span
-                          className="inline-flex items-center gap-0.5 rounded-sm bg-brand/10 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider text-brand"
+                          className="inline-flex items-center gap-0.5 rounded-sm bg-brand/10 px-1.5 py-0.5 text-3xs font-medium uppercase tracking-wider text-brand"
                           title={row.member_type_de}
                         >
                           ÖAW-Mitglied
@@ -143,7 +143,7 @@ export function LeaderboardTable({ rows, loading }: LeaderboardTableProps) {
                         </span>
                       )}
                       {row.external && (
-                        <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground/70">
+                        <span className="inline-flex items-center gap-0.5 text-2xs text-muted-foreground/70">
                           extern
                           <InfoBubble id="external_person" />
                         </span>

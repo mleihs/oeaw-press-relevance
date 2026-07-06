@@ -190,7 +190,7 @@ export function UserManagementCard() {
             <div>
               <CardTitle className="flex items-center gap-2 text-base">
                 Nutzerverwaltung
-                <span className="inline-flex items-center gap-1 rounded-full bg-brand/10 px-2 py-0.5 text-[11px] font-semibold text-brand">
+                <span className="inline-flex items-center gap-1 rounded-full bg-brand/10 px-2 py-0.5 text-2xs font-semibold text-brand">
                   <ShieldCheck className="h-3 w-3" />
                   Nur Admins
                 </span>
@@ -242,7 +242,7 @@ export function UserManagementCard() {
 
           {usersQuery.isSuccess && (
             <div>
-              <div className="grid grid-cols-[1fr_110px_110px_40px] gap-2 px-2 pb-2 font-mono text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground sm:grid-cols-[1fr_120px_120px_150px_40px]">
+              <div className="grid grid-cols-[1fr_110px_110px_40px] gap-2 px-2 pb-2 font-mono text-2xs font-semibold uppercase tracking-wider text-muted-foreground sm:grid-cols-[1fr_120px_120px_150px_40px]">
                 <span>Name</span>
                 <span>Rolle</span>
                 <span>Status</span>
@@ -392,7 +392,7 @@ function CreateForm(props: {
               <Key className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
               <Input
                 id="new-user-password"
-                className="pl-9 font-mono text-[13px]"
+                className="pl-9 font-mono text-sm"
                 value={props.password}
                 onChange={(e) => props.onPassword(e.target.value)}
               />
@@ -483,7 +483,7 @@ function UserRowItem(props: {
       <div>
         <span
           className={cn(
-            'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold',
+            'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-2xs font-semibold',
             isAdmin ? 'bg-brand/10 text-brand' : 'bg-muted text-muted-foreground',
           )}
         >
@@ -514,7 +514,7 @@ function UserRowItem(props: {
             : '–'}
         </span>
         {neverSignedIn && (
-          <span className="rounded-full bg-orange-100 px-1.5 py-0.5 text-[10px] font-semibold text-orange-700 dark:bg-orange-500/15 dark:text-orange-400">
+          <span className="rounded-full bg-orange-100 px-1.5 py-0.5 text-2xs font-semibold text-orange-700 dark:bg-orange-500/15 dark:text-orange-400">
             Neu
           </span>
         )}

@@ -57,7 +57,7 @@ export function CardMovePopover({
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="inline-flex h-9 items-center gap-1.5 rounded-md border border-input bg-card px-3 text-[13px] font-medium text-foreground hover:bg-muted"
+          className="inline-flex h-9 items-center gap-1.5 rounded-md border border-input bg-card px-3 text-sm font-medium text-foreground hover:bg-muted"
         >
           <ArrowRightToLine className="h-4 w-4" />
           {/* Mobil (Sheet-Header, M6a) reicht das Icon — Platz ist knapp. */}
@@ -65,7 +65,7 @@ export function CardMovePopover({
         </button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-64 p-2">
-        <div className="mb-1 px-1 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+        <div className="mb-1 px-1 font-mono text-2xs uppercase tracking-wider text-muted-foreground">
           Board
         </div>
         <Select value={boardSlug} onValueChange={setBoardSlug}>
@@ -80,7 +80,7 @@ export function CardMovePopover({
             ))}
           </SelectContent>
         </Select>
-        <div className="mb-1 px-1 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+        <div className="mb-1 px-1 font-mono text-2xs uppercase tracking-wider text-muted-foreground">
           Kanal
         </div>
         <div className="flex max-h-56 flex-col overflow-y-auto">
@@ -96,7 +96,7 @@ export function CardMovePopover({
                   setOpen(false);
                 }}
                 className={cn(
-                  'flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] transition-colors',
+                  'flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors',
                   isHere ? 'text-muted-foreground' : 'hover:bg-muted',
                 )}
               >
@@ -108,7 +108,7 @@ export function CardMovePopover({
             );
           })}
           {targetColumns.length === 0 && (
-            <div className="px-2 py-3 text-center text-[13px] text-muted-foreground">
+            <div className="px-2 py-3 text-center text-sm text-muted-foreground">
               Keine Kanäle
             </div>
           )}

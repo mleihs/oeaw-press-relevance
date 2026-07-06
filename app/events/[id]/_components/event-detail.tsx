@@ -55,7 +55,7 @@ export function EventDetail({ event }: { event: Event }) {
             </Badge>
           )}
           {event.available_langs.map((lang) => (
-            <Badge key={lang} variant="outline" className="text-[10px] uppercase">
+            <Badge key={lang} variant="outline" className="text-2xs uppercase">
               {lang}
             </Badge>
           ))}
@@ -168,7 +168,7 @@ export function EventDetail({ event }: { event: Event }) {
                 <li key={`${n.by}-${i}`} className="border-l-2 border-amber-300 pl-3 py-0.5">
                   <div className="flex items-baseline gap-2">
                     <span className="text-sm font-medium">{n.by}</span>
-                    <span className="text-[10px] text-muted-foreground/70">
+                    <span className="text-2xs text-muted-foreground/70">
                       {eventDateFmt.format(new Date(n.at))}
                     </span>
                   </div>
@@ -184,7 +184,7 @@ export function EventDetail({ event }: { event: Event }) {
         </Card>
       )}
 
-      <div className="text-[11px] text-muted-foreground/70 flex flex-wrap items-center gap-3">
+      <div className="text-2xs text-muted-foreground/70 flex flex-wrap items-center gap-3">
         <span>WEBDB-UID: {event.webdb_uid}</span>
         <span>•</span>
         <span>Synchronisiert: {eventDateFmt.format(new Date(event.synced_at))}</span>

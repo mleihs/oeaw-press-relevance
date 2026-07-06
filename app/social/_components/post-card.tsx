@@ -44,7 +44,7 @@ export function PostCard({
       <div className="relative">
         <PostImage postId={post.id} hasImage={Boolean(post.image_url)} label={post.topic} />
         {hot && (
-          <span className="absolute left-2 top-2 z-10 inline-flex items-center gap-1 rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
+          <span className="absolute left-2 top-2 z-10 inline-flex items-center gap-1 rounded-full bg-red-600 px-2 py-0.5 text-2xs font-bold text-white shadow-sm">
             <Flame className="h-3 w-3" weight="fill" aria-hidden />
             Top-Post
           </span>
@@ -70,7 +70,7 @@ export function PostCard({
 
       {/* All post meta in one semantic <footer>: row 1 = channel + engagement,
           row 2 = timestamp + link to the original. */}
-      <footer className="mt-auto flex flex-col gap-1.5 border-t border-line/70 pt-2 text-[11px] text-ink-subtle">
+      <footer className="mt-auto flex flex-col gap-1.5 border-t border-line/70 pt-2 text-2xs text-ink-subtle">
         <div className="flex items-center justify-between gap-2">
           {channel ? (
             <HoverCard openDelay={120} closeDelay={80}>

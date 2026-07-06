@@ -72,7 +72,7 @@ export function CalendarEventModal({ event, open, onOpenChange }: Props) {
             {event.available_langs.length > 0 && (
               <div className="flex flex-wrap gap-1">
                 {event.available_langs.map((lang) => (
-                  <Badge key={lang} variant="outline" className="text-[10px] uppercase">
+                  <Badge key={lang} variant="outline" className="text-2xs uppercase">
                     {lang}
                   </Badge>
                 ))}

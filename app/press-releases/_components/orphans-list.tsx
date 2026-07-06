@@ -160,13 +160,13 @@ function OrphanRow({
       <span className="whitespace-nowrap text-xs">
         {pr.released_at ?? <span className="text-muted-foreground">–</span>}
         {paperYearMismatch && (
-          <span className="block text-[10px] text-muted-foreground">
+          <span className="block text-2xs text-muted-foreground">
             Paper: {pr.paper_year}
           </span>
         )}
       </span>
       <span>
-        <Badge variant="outline" className="text-[10px] uppercase">
+        <Badge variant="outline" className="text-2xs uppercase">
           {pr.lang ?? '?'}
         </Badge>
       </span>
@@ -180,7 +180,7 @@ function OrphanRow({
       </span>
       <span className="text-xs max-w-xs">
         {pr.oeaw_author_matches && pr.oeaw_author_matches.length > 0 && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-brand/10 text-brand px-2 py-0.5 text-[10px] font-medium mb-1">
+          <span className="inline-flex items-center gap-1 rounded-full bg-brand/10 text-brand px-2 py-0.5 text-2xs font-medium mb-1">
             <Users className="h-2.5 w-2.5" />
             {pr.oeaw_author_matches.length} ÖAW
           </span>
@@ -250,7 +250,7 @@ function OrphanDetail({ pr }: { pr: PressRelease }) {
               </Link>
             ))}
           </div>
-          <p className="text-[10px] text-muted-foreground mt-1">
+          <p className="text-2xs text-muted-foreground mt-1">
             Zuordnung über Nachname + Vornamen-Initial gegen die <code>persons</code>-Tabelle.
             Manuelle Verifikation empfohlen.
           </p>

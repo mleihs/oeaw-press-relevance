@@ -60,9 +60,9 @@ export function ReferencesSection({
     <div>
       <div className="mb-2 flex items-center gap-2">
         <Layers className="h-4 w-4 text-muted-foreground" />
-        <span className="text-[13.5px] font-semibold text-foreground">Verknüpfte Objekte</span>
+        <span className="text-sm font-semibold text-foreground">Verknüpfte Objekte</span>
         {card.references.length > 0 && (
-          <span className="font-mono text-[11px] text-muted-foreground">
+          <span className="font-mono text-2xs text-muted-foreground">
             {card.references.length}
           </span>
         )}
@@ -121,11 +121,11 @@ function InternalRow({ reference }: { reference: Extract<CardReference, { kind: 
       <div className="min-w-0 flex-1">
         <NextLink
           href={href}
-          className="block truncate text-[13px] font-medium text-foreground hover:text-brand hover:underline"
+          className="block truncate text-sm font-medium text-foreground hover:text-brand hover:underline"
         >
           {reference.title}
         </NextLink>
-        <div className="font-mono text-[10.5px] text-muted-foreground">
+        <div className="font-mono text-2xs text-muted-foreground">
           {isEvent ? 'Veranstaltung' : 'Publikation'}
           {date && ` · ${formatDate(date)}`}
           {isEvent && reference.decision === 'pitch' && ' · gepitcht'}
@@ -172,7 +172,7 @@ function YoutubeRow({
           </span>
         )}
         {s.duration_seconds != null && (
-          <span className="absolute bottom-0.5 right-0.5 rounded bg-black/75 px-1 font-mono text-[9.5px] font-medium leading-[15px] text-white">
+          <span className="absolute bottom-0.5 right-0.5 rounded bg-black/75 px-1 font-mono text-3xs font-medium leading-[15px] text-white">
             {formatVideoDuration(s.duration_seconds)}
           </span>
         )}
@@ -183,14 +183,14 @@ function YoutubeRow({
             href={reference.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="block truncate text-[13px] font-medium text-foreground hover:text-brand hover:underline"
+            className="block truncate text-sm font-medium text-foreground hover:text-brand hover:underline"
           >
             {s.title}
           </a>
         ) : (
-          <span className="block truncate text-[13px] font-medium text-foreground">{s.title}</span>
+          <span className="block truncate text-sm font-medium text-foreground">{s.title}</span>
         )}
-        <div className="truncate font-mono text-[10.5px] text-muted-foreground">
+        <div className="truncate font-mono text-2xs text-muted-foreground">
           {['YouTube', ...meta].join(' · ')}
         </div>
       </div>

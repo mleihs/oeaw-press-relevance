@@ -278,7 +278,7 @@ function DecisionTab({ value, count }: { value: Decision; count: number }) {
     <TabsTrigger value={value} className="gap-2">
       <Icon className="h-4 w-4" />
       {config.label}
-      <Badge variant="secondary" className="ml-0.5 text-[10px] px-1.5 py-0 tabular-nums">
+      <Badge variant="secondary" className="ml-0.5 text-2xs px-1.5 py-0 tabular-nums">
         {count}
       </Badge>
     </TabsTrigger>

@@ -41,7 +41,7 @@ export function MobileBottomNav() {
               <Icon size={21} weight={isActive ? 'fill' : 'regular'} aria-hidden />
               <span
                 className={cn(
-                  'text-[10px] leading-none',
+                  'text-2xs leading-none',
                   isActive ? 'font-semibold' : 'font-medium',
                 )}
               >

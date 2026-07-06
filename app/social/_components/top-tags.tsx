@@ -28,7 +28,7 @@ export function TopTags({ posts, limit = 12 }: { posts: SocialPost[]; limit?: nu
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="text-[11px] font-semibold uppercase tracking-[.05em] text-ink-soft">
+      <span className="text-2xs font-semibold uppercase tracking-[.05em] text-ink-soft">
         Häufige Tags
       </span>
       {tags.map((t) => {
@@ -49,7 +49,7 @@ export function TopTags({ posts, limit = 12 }: { posts: SocialPost[]; limit?: nu
           >
             <Hash className={cn('h-3 w-3', active ? '' : 'text-ink-soft')} aria-hidden />
             {t.label}
-            <span className="font-mono text-[10px] text-ink-soft">{t.n}</span>
+            <span className="font-mono text-2xs text-ink-soft">{t.n}</span>
           </button>
         );
       })}

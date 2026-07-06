@@ -22,7 +22,7 @@ export interface Explanation {
 
 const Para = ({ children }: { children: ReactNode }) => <p className="leading-relaxed">{children}</p>;
 const Code = ({ children }: { children: ReactNode }) => (
-  <code className="rounded bg-muted px-1 py-0.5 font-mono text-[10px] text-foreground/90">{children}</code>
+  <code className="rounded bg-muted px-1 py-0.5 font-mono text-2xs text-foreground/90">{children}</code>
 );
 
 /**

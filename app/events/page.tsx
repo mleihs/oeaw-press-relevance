@@ -158,7 +158,7 @@ export default async function EventsPage({
           <h1 className="text-2xl font-bold tracking-tight text-ink">
             Veranstaltungen
           </h1>
-          <p className="text-muted-foreground text-[13.5px] mt-1.5">
+          <p className="text-muted-foreground text-sm mt-1.5">
             Bewerten, pitchen, ins Redaktionsboard übernehmen. Eine Entscheidung
             wird zur vorbefüllten Karte.
           </p>

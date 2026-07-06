@@ -45,7 +45,7 @@ export function PersonHeader({ person, stats, windowLabel }: PersonHeaderProps) 
             <div className="flex flex-wrap items-center gap-1.5">
               {person.member_type_de && (
                 <span
-                  className="inline-flex items-center gap-1 rounded-md bg-brand/10 px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-brand"
+                  className="inline-flex items-center gap-1 rounded-md bg-brand/10 px-2 py-1 text-2xs font-medium uppercase tracking-wider text-brand"
                   title={person.member_type_de}
                 >
                   ÖAW-Mitglied
@@ -53,13 +53,13 @@ export function PersonHeader({ person, stats, windowLabel }: PersonHeaderProps) 
                 </span>
               )}
               {person.external && (
-                <span className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                <span className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-2xs font-medium uppercase tracking-wider text-muted-foreground">
                   Extern
                   <InfoBubble id="external_person" />
                 </span>
               )}
               {person.deceased && (
-                <span className="rounded-md bg-muted px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                <span className="rounded-md bg-muted px-2 py-1 text-2xs font-medium uppercase tracking-wider text-muted-foreground">
                   Verstorben
                 </span>
               )}
@@ -152,11 +152,11 @@ function StatCard({
       transition={{ duration: 0.4 }}
       className="rounded-lg border bg-card p-4"
     >
-      <p className="flex items-center gap-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+      <p className="flex items-center gap-1 text-2xs font-medium uppercase tracking-wider text-muted-foreground">
         {label}
         {explId && <InfoBubble id={explId} />}
       </p>
-      {subline && <p className="text-[10px] text-muted-foreground/70">{subline}</p>}
+      {subline && <p className="text-2xs text-muted-foreground/70">{subline}</p>}
       <div className="mt-2 flex items-baseline gap-2">
         <span className="text-2xl font-light tabular-nums text-foreground" style={color ? { color } : undefined}>
           <AnimateNumber format={{ maximumFractionDigits: fractionDigits }} locales="de-AT">

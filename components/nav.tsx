@@ -416,7 +416,7 @@ function MobileGroup({
   return (
     <div className="flex flex-col">
       {title && (
-        <div className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-white/40">
+        <div className="px-3 pt-2 pb-1 text-2xs font-semibold uppercase tracking-wider text-white/40">
           {title}
         </div>
       )}

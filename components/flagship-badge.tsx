@@ -21,7 +21,7 @@ export function FlagshipBadge({
     <span
       title="Flaggschiff-Journal (Nature-Familie oder Science)"
       className={cn(
-        'inline-flex shrink-0 items-center gap-0.5 rounded bg-brand/10 px-1.5 py-0 text-[10px] font-semibold text-brand',
+        'inline-flex shrink-0 items-center gap-0.5 rounded bg-brand/10 px-1.5 py-0 text-2xs font-semibold text-brand',
         className,
       )}
     >

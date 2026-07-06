@@ -39,7 +39,7 @@ export function EventsTable({ rows, boardCardHrefs }: Props) {
       <div className={CARD}>
         <div className="px-4 py-11 text-center">
           <CalendarDays aria-hidden className="mx-auto h-7 w-7 text-line-strong" />
-          <div className="mt-2.5 text-[13.5px] text-ink-subtle">
+          <div className="mt-2.5 text-sm text-ink-subtle">
             Keine Veranstaltungen in dieser Ansicht
           </div>
         </div>
@@ -83,7 +83,7 @@ function EventRowView({
         <div className="font-mono text-[17px] font-semibold leading-none">
           {eventDayFmt.format(start)}
         </div>
-        <div className="mt-[3px] font-mono text-[10px] font-medium uppercase leading-none tracking-[0.06em]">
+        <div className="mt-[3px] font-mono text-2xs font-medium uppercase leading-none tracking-[0.06em]">
           {eventMonFmt.format(start).replace('.', '')}
         </div>
       </div>
@@ -97,20 +97,20 @@ function EventRowView({
           {event.title}
         </Link>
         {venue && (
-          <div className="mt-[3px] truncate text-[12px] text-ink-subtle">
+          <div className="mt-[3px] truncate text-xs text-ink-subtle">
             {venue}
           </div>
         )}
         <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
           {event.institute && (
-            <span className="rounded-full bg-fill px-2 py-[2px] text-[10.5px] font-medium text-ink-soft">
+            <span className="rounded-full bg-fill px-2 py-[2px] text-2xs font-medium text-ink-soft">
               {event.institute}
             </span>
           )}
           {event.available_langs.map((lang) => (
             <span
               key={lang}
-              className="rounded-full bg-fill px-2 py-[2px] text-[10.5px] font-medium uppercase text-ink-muted"
+              className="rounded-full bg-fill px-2 py-[2px] text-2xs font-medium uppercase text-ink-muted"
             >
               {lang}
             </span>
@@ -124,7 +124,7 @@ function EventRowView({
           <ScoreReasonBadge score={event.event_score!} reasoning={event.reasoning} />
         ) : (
           <span
-            className="font-mono text-[11px] text-ink-muted"
+            className="font-mono text-2xs text-ink-muted"
             title="Noch nicht analysiert"
           >
             n/a

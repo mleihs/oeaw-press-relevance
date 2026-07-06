@@ -10,7 +10,7 @@ export function PublicationBreadcrumb(_props: { title?: string }) {
   return (
     <Link
       href="/publications"
-      className="inline-flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground transition-colors hover:text-brand"
+      className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-brand"
     >
       <ArrowLeft className="h-[15px] w-[15px]" />
       Zurück zu Publikationen

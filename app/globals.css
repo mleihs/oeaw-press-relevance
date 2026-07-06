@@ -117,6 +117,15 @@
   --shadow-popover: var(--elevation-popover);
   --shadow-modal: var(--elevation-modal);
   --shadow-btn: var(--elevation-btn);
+
+  /* Type-Scale unterhalb von text-xs (Review-Fixplan F1). Verbindliche Stufen:
+     3xs = 9px/12px (Mikro-Labels, Chart-Ticks), 2xs = 10px/14px (Badges,
+     Meta-Labels). Ersetzen die arbitrary text-[9…11px]-Streuung; 11.5–12.5px →
+     text-xs, 13–13.5px → text-sm (Tailwind-Bestand). */
+  --text-3xs: 9px;
+  --text-3xs--line-height: 12px;
+  --text-2xs: 10px;
+  --text-2xs--line-height: 14px;
 }
 
 :root {

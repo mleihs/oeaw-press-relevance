@@ -59,7 +59,7 @@ function EventScore({ event }: { event: Event }) {
     <ScoreReasonBadge score={event.event_score!} reasoning={event.reasoning} />
   ) : (
     <span
-      className="font-mono text-[11px] text-ink-muted"
+      className="font-mono text-2xs text-ink-muted"
       title="Noch nicht analysiert"
     >
       n/a
@@ -134,7 +134,7 @@ function DecisionPill({ decision }: { decision: Event['decision'] }) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 rounded-full px-[9px] py-[3px] text-[11px] font-semibold',
+        'inline-flex items-center gap-1 rounded-full px-[9px] py-[3px] text-2xs font-semibold',
         decision === 'pitch'
           ? 'bg-success-tint text-success'
           : decision === 'hold'
@@ -195,7 +195,7 @@ function EventDetailSheet({
             aria-hidden
             className="h-[17px] w-[17px] text-ink-soft"
           />
-          <span className="font-mono text-[12.5px] font-medium text-ink-soft">
+          <span className="font-mono text-xs font-medium text-ink-soft">
             {dateLabel}
           </span>
           <DrawerClose asChild>
@@ -219,14 +219,14 @@ function EventDetailSheet({
             </div>
           </div>
           {venue && (
-            <div className="mt-1.5 text-[13px] text-ink-subtle">{venue}</div>
+            <div className="mt-1.5 text-sm text-ink-subtle">{venue}</div>
           )}
           {chips.length > 0 && (
             <div className="mt-[13px] flex flex-wrap gap-1.5">
               {chips.map((chip) => (
                 <span
                   key={chip}
-                  className="rounded-full bg-fill px-[9px] py-[3px] text-[11px] font-medium text-ink-soft"
+                  className="rounded-full bg-fill px-[9px] py-[3px] text-2xs font-medium text-ink-soft"
                 >
                   {chip}
                 </span>

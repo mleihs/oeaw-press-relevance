@@ -50,7 +50,7 @@ export function SpotlightPodium({ rows, metric }: SpotlightPodiumProps) {
     >
       <div className="mb-5 flex items-baseline justify-between">
         <div>
-          <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-brand">
+          <p className="text-2xs font-medium uppercase tracking-[0.18em] text-brand">
             <Sparkles className="mr-1 inline h-3 w-3 -translate-y-px" />
             Im Spotlight
           </p>
@@ -81,7 +81,7 @@ export function SpotlightPodium({ rows, metric }: SpotlightPodiumProps) {
                 className="block rounded-lg border bg-card p-5 transition-all hover:-translate-y-0.5 hover:shadow-md"
                 style={{ borderTopColor: meta.color, borderTopWidth: 2 }}
               >
-                <div className="mb-3 flex items-center justify-between text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                <div className="mb-3 flex items-center justify-between text-2xs font-medium uppercase tracking-wider text-muted-foreground">
                   <span className="inline-flex items-center gap-1.5">
                     <Icon className="h-3 w-3" style={{ color: meta.color }} />
                     {meta.label}
@@ -110,7 +110,7 @@ export function SpotlightPodium({ rows, metric }: SpotlightPodiumProps) {
 
                 <div className="mt-4 flex items-end justify-between">
                   <div>
-                    <p className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground/70">
+                    <p className="flex items-center gap-1 text-2xs uppercase tracking-wider text-muted-foreground/70">
                       {METRIC_SHORT_LABELS[metric]}
                       <InfoBubble id={metric} />
                     </p>
@@ -126,7 +126,7 @@ export function SpotlightPodium({ rows, metric }: SpotlightPodiumProps) {
                   </div>
                   <div className="flex flex-col items-end text-brand opacity-70">
                     <Sparkline data={row.sparkline ?? []} width={80} height={26} stroke="currentColor" />
-                    <span className="mt-0.5 inline-flex items-center gap-0.5 text-[9px] uppercase tracking-wider text-muted-foreground/70 opacity-60">
+                    <span className="mt-0.5 inline-flex items-center gap-0.5 text-3xs uppercase tracking-wider text-muted-foreground/70 opacity-60">
                       12 M
                       <InfoBubble id="sparkline" />
                     </span>
@@ -135,7 +135,7 @@ export function SpotlightPodium({ rows, metric }: SpotlightPodiumProps) {
 
                 {row.top_pub && (
                   <div className="mt-4 border-t pt-3">
-                    <p className="mb-1 flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground/70">
+                    <p className="mb-1 flex items-center gap-1 text-2xs uppercase tracking-wider text-muted-foreground/70">
                       Stärkste Publikation im Zeitraum
                       <InfoBubble
                         content={{
