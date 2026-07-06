@@ -13,6 +13,14 @@ eigene Checks für Duplikate/Gates). Dieser Plan ist die Spec für Folge-Session
 > Committe pro Gruppe mit beschreibender Message. Keine visuellen Änderungen
 > außer wo explizit vorgesehen (Gruppe F mit Browser-Verify).
 
+## ⚠️ Working-Tree-Hinweis (Stand 2026-07-06)
+
+Im Working Tree liegt **uncommittete parallele Arbeit** (Board-MT-Parität:
+emoji-picker, mention-textarea, due-date-picker, attachment-preview,
+lib/icons.ts, package.json u. a. — siehe docs/RESUME_BOARD_MT_PARITAET.md).
+**Nicht anfassen und nicht mitcommitten** — beim Committen immer gezielt
+`git add <pfad>` der eigenen Änderungen, nie `git add -A` auf Repo-Ebene.
+
 ## Gates (nach jeder Gruppe)
 
 ```
@@ -46,9 +54,9 @@ fehlende Typografie-Skala, Credentials in Docs (OSS-Blocker).
       `docs/RESUME_LOGIN_REDESIGN.md:95-98`, `docs/RESUME_BOARD_MT_PARITAET.md:107`.
       (Historie bleibt schmutzig → bei OSS frisches Repo, siehe Gruppe G.)
 
-### Gruppe B — Typen-/Schema-Split (Fable, in Arbeit 2026-07-06)
+### Gruppe B — Typen-/Schema-Split (Fable, ERLEDIGT 2026-07-06)
 
-- [ ] **B1 `lib/shared/types.ts` (627 Z.) splitten** → `lib/shared/types/` mit
+- [x] **B1 `lib/shared/types.ts` (627 Z.) splitten** → `lib/shared/types/` mit
       `index.ts`-Barrel (Import-Pfad `@/lib/shared/types` bleibt gültig):
       `core.ts` (Decision-Tupel, isDecision, Lang, EventLang, ModalStatus, FlagNote),
       `publications.ts` (Publication, PublicationType, PublicationWithRelations,
@@ -58,7 +66,7 @@ fehlende Typografie-Skala, Credentials in Docs (OSS-Blocker).
       (SSE-/Progress-Event-Typen), `events.ts`, `social.ts`, `users.ts`,
       `settings.ts` (AppSettings + DEFAULT_SETTINGS).
       Interne Abhängigkeiten sind azyklisch (publications → core/press-releases/people).
-- [ ] **B2 `lib/server/db/schema.ts` (1094 Z., 49 Tabellen) splitten** →
+- [x] **B2 `lib/server/db/schema.ts` (1094 Z., 49 Tabellen) splitten** →
       `lib/server/db/schema/` mit `index.ts`-Barrel: `auth.ts` (users,
       user_settings), `webdb.ts` (persons/orgunits/extunits/projects/lectures +
       Typ-Lookups + Junctions), `publications.ts` (+ embeddings, centroid,
