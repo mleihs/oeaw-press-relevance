@@ -1,0 +1,1456 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style data-omelette-injected>html,body{background:transparent}</style><script data-omelette-injected>(()=>{{const Y=new URLSearchParams(location.search).get("theme");if(Y==="light"||Y==="dark"){document.documentElement.dataset.theme=Y}}{const Y=()=>{try{if(document.querySelector('meta[name="color-scheme"]'))return;const k=getComputedStyle(document.documentElement).getPropertyValue("color-scheme").trim();if(k&&k!=="normal")return;const w=(X)=>{if(!X)return null;const F=getComputedStyle(X).backgroundColor.match(/^rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)(?:[,\s/]+([\d.]+%?))?\s*\)$/);if(!F)return null;const K=F[4]==null?1:parseFloat(F[4])/(F[4].endsWith("%")?100:1);if(K<0.99)return null;return[+F[1],+F[2],+F[3]]};const U=w(document.body)||w(document.documentElement);if(!U)return;const x=(X)=>{const F=X/255;return F<=0.04045?F/12.92:((F+0.055)/1.055)**2.4};const D=0.2126*x(U[0])+0.7152*x(U[1])+0.0722*x(U[2]);document.documentElement.style.setProperty("color-scheme",D<0.4?"dark":"light")}catch{}};if(document.readyState==="complete")Y();else window.addEventListener("load",Y)}var _=[];var v=false;var P=30000;var h=3000;document.addEventListener("DOMContentLoaded",()=>{const Y=window.Babel;const k="om-src-id";if(Y&&Y.registerPlugin&&!(Y.availablePlugins&&Y.availablePlugins[k])){Y.registerPlugin(k,({types:D})=>({visitor:{JSXOpeningElement(X,F){const K=X.node;if(K.name&&K.name.type==="JSXMemberExpression")return;for(let z=0;z<K.attributes.length;z++){const V=K.attributes[z];if(V.type==="JSXAttribute"&&V.name&&V.name.name==="data-om-id")return}const B=F.file&&F.file.opts&&F.file.opts.filename||"?";const A=K.loc&&K.loc.start;const J=`jsx:${B}:${K.start??0}:${A?A.line:0}:${A?A.column+1:0}`;K.attributes.push(D.jsxAttribute(D.jsxIdentifier("data-om-id"),D.stringLiteral(J)))}}}))}const w="om-text-extract";let U=false;if(v&&Y&&Y.registerPlugin&&!(Y.availablePlugins&&Y.availablePlugins[w])){const D=window.React;if(D&&D.useSyncExternalStore&&D.createElement){U=true;const X={};const F=new Set;let K=0;window.__omTextO=X;window.__omTextSet=(J)=>{for(const z in J){const V=J[z];if(V==null)delete X[z];else X[z]=V}K++;F.forEach((z)=>z())};const B=(J)=>{F.add(J);return()=>F.delete(J)};const A=()=>K;window.__OmT=function J(z){D.useSyncExternalStore(B,A,A);return D.createElement("span",{"data-om-text":z.i,className:"__om-t"},z.i in X?X[z.i]:z.children)};Y.registerPlugin(w,({types:J})=>{const z={style:1,script:1,noscript:1,textarea:1,title:1,option:1,text:1,tspan:1,textPath:1};const V={placeholder:1,alt:1,title:1,label:1,"aria-label":1,"aria-description":1,"aria-placeholder":1};const W=(Z,H)=>J.logicalExpression("??",J.memberExpression(J.logicalExpression("||",J.memberExpression(J.identifier("window"),J.identifier("__omTextO")),J.objectExpression([])),J.stringLiteral(Z),true),H);const Q=(Z)=>Z.file&&Z.file.opts&&Z.file.opts.filename||"?";const j=(Z)=>Z.file&&Z.file.code||"";const G=(Z,H)=>{const N=($)=>$&&$.start!=null&&$.end!=null&&($.type==="StringLiteral"||$.type==="TemplateLiteral"&&$.expressions.length===0)?[$.start,$.end]:null;const L=N(H);if(L)return L;if(H&&H.type==="Identifier"){const $=Z.scope.getBinding(H.name);if($&&$.constant&&$.path.node.type==="VariableDeclarator"){return N($.path.node.init)}}return null};const R=(Z,H,N)=>{const L=Z.node;let $=false;const M=(q,E)=>{$=true;return J.jsxElement(J.jsxOpeningElement(J.jsxIdentifier("__OmT"),[J.jsxAttribute(J.jsxIdentifier("i"),J.stringLiteral(q))],false),J.jsxClosingElement(J.jsxIdentifier("__OmT")),[E],false)};const C=L.children.map((q)=>{if(q.type==="JSXText"){if(q.start==null||q.end==null)return q;const E=N.slice(q.start,q.end);const f=E.length-E.trimStart().length;const I=E.length-E.trimEnd().length;if(f+I>=E.length)return q;return M(`txt:${H}:${q.start+f}:${q.end-I}`,q)}if(q.type==="JSXExpressionContainer"){const E=G(Z,q.expression);if(E)return M(`str:${H}:${E[0]}:${E[1]}`,q)}return q});if($)L.children=C};return{visitor:{JSXOpeningElement(Z,H){const N=Z.node;const L=Q(H);const $={};for(let M=0;M<N.attributes.length;M++){const C=N.attributes[M];if(C.type!=="JSXAttribute"||!C.name)continue;const q=C.name.name;if(!V[q])continue;if(!C.value||C.value.type!=="StringLiteral")continue;if(C.value.start==null||C.value.end==null)continue;const E=`txt:${L}:${C.value.start}:${C.value.end}`;$[q]=E;C.value=J.jsxExpressionContainer(W(E,J.stringLiteral(C.value.value)))}if(Object.keys($).length){N.attributes.push(J.jsxAttribute(J.jsxIdentifier("data-om-text-attrs"),J.stringLiteral(JSON.stringify($))))}},JSXElement(Z,H){const N=Z.node.openingElement;const L=N&&N.name&&N.name.name;if(L==="__OmT")return;if(typeof L==="string"&&z[L])return;R(Z,Q(H),j(H))},JSXFragment(Z,H){R(Z,Q(H),j(H))}}}})}}const x=U?["transform-react-jsx-source",k,w]:["transform-react-jsx-source",k];document.querySelectorAll('script[type="text/babel"],script[type="text/jsx"]').forEach((D,X)=>{const F=D.getAttribute("data-plugins")||"";const K=x.filter((B)=>F.indexOf(B)<0);if(K.length){D.setAttribute("data-plugins",F?`${F},${K.join(",")}`:K.join(","))}if(!D.hasAttribute("data-filename")){D.setAttribute("data-filename",D.getAttribute("src")||`inline-${X}`)}})});var S=window.parent;if(S&&S!==window){const Y=(J,z)=>{try{S.postMessage({__omelette_log:true,type:J,data:z},"*")}catch{}};["log","warn","error"].forEach((J)=>{const z=console[J];console[J]=(...V)=>{const W=V.map((Q)=>{try{return typeof Q==="object"?JSON.stringify(Q):String(Q)}catch{try{return String(Q)}catch{return"[unstringifiable]"}}}).join(" ");Y(J,W);z.apply(console,V)}});window.addEventListener("error",(J)=>{const z=J.target;if(z&&z!==window&&z.tagName){const V=z.src||z.href||"";Y("resource_error",`${z.tagName} failed to load: ${V}`)}else{Y("error",`${J.message||"Unknown error"} at ${J.filename||"?"}:${J.lineno||0}:${J.colno||0}`)}},true);window.addEventListener("unhandledrejection",(J)=>{const z=J.reason;const V=z instanceof Error?`${z.message} ${z.stack}`:String(z);Y("error",`Unhandled rejection: ${V}`)});const k=()=>{try{S.postMessage({type:"omelette:height",height:document.documentElement.scrollHeight},"*")}catch{}};if(window.ResizeObserver)new ResizeObserver(k).observe(document.documentElement);const w=()=>{k();if(!document.querySelector('script[type="text/babel"],script[type="text/jsx"]'))return;const J=()=>document.getElementById("root")||document.querySelector("body > div[id]");const z=J()?.firstElementChild??null;let V=0;const W=()=>{const Q=J();if(Q&&Q.firstElementChild!==z||++V>30){k();return}setTimeout(W,100)};setTimeout(W,100)};if(document.readyState==="complete")w();else window.addEventListener("load",w);const U={};let x=0;const D=(J)=>new Promise((z,V)=>{if(!_.length){V(new Error("claude.complete: no parent origin"));return}const W=`c${++x}`;const Q=()=>setTimeout(()=>{delete U[W];V(new Error(`claude.complete: no data for ${P/1000}s`))},P);const j=Q();U[W]={resolve:z,reject:V,text:"",t:j,arm:Q};try{for(const G of _){S.postMessage({__om_api:true,id:W,body:J},G)}}catch(G){clearTimeout(j);delete U[W];V(G)}});const X=8;const F=async(J,z)=>{if(!Array.isArray(J.messages)){throw new Error("claude.complete: tools require a messages array")}const V=J.messages.slice();const W={...J,tools:J.tools.map((G)=>{if(G===null||typeof G!=="object")return G;const R={};for(const Z of Object.keys(G)){if(typeof G[Z]!=="function")R[Z]=G[Z]}return R})};const Q=W.tool_choice;const j=Q!=null&&(Q.type==="any"||Q.type==="tool")?{...W,tool_choice:Q.disable_parallel_tool_use!==undefined?{type:"auto",disable_parallel_tool_use:Q.disable_parallel_tool_use}:{type:"auto"}}:W;for(let G=0;G<X;G++){const R=await D({...G===0?W:j,messages:V});const Z=R.message;const H=Z&&Array.isArray(Z.content)?Z.content:null;const N=H?H.filter(($)=>$?.type==="tool_use"):[];if(Z?.stop_reason!=="tool_use"||N.length===0){return R.text}const L=[];for(const $ of N){const M=z.get($.name);if(!M){L.push({type:"tool_result",tool_use_id:$.id,content:`no handler for tool "${$.name}"`,is_error:true});continue}try{const C=await M($.input);const q=typeof C==="string"?C:A(C)??"";L.push({type:"tool_result",tool_use_id:$.id,content:q})}catch(C){L.push({type:"tool_result",tool_use_id:$.id,content:String(C?.message??C??"tool handler failed"),is_error:true})}}V.push({role:"assistant",content:H},{role:"user",content:L})}throw new Error(`claude.complete: exceeded ${X} tool turns`)};window.claude={complete(J){const z=J;if(z!==null&&typeof z==="object"&&Array.isArray(z.tools)&&z.tools.some((V)=>V!==null&&typeof V==="object"&&typeof V.run==="function")){const V=new Map;for(const W of z.tools){if(W!==null&&typeof W==="object"&&typeof W.run==="function"){V.set(String(W.name),W.run)}}return F(z,V)}return D(J).then((V)=>V.text)}};const K={};let B=0;window.omelette={writeFile:(J,z)=>new Promise((V,W)=>{if(!_.length){V();return}const Q=`f${++B}`;const j=setTimeout(()=>{delete K[Q];V()},h);K[Q]={resolve:V,reject:W,t:j};try{for(const G of _){S.postMessage({__om_file:true,id:Q,op:"write",path:J,content:z},G)}}catch{clearTimeout(j);delete K[Q];V()}})};const A=(J)=>{try{return JSON.stringify(J)}catch{return JSON.stringify(String(J))}};window.addEventListener("message",(J)=>{if(_.indexOf(J.origin)<0)return;if(J.source!==S)return;const z=J.data;if(!z)return;if(z.type==="omelette-preview-refresh"){if(typeof z.token!=="string"||!/^[0-9a-f.-]+(\.(rc|pr-[0-9]+))?(\.[0-9]+\.[0-9a-f]{16})?$/.test(z.token))return;const Q=Math.max(1,Math.floor((z.expiresAt||0)-Date.now()/1000));document.cookie="__Host-omelette-preview="+z.token+"; Path=/; Secure; SameSite=None; Partitioned; Max-Age="+Q;return}if(z.__om_file_r){const Q=K[z.id];if(!Q)return;clearTimeout(Q.t);delete K[z.id];if(z.ok)Q.resolve();else Q.reject(new Error(z.error||"write failed"));return}if(z.__om_api_r){const Q=U[z.id];if(!Q)return;if(z.error!=null){clearTimeout(Q.t);delete U[z.id];Q.reject(new Error(z.error));return}if(z.chunk!=null){clearTimeout(Q.t);Q.t=Q.arm();Q.text+=z.chunk;return}if(z.done){clearTimeout(Q.t);delete U[z.id];Q.resolve({text:z.text!=null?z.text:Q.text,message:z.message});return}return}if(!z.__om_eval)return;const V=z;const W=(Q)=>{J.source.postMessage({...Q,__om_eval_r:1,id:V.id},J.origin)};try{const Q=(0,eval)(V.code);if(Q&&typeof Q.then==="function"){Q.then((j)=>W({ok:1,v:A(j)}),(j)=>W({ok:0,e:String(j)}))}else{W({ok:1,v:A(Q)})}}catch(Q){W({ok:0,e:String(Q)})}})}})();
+</script>
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  ::selection { background: #cfe0ff; }
+  input::placeholder { color: #9aa4b2; }
+  @keyframes rf-spin { to { transform: rotate(360deg); } }
+  @keyframes rf-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes rf-pop { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+</style>
+</helmet>
+<div data-screen-label="Toolkit Redesign" style="min-height:100vh;background:#f7f8fa;font-family:'Geist',system-ui,sans-serif;color:#16202e;-webkit-font-smoothing:antialiased;padding-bottom:80px;">
+
+  <!-- ===== TOP NAV ===== -->
+  <header style="background:#0047bb;color:#fff;box-shadow:0 1px 3px rgba(0,50,130,.35);position:sticky;top:0;z-index:50;">
+    <div style="height:54px;display:flex;align-items:center;padding:0 18px;gap:4px;max-width:1200px;margin:0 auto;">
+      <div style="display:flex;align-items:center;gap:9px;margin-right:18px;">
+        <i class="ph-fill ph-radio-button" style="font-size:20px;color:#9cc0ff;"></i>
+        <span style="font-weight:600;font-size:16px;letter-spacing:-0.01em;white-space:nowrap;">ÖAW Presse</span>
+      </div>
+      <sc-for list="{{ navTabs }}" as="t" hint-placeholder-count="3">
+        <a onClick="{{ t.onSelect }}" style="{{ t.style }}"><i class="{{ t.icon }}" style="font-size:16px;"></i>{{ t.label }}</a>
+      </sc-for>
+      <a href="Redaktionsboard.dc.html" style="display:flex;align-items:center;gap:7px;padding:7px 11px;border-radius:8px;font-size:13.5px;font-weight:500;color:rgba(255,255,255,.72);text-decoration:none;cursor:pointer;"><i class="ph ph-kanban" style="font-size:16px;"></i>Board</a>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:6px;">
+        <button style="display:flex;align-items:center;gap:8px;height:34px;padding:0 10px;border:none;background:rgba(255,255,255,.12);color:rgba(255,255,255,.9);border-radius:8px;cursor:pointer;font-family:inherit;"><i class="ph ph-magnifying-glass" style="font-size:15px;"></i><span style="font-size:12.5px;font-weight:500;">Suchen</span><span style="font-family:'Geist Mono',monospace;font-size:10.5px;background:rgba(255,255,255,.18);padding:2px 5px;border-radius:5px;">⌘K</span></button>
+        <span style="width:32px;height:32px;border-radius:999px;background:#9cc0ff;color:#00337f;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;margin-left:4px;">CH</span>
+      </div>
+    </div>
+  </header>
+
+  <div style="max-width:1200px;margin:0 auto;padding:26px 24px 0;">
+
+    <!-- ================= DASHBOARD ================= -->
+    <sc-if value="{{ isDash }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:20px;">
+        <div>
+          <h1 style="margin:0;font-size:24px;font-weight:700;letter-spacing:-0.015em;">Guten Morgen, Christine</h1>
+          <p style="margin:6px 0 0;font-size:13.5px;color:#64707f;">{{ dashSub }}</p>
+        </div>
+        <div style="display:flex;background:#eef1f5;border-radius:9px;padding:3px;gap:2px;">
+          <sc-for list="{{ periodTabs }}" as="p" hint-placeholder-count="4">
+            <button onClick="{{ p.onSelect }}" style="{{ p.style }}">{{ p.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+
+      <!-- ROW 1: actionable -->
+      <div style="display:grid;grid-template-columns:1fr;gap:16px;margin-bottom:16px;">
+        <!-- Redaktionsboard tile (NEW) -->
+        <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;box-shadow:0 1px 2px rgba(16,32,46,.05);overflow:hidden;display:flex;flex-direction:column;">
+          <div style="display:flex;align-items:center;gap:9px;padding:14px 16px 11px;">
+            <span style="width:30px;height:30px;border-radius:8px;background:#eef4ff;color:#0047bb;display:flex;align-items:center;justify-content:center;"><i class="ph-duotone ph-kanban" style="font-size:17px;"></i></span>
+            <div style="flex:1;"><div style="font-size:14px;font-weight:600;">Redaktionsboard</div></div>
+            <span style="display:inline-flex;align-items:center;gap:5px;font-family:'Geist Mono',monospace;font-size:11px;font-weight:500;color:#dc2626;background:#fdeaea;padding:3px 8px;border-radius:999px;"><i class="ph-bold ph-clock-countdown" style="font-size:12px;"></i>3 überfällig</span>
+          </div>
+          <div style="padding:0 8px;flex:1;">
+            <sc-for list="{{ boardTasks }}" as="t" hint-placeholder-count="4">
+              <a href="Redaktionsboard.dc.html" style="display:flex;align-items:center;gap:9px;padding:8px 8px;border-radius:9px;text-decoration:none;cursor:pointer;" style-hover="background:#f7f8fa;">
+                <span style="{{ t.dotStyle }}"></span>
+                <span style="flex:1;min-width:0;font-size:13px;font-weight:500;color:#16202e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ t.title }}</span>
+                <span style="{{ t.dueStyle }}">{{ t.due }}</span>
+              </a>
+            </sc-for>
+          </div>
+          <a href="Redaktionsboard.dc.html" style="display:flex;align-items:center;gap:7px;padding:11px 16px;border-top:1px solid #eef1f5;text-decoration:none;color:#0047bb;font-size:12.5px;font-weight:600;" style-hover="background:#f7f8fa;">Zum Board<span style="flex:1;"></span><i class="ph ph-arrow-right" style="font-size:14px;"></i></a>
+        </div>
+
+      </div>
+
+      <!-- ROW 2: stats -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px;">
+        <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;box-shadow:0 1px 2px rgba(16,32,46,.05);padding:16px 18px;display:flex;align-items:center;gap:14px;">
+          <span style="width:40px;height:40px;border-radius:11px;background:#eef4ff;color:#0047bb;display:flex;align-items:center;justify-content:center;"><i class="ph-duotone ph-book-open" style="font-size:21px;"></i></span>
+          <div><div style="font-family:'Geist Mono',monospace;font-size:22px;font-weight:600;letter-spacing:-0.01em;line-height:1.1;">12.480</div><div style="font-size:12px;color:#64707f;margin-top:2px;">Publikationen · 68 % peer-reviewed</div></div>
+        </div>
+        <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;box-shadow:0 1px 2px rgba(16,32,46,.05);padding:16px 18px;display:flex;align-items:center;gap:14px;">
+          <span style="width:40px;height:40px;border-radius:11px;background:#eef4ff;color:#0047bb;display:flex;align-items:center;justify-content:center;"><i class="ph-duotone ph-chart-bar" style="font-size:21px;"></i></span>
+          <div><div style="font-family:'Geist Mono',monospace;font-size:22px;font-weight:600;letter-spacing:-0.01em;line-height:1.1;">9.812</div><div style="font-size:12px;color:#64707f;margin-top:2px;">analysiert · 79 % des Bestands</div></div>
+        </div>
+        <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;box-shadow:0 1px 2px rgba(16,32,46,.05);padding:16px 18px;display:flex;align-items:center;gap:14px;">
+          <span style="width:40px;height:40px;border-radius:11px;background:#e7f7ef;color:#059669;display:flex;align-items:center;justify-content:center;"><i class="ph-duotone ph-trend-up" style="font-size:21px;"></i></span>
+          <div><div style="font-family:'Geist Mono',monospace;font-size:22px;font-weight:600;letter-spacing:-0.01em;line-height:1.1;">214</div><div style="font-size:12px;color:#64707f;margin-top:2px;">hohes Story-Potenzial · Ø 58 %</div></div>
+        </div>
+      </div>
+
+      <!-- ROW 3: top pubs + analytics -->
+      <div style="display:grid;grid-template-columns:1.6fr 1fr;gap:16px;align-items:start;">
+        <!-- Top Publikationen -->
+        <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;box-shadow:0 1px 2px rgba(16,32,46,.05);overflow:hidden;">
+          <div style="display:flex;align-items:center;gap:9px;padding:15px 18px 12px;border-bottom:1px solid #eef1f5;">
+            <span style="font-size:14.5px;font-weight:600;">Top-Storys</span>
+            <span style="font-size:12px;color:#9aa4b2;">nach Story Score · {{ periodLabel }} · ohne Pop-Science</span>
+            <span style="flex:1;"></span>
+            <span style="font-family:'Geist Mono',monospace;font-size:11.5px;color:#9aa4b2;">{{ poolLabel }}</span>
+          </div>
+          <div style="padding:6px 8px 8px;">
+            <sc-for list="{{ topPubs }}" as="p" hint-placeholder-count="5">
+              <div onClick="{{ p.onOpen }}" style="display:flex;align-items:flex-start;gap:12px;padding:11px 10px;border-radius:10px;cursor:pointer;" style-hover="background:#f7f8fa;">
+                <span style="{{ p.rankStyle }}">{{ p.rank }}</span>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-size:13.5px;font-weight:600;color:#16202e;line-height:1.35;">{{ p.title }}</div>
+                  <div style="display:flex;align-items:center;gap:8px;margin-top:3px;flex-wrap:wrap;">
+                    <span style="font-size:12px;color:#64707f;">{{ p.meta }}</span>
+                    <sc-if value="{{ p.flagship }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;color:#0047bb;background:#eef4ff;padding:2px 7px;border-radius:999px;"><i class="ph-fill ph-crown-simple" style="font-size:11px;"></i>{{ p.venue }}</span></sc-if>
+                    <sc-if value="{{ p.plainVenue }}" hint-placeholder-val="{{ true }}"><span style="font-size:11px;color:#9aa4b2;">{{ p.venue }}</span></sc-if>
+                  </div>
+                  <div style="font-size:12.5px;color:#475262;margin-top:4px;line-height:1.45;">{{ p.pitch }}</div>
+                </div>
+                <span style="{{ p.scoreStyle }}">{{ p.score }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <button onClick="{{ goPubs }}" style="width:100%;display:flex;align-items:center;gap:7px;padding:12px 18px;border:none;border-top:1px solid #eef1f5;background:transparent;color:#0047bb;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;" style-hover="background:#f7f8fa;">Alle Publikationen<span style="flex:1;"></span><i class="ph ph-arrow-right" style="font-size:14px;"></i></button>
+        </div>
+
+        <!-- right column -->
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;box-shadow:0 1px 2px rgba(16,32,46,.05);padding:16px 18px;">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px;"><span style="font-size:13.5px;font-weight:600;">Score-Verteilung</span><span style="font-family:'Geist Mono',monospace;font-size:11px;color:#9aa4b2;">analysierte Pubs</span></div>
+            <div style="display:flex;gap:4px;align-items:flex-end;height:74px;">
+              <sc-for list="{{ scoreDist }}" as="b" hint-placeholder-count="8">
+                <span title="{{ b.tip }}" style="{{ b.style }}"></span>
+              </sc-for>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-top:7px;font-family:'Geist Mono',monospace;font-size:10.5px;color:#9aa4b2;"><span>0 %</span><span>Story Score</span><span>100 %</span></div>
+          </div>
+          <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;box-shadow:0 1px 2px rgba(16,32,46,.05);padding:16px 18px;">
+            <div style="font-size:13.5px;font-weight:600;margin-bottom:13px;">Dimensions-Mittelwerte</div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <sc-for list="{{ dims }}" as="d" hint-placeholder-count="5">
+                <div>
+                  <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;"><span style="color:#475262;font-weight:500;">{{ d.name }}</span><span style="font-family:'Geist Mono',monospace;color:#64707f;">{{ d.val }}</span></div>
+                  <div style="height:6px;background:#eef1f5;border-radius:999px;overflow:hidden;"><span style="{{ d.barStyle }}"></span></div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;box-shadow:0 1px 2px rgba(16,32,46,.05);padding:16px 18px;">
+            <div style="font-size:13.5px;font-weight:600;margin-bottom:12px;">Häufige Keywords</div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;">
+              <sc-for list="{{ keywords }}" as="k" hint-placeholder-count="8">
+                <span style="{{ k.style }}">{{ k.word }}</span>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ================= PUBLIKATIONEN ================= -->
+    <sc-if value="{{ isPubs }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px;">
+        <div>
+          <h1 style="margin:0;font-size:24px;font-weight:700;letter-spacing:-0.015em;">Publikationen</h1>
+          <p style="margin:6px 0 0;font-size:13.5px;color:#64707f;">{{ pubsSub }}</p>
+        </div>
+        <button style="display:inline-flex;align-items:center;gap:7px;border:1px solid #cbd2dc;background:#fff;color:#333d4c;font-family:inherit;font-size:13px;font-weight:600;padding:9px 14px;border-radius:9px;cursor:pointer;"><i class="ph ph-export" style="font-size:15px;"></i>Export</button>
+      </div>
+
+      <!-- filter bar -->
+      <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:14px;">
+        <div style="display:flex;align-items:center;gap:8px;border:1px solid #cbd2dc;border-radius:9px;padding:0 11px;height:38px;background:#fff;width:300px;">
+          <i class="ph ph-magnifying-glass" style="font-size:15px;color:#9aa4b2;"></i>
+          <input value="{{ pubSearch }}" onInput="{{ onPubSearch }}" placeholder="Titel, Autor:in, Institut…" style="border:none;outline:none;font-family:inherit;font-size:13px;flex:1;color:#16202e;background:transparent;min-width:0;"/>
+        </div>
+        <sc-for list="{{ presets }}" as="pr" hint-placeholder-count="4">
+          <button onClick="{{ pr.onSelect }}" style="{{ pr.style }}"><i class="{{ pr.icon }}" style="font-size:13px;"></i>{{ pr.label }}</button>
+        </sc-for>
+        <span style="flex:1;"></span>
+        <button style="display:inline-flex;align-items:center;gap:7px;border:1px solid #cbd2dc;background:#fff;color:#475262;font-family:inherit;font-size:13px;font-weight:600;padding:0 13px;height:38px;border-radius:9px;cursor:pointer;"><i class="ph ph-funnel" style="font-size:14px;"></i>Filter</button>
+      </div>
+
+      <!-- list -->
+      <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;box-shadow:0 1px 2px rgba(16,32,46,.05);overflow:hidden;">
+        <sc-for list="{{ pubRows }}" as="p" hint-placeholder-count="6">
+          <div style="display:flex;align-items:flex-start;gap:14px;padding:15px 18px;border-bottom:1px solid #eef1f5;cursor:pointer;" onClick="{{ p.onOpen }}" style-hover="background:#f7f8fa;">
+            <span style="{{ p.scoreStyle }}">{{ p.score }}</span>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:14px;font-weight:600;color:#16202e;line-height:1.35;">{{ p.title }}</div>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap;">
+                <span style="font-size:12.5px;color:#64707f;">{{ p.meta }}</span>
+                <sc-if value="{{ p.flagship }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;color:#0047bb;background:#eef4ff;padding:2px 7px;border-radius:999px;"><i class="ph-fill ph-crown-simple" style="font-size:11px;"></i>{{ p.venue }}</span></sc-if>
+                <sc-if value="{{ p.plainVenue }}" hint-placeholder-val="{{ true }}"><span style="font-size:11.5px;color:#9aa4b2;">{{ p.venue }}</span></sc-if>
+                <span style="font-size:10.5px;font-weight:600;color:#64707f;background:#eef1f5;padding:2px 7px;border-radius:999px;">{{ p.type }}</span>
+                <span style="font-family:'Geist Mono',monospace;font-size:10.5px;color:#9aa4b2;">{{ p.date }}</span>
+              </div>
+              <div style="font-size:12.5px;color:#475262;margin-top:5px;line-height:1.45;">{{ p.pitch }}</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">
+              <sc-if value="{{ p.hasPm }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;color:#059669;background:#e7f7ef;padding:3px 8px;border-radius:999px;"><i class="ph-bold ph-newspaper" style="font-size:11px;"></i>PM</span></sc-if>
+              <sc-if value="{{ p.flagged }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;color:#92620c;background:#fdf1e3;padding:3px 8px;border-radius:999px;"><i class="ph-fill ph-push-pin" style="font-size:11px;"></i>Geflaggt</span></sc-if>
+              <i class="ph ph-caret-right" style="font-size:15px;color:#cbd2dc;"></i>
+            </div>
+          </div>
+        </sc-for>
+        <sc-if value="{{ pubsEmpty }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:44px 16px;text-align:center;"><i class="ph ph-magnifying-glass" style="font-size:28px;color:#cbd2dc;"></i><div style="font-size:13.5px;color:#64707f;margin-top:10px;">Keine Publikationen für diese Filter</div></div>
+        </sc-if>
+        <div style="display:flex;align-items:center;padding:12px 18px;background:#fbfcfd;">
+          <span style="font-family:'Geist Mono',monospace;font-size:11.5px;color:#9aa4b2;">{{ pubsFooter }}</span>
+          <span style="flex:1;"></span>
+          <button style="display:inline-flex;align-items:center;gap:6px;border:1px solid #cbd2dc;background:#fff;color:#475262;font-family:inherit;font-size:12px;font-weight:600;padding:7px 12px;border-radius:8px;cursor:pointer;">Mehr laden</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ================= PUBLIKATION DETAIL ================= -->
+    <sc-if value="{{ isPubDetail }}" hint-placeholder-val="{{ false }}">
+      <div onClick="{{ backToPubs }}" style="display:inline-flex;align-items:center;gap:7px;color:#64707f;font-size:13px;font-weight:500;cursor:pointer;margin-bottom:16px;" style-hover="color:#0047bb;"><i class="ph ph-arrow-left" style="font-size:15px;"></i>Zurück zu Publikationen</div>
+
+      <!-- header -->
+      <div style="margin-bottom:18px;">
+        <div style="display:flex;align-items:flex-start;gap:14px;">
+          <h1 style="margin:0;flex:1;font-size:25px;font-weight:700;letter-spacing:-0.015em;line-height:1.25;">{{ pd.title }}</h1>
+          <div style="display:flex;gap:8px;flex-shrink:0;">
+            <button style="display:inline-flex;align-items:center;gap:7px;border:none;background:#0047bb;color:#fff;font-family:inherit;font-size:13px;font-weight:600;padding:9px 14px;border-radius:9px;cursor:pointer;"><i class="ph-bold ph-kanban" style="font-size:15px;"></i>Ins Board</button>
+            <button style="width:38px;height:38px;border:1px solid #cbd2dc;background:#fff;color:#92620c;border-radius:9px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;"><i class="ph-fill ph-push-pin" style="font-size:16px;"></i></button>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:9px;margin-top:10px;flex-wrap:wrap;font-size:13.5px;">
+          <span style="font-weight:600;color:#0047bb;">{{ pd.meta }}</span>
+          <span style="color:#cbd2dc;">|</span>
+          <span style="color:#475262;">{{ pd.date }}</span>
+          <span style="color:#cbd2dc;">|</span>
+          <span style="color:#64707f;">{{ pd.type }}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:7px;margin-top:12px;flex-wrap:wrap;">
+          <sc-if value="{{ pd.flagship }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;color:#0047bb;background:#eef4ff;padding:4px 10px;border-radius:999px;"><i class="ph-fill ph-crown-simple" style="font-size:12px;"></i>{{ pd.venue }}</span></sc-if>
+          <sc-for list="{{ pd.badges }}" as="b" hint-placeholder-count="3">
+            <span style="{{ b.style }}"><i class="{{ b.icon }}" style="font-size:12px;"></i>{{ b.text }}</span>
+          </sc-for>
+        </div>
+        <div style="display:flex;align-items:center;gap:7px;margin-top:12px;flex-wrap:wrap;">
+          <i class="ph ph-buildings" style="font-size:15px;color:#9aa4b2;"></i>
+          <sc-for list="{{ pd.insts }}" as="o" hint-placeholder-count="2">
+            <span style="font-size:12px;font-weight:500;color:#475262;background:#eef1f5;padding:3px 9px;border-radius:7px;">{{ o.name }}</span>
+          </sc-for>
+          <span style="color:#cbd2dc;margin:0 2px;">·</span>
+          <a href="{{ pd.doiUrl }}" style="display:inline-flex;align-items:center;gap:5px;font-size:12.5px;color:#0047bb;text-decoration:none;font-weight:500;">DOI: {{ pd.doi }}<i class="ph ph-arrow-square-out" style="font-size:13px;"></i></a>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1.65fr 1fr;gap:16px;align-items:start;">
+        <!-- LEFT column -->
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <!-- Pitch -->
+          <div style="background:#f6f9ff;border:1px solid #d3e2ff;border-radius:14px;padding:18px 20px;">
+            <div style="display:flex;align-items:center;gap:7px;font-family:'Geist Mono',monospace;font-size:10.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#0047bb;margin-bottom:10px;"><i class="ph-fill ph-lightning" style="font-size:13px;"></i>Pitch-Vorschlag</div>
+            <p style="margin:0;font-size:15px;line-height:1.55;color:#16202e;font-weight:500;">{{ pd.pitch }}</p>
+            <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px;">
+              <div style="font-size:13px;color:#475262;line-height:1.5;"><span style="font-weight:600;color:#0047bb;">Blickwinkel:</span> {{ pd.angle }}</div>
+              <div style="font-size:13px;color:#475262;line-height:1.5;"><span style="font-weight:600;color:#0047bb;">Zielgruppe:</span> {{ pd.audience }}</div>
+            </div>
+          </div>
+
+          <!-- Summary -->
+          <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;box-shadow:0 1px 2px rgba(16,32,46,.05);padding:18px 20px;">
+            <div style="display:flex;align-items:center;gap:8px;font-size:14.5px;font-weight:600;margin-bottom:11px;"><i class="ph-duotone ph-book-open-text" style="font-size:18px;color:#0047bb;"></i>Zusammenfassung</div>
+            <p style="margin:0;font-size:14px;line-height:1.65;color:#333d4c;">{{ pd.summaryDe }}</p>
+          </div>
+
+          <!-- Haiku -->
+          <div style="background:linear-gradient(160deg,#0047bb,#00337f);border-radius:14px;padding:22px 24px;color:#fff;position:relative;overflow:hidden;">
+            <i class="ph-fill ph-flower-lotus" style="position:absolute;right:16px;top:14px;font-size:40px;color:rgba(255,255,255,.12);"></i>
+            <div style="font-family:'Geist Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:#9cc0ff;margin-bottom:12px;">Haiku</div>
+            <div style="display:flex;flex-direction:column;gap:5px;">
+              <sc-for list="{{ pd.haikuLines }}" as="h" hint-placeholder-count="3">
+                <div style="font-size:18px;font-weight:500;line-height:1.4;letter-spacing:-0.01em;">{{ h.line }}</div>
+              </sc-for>
+            </div>
+            <div style="margin-top:16px;font-family:'Geist Mono',monospace;font-size:10.5px;color:rgba(255,255,255,.6);display:flex;align-items:center;gap:6px;"><i class="ph ph-sparkle" style="font-size:12px;"></i>{{ pd.model }}</div>
+          </div>
+
+          <!-- Authors -->
+          <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;box-shadow:0 1px 2px rgba(16,32,46,.05);overflow:hidden;">
+            <div style="display:flex;align-items:center;gap:8px;padding:16px 20px 13px;border-bottom:1px solid #eef1f5;">
+              <i class="ph-duotone ph-users-three" style="font-size:18px;color:#0047bb;"></i><span style="font-size:14.5px;font-weight:600;">Autor:innen</span>
+              <span style="font-size:12.5px;color:#9aa4b2;">({{ pd.authorsCount }}) · {{ pd.authorsBreak }}</span>
+            </div>
+            <div style="padding:6px 12px 10px;">
+              <sc-for list="{{ pd.authors }}" as="a" hint-placeholder-count="3">
+                <div style="display:flex;align-items:center;gap:11px;padding:9px 8px;">
+                  <span style="{{ a.avatarStyle }}">{{ a.initials }}</span>
+                  <div style="flex:1;min-width:0;">
+                    <div style="{{ a.nameStyle }}">{{ a.name }}</div>
+                    <sc-if value="{{ a.hasRole }}" hint-placeholder-val="{{ false }}"><div style="font-size:11.5px;color:#9aa4b2;margin-top:1px;">{{ a.role }}</div></sc-if>
+                  </div>
+                  <sc-if value="{{ a.ext }}" hint-placeholder-val="{{ false }}"><span style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:#9aa4b2;background:#f1f3f6;padding:2px 7px;border-radius:6px;">Ext</span></sc-if>
+                  <sc-if value="{{ a.hasMail }}" hint-placeholder-val="{{ false }}"><a href="mailto:{{ a.mail }}" style="width:30px;height:30px;border-radius:8px;color:#9aa4b2;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;" style-hover="color:#0047bb;background:#eef4ff;"><i class="ph ph-envelope-simple" style="font-size:15px;"></i></a></sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <!-- Enrichment / Abstract -->
+          <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;box-shadow:0 1px 2px rgba(16,32,46,.05);padding:18px 20px;">
+            <div style="display:flex;align-items:center;gap:8px;font-size:14.5px;font-weight:600;margin-bottom:12px;"><i class="ph-duotone ph-file-text" style="font-size:18px;color:#0047bb;"></i>Externe Anreicherung</div>
+            <div style="font-family:'Geist Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#9aa4b2;margin-bottom:6px;">Abstract</div>
+            <p style="margin:0 0 14px;font-size:13.5px;line-height:1.6;color:#333d4c;">{{ pd.abstract }}</p>
+            <div style="font-family:'Geist Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#9aa4b2;margin-bottom:8px;">Schlagwörter</div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;">
+              <sc-for list="{{ pd.keywords }}" as="k" hint-placeholder-count="4">
+                <span style="font-size:11.5px;font-weight:500;color:#475262;background:#eef1f5;padding:3px 9px;border-radius:999px;">{{ k.word }}</span>
+              </sc-for>
+            </div>
+            <div style="margin-top:14px;padding-top:12px;border-top:1px solid #eef1f5;font-family:'Geist Mono',monospace;font-size:11px;color:#9aa4b2;">{{ pd.words }}</div>
+          </div>
+        </div>
+
+        <!-- RIGHT column -->
+        <div style="display:flex;flex-direction:column;gap:16px;position:sticky;top:78px;">
+          <!-- Score analysis -->
+          <div style="background:#fff;border:1px solid #d3e2ff;border-radius:14px;box-shadow:0 1px 2px rgba(16,32,46,.05);padding:18px 20px;">
+            <div style="display:flex;align-items:center;gap:8px;font-size:14.5px;font-weight:600;margin-bottom:16px;"><i class="ph-duotone ph-brain" style="font-size:18px;color:#0047bb;"></i>Relevanz-Analyse</div>
+            <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;">
+              <span style="{{ pd.scoreCircleStyle }}">{{ pd.scoreBig }}</span>
+              <div><div style="font-size:15px;font-weight:700;">Story Score</div><div style="font-size:12.5px;color:#64707f;margin-top:2px;">{{ pd.scoreLabel }}</div></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:11px;">
+              <sc-for list="{{ pd.dims }}" as="d" hint-placeholder-count="5">
+                <div>
+                  <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;"><span style="color:#475262;font-weight:500;">{{ d.name }}</span><span style="font-family:'Geist Mono',monospace;color:#64707f;">{{ d.val }}</span></div>
+                  <div style="height:6px;background:#eef1f5;border-radius:999px;overflow:hidden;"><span style="{{ d.barStyle }}"></span></div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="margin-top:16px;padding-top:14px;border-top:1px solid #eef1f5;">
+              <div style="font-family:'Geist Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:#9aa4b2;margin-bottom:6px;">Begründung</div>
+              <p style="margin:0;font-size:13px;line-height:1.6;color:#475262;">{{ pd.reasoning }}</p>
+            </div>
+            <div style="margin-top:14px;font-family:'Geist Mono',monospace;font-size:10.5px;color:#9aa4b2;display:flex;align-items:center;gap:6px;"><i class="ph ph-sparkle" style="font-size:12px;"></i>{{ pd.model }} · {{ pd.cost }}</div>
+          </div>
+
+          <!-- Decision -->
+          <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;box-shadow:0 1px 2px rgba(16,32,46,.05);padding:16px 18px;">
+            <div style="font-size:13px;font-weight:600;margin-bottom:11px;">Redaktionsentscheidung</div>
+            <div style="display:flex;gap:8px;">
+              <button style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:7px;border:none;background:#0047bb;color:#fff;font-family:inherit;font-size:13px;font-weight:600;padding:11px;border-radius:10px;cursor:pointer;"><i class="ph-bold ph-lightning" style="font-size:14px;"></i>Pitchen</button>
+              <button style="display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid #cbd2dc;background:#fff;color:#64707f;font-family:inherit;font-size:13px;font-weight:600;padding:11px 16px;border-radius:10px;cursor:pointer;">Verwerfen</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ================= VERANSTALTUNGEN ================= -->
+    <sc-if value="{{ isEvents }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px;">
+        <div>
+          <h1 style="margin:0;font-size:24px;font-weight:700;letter-spacing:-0.015em;">Veranstaltungen</h1>
+          <p style="margin:6px 0 0;font-size:13.5px;color:#64707f;">Bewerten, pitchen, ins Redaktionsboard übernehmen. Eine Entscheidung wird zur vorbefüllten Karte.</p>
+        </div>
+        <div style="display:flex;background:#eef1f5;border-radius:9px;padding:3px;gap:2px;">
+          <button onClick="{{ onEventsTable }}" style="{{ evTableStyle }}"><i class="ph ph-rows" style="font-size:14px;"></i>Tabelle</button>
+          <button onClick="{{ onEventsCal }}" style="{{ evCalStyle }}"><i class="ph ph-calendar-blank" style="font-size:14px;"></i>Kalender</button>
+        </div>
+      </div>
+
+      <sc-if value="{{ eventsTableMode }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:14px;">
+        <sc-for list="{{ eventTabs }}" as="t" hint-placeholder-count="2">
+          <button onClick="{{ t.onSelect }}" style="{{ t.style }}">{{ t.label }}<span style="{{ t.countStyle }}">{{ t.count }}</span></button>
+        </sc-for>
+        <span style="flex:1;"></span>
+        <button onClick="{{ toggleMainNews }}" style="{{ mainNewsStyle }}"><i class="ph-fill ph-star" style="font-size:13px;"></i>Nur Main News</button>
+      </div>
+
+      <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;box-shadow:0 1px 2px rgba(16,32,46,.05);overflow:hidden;">
+        <sc-for list="{{ eventRows }}" as="e" hint-placeholder-count="5">
+          <div style="display:flex;align-items:center;gap:16px;padding:14px 18px;border-bottom:1px solid #eef1f5;">
+            <div style="{{ e.dateStyle }}"><div style="font-family:'Geist Mono',monospace;font-size:17px;font-weight:600;line-height:1;">{{ e.day }}</div><div style="font-family:'Geist Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.06em;margin-top:3px;">{{ e.mon }}</div></div>
+            <div style="flex:1;min-width:0;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:14px;font-weight:600;color:#16202e;">{{ e.title }}</span>
+                <sc-if value="{{ e.mainNews }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;color:#92620c;background:#fdf1e3;padding:2px 7px;border-radius:999px;"><i class="ph-fill ph-star" style="font-size:10px;"></i>Main News</span></sc-if>
+              </div>
+              <div style="font-size:12px;color:#64707f;margin-top:3px;">{{ e.venue }}</div>
+              <div style="display:flex;gap:5px;margin-top:6px;flex-wrap:wrap;">
+                <sc-for list="{{ e.reasons }}" as="r" hint-placeholder-count="2">
+                  <span style="font-size:10.5px;font-weight:500;color:#475262;background:#eef1f5;padding:2px 8px;border-radius:999px;">{{ r }}</span>
+                </sc-for>
+              </div>
+            </div>
+            <span style="{{ e.scoreStyle }}">{{ e.score }}</span>
+            <div style="width:210px;display:flex;justify-content:flex-end;gap:7px;flex-shrink:0;">
+              <sc-if value="{{ e.open }}" hint-placeholder-val="{{ true }}">
+                <button onClick="{{ e.onPitch }}" style="display:inline-flex;align-items:center;gap:6px;border:none;background:#0047bb;color:#fff;font-family:inherit;font-size:12px;font-weight:600;padding:8px 12px;border-radius:8px;cursor:pointer;"><i class="ph-bold ph-lightning" style="font-size:13px;"></i>Pitchen</button>
+                <button onClick="{{ e.onReject }}" style="display:inline-flex;align-items:center;gap:6px;border:1px solid #cbd2dc;background:#fff;color:#64707f;font-family:inherit;font-size:12px;font-weight:600;padding:8px 12px;border-radius:8px;cursor:pointer;">Verwerfen</button>
+              </sc-if>
+              <sc-if value="{{ e.pitched }}" hint-placeholder-val="{{ false }}">
+                <a href="Redaktionsboard.dc.html" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;color:#059669;background:#e7f7ef;font-size:12px;font-weight:600;padding:8px 12px;border-radius:8px;"><i class="ph-bold ph-kanban" style="font-size:13px;"></i>Im Board · Karte öffnen</a>
+              </sc-if>
+              <sc-if value="{{ e.rejected }}" hint-placeholder-val="{{ false }}">
+                <span style="display:inline-flex;align-items:center;gap:6px;color:#9aa4b2;background:#f1f3f6;font-size:12px;font-weight:600;padding:8px 12px;border-radius:8px;">Verworfen</span>
+                <button onClick="{{ e.onReopen }}" title="Zurücksetzen" style="width:32px;height:32px;border:1px solid #e2e6ec;background:#fff;color:#9aa4b2;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;"><i class="ph ph-arrow-counter-clockwise" style="font-size:14px;"></i></button>
+              </sc-if>
+            </div>
+          </div>
+        </sc-for>
+        <sc-if value="{{ eventsEmpty }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:44px 16px;text-align:center;"><i class="ph ph-calendar-x" style="font-size:28px;color:#cbd2dc;"></i><div style="font-size:13.5px;color:#64707f;margin-top:10px;">Keine Veranstaltungen in dieser Ansicht</div></div>
+        </sc-if>
+      </div>
+      </sc-if>
+
+      <!-- KALENDER (Schedule-X neu gestylt) -->
+      <sc-if value="{{ eventsCalMode }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:3px;">
+            <button onClick="{{ onPrev }}" style="width:34px;height:34px;border:1px solid #cbd2dc;background:#fff;color:#475262;border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="ph ph-caret-left" style="font-size:15px;"></i></button>
+            <button onClick="{{ onNext }}" style="width:34px;height:34px;border:1px solid #cbd2dc;background:#fff;color:#475262;border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="ph ph-caret-right" style="font-size:15px;"></i></button>
+          </div>
+          <span style="font-size:16px;font-weight:700;letter-spacing:-0.01em;min-width:210px;">{{ periodLabel }}</span>
+          <button onClick="{{ onToday }}" style="border:1px solid #cbd2dc;background:#fff;color:#475262;font-family:inherit;font-size:12.5px;font-weight:600;padding:7px 13px;border-radius:9px;cursor:pointer;">Heute</button>
+          <div style="display:flex;background:#eef1f5;border-radius:9px;padding:3px;gap:2px;">
+            <button onClick="{{ onMonthView }}" style="{{ monthSegStyle }}">Monat</button>
+            <button onClick="{{ onWeekView }}" style="{{ weekSegStyle }}">Woche</button>
+          </div>
+          <span style="flex:1;"></span>
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#fff;border:1px solid #e2e6ec;border-radius:10px;padding:8px 13px;font-size:11.5px;">
+            <span style="font-weight:600;color:#475262;">Relevanz</span>
+            <span style="display:inline-flex;align-items:center;gap:5px;color:#64707f;"><span style="width:11px;height:11px;border-radius:3px;background:#0047bb;"></span>Hoch</span>
+            <span style="display:inline-flex;align-items:center;gap:5px;color:#64707f;"><span style="width:11px;height:11px;border-radius:3px;background:#f59e0b;"></span>Mittel</span>
+            <span style="display:inline-flex;align-items:center;gap:5px;color:#64707f;"><span style="width:11px;height:11px;border-radius:3px;background:#ea580c;"></span>Niedrig</span>
+            <span style="width:1px;height:14px;background:#e2e6ec;"></span>
+            <span style="display:inline-flex;align-items:center;gap:4px;color:#64707f;"><i class="ph-bold ph-check" style="font-size:12px;color:#059669;"></i>Pitch</span>
+            <span style="display:inline-flex;align-items:center;gap:4px;color:#64707f;"><i class="ph-bold ph-x" style="font-size:12px;color:#9aa4b2;"></i>Skip</span>
+          </div>
+        </div>
+
+        <sc-if value="{{ calMonthView }}" hint-placeholder-val="{{ true }}">
+        <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;box-shadow:0 1px 2px rgba(16,32,46,.05);overflow:hidden;">
+          <div style="display:grid;grid-template-columns:repeat(7,1fr);background:#fbfcfd;border-bottom:1px solid #eef1f5;">
+            <sc-for list="{{ weekdays }}" as="wd" hint-placeholder-count="7">
+              <div style="padding:9px 8px;font-family:'Geist Mono',monospace;font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#9aa4b2;text-align:left;border-right:1px solid #eef1f5;">{{ wd }}</div>
+            </sc-for>
+          </div>
+          <sc-for list="{{ weeks }}" as="w" hint-placeholder-count="6">
+            <div style="display:grid;grid-template-columns:repeat(7,1fr);">
+              <sc-for list="{{ w.days }}" as="d" hint-placeholder-count="7">
+                <div style="{{ d.cellStyle }}">
+                  <span style="{{ d.numStyle }}">{{ d.num }}</span>
+                  <sc-for list="{{ d.events }}" as="c" hint-placeholder-count="1">
+                    <div onClick="{{ c.onOpen }}" style="{{ c.style }}">
+                      <span style="{{ c.barStyle }}"></span>
+                      <span style="flex:1;min-width:0;font-size:11px;font-weight:600;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ c.title }}</span>
+                      <span style="font-family:'Geist Mono',monospace;font-size:10px;opacity:.75;flex-shrink:0;">{{ c.pct }}</span>
+                      <sc-if value="{{ c.hasDec }}" hint-placeholder-val="{{ false }}"><i class="{{ c.decIcon }}" style="{{ c.decStyle }}"></i></sc-if>
+                    </div>
+                  </sc-for>
+                  <sc-if value="{{ d.more }}" hint-placeholder-val="{{ false }}"><div style="font-size:10.5px;color:#9aa4b2;padding:1px 5px;">+{{ d.moreCount }} mehr</div></sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </sc-for>
+          <div style="display:flex;align-items:center;gap:10px;padding:11px 16px;background:#fbfcfd;border-top:1px solid #eef1f5;font-family:'Geist Mono',monospace;font-size:11.5px;">
+            <span style="font-weight:600;color:#16202e;">{{ legTotal }} Events</span>
+            <span style="color:#cbd2dc;">·</span>
+            <span style="color:#0047bb;">{{ legHigh }} hochrelevant</span>
+            <span style="color:#cbd2dc;">·</span>
+            <span style="color:#9aa4b2;">{{ legOpen }} offen</span>
+          </div>
+        </div>
+        </sc-if>
+
+        <sc-if value="{{ calWeekView }}" hint-placeholder-val="{{ false }}">
+          <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;box-shadow:0 1px 2px rgba(16,32,46,.05);overflow:hidden;">
+            <div style="display:grid;grid-template-columns:56px repeat(7,1fr);background:#fbfcfd;border-bottom:1px solid #eef1f5;">
+              <div style="border-right:1px solid #eef1f5;"></div>
+              <sc-for list="{{ weekDays }}" as="d" hint-placeholder-count="7">
+                <div style="padding:7px 6px 9px;text-align:center;border-right:1px solid #eef1f5;">
+                  <div style="font-family:'Geist Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#9aa4b2;">{{ d.wd }}</div>
+                  <div style="{{ d.numStyle }}">{{ d.num }}</div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:grid;grid-template-columns:56px repeat(7,1fr);max-height:540px;overflow-y:auto;">
+              <div style="{{ weekGutterStyle }}">
+                <sc-for list="{{ weekHours }}" as="h" hint-placeholder-count="13">
+                  <div style="{{ h.labelStyle }}">{{ h.label }}</div>
+                </sc-for>
+              </div>
+              <sc-for list="{{ weekDays }}" as="d" hint-placeholder-count="7">
+                <div style="{{ d.colStyle }}">
+                  <sc-for list="{{ weekHours }}" as="h" hint-placeholder-count="13">
+                    <div style="{{ h.lineStyle }}"></div>
+                  </sc-for>
+                  <sc-for list="{{ d.events }}" as="c" hint-placeholder-count="0">
+                    <div onClick="{{ c.onOpen }}" style="{{ c.style }}">
+                      <span style="{{ c.barStyle }}"></span>
+                      <div style="display:flex;align-items:center;gap:5px;">
+                        <span style="font-family:'Geist Mono',monospace;font-size:10px;opacity:.85;font-weight:500;">{{ c.time }}</span>
+                        <span style="font-family:'Geist Mono',monospace;font-size:10px;opacity:.7;">· {{ c.pct }}</span>
+                        <sc-if value="{{ c.hasDec }}" hint-placeholder-val="{{ false }}"><i class="{{ c.decIcon }}" style="{{ c.decStyle }}"></i></sc-if>
+                      </div>
+                      <span style="font-size:11.5px;font-weight:600;line-height:1.25;overflow:hidden;">{{ c.title }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;padding:11px 16px;background:#fbfcfd;border-top:1px solid #eef1f5;font-family:'Geist Mono',monospace;font-size:11.5px;">
+              <span style="font-weight:600;color:#16202e;">{{ weekCount }} Events diese Woche</span>
+              <span style="color:#cbd2dc;">·</span>
+              <span style="color:#64707f;">08:00 – 20:00</span>
+            </div>
+          </div>
+        </sc-if>
+      </sc-if>
+
+      <!-- EVENT MODAL -->
+      <sc-if value="{{ calModalOpen }}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{ closeCalModal }}" style="position:fixed;inset:0;background:rgba(13,36,80,.42);backdrop-filter:blur(2px);z-index:80;display:flex;align-items:center;justify-content:center;padding:20px;">
+          <div onClick="{{ stop }}" style="width:100%;max-width:440px;background:#fff;border-radius:16px;box-shadow:0 24px 60px rgba(13,36,80,.32);overflow:hidden;">
+            <div style="{{ cm.headStyle }}">
+              <i class="ph-fill ph-calendar-dots" style="font-size:18px;color:#475262;"></i>
+              <span style="font-family:'Geist Mono',monospace;font-size:12.5px;font-weight:500;color:#475262;">{{ cm.dateLabel }}</span>
+              <span style="flex:1;"></span>
+              <button onClick="{{ closeCalModal }}" style="width:32px;height:32px;border:none;background:rgba(255,255,255,.6);color:#64707f;border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="ph ph-x" style="font-size:15px;"></i></button>
+            </div>
+            <div style="padding:18px 20px 20px;">
+              <div style="display:flex;align-items:flex-start;gap:10px;">
+                <div style="flex:1;font-size:17px;font-weight:700;letter-spacing:-0.01em;line-height:1.3;">{{ cm.title }}</div>
+                <span style="{{ cm.scoreStyle }}">{{ cm.score }}</span>
+              </div>
+              <div style="font-size:13px;color:#64707f;margin-top:6px;">{{ cm.venue }}</div>
+              <div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;">
+                <sc-for list="{{ cm.reasons }}" as="r" hint-placeholder-count="2">
+                  <span style="font-size:11px;font-weight:500;color:#475262;background:#eef1f5;padding:3px 9px;border-radius:999px;">{{ r }}</span>
+                </sc-for>
+              </div>
+              <div style="display:flex;gap:9px;margin-top:20px;">
+                <sc-if value="{{ cm.open }}" hint-placeholder-val="{{ true }}">
+                  <button onClick="{{ cm.onPitch }}" style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:7px;border:none;background:#0047bb;color:#fff;font-family:inherit;font-size:13.5px;font-weight:600;padding:11px;border-radius:10px;cursor:pointer;"><i class="ph-bold ph-lightning" style="font-size:15px;"></i>Pitchen ins Board</button>
+                  <button onClick="{{ cm.onReject }}" style="border:1px solid #cbd2dc;background:#fff;color:#64707f;font-family:inherit;font-size:13.5px;font-weight:600;padding:11px 16px;border-radius:10px;cursor:pointer;">Verwerfen</button>
+                </sc-if>
+                <sc-if value="{{ cm.pitched }}" hint-placeholder-val="{{ false }}">
+                  <a href="Redaktionsboard.dc.html" style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:7px;text-decoration:none;background:#e7f7ef;color:#059669;font-size:13.5px;font-weight:600;padding:11px;border-radius:10px;"><i class="ph-bold ph-kanban" style="font-size:15px;"></i>Im Board · Karte öffnen</a>
+                  <button onClick="{{ cm.onReopen }}" style="border:1px solid #cbd2dc;background:#fff;color:#64707f;font-family:inherit;font-size:13.5px;font-weight:600;padding:11px 16px;border-radius:10px;cursor:pointer;">Zurück</button>
+                </sc-if>
+                <sc-if value="{{ cm.rejected }}" hint-placeholder-val="{{ false }}">
+                  <span style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:7px;background:#f1f3f6;color:#9aa4b2;font-size:13.5px;font-weight:600;padding:11px;border-radius:10px;">Verworfen</span>
+                  <button onClick="{{ cm.onReopen }}" style="border:1px solid #cbd2dc;background:#fff;color:#64707f;font-family:inherit;font-size:13.5px;font-weight:600;padding:11px 16px;border-radius:10px;cursor:pointer;">Zurücksetzen</button>
+                </sc-if>
+              </div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+    </sc-if>
+
+    <!-- ================= SOCIAL MEDIA ================= -->
+    <sc-if value="{{ isSocial }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px;">
+        <div>
+          <h1 style="margin:0;font-size:24px;font-weight:700;letter-spacing:-0.015em;">Social Media</h1>
+          <p style="margin:6px 0 0;font-size:13.5px;color:#64707f;">Lagebild der ÖAW-Kanäle auf Instagram — geclustert nach Themen und Kanälen. Monitoring, keine Veröffentlichung.</p>
+        </div>
+        <button onClick="{{ openRefresh }}" style="display:inline-flex;align-items:center;gap:8px;border:1px solid #cbd2dc;background:#fff;color:#475262;font-family:inherit;font-size:13px;font-weight:600;padding:9px 15px;border-radius:10px;cursor:pointer;"><i class="ph ph-arrows-clockwise" style="font-size:15px;"></i>Aktualisieren</button>
+      </div>
+
+      <!-- KPI strip -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px;">
+        <sc-for list="{{ socKpis }}" as="k" hint-placeholder-count="4">
+          <div onClick="{{ k.click }}" style="{{ k.style }}">
+            <span style="{{ k.iconWrap }}"><i class="{{ k.icon }}" style="font-size:20px;"></i></span>
+            <div style="min-width:0;">
+              <div style="font-family:'Geist Mono',monospace;font-size:22px;font-weight:600;letter-spacing:-0.01em;line-height:1.1;">{{ k.value }}</div>
+              <div style="font-size:12px;color:#475262;font-weight:500;margin-top:2px;">{{ k.label }}</div>
+              <div style="font-size:11px;color:#9aa4b2;margin-top:1px;">{{ k.sub }}</div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+
+      <!-- Lagebild / briefing -->
+      <div style="display:flex;gap:14px;background:linear-gradient(135deg,#eef4ff,#fbfcff);border:1px solid #d3e2ff;border-radius:14px;padding:17px 20px;margin-bottom:16px;">
+        <span style="width:34px;height:34px;border-radius:10px;background:#0047bb;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ph-fill ph-sparkle" style="font-size:17px;"></i></span>
+        <div>
+          <div style="display:flex;align-items:center;gap:7px;font-size:13.5px;font-weight:700;color:#0047bb;margin-bottom:5px;">Lagebild<span style="font-family:'Geist Mono',monospace;font-size:10px;font-weight:500;color:#7392c9;background:#fff;padding:1px 7px;border-radius:999px;">KI-Zusammenfassung</span></div>
+          <p style="margin:0;font-size:13.5px;line-height:1.6;color:#333d4c;">{{ socBriefing }}</p>
+        </div>
+      </div>
+
+      <!-- theme chips -->
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px;">
+        <sc-for list="{{ socThemeChips }}" as="t" hint-placeholder-count="4">
+          <button onClick="{{ t.onSelect }}" style="{{ t.style }}"><span style="{{ t.dotStyle }}"></span>{{ t.name }}<span style="{{ t.countStyle }}">{{ t.count }}</span></button>
+        </sc-for>
+      </div>
+
+      <!-- toolbar -->
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px;">
+        <div style="display:flex;background:#eef1f5;border-radius:9px;padding:3px;gap:2px;">
+          <button onClick="{{ onSocThemen }}" style="{{ socThemenSeg }}"><i class="ph ph-stack" style="font-size:14px;"></i>Themen</button>
+          <button onClick="{{ onSocKanaele }}" style="{{ socKanaeleSeg }}"><i class="ph ph-broadcast" style="font-size:14px;"></i>Nach Kanal</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;border:1px solid #cbd2dc;border-radius:10px;padding:0 12px;height:38px;flex:1;min-width:220px;background:#fff;">
+          <i class="ph ph-magnifying-glass" style="font-size:16px;color:#9aa4b2;"></i>
+          <input value="{{ socSearch }}" onInput="{{ onSocSearch }}" placeholder="Posts, Themen, @Kanäle durchsuchen…" style="border:none;outline:none;font-family:inherit;font-size:13.5px;flex:1;min-width:0;color:#16202e;background:transparent;"/>
+        </div>
+        <div style="display:flex;background:#eef1f5;border-radius:9px;padding:3px;gap:2px;">
+          <button onClick="{{ onSocSortRecent }}" style="{{ socSortRecent }}">Neueste</button>
+          <button onClick="{{ onSocSortLikes }}" style="{{ socSortLikes }}">Beliebteste</button>
+        </div>
+      </div>
+
+      <!-- top tags -->
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:18px;">
+        <span style="font-size:11.5px;font-weight:600;color:#9aa4b2;text-transform:uppercase;letter-spacing:.05em;">Häufige Tags</span>
+        <sc-for list="{{ socTopTags }}" as="t" hint-placeholder-count="8">
+          <span style="{{ t.style }}"><i class="ph ph-hash" style="font-size:12px;color:#9aa4b2;"></i>{{ t.tag }}<span style="{{ t.countStyle }}">{{ t.n }}</span></span>
+        </sc-for>
+      </div>
+
+      <!-- THEMEN VIEW -->
+      <sc-if value="{{ socThemenView }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <sc-for list="{{ socThemeGroups }}" as="g" hint-placeholder-count="4">
+            <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;box-shadow:0 1px 2px rgba(16,32,46,.05);overflow:hidden;">
+              <div style="{{ g.headStyle }}">
+                <span style="{{ g.badgeStyle }}">{{ g.count }}</span>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-size:15px;font-weight:700;letter-spacing:-0.01em;">{{ g.name }}</div>
+                  <div style="font-size:12.5px;color:#64707f;margin-top:3px;line-height:1.45;">{{ g.desc }}</div>
+                  <div style="font-family:'Geist Mono',monospace;font-size:11px;color:#9aa4b2;margin-top:6px;">{{ g.channels }}</div>
+                </div>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:16px 18px;">
+                <sc-for list="{{ g.cards }}" as="c" hint-placeholder-count="3">
+                  <div style="display:flex;flex-direction:column;gap:9px;border:1px solid #eef1f5;border-radius:13px;padding:11px;background:#fff;" style-hover="box-shadow:0 6px 18px rgba(16,32,46,.09);">
+                    <div style="{{ c.imgStyle }}">
+                      <i class="{{ c.icon }}" style="{{ c.iconStyle }}"></i>
+                      <sc-if value="{{ c.hot }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:9px;left:9px;display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:#fff;background:#dc2626;padding:3px 8px;border-radius:999px;"><i class="ph-fill ph-flame" style="font-size:11px;"></i>Top-Post</span></sc-if>
+                    </div>
+                    <div style="font-size:13.5px;font-weight:600;color:#16202e;line-height:1.35;">{{ c.topic }}</div>
+                    <div style="font-size:12px;color:#64707f;line-height:1.5;">{{ c.summary }}</div>
+                    <div style="display:flex;flex-wrap:wrap;gap:5px;">
+                      <sc-for list="{{ c.kw }}" as="k" hint-placeholder-count="3"><span style="font-size:10.5px;font-weight:500;color:#0047bb;background:#eef4ff;padding:2px 8px;border-radius:999px;">#{{ k.k }}</span></sc-for>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;margin-top:auto;padding-top:9px;border-top:1px solid #f1f3f6;font-size:11.5px;color:#64707f;">
+                      <span style="display:inline-flex;align-items:center;gap:5px;font-weight:600;color:#475262;"><span style="{{ c.chDot }}"></span>{{ c.handle }}</span>
+                      <span style="flex:1;"></span>
+                      <span style="display:inline-flex;align-items:center;gap:3px;"><i class="ph-fill ph-heart" style="font-size:12px;color:#e0567a;"></i>{{ c.likes }}</span>
+                      <span style="display:inline-flex;align-items:center;gap:3px;"><i class="ph-fill ph-chat-circle" style="font-size:12px;color:#9aa4b2;"></i>{{ c.comments }}</span>
+                    </div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;font-size:11px;color:#9aa4b2;">
+                      <span>{{ c.rel }}</span>
+                      <a href="https://www.instagram.com" target="_blank" style="display:inline-flex;align-items:center;gap:4px;color:#0047bb;text-decoration:none;font-weight:500;">Original<i class="ph ph-arrow-square-out" style="font-size:12px;"></i></a>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ socThemenEmpty }}" hint-placeholder-val="{{ false }}">
+            <div style="border:1.5px dashed #d5dbe3;border-radius:14px;padding:44px 16px;text-align:center;"><i class="ph ph-magnifying-glass" style="font-size:28px;color:#cbd2dc;"></i><div style="font-size:13.5px;color:#64707f;margin-top:10px;">Keine Posts für die aktuellen Filter</div><button onClick="{{ onSocReset }}" style="margin-top:14px;border:1px solid #cbd2dc;background:#fff;color:#475262;font-family:inherit;font-size:12.5px;font-weight:600;padding:8px 15px;border-radius:9px;cursor:pointer;">Filter zurücksetzen</button></div>
+          </sc-if>
+        </div>
+      </sc-if>
+
+      <!-- KANAELE VIEW -->
+      <sc-if value="{{ socKanaeleView }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <sc-for list="{{ socChannelGroups }}" as="g" hint-placeholder-count="4">
+            <div style="background:#fff;border:1px solid #e2e6ec;border-radius:14px;box-shadow:0 1px 2px rgba(16,32,46,.05);overflow:hidden;">
+              <div style="display:flex;align-items:center;gap:12px;padding:15px 18px;border-bottom:1px solid #eef1f5;">
+                <span style="{{ g.avatarStyle }}"><i class="ph-fill ph-instagram-logo"></i></span>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-size:14.5px;font-weight:700;">{{ g.handle }}</div>
+                  <div style="font-size:12px;color:#64707f;margin-top:2px;">{{ g.name }}</div>
+                </div>
+                <div style="text-align:right;font-family:'Geist Mono',monospace;font-size:11.5px;color:#9aa4b2;">
+                  <div style="color:#475262;font-weight:600;">{{ g.followers }} Follower</div>
+                  <div style="margin-top:2px;">{{ g.count }} Posts · {{ g.likes }}</div>
+                </div>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:16px 18px;">
+                <sc-for list="{{ g.cards }}" as="c" hint-placeholder-count="3">
+                  <div style="display:flex;flex-direction:column;gap:9px;border:1px solid #eef1f5;border-radius:13px;padding:11px;background:#fff;" style-hover="box-shadow:0 6px 18px rgba(16,32,46,.09);">
+                    <div style="{{ c.imgStyle }}">
+                      <i class="{{ c.icon }}" style="{{ c.iconStyle }}"></i>
+                      <sc-if value="{{ c.hot }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:9px;left:9px;display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:#fff;background:#dc2626;padding:3px 8px;border-radius:999px;"><i class="ph-fill ph-flame" style="font-size:11px;"></i>Top-Post</span></sc-if>
+                    </div>
+                    <div style="font-size:13.5px;font-weight:600;color:#16202e;line-height:1.35;">{{ c.topic }}</div>
+                    <div style="font-size:12px;color:#64707f;line-height:1.5;">{{ c.summary }}</div>
+                    <div style="display:flex;flex-wrap:wrap;gap:5px;">
+                      <sc-for list="{{ c.kw }}" as="k" hint-placeholder-count="3"><span style="font-size:10.5px;font-weight:500;color:#0047bb;background:#eef4ff;padding:2px 8px;border-radius:999px;">#{{ k.k }}</span></sc-for>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;margin-top:auto;padding-top:9px;border-top:1px solid #f1f3f6;font-size:11.5px;color:#64707f;">
+                      <span style="flex:1;"></span>
+                      <span style="display:inline-flex;align-items:center;gap:3px;"><i class="ph-fill ph-heart" style="font-size:12px;color:#e0567a;"></i>{{ c.likes }}</span>
+                      <span style="display:inline-flex;align-items:center;gap:3px;"><i class="ph-fill ph-chat-circle" style="font-size:12px;color:#9aa4b2;"></i>{{ c.comments }}</span>
+                    </div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;font-size:11px;color:#9aa4b2;">
+                      <span>{{ c.rel }}</span>
+                      <a href="https://www.instagram.com" target="_blank" style="display:inline-flex;align-items:center;gap:4px;color:#0047bb;text-decoration:none;font-weight:500;">Original<i class="ph ph-arrow-square-out" style="font-size:12px;"></i></a>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ socKanaeleEmpty }}" hint-placeholder-val="{{ false }}">
+            <div style="border:1.5px dashed #d5dbe3;border-radius:14px;padding:44px 16px;text-align:center;"><i class="ph ph-magnifying-glass" style="font-size:28px;color:#cbd2dc;"></i><div style="font-size:13.5px;color:#64707f;margin-top:10px;">Keine Posts für die aktuellen Filter</div><button onClick="{{ onSocReset }}" style="margin-top:14px;border:1px solid #cbd2dc;background:#fff;color:#475262;font-family:inherit;font-size:12.5px;font-weight:600;padding:8px 15px;border-radius:9px;cursor:pointer;">Filter zurücksetzen</button></div>
+          </sc-if>
+        </div>
+      </sc-if>
+      <!-- REFRESH MODAL -->
+      <sc-if value="{{ rfOpen }}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{ overlayClose }}" style="position:fixed;inset:0;background:rgba(13,36,80,.42);backdrop-filter:blur(3px);z-index:90;display:flex;align-items:center;justify-content:center;padding:20px;animation:rf-fade .18s ease;">
+          <div onClick="{{ stop }}" style="width:100%;max-width:496px;background:#fff;border-radius:18px;box-shadow:0 30px 70px rgba(13,36,80,.4);overflow:hidden;animation:rf-pop .24s cubic-bezier(.2,.7,.3,1);">
+            <!-- header -->
+            <div style="display:flex;align-items:flex-start;gap:13px;padding:20px 22px 16px;background:linear-gradient(135deg,#eef4ff,#fbfcff);border-bottom:1px solid #eef1f5;">
+              <span style="width:40px;height:40px;border-radius:11px;background:#0047bb;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 12px rgba(0,71,187,.32);"><i class="ph-fill ph-instagram-logo" style="font-size:20px;"></i></span>
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:16px;font-weight:700;letter-spacing:-0.01em;">Social Media aktualisieren</div>
+                <div style="font-size:12.5px;color:#64707f;margin-top:3px;line-height:1.45;">Lädt neue Posts der aktiven Kanäle, extrahiert Themen und erstellt ein neues Lagebild.</div>
+              </div>
+              <button onClick="{{ closeRefreshFn }}" style="width:32px;height:32px;border:none;background:rgba(255,255,255,.7);color:#64707f;border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="ph ph-x" style="font-size:15px;"></i></button>
+            </div>
+
+            <div style="padding:20px 22px 22px;">
+              <!-- IDLE: model picker -->
+              <sc-if value="{{ rfIdle }}" hint-placeholder-val="{{ true }}">
+                <div style="font-size:12.5px;font-weight:600;color:#16202e;margin-bottom:8px;">Modell</div>
+                <div style="border:1px solid #e2e6ec;border-radius:11px;padding:6px;display:flex;flex-direction:column;gap:2px;">
+                  <sc-for list="{{ rfModels }}" as="m" hint-placeholder-count="4">
+                    <button onClick="{{ m.onSelect }}" style="{{ m.style }}">
+                      <span style="{{ m.radioStyle }}"><span style="{{ m.dotStyle }}"></span></span>
+                      <span style="flex:1;font-weight:500;">{{ m.label }}</span>
+                      <span style="{{ m.costStyle }}">{{ m.cost }}</span>
+                    </button>
+                  </sc-for>
+                </div>
+                <label onClick="{{ toggleForce }}" style="display:flex;align-items:center;gap:9px;margin-top:14px;cursor:pointer;font-size:13px;color:#475262;">
+                  <span style="{{ forceBoxStyle }}"><i class="ph-bold ph-check" style="font-size:12px;color:#fff;"></i></span>
+                  Throttle ignorieren (trotz kürzlicher Aktualisierung)
+                </label>
+                <button onClick="{{ startRefreshFn }}" style="width:100%;margin-top:18px;display:inline-flex;align-items:center;justify-content:center;gap:8px;border:none;background:#0047bb;color:#fff;font-family:inherit;font-size:14px;font-weight:600;padding:13px;border-radius:11px;cursor:pointer;box-shadow:0 6px 16px rgba(0,71,187,.28);"><i class="ph-fill ph-play" style="font-size:14px;"></i>Starten</button>
+              </sc-if>
+
+              <!-- RUNNING / DONE -->
+              <sc-if value="{{ rfActive }}" hint-placeholder-val="{{ false }}">
+                <!-- stepper -->
+                <div style="display:flex;align-items:flex-start;margin-bottom:20px;">
+                  <sc-for list="{{ rfSteps }}" as="st" hint-placeholder-count="3">
+                    <div style="display:flex;align-items:flex-start;flex:1;">
+                      <div style="display:flex;flex-direction:column;align-items:center;gap:7px;flex-shrink:0;width:64px;">
+                        <span style="{{ st.circleStyle }}"><i class="{{ st.icon }}" style="font-size:17px;{{ st.spinStyle }}"></i></span>
+                        <span style="{{ st.labelStyle }}">{{ st.label }}</span>
+                      </div>
+                      <sc-if value="{{ st.hasConn }}" hint-placeholder-val="{{ true }}">
+                        <div style="flex:1;height:2px;background:#e8ebf0;border-radius:2px;margin-top:18px;overflow:hidden;"><span style="display:block;height:100%;background:#0047bb;border-radius:2px;transition:width .5s ease;width:{{ st.connFill }};"></span></div>
+                      </sc-if>
+                    </div>
+                  </sc-for>
+                </div>
+
+                <!-- progress -->
+                <sc-if value="{{ rfShowProgress }}" hint-placeholder-val="{{ false }}">
+                  <div style="height:8px;background:#eef1f5;border-radius:999px;overflow:hidden;"><span style="display:block;height:100%;background:linear-gradient(90deg,#0047bb,#3b82f6);border-radius:999px;transition:width .3s ease;width:{{ rfPct }}%;"></span></div>
+                  <div style="display:flex;justify-content:space-between;font-size:11.5px;color:#64707f;margin-top:6px;font-family:'Geist Mono',monospace;"><span>{{ rfProcessedLabel }}</span><span>{{ rfPct }}%</span></div>
+                </sc-if>
+
+                <!-- metrics -->
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:16px;">
+                  <div style="border:1px solid #eef1f5;background:#fbfcfd;border-radius:10px;padding:10px;text-align:center;"><div style="font-family:'Geist Mono',monospace;font-size:16px;font-weight:600;">{{ rfFetchedVal }}</div><div style="font-size:10.5px;color:#9aa4b2;margin-top:2px;">geladen</div></div>
+                  <div style="border:1px solid #eef1f5;background:#fbfcfd;border-radius:10px;padding:10px;text-align:center;"><div style="font-family:'Geist Mono',monospace;font-size:16px;font-weight:600;">{{ rfThemesVal }}</div><div style="font-size:10.5px;color:#9aa4b2;margin-top:2px;">Themen</div></div>
+                  <div style="border:1px solid #eef1f5;background:#fbfcfd;border-radius:10px;padding:10px;text-align:center;"><div style="font-family:'Geist Mono',monospace;font-size:16px;font-weight:600;">{{ rfCostVal }}</div><div style="font-size:10.5px;color:#9aa4b2;margin-top:2px;">Kosten</div></div>
+                </div>
+                <div style="text-align:center;font-size:11.5px;color:#9aa4b2;margin-top:12px;font-family:'Geist Mono',monospace;">{{ rfStatusLabel }}</div>
+
+                <sc-if value="{{ rfDone }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;align-items:center;gap:9px;margin-top:16px;background:#e7f7ef;border:1px solid #b6e6cd;border-radius:11px;padding:12px 14px;color:#0f7a4d;font-size:13px;font-weight:600;"><i class="ph-fill ph-check-circle" style="font-size:18px;"></i>Aktualisierung abgeschlossen.</div>
+                  <button onClick="{{ closeRefreshFn }}" style="width:100%;margin-top:14px;border:1px solid #cbd2dc;background:#fff;color:#475262;font-family:inherit;font-size:14px;font-weight:600;padding:12px;border-radius:11px;cursor:pointer;">Schließen</button>
+                </sc-if>
+                <sc-if value="{{ rfRunning }}" hint-placeholder-val="{{ true }}">
+                  <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:16px;color:#9aa4b2;font-size:13px;font-weight:600;"><i class="ph-bold ph-spinner-gap" style="font-size:15px;animation:rf-spin .8s linear infinite;"></i>Läuft …</div>
+                </sc-if>
+              </sc-if>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+    </sc-if>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const MONO = "'Geist Mono',monospace";
+function scoreBadge(pct, big){
+  const c = pct >= 70 ? { fg:'#0047bb', bg:'#eef4ff' } : pct >= 40 ? { fg:'#b45309', bg:'#fdf1e3' } : { fg:'#64707f', bg:'#eef1f5' };
+  return { display:'inline-flex', alignItems:'center', justifyContent:'center', fontFamily:MONO, fontSize: big ? '13px' : '12px', fontWeight:600, color:c.fg, background:c.bg, padding: big ? '6px 10px' : '5px 9px', borderRadius:'8px', flexShrink:0 };
+}
+
+const PUBS = [
+  { title:'Fehlertolerante Qubits in photonischen Netzwerken', meta:'M. Aigner | IQOQI Innsbruck', venue:'Nature Physics', flagship:true, type:'Journal Article', date:'28.06.2026', score:91, pm:false, flagged:true, pitch:'Quantencomputer rücken näher an den Alltag: Innsbrucker Team zeigt Fehlerkorrektur mit Licht statt Kälte.', kw:['quanten','physik'] },
+  { title:'Exoplanet-Atmosphären: Wasserdampf auf TOI-270 d', meta:'L. Fossati | IWF Graz', venue:'Science', flagship:true, type:'Journal Article', date:'22.06.2026', score:88, pm:true, flagged:false, pitch:'JWST-Daten zeigen Wasserdampf und Methan auf einem Sub-Neptun. Grazer Beteiligung an der Auswertung.', kw:['weltraum'] },
+  { title:'Neue Wirkstoffklasse gegen antibiotikaresistente Keime', meta:'S. Novak | IMBA', venue:'Cell', flagship:true, type:'Journal Article', date:'15.06.2026', score:86, pm:false, flagged:true, pitch:'Peptid-Wirkstoff umgeht drei der häufigsten Resistenzmechanismen. Klinische Phase I geplant.', kw:['medizin'] },
+  { title:'Bronzezeitliche Handelsrouten im Ostalpenraum', meta:'K. Hofer | ÖAI', venue:'Antiquity', flagship:false, type:'Journal Article', date:'19.06.2026', score:84, pm:false, flagged:false, pitch:'Isotopenanalysen belegen Zinnhandel über die Alpen 1.000 Jahre früher als angenommen.', kw:['archäologie'] },
+  { title:'Gletscherschmelze im Ötztal: die 20-Jahres-Bilanz', meta:'R. Prinz | IGF Innsbruck', venue:'The Cryosphere', flagship:false, type:'Journal Article', date:'11.06.2026', score:82, pm:true, flagged:false, pitch:'Längste durchgehende Messreihe Österreichs: 38 % Volumenverlust seit 2006, Kipppunkt für zwei Zungen.', kw:['klima','gletscher'] },
+  { title:'KI liest mittelalterliche Handschriften: 40.000 Seiten erschlossen', meta:'B. Steiner | IMAFO', venue:'Digital Scholarship in the Humanities', flagship:false, type:'Journal Article', date:'05.06.2026', score:78, pm:false, flagged:false, pitch:'Transformer-Modell entziffert gotische Kursive mit 96 % Genauigkeit. Archivbestände erstmals durchsuchbar.', kw:['ki','digital humanities'] },
+  { title:'Mikroplastik in alpinen Seen: unerwartete Eintragspfade', meta:'J. Weiss | ÖAW-Umweltforschung', venue:'Environmental Science & Technology', flagship:false, type:'Journal Article', date:'02.06.2026', score:75, pm:false, flagged:false, pitch:'Ferntransport über die Atmosphäre bringt mehr Partikel in Hochgebirgsseen als lokaler Tourismus.', kw:['klima','umwelt'] },
+  { title:'Demografischer Wandel in Österreichs Gemeinden 2025–2050', meta:'T. Sobotka | VID', venue:'Population Studies', flagship:false, type:'Working Paper', date:'27.05.2026', score:71, pm:false, flagged:false, pitch:'Interaktive Projektion: Jede dritte Gemeinde schrumpft, Speckgürtel wachsen zweistellig.', kw:['demografie'] },
+];
+
+const BOARD_TASKS = [
+  { title:'Jahresbericht 2025 · Pressegespräch', due:'28. Jun', overdue:true, color:'#2563eb' },
+  { title:'Symposium KI und Ethik', due:'30. Jun', overdue:true, color:'#ea580c' },
+  { title:'Screen-Content Juli · Foyer', due:'1. Jul', overdue:true, color:'#16a34a' },
+  { title:'Preisverleihung ÖAW · Coverage', due:'morgen', overdue:false, color:'#ea580c' },
+  { title:'Quantencomputer-Durchbruch am IQOQI', due:'8. Jul', overdue:false, color:'#2563eb' },
+];
+
+const EVENTS = [
+  { id:'e1', date:'2026-07-04', day:'04', mon:'Jul', title:'Preisverleihung der Akademiepreise 2026', venue:'Festsaal ÖAW, Wien · 18:00', score:88, mainNews:true, reasons:['Prominente Preisträger:innen','Bildstark','Eigen-Highlight'], decision:'pitched', upcoming:true },
+  { id:'e2', date:'2026-07-10', day:'10', mon:'Jul', title:'Symposium: KI und Ethik in der Forschung', venue:'Theatersaal ÖAW, Wien · 09:00', score:82, mainNews:true, reasons:['Aktualität','Interdisziplinär'], decision:'open', upcoming:true },
+  { id:'e3', date:'2026-07-16', day:'16', mon:'Jul', title:'Vortrag: Quantentechnologie in Europa', venue:'IQOQI Innsbruck · 17:00', score:74, mainNews:false, reasons:['Publikumsnah','Anschlussfähig an PM'], decision:'open', upcoming:true },
+  { id:'e4', date:'2026-07-22', day:'22', mon:'Jul', title:'Buchpräsentation: Die Akademie 1847–2027', venue:'Bibliothek ÖAW, Wien · 19:00', score:58, mainNews:false, reasons:['Nischenpublikum'], decision:'rejected', upcoming:true },
+  { id:'e5', date:'2026-07-30', day:'30', mon:'Jul', title:'Workshop: Digital Humanities Methoden', venue:'ACDH, Wien · 10:00', score:65, mainNews:false, reasons:['Fachpublikum','Workshop-Format'], decision:'open', upcoming:true },
+  { id:'e6', date:'2026-09-25', day:'25', mon:'Sep', title:'Lange Nacht der Forschung 2026', venue:'Campus Akademie, Wien · 17:00', score:95, mainNews:true, reasons:['Größtes Publikumsevent','Alle Kanäle'], decision:'pitched', upcoming:true },
+  { id:'e7', date:'2026-06-12', day:'12', mon:'Jun', title:'Sommerfest der Akademie', venue:'Innenhof ÖAW · 18:00', score:52, mainNews:false, reasons:['Intern'], decision:'rejected', upcoming:false },
+  { id:'e8', date:'2026-06-05', day:'05', mon:'Jun', title:'Panel: Wissenschaftskommunikation im Wandel', venue:'Presseclub Concordia · 11:00', score:77, mainNews:false, reasons:['Medienpartner vor Ort'], decision:'pitched', upcoming:false },
+];
+const MONTHS_DE = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+const WEEKDAYS_DE = ['Mo','Di','Mi','Do','Fr','Sa','So'];
+
+const DIST = [4,7,12,16,15,11,8,5];
+const DIMS = [ ['Zugänglichkeit',62], ['Gesell. Relevanz',58], ['Neuigkeitswert',54], ['Storytelling',49], ['Aktualität',44] ];
+const KEYWORDS = [ ['Quantenphysik',24], ['Klimawandel',21], ['KI',19], ['Archäologie',14], ['Demografie',11], ['Weltraum',10], ['Medizin',9], ['Digital Humanities',8], ['Mikroplastik',6], ['Gletscher',6] ];
+
+// Per-publication detail (index-aligned to PUBS)
+const PUB_EXTRA = [
+  { doi:'10.1038/s41567-026-02391-7', oa:'Hybrid Open Access', peer:true, popsci:false, model:'claude-haiku-4-20260401', cost:0.0071, words:6820,
+    insts:['IQOQI Innsbruck','Institut für Experimentalphysik'],
+    authors:[ {n:'Miriam Aigner',oeaw:true,role:'Erstautorin',mail:'miriam.aigner@oeaw.ac.at'}, {n:'Rainer Blatt',oeaw:true,role:'Korrespondenz'}, {n:'Chen Wei',oeaw:false}, {n:'Sofia Marchetti',oeaw:false} ],
+    dims:[88,82,94,78,86],
+    angle:'Vom Labor zur Anwendung — warum Fehlerkorrektur mit Licht den Quantencomputer alltagstauglicher macht.',
+    audience:'Überregionale Tagesmedien, Wissenschaftsressorts, Tech-Fachpresse',
+    reasoning:'Sehr hoher Neuigkeitswert bei starker Anschlussfähigkeit an die laufende Quanten-Debatte. Ergebnis ist ohne Fachjargon erklärbar, bildstarke Laboraufnahmen liegen vor. Flagship-Venue erhöht Zitierfähigkeit.',
+    abstract:'Wir demonstrieren fehlertolerante logische Qubits in einem rein photonischen Netzwerk und zeigen, dass Fehlerkorrektur ohne kryogene Kühlung skalierbar bleibt. Der Ansatz senkt die technische Einstiegshürde für praxistaugliche Quantenprozessoren erheblich.',
+    summaryDe:'Ein Innsbrucker Team hat gezeigt, dass sich Rechenfehler in Quantencomputern mit Lichtteilchen statt mit aufwendiger Kühlung korrigieren lassen — ein möglicher Wendepunkt auf dem Weg zu praktisch nutzbaren Quantenrechnern.',
+    haiku:['Licht statt tiefer Kälte —','ein Qubit trägt den Fehler fort,','Rechnen wird robust.'],
+    keywords:['Quantencomputing','Fehlerkorrektur','Photonik','Qubit','Skalierbarkeit'] },
+
+  { doi:'10.1126/science.adn8842', oa:'Green Open Access', peer:true, popsci:false, model:'claude-haiku-4-20260401', cost:0.0064, words:5410,
+    insts:['IWF Graz','Institut für Weltraumforschung'],
+    authors:[ {n:'Luca Fossati',oeaw:true,role:'Erstautor',mail:'luca.fossati@oeaw.ac.at'}, {n:'Anna Steindl',oeaw:true}, {n:'James Whitfield',oeaw:false} ],
+    dims:[84,80,88,82,79],
+    angle:'Ein Sub-Neptun mit Wasserdampf: Wie Graz an der Suche nach lebensfreundlichen Welten mitschreibt.',
+    audience:'Wissenschaftsressorts, Astronomie-Interessierte, Schulen',
+    reasoning:'Weltraumthemen mit Wasser-Bezug haben hohe Publikumsresonanz. JWST-Bezug sorgt für Aktualität, Grazer Beteiligung macht es zur regionalen Eigenleistung. PM bereits in Vorbereitung.',
+    abstract:'JWST-Transmissionsspektroskopie weist Wasserdampf und Methan in der Atmosphäre des Sub-Neptun TOI-270 d nach. Die Zusammensetzung deutet auf eine wasserstoffreiche Hülle über einem möglichen Ozean hin.',
+    summaryDe:'Mit dem James-Webb-Teleskop wurde auf einem fernen Planeten Wasserdampf nachgewiesen. Grazer Forschende waren an der Auswertung beteiligt.',
+    haiku:['Fernes blaues Glimmen —','im Spektrum wohnt der Wasserdampf,','ein Ozean vielleicht.'],
+    keywords:['Exoplaneten','JWST','Atmosphäre','Wasserdampf','Astrophysik'] },
+
+  { doi:'10.1016/j.cell.2026.05.019', oa:'Closed Access', peer:true, popsci:false, model:'claude-haiku-4-20260401', cost:0.0069, words:6120,
+    insts:['IMBA','Institut für Molekulare Biotechnologie'],
+    authors:[ {n:'Sonja Novak',oeaw:true,role:'Erstautorin',mail:'sonja.novak@oeaw.ac.at'}, {n:'Petra Lang',oeaw:true}, {n:'David Osei',oeaw:false} ],
+    dims:[80,90,84,74,82],
+    angle:'Hoffnung gegen Antibiotika-Resistenz — ein Wirkstoff, der drei Fluchtwege der Keime zugleich blockiert.',
+    audience:'Gesundheitsressorts, Tagesmedien, medizinische Fachpresse',
+    reasoning:'Antibiotikaresistenz ist ein gesellschaftlich hochrelevantes Dauerthema. Konkreter Wirkstoff mit geplanter klinischer Phase gibt eine greifbare Story. Sensible Kommunikation nötig, keine Heilsversprechen.',
+    abstract:'Eine neue Peptid-Wirkstoffklasse überwindet drei der häufigsten Resistenzmechanismen gramnegativer Keime gleichzeitig. In präklinischen Modellen zeigt sich Wirksamkeit ohne nennenswerte Toxizität.',
+    summaryDe:'Ein Wiener Team hat eine neue Substanzklasse entwickelt, die gegen mehrfach resistente Bakterien wirkt. Erste klinische Tests sind geplant.',
+    haiku:['Der Keim sucht die Flucht —','drei Türen fallen leise zu,','die Wunde wird still.'],
+    keywords:['Antibiotikaresistenz','Peptide','Wirkstoff','Mikrobiologie','präklinisch'] },
+
+  { doi:'10.15184/aqy.2026.71', oa:'Gold Open Access', peer:true, popsci:false, model:'claude-haiku-4-20260401', cost:0.0058, words:4980,
+    insts:['ÖAI','Österreichisches Archäologisches Institut'],
+    authors:[ {n:'Katharina Hofer',oeaw:true,role:'Erstautorin',mail:'katharina.hofer@oeaw.ac.at'}, {n:'Georg Reiter',oeaw:true} ],
+    dims:[82,72,80,78,64],
+    angle:'Der Alpen-Zinnhandel ist 1.000 Jahre älter als gedacht — was Isotope über frühe Netzwerke verraten.',
+    audience:'Kultur- und Wissenschaftsressorts, Geschichtsinteressierte',
+    reasoning:'Überraschender Zeitsprung ist eine klassische „Aha"-Story. Regionaler Bezug zum Ostalpenraum, gute Bebilderung durch Fundstücke möglich. Aktualitätsdruck gering.',
+    abstract:'Blei- und Zinnisotopenanalysen bronzezeitlicher Artefakte belegen überregionalen Zinnhandel über die Ostalpen bereits im frühen 3. Jahrtausend v. Chr. — deutlich früher als bisher angenommen.',
+    summaryDe:'Neue Analysen zeigen, dass über die Alpen schon vor über 4.000 Jahren mit Zinn gehandelt wurde — viel früher als gedacht.',
+    haiku:['Zinn wandert bergwärts —','vor viertausend stillen Jahren','klingt schon ein Markt auf.'],
+    keywords:['Bronzezeit','Handelsrouten','Isotopenanalyse','Ostalpen','Archäometrie'] },
+
+  { doi:'10.5194/tc-20-2026', oa:'Gold Open Access', peer:true, popsci:false, model:'claude-haiku-4-20260401', cost:0.0061, words:5230,
+    insts:['IGF Innsbruck','Institut für Interdisziplinäre Gebirgsforschung'],
+    authors:[ {n:'Rainer Prinz',oeaw:true,role:'Erstautor',mail:'rainer.prinz@oeaw.ac.at'}, {n:'Elke Moser',oeaw:true} ],
+    dims:[80,78,72,76,74],
+    angle:'20 Jahre Messreihe, 38 Prozent weg — der Ötztal-Gletscher als Klima-Chronik zum Anfassen.',
+    audience:'Tagesmedien, Klima- und Umweltressorts, regionale Medien',
+    reasoning:'Längste durchgehende Messreihe Österreichs liefert belastbare, bildstarke Klima-Story mit Kipppunkt-Narrativ. Hohe Aktualität in Sommermonaten, PM in Vorbereitung.',
+    abstract:'Die 20-jährige Massenbilanzreihe im Ötztal dokumentiert einen Volumenverlust von 38 % seit 2006. Für zwei Gletscherzungen wird ein irreversibler Kipppunkt erreicht.',
+    summaryDe:'Österreichs längste Gletscher-Messreihe zeigt einen dramatischen Eisverlust im Ötztal. Zwei Zungen sind nicht mehr zu retten.',
+    haiku:['Zwanzig Sommer zählt','das Eis — und schweigt nun leiser,','ein Drittel ist fort.'],
+    keywords:['Gletscher','Klimawandel','Massenbilanz','Ötztal','Kryosphäre'] },
+
+  { doi:'10.1093/llc/fqae026', oa:'Green Open Access', peer:true, popsci:false, model:'claude-haiku-4-20260401', cost:0.0055, words:4610,
+    insts:['IMAFO','Institut für Mittelalterforschung'],
+    authors:[ {n:'Bernhard Steiner',oeaw:true,role:'Erstautor',mail:'bernhard.steiner@oeaw.ac.at'}, {n:'Yuki Tanaka',oeaw:false} ],
+    dims:[76,66,82,70,68],
+    angle:'KI liest, was jahrhundertelang unlesbar war — 40.000 Seiten mittelalterlicher Handschriften erschlossen.',
+    audience:'Wissenschafts- und Kulturressorts, Digital-Interessierte',
+    reasoning:'Starke „KI trifft Geschichte"-Erzählung mit konkretem Nutzwert (durchsuchbare Archive). Anschlussfähig an KI-Debatte, Bildmaterial aus Handschriften verfügbar.',
+    abstract:'Ein feinabgestimmtes Transformer-Modell transkribiert gotische Kursive mit 96 % Zeichengenauigkeit und erschließt erstmals rund 40.000 bislang undurchsuchbare Handschriftenseiten.',
+    summaryDe:'Ein KI-Modell entziffert mittelalterliche Handschriften fast fehlerfrei und macht große Archivbestände erstmals durchsuchbar.',
+    haiku:['Gotische Schleifen —','die Maschine liest geduldig,','Archive erwachen.'],
+    keywords:['Digital Humanities','Handschriften','KI','Transkription','Mediävistik'] },
+
+  { doi:'10.1021/acs.est.6b01427', oa:'Hybrid Open Access', peer:true, popsci:false, model:'claude-haiku-4-20260401', cost:0.0059, words:5040,
+    insts:['ÖAW-Umweltforschung'],
+    authors:[ {n:'Julia Weiss',oeaw:true,role:'Erstautorin',mail:'julia.weiss@oeaw.ac.at'}, {n:'Marco Bauer',oeaw:true} ],
+    dims:[76,74,70,68,72],
+    angle:'Mikroplastik kommt aus der Luft — warum abgelegene Bergseen belasteter sind als gedacht.',
+    audience:'Umweltressorts, regionale Medien, Tourismusbranche',
+    reasoning:'Kontraintuitives Ergebnis (Ferntransport schlägt lokalen Tourismus) trägt die Story. Umweltrelevanz hoch, Aktualität mittel. Sachliche Einordnung nötig.',
+    abstract:'Sedimentanalysen alpiner Seen zeigen, dass atmosphärischer Ferntransport mehr Mikroplastik einträgt als lokaler Tourismus. Die Partikelzusammensetzung verweist auf entfernte Quellen.',
+    summaryDe:'In abgelegenen Bergseen sammelt sich mehr Mikroplastik an, als der Tourismus vor Ort erklären kann — der Wind trägt es aus der Ferne herbei.',
+    haiku:['Der Wind trägt den Rest','vergangener Dinge bergauf —','klarer See, nicht rein.'],
+    keywords:['Mikroplastik','Alpenseen','Ferntransport','Umwelt','Sediment'] },
+
+  { doi:'10.1080/00324728.2026.2201', oa:'Green Open Access', peer:false, popsci:false, model:'claude-haiku-4-20260401', cost:0.0052, words:4380,
+    insts:['VID','Institut für Demographie'],
+    authors:[ {n:'Tomáš Sobotka',oeaw:true,role:'Erstautor',mail:'tomas.sobotka@oeaw.ac.at'}, {n:'Lena Vogl',oeaw:true} ],
+    dims:[72,76,64,66,70],
+    angle:'Jede dritte Gemeinde schrumpft: eine interaktive Landkarte der demografischen Zukunft Österreichs.',
+    audience:'Innenpolitik- und Regionalressorts, Kommunen',
+    reasoning:'Regionalisierbare Daten erlauben lokale Anknüpfung in jeder Redaktion. Working Paper (noch nicht peer-reviewed) — Einordnung als Projektion kommunizieren.',
+    abstract:'Kleinräumige Bevölkerungsprojektionen bis 2050 zeigen, dass rund ein Drittel der österreichischen Gemeinden schrumpft, während Speckgürtel zweistellig wachsen.',
+    summaryDe:'Eine neue Projektion zeigt, wie sich Österreichs Gemeinden bis 2050 entwickeln: Abwanderung im ländlichen Raum, Wachstum rund um die Städte.',
+    haiku:['Dörfer werden still,','die Ränder der Stadt gedeihn —','Karten atmen um.'],
+    keywords:['Demografie','Bevölkerung','Projektion','Gemeinden','Migration'] },
+];
+function pubDims(i){ const e = PUB_EXTRA[i]; const names = DIMS.map(d => d[0]); return e.dims.map((v,j) => [names[j], v]); }
+
+// ===== Social Media monitoring data =====
+const SOC_CHANNELS = [
+  { id:'oeaw',   handle:'oeaw_wien',   name:'Österreichische Akademie der Wissenschaften', accent:'#0047bb', posts:9,  followers:'18,4k' },
+  { id:'imba',   handle:'imba.wien',   name:'IMBA — Molekulare Biotechnologie',            accent:'#0f7a4d', posts:6,  followers:'7,9k' },
+  { id:'gmi',    handle:'gmi.vienna',  name:'Gregor Mendel Institut',                       accent:'#b45309', posts:5,  followers:'5,2k' },
+  { id:'iqoqi',  handle:'iqoqi_vienna',name:'IQOQI — Quantenoptik & Quanteninformation',    accent:'#6d28d9', posts:7,  followers:'11,3k' },
+  { id:'acdh',   handle:'acdh_oeaw',   name:'ACDH — Digital Humanities',                    accent:'#0e7490', posts:4,  followers:'3,8k' },
+];
+const SOC_POSTS = [
+  { id:'p1', ch:'iqoqi', theme:'quant', topic:'Fehlertolerante Qubits — erklärt in 60 Sekunden', summary:'Reel zum neuen Nature-Physics-Paper: Wie Fehlerkorrektur mit Licht statt Kälte funktioniert. In drei Tagen 41k Views.', kw:['Quantencomputing','Reel','Nature'], likes:2870, comments:63, rel:'vor 2 Tagen', hot:true, icon:'ph-duotone ph-atom' },
+  { id:'p2', ch:'oeaw', theme:'quant', topic:'Quantenphysik zum Angreifen — Ausstellungsblick', summary:'Carousel aus dem Foyer: Publikumsandrang bei der Quanten-Demo. Starkes Speichern-Verhältnis.', kw:['Quantenphysik','Ausstellung','Carousel'], likes:1540, comments:38, rel:'vor 4 Tagen', hot:false, icon:'ph-duotone ph-atom' },
+  { id:'p3', ch:'oeaw', theme:'lndf', topic:'Lange Nacht der Forschung 2026 — Save the Date', summary:'Ankündigungs-Post mit Countdown-Sticker. Höchste Interaktionsrate der Woche, viele Shares in Storys.', kw:['LNDF','Event','Countdown'], likes:3120, comments:104, rel:'vor 1 Tag', hot:true, icon:'ph-duotone ph-sparkle' },
+  { id:'p4', ch:'imba', theme:'lndf', topic:'Blick ins Labor: Was euch bei der LNDF erwartet', summary:'Behind-the-Scenes-Reel aus dem IMBA-Labor. Gutes Reichweiten-Plus bei Nicht-Followern.', kw:['LNDF','Labor','Reel'], likes:1980, comments:47, rel:'vor 2 Tagen', hot:false, icon:'ph-duotone ph-flask' },
+  { id:'p5', ch:'gmi', theme:'nachwuchs', topic:'Doktorandin des Monats: Interview', summary:'Portrait-Post zur Nachwuchsförderung. Solide Resonanz, viele wertschätzende Kommentare.', kw:['Nachwuchs','Interview','PhD'], likes:840, comments:29, rel:'vor 3 Tagen', hot:false, icon:'ph-duotone ph-student' },
+  { id:'p6', ch:'oeaw', theme:'nachwuchs', topic:'Akademiepreise 2026 — die Preisträger:innen', summary:'Verkündungs-Carousel der diesjährigen Preisträger:innen. Breite Streuung, viele Glückwünsche.', kw:['Preise','Auszeichnung','Carousel'], likes:2210, comments:88, rel:'vor 5 Tagen', hot:false, icon:'ph-duotone ph-trophy' },
+  { id:'p7', ch:'gmi', theme:'klima', topic:'Pflanzen unter Hitzestress — neue Erkenntnisse', summary:'Infografik-Post zum aktuellen Preprint. Wird überdurchschnittlich oft gespeichert.', kw:['Klima','Pflanzen','Infografik'], likes:1120, comments:34, rel:'vor 6 Tagen', hot:false, icon:'ph-duotone ph-plant' },
+  { id:'p8', ch:'imba', theme:'klima', topic:'Mikroplastik in alpinen Seen — Feldarbeit', summary:'Story-Highlight von der Probenahme im Gebirge. Bildstark, gute Interaktion in Umfrage-Sticker.', kw:['Umwelt','Mikroplastik','Story'], likes:960, comments:22, rel:'vor 4 Tagen', hot:false, icon:'ph-duotone ph-drop' },
+  { id:'p9', ch:'iqoqi', theme:'quant', topic:'Q&A: Eure Fragen zur Quantenverschränkung', summary:'Fragerunde im Story-Format, als Reel nachverwertet. Sehr aktives Kommentarfeld.', kw:['Quantenphysik','Q&A','Community'], likes:1430, comments:71, rel:'vor 7 Tagen', hot:false, icon:'ph-duotone ph-atom' },
+  { id:'p10', ch:'acdh', theme:'nachwuchs', topic:'KI liest mittelalterliche Handschriften', summary:'Demo-Reel zur Transkriptions-KI. Fachpublikum reagiert stark, geteilt von Partnerinstituten.', kw:['Digital Humanities','KI','Reel'], likes:1290, comments:41, rel:'vor 3 Tagen', hot:false, icon:'ph-duotone ph-scroll' },
+  { id:'p11', ch:'oeaw', theme:'lndf', topic:'Programm-Highlights der LNDF im Überblick', summary:'Carousel mit den Top-Stationen. Als Lesezeichen-Magnet konzipiert, funktioniert gut.', kw:['LNDF','Programm','Carousel'], likes:1760, comments:52, rel:'vor 2 Tagen', hot:false, icon:'ph-duotone ph-sparkle' },
+  { id:'p12', ch:'acdh', theme:'klima', topic:'Datenvisualisierung: Österreichs Gemeinden 2050', summary:'Interaktive Karte als Video-Post. Nischig, aber hohe Verweildauer.', kw:['Demografie','Datenviz','Video'], likes:680, comments:18, rel:'vor 8 Tagen', hot:false, icon:'ph-duotone ph-chart-line' },
+];
+const SOC_THEMES = [
+  { key:'quant',     name:'Quantenforschung im Alltag', desc:'Erklärformate rund um Qubits, Verschränkung und die aktuelle Nature-Physics-Story.', tint:'#6d28d9', tintBg:'#f3effe' },
+  { key:'lndf',      name:'Lange Nacht der Forschung 2026', desc:'Aufbau-Kommunikation zum größten Publikumsevent — Ankündigung, Programm, Behind-the-Scenes.', tint:'#0047bb', tintBg:'#eef4ff' },
+  { key:'nachwuchs', name:'Nachwuchs & Auszeichnungen', desc:'Porträts, Preise und Interviews — die menschliche Seite der Akademie.', tint:'#b45309', tintBg:'#fdf1e3' },
+  { key:'klima',     name:'Klima, Umwelt & Gesellschaft', desc:'Infografiken und Feldarbeit zu Umwelt-, Klima- und Demografiethemen.', tint:'#0f7a4d', tintBg:'#e7f7ef' },
+];
+const SOC_BRIEFING = 'Die Woche steht klar im Zeichen der Lange Nacht der Forschung 2026: der Save-the-Date-Post ist mit Abstand euer stärkster Beitrag (104 Kommentare, viele Story-Shares). Parallel zahlt sich die Quanten-Serie aus — das 60-Sekunden-Reel zu fehlertoleranten Qubits erreicht überdurchschnittlich viele Nicht-Follower. Nachwuchs- und Preis-Themen liefern verlässliche, wohlwollende Resonanz. Empfehlung: LNDF-Momentum mit einem Behind-the-Scenes-Reel weitertragen und das Qubit-Thema als Q&A verlängern.';
+
+
+class Component extends DCLogic {
+  state = {
+    view:'dashboard', period:'month',
+    pubSearch:'', preset:'all', pubSel:null,
+    socView:'themen', socSearch:'', socSort:'recent', socRange:null, socChannels:[], socFocus:null,
+    rfOpen:false, rfPhase:'idle', rfModel:'deepseek/deepseek-chat', rfForce:false,
+    rfStep:-1, rfFetched:0, rfAdded:0, rfTotal:0, rfProcessed:0, rfThemes:0, rfCost:0, rfTokens:0, rfElapsed:0,
+    eventTab:'upcoming', mainNewsOnly:false,
+    eventsMode:'table', calY:2026, calM:6, calSel:null, calView:'month', calWeekRef:'2026-07-03',
+    events: EVENTS.slice(),
+  };
+
+  renderVals(){
+    const s = this.state;
+    const navDefs = [
+      { id:'dashboard', label:'Dashboard', icon:'ph ph-chart-bar' },
+      { id:'pubs', label:'Publikationen', icon:'ph ph-book-open' },
+      { id:'events', label:'Veranstaltungen', icon:'ph ph-calendar-dots' },
+      { id:'social', label:'Social Media', icon:'ph ph-instagram-logo' },
+    ];
+    const navTabs = navDefs.map(n => ({
+      label:n.label, icon:n.icon,
+      style:{ display:'flex', alignItems:'center', gap:'7px', padding:'7px 11px', borderRadius:'8px', fontSize:'13.5px', fontWeight: s.view===n.id?600:500, color: s.view===n.id?'#fff':'rgba(255,255,255,.72)', background: s.view===n.id?'rgba(255,255,255,.2)':'transparent', textDecoration:'none', cursor:'pointer' },
+      onSelect: () => this.setState({ view:n.id }),
+    }));
+
+    const periods = [ ['week','7 Tage'], ['month','2 Monate'], ['year','Jahr'], ['all','Alle'] ];
+    const periodTabs = periods.map(([id,label]) => ({
+      label, onSelect: () => this.setState({ period:id }),
+      style:{ border:'none', fontFamily:'inherit', fontSize:'12px', fontWeight:600, padding:'6px 12px', borderRadius:'7px', cursor:'pointer', background: s.period===id?'#fff':'transparent', color: s.period===id?'#0047bb':'#64707f', boxShadow: s.period===id?'0 1px 2px rgba(16,32,46,.1)':'none' },
+    }));
+    const periodLabel = { week:'letzte 7 Tage', month:'letzte 2 Monate', year:'letztes Jahr', all:'alle Zeiträume' }[s.period];
+    const topCount = { week:4, month:6, year:8, all:8 }[s.period];
+
+    const topPubs = PUBS.slice(0, topCount).map((p,i) => ({
+      rank: i+1, title:p.title, meta:p.meta, venue:p.venue, flagship:p.flagship, plainVenue:!p.flagship,
+      pitch:p.pitch, score:p.score + ' %',
+      onOpen: () => this.setState({ view:'pubs', pubSel:i }),
+      rankStyle:{ width:26, height:26, borderRadius:999, background: i<3?'#0047bb':'#eef1f5', color: i<3?'#fff':'#64707f', fontFamily:MONO, fontSize:12, fontWeight:600, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, marginTop:2 },
+      scoreStyle: scoreBadge(p.score, true),
+    }));
+
+    const maxD = Math.max(...DIST);
+    const bucketColors = ['#cbd2dc','#9aa4b2','#f4c98a','#f0a952','#e88a2a','#6b93e6','#2f6ad0','#0047bb'];
+    const scoreDist = DIST.map((v,i) => ({
+      tip: (i*12.5)+'–'+((i+1)*12.5)+' %: '+v+' %',
+      style:{ flex:1, height: Math.round(v/maxD*100)+'%', background:bucketColors[i], borderRadius:'4px', display:'block' },
+    }));
+    const dims = DIMS.map(([name,val]) => ({ name, val: val+' %', barStyle:{ display:'block', height:'100%', width: val+'%', background:'#0047bb', borderRadius:'999px' } }));
+    const maxK = KEYWORDS[0][1];
+    const keywords = KEYWORDS.map(([word,n]) => ({ word, style:{ fontSize: (11 + Math.round(n/maxK*4)) + 'px', fontWeight:500, color: n > 15 ? '#0047bb' : '#475262', background: n > 15 ? '#eef4ff' : '#eef1f5', padding:'3px 9px', borderRadius:'999px' } }));
+
+    const boardTasks = BOARD_TASKS.map(t => ({
+      title:t.title, due:t.due,
+      dotStyle:{ width:'8px', height:'8px', borderRadius:'2px', background:t.color, flexShrink:0 },
+      dueStyle:{ fontFamily:MONO, fontSize:'11px', fontWeight:500, color: t.overdue?'#dc2626':'#64707f', background: t.overdue?'#fdeaea':'#eef1f5', padding:'2px 7px', borderRadius:'6px', flexShrink:0 },
+    }));
+
+    // ===== Publications view =====
+    const presetDefs = [
+      { id:'all', label:'Alle', icon:'ph ph-rows' },
+      { id:'high', label:'Hohes Potenzial', icon:'ph ph-trend-up' },
+      { id:'flagship', label:'Flagship-Venues', icon:'ph ph-crown-simple' },
+      { id:'pm', label:'Mit PM', icon:'ph ph-newspaper' },
+      { id:'flagged', label:'Geflaggt', icon:'ph ph-push-pin' },
+    ];
+    const presets = presetDefs.map(pr => ({
+      label:pr.label, icon:pr.icon,
+      onSelect: () => this.setState({ preset:pr.id }),
+      style:{ display:'inline-flex', alignItems:'center', gap:'6px', border:'1px solid ' + (s.preset===pr.id?'#0047bb':'#cbd2dc'), background: s.preset===pr.id?'#eef4ff':'#fff', color: s.preset===pr.id?'#0047bb':'#64707f', fontFamily:'inherit', fontSize:'12.5px', fontWeight:600, padding:'0 12px', height:'38px', borderRadius:'9px', cursor:'pointer' },
+    }));
+    const q = s.pubSearch.trim().toLowerCase();
+    const pubRows = PUBS.map((p,idx) => ({ p, idx })).filter(({p}) => {
+      if(q && !(p.title.toLowerCase().includes(q) || p.meta.toLowerCase().includes(q))) return false;
+      if(s.preset==='high') return p.score >= 80;
+      if(s.preset==='flagship') return p.flagship;
+      if(s.preset==='pm') return p.pm;
+      if(s.preset==='flagged') return p.flagged;
+      return true;
+    }).map(({p,idx}) => ({
+      title:p.title, meta:p.meta, venue:p.venue, flagship:p.flagship, plainVenue:!p.flagship,
+      type:p.type, date:p.date, pitch:p.pitch, score:p.score+' %', scoreStyle:scoreBadge(p.score,true),
+      hasPm:p.pm, flagged:p.flagged, onOpen: () => this.setState({ pubSel:idx }),
+    }));
+
+    // ===== Events view =====
+    const upC = s.events.filter(e => e.upcoming).length, pastC = s.events.filter(e => !e.upcoming).length;
+    const eventTabs = [ ['upcoming','Kommend', upC], ['past','Vergangen', pastC] ].map(([id,label,count]) => ({
+      label, count,
+      onSelect: () => this.setState({ eventTab:id }),
+      style:{ display:'inline-flex', alignItems:'center', gap:'7px', border:'1px solid ' + (s.eventTab===id?'#0047bb':'#cbd2dc'), background: s.eventTab===id?'#eef4ff':'#fff', color: s.eventTab===id?'#0047bb':'#64707f', fontFamily:'inherit', fontSize:'12.5px', fontWeight:600, padding:'0 13px', height:'38px', borderRadius:'9px', cursor:'pointer' },
+      countStyle:{ fontFamily:MONO, fontSize:'11px', fontWeight:500, background: s.eventTab===id?'#dbe7ff':'#eef1f5', color: s.eventTab===id?'#0047bb':'#9aa4b2', padding:'1px 7px', borderRadius:'999px' },
+    }));
+    const eventRows = s.events.filter(e => (s.eventTab==='upcoming') === e.upcoming && (!s.mainNewsOnly || e.mainNews)).map(e => ({
+      day:e.day, mon:e.mon, title:e.title, venue:e.venue, reasons:e.reasons, mainNews:e.mainNews,
+      dateStyle:{ width:'52px', height:'52px', borderRadius:'11px', background: e.mainNews?'#eef4ff':'#f1f3f6', color: e.mainNews?'#0047bb':'#475262', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', flexShrink:0 },
+      score:e.score+' %', scoreStyle:scoreBadge(e.score,true),
+      open: e.decision==='open', pitched: e.decision==='pitched', rejected: e.decision==='rejected',
+      onPitch: () => this.setDecision(e.id,'pitched'),
+      onReject: () => this.setDecision(e.id,'rejected'),
+      onReopen: () => this.setDecision(e.id,'open'),
+    }));
+
+    return {
+      navTabs,
+      isDash: s.view==='dashboard', isPubs: s.view==='pubs' && s.pubSel===null, isEvents: s.view==='events',
+      isPubDetail: s.view==='pubs' && s.pubSel!==null, isSocial: s.view==='social',
+      ...this.buildSocial(),
+      ...this.buildRefresh(),
+      goPubs: () => this.setState({ view:'pubs', pubSel:null }),
+      backToPubs: () => this.setState({ pubSel:null }),
+      ...this.buildPubDetail(),
+
+      dashSub: 'Freitag, 3. Juli 2026 · WebDB-Stand heute 06:30 · 4 Karten fällig, 12 Publikationen geflaggt',
+      periodTabs, periodLabel,
+      poolLabel: { week:'41 im Pool', month:'187 im Pool', year:'2.204 im Pool', all:'9.812 im Pool' }[s.period],
+      topPubs, scoreDist, dims, keywords, boardTasks,
+
+      pubsSub: '12.480 Publikationen · 9.812 analysiert · sortiert nach Story Score',
+      pubSearch:s.pubSearch, onPubSearch:(e)=>this.setState({ pubSearch:e.target.value }),
+      presets, pubRows, pubsEmpty: pubRows.length===0,
+      pubsFooter: '1–' + pubRows.length + ' von 12.480 · Sortierung: Story Score absteigend',
+
+      eventTabs, eventRows, eventsEmpty: eventRows.length===0,
+      toggleMainNews: () => this.setState({ mainNewsOnly: !s.mainNewsOnly }),
+      mainNewsStyle:{ display:'inline-flex', alignItems:'center', gap:'6px', border:'1px solid ' + (s.mainNewsOnly?'#0047bb':'#cbd2dc'), background: s.mainNewsOnly?'#0047bb':'#fff', color: s.mainNewsOnly?'#fff':'#64707f', fontFamily:'inherit', fontSize:'12.5px', fontWeight:600, padding:'0 13px', height:'38px', borderRadius:'9px', cursor:'pointer' },
+
+      // events view mode
+      eventsTableMode: s.eventsMode === 'table', eventsCalMode: s.eventsMode === 'calendar',
+      onEventsTable: () => this.setState({ eventsMode:'table' }),
+      onEventsCal: () => this.setState({ eventsMode:'calendar' }),
+      evTableStyle: this.modeSeg(s.eventsMode === 'table'),
+      evCalStyle: this.modeSeg(s.eventsMode === 'calendar'),
+      calMonthView: s.calView === 'month', calWeekView: s.calView === 'week',
+      onMonthView: () => this.setState({ calView:'month' }),
+      onWeekView: () => this.setState({ calView:'week' }),
+      monthSegStyle: this.modeSeg(s.calView === 'month'),
+      weekSegStyle: this.modeSeg(s.calView === 'week'),
+      onPrev: () => (s.calView === 'month' ? this.monthNav(-1) : this.weekNav(-1)),
+      onNext: () => (s.calView === 'month' ? this.monthNav(1) : this.weekNav(1)),
+      onToday: () => this.setState({ calY:2026, calM:6, calWeekRef:'2026-07-03' }),
+      ...this.buildCalendar(),
+      ...this.buildWeek(),
+      periodLabel: s.calView === 'month' ? (MONTHS_DE[s.calM] + ' ' + s.calY) : this.buildWeek().weekLabel,
+
+      // event modal
+      ...this.calModal(),
+    };
+  }
+
+  modeSeg(on){ return { display:'inline-flex', alignItems:'center', gap:'6px', border:'none', fontFamily:'inherit', fontSize:'12.5px', fontWeight:600, padding:'7px 13px', borderRadius:'7px', cursor:'pointer', background: on?'#fff':'transparent', color: on?'#0047bb':'#64707f', boxShadow: on?'0 1px 2px rgba(16,32,46,.1)':'none' }; }
+
+  startRefresh(){
+    this.setState({ rfPhase:'running', rfStep:0, rfFetched:0, rfAdded:0, rfTotal:0, rfProcessed:0, rfThemes:0, rfCost:0, rfTokens:0, rfElapsed:0 });
+    this._rfStart = Date.now();
+    clearInterval(this._rfTimer);
+    const FETCH=1000, ANALYZE=3400, SNAP=4300;
+    this._rfTimer = setInterval(() => {
+      const e = Date.now() - this._rfStart;
+      const st = {};
+      if(e < FETCH){ st.rfStep=0; st.rfFetched=Math.min(31, Math.floor(e/FETCH*31)); st.rfAdded=Math.min(4, Math.floor(e/FETCH*4)); }
+      else { st.rfFetched=31; st.rfAdded=4; }
+      if(e >= FETCH && e < ANALYZE){ st.rfStep=1; st.rfTotal=31; st.rfProcessed=Math.floor((e-FETCH)/(ANALYZE-FETCH)*31); }
+      else if(e >= ANALYZE){ st.rfTotal=31; st.rfProcessed=31; }
+      if(e >= ANALYZE && e < SNAP){ st.rfStep=2; st.rfThemes=4; }
+      st.rfElapsed = (e/1000);
+      if(e >= SNAP){ st.rfStep=2; st.rfThemes=4; st.rfProcessed=31; st.rfCost=0.0043; st.rfTokens=48210; st.rfPhase='done'; st.rfElapsed=(SNAP/1000); clearInterval(this._rfTimer); }
+      this.setState(st);
+    }, 90);
+  }
+  closeRefresh(){ clearInterval(this._rfTimer); this.setState({ rfOpen:false, rfPhase:'idle', rfStep:-1, rfFetched:0, rfAdded:0, rfTotal:0, rfProcessed:0, rfThemes:0, rfCost:0, rfTokens:0, rfElapsed:0 }); }
+
+  buildRefresh(){
+    const s = this.state;
+    const MODELS = [
+      { value:'deepseek/deepseek-chat', label:'DeepSeek Chat', cost:'$0,14/M' },
+      { value:'claude-haiku-4', label:'Claude Haiku 4', cost:'$0,80/M' },
+      { value:'gpt-5-mini', label:'GPT-5 mini', cost:'$0,25/M' },
+      { value:'gemini-flash', label:'Gemini Flash', cost:'gratis' },
+    ];
+    const rfModels = MODELS.map(m => { const on = s.rfModel===m.value; return { label:m.label, cost:m.cost, on,
+      onSelect: () => this.setState({ rfModel:m.value }),
+      style:{ display:'flex', alignItems:'center', gap:10, width:'100%', textAlign:'left', border:'none', borderRadius:9, padding:'10px 12px', cursor:'pointer', fontFamily:'inherit', fontSize:'13px', background: on?'#16202e':'transparent', color: on?'#fff':'#16202e' },
+      radioStyle:{ width:16, height:16, borderRadius:999, border:'2px solid ' + (on?'#fff':'#cbd2dc'), display:'inline-flex', alignItems:'center', justifyContent:'center', flexShrink:0 },
+      dotStyle:{ width:7, height:7, borderRadius:999, background:'#fff', display: on?'block':'none' },
+      costStyle:{ fontSize:'11.5px', color: on?'rgba(255,255,255,.65)':'#9aa4b2', fontFamily:MONO } }; });
+
+    const STEPS = [ { label:'Posts laden', icon:'ph-bold ph-download-simple' }, { label:'Themen analysieren', icon:'ph-bold ph-tag' }, { label:'Lagebild erstellen', icon:'ph-bold ph-sparkle' } ];
+    const done = s.rfPhase==='done';
+    const stepState = (i) => done ? 'done' : (i < s.rfStep ? 'done' : (i === s.rfStep ? 'active' : 'pending'));
+    const rfSteps = STEPS.map((st,i) => { const state = stepState(i); return {
+      label:st.label, icon: state==='done' ? 'ph-bold ph-check' : (state==='active' ? 'ph-bold ph-spinner-gap' : st.icon),
+      spinStyle: state==='active' ? 'animation:rf-spin .8s linear infinite;' : '',
+      hasConn: i < STEPS.length - 1,
+      circleStyle:{ width:38, height:38, borderRadius:999, display:'inline-flex', alignItems:'center', justifyContent:'center', border:'2px solid ' + (state==='pending'?'#dbe1e9':'#0047bb'), background: state==='done'?'#0047bb':'#fff', color: state==='done'?'#fff':(state==='active'?'#0047bb':'#c0c7d1'), transition:'all .3s', transform: state==='active'?'scale(1.06)':'scale(1)' },
+      labelStyle:{ fontSize:'11px', lineHeight:1.2, textAlign:'center', color: state==='pending'?'#9aa4b2':'#16202e', fontWeight: state==='active'?600:500 },
+      connFill: (i < s.rfStep || done) ? '100%' : '0%' };
+    });
+    const pct = s.rfTotal > 0 ? Math.round((s.rfProcessed/s.rfTotal)*100) : 0;
+    return {
+      rfOpen:s.rfOpen, rfIdle:s.rfPhase==='idle', rfRunning:s.rfPhase==='running', rfDone:done, rfActive: s.rfPhase==='running'||done,
+      openRefresh: () => this.setState({ rfOpen:true, rfPhase:'idle' }),
+      closeRefreshFn: () => this.closeRefresh(),
+      overlayClose: (e) => { if(e && e.target === e.currentTarget) this.closeRefresh(); },
+      startRefreshFn: () => this.startRefresh(),
+      rfForce:s.rfForce, toggleForce: () => this.setState({ rfForce:!s.rfForce }),
+      forceBoxStyle:{ width:18, height:18, borderRadius:5, border:'2px solid ' + (s.rfForce?'#0047bb':'#cbd2dc'), background: s.rfForce?'#0047bb':'#fff', display:'inline-flex', alignItems:'center', justifyContent:'center', flexShrink:0 },
+      rfModels, rfSteps, rfShowProgress: (s.rfStep>=1 || done) && s.rfTotal>0, rfPct: done?100:pct,
+      rfProcessedLabel: s.rfProcessed + ' / ' + s.rfTotal + ' Posts analysiert',
+      rfFetchedVal: s.rfFetched + (s.rfAdded ? ' (+' + s.rfAdded + ')' : ''),
+      rfThemesVal: s.rfThemes || '–', rfCostVal: s.rfCost ? '$' + s.rfCost.toFixed(4) : '–',
+      rfStatusLabel: (done?'Fertig':'Läuft') + ' · ' + s.rfElapsed.toFixed(1) + 's' + (s.rfTokens ? ' · ' + s.rfTokens.toLocaleString('de-AT') + ' Tokens' : ''),
+    };
+  }
+
+  buildSocial(){
+    const s = this.state;
+    const chById = {}; SOC_CHANNELS.forEach(c => chById[c.id] = c);
+    const q = s.socSearch.trim().toLowerCase();
+    const chSet = new Set(s.socChannels);
+    const match = (p) => {
+      if(chSet.size && !chSet.has(p.ch)) return false;
+      if(q){ const hay = (p.topic + ' ' + p.summary + ' ' + p.kw.join(' ') + ' ' + chById[p.ch].handle).toLowerCase(); if(!hay.includes(q)) return false; }
+      return true;
+    };
+    const relDays = (r) => { const m = r.match(/(\d+)/); return m ? parseInt(m[1]) : 0; };
+    const sortFn = (a,b) => s.socSort==='likes' ? b.likes - a.likes : relDays(a.rel) - relDays(b.rel);
+    const filtered = SOC_POSTS.filter(match);
+    const filtering = q !== '' || chSet.size > 0;
+
+    // KPI
+    const totalLikes = SOC_POSTS.reduce((n,p) => n + p.likes, 0);
+    const kpis = [
+      { label:'Posts im Fenster', value:String(SOC_POSTS.length), icon:'ph-duotone ph-image-square', accent:'#0047bb', bg:'#eef4ff', sub:'letzte 14 Tage', click:null },
+      { label:'Kanäle', value:String(SOC_CHANNELS.length), icon:'ph-duotone ph-broadcast', accent:'#0f7a4d', bg:'#e7f7ef', sub:'ÖAW-Institute', click:() => this.setState({ socView:'kanaele' }) },
+      { label:'Themen', value:String(SOC_THEMES.length), icon:'ph-duotone ph-stack', accent:'#6d28d9', bg:'#f3effe', sub:'automatisch geclustert', click:() => this.setState({ socView:'themen' }) },
+      { label:'Interaktionen', value:(totalLikes/1000).toFixed(1).replace('.',',') + 'k', icon:'ph-duotone ph-heart', accent:'#b45309', bg:'#fdf1e3', sub:'Likes gesamt', click:null },
+    ].map(k => ({ ...k, iconWrap:{ width:40, height:40, borderRadius:11, background:k.bg, color:k.accent, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }, style:{ background:'#fff', border:'1px solid #e2e6ec', borderRadius:14, boxShadow:'0 1px 2px rgba(16,32,46,.05)', padding:'15px 17px', display:'flex', alignItems:'center', gap:14, cursor: k.click?'pointer':'default' } }));
+
+    // theme chips (overview)
+    const themeCounts = {}; SOC_THEMES.forEach(t => themeCounts[t.key] = SOC_POSTS.filter(p => p.theme===t.key).length);
+    const socThemeChips = SOC_THEMES.map(t => ({ key:t.key, name:t.name, count:themeCounts[t.key],
+      onSelect: () => this.setState({ socView:'themen', socFocus:t.key }),
+      style:{ display:'inline-flex', alignItems:'center', gap:8, border:'1px solid ' + (s.socFocus===t.key?t.tint:'#e2e6ec'), background: s.socFocus===t.key?t.tintBg:'#fff', color: s.socFocus===t.key?t.tint:'#475262', fontFamily:'inherit', fontSize:'12.5px', fontWeight:600, padding:'8px 13px', borderRadius:'999px', cursor:'pointer', boxShadow:'0 1px 2px rgba(16,32,46,.04)' },
+      dotStyle:{ width:8, height:8, borderRadius:999, background:t.tint, flexShrink:0 },
+      countStyle:{ fontFamily:MONO, fontSize:'11px', fontWeight:600, color: s.socFocus===t.key?t.tint:'#9aa4b2', background: s.socFocus===t.key?'#fff':'#eef1f5', padding:'1px 7px', borderRadius:'999px' } }));
+
+    // top tags
+    const tagCounts = {}; SOC_POSTS.forEach(p => p.kw.forEach(k => tagCounts[k] = (tagCounts[k]||0)+1));
+    const topTags = Object.entries(tagCounts).sort((a,b) => b[1]-a[1]).slice(0,8).map(([tag,n]) => ({ tag, n,
+      style:{ display:'inline-flex', alignItems:'center', gap:6, border:'1px solid #e2e6ec', background:'#fff', color:'#475262', fontSize:'12px', fontWeight:500, padding:'5px 11px', borderRadius:'999px' },
+      countStyle:{ fontFamily:MONO, fontSize:'10.5px', color:'#9aa4b2' } }));
+
+    const compact = (n) => n >= 1000 ? (n/1000).toFixed(1).replace('.',',') + 'k' : String(n);
+    const mkCard = (p) => { const c = chById[p.ch]; return {
+      id:p.id, topic:p.topic, summary:p.summary, handle:'@' + c.handle, likes:compact(p.likes), comments:compact(p.comments), rel:p.rel, hot:p.hot, icon:p.icon,
+      imgStyle:{ position:'relative', height:'132px', borderRadius:'11px', background:'linear-gradient(150deg,' + c.accent + '14,' + c.accent + '05)', border:'1px solid ' + c.accent + '1f', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden' },
+      iconStyle:{ fontSize:'40px', color: c.accent, opacity:.5 },
+      chDot:{ width:7, height:7, borderRadius:999, background:c.accent, flexShrink:0 },
+      kw: p.kw.map(k => ({ k })),
+    }; };
+
+    // Themen view groups
+    const socThemeGroups = SOC_THEMES.map(t => {
+      const posts = filtered.filter(p => p.theme===t.key).sort(sortFn);
+      return { key:t.key, name:t.name, desc:t.desc, count:posts.length,
+        channels: [...new Set(posts.map(p => '@' + chById[p.ch].handle))].join(' · '),
+        headStyle:{ display:'flex', alignItems:'flex-start', gap:12, padding:'15px 18px', borderBottom: posts.length?'1px solid #eef1f5':'none', cursor:'default' },
+        badgeStyle:{ width:34, height:34, borderRadius:9, background:t.tintBg, color:t.tint, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontFamily:MONO, fontSize:13, fontWeight:700 },
+        cards: posts.map(mkCard) };
+    }).filter(g => !filtering || g.count > 0);
+
+    // Nach Kanal view
+    const socChannelGroups = SOC_CHANNELS.map(c => {
+      const posts = filtered.filter(p => p.ch===c.id).sort(sortFn);
+      const likes = posts.reduce((n,p) => n + p.likes, 0);
+      return { id:c.id, name:c.name, handle:'@' + c.handle, count:posts.length, followers:c.followers, likes: compact(likes) + ' Likes',
+        avatarStyle:{ width:38, height:38, borderRadius:11, background:c.accent, color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:16 },
+        cards: posts.map(mkCard) };
+    }).filter(g => !filtering || g.count > 0);
+
+    const sortSeg = (on) => ({ display:'inline-flex', alignItems:'center', gap:6, border:'none', fontFamily:'inherit', fontSize:'12.5px', fontWeight:600, padding:'7px 13px', borderRadius:'7px', cursor:'pointer', background: on?'#fff':'transparent', color: on?'#0047bb':'#64707f', boxShadow: on?'0 1px 2px rgba(16,32,46,.1)':'none' });
+
+    return {
+      socBriefing: SOC_BRIEFING,
+      socKpis: kpis, socThemeChips, socTopTags: topTags,
+      socThemenView: s.socView==='themen', socKanaeleView: s.socView==='kanaele',
+      onSocThemen: () => this.setState({ socView:'themen' }), onSocKanaele: () => this.setState({ socView:'kanaele' }),
+      socThemenSeg: this.modeSeg(s.socView==='themen'), socKanaeleSeg: this.modeSeg(s.socView==='kanaele'),
+      socSearch: s.socSearch, onSocSearch: (e) => this.setState({ socSearch:e.target.value }),
+      socSortRecent: sortSeg(s.socSort==='recent'), socSortLikes: sortSeg(s.socSort==='likes'),
+      onSocSortRecent: () => this.setState({ socSort:'recent' }), onSocSortLikes: () => this.setState({ socSort:'likes' }),
+      socResult: filtered.length + ' von ' + SOC_POSTS.length + ' Posts',
+      socFiltering: filtering, onSocReset: () => this.setState({ socSearch:'', socChannels:[], socFocus:null }),
+      socThemeGroups, socChannelGroups,
+      socThemenEmpty: socThemeGroups.length===0, socKanaeleEmpty: socChannelGroups.length===0,
+    };
+  }
+
+  buildPubDetail(){
+    const i = this.state.pubSel;
+    if(i === null || i === undefined) return { pd:{} };
+    const p = PUBS[i]; const e = PUB_EXTRA[i]; const pct = p.score;
+    const band = pct >= 70 ? { fg:'#0047bb', bg:'#eef4ff' } : pct >= 40 ? { fg:'#b45309', bg:'#fdf1e3' } : { fg:'#64707f', bg:'#eef1f5' };
+    const scoreLabel = pct >= 80 ? 'Sehr hohes Story-Potenzial' : pct >= 60 ? 'Hohes Story-Potenzial' : pct >= 40 ? 'Mittleres Potenzial' : 'Geringes Potenzial';
+    const badgeTint = { blue:{c:'#0047bb',b:'#eef4ff'}, emerald:{c:'#0f7a4d',b:'#e7f7ef'}, amber:{c:'#92620c',b:'#fdf1e3'}, slate:{c:'#475262',b:'#eef1f5'} };
+    const tb = (color, icon, text) => ({ text, icon, style:{ display:'inline-flex', alignItems:'center', gap:'5px', fontSize:'11.5px', fontWeight:600, color:badgeTint[color].c, background:badgeTint[color].b, padding:'4px 10px', borderRadius:'999px' } });
+    const badges = [];
+    if(e.peer) badges.push(tb('blue','ph-fill ph-shield-check','Peer-reviewed'));
+    if(e.popsci) badges.push(tb('amber','ph-fill ph-megaphone-simple','Popular Science'));
+    badges.push(tb('emerald','ph-fill ph-lock-open', e.oa));
+    if(p.pm) badges.push(tb('emerald','ph-fill ph-newspaper','ÖAW-PM erschienen'));
+    if(p.flagged) badges.push(tb('amber','ph-fill ph-push-pin','Für Triage geflaggt'));
+
+    const authors = e.authors.map(a => ({
+      name:a.n, oeaw:!!a.oeaw, ext:!a.oeaw, role:a.role || '', hasRole:!!a.role, mail:a.mail || '', hasMail:!!a.mail,
+      nameStyle:{ fontSize:'13.5px', fontWeight:600, color: a.oeaw ? '#0047bb' : '#16202e' },
+      avatarStyle:{ width:32, height:32, borderRadius:999, background: a.oeaw ? '#0047bb' : '#cbd2dc', color:'#fff', fontSize:11.5, fontWeight:600, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 },
+      initials: a.n.split(/\s+/).slice(0,2).map(w => w[0]).join(''),
+    }));
+    const oeawN = e.authors.filter(a => a.oeaw).length, extN = e.authors.length - oeawN;
+
+    const dims = pubDims(i).map(([name,val]) => ({ name, val: val + ' %', barStyle:{ display:'block', height:'100%', width: val + '%', background:'#0047bb', borderRadius:'999px' } }));
+
+    return { pd:{
+      title:p.title, meta:p.meta, venue:p.venue, flagship:p.flagship, plainVenue:!p.flagship, type:p.type, date:p.date,
+      doi:e.doi, doiUrl:'https://doi.org/' + e.doi,
+      badges,
+      scoreBig: pct + '%', scoreLabel,
+      scoreCircleStyle:{ width:72, height:72, borderRadius:999, background:band.bg, color:band.fg, fontFamily:MONO, fontSize:22, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 },
+      pitch:p.pitch, angle:e.angle, audience:e.audience, reasoning:e.reasoning,
+      summaryDe:e.summaryDe, abstract:e.abstract,
+      haikuLines: e.haiku.map(l => ({ line:l })), model:e.model, cost:'$' + e.cost.toFixed(4),
+      authors, authorsCount: e.authors.length, authorsBreak: oeawN && extN ? (oeawN + ' ÖAW, ' + extN + ' extern') : (oeawN ? 'alle ÖAW' : 'alle extern'),
+      dims,
+      keywords: e.keywords.map(k => ({ word:k })),
+      insts: e.insts.map(x => ({ name:x })),
+      words: e.words.toLocaleString('de-AT') + ' Wörter angereicherter Inhalt',
+    } };
+  }
+
+  calModal(){
+    const e = this.state.events.find(x => x.id === this.state.calSel);
+    if(!e) return { calModalOpen:false, cm:{} };
+    const b = this.band(e.score);
+    return { calModalOpen:true, stop:(ev)=>ev.stopPropagation(), closeCalModal:()=>this.setState({ calSel:null }),
+      cm:{
+        title:e.title, venue:e.venue, dateLabel: parseInt(e.day) + '. ' + MONTHS_DE[parseInt(e.date.slice(5,7))-1] + ' ' + e.date.slice(0,4),
+        score:e.score + ' %', scoreStyle:{ display:'inline-flex', alignItems:'center', justifyContent:'center', fontFamily:MONO, fontSize:'13px', fontWeight:600, color:b.text, background:b.tint, padding:'6px 11px', borderRadius:'9px' },
+        headStyle:{ display:'flex', alignItems:'center', gap:'10px', padding:'16px 20px', background:b.tint, borderBottom:'1px solid rgba(0,0,0,.04)' },
+        reasons:e.reasons, mainNews:e.mainNews,
+        open: e.decision==='open', pitched: e.decision==='pitched', rejected: e.decision==='rejected',
+        onPitch:()=>this.setDecision(e.id,'pitched'), onReject:()=>this.setDecision(e.id,'rejected'), onReopen:()=>this.setDecision(e.id,'open'),
+      },
+    };
+  }
+
+  setDecision(id, d){ this.setState(s => ({ events: s.events.map(e => e.id === id ? { ...e, decision:d } : e) })); }
+
+  band(score){
+    if(score >= 70) return { bar:'#0047bb', tint:'#eef4ff', text:'#1e3a8a' };
+    if(score >= 40) return { bar:'#f59e0b', tint:'#fef4e2', text:'#92620c' };
+    return { bar:'#ea580c', tint:'#fdeee3', text:'#9a3412' };
+  }
+  decMeta(d){
+    if(d === 'pitched') return { icon:'ph-bold ph-check', color:'#059669' };
+    if(d === 'rejected') return { icon:'ph-bold ph-x', color:'#9aa4b2' };
+    return { icon:'', color:'transparent' };
+  }
+  monthNav(delta){
+    let m = this.state.calM + delta, y = this.state.calY;
+    if(m < 0){ m = 11; y--; } if(m > 11){ m = 0; y++; }
+    this.setState({ calM:m, calY:y });
+  }
+  weekNav(delta){
+    const d = new Date(this.state.calWeekRef + 'T00:00:00');
+    d.setDate(d.getDate() + delta*7);
+    this.setState({ calWeekRef: d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') });
+  }
+
+  buildWeek(){
+    const s = this.state;
+    const ref = new Date(s.calWeekRef + 'T00:00:00');
+    const startMon = (ref.getDay() + 6) % 7;
+    const weekStart = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate() - startMon);
+    const iso = (d) => d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    const todayIso = '2026-07-03';
+    const H0 = 8, H1 = 20, HH = 46;
+    const gridH = (H1 - H0) * HH + HH;
+    const hours = [];
+    for(let h = H0; h <= H1; h++){
+      const top = (h - H0) * HH;
+      hours.push({ label: String(h).padStart(2,'0') + ':00',
+        labelStyle:{ position:'absolute', right:'7px', top:(top-6) + 'px', textAlign:'right', fontFamily:MONO, fontSize:'10px', color:'#b0b8c2' },
+        lineStyle:{ position:'absolute', left:0, right:0, top:top + 'px', borderTop:'1px solid #f1f3f6' } });
+    }
+    const byDate = {};
+    s.events.forEach(e => { (byDate[e.date] = byDate[e.date] || []).push(e); });
+    let weekCount = 0;
+    const days = [];
+    for(let i = 0; i < 7; i++){
+      const cur = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + i);
+      const key = iso(cur); const isToday = key === todayIso;
+      const evs = (byDate[key] || []).map(e => {
+        const t = e.venue.match(/(\d{1,2}):(\d{2})/) || [];
+        const hh = t[1] ? parseInt(t[1]) : 10, mm = t[2] ? parseInt(t[2]) : 0;
+        const top = Math.max(0, ((hh - H0) + mm/60) * HH);
+        const b = this.band(e.score); const dm = this.decMeta(e.decision);
+        return { title:e.title, time: String(hh).padStart(2,'0') + ':' + String(mm).padStart(2,'0'), pct:e.score + '%',
+          style:{ position:'absolute', left:'5px', right:'5px', top:top + 'px', minHeight:'62px', display:'flex', flexDirection:'column', gap:'3px', overflow:'hidden', background:b.tint, color:b.text, borderRadius:'8px', padding:'7px 9px 7px 12px', cursor:'pointer', boxShadow:'0 1px 3px rgba(16,32,46,.1)', zIndex:2 },
+          barStyle:{ position:'absolute', left:0, top:0, bottom:0, width:'3px', background:b.bar },
+          decIcon: dm.icon, decStyle:{ fontSize:'12px', color:dm.color }, hasDec: !!dm.icon,
+          onOpen: () => this.setState({ calSel:e.id }) };
+      });
+      weekCount += evs.length;
+      days.push({ wd:WEEKDAYS_DE[i], num:cur.getDate(),
+        numStyle:{ display:'inline-flex', alignItems:'center', justifyContent:'center', width:'26px', height:'26px', marginTop:'3px', borderRadius:'999px', fontFamily:MONO, fontSize:'12.5px', fontWeight: isToday ? 700 : 600, color: isToday ? '#fff' : '#333d4c', background: isToday ? '#0047bb' : 'transparent' },
+        colStyle:{ position:'relative', height:gridH + 'px', borderRight:'1px solid #eef1f5', background: isToday ? '#f7faff' : '#fff' },
+        events: evs });
+    }
+    const wkEnd = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + 6);
+    const label = weekStart.getDate() + '. ' + MONTHS_DE[weekStart.getMonth()] + ' – ' + wkEnd.getDate() + '. ' + MONTHS_DE[wkEnd.getMonth()] + ' ' + wkEnd.getFullYear();
+    return { weekHours:hours, weekDays:days, weekLabel:label, weekCount,
+      weekGutterStyle:{ position:'relative', height:gridH + 'px', borderRight:'1px solid #eef1f5' } };
+  }
+
+  buildCalendar(){
+    const s = this.state; const y = s.calY, m = s.calM;
+    const byDate = {};
+    s.events.forEach(e => { (byDate[e.date] = byDate[e.date] || []).push(e); });
+    const first = new Date(y, m, 1);
+    const startMon = (first.getDay() + 6) % 7;
+    const gridStart = new Date(y, m, 1 - startMon);
+    const todayIso = '2026-07-03';
+    const iso = (d) => d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    const weeks = [];
+    for(let w = 0; w < 6; w++){
+      const days = [];
+      for(let d = 0; d < 7; d++){
+        const cur = new Date(gridStart.getFullYear(), gridStart.getMonth(), gridStart.getDate() + w*7 + d);
+        const inMonth = cur.getMonth() === m;
+        const isToday = iso(cur) === todayIso;
+        const evs = (byDate[iso(cur)] || []).slice(0, 3).map(e => {
+          const b = this.band(e.score); const dm = this.decMeta(e.decision);
+          return { title:e.title, pct:e.score + '%',
+            style:{ display:'flex', alignItems:'center', gap:'4px', position:'relative', overflow:'hidden', background:b.tint, color:b.text, borderRadius:'5px', padding:'2px 5px 2px 9px', cursor:'pointer', marginBottom:'3px' },
+            barStyle:{ position:'absolute', left:0, top:0, bottom:0, width:'3px', background:b.bar },
+            decIcon: dm.icon, decStyle:{ fontSize:'11px', color:dm.color, flexShrink:0 }, hasDec: !!dm.icon,
+            onOpen: () => this.setState({ calSel:e.id }),
+          };
+        });
+        const moreCount = (byDate[iso(cur)] || []).length - evs.length;
+        days.push({
+          num: cur.getDate(),
+          cellStyle:{ minHeight:'104px', borderRight:'1px solid #eef1f5', borderBottom:'1px solid #eef1f5', padding:'6px', background: inMonth ? '#fff' : '#fbfcfd' },
+          numStyle:{ display:'inline-flex', alignItems:'center', justifyContent:'center', width:'22px', height:'22px', borderRadius:'999px', fontFamily:MONO, fontSize:'11.5px', fontWeight: isToday ? 700 : 500, color: isToday ? '#fff' : (inMonth ? '#333d4c' : '#c0c7d1'), background: isToday ? '#0047bb' : 'transparent', marginBottom:'4px' },
+          events: evs, more: moreCount > 0, moreCount,
+        });
+      }
+      weeks.push({ days });
+    }
+    const monthEvents = s.events.filter(e => e.date.startsWith(y + '-' + String(m+1).padStart(2,'0')));
+    return {
+      monthLabel: MONTHS_DE[m] + ' ' + y,
+      weekdays: WEEKDAYS_DE,
+      weeks,
+      legTotal: monthEvents.length,
+      legHigh: monthEvents.filter(e => e.score >= 70).length,
+      legOpen: monthEvents.filter(e => e.decision === 'open').length,
+    };
+  }
+}
+</script>
+</body>
+</html>
