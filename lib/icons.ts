@@ -151,6 +151,7 @@ export {
   ShieldCheck as ShieldCheck,
   SlidersHorizontal as SlidersHorizontal,
   Sparkle as Sparkles,
+  Timer as Timer,
   Square as Square,
   ArrowSquareOut as SquareArrowOutUpRight,
   Star as Star,
