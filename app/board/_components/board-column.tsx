@@ -84,7 +84,7 @@ export function BoardColumn({
         className="mb-2 flex items-center gap-2 rounded-[10px] px-3 py-2.5 shadow-[0_1px_2px_rgba(16,32,46,.16)]"
         style={{ backgroundColor: headBg }}
       >
-        <ChannelIcon name={column.name} className="h-[18px] w-[18px] shrink-0" style={{ color: iconColor }} />
+        <ChannelIcon name={column.name} className="h-5 w-5 shrink-0" style={{ color: iconColor }} />
         {editing ? (
           <input
             autoFocus
@@ -96,24 +96,17 @@ export function BoardColumn({
               else if (e.key === 'Escape') { setDraft(column.name); setEditing(false); }
             }}
             aria-label="Kanalname"
-            className="min-w-0 flex-1 rounded bg-white/25 px-1 py-0.5 text-[14.5px] font-bold tracking-tight outline-none placeholder:text-white/60"
+            className="min-w-0 flex-1 rounded bg-white/25 px-1 py-0.5 text-[14.5px] font-semibold tracking-tight outline-none placeholder:text-white/60"
             style={{ color: nameColor }}
           />
         ) : (
           <span
-            className="min-w-0 flex-1 truncate text-[14.5px] font-bold tracking-tight"
+            className="min-w-0 flex-1 truncate text-[14.5px] font-semibold tracking-tight"
             style={{ color: nameColor }}
           >
             {column.name}
           </span>
         )}
-        <span
-          className="rounded-full bg-white/22 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-white"
-          style={{ backgroundColor: 'rgba(255,255,255,.22)' }}
-        >
-          {cards.length}
-        </span>
-
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
@@ -204,6 +197,14 @@ export function BoardColumn({
         >
           <Plus className="h-[15px] w-[15px]" />
         </button>
+
+        {/* Zähler ganz rechts außen (User-Wunsch), hinter „…" und „+". */}
+        <span
+          className="shrink-0 rounded-full px-1.5 py-0.5 font-mono text-[11px] font-semibold text-white"
+          style={{ backgroundColor: 'rgba(255,255,255,.22)' }}
+        >
+          {cards.length}
+        </span>
       </div>
 
       {/* Body — neutrale, leicht eingesenkte Mulde (Board-Tiefe A). Der
