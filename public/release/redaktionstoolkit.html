@@ -1071,18 +1071,49 @@
       </div>
     </div>
 
-    <div class="subhead reveal">Kalenderansicht</div>
+    <style>
+      .calb-hd,.calb-row{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}
+      .calb-hd{margin-bottom:2px;} .calb-row{margin-top:2px;}
+      .calb-hd span{font-family:var(--mono);font-size:8px;text-transform:uppercase;color:#b0b0b0;padding:0 2px;}
+      .calb-row .cbx{min-height:58px;border:1px solid #e3e3e3;background:#fff;padding:3px;}
+      .calb-row .cbx.out{background:#f5f5f5;}
+      .calb-row .cbx i{font-family:var(--mono);font-size:8.5px;color:#9a9a9a;font-style:normal;}
+      .calb-row .cbx .genx{display:block;margin-top:3px;background:#5b8def;color:#fff;font-size:7.5px;font-weight:600;padding:1px 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+      .calm{display:flex;flex-direction:column;gap:3px;}
+      .calm .hd{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+      .calm .hd span{font-family:var(--mono);font-size:8px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-400);padding:0 3px;}
+      .calm .wk{position:relative;}
+      .calm .cells{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+      .calm .cells>div{min-height:64px;border:1px solid var(--line);border-radius:5px;background:var(--surface);padding:3px 4px;}
+      .calm .cells>div.out{opacity:.4;}
+      .calm .cells .dn{font-family:var(--mono);font-size:8.5px;color:var(--ink-400);}
+      .calm .evl{position:absolute;inset:0;display:grid;grid-template-columns:repeat(7,1fr);gap:3px;grid-auto-rows:16px;align-content:start;padding:20px 0 0;pointer-events:none;}
+      .calm .evl>span{margin:0 2px;border-radius:4px;font-size:8px;font-weight:600;height:15px;line-height:15px;padding:0 6px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;display:flex;align-items:center;}
+      .calm .evl .hi{background:#eaf1ff;color:#1e3a8a;box-shadow:inset 3px 0 #2563eb;}
+      .calm .evl .mid{background:#fdeee3;color:#c2410c;box-shadow:inset 3px 0 #ea580c;}
+      .calm .evl .sc{margin-left:auto;padding-left:6px;opacity:.7;font-size:7.5px;font-weight:600;}
+      @media (prefers-color-scheme:dark){ .calb-row .cbx{background:#f0f0f0;} }
+    </style>
+    <div class="subhead reveal">Kalenderansicht · mehrtägige Veranstaltungen</div>
     <div class="ba screens reveal">
       <div class="ba-col before">
         <div class="cap">Vorher<span class="pill">Kalender-Standard</span></div>
         <div class="stage mock-stock">
-          <div class="cal">
-            <div class="wd">Mo</div><div class="wd">Di</div><div class="wd">Mi</div><div class="wd">Do</div><div class="wd">Fr</div><div class="wd">Sa</div><div class="wd">So</div>
-            <div class="cell"><div class="dn">30</div></div><div class="cell"><div class="dn">1</div></div><div class="cell"><div class="dn">2</div></div><div class="cell"><div class="dn">3</div></div><div class="cell"><div class="dn">4</div><div class="ev">Preisverleihung</div></div><div class="cell"><div class="dn">5</div></div><div class="cell"><div class="dn">6</div></div>
-            <div class="cell"><div class="dn">7</div></div><div class="cell"><div class="dn">8</div></div><div class="cell"><div class="dn">9</div></div><div class="cell"><div class="dn">10</div><div class="ev">Symposium</div></div><div class="cell"><div class="dn">11</div></div><div class="cell"><div class="dn">12</div></div><div class="cell"><div class="dn">13</div></div>
-            <div class="cell"><div class="dn">14</div></div><div class="cell"><div class="dn">15</div></div><div class="cell"><div class="dn">16</div><div class="ev">Vortrag</div></div><div class="cell"><div class="dn">17</div></div><div class="cell"><div class="dn">18</div></div><div class="cell"><div class="dn">19</div></div><div class="cell"><div class="dn">20</div></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <span style="font-weight:700;font-size:12px;color:#333;">Juli 2026</span>
+            <span style="font-family:var(--mono);font-size:9px;color:#b0b0b0;">‹&nbsp;&nbsp;heute&nbsp;&nbsp;›</span>
           </div>
-          <p style="font-size:12px;color:#8a8a8a;margin:11px 2px 0;line-height:1.5;">Monochrome Blöcke, kein Relevanz-Signal, Fremd-Optik.</p>
+          <div class="calb-hd"><span>Mo</span><span>Di</span><span>Mi</span><span>Do</span><span>Fr</span><span>Sa</span><span>So</span></div>
+          <div class="calb-row">
+            <div class="cbx out"><i>30</i></div><div class="cbx"><i>1</i></div><div class="cbx"><i>2</i></div><div class="cbx"><i>3</i></div><div class="cbx"><i>4</i><b class="genx">Preisverleihung</b></div><div class="cbx"><i>5</i></div><div class="cbx"><i>6</i></div>
+          </div>
+          <div class="calb-row">
+            <div class="cbx"><i>7</i></div><div class="cbx"><i>8</i><b class="genx">Konferenz</b></div><div class="cbx"><i>9</i><b class="genx">Konferenz</b></div><div class="cbx"><i>10</i><b class="genx">Konferenz</b></div><div class="cbx"><i>11</i></div><div class="cbx"><i>12</i></div><div class="cbx"><i>13</i></div>
+          </div>
+          <div class="calb-row">
+            <div class="cbx"><i>14</i><b class="genx">Ausstellung</b></div><div class="cbx"><i>15</i><b class="genx">Ausstellung</b></div><div class="cbx"><i>16</i><b class="genx">Ausstellung</b></div><div class="cbx"><i>17</i></div><div class="cbx"><i>18</i></div><div class="cbx"><i>19</i></div><div class="cbx"><i>20</i></div>
+          </div>
+          <p style="font-size:12px;color:#8a8a8a;margin:11px 2px 0;line-height:1.5;">Alles gleich blau, keine Relevanz, keine Entscheidung — und mehrtägige Termine als Block je Tag <b style="color:#666;">wiederholt</b>.</p>
         </div>
       </div>
       <div class="ba-col after">
@@ -1093,13 +1124,23 @@
             <span class="lg"><span class="sw2" style="background:#e88a2a;"></span>Mittel</span>
             <span class="lg"><span class="sw2" style="background:#dc2626;"></span>Niedrig</span>
           </div>
-          <div class="cal">
-            <div class="wd">Mo</div><div class="wd">Di</div><div class="wd">Mi</div><div class="wd">Do</div><div class="wd">Fr</div><div class="wd">Sa</div><div class="wd">So</div>
-            <div class="cell out"><div class="dn">30</div></div><div class="cell"><div class="dn">1</div></div><div class="cell"><div class="dn">2</div></div><div class="cell"><div class="dn">3</div></div><div class="cell"><div class="dn">4</div><div class="ev" style="background:#eaf1ff;color:#1e3a8a;border-left:2px solid #2563eb;">Preisverleihung 88% ✓</div></div><div class="cell"><div class="dn">5</div></div><div class="cell"><div class="dn">6</div></div>
-            <div class="cell"><div class="dn">7</div></div><div class="cell"><div class="dn">8</div></div><div class="cell"><div class="dn">9</div></div><div class="cell"><div class="dn">10</div><div class="ev" style="background:#eaf1ff;color:#1e3a8a;border-left:2px solid #2563eb;">Symposium 82%</div></div><div class="cell"><div class="dn">11</div></div><div class="cell"><div class="dn">12</div></div><div class="cell"><div class="dn">13</div></div>
-            <div class="cell"><div class="dn">14</div></div><div class="cell"><div class="dn">15</div></div><div class="cell"><div class="dn">16</div><div class="ev" style="background:#eaf1ff;color:#1e3a8a;border-left:2px solid #2563eb;">Vortrag 74%</div></div><div class="cell"><div class="dn">17</div></div><div class="cell"><div class="dn">18</div></div><div class="cell"><div class="dn">19</div></div><div class="cell"><div class="dn">20</div></div>
+          <div class="calm">
+            <div class="hd"><span>Mo</span><span>Di</span><span>Mi</span><span>Do</span><span>Fr</span><span>Sa</span><span>So</span></div>
+            <div class="wk">
+              <div class="cells"><div class="out"><span class="dn">30</span></div><div><span class="dn">1</span></div><div><span class="dn">2</span></div><div><span class="dn">3</span></div><div><span class="dn">4</span></div><div><span class="dn">5</span></div><div><span class="dn">6</span></div></div>
+              <div class="evl"><span class="hi" style="grid-column:5;">Preisverleihung<span class="sc">88% ✓</span></span></div>
+            </div>
+            <div class="wk">
+              <div class="cells"><div><span class="dn">7</span></div><div><span class="dn">8</span></div><div><span class="dn">9</span></div><div><span class="dn">10</span></div><div><span class="dn">11</span></div><div><span class="dn">12</span></div><div><span class="dn">13</span></div></div>
+              <div class="evl"><span class="hi" style="grid-column:2 / 5;">Konferenz: Quantentechnologie<span class="sc">82%</span></span><span class="hi" style="grid-column:5;">Vortrag<span class="sc">74%</span></span></div>
+            </div>
+            <div class="wk">
+              <div class="cells"><div><span class="dn">14</span></div><div><span class="dn">15</span></div><div><span class="dn">16</span></div><div><span class="dn">17</span></div><div><span class="dn">18</span></div><div><span class="dn">19</span></div><div><span class="dn">20</span></div></div>
+              <div class="evl"><span class="mid" style="grid-column:1 / 8;">Ausstellung: Die Akademie 1847<span class="sc">läuft</span></span><span class="mid" style="grid-column:3;">Workshop<span class="sc">65%</span></span></div>
+            </div>
           </div>
-          <div style="font-family:var(--mono);font-size:9.5px;color:var(--ink-500);margin-top:9px;"><b style="color:var(--ink-700);">5 Events</b> · 3 hochrelevant · 3 offen</div>
+          <p style="font-size:12px;color:var(--ink-500);margin:11px 2px 0;line-height:1.5;">Score wird zur Balkenfarbe, die Entscheidung zum Symbol — und <b style="color:var(--ink-700);">mehrtägige Veranstaltungen laufen als ein durchgehender Balken</b> über die Tage.</p>
+          <div style="font-family:var(--mono);font-size:9.5px;color:var(--ink-500);margin-top:10px;"><b style="color:var(--ink-700);">6 Events</b> · 2 mehrtägig · 3 hochrelevant</div>
         </div>
       </div>
     </div>
