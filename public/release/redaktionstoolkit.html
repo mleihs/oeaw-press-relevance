@@ -406,6 +406,7 @@
       <a href="#publikationen">Publikationen</a>
       <a href="#veranstaltungen">Veranstaltungen</a>
       <a href="#dashboard">Dashboard</a>
+      <a href="#social">Social Media</a>
       <a href="#mobile">Mobile</a>
       <a href="#infrastruktur">Infrastruktur</a>
       <a href="#sicherheit">Sicherheit</a>
@@ -490,6 +491,8 @@
           <li><span class="b">›</span>Umzug der Datenbank auf ein selbst-gehostetes Supabase</li>
           <li><span class="b">›</span>Weg vom Cloud-Free-Tier (500-MB-Grenze, gedeckelter Egress)</li>
           <li><span class="b">›</span>Konsolidiert mit dem eigenen Bild-Speicher auf demselben Server</li>
+          <li><span class="b">›</span>Social Media neu nach Design-Mock, inkl. neuem Aktualisierungs-Modell</li>
+          <li><span class="b">›</span>Profilbilder aus MeisterTask für das ganze Team übernommen</li>
         </ul>
       </div>
     </div>
@@ -915,6 +918,10 @@
   /* ---- Screen before/after mocks ------------------------------------- */
   .scap { font-size:13.5px; color:var(--ink-500); margin:0 0 14px; max-width:64ch; }
   .ba.screens .stage { padding:16px; }
+  /* echte Screenshots (Social-Redesign): randlos in der Stage, oben bündig */
+  .ba-col .stage.shotstage { padding:0; display:flex; align-items:flex-start; justify-content:center; background:var(--fill-2); }
+  .shot { display:block; width:100%; height:auto; }
+  .shot.phone { max-width:300px; margin:18px auto; border-radius:16px; border:1px solid var(--line); box-shadow:var(--e1); }
   .subhead { font-family:var(--mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-400); margin:34px 0 12px; display:flex; align-items:center; gap:9px; }
   .subhead::before { content:""; width:16px; height:1px; background:var(--line-strong); }
 
@@ -1203,11 +1210,95 @@
   </div>
 </section>
 
-<!-- ============================ MOBILE ============================ -->
-<section class="band" id="mobile">
+<!-- ============================ SOCIAL MEDIA ============================ -->
+<section class="band" id="social">
   <div class="wrap">
     <div class="section-head reveal">
-      <div class="eyebrow"><span class="dot"></span>07 · Mobile Native-Shell</div>
+      <div class="eyebrow"><span class="dot"></span>07 · Social Media</div>
+      <h2>Das Lagebild der ÖAW-Kanäle — neu gebaut.</h2>
+      <p>Der Social-Media-Bereich wurde vollständig nach dem Design-Mock neu aufgebaut
+        (Session vom 6. Juli): Kennzahlen mit Interaktions-Summe, farbige Themen-Chips,
+        immer offene Themen- und Kanal-Gruppen mit Top-Post-Markierung — und ein neues
+        Aktualisierungs-Modell mit animiertem Drei-Phasen-Ablauf. Erstmals mit echten
+        Vorher/Nachher-Screenshots statt Nachbauten.</p>
+    </div>
+
+    <div class="subhead reveal">Desktop · Übersicht</div>
+    <div class="ba screens reveal">
+      <div class="ba-col before">
+        <div class="cap">Vorher<span class="pill">Accordion + Tabs</span></div>
+        <div class="stage shotstage">
+          <img class="shot" src="img/social-vorher-desktop.png" alt="Social-Media-Seite vor dem Umbau: graue KPI-Kacheln, Themen als Textzeile, Accordion-Listen" loading="lazy" decoding="async">
+        </div>
+      </div>
+      <div class="ba-col after">
+        <div class="cap">Nachher<span class="pill">Design-Mock umgesetzt</span></div>
+        <div class="stage shotstage">
+          <img class="shot" src="img/social-nachher-desktop.png" alt="Social-Media-Seite nach dem Umbau: Interaktions-KPI, farbige Themen-Chips, segmentierte Toolbar, offene Gruppen-Karten" loading="lazy" decoding="async">
+        </div>
+      </div>
+    </div>
+
+    <div class="subhead reveal">Aktualisieren · neues Modell</div>
+    <div class="ba screens reveal">
+      <div class="ba-col before">
+        <div class="cap">Vorher<span class="pill">Standard-Dialog</span></div>
+        <div class="stage shotstage">
+          <img class="shot" src="img/social-vorher-modal.png" alt="Alter Aktualisieren-Dialog: schlichter weißer Dialog mit Modell-Liste" loading="lazy" decoding="async">
+        </div>
+      </div>
+      <div class="ba-col after">
+        <div class="cap">Nachher<span class="pill">Getinteter Kopf + Stepper</span></div>
+        <div class="stage shotstage">
+          <img class="shot" src="img/social-nachher-modal.png" alt="Neuer Aktualisieren-Dialog: getinteter Kopf mit Instagram-Quadrat, Modell-Liste, Start-Button; im Lauf animierter Drei-Phasen-Stepper mit Live-Metriken" loading="lazy" decoding="async">
+        </div>
+      </div>
+    </div>
+
+    <div class="subhead reveal">Mobil · Übersicht &amp; Bottom-Sheet</div>
+    <div class="ba screens reveal">
+      <div class="ba-col before">
+        <div class="cap">Vorher<span class="pill">Desktop verkleinert</span></div>
+        <div class="stage shotstage" style="gap:14px;">
+          <img class="shot phone" src="img/social-vorher-mobil.png" alt="Mobile Ansicht vor dem Umbau" loading="lazy" decoding="async">
+          <img class="shot phone" src="img/social-vorher-mobil-modal.png" alt="Aktualisieren-Dialog mobil vor dem Umbau" loading="lazy" decoding="async">
+        </div>
+      </div>
+      <div class="ba-col after">
+        <div class="cap">Nachher<span class="pill">2er-KPI-Raster + Sheet</span></div>
+        <div class="stage shotstage" style="gap:14px;">
+          <img class="shot phone" src="img/social-nachher-mobil.png" alt="Mobile Ansicht nach dem Umbau: zweispaltiges KPI-Raster, scrollbare Themen-Chips, einspaltige Post-Karten" loading="lazy" decoding="async">
+          <img class="shot phone" src="img/social-nachher-mobil-modal.png" alt="Aktualisieren mobil nach dem Umbau: Bottom-Sheet mit rundem Kopf" loading="lazy" decoding="async">
+        </div>
+      </div>
+    </div>
+
+    <div class="grid g3 reveal" style="margin-top:40px;">
+      <div class="card">
+        <h3>Themen &amp; Kanäle als offene Gruppen</h3>
+        <p>Statt Accordion: immer sichtbare Gruppen-Karten mit Themen-Zähler bzw.
+          Kanal-Avatar, Drei-Spalten-Post-Raster und „Ältere anzeigen".</p>
+      </div>
+      <div class="card">
+        <h3>Top-Post &amp; kategoriale Akzente</h3>
+        <p>Die interaktionsstärksten Posts tragen ein Flame-Badge; Themen und Kanäle
+          bekommen stabile Akzentfarben, die Chips, Badges und Kanal-Punkte teilen.</p>
+      </div>
+      <div class="card">
+        <h3>Aktualisieren mit Belohnungsmoment</h3>
+        <p>Drei Phasen — Posts laden, Themen analysieren, Lagebild erstellen — als
+          animierter Stepper mit füllenden Verbindungslinien, Live-Metriken und
+          Kosten. Mobil als Bottom-Sheet.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ MOBILE ============================ -->
+<section class="band alt" id="mobile">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <div class="eyebrow"><span class="dot"></span>08 · Mobile Native-Shell</div>
       <h2>Das ganze Toolkit — jetzt am Handy wie eine App.</h2>
       <p>In sechs Ebenen (M1–M6) bekam das Toolkit eine native App-Anmutung: eine
         Bottom-Tab-Leiste, pro Screen ein eigener App-Header und Detailansichten, die als
@@ -1317,10 +1408,10 @@
   .mock-oeaw .speclist li { color:var(--ink-700); }
   .mock-oeaw .speclist li .ck { color:var(--ok); flex:none; margin-top:1px; }
 </style>
-<section class="band alt" id="infrastruktur">
+<section class="band" id="infrastruktur">
   <div class="wrap">
     <div class="section-head reveal">
-      <div class="eyebrow"><span class="dot"></span>08 · Infrastruktur</div>
+      <div class="eyebrow"><span class="dot"></span>09 · Infrastruktur</div>
       <h2>Die Daten ziehen auf den eigenen Server.</h2>
       <p>Am Montag kam der Unterbau dran — angestoßen durch das Traffic-Limit des
         Cloud-Tarifs, das die Anmeldung lahmgelegt hatte. Die Datenbank zieht auf eine
@@ -1391,10 +1482,10 @@
 </section>
 
 <!-- ============================ SICHERHEIT ============================ -->
-<section class="band" id="sicherheit">
+<section class="band alt" id="sicherheit">
   <div class="wrap">
     <div class="section-head reveal">
-      <div class="eyebrow"><span class="dot"></span>09 · Identität &amp; Sicherheit</div>
+      <div class="eyebrow"><span class="dot"></span>10 · Identität &amp; Sicherheit</div>
       <h2>Wer was macht — jetzt nachvollziehbar.</h2>
     </div>
     <div class="grid g2 reveal">
