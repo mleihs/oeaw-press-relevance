@@ -614,3 +614,12 @@
   from { transform: translateY(-12px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
+
+/* ===== Full-bleed-Ausbruch aus dem zentrierten max-w-7xl-<main> =====
+   Fürs Board-Detail (volle Bildschirmbreite wie MeisterTask): trägt eine
+   Seite die Marker-Klasse .full-bleed, hebt :has() die max-width des
+   globalen <main> auf. Kein 100vw-Margin-Trick — der koppelt Breite und
+   Scrollbar zu einer Layout-Schwingung. */
+main:has(.full-bleed) {
+  max-width: none;
+}

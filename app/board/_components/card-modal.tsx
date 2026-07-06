@@ -302,12 +302,14 @@ export function CardModal({
                 </div>
               )}
 
-              {/* Body — abgeschlossen: gedimmt + inaktiv (Design), „Wieder
-                  öffnen" im Kopf hebt das wieder auf. */}
+              {/* Body — abgeschlossen: gedimmt (Design). Bewusst OHNE
+                  pointer-events-none: das tötete auch Scrollen/Textauswahl
+                  langer Inhalte (Review-Fund) — lesen bleibt möglich,
+                  „Wieder öffnen" im Kopf hebt die Dämpfung auf. */}
               <div
                 className={cn(
                   'flex min-h-0 flex-1 flex-col transition-[opacity,filter] duration-300 md:flex-row',
-                  card.completed_at && 'pointer-events-none opacity-50 grayscale-[.25]',
+                  card.completed_at && 'opacity-60 grayscale-[.25]',
                 )}
               >
                 <div className="flex-1 overflow-y-auto p-6">
@@ -400,10 +402,13 @@ function CompleterLine({ card, byId }: { card: CardDetail; byId: Map<string, Boa
   const completedEntry = [...card.activity]
     .reverse()
     .find((a) => a.verb === 'completed');
-  const completer =
-    byId.get(completedEntry?.actor_id ?? '') ??
-    byId.get(card.assignee_id ?? '') ??
-    byId.get(card.created_by);
+  // Gibt es einen Log-Eintrag, zählt NUR dessen Akteur — der Fallback auf
+  // Zuständige:n/Ersteller:in würde sonst die falsche Person als
+  // abschließend ausweisen (z. B. gelöschtes Konto). Fallback nur für
+  // Alt-Karten, die vor dem Aktivitätslog abgeschlossen wurden.
+  const completer = completedEntry
+    ? byId.get(completedEntry.actor_id)
+    : (byId.get(card.assignee_id ?? '') ?? byId.get(card.created_by));
   if (!completer) return null;
   return (
     <div className="mt-0.5 flex items-center gap-1.5 text-xs text-emerald-600">
@@ -1093,7 +1098,10 @@ function Sidebar({
                   <Plus className="h-3.5 w-3.5" /> Beobachter
                 </span>
               </SelectTrigger>
-              <SelectContent>
+              {/* position="popper" zwingend: der item-aligned-Default braucht
+                  einen AUSGEWÄHLTEN Wert für die Positionierung — mit value=""
+                  landete die Liste unpositioniert oben links (User-Report). */}
+              <SelectContent position="popper">
                 {notWatching.map((m) => (
                   <SelectItem key={m.id} value={m.id}>
                     {displayNameOf(m)}

@@ -82,13 +82,16 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
     if (mode === 'signin') emailRef.current?.focus();
   }, [mode]);
 
-  /** Nach erfolgreichem Auth: Session-Marker setzen und weiterleiten. Beim
-   *  Gate ohne Deep-Link rendert das AUTH_SUCCESS_EVENT die App in place
-   *  (Store-Subscription in password-gate.tsx); /login navigiert immer. */
-  function finishAuth() {
+  /** Nach erfolgreichem Auth: Session-Marker setzen und weiterleiten.
+   *  `identity: true` (persönlicher Login) navigiert IMMER voll — die Seite
+   *  wurde ohne Session serverseitig gerendert, erst ein frischer
+   *  RSC-Request zeigt session-abhängige Inhalte (z. B. die Board-Kachel).
+   *  Nur der Übergangszugang am Gate deckt in place auf
+   *  (AUTH_SUCCESS_EVENT → Store-Subscription in password-gate.tsx). */
+  function finishAuth(identity: boolean) {
     sessionStorage.setItem(AUTH_STORAGE_KEY, '1');
     const next = safeNextPath();
-    if (variant === 'login') {
+    if (identity || variant === 'login') {
       // Volle Navigation statt router.replace: die Ziel-RSC soll mit der
       // frischen Session rendern (nextjs16_client_nav_regression).
       window.location.assign(next ?? '/');
@@ -125,7 +128,7 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
         return;
       }
       queryClient.setQueryData<CurrentUser | null>(QK.currentUser, body.user ?? null);
-      finishAuth();
+      finishAuth(true);
     } catch {
       setError('Anmeldung fehlgeschlagen. Bitte erneut versuchen.');
       setErrNonce((n) => n + 1);
@@ -156,7 +159,7 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
         setGatePw('');
         return;
       }
-      finishAuth();
+      finishAuth(false);
     } catch {
       setGateError('Anmeldung fehlgeschlagen. Bitte erneut versuchen.');
       setGateNonce((n) => n + 1);

@@ -67,6 +67,13 @@ export function activityPhrase(a: CardActivityEntry): string {
       return 'hat die Zuständigkeit gesetzt';
     case 'assignee_cleared':
       return 'hat die Zuständigkeit entfernt';
+    case 'item_added': {
+      const kind = a.payload.kind;
+      if (kind === 'subtask') {
+        return text ? `hat die Unteraufgabe „${text}" angelegt` : 'hat eine Unteraufgabe angelegt';
+      }
+      return text ? `hat „${text}" zur Checkliste hinzugefügt` : 'hat einen Checklisten-Eintrag hinzugefügt';
+    }
     case 'item_checked':
       return text ? `hat „${text}" abgehakt` : 'hat einen Eintrag abgehakt';
     case 'item_unchecked':

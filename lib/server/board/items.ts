@@ -32,7 +32,7 @@ async function loadItem(itemId: string): Promise<CardItem> {
   return cardItemFromRow(rows[0]);
 }
 
-export async function addItem(payload: ItemCreatePayload): Promise<CardItem> {
+export async function addItem(userId: string, payload: ItemCreatePayload): Promise<CardItem> {
   const [card] = await db
     .select({ id: cards.id })
     .from(cards)
@@ -52,6 +52,13 @@ export async function addItem(payload: ItemCreatePayload): Promise<CardItem> {
       })
       .returning();
     return row;
+  });
+  // MeisterTask loggt auch das Anlegen von Einträgen — ohne item_added fehlte
+  // im Strang, WER die Checkliste aufgebaut hat (User-Report 2026-07-06).
+  await writeActivity(payload.card_id, userId, 'item_added', {
+    item_id: inserted.id,
+    text: payload.text,
+    kind: payload.kind,
   });
   return loadItem(inserted.id);
 }

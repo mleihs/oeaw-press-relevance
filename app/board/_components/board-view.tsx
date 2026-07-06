@@ -167,6 +167,12 @@ export function BoardView({
       if (card.column_id === overId) {
         const list = cardsByColumn.get(overId) ?? [];
         if (list[list.length - 1]?.id === cardId) return; // schon letzte
+        // Innerhalb derselben Spalte MUSS der Move positioniert sein
+        // (beforeId = letzte andere Karte), sonst ist er serverseitig ein
+        // same-column-no-op und die optimistische Bewegung schnappt zurück.
+        const lastOther = list.filter((c) => c.id !== cardId).at(-1);
+        move.mutate({ cardId, columnId: overId, beforeId: lastOther?.id ?? null, afterId: null });
+        return;
       }
       move.mutate({ cardId, columnId: overId, beforeId: null, afterId: null });
       return;
@@ -358,7 +364,11 @@ export function BoardView({
         <div className="mt-3 flex gap-3">
           <div
             data-board-appearance={appearance}
-            className="board-texture flex flex-1 gap-3.5 overflow-x-auto rounded-lg pb-2"
+            // Spalten auf Fensterhöhe deckeln: NICHT die Seite scrollt,
+            // sondern jede Spalte für sich (MeisterTask-Verhalten; die
+            // Kanalköpfe bleiben so immer sichtbar). 210px ≈ Top-Nav +
+            // Board-Kopf + Filterleiste + Außenabstände.
+            className="board-texture flex h-[calc(100dvh-210px)] min-h-[420px] flex-1 gap-3.5 overflow-x-auto rounded-lg pb-2"
           >
             {board.columns.length === 0 ? (
               <EmptyBoardHint isAdmin={isAdmin} />

@@ -36,17 +36,16 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   const topPubsLimit = parseTopPubsLimit(sp.topPubs);
   const sortBy = parseSortBy(sp.sortBy);
 
-  const [data, socialData] = await Promise.all([
-    getDashboardData(period, topPubsLimit, sortBy),
-    getSocialDashboardData(),
-  ]);
-
   // Board-Kachel nur für angemeldete Nutzer (Board ist auth-gated). Bewusst
   // NICHT in getDashboardData: das Gate hängt an getCurrentUser() (liest
   // Cookies → im unstable_cache-Wrapper von getDashboardData nicht erlaubt) und
-  // die Karten sollen pro Request frisch sein.
-  const user = await getCurrentUser();
-  const boardCards = user ? await getBoardDashboardCards() : null;
+  // die Karten sollen pro Request frisch sein. Der Zweig läuft parallel zu
+  // den Aggregaten (unabhängig — sequenziell kostete er nur Latenz).
+  const [data, socialData, boardCards] = await Promise.all([
+    getDashboardData(period, topPubsLimit, sortBy),
+    getSocialDashboardData(),
+    getCurrentUser().then((user) => (user ? getBoardDashboardCards() : null)),
+  ]);
 
   return (
     <DashboardClient

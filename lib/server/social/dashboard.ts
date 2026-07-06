@@ -5,6 +5,7 @@
 // Apify-/LLM-Aufruf, der Dashboard-Besuch kostet nichts.
 
 import 'server-only';
+import { unstable_cache } from 'next/cache';
 import { getEnv } from '@/lib/server/env';
 import {
   getLatestThemeSnapshot,
@@ -81,14 +82,26 @@ function sparkline(posts: SocialPost[], windowStart: number, windowMs: number): 
 }
 
 /** null, wenn es noch keinen Themen-Snapshot oder keine Posts gibt — die
- *  Dashboard-Karte blendet sich dann aus. */
-export async function getSocialDashboardData(): Promise<SocialDashboardData | null> {
+ *  Dashboard-Karte blendet sich dann aus. Param-unabhängig und nur durch
+ *  einen Social-Refresh veränderlich → 60 s gecacht (Muster wie die
+ *  Aggregat-Reader in lib/server/dashboard/fetch.ts); ohne Cache liefe die
+ *  Kanal+Posts-Abfrage bei jedem Dashboard-Hit, auch anonym auf `/`. */
+export const getSocialDashboardData = unstable_cache(
+  computeSocialDashboardData,
+  ['dashboard-social'],
+  { revalidate: 60 },
+);
+
+async function computeSocialDashboardData(): Promise<SocialDashboardData | null> {
   const env = getEnv();
-  const [snapshot, channels] = await Promise.all([
-    getLatestThemeSnapshot(),
-    listChannelsWithRecentPosts(env.SOCIAL_WINDOW_DAYS),
-  ]);
+  const snapshot = await getLatestThemeSnapshot();
   if (!snapshot) return null;
+  // Pool im Fenster des SNAPSHOTS laden, nicht im globalen Default — sonst
+  // zählen bei abweichender Konfiguration Posts außerhalb des Snapshot-
+  // Fensters in Momentum/Sparkline hinein (alles im ältesten Bucket).
+  const channels = await listChannelsWithRecentPosts(
+    snapshot.window_days || env.SOCIAL_WINDOW_DAYS,
+  );
 
   const allPosts = channels.flatMap((c) => c.posts);
   // Wie auf /social: Snapshot-referenzierte Posts außerhalb der Kanal-Kappung
