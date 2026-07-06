@@ -1,14 +1,17 @@
+import 'server-only';
 import { publicationsRepo } from '@/lib/server/repos/publications';
 import type { Publication } from '@/lib/shared/types';
 import type { DecisionPayload } from '@/lib/shared/schemas';
-import { pushPublicationToMeistertask } from '@/lib/server/meistertask/push';
-import type { MeistertaskPushResult } from '@/lib/shared/meistertask-types';
+import {
+  runDecisionSideEffects,
+  type DecisionSideEffectResults,
+} from './decision-side-effects';
 import { PublicationNotFoundError } from './errors';
 import { publicationToApi } from './to-api';
 
 export interface DecisionResult {
   publication: Publication;
-  meistertask: MeistertaskPushResult | null;
+  meistertask: DecisionSideEffectResults['meistertask'];
 }
 
 /**
@@ -22,9 +25,11 @@ export interface DecisionResult {
  * - `decided_at` is auto-managed by trg_publications_decided_at_sync;
  *   never set from app code. Drizzle's `.returning()` sees post-trigger
  *   state (same transaction).
- * - `pitch` triggers a one-way MeisterTask push. The push is idempotent
- *   and fail-soft: MT errors don't roll back the decision write, the
- *   caller surfaces `meistertask.status` to the UI.
+ * - post-write side effects (e.g. the one-way MeisterTask push on `pitch`)
+ *   run via runDecisionSideEffects — registered in decision-side-effects.ts,
+ *   never wired into this core. They are fail-soft: an integration error
+ *   doesn't roll back the decision write, the caller surfaces the returned
+ *   status to the UI.
  */
 export async function applyDecision(
   payload: DecisionPayload,
@@ -53,10 +58,14 @@ export async function applyDecision(
     throw new PublicationNotFoundError();
   }
 
-  const meistertask =
-    payload.decision === 'pitch'
-      ? await pushPublicationToMeistertask(pubId, opts.appBaseUrl)
-      : null;
+  const sideEffects = await runDecisionSideEffects({
+    pubId,
+    decision: payload.decision,
+    appBaseUrl: opts.appBaseUrl,
+  });
 
-  return { publication: publicationToApi(updated), meistertask };
+  return {
+    publication: publicationToApi(updated),
+    meistertask: sideEffects.meistertask,
+  };
 }

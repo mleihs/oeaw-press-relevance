@@ -1,6 +1,7 @@
 // Domänenfehler des Boards. Die Routen mappen sie auf HTTP-Status (404/409);
 // alles andere fällt über withApiError auf 500.
 
+import 'server-only';
 export class BoardNotFoundError extends Error {
   constructor(message = 'Board nicht gefunden.') {
     super(message);

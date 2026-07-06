@@ -4,24 +4,13 @@ import { db, events as eventsTable } from '@/lib/server/db';
 import { ascNullsLast, descNullsLast } from '@/lib/server/db/sort';
 import { eventListColumns, eventListRowToApi } from './to-api';
 import { SCORE_BAND_HIGH, SCORE_BAND_MID } from '@/lib/shared/constants';
-import type { EventsBand } from '@/lib/shared/events-filter';
+import {
+  DEFAULT_EVENTS_SORT,
+  type EventsBand,
+  type EventsSortSpec,
+  type EventsTab,
+} from '@/lib/shared/events-filter';
 import type { Event } from '@/lib/shared/types';
-
-export const EVENTS_TAB_VALUES = [
-  'upcoming',
-  'undecided',
-  'pitch',
-  'hold',
-  'skip',
-] as const;
-export type EventsTab = (typeof EVENTS_TAB_VALUES)[number];
-
-export function isEventsTab(v: unknown): v is EventsTab {
-  return (
-    typeof v === 'string' &&
-    (EVENTS_TAB_VALUES as readonly string[]).includes(v)
-  );
-}
 
 /** Derived institute label for events that live in the news folder of the
  *  ÖAW main site (vs. an institute / cluster / project folder). The typo3-events
@@ -236,24 +225,6 @@ export interface EventsListResult {
 /** Sortable list columns. `date` is the default (chronological agenda); `score`
  *  lets the press team surface the most relevant events first. Whitelisted so a
  *  bad `?sort=` query param can't reach the order-by. */
-export const EVENTS_SORT_VALUES = ['date', 'score'] as const;
-export type EventsSort = (typeof EVENTS_SORT_VALUES)[number];
-export type EventsSortOrder = 'asc' | 'desc';
-
-export function isEventsSort(v: unknown): v is EventsSort {
-  return (
-    typeof v === 'string' &&
-    (EVENTS_SORT_VALUES as readonly string[]).includes(v)
-  );
-}
-
-export interface EventsSortSpec {
-  by: EventsSort;
-  order: EventsSortOrder;
-}
-
-export const DEFAULT_EVENTS_SORT: EventsSortSpec = { by: 'date', order: 'asc' };
-
 export async function listEvents(
   filter: SQL,
   sort: EventsSortSpec = DEFAULT_EVENTS_SORT,

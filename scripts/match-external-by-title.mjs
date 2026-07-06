@@ -41,7 +41,10 @@ const until = val('--until');
 const statuses = (val('--status', 'failed,partial')).split(',').map((s) => s.trim()).filter(Boolean);
 const sources = (val('--source', 'crossref,openalex')).split(',').map((s) => s.trim());
 const max = Number(val('--max', 'Infinity'));
-const MAILTO = 'matthias.leihs@gmail.com';
+// Contact mail for the Crossref/OpenAlex polite pool. Override via
+// API_CONTACT_EMAIL; the fallback is a neutral project address (never a
+// personal inbox — this file ships in the repo).
+const MAILTO = process.env.API_CONTACT_EMAIL || 'admin@oeaw.ac.at';
 const UA = `oeaw-press-relevance/1.0 (mailto:${MAILTO})`;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

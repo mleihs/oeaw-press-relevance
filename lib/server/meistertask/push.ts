@@ -3,6 +3,7 @@
 // decision lands) call into this. Centralising avoids self-fetch overhead
 // and keeps the dedup-write race-safe in one place.
 
+import 'server-only';
 import { and, eq, isNull } from 'drizzle-orm';
 import { db, publications } from '@/lib/server/db';
 import {

@@ -1,3 +1,4 @@
+import 'server-only';
 import sanitizeHtml from 'sanitize-html';
 import {
   ANCHOR_ALLOWED_SCHEMES,

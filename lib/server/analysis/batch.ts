@@ -1,3 +1,4 @@
+import 'server-only';
 import { and, eq, gte, inArray } from 'drizzle-orm';
 import { db, publications, descNullsLast } from '@/lib/server/db';
 import { analyzePublications } from './analyze';

@@ -3,6 +3,7 @@
 // can't carry arbitrary named exports. (Path classification + the cookie name
 // live in lib/shared/gate.ts so the Edge proxy can use them crypto-free.)
 
+import 'server-only';
 import { createHash, timingSafeEqual } from 'crypto';
 
 /** Cookie-Attribute des Gate-Cookies — geteilt zwischen /api/auth/gate und

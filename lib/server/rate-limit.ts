@@ -13,6 +13,7 @@
  *
  * Test contract: `clear()` wipes the internal Map for vitest determinism.
  */
+import 'server-only';
 export interface RateLimiter {
   isBlocked(ip: string): boolean;
   recordFailure(ip: string): void;

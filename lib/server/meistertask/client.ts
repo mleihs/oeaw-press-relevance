@@ -1,6 +1,7 @@
 // Minimal MeisterTask client. We only use createTask in MVP — list/get/update
 // can be added later when actually needed (avoids dead code & test surface).
 
+import 'server-only';
 import { MEISTERTASK_API_BASE, MEISTERTASK_RPS_LIMIT } from './constants';
 
 export interface MeistertaskTask {

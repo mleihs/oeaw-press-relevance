@@ -2,6 +2,7 @@
 // (lib/server/flag-notes.ts) to the publications repo. All dedup/timestamp
 // logic lives in the engine; this only injects persistence + the not-found error.
 
+import 'server-only';
 import { publicationsRepo } from '@/lib/server/repos/publications';
 import type { FlagNote } from '@/lib/shared/types';
 import type { FlagSetPayload, FlagDeletePayload } from '@/lib/shared/schemas';

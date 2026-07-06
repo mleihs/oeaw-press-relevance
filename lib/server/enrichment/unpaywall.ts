@@ -5,7 +5,10 @@ export async function enrichFromUnpaywall(rawDoi: string): Promise<EnrichmentRes
   const doi = cleanDoi(rawDoi);
   if (!doi) return null;
 
-  const email = 'admin@oeaw.ac.at';
+  // Unpaywall's polite pool requires a contact mail on every request. Override
+  // via API_CONTACT_EMAIL (shared with the Crossref/OpenAlex scripts); the
+  // fallback keeps local dev working without extra config.
+  const email = process.env.API_CONTACT_EMAIL || 'admin@oeaw.ac.at';
   const url = `https://api.unpaywall.org/v2/${encodeURIComponent(doi)}?email=${email}`;
 
   const response = await fetch(url, {

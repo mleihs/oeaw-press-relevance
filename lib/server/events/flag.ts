@@ -4,6 +4,7 @@
 // call site — the flag route handler — so no events-repo is justified per
 // repos/README.md) and the not-found error.
 
+import 'server-only';
 import { eq } from 'drizzle-orm';
 import { db, events as eventsTable } from '@/lib/server/db';
 import type { FlagNote } from '@/lib/shared/types';

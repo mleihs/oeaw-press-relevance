@@ -2,11 +2,11 @@ import Link from 'next/link';
 import { CalendarRange, ListTree, Star } from '@/lib/icons';
 import { cn } from '@/lib/shared/utils';
 import { buildEventsUrl, type EventsFilterState } from '../_lib/build-events-url';
+import { type EventsStats } from '@/lib/server/events/list';
 import {
   EVENTS_TAB_VALUES,
-  type EventsStats,
   type EventsTab,
-} from '@/lib/server/events/list';
+} from '@/lib/shared/events-filter';
 
 // Kurzlabels für die schmalen Mobile-Chips (Desktop-Pendant: EventsTabsNav).
 const TAB_LABELS: Record<EventsTab, string> = {

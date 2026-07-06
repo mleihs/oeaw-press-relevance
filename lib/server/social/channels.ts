@@ -2,6 +2,7 @@
 // the only domain logic is normalizing user input (a pasted profile URL or a
 // bare handle) to a canonical handle + URL via parseInstagramHandle.
 
+import 'server-only';
 import { and, eq } from 'drizzle-orm';
 import { db, socialChannels } from '@/lib/server/db';
 import type { SocialChannel } from '@/lib/shared/types';

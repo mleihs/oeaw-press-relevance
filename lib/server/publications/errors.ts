@@ -3,6 +3,7 @@
  * the mutation paths (decisions.ts, flag.ts) so they land in the same 404
  * mapping in route handlers.
  */
+import 'server-only';
 export class PublicationNotFoundError extends Error {
   constructor(reason?: string) {
     super(reason ?? 'Publication not found');

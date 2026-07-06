@@ -1,3 +1,4 @@
+import 'server-only';
 import type { AnalysisResult, LLMResponse } from '@/lib/shared/types';
 import { SYSTEM_PROMPT, buildEvaluationPrompt, type PublicationForPrompt } from './prompts';
 import { chatCompletionJson, parseJsonContent } from '@/lib/server/openrouter';

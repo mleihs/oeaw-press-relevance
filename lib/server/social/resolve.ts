@@ -3,6 +3,7 @@
 // post_ids shipped, or when the LLM omitted them): match posts whose topic or
 // keywords overlap the theme's keywords. Pure + unit-tested (resolve.test.ts).
 
+import 'server-only';
 import type { SocialPost, SocialTheme } from '@/lib/shared/types';
 
 export interface ThemeWithPosts {

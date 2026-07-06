@@ -21,3 +21,43 @@ export const EVENTS_BAND_LABELS: Record<EventsBand, string> = {
   low: 'Niedrig',
   unscored: 'Unbewertet',
 };
+
+/** Decision-workflow tabs for the events list. Client nav surfaces (tabs,
+ *  mobile chips) iterate these values, so they live here rather than in the
+ *  `server-only` list module — same rationale as EVENTS_BAND_VALUES above. */
+export const EVENTS_TAB_VALUES = [
+  'upcoming',
+  'undecided',
+  'pitch',
+  'hold',
+  'skip',
+] as const;
+export type EventsTab = (typeof EVENTS_TAB_VALUES)[number];
+
+export function isEventsTab(v: unknown): v is EventsTab {
+  return (
+    typeof v === 'string' &&
+    (EVENTS_TAB_VALUES as readonly string[]).includes(v)
+  );
+}
+
+/** Sortable list columns. `date` is the default (chronological agenda); `score`
+ *  lets the press team surface the most relevant events first. Whitelisted so a
+ *  bad `?sort=` query param can't reach the order-by. */
+export const EVENTS_SORT_VALUES = ['date', 'score'] as const;
+export type EventsSort = (typeof EVENTS_SORT_VALUES)[number];
+export type EventsSortOrder = 'asc' | 'desc';
+
+export function isEventsSort(v: unknown): v is EventsSort {
+  return (
+    typeof v === 'string' &&
+    (EVENTS_SORT_VALUES as readonly string[]).includes(v)
+  );
+}
+
+export interface EventsSortSpec {
+  by: EventsSort;
+  order: EventsSortOrder;
+}
+
+export const DEFAULT_EVENTS_SORT: EventsSortSpec = { by: 'date', order: 'asc' };

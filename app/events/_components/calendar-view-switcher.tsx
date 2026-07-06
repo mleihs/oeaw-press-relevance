@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { cn } from '@/lib/shared/utils';
 import { buildEventsUrl, type EventsFilterState } from '../_lib/build-events-url';
-import type { EventsTab } from '@/lib/server/events/list';
+import type { EventsTab } from '@/lib/shared/events-filter';
 import type { CalendarView, CalendarWindow } from '../_lib/calendar-range';
 
 /** Monat / Woche sub-segment for the calendar (Toolkit-Redesign.dc.html
