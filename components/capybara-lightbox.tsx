@@ -108,7 +108,7 @@ export function CapybaraLightbox({
             <DialogPrimitive.Content asChild forceMount aria-describedby={undefined}>
               <motion.div className="fixed inset-0 z-50 outline-none">
                 <DialogPrimitive.Title className="sr-only">
-                  Science Propaganda Ninja Capybara in voller Größe
+                  ÖAW Presse Capybara in voller Größe
                 </DialogPrimitive.Title>
 
                 {/* Backdrop catcher: click anywhere (incl. the image, which is

@@ -97,7 +97,7 @@ export function CommandCheatsheet({
         <DialogHeader>
           <DialogTitle>Tastenkürzel</DialogTitle>
           <DialogDescription>
-            Schneller durch Science Propaganda Ninja. ⌘K öffnet das Befehlsmenü (mit Suche und
+            Schneller durch ÖAW Presse. ⌘K öffnet das Befehlsmenü (mit Suche und
             Hilfe), die Kürzel darunter sind direkte Sprünge.
           </DialogDescription>
         </DialogHeader>
