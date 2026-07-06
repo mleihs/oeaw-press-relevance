@@ -137,14 +137,14 @@ export default function ReviewPage() {
             explId="triage_flagged"
           />
           <CountCard
-            icon={<Sparkles className="h-4 w-4 text-emerald-600" />}
+            icon={<Sparkles className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />}
             label="Frisch (Score ≥ 70%)"
             count={counts.fresh}
             tone="emerald"
             explId="triage_fresh"
           />
           <CountCard
-            icon={<Crown className="h-4 w-4 text-blue-600" />}
+            icon={<Crown className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
             label="ÖAW-Highlights"
             count={counts.mahl}
             tone="blue"

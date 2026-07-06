@@ -288,7 +288,7 @@ export function UserManagementCard() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <UserMinus className="h-5 w-5 text-orange-600" />
+              <UserMinus className="h-5 w-5 text-orange-600 dark:text-orange-400" />
               Nutzer deaktivieren?
             </DialogTitle>
             <DialogDescription>
@@ -323,7 +323,7 @@ export function UserManagementCard() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Check className="h-5 w-5 text-green-600" />
+              <Check className="h-5 w-5 text-green-600 dark:text-green-400" />
               {reveal?.title}
             </DialogTitle>
             <DialogDescription>{reveal?.subtitle}</DialogDescription>
@@ -591,7 +591,7 @@ function CopyButton({ value, withLabel = false }: { value: string; withLabel?: b
         }
       }}
     >
-      {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+      {copied ? <Check className="h-4 w-4 text-green-600 dark:text-green-400" /> : <Copy className="h-4 w-4" />}
       {withLabel && <span className="ml-1.5 text-xs">{copied ? 'Kopiert' : 'Kopieren'}</span>}
     </Button>
   );

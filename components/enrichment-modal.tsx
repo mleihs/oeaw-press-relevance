@@ -90,9 +90,9 @@ function SourceStatusIcon({ status }: { status: EnrichmentSourceStatus }) {
     case 'waiting':
       return <span className="text-muted-foreground/50 text-sm">--</span>;
     case 'loading':
-      return <span className="inline-block w-4 h-4 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin" />;
+      return <span className="inline-block w-4 h-4 border-2 border-blue-300 border-t-blue-600 dark:border-blue-800 dark:border-t-blue-400 rounded-full animate-spin" />;
     case 'success':
-      return <span className="text-green-600 font-medium text-sm">gefunden</span>;
+      return <span className="text-green-600 font-medium text-sm dark:text-green-400">gefunden</span>;
     case 'no_data':
       return <span className="text-amber-500 text-sm">nichts</span>;
     case 'error':

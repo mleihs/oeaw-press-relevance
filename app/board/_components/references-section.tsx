@@ -113,7 +113,7 @@ function InternalRow({ reference }: { reference: Extract<CardReference, { kind: 
       <span
         className={cn(
           'flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-md',
-          isEvent ? 'bg-brand/10 text-brand' : 'bg-violet-500/10 text-violet-600',
+          isEvent ? 'bg-brand/10 text-brand' : 'bg-violet-500/10 text-violet-600 dark:text-violet-400',
         )}
       >
         <Icon className="h-4 w-4" />

@@ -374,7 +374,7 @@ function CompleteButton({
         type="button"
         onClick={() => m.mutate()}
         disabled={m.isPending}
-        className="inline-flex h-9 items-center gap-1.5 rounded-md border border-emerald-500/40 bg-white px-3 text-sm font-semibold text-emerald-600 transition-colors hover:bg-emerald-50"
+        className="inline-flex h-9 items-center gap-1.5 rounded-md border border-emerald-500/40 bg-white px-3 text-sm font-semibold text-emerald-600 transition-colors hover:bg-emerald-50 dark:bg-card dark:text-emerald-400 dark:hover:bg-emerald-500/10"
       >
         <RotateCcw className="h-4 w-4" />
         <span className="max-md:hidden">Wieder öffnen</span>
@@ -387,7 +387,7 @@ function CompleteButton({
       type="button"
       onClick={() => m.mutate()}
       disabled={m.isPending}
-      className="inline-flex h-9 items-center gap-1.5 rounded-md border border-input bg-card px-3 text-sm font-medium text-foreground transition-colors hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-600"
+      className="inline-flex h-9 items-center gap-1.5 rounded-md border border-input bg-card px-3 text-sm font-medium text-foreground transition-colors hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:border-emerald-800 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-400"
     >
       <CheckCircle2 className="h-4 w-4" />
       Abschließen

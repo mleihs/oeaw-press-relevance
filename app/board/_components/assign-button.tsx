@@ -125,7 +125,7 @@ export function AssignButton({
             type="button"
             onClick={() => patch.mutate(null)}
             disabled={patch.isPending}
-            className="flex w-full items-center gap-2.5 border-t px-3.5 py-2.5 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50"
+            className="flex w-full items-center gap-2.5 border-t px-3.5 py-2.5 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
           >
             <span className="flex w-[30px] justify-center">
               <UserMinus className="h-[17px] w-[17px]" />

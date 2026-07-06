@@ -295,7 +295,7 @@ function ColumnEditor({ board }: { board: BoardSummary }) {
         >
           <div className="w-full max-w-sm rounded-2xl bg-card p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-2 flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-600">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-600 dark:bg-red-500/15 dark:text-red-300">
                 <AlertTriangle className="h-4 w-4" />
               </span>
               <span className="font-semibold text-foreground">Spalte enthält Karten</span>
@@ -385,7 +385,7 @@ function ColumnRow({
       <button
         type="button"
         onClick={onDelete}
-        className="rounded p-1 text-muted-foreground hover:bg-red-50 hover:text-red-600"
+        className="rounded p-1 text-muted-foreground hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/15 dark:hover:text-red-300"
         aria-label="Spalte löschen"
       >
         <Trash2 className="h-3.5 w-3.5" />

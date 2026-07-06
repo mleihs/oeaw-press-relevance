@@ -530,12 +530,12 @@ function PublicationRow({
             </Link>
             {pub.peer_reviewed && (
               <Tooltip><TooltipTrigger asChild>
-                <ShieldCheck className="h-3 w-3 text-blue-600 shrink-0" />
+                <ShieldCheck className="h-3 w-3 text-blue-600 shrink-0 dark:text-blue-400" />
               </TooltipTrigger><TooltipContent>Peer-reviewed</TooltipContent></Tooltip>
             )}
             {pub.popular_science && (
               <Tooltip><TooltipTrigger asChild>
-                <Megaphone className="h-3 w-3 text-purple-600 shrink-0" />
+                <Megaphone className="h-3 w-3 text-purple-600 shrink-0 dark:text-purple-400" />
               </TooltipTrigger><TooltipContent>Popular Science</TooltipContent></Tooltip>
             )}
             {pub.press_release && (
@@ -545,7 +545,7 @@ function PublicationRow({
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
-                  className="text-emerald-600 hover:text-emerald-700 shrink-0"
+                  className="text-emerald-600 hover:text-emerald-700 shrink-0 dark:text-emerald-400 dark:hover:text-emerald-300"
                   aria-label={`ÖAW-Pressemitteilung: ${pub.press_release.paper_title ?? pub.press_release.news_title ?? ''}`}
                 >
                   <Newspaper className="h-3 w-3" />

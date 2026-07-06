@@ -130,26 +130,26 @@ export function CompletionBanner({
   const shown = contributors.slice(0, 4);
   const extra = contributors.length - shown.length;
   return (
-    <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-[#d5f0e0] bg-[linear-gradient(90deg,#f0fdf4,#ecfdf5)] px-4 py-3 [animation:bc-banner_.45s_ease_both] md:px-5">
+    <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-[#d5f0e0] bg-[linear-gradient(90deg,#f0fdf4,#ecfdf5)] dark:border-emerald-950 dark:bg-[linear-gradient(90deg,#0f2a20,#0d241d)] px-4 py-3 [animation:bc-banner_.45s_ease_both] md:px-5">
       <div className="flex items-center gap-2.5">
-        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600">
+        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300">
           <Timer weight="bold" className="h-[17px] w-[17px]" />
         </span>
         <div>
-          <div className="font-mono text-2xs font-semibold uppercase tracking-wider text-emerald-600">
+          <div className="font-mono text-2xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-300">
             Benötigte Zeit
           </div>
-          <div className="text-sm font-bold text-emerald-900">
+          <div className="text-sm font-bold text-emerald-900 dark:text-emerald-100">
             {formatNeededTime(card.created_at, card.completed_at)}
           </div>
         </div>
       </div>
       <div className="flex items-center gap-3">
         <div className="text-right">
-          <div className="font-mono text-2xs font-semibold uppercase tracking-wider text-emerald-600">
+          <div className="font-mono text-2xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-300">
             Mitwirkende
           </div>
-          <div className="text-sm font-bold text-emerald-900">
+          <div className="text-sm font-bold text-emerald-900 dark:text-emerald-100">
             {contributors.length === 1
               ? '1 Person trug bei'
               : `${contributors.length} Personen trugen bei`}
@@ -166,13 +166,13 @@ export function CompletionBanner({
               <BoardAvatar
                 member={m}
                 size={30}
-                className="border-2 border-[#f0fdf4]"
+                className="border-2 border-[#f0fdf4] dark:border-[#0f2a20]"
               />
             </span>
           ))}
           {extra > 0 && (
             <span
-              className="relative z-0 flex h-[30px] w-[30px] items-center justify-center rounded-full border-2 border-[#f0fdf4] bg-emerald-200 text-2xs font-bold text-emerald-800 shadow-sm"
+              className="relative z-0 flex h-[30px] w-[30px] items-center justify-center rounded-full border-2 border-[#f0fdf4] bg-emerald-200 text-2xs font-bold text-emerald-800 dark:border-[#0f2a20] dark:bg-emerald-900 dark:text-emerald-200 shadow-sm"
               style={{ marginLeft: -11 }}
             >
               +{extra}
