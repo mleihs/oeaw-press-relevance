@@ -6,7 +6,11 @@ export const GATE_COOKIE_NAME = 'gate';
 
 // Paths reachable without a gate cookie: the login endpoint itself, plus a few
 // static assets. PUBLIC_PREFIXES match by startsWith.
-const PUBLIC_PATHS = ['/api/auth/gate', '/robots.txt', '/favicon.ico'];
+// /api/auth/login ist bewusst gate-öffentlich: der vereinheitlichte Anmelde-
+// Screen (AuthScreen am Gate) bietet den persönlichen Login VOR dem Gate an.
+// Die Route ist rate-limitiert und verlangt echte Supabase-Credentials;
+// bei Erfolg setzt sie das Gate-Cookie gleich mit (app/api/auth/login).
+const PUBLIC_PATHS = ['/api/auth/gate', '/api/auth/login', '/robots.txt', '/favicon.ico', '/icon.svg'];
 const PUBLIC_PREFIXES = ['/_next/', '/capybara'];
 
 export function isPublicGatePath(pathname: string): boolean {

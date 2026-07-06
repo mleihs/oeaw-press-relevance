@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { apiError, validateBody, withApiError } from '@/lib/server/http';
 import { gatePayloadSchema } from '@/lib/shared/schemas';
 import { createRateLimiter, getClientIp } from '@/lib/server/rate-limit';
-import { tokenize, timingSafePasswordMatch } from '@/lib/server/gate';
+import { tokenize, timingSafePasswordMatch, GATE_COOKIE_OPTIONS } from '@/lib/server/gate';
 
 // Login endpoint for the middleware gate. The browser POSTs the password
 // here; we compare against GATE_PASSWORD server-side and, on match, set
@@ -45,16 +45,7 @@ export const POST = withApiError(async (req: NextRequest) => {
 
   const token = tokenize(password);
   const res = NextResponse.json({ ok: true });
-  res.cookies.set('gate', token, {
-    httpOnly: true,
-    // Strict because every mutating route also enforces same-origin via
-    // assertSameOrigin (lib/server/http.ts). Lax was leaving a CSRF window
-    // open on top-level POST navigations.
-    sameSite: 'strict',
-    secure: process.env.NODE_ENV === 'production',
-    path: '/',
-    maxAge: 60 * 60 * 24 * 30, // 30 days
-  });
+  res.cookies.set('gate', token, GATE_COOKIE_OPTIONS);
   return res;
 });
 
