@@ -510,7 +510,7 @@ function BoardTile({ cards, overdueCount }: { cards: BoardCardRef[]; overdueCoun
           </div>
         </div>
         {overdueCount > 0 && (
-          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#fdeaea] px-2 py-[3px] font-mono text-[11px] font-semibold text-destructive">
+          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-danger-tint px-2 py-[3px] font-mono text-[11px] font-semibold text-destructive">
             <AlarmClock weight="bold" className="h-3 w-3" />
             {overdueCount} überfällig
           </span>
@@ -573,7 +573,7 @@ function DeltaChip({ pct, small }: { pct: number | null; small?: boolean }) {
     <span
       className={`inline-flex shrink-0 items-center gap-1 rounded-full font-mono font-semibold ${
         small ? 'px-[7px] py-0.5 text-[11px]' : 'px-2 py-[3px] text-[11px]'
-      } ${up ? 'bg-success-tint text-success' : 'bg-[#fdeaea] text-destructive'}`}
+      } ${up ? 'bg-success-tint text-success' : 'bg-danger-tint text-destructive'}`}
     >
       <Icon weight="bold" className="h-3 w-3" />
       {up ? '+' : ''}

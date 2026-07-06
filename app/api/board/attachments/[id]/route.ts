@@ -7,6 +7,7 @@ import {
   deleteAttachment,
   INLINE_ATTACHMENT_TYPES,
   boardErrorToResponse,
+  withBoardErrors,
 } from '@/lib/server/board';
 import { getObject } from '@/lib/server/storage/s3';
 
@@ -55,18 +56,12 @@ export const GET = withApiError(async (
   });
 });
 
-export const DELETE = withApiError(async (
+export const DELETE = withApiError(withBoardErrors(async (
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) => {
   const user = await requireUser();
   const { id } = validateParams(await params, idParamSchema);
-  try {
-    await deleteAttachment(user, id);
-    return NextResponse.json({ ok: true });
-  } catch (err) {
-    const res = boardErrorToResponse(err);
-    if (res) return res;
-    throw err;
-  }
-});
+  await deleteAttachment(user, id);
+  return NextResponse.json({ ok: true });
+}));

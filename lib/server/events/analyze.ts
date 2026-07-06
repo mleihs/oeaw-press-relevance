@@ -10,7 +10,12 @@ import {
   chatCompletionJson,
   parseJsonContent,
 } from '@/lib/server/openrouter';
-import { runLLMBatch, preflightBalance } from '@/lib/server/llm-batch';
+import {
+  runLLMBatch,
+  preflightBalance,
+  sseBatchHooks,
+  emitBatchComplete,
+} from '@/lib/server/llm-batch';
 import { computeEventScore } from '@/lib/shared/scoring';
 import { getCurrentEventScoreWeights } from './score-weights';
 import {
@@ -136,30 +141,8 @@ export async function runEventsAnalysisBatch(
         .set({ analysisStatus: 'failed' })
         .where(inArray(eventsTable.id, batch.map((e) => e.id)));
     },
-    hooks: {
-      onBatchStart: (p) =>
-        emit('progress', {
-          processed: p.processed,
-          total: p.total,
-          current_title: p.batch[0].title,
-          batch_index: p.batchIndex,
-          total_batches: p.totalBatches,
-          tokens_used: p.tokensUsed,
-          cost: p.cost,
-        }),
-      onError: (e) => emit('error', { message: e.message, batch_start: e.batchStartIndex, fatal: e.fatal }),
-      onCancelled: (p) => emit('cancelled', { processed: p.processed, successful: p.successful, total: p.total }),
-    },
+    hooks: sseBatchHooks<EventRow>(emit),
   });
 
-  if (!result.cancelled) {
-    emit('complete', {
-      processed: result.processed,
-      total: result.total,
-      successful: result.successful,
-      failed: result.failed,
-      tokens_used: result.tokensUsed,
-      cost: result.cost,
-    });
-  }
+  emitBatchComplete(emit, result);
 }

@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { asc, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { apiError, withApiError } from '@/lib/server/http';
 import { db, users, getSupabaseAdmin } from '@/lib/server/db';
 import { getSupabaseAuthClient } from '@/lib/server/auth/client';
-import { getCurrentUser } from '@/lib/server/auth/require';
 import {
   IMPERSONATION_COOKIE,
-  readImpersonationOrigin,
   signImpersonationOrigin,
 } from '@/lib/server/auth/impersonation';
+import {
+  authorizeUserSwitch,
+  listSwitchableUsers,
+} from '@/lib/server/auth/user-switcher';
 import type { UserRole } from '@/lib/shared/types';
 
 export const dynamic = 'force-dynamic';
@@ -26,54 +28,25 @@ export const dynamic = 'force-dynamic';
  * Auf self-hosted/cloud Supabase versendet generateLink KEINE Mail — es gibt
  * nur den Token zurück.
  *
- * Autorisierung (authorize()): erlaubt, wenn die aktive Session ein Admin ist
- * ODER ein gültiger, signierter Herkunfts-Cookie belegt, dass ein Admin die
- * Impersonation gestartet hat (siehe lib/server/auth/impersonation.ts). Das
- * hält den Switcher auch dann nutzbar, wenn ein Admin gerade als Member agiert
- * — sonst wäre der Wechsel eine Einbahnstraße.
+ * Autorisierung + Auswahlliste liegen in lib/server/auth/user-switcher.ts; die
+ * Session-Cookie-Machinerie (verifyOtp + Herkunfts-Cookie) bleibt hier, weil
+ * sie request/response-gebunden ist.
  */
 
-async function authorize(): Promise<{ ok: true; originAdminId: string } | { ok: false }> {
-  // Herkunfts-Cookie hat Vorrang → der ursprüngliche Admin bleibt auch über
-  // Admin→Admin-Wechsel hinweg stabil („Zurück zu mir" zielt auf den Start).
-  const store = await cookies();
-  const cookieOrigin = readImpersonationOrigin(store.get(IMPERSONATION_COOKIE)?.value);
-  if (cookieOrigin) {
-    const [row] = await db.select().from(users).where(eq(users.id, cookieOrigin)).limit(1);
-    if (row && row.role === 'admin' && !row.disabledAt) {
-      return { ok: true, originAdminId: cookieOrigin };
-    }
-  }
-  const current = await getCurrentUser();
-  if (current?.role === 'admin') return { ok: true, originAdminId: current.id };
-  return { ok: false };
-}
-
-// GET: Auswahlliste für den Switcher (alle Konten, inkl. deaktivierter —
-// so lässt sich auch der Ausgeloggt-/Gesperrt-Zustand testen) + der Herkunfts-
-// Admin, damit die UI „Zurück zu mir" anbieten kann.
+// GET: Auswahlliste für den Switcher + der Herkunfts-Admin, damit die UI
+// „Zurück zu mir" anbieten kann.
 export const GET = withApiError(async () => {
-  const auth = await authorize();
+  const auth = await authorizeUserSwitch();
   if (!auth.ok) return apiError('Nur für Admins.', 403);
-  const rows = await db
-    .select({
-      id: users.id,
-      email: users.email,
-      displayName: users.displayName,
-      role: users.role,
-      disabledAt: users.disabledAt,
-    })
-    .from(users)
-    .orderBy(asc(users.email));
   return NextResponse.json({
-    users: rows.map((r) => ({ ...r, role: r.role as UserRole })),
+    users: await listSwitchableUsers(),
     originAdminId: auth.originAdminId,
   });
 });
 
 // POST { userId }: Session für diesen Nutzer setzen.
 export const POST = withApiError(async (req: NextRequest) => {
-  const auth = await authorize();
+  const auth = await authorizeUserSwitch();
   if (!auth.ok) return apiError('Nur für Admins.', 403);
 
   const body = (await req.json().catch(() => ({}))) as { userId?: string };

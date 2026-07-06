@@ -101,12 +101,12 @@ const eslintConfig = defineConfig([
   //   checkAllOrigins/checkUnknownLocals defaults.
   // - level: "error" — CI fails on new violations.
   //
-  // Selector form: still string-based even though v6's TS types document an
-  // object form (`{ type: "shared" }`). The runtime ESLint JSON-schema in
-  // eslint-plugin-boundaries@6.0.2 rejects `{ type: … }` at the from/allow
-  // positions (empirisch geprobt 2026-07-03: "Unexpected property 'type'"),
-  // so the "Consider migrating to object-based selectors" notice printed at
-  // lint start is unactionable until upstream ships the schema update.
+  // Selector form: object-based entity selectors (v7). Migrated from the
+  // string/tuple legacy form 2026-07-06 alongside the v6→v7 bump; the
+  // deprecation notice ("Consider migrating to object-based selectors" +
+  // "'rules' option is deprecated") is now silent. v7 renamed the option
+  // `rules` → `policies` and each policy uses `from: { element: { type } }` /
+  // `allow: { to: { element: { types: [...] } } }`.
   //
   // Pattern order matters (first-match-wins): app/api/** must come BEFORE
   // app/** so route handlers resolve to api-routes, not app-pages.
@@ -128,15 +128,29 @@ const eslintConfig = defineConfig([
         "error",
         {
           default: "disallow",
-          rules: [
+          policies: [
             // shared is the kernel — no project-internal deps
-            { from: "shared", allow: ["shared"] },
+            {
+              from: { element: { type: "shared" } },
+              allow: { to: { element: { types: ["shared"] } } },
+            },
             // server can call into shared + other server modules
-            { from: "server", allow: ["shared", "server"] },
+            {
+              from: { element: { type: "server" } },
+              allow: { to: { element: { types: ["shared", "server"] } } },
+            },
             // client must NOT reach into server (would leak into the bundle)
-            { from: "client", allow: ["shared", "client"] },
+            {
+              from: { element: { type: "client" } },
+              allow: { to: { element: { types: ["shared", "client"] } } },
+            },
             // components are pure UI; no server, no app-pages, no api-routes
-            { from: "components", allow: ["shared", "client", "components"] },
+            {
+              from: { element: { type: "components" } },
+              allow: {
+                to: { element: { types: ["shared", "client", "components"] } },
+              },
+            },
             // app-pages compose client/components AND — since the Phase-A4
             // RSC pilot (ADR 0009) — directly call thin server entry points
             // for first-paint data. Bundle leaks into client code are still
@@ -145,13 +159,35 @@ const eslintConfig = defineConfig([
             // a 'use client' page MUST NOT import @/lib/server/* (reviewer
             // discipline + build break are the guards).
             {
-              from: "app-pages",
-              allow: ["shared", "client", "components", "app-pages", "server"],
+              from: { element: { type: "app-pages" } },
+              allow: {
+                to: {
+                  element: {
+                    types: [
+                      "shared",
+                      "client",
+                      "components",
+                      "app-pages",
+                      "server",
+                    ],
+                  },
+                },
+              },
             },
             // api-routes are the only surface that bridges to server
-            { from: "api-routes", allow: ["server", "shared", "api-routes"] },
+            {
+              from: { element: { type: "api-routes" } },
+              allow: {
+                to: { element: { types: ["server", "shared", "api-routes"] } },
+              },
+            },
             // scripts run offline / in cron; need server enrichment clients
-            { from: "scripts", allow: ["shared", "server", "scripts"] },
+            {
+              from: { element: { type: "scripts" } },
+              allow: {
+                to: { element: { types: ["shared", "server", "scripts"] } },
+              },
+            },
           ],
         },
       ],

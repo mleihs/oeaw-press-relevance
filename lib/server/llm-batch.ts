@@ -158,6 +158,54 @@ export async function runLLMBatch<TItem, TResult>(
   };
 }
 
+type SseEmit = (type: string, data: unknown) => void;
+
+/**
+ * The neutral→SSE hook mapping shared verbatim by the publication and event
+ * analysis runners: `onBatchStart`→'progress', `onError`→'error',
+ * `onCancelled`→'cancelled', with the exact field names the (shared) analysis
+ * modal expects. Requires each item to carry a `title` (used for the
+ * `current_title` progress label). Pass to `runLLMBatch({ hooks: ... })`.
+ */
+export function sseBatchHooks<TItem extends { title: string }>(
+  emit: SseEmit,
+): NonNullable<RunLLMBatchOptions<TItem, unknown>['hooks']> {
+  return {
+    onBatchStart: (p) =>
+      emit('progress', {
+        processed: p.processed,
+        total: p.total,
+        current_title: p.batch[0].title,
+        batch_index: p.batchIndex,
+        total_batches: p.totalBatches,
+        tokens_used: p.tokensUsed,
+        cost: p.cost,
+      }),
+    onError: (e) =>
+      emit('error', { message: e.message, batch_start: e.batchStartIndex, fatal: e.fatal }),
+    onCancelled: (p) =>
+      emit('cancelled', { processed: p.processed, successful: p.successful, total: p.total }),
+  };
+}
+
+/**
+ * Emits the terminal 'complete' frame the analysis modal expects — but NOT on
+ * abort, where the 'cancelled' frame already fired from `onCancelled`. Shared by
+ * the publication and event runners.
+ */
+export function emitBatchComplete(emit: SseEmit, result: LLMBatchResult): void {
+  if (!result.cancelled) {
+    emit('complete', {
+      processed: result.processed,
+      total: result.total,
+      successful: result.successful,
+      failed: result.failed,
+      tokens_used: result.tokensUsed,
+      cost: result.cost,
+    });
+  }
+}
+
 export interface PreflightBalanceArgs {
   apiKey: string;
   /** Row count for the run — drives the 'init' frame and the zero tally. */

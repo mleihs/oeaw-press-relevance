@@ -84,16 +84,17 @@ fehlende Typografie-Skala, Credentials in Docs (OSS-Blocker).
       Feature-Dateien umziehen (mechanisch; nur nötig für den echten Paketschnitt,
       nicht für die Whole-App-OSS-Variante).
 
-### Gruppe C — Quick Wins Architektur (Opus Medium) — DONE bis auf C2 (Commit 1a54f6a)
+### Gruppe C — Quick Wins Architektur (Opus Medium) — DONE (C1–C6; C2 Commit s. u.)
 
 - [x] **C1 (hinfällig)** Der ungenutzte `Input`-Import in card-modal.tsx war durch
       die parallele Board-Arbeit bereits entfernt — nichts zu tun.
-- [ ] **C2 (DEFERRED)** `eslint-plugin-boundaries` auf v7 + die 7 Legacy-Selektoren
-      in `eslint.config.mjs` auf Objekt-Syntax migrieren (Migrationsguide:
-      jsboundaries.dev v5-to-v6/v7). **Zurückgestellt:** braucht package.json-Bump
-      + package-lock-Regen, die mit paralleler Board-Arbeit (frimousse/mammoth)
-      kollidierten (Lock nicht partiell stageable). Nachziehen, sobald der
-      Working-Tree sauber ist. Lint gibt bis dahin die bekannte Legacy-Warnung.
+- [x] **C2 (DONE, 2026-07-06)** `eslint-plugin-boundaries` 6.0.2 → 7.0.1 gebumpt
+      und die 7 Legacy-Selektoren in `eslint.config.mjs` auf Objekt-Syntax
+      migriert. v7 benennt zusätzlich `rules` → `policies` um; beide Warnungen
+      (legacy-Selektor + `rules`-Deprecation) sind jetzt still. Neue Form:
+      `from: { element: { type } }` / `allow: { to: { element: { types: [...] } } }`.
+      Enforcement empirisch verifiziert (Probe-Datei `lib/client → lib/server`
+      wird weiterhin als Error gefangen). Lint jetzt 0 Warnungen / 0 Fehler.
 - [x] **C3 (DONE)** `import 'server-only'` auf 25 weitere `lib/server/**`-Module
       (jetzt 54/117). Ausgeschlossen: die 64 script-erreichbaren Module (transitiver
       Import-Graph ab `scripts/` berechnet — tsx/Node wirft bei `server-only`).
@@ -112,35 +113,58 @@ fehlende Typografie-Skala, Credentials in Docs (OSS-Blocker).
       Typen und `DEFAULT_EVENTS_SORT`) aus `events/list.ts` nach
       `lib/shared/events-filter.ts` verschoben; alle Importstellen umgezogen.
 
-### Gruppe D — Dedup (Opus Medium)
+### Gruppe D — Dedup (Opus Medium) — DONE 2026-07-06
 
-- [ ] **D1** `withBoardAuth`-Wrapper für die 5 identischen Preambles in
-      `app/api/board/{cards,columns,items,comments}/[id]/**` (+ labels/watchers/hidden).
-- [ ] **D2** Gemeinsame Handler-Factory für `app/api/events/[id]/flag` ↔
-      `app/api/publications/[id]/flag` (2 Klone à ~15 Z.).
-- [ ] **D3** Geteilte Error-Komponente für `app/{press-releases,publications,researchers}/error.tsx`.
-- [ ] **D4** `lib/client/hooks/use-info-bubbles.ts` ↔ `use-keyboard-shortcuts-enabled.ts`
-      (29-Z.-Klon) → generischer `useLocalStorageFlag`.
-- [ ] **D5** Stats-Klone: `app/api/publications/stats/route.ts` ↔
-      `lib/server/dashboard/fetch.ts:36-52,166-177` → gemeinsame Funktion in
-      `lib/server/publications/`.
-- [ ] **D6** SSE-Batch-Klon (größter, 31 Z.): `lib/server/analysis/batch.ts:134-164`
-      ↔ `lib/server/events/analyze.ts:137-165` → gemeinsamer Batch-Loop-Helper.
-- [ ] **D7** Query-Logik aus Report-Routen in Feature-Module:
-      `app/api/dev/switch-user`, `app/api/export/csv`, `app/api/webdb/status`,
-      `app/api/publications/[id]/similar-pressed`.
+- [x] **D1** `withBoardErrors`-HOF (statt des geplanten `withBoardAuth` — die
+      echte Duplikation war die 6-Zeilen-`boardErrorToResponse`-try/catch, nicht
+      die requireUser-Preamble; ein Auth-Wrapper hätte die variierenden
+      Handler-Signaturen erzwungen). In `lib/server/board/errors-http.ts`, per
+      Barrel exportiert. 25 Board-Routen / 30 Handler auf
+      `withApiError(withBoardErrors(async …))` umgestellt, try/catch entfernt.
+      Bewusst NICHT umgestellt: `attachments/[id]` GET (scoped mid-function catch,
+      kein mechanisches Match) — behält `boardErrorToResponse`.
+- [x] **D2** `createFlagRoute(deps)`-Factory in `lib/server/flag-route.ts`; beide
+      Flag-Routen (events/publications) sind jetzt 10-Zeilen-`export const
+      { POST, DELETE } = createFlagRoute({ setFlag, clearFlag, isNotFound })`.
+- [x] **D3** `components/route-error.tsx` (`RouteError`); die drei list-page
+      `error.tsx` sind dünne Wrapper.
+- [x] **D4** `makeLocalStorageFlag(key, eventName)` in
+      `lib/client/hooks/use-local-storage-flag.ts`; beide Hooks delegieren
+      (keyboard-Hook exportiert zusätzlich `read` als imperativen Reader).
+- [x] **D5** `fetchPublicationDashboardStats(defaultEligible)` +
+      `PublicationDashboardStats` in `lib/server/publications/dashboard-stats.ts`;
+      stats-Route + dashboard/fetch nutzen es (Dashboard = Basis + similarity_distribution).
+- [x] **D6** `sseBatchHooks(emit)` + `emitBatchComplete(emit, result)` in
+      `lib/server/llm-batch.ts`; analysis/batch + events/analyze nutzen sie.
+- [x] **D7** Query-Logik in Feature-Module: `lib/server/webdb/status.ts`
+      (`getWebdbStatus`), `lib/server/publications/similar-pressed.ts`
+      (`getSimilarPressed`), `lib/server/publications/export.ts`
+      (`fetchAnalyzedExportRows`), `lib/server/auth/user-switcher.ts`
+      (`authorizeUserSwitch` + `listSwitchableUsers`). Die vier Routen sind jetzt
+      dünne HTTP-Adapter (CSV-Formatierung + switch-user-Session-Cookie-Flow
+      bleiben request/response-gebunden in der Route).
 
-### Gruppe E — Design-System-Fixes ohne visuelles Risiko (Opus Medium)
+### Gruppe E — Design-System-Fixes ohne visuelles Risiko (Opus Medium) — DONE 2026-07-06 (E3-Changelog → F verschoben)
 
-- [ ] **E1** `components/ui/virtualized-multi-select.tsx` Z.193-318: neutral-Grauskala
-      → semantische Tokens (muted/border/foreground); einzige Grauskala-Datei im
-      ui-Kit, in Dark kaputt. Konsumenten: publications/filter-sheet, social-toolbar.
-- [ ] **E2** `SOURCE_BADGE_CLASSES` (`lib/shared/constants.ts:124-132`) dark-fähig
-      (dokumentierter offener Dark-Bug, siehe DESIGN_ROLLOUT.md).
-- [ ] **E3** Wert-identische Ersetzungen (0 visuelle Änderung):
-      `app/_components/dashboard-client.tsx:512,580` `bg-[#fdeaea]` → `bg-danger-tint`;
-      `components/changelog-panel.tsx:165-244` `rgba(0,71,187,…)` →
-      `var(--brand-500)`/color-mix.
+- [x] **E1** `components/ui/virtualized-multi-select.tsx`: neutral-Grauskala →
+      semantische Tokens. `text-neutral-500`→`text-muted-foreground`,
+      `hover:text-neutral-900`→`hover:text-foreground`, GroupHeader
+      `bg-neutral-50 border-neutral-100`→`bg-muted border-border`, RowItem
+      `hover:bg-neutral-100`+`bg-neutral-50(checked)`→`hover:bg-accent`+`bg-accent`
+      (command.tsx-Idiom), Checkbox-off `border-neutral-300 bg-white`→
+      `border-input bg-background`. Brand-Fill (checked) unverändert.
+- [x] **E2** `SOURCE_BADGE_CLASSES` (`lib/shared/constants.ts`) dark-fähig — je
+      Quelle additiv `dark:bg-<c>-500/15 dark:text-<c>-300` (tint-badge-Konvention);
+      Light 1:1 unverändert.
+- [x] **E3 (Teil)** `app/_components/dashboard-client.tsx` (2×) `bg-[#fdeaea]` →
+      `bg-danger-tint` (Token = #fdeaea light / #331515 dark → light-identisch,
+      dark-gefixt).
+- [ ] **E3 (Rest) → verschoben nach F:** `components/changelog-panel.tsx`
+      `rgba(0,71,187,…)`-Schatten → `color-mix(in srgb, var(--brand-500) …%, transparent)`.
+      Grund: color-mix in Tailwind-Arbitrary-`shadow-[…]` ist im Repo bisher
+      NICHT verwendet; unparsbare Arbitrary-Values verwirft Tailwind still
+      (→ Schatten verschwindet, unsichtbare Regression). Braucht Browser-Verify
+      → gehört zu Gruppe F, nicht in den „ohne visuelles Risiko"-Schnitt.
 
 ### Gruppe F — Design-Pass mit Browser-Verify (Opus, eigene Session)
 
@@ -161,6 +185,11 @@ fehlende Typografie-Skala, Credentials in Docs (OSS-Blocker).
       (enrichment-modal, user-management-card, review/page, detail-client, …).
 - [ ] **F4** (optional) `decision-badge`/`tint-badge` auf State-Tokens mappen
       (green→success, blue→info); kategoriale Token-Gruppe lt. DESIGN_ROLLOUT.md.
+- [ ] **F5** (aus E3 verschoben) `components/changelog-panel.tsx`: die
+      `rgba(0,71,187,…)`-Marken-Schatten auf `color-mix(in srgb,
+      var(--brand-500) …%, transparent)` umstellen (rgb(0,71,187) == `--brand-500`).
+      Wert-identisch NUR wenn Tailwind die Arbitrary-`shadow-[…]` mit color-mix
+      generiert — im Browser gegenprüfen (Tailwind verwirft Unparsbares still).
 
 ### Gruppe G — OSS-Track (eigene Planung, nicht „Fixes")
 

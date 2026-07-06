@@ -1,18 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withApiError, validateBody } from '@/lib/server/http';
 import { requireUser } from '@/lib/server/auth/require';
-import { addItem, boardErrorToResponse } from '@/lib/server/board';
+import { addItem, withBoardErrors } from '@/lib/server/board';
 import { itemCreateSchema } from '@/lib/shared/board-schemas';
 
-export const POST = withApiError(async (req: NextRequest) => {
+export const POST = withApiError(withBoardErrors(async (req: NextRequest) => {
   const user = await requireUser();
   const payload = await validateBody(req, itemCreateSchema);
-  try {
-    const item = await addItem(user.id, payload);
-    return NextResponse.json({ item }, { status: 201 });
-  } catch (err) {
-    const res = boardErrorToResponse(err);
-    if (res) return res;
-    throw err;
-  }
-});
+  const item = await addItem(user.id, payload);
+  return NextResponse.json({ item }, { status: 201 });
+}));

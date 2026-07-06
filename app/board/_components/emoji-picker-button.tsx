@@ -20,8 +20,13 @@ const EmojiPickerPanel = dynamic(() => import('./emoji-picker-panel'), {
  *  frimousse-Panel, Auswahl landet an der Cursor-Position des Composers. */
 export function EmojiPickerButton({ onPick }: { onPick: (emoji: string) => void }) {
   const [open, setOpen] = useState(false);
+  // modal: das Karten-Modal (Radix Dialog) hält einen Scroll-Lock
+  // (react-remove-scroll), der Wheel-Events auf portalisierten Layern
+  // außerhalb des Dialog-Baums verwirft — das Emoji-Panel ließ sich nicht
+  // mit dem Mausrad scrollen. Ein modales Popover legt seinen eigenen Lock
+  // an die Spitze des Stacks und gibt Wheel im Panel wieder frei.
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={setOpen} modal>
       <PopoverTrigger asChild>
         <button
           type="button"

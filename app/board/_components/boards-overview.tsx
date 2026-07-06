@@ -86,9 +86,9 @@ export function BoardsOverview({
           <button
             type="button"
             onClick={() => setCreateOpen(true)}
-            className="flex min-h-[150px] flex-col items-center justify-center gap-2 rounded-[14px] border border-dashed border-border text-muted-foreground transition-colors hover:border-brand hover:text-brand"
+            className="group flex min-h-[150px] flex-col items-center justify-center gap-2 rounded-[14px] border border-dashed border-border text-muted-foreground transition-all duration-200 hover:-translate-y-0.5 hover:border-brand hover:text-brand active:translate-y-0"
           >
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand/10 text-brand">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand/10 text-brand transition-transform duration-200 group-hover:scale-105">
               <Plus className="h-5 w-5" />
             </span>
             <span className="text-sm font-medium">Neues Board</span>
@@ -144,14 +144,21 @@ function BoardCard({
   return (
     <div
       className={cn(
-        'group relative rounded-[14px] border border-border bg-card p-[18px] shadow-sm transition-all hover:-translate-y-0.5 hover:border-muted-foreground/40 hover:shadow-md',
+        'group relative rounded-[14px] border border-border bg-card p-[18px] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-muted-foreground/40 hover:shadow-md active:translate-y-0 active:shadow-sm',
         archived && 'opacity-70',
       )}
       style={{ borderLeft: `3px solid ${accent}` }}
     >
+      {/* Stretched-Link: die ganze Karte ist klickbar; Stern und „Zurückholen"
+          liegen mit z-10 darüber und bleiben eigenständig bedienbar. */}
+      <Link
+        href={`/board/${board.slug}`}
+        aria-label={`Board ${board.name} öffnen`}
+        className="absolute inset-0 rounded-[14px]"
+      />
       <div className="mb-3 flex items-start justify-between">
         <span
-          className="flex h-9 w-9 items-center justify-center rounded-lg"
+          className="flex h-9 w-9 items-center justify-center rounded-lg transition-transform duration-200 group-hover:scale-105"
           style={{ backgroundColor: `${accent}18`, color: accent }}
         >
           <Kanban className="h-5 w-5" />
@@ -160,7 +167,7 @@ function BoardCard({
           type="button"
           aria-label={board.is_favorite ? 'Favorit entfernen' : 'Als Favorit markieren'}
           onClick={() => onToggleFavorite(!board.is_favorite)}
-          className="rounded p-1 text-muted-foreground/60 transition-colors hover:text-amber-500"
+          className="relative z-10 rounded p-1 text-muted-foreground/60 transition-all hover:scale-110 hover:text-amber-500 active:scale-95"
         >
           <Star
             className="h-[18px] w-[18px]"
@@ -168,8 +175,10 @@ function BoardCard({
           />
         </button>
       </div>
-      <Link href={`/board/${board.slug}`} className="block">
-        <div className="font-semibold text-foreground">{board.name}</div>
+      <div>
+        <div className="font-semibold text-foreground transition-colors duration-200 group-hover:text-brand">
+          {board.name}
+        </div>
         <div className="mt-1.5 flex items-center gap-1.5 font-mono text-xs text-muted-foreground">
           <span className={cn(board.card_count === 0 && 'text-muted-foreground/50')}>
             {board.card_count} Karten
@@ -180,8 +189,8 @@ function BoardCard({
             board.last_activity_at && <span>· aktiv {relativeDay(board.last_activity_at)}</span>
           )}
         </div>
-      </Link>
-      {archived && <ArchivedRestore board={board} accentClassName="mt-3" />}
+      </div>
+      {archived && <ArchivedRestore board={board} accentClassName="relative z-10 mt-3" />}
     </div>
   );
 }

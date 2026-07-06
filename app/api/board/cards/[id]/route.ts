@@ -6,55 +6,37 @@ import {
   getCardDetail,
   patchCard,
   deleteCard,
-  boardErrorToResponse,
+  withBoardErrors,
 } from '@/lib/server/board';
 import { cardPatchSchema } from '@/lib/shared/board-schemas';
 
-export const GET = withApiError(async (
+export const GET = withApiError(withBoardErrors(async (
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) => {
   await requireUser();
   const { id } = validateParams(await params, idParamSchema);
-  try {
-    const card = await getCardDetail(id);
-    return NextResponse.json({ card });
-  } catch (err) {
-    const res = boardErrorToResponse(err);
-    if (res) return res;
-    throw err;
-  }
-});
+  const card = await getCardDetail(id);
+  return NextResponse.json({ card });
+}));
 
-export const PATCH = withApiError(async (
+export const PATCH = withApiError(withBoardErrors(async (
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) => {
   const user = await requireUser();
   const { id } = validateParams(await params, idParamSchema);
   const patch = await validateBody(req, cardPatchSchema);
-  try {
-    const card = await patchCard(user.id, id, patch);
-    return NextResponse.json({ card });
-  } catch (err) {
-    const res = boardErrorToResponse(err);
-    if (res) return res;
-    throw err;
-  }
-});
+  const card = await patchCard(user.id, id, patch);
+  return NextResponse.json({ card });
+}));
 
-export const DELETE = withApiError(async (
+export const DELETE = withApiError(withBoardErrors(async (
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) => {
   await requireUser();
   const { id } = validateParams(await params, idParamSchema);
-  try {
-    await deleteCard(id);
-    return NextResponse.json({ ok: true });
-  } catch (err) {
-    const res = boardErrorToResponse(err);
-    if (res) return res;
-    throw err;
-  }
-});
+  await deleteCard(id);
+  return NextResponse.json({ ok: true });
+}));

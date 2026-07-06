@@ -190,7 +190,7 @@ export function VirtualizedMultiSelect({
             placeholder={searchPlaceholder}
           />
           {rows.length === 0 ? (
-            <div className="py-6 text-center text-sm text-neutral-500">{emptyMessage}</div>
+            <div className="py-6 text-center text-sm text-muted-foreground">{emptyMessage}</div>
           ) : useVirt ? (
             <div
               ref={parentRef}
@@ -251,11 +251,11 @@ export function VirtualizedMultiSelect({
           )}
           {value.length > 0 && (
             <div className="border-t px-3 py-2 flex items-center justify-between text-xs">
-              <span className="text-neutral-500">{value.length} ausgewählt</span>
+              <span className="text-muted-foreground">{value.length} ausgewählt</span>
               <button
                 type="button"
                 onClick={clearAll}
-                className="flex items-center gap-1 text-neutral-500 hover:text-neutral-900 transition-colors"
+                className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
               >
                 <X className="h-3 w-3" /> Alle entfernen
               </button>
@@ -270,7 +270,7 @@ export function VirtualizedMultiSelect({
 function GroupHeader({ label }: { label: string }) {
   return (
     <div
-      className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-neutral-500 bg-neutral-50 border-b border-neutral-100"
+      className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground bg-muted border-b border-border"
       style={{ height: HEADER_HEIGHT }}
     >
       {label}
@@ -297,9 +297,9 @@ function RowItem({
       aria-pressed={checked}
       onClick={onToggle}
       className={cn(
-        'flex w-full items-center gap-2 px-3 py-2 cursor-pointer text-left text-sm hover:bg-neutral-100',
+        'flex w-full items-center gap-2 px-3 py-2 cursor-pointer text-left text-sm hover:bg-accent',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset',
-        checked && 'bg-neutral-50',
+        checked && 'bg-accent',
       )}
       style={{ height: ITEM_HEIGHT }}
     >
@@ -307,7 +307,7 @@ function RowItem({
         aria-hidden="true"
         className={cn(
           'flex items-center justify-center h-4 w-4 rounded border shrink-0',
-          checked ? 'bg-brand border-brand text-white' : 'border-neutral-300 bg-white',
+          checked ? 'bg-brand border-brand text-white' : 'border-input bg-background',
         )}
       >
         {checked && <Check className="h-3 w-3" />}
@@ -315,7 +315,7 @@ function RowItem({
       <span className="flex-1 min-w-0">
         <span className="block truncate">{item.label}</span>
         {item.sublabel && (
-          <span className="block text-xs text-neutral-500 truncate">{item.sublabel}</span>
+          <span className="block text-xs text-muted-foreground truncate">{item.sublabel}</span>
         )}
       </span>
     </button>
