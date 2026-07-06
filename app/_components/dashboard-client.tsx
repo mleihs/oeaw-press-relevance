@@ -1,6 +1,6 @@
 'use client';
 
-import { useSyncExternalStore, type ReactNode } from 'react';
+import { useSyncExternalStore, type ComponentProps, type ReactNode } from 'react';
 import Link from 'next/link';
 import {
   ArrowRight,
@@ -201,6 +201,8 @@ export function DashboardClient({ data, period, sortBy, boardCards, socialData }
           <h1 className="text-2xl font-bold tracking-tight text-ink">{greeting.line}</h1>
           <p className="mt-1.5 text-sm text-ink-subtle">{subParts.join(' · ')}</p>
         </div>
+        <div className="flex items-center gap-1.5">
+        <InfoBubble id="dashboard_time_range" size="sm" />
         <nav
           aria-label="Zeitraum"
           className="flex gap-0.5 rounded-[9px] bg-fill p-[3px]"
@@ -222,6 +224,7 @@ export function DashboardClient({ data, period, sortBy, boardCards, socialData }
             </a>
           ))}
         </nav>
+        </div>
       </div>
 
       {/* Row 1 — Social-Trends + Redaktionsboard (Design Toolkit-Redesign
@@ -320,7 +323,10 @@ export function DashboardClient({ data, period, sortBy, boardCards, socialData }
           <DimensionMeans averages={stats.dimension_avgs} />
           {stats.top_keywords.length > 0 && (
             <div className={`${CARD} px-[18px] py-4`}>
-              <div className="mb-3 text-[13.5px] font-semibold text-ink">Häufige Keywords</div>
+              <div className="mb-3 flex items-center gap-1.5 text-[13.5px] font-semibold text-ink">
+                Häufige Keywords
+                <InfoBubble id="top_keywords" size="sm" />
+              </div>
               <KeywordCloud keywords={stats.top_keywords} />
             </div>
           )}
@@ -333,17 +339,20 @@ export function DashboardClient({ data, period, sortBy, boardCards, socialData }
           icon={<BookOpen className="h-[21px] w-[21px]" />}
           value={stats.total}
           label={statLabels.pubs}
+          bubbleId="stat_total_pubs"
         />
         <StatTile
           icon={<BarChart3 className="h-[21px] w-[21px]" />}
           value={stats.analyzed}
           label={statLabels.analyzed}
+          bubbleId="stat_analyzed"
         />
         <StatTile
           icon={<TrendingUp className="h-[21px] w-[21px]" />}
           iconClass="bg-success-tint text-success"
           value={stats.high_score_count}
           label={statLabels.high}
+          bubbleId="stat_high_score"
         />
       </div>
     </div>
@@ -471,7 +480,10 @@ export function DashboardClient({ data, period, sortBy, boardCards, socialData }
 
       {stats.top_keywords.length > 0 && (
         <div className={`${CARD} p-[15px]`}>
-          <div className="mb-3 text-[13.5px] font-semibold text-ink">Häufige Keywords</div>
+          <div className="mb-3 flex items-center gap-1.5 text-[13.5px] font-semibold text-ink">
+            Häufige Keywords
+            <InfoBubble id="top_keywords" size="sm" />
+          </div>
           <KeywordCloud keywords={stats.top_keywords} />
         </div>
       )}
@@ -691,11 +703,14 @@ function StatTile({
   iconClass = 'bg-brand-50 text-brand',
   value,
   label,
+  bubbleId,
 }: {
   icon: ReactNode;
   iconClass?: string;
   value: number;
   label: string;
+  /** InfoBubble-Ziel im Hilfesystem (lib/client/explanations). */
+  bubbleId?: ComponentProps<typeof InfoBubble>['id'];
 }) {
   return (
     <div className={`${CARD} flex items-center gap-3.5 px-[18px] py-4`}>
@@ -706,7 +721,10 @@ function StatTile({
         <div className="font-mono text-[22px] font-semibold leading-none tracking-[-0.01em] text-ink tabular-nums">
           {value.toLocaleString('de-AT')}
         </div>
-        <div className="mt-1 text-xs text-ink-subtle">{label}</div>
+        <div className="mt-1 flex items-center gap-1 text-xs text-ink-subtle">
+          {label}
+          {bubbleId && <InfoBubble id={bubbleId} size="sm" />}
+        </div>
       </div>
     </div>
   );
@@ -759,7 +777,10 @@ function ScoreDistribution({ buckets }: { buckets: number[] }) {
   return (
     <div className={`${CARD} px-[18px] py-4`}>
       <div className="mb-3.5 flex items-baseline justify-between">
-        <span className="text-[13.5px] font-semibold text-ink">Score-Verteilung</span>
+        <span className="inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-ink">
+          Score-Verteilung
+          <InfoBubble id="score_distribution_chart" size="sm" />
+        </span>
         <span className="font-mono text-[11px] text-ink-muted">analysierte Pubs</span>
       </div>
       <div className="flex h-[74px] items-end gap-1">
@@ -789,7 +810,10 @@ function DimensionMeans({ averages }: { averages: Record<string, number> }) {
   if (rows.length === 0) return null;
   return (
     <div className={`${CARD} px-[18px] py-4`}>
-      <div className="mb-3 text-[13.5px] font-semibold text-ink">Dimensions-Mittelwerte</div>
+      <div className="mb-3 flex items-center gap-1.5 text-[13.5px] font-semibold text-ink">
+        Dimensions-Mittelwerte
+        <InfoBubble id="dimensions_profile" size="sm" />
+      </div>
       <div className="flex flex-col gap-2.5">
         {rows.map((r) => (
           <div key={r.label}>
