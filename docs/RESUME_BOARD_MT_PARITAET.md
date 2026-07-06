@@ -93,7 +93,7 @@ Format in `attachment-preview.tsx` (Modal mit Download-Button):
   /api/auth/login` — braucht `origin`/`referer`-Header!) +
   `addInitScript(sessionStorage storyscout-auth-marker=1)`, NICHT den
   Klick-Flow (goto() unterbricht die Login-Navigation, Next-Streams hängen).
-- Lokaler Test-User authtest.tmp@oeaw.ac.at / tmp-test-9911 (disabled_at vor
+- Lokaler Test-User authtest.tmp@oeaw.ac.at / &lt;redacted&gt; (disabled_at vor
   Tests auf NULL, danach wieder setzen); card_activity ist append-only →
   Verify-Spuren nur mit `ALTER TABLE … DISABLE TRIGGER
   trg_card_activity_no_delete` (lokal!) löschbar.
