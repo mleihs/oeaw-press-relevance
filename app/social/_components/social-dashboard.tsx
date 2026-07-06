@@ -10,7 +10,7 @@ import { StatusBanner } from '@/components/status-banner';
 import { StatStrip } from './stat-strip';
 import { SocialToolbar } from './social-toolbar';
 import { SocialViews, type SocialView } from './social-views';
-import type { DisclosureItem } from './accordion-list';
+import type { GroupItem } from './group-section';
 import type { PostCardChannel } from './post-card';
 import { SocialFilterProvider } from './social-filter-context';
 import { TopTags } from './top-tags';
@@ -18,20 +18,17 @@ import { ThemeChips } from './theme-chips';
 import { EmptyState } from '@/components/empty-state';
 import { Button } from '@/components/ui/button';
 import { SearchX } from '@/lib/icons';
+import { socialAccent, SOCIAL_ACCENTS } from './social-accents';
 
 const compact = new Intl.NumberFormat('de-AT', { notation: 'compact', maximumFractionDigits: 1 });
+
+/** Anzahl „Top-Post"-Flame-Badges (Mock `hot`): die interaktionsstärksten
+ *  Posts des Fensters. */
+const HOT_COUNT = 2;
 
 export interface ThemeWithPosts {
   theme: SocialTheme;
   posts: SocialPost[];
-}
-
-function topKeywords(posts: SocialPost[], n = 4): string[] {
-  const counts = new Map<string, number>();
-  for (const p of posts) for (const k of p.keywords ?? []) {
-    counts.set(k, (counts.get(k) ?? 0) + 1);
-  }
-  return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, n).map(([k]) => k);
 }
 
 export function SocialDashboard({
@@ -85,6 +82,35 @@ export function SocialDashboard({
   const selectedSet = useMemo(() => new Set(selectedChannels), [selectedChannels]);
   const tagSet = useMemo(() => new Set(selectedTags.map((t) => t.toLowerCase())), [selectedTags]);
 
+  // Kategoriale Kanal-Akzente (Mock): Index in der Kanal-Liste → Palette.
+  // channelById kommt vom Server ohne Farbe; hier einmalig anreichern.
+  const accentIndexByChannel = useMemo(() => {
+    const m = new Map<string, number>();
+    channels.forEach((c, i) => m.set(c.id, i % SOCIAL_ACCENTS.length));
+    return m;
+  }, [channels]);
+  const channelByIdAccented = useMemo(() => {
+    const out: Record<string, PostCardChannel> = {};
+    for (const [id, ch] of Object.entries(channelById)) {
+      out[id] = { ...ch, dot: socialAccent(accentIndexByChannel.get(id) ?? 0).dot };
+    }
+    return out;
+  }, [channelById, accentIndexByChannel]);
+
+  // „Top-Post"-Markierung: die interaktionsstärksten Posts des Fensters.
+  const hotIds = useMemo(() => {
+    const top = [...allPosts]
+      .filter((p) => (p.like_count ?? 0) > 0)
+      .sort((a, b) => (b.like_count ?? 0) - (a.like_count ?? 0))
+      .slice(0, HOT_COUNT);
+    return new Set(top.map((p) => p.id));
+  }, [allPosts]);
+
+  const totalLikes = useMemo(
+    () => allPosts.reduce((n, p) => n + (p.like_count ?? 0), 0),
+    [allPosts],
+  );
+
   const pred = useCallback(
     (p: SocialPost) => {
       if (selectedSet.size && !selectedSet.has(p.channel_id)) return false;
@@ -97,7 +123,6 @@ export function SocialDashboard({
 
   const filtering =
     query.trim() !== '' || selectedChannels.length > 0 || selectedTags.length > 0 || range !== null;
-  const resetKey = `${query}|${selectedChannels.join(',')}|${selectedTags.join(',')}|${range ?? 'all'}|${sort}`;
 
   // Human-readable echo of what's currently narrowing the feed — shown inside
   // the empty state so "no results" is never a dead-end (the user sees WHY and
@@ -113,7 +138,7 @@ export function SocialDashboard({
 
   // Recovery empty state (filter-UX best practice: name the active filters +
   // offer a one-click reset). Rendered only while filtering — a genuinely empty
-  // lens (e.g. no snapshot yet) keeps the accordion's own neutral message.
+  // lens (e.g. no snapshot yet) keeps the group list's own neutral message.
   const filteredEmpty = (
     <EmptyState
       icon={<SearchX className="h-5 w-5" />}
@@ -132,42 +157,47 @@ export function SocialDashboard({
           Alle Filter zurücksetzen
         </Button>
       }
+      className="border-[1.5px] border-dashed border-line-strong bg-transparent"
     />
   );
 
-  const themeDisclosure = useMemo<DisclosureItem[]>(() => {
+  const themeGroups = useMemo<GroupItem[]>(() => {
     // Key by the ORIGINAL snapshot index (stable across filtering) so surviving
     // themes keep their component identity — no remount, no lost child state.
     return themeItems
-      .map((t, i) => ({ key: `theme-${i}`, theme: t.theme, posts: sortPosts(t.posts.filter(pred), sort) }))
+      .map((t, i) => ({ i, theme: t.theme, posts: sortPosts(t.posts.filter(pred), sort) }))
       .filter((t) => !filtering || t.posts.length > 0)
       .map((t) => ({
-        key: t.key,
+        key: `theme-${t.i}`,
         title: t.theme.theme,
-        count: t.posts.length,
-        meta: t.theme.channels.join(' · ') || undefined,
         description: t.theme.description || undefined,
+        metaMono: t.theme.channels.map((c) => `@${c}`).join(' · ') || undefined,
+        count: t.posts.length,
+        accentIndex: t.i,
+        badge: 'count' as const,
         posts: t.posts,
       }));
   }, [themeItems, pred, sort, filtering]);
 
-  const channelDisclosure = useMemo<DisclosureItem[]>(() => {
+  const channelGroups = useMemo<GroupItem[]>(() => {
     return channels
-      .map((c) => {
+      .map((c, i) => {
         const posts = sortPosts(c.posts.filter(pred), sort);
         const likes = posts.reduce((n, p) => n + (p.like_count ?? 0), 0);
         const last = posts.map((p) => p.posted_at).filter(Boolean).sort().at(-1) ?? null;
-        const kw = topKeywords(posts);
         const meta = [
+          `${posts.length} Posts`,
           likes > 0 ? `${compact.format(likes)} Likes` : null,
-          last ? `vor ${formatDistanceToNow(new Date(last), { locale: de })}` : null,
+          last ? `zuletzt vor ${formatDistanceToNow(new Date(last), { locale: de })}` : null,
         ].filter(Boolean).join(' · ');
         return {
           key: c.id,
-          title: c.display_name || c.handle,
+          title: `@${c.handle}`,
+          description: c.display_name || undefined,
+          metaMono: meta,
           count: posts.length,
-          meta: meta || undefined,
-          description: kw.length ? `Häufige Schlagworte: ${kw.join(', ')}` : undefined,
+          accentIndex: i % SOCIAL_ACCENTS.length,
+          badge: 'avatar' as const,
           posts,
         };
       })
@@ -181,9 +211,15 @@ export function SocialDashboard({
     [channels],
   );
 
-  // Theme fields (stable keys match themeDisclosure) for the clickable overview row.
+  // Theme fields (stable keys match themeGroups) for the clickable chip row.
   const themeChips = useMemo(
-    () => themeItems.map((t, i) => ({ key: `theme-${i}`, title: t.theme.theme, count: t.posts.length })),
+    () =>
+      themeItems.map((t, i) => ({
+        key: `theme-${i}`,
+        title: t.theme.theme,
+        count: t.posts.length,
+        accentIndex: i,
+      })),
     [themeItems],
   );
 
@@ -197,8 +233,7 @@ export function SocialDashboard({
     [reduce],
   );
 
-  // Theme chip → switch to the Themen view + open that theme; the accordion
-  // scrolls the opened theme into view itself.
+  // Theme chip → switch to the Themen view + scroll that theme into view.
   const gotoTheme = useCallback((key: string) => {
     setView('themen');
     setFocusedThemeKey(key);
@@ -211,6 +246,7 @@ export function SocialDashboard({
         posts={allPosts.length}
         channels={channels.length}
         themes={themeItems.length}
+        likes={totalLikes}
         windowDays={windowDays}
         onThemen={() => goto('themen')}
         onKanaele={() => goto('kanaele')}
@@ -231,6 +267,8 @@ export function SocialDashboard({
         <SocialFilterProvider value={{ activeTags: selectedTags, toggleTag, clearTags }}>
           <div ref={viewsRef} className="scroll-mt-4 space-y-4">
             <SocialToolbar
+              view={view}
+              onView={setView}
               query={query}
               onQuery={setQuery}
               channelOptions={channelOptions}
@@ -246,13 +284,10 @@ export function SocialDashboard({
             <TopTags posts={allPosts} />
             <SocialViews
               view={view}
-              onView={setView}
-              themeItems={themeDisclosure}
-              channelItems={channelDisclosure}
-              channelById={channelById}
-              themeOpenMode={filtering ? 'all' : 'first'}
-              channelOpenMode={filtering ? 'all' : 'none'}
-              resetKey={resetKey}
+              themeItems={themeGroups}
+              channelItems={channelGroups}
+              channelById={channelByIdAccented}
+              hotIds={hotIds}
               freshWindowDays={freshWindowDays}
               splitOlder={!filtering}
               themeFocusKey={focusedThemeKey ? `${focusedThemeKey}#${focusNonce}` : ''}

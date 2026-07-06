@@ -1,24 +1,29 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, useReducedMotion } from 'motion/react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { StatusBanner } from '@/components/status-banner';
 import { getApiHeaders } from '@/lib/client/stores/settings-store';
 import { consumeSSE } from '@/lib/client/sse';
 import { LLM_MODELS } from '@/lib/shared/constants';
 import { cn } from '@/lib/shared/utils';
-import { RefreshCw, Play, AlertCircle, Check, Loader2, Download, Sparkles, Tags } from '@/lib/icons';
+import {
+  RefreshCw,
+  Play,
+  AlertCircle,
+  Check,
+  CheckCircle2,
+  Loader2,
+  Download,
+  Sparkles,
+  Tags,
+  InstagramLogo,
+  X,
+} from '@/lib/icons';
 
 type Phase = 'idle' | 'running' | 'done' | 'skipped' | 'error';
 type Step = 'fetch' | 'analyze' | 'snapshot' | null;
@@ -43,9 +48,33 @@ const STEPS: { key: Exclude<Step, null>; label: string; icon: typeof Download }[
   { key: 'snapshot', label: 'Lagebild erstellen', icon: Sparkles },
 ];
 
+/** SSR-sicherer Mobile-Breakpoint (< sm): entscheidet Dialog vs. Bottom-Sheet
+ *  (Mock: Desktop-Modal / Mobile-Refresh-Sheet). Server snapshot = false →
+ *  Dialog, korrigiert sich nach Hydration. */
+function useIsMobile(): boolean {
+  return useSyncExternalStore(
+    (onChange) => {
+      const mql = window.matchMedia('(max-width: 639px)');
+      mql.addEventListener('change', onChange);
+      return () => mql.removeEventListener('change', onChange);
+    },
+    () => window.matchMedia('(max-width: 639px)').matches,
+    () => false,
+  );
+}
+
+const EASE = [0.22, 1, 0.36, 1] as const;
+
+/**
+ * „Aktualisieren" — der APIFY→LLM-Refresh-Flow im Mock-Design: getinteter
+ * Kopf mit Instagram-Quadrat, Modell-Liste + Throttle-Checkbox im Idle,
+ * animierter 3-Phasen-Stepper mit füllenden Verbindungslinien, Fortschritt,
+ * Live-Metrik-Karten und Sekunden-Timer im Lauf. Desktop = zentriertes Modal,
+ * Mobile = Bottom-Sheet.
+ */
 export function RefreshButton({ disabled }: { disabled?: boolean }) {
   const router = useRouter();
-  const reduce = useReducedMotion();
+  const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
   const [phase, setPhase] = useState<Phase>('idle');
   const [model, setModel] = useState(DEFAULT_MODEL);
@@ -164,60 +193,202 @@ export function RefreshButton({ disabled }: { disabled?: boolean }) {
     }
   }, [model, force, handleEvent]);
 
-  const curIdx = step ? STEPS.findIndex((s) => s.key === step) : -1;
-  const stepState = (i: number): 'done' | 'active' | 'pending' =>
-    phase === 'done' ? 'done' : i < curIdx ? 'done' : i === curIdx ? 'active' : 'pending';
-  const pct = counts.total > 0 ? Math.round((counts.processed / counts.total) * 100) : 0;
+  // Closing aborts an in-flight run (the server honors request-abort and skips
+  // the snapshot) and clears state, so no setState/router.refresh fires against
+  // a closed dialog/sheet.
+  const onOpenChange = useCallback(
+    (o: boolean) => {
+      setOpen(o);
+      if (!o) {
+        abortRef.current?.abort();
+        reset();
+      }
+    },
+    [reset],
+  );
+
+  const close = useCallback(() => onOpenChange(false), [onOpenChange]);
+
+  const body = (
+    <RefreshFlow
+      phase={phase}
+      step={step}
+      counts={counts}
+      elapsed={elapsed}
+      model={model}
+      onModel={setModel}
+      force={force}
+      onForce={setForce}
+      errorMsg={errorMsg}
+      skippedMsg={skippedMsg}
+      onStart={start}
+      onClose={close}
+      onForceRetry={() => {
+        setForce(true);
+        reset();
+      }}
+    />
+  );
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(o) => {
-        setOpen(o);
-        // Closing aborts an in-flight run (the server honors request-abort and
-        // skips the snapshot) and clears state, so no setState/router.refresh
-        // fires against a closed dialog.
-        if (!o) {
-          abortRef.current?.abort();
-          reset();
-        }
-      }}
-    >
-      <Button size="sm" disabled={disabled} onClick={() => setOpen(true)} title={disabled ? 'APIFY_TOKEN nicht konfiguriert' : undefined}>
+    <>
+      <Button
+        size="sm"
+        variant="outline"
+        disabled={disabled}
+        onClick={() => setOpen(true)}
+        title={disabled ? 'APIFY_TOKEN nicht konfiguriert' : undefined}
+      >
         <RefreshCw className="mr-2 h-4 w-4" />
         Aktualisieren
       </Button>
 
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Social Media aktualisieren</DialogTitle>
-          <DialogDescription>
-            Lädt die neuesten Posts der aktiven Kanäle, extrahiert Themen und erstellt ein neues Lagebild.
-          </DialogDescription>
-        </DialogHeader>
+      {isMobile ? (
+        <Drawer open={open} onOpenChange={onOpenChange}>
+          <DrawerContent grabber={false} className="max-h-[92%]">
+            <div className="overflow-y-auto pb-[max(env(safe-area-inset-bottom),1rem)]">
+              <RefreshHeader onClose={close} className="rounded-t-[22px]" TitleSlot={DrawerTitle} />
+              <div className="px-4 pt-4">{body}</div>
+            </div>
+          </DrawerContent>
+        </Drawer>
+      ) : (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+          <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-[500px]" showCloseButton={false}>
+            <RefreshHeader onClose={close} TitleSlot={DialogTitle} />
+            <div className="px-5 pb-5 pt-4">{body}</div>
+          </DialogContent>
+        </Dialog>
+      )}
+    </>
+  );
+}
 
+/** Getinteter Kopf (Mock): Instagram-Quadrat, Titel + Beschreibung, X. Von
+ *  Dialog und Drawer geteilt; `TitleSlot` liefert das jeweils a11y-korrekte
+ *  Title-Primitive (Radix Dialog bzw. vaul). */
+function RefreshHeader({
+  onClose,
+  className,
+  TitleSlot,
+}: {
+  onClose: () => void;
+  className?: string;
+  TitleSlot: React.ComponentType<{ className?: string; children?: React.ReactNode }>;
+}) {
+  return (
+    <div
+      className={cn(
+        'flex items-start gap-3 border-b border-line/70 bg-gradient-to-br from-brand-50 to-surface-muted px-5 py-4 dark:from-brand-500/10 dark:to-transparent',
+        className,
+      )}
+    >
+      <span
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] bg-brand-500 text-white shadow-[0_4px_12px_rgba(0,71,187,.32)]"
+        aria-hidden
+      >
+        <InstagramLogo className="h-5 w-5" weight="fill" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <TitleSlot className="text-base font-bold tracking-[-0.01em]">
+          Social Media aktualisieren
+        </TitleSlot>
+        <p className="mt-0.5 text-xs leading-relaxed text-ink-subtle">
+          Lädt neue Posts der aktiven Kanäle, extrahiert Themen und erstellt ein neues Lagebild.
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="Schließen"
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] bg-surface/70 text-ink-subtle transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <X className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
+
+/** Innenleben des Refresh-Flows (Dialog + Sheet identisch). */
+function RefreshFlow({
+  phase,
+  step,
+  counts,
+  elapsed,
+  model,
+  onModel,
+  force,
+  onForce,
+  errorMsg,
+  skippedMsg,
+  onStart,
+  onClose,
+  onForceRetry,
+}: {
+  phase: Phase;
+  step: Step;
+  counts: Counts;
+  elapsed: number;
+  model: string;
+  onModel: (m: string) => void;
+  force: boolean;
+  onForce: (f: boolean) => void;
+  errorMsg: string | null;
+  skippedMsg: string | null;
+  onStart: () => void;
+  onClose: () => void;
+  onForceRetry: () => void;
+}) {
+  const reduce = useReducedMotion();
+  const curIdx = step ? STEPS.findIndex((s) => s.key === step) : -1;
+  const stepState = (i: number): 'done' | 'active' | 'pending' =>
+    phase === 'done' ? 'done' : i < curIdx ? 'done' : i === curIdx ? 'active' : 'pending';
+  const pct = counts.total > 0 ? Math.round((counts.processed / counts.total) * 100) : 0;
+  const running = phase === 'running';
+  const active = running || phase === 'done';
+
+  return (
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.div
+        key={active ? 'active' : phase}
+        initial={reduce ? false : { opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={reduce ? undefined : { opacity: 0, y: -6 }}
+        transition={{ duration: 0.22, ease: EASE }}
+      >
         {phase === 'idle' && (
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium">Modell</label>
-              <div className="max-h-44 space-y-1 overflow-y-auto rounded-lg border p-1.5">
+              <p className="text-[13px] font-semibold text-foreground">Modell</p>
+              <div className="max-h-48 space-y-0.5 overflow-y-auto rounded-[11px] border border-line p-1.5">
                 {LLM_MODELS.map((m) => {
                   const selected = model === m.value;
                   return (
                     <button
                       key={m.value}
                       type="button"
-                      onClick={() => setModel(m.value)}
+                      onClick={() => onModel(m.value)}
                       className={cn(
-                        'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors',
+                        'flex w-full items-center gap-2.5 rounded-[9px] px-3 py-2.5 text-left text-sm transition-colors',
                         selected ? 'bg-foreground text-background' : 'hover:bg-muted',
                       )}
                     >
-                      <span className={cn('flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2', selected ? 'border-background' : 'border-input')}>
-                        {selected && <Check className="h-2.5 w-2.5" />}
+                      <span
+                        className={cn(
+                          'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2',
+                          selected ? 'border-background' : 'border-line-strong',
+                        )}
+                        aria-hidden
+                      >
+                        {selected && <span className="h-[7px] w-[7px] rounded-full bg-background" />}
                       </span>
                       <span className="flex-1 font-medium">{m.label}</span>
-                      <span className={selected ? 'text-background/70' : 'text-muted-foreground/70'}>
+                      <span
+                        className={cn(
+                          'font-mono text-[11px]',
+                          selected ? 'text-background/70' : 'text-ink-soft',
+                        )}
+                      >
                         {m.costPerMillionTokens === 0 ? 'gratis' : `$${m.costPerMillionTokens}/M`}
                       </span>
                     </button>
@@ -225,42 +396,87 @@ export function RefreshButton({ disabled }: { disabled?: boolean }) {
                 })}
               </div>
             </div>
-            <label className="flex cursor-pointer items-center gap-2 text-sm">
-              <input type="checkbox" checked={force} onChange={(e) => setForce(e.target.checked)} className="rounded border-input" />
-              <span>Throttle ignorieren (trotz kürzlicher Aktualisierung)</span>
+
+            <label className="flex cursor-pointer items-center gap-2.5 text-sm text-ink-strong">
+              <input
+                type="checkbox"
+                checked={force}
+                onChange={(e) => onForce(e.target.checked)}
+                className="peer sr-only"
+              />
+              <span
+                className={cn(
+                  'flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-[5px] border-2 transition-colors',
+                  'peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2',
+                  force ? 'border-brand-500 bg-brand-500' : 'border-line-strong bg-surface',
+                )}
+                aria-hidden
+              >
+                <Check className={cn('h-3 w-3 text-white', force ? 'opacity-100' : 'opacity-0')} weight="bold" />
+              </span>
+              Throttle ignorieren (trotz kürzlicher Aktualisierung)
             </label>
+
+            <motion.div whileTap={reduce ? undefined : { scale: 0.985 }}>
+              <Button
+                onClick={onStart}
+                className="w-full gap-2 rounded-[11px] py-5 text-sm font-semibold shadow-[0_6px_16px_rgba(0,71,187,.28)]"
+              >
+                <Play className="h-4 w-4" weight="fill" /> Starten
+              </Button>
+            </motion.div>
           </div>
         )}
 
-        {(phase === 'running' || phase === 'done') && (
+        {active && (
           <div className="space-y-4">
-            {/* Phase stepper */}
-            <ol className="flex items-center">
+            {/* Phase stepper (Mock: Kreise + füllende Verbindungslinien) */}
+            <ol className="flex items-start">
               {STEPS.map((s, i) => {
                 const st = stepState(i);
                 const Icon = s.icon;
                 return (
-                  <li key={s.key} className="flex flex-1 items-center last:flex-none">
-                    <div className="flex flex-col items-center gap-1.5 text-center">
+                  <li key={s.key} className="flex flex-1 items-start last:flex-none">
+                    <div className="flex w-16 flex-col items-center gap-1.5 text-center">
                       <motion.div
                         animate={reduce ? undefined : { scale: st === 'active' ? 1.08 : 1 }}
-                        transition={{ duration: 0.3, repeat: st === 'active' ? Infinity : 0, repeatType: 'reverse' }}
+                        transition={{
+                          duration: 0.3,
+                          repeat: st === 'active' ? Infinity : 0,
+                          repeatType: 'reverse',
+                        }}
                         className={cn(
-                          'flex h-9 w-9 items-center justify-center rounded-full border-2',
+                          'flex h-10 w-10 items-center justify-center rounded-full border-2 transition-colors duration-300',
                           st === 'done' && 'border-brand bg-brand text-white',
-                          st === 'active' && 'border-brand text-brand',
-                          st === 'pending' && 'border-input text-muted-foreground/50',
+                          st === 'active' && 'border-brand bg-surface text-brand',
+                          st === 'pending' && 'border-line text-ink-soft/60',
                         )}
                       >
-                        {st === 'done' ? <Check className="h-4 w-4" /> : st === 'active' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Icon className="h-4 w-4" />}
+                        {st === 'done' ? (
+                          <Check className="h-4 w-4" weight="bold" />
+                        ) : st === 'active' ? (
+                          <Loader2 className="h-4 w-4 animate-spin" weight="bold" />
+                        ) : (
+                          <Icon className="h-4 w-4" weight="bold" />
+                        )}
                       </motion.div>
-                      <span className={cn('text-[11px] leading-tight', st === 'pending' ? 'text-muted-foreground/60' : 'text-foreground')}>
+                      <span
+                        className={cn(
+                          'text-[11px] leading-tight',
+                          st === 'pending' ? 'text-ink-soft' : 'font-medium text-foreground',
+                        )}
+                      >
                         {s.label}
                       </span>
                     </div>
                     {i < STEPS.length - 1 && (
-                      <div className="mx-1 h-0.5 flex-1 rounded bg-border">
-                        <div className={cn('h-full rounded bg-brand transition-all duration-500', i < curIdx || phase === 'done' ? 'w-full' : 'w-0')} />
+                      <div className="mt-[19px] h-0.5 flex-1 overflow-hidden rounded bg-fill">
+                        <div
+                          className={cn(
+                            'h-full rounded bg-brand transition-all duration-500',
+                            i < curIdx || phase === 'done' ? 'w-full' : 'w-0',
+                          )}
+                        />
                       </div>
                     )}
                   </li>
@@ -268,80 +484,105 @@ export function RefreshButton({ disabled }: { disabled?: boolean }) {
               })}
             </ol>
 
-            {/* Analyze progress */}
+            {/* Analyze progress (Mock: Gradient-Balken) */}
             {(step === 'analyze' || phase === 'done') && counts.total > 0 && (
-              <div className="space-y-1">
-                <Progress value={phase === 'done' ? 100 : pct} />
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>{phase === 'done' ? counts.analyzed : counts.processed} / {counts.total} Posts analysiert</span>
+              <div className="space-y-1.5">
+                <div className="h-2 overflow-hidden rounded-full bg-fill">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-brand-500 to-brand-400 transition-[width] duration-300"
+                    style={{ width: `${phase === 'done' ? 100 : pct}%` }}
+                    role="progressbar"
+                    aria-valuenow={phase === 'done' ? 100 : pct}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                  />
+                </div>
+                <div className="flex justify-between font-mono text-[11px] text-ink-subtle">
+                  <span>
+                    {phase === 'done' ? counts.analyzed : counts.processed} / {counts.total} Posts analysiert
+                  </span>
                   <span>{phase === 'done' ? 100 : pct}%</span>
                 </div>
               </div>
             )}
 
-            {/* Live metrics */}
+            {/* Live metrics (Mock: 3 Karten) */}
             <div className="grid grid-cols-3 gap-2 text-center">
               <Metric label="geladen" value={`${counts.fetched}${counts.added ? ` (+${counts.added})` : ''}`} />
               <Metric label="Themen" value={counts.themes || '–'} />
               <Metric label="Kosten" value={counts.cost ? `$${counts.cost.toFixed(4)}` : '–'} />
             </div>
 
-            <p className="text-center text-xs text-muted-foreground tabular-nums">
+            <p className="text-center font-mono text-[11px] text-ink-soft">
               {phase === 'done' ? 'Fertig' : 'Läuft'} · {elapsed}s
               {counts.tokens > 0 && ` · ${counts.tokens.toLocaleString('de-AT')} Tokens`}
             </p>
 
-            {errorMsg && phase === 'running' && (
+            {errorMsg && running && (
               <StatusBanner variant="warning" icon={<AlertCircle className="mt-0.5 h-3 w-3 shrink-0" />}>
                 {errorMsg}
               </StatusBanner>
             )}
+
             {phase === 'done' && (
-              <StatusBanner variant="success" className="text-sm">
-                Aktualisierung abgeschlossen.
-              </StatusBanner>
+              <motion.div
+                initial={reduce ? false : { opacity: 0, scale: 0.97 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.25, ease: EASE }}
+                className="space-y-3"
+              >
+                <div className="flex items-center gap-2.5 rounded-[11px] border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-3 text-[13px] font-semibold text-emerald-700 dark:text-emerald-400">
+                  <CheckCircle2 className="h-[18px] w-[18px] shrink-0" weight="fill" />
+                  Aktualisierung abgeschlossen.
+                </div>
+                <Button variant="outline" onClick={onClose} className="w-full rounded-[11px]">
+                  Schließen
+                </Button>
+              </motion.div>
+            )}
+            {running && (
+              <div className="flex items-center justify-center gap-2 text-[13px] font-semibold text-ink-soft">
+                <Loader2 className="h-4 w-4 animate-spin" weight="bold" /> Läuft …
+              </div>
             )}
           </div>
         )}
 
         {phase === 'skipped' && skippedMsg && (
-          <StatusBanner variant="neutral" className="px-3 py-3 text-sm">{skippedMsg}</StatusBanner>
+          <div className="space-y-3">
+            <StatusBanner variant="neutral" className="px-3 py-3 text-sm">
+              {skippedMsg}
+            </StatusBanner>
+            <Button onClick={onForceRetry} className="w-full rounded-[11px]">
+              Trotzdem aktualisieren
+            </Button>
+          </div>
         )}
         {phase === 'error' && errorMsg && (
-          <StatusBanner variant="error" icon={<AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />} className="space-y-1 px-3 py-3 text-sm">
-            <p className="font-medium">Fehler</p>
-            <p>{errorMsg}</p>
-          </StatusBanner>
+          <div className="space-y-3">
+            <StatusBanner
+              variant="error"
+              icon={<AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />}
+              className="space-y-1 px-3 py-3 text-sm"
+            >
+              <p className="font-medium">Fehler</p>
+              <p>{errorMsg}</p>
+            </StatusBanner>
+            <Button variant="outline" onClick={onClose} className="w-full rounded-[11px]">
+              Schließen
+            </Button>
+          </div>
         )}
-
-        <DialogFooter>
-          {phase === 'idle' && (
-            <Button size="sm" onClick={start}>
-              <Play className="mr-2 h-4 w-4" /> Starten
-            </Button>
-          )}
-          {phase === 'running' && (
-            <Button size="sm" variant="outline" disabled>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Läuft …
-            </Button>
-          )}
-          {(phase === 'done' || phase === 'error') && (
-            <Button size="sm" variant="outline" onClick={reset}>Schließen</Button>
-          )}
-          {phase === 'skipped' && (
-            <Button size="sm" onClick={() => { setForce(true); reset(); }}>Trotzdem aktualisieren</Button>
-          )}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      </motion.div>
+    </AnimatePresence>
   );
 }
 
 function Metric({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-lg border bg-muted/30 px-2 py-1.5">
-      <div className="text-sm font-semibold tabular-nums text-foreground">{value}</div>
-      <div className="text-[10px] text-muted-foreground">{label}</div>
+    <div className="rounded-[10px] border border-line/70 bg-surface-muted px-2 py-2">
+      <div className="font-mono text-[15px] font-semibold tabular-nums text-foreground">{value}</div>
+      <div className="mt-0.5 text-[10px] text-ink-soft">{label}</div>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { FileText, Radio, Layers, CalendarRange } from '@/lib/icons';
+import { FileText, Radio, Layers, Heart } from '@/lib/icons';
 import { StatCard } from '@/components/stat-card';
 
 /** Wraps a StatCard so the whole tile acts as a button (KPI-as-navigation).
@@ -39,12 +39,15 @@ function ClickableTile({
   );
 }
 
-/** KPI strip — the at-a-glance overview. „Themen" and „Kanäle" are entry points
- *  into the matching lens below. */
+/** KPI strip (Mock: Posts / Kanäle / Themen / Interaktionen). „Themen" und
+ *  „Kanäle" sind Einstiege in die passende Ansicht darunter. „Interaktionen"
+ *  ersetzt die alte Beobachtungs-Kachel; das Zeitfenster wandert als Subtitle
+ *  auf die Posts-Kachel (dort sitzt auch die Fenster-Erklärung). */
 export function StatStrip({
   posts,
   channels,
   themes,
+  likes,
   windowDays,
   onThemen,
   onKanaele,
@@ -52,25 +55,53 @@ export function StatStrip({
   posts: number;
   channels: number;
   themes: number;
+  likes: number;
   windowDays: number;
   onThemen: () => void;
   onKanaele: () => void;
 }) {
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-      <StatCard label="Posts im Fenster" value={posts} icon={<FileText className="h-5 w-5" />} accent="brand" explId="social_kpi_posts" />
+      <StatCard
+        label="Posts im Fenster"
+        value={posts}
+        subtitle={`letzte ${windowDays} Tage`}
+        icon={<FileText className="h-5 w-5" />}
+        accent="brand"
+        explId="social_kpi_posts"
+      />
 
       {/* StatCard renders its own bubble inline next to the label (explId); the
           tile itself is the navigation, named by aria-label. */}
       <ClickableTile label="Zur Kanal-Ansicht" onClick={onKanaele}>
-        <StatCard label="Kanäle" value={channels} icon={<Radio className="h-5 w-5" />} explId="social_kpi_channels" />
+        <StatCard
+          label="Kanäle"
+          value={channels}
+          subtitle="beobachtet"
+          icon={<Radio className="h-5 w-5" />}
+          accent="emerald"
+          explId="social_kpi_channels"
+        />
       </ClickableTile>
 
       <ClickableTile label="Zur Themen-Ansicht" onClick={onThemen}>
-        <StatCard label="Themen" value={themes} icon={<Layers className="h-5 w-5" />} accent="purple" explId="social_kpi_themes" />
+        <StatCard
+          label="Themen"
+          value={themes}
+          subtitle="automatisch geclustert"
+          icon={<Layers className="h-5 w-5" />}
+          accent="purple"
+          explId="social_kpi_themes"
+        />
       </ClickableTile>
 
-      <StatCard label="Beobachtung" value={windowDays} subtitle="Tage (Standard)" icon={<CalendarRange className="h-5 w-5" />} accent="amber" explId="social_window" />
+      <StatCard
+        label="Interaktionen"
+        value={likes}
+        subtitle="Likes gesamt"
+        icon={<Heart className="h-5 w-5" />}
+        accent="amber"
+      />
     </div>
   );
 }
