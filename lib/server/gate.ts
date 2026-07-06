@@ -5,6 +5,19 @@
 
 import { createHash, timingSafeEqual } from 'crypto';
 
+/** Cookie-Attribute des Gate-Cookies — geteilt zwischen /api/auth/gate und
+ *  /api/auth/login (ein persönlicher Login ist strikt stärker als das
+ *  gemeinsame Übergangs-Passwort und setzt das Gate-Cookie deshalb mit).
+ *  sameSite strict, weil jede mutierende Route zusätzlich assertSameOrigin
+ *  erzwingt (lib/server/http.ts). */
+export const GATE_COOKIE_OPTIONS = {
+  httpOnly: true,
+  sameSite: 'strict',
+  secure: process.env.NODE_ENV === 'production',
+  path: '/',
+  maxAge: 60 * 60 * 24 * 30, // 30 days
+} as const;
+
 /** SHA-256 hex of the password — the value stored in the cookie / GATE_TOKEN.
  *  Hashing keeps the raw password out of the browser jar. */
 export function tokenize(password: string): string {

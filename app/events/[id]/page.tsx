@@ -13,10 +13,10 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  if (!UUID_RE.test(id)) return { title: 'Event | Science Propaganda Ninja' };
+  if (!UUID_RE.test(id)) return { title: 'Event | ÖAW Presse' };
   const event = await getEvent(id);
-  if (!event) return { title: 'Event | Science Propaganda Ninja' };
-  return { title: `${event.title} | Science Propaganda Ninja` };
+  if (!event) return { title: 'Event | ÖAW Presse' };
+  return { title: `${event.title} | ÖAW Presse` };
 }
 
 // Per ADR 0009: decision-state-mutable surfaces stay force-dynamic so the

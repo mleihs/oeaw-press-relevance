@@ -31,8 +31,8 @@ const newsreader = Newsreader({
 });
 
 export const metadata: Metadata = {
-  title: "Science Propaganda Ninja | ÖAW",
-  description: "Science Propaganda Ninja findet die besten Stories in Publikationen der Österreichischen Akademie der Wissenschaften",
+  title: "ÖAW Presse",
+  description: "Press Relevance Toolkit der Österreichischen Akademie der Wissenschaften: Publikationen bewerten, Veranstaltungen kuratieren, Social Media im Blick",
 };
 
 export default function RootLayout({
@@ -46,7 +46,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable} antialiased bg-canvas text-foreground flex flex-col min-h-screen`}
       >
         {/* Fumadocs RootProvider: theme disabled so next-themes stays in
-            charge; search disabled because Science Propaganda Ninja owns a single global
+            charge; search disabled because ÖAW Presse owns a single global
             ⌘K palette (components/command) that surfaces Orama help results
             itself via useDocsSearch. Disabling it here removes Fumadocs's
             duplicate global ⌘K + its sidebar search trigger; DocsLayout still
@@ -71,7 +71,7 @@ export default function RootLayout({
                       erreichbar. */}
                   <footer className="hidden md:block border-t bg-background/50 mt-auto">
                     <div className="mx-auto max-w-7xl px-4 py-4 flex items-center justify-between text-xs text-muted-foreground">
-                      <span>Science Propaganda Ninja 0.1</span>
+                      <span>ÖAW Presse 0.1</span>
                       <div className="flex items-center gap-4">
                         <Link href="/settings" className="hover:text-foreground transition-colors">
                           Einstellungen

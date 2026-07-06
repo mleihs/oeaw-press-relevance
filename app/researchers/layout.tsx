@@ -5,7 +5,7 @@ import type { Metadata } from 'next';
 // This thin server boundary supplies the document title instead of falling
 // back to the root title.
 export const metadata: Metadata = {
-  title: 'Forscher:innen | Science Propaganda Ninja',
+  title: 'Forscher:innen | ÖAW Presse',
 };
 
 export default function ResearchersLayout({ children }: { children: React.ReactNode }) {

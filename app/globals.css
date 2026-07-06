@@ -505,3 +505,85 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* ===== Anmelde-Screen (components/auth/auth-screen.tsx) =====
+   Design: docs/design/claude-design/Login.dc.html. Die Feld-/Button-Formen
+   weichen bewusst vom shadcn-Input ab (46px, Radius 11px, Icon im Feld) und
+   leben deshalb als eigene Klassen. Motion wird vom globalen
+   prefers-reduced-motion-Reset (oben) mit neutralisiert. */
+.auth-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 46px;
+  padding: 0 13px;
+  border: 1.5px solid #d5dbe3;
+  border-radius: 11px;
+  background: #fff;
+  transition: border-color .15s, box-shadow .15s;
+}
+.auth-field:focus-within {
+  border-color: var(--brand-500);
+  box-shadow: 0 0 0 3px rgba(0, 71, 187, .13);
+}
+.auth-field input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 14.5px;
+  color: #16202e;
+}
+.auth-field input::placeholder { color: #9aa4b2; }
+
+.auth-btn-primary {
+  display: inline-flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border: none;
+  border-radius: 11px;
+  padding: 13px;
+  background: var(--brand-500);
+  color: #fff;
+  font-size: 14.5px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(0, 71, 187, .26);
+  transition: background .15s;
+}
+.auth-btn-primary:hover { background: var(--brand-600); }
+.auth-btn-primary:disabled {
+  background: var(--brand-300);
+  box-shadow: none;
+  cursor: default;
+}
+
+@keyframes auth-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.auth-rise { animation: auth-rise .5s cubic-bezier(.2,.7,.3,1) both; }
+
+@keyframes auth-shake {
+  10%, 90% { transform: translateX(-1px); }
+  20%, 80% { transform: translateX(2px); }
+  30%, 50%, 70% { transform: translateX(-4px); }
+  40%, 60% { transform: translateX(4px); }
+}
+.auth-shake { animation: auth-shake .5s; }
+
+@keyframes auth-pop {
+  from { opacity: 0; transform: scale(.85); }
+  to { opacity: 1; transform: scale(1); }
+}
+.auth-pop { animation: auth-pop .4s cubic-bezier(.2,.8,.3,1); }
+
+@keyframes auth-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+.auth-float { animation: auth-float 5s ease-in-out infinite; }

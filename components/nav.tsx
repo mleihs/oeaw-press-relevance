@@ -21,6 +21,7 @@ import {
   ChevronDown,
   Layers,
   Kanban,
+  RadioButton,
   type LucideIcon,
 } from '@/lib/icons';
 import { Button } from '@/components/ui/button';
@@ -268,8 +269,10 @@ export function Nav() {
   return (
     <header className="bg-brand shadow-md">
       <div className="mx-auto flex h-14 max-w-7xl items-center px-4">
-        <Link href="/" className="mr-6 font-semibold text-lg text-white">
-          Science Propaganda Ninja
+        <Link href="/" className="mr-6 flex items-center gap-2 font-semibold text-lg text-white">
+          {/* Marken-Logo wie im Login-Design: gefüllter RadioButton in Hellblau */}
+          <RadioButton weight="fill" aria-hidden className="h-6 w-6 text-[#9cc0ff]" />
+          ÖAW Presse
         </Link>
 
         {/* Desktop primary tabs + Mehr dropdown */}
@@ -335,7 +338,7 @@ export function Nav() {
             >
               <SheetHeader className="px-4 pt-4 pb-2">
                 <SheetTitle className="text-white text-lg font-semibold">
-                  Science Propaganda Ninja
+                  ÖAW Presse
                 </SheetTitle>
                 <SheetDescription className="sr-only">
                   Hauptnavigation: Bereiche, Schnellzugriffe und Einstellungen.

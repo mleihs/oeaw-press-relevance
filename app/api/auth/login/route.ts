@@ -8,6 +8,8 @@ import { evaluateUserRow } from '@/lib/server/auth/require';
 import { IMPERSONATION_COOKIE } from '@/lib/server/auth/impersonation';
 import { db, users } from '@/lib/server/db';
 import { eq } from 'drizzle-orm';
+import { tokenize, GATE_COOKIE_OPTIONS } from '@/lib/server/gate';
+import { GATE_COOKIE_NAME } from '@/lib/shared/gate';
 
 // Supabase-Auth-Login (Identität HINTER dem Passwort-Gate — das Gate
 // bleibt die äußere Hülle, s. BOARD_PLAN.md §3.1). Muster wie
@@ -50,5 +52,11 @@ export const POST = withApiError(async (req: NextRequest) => {
   // Frischer echter Login setzt den Impersonation-Zustand zurück (falls ein
   // Herkunfts-Cookie aus einer alten Switcher-Sitzung übrig war).
   (await cookies()).delete(IMPERSONATION_COOKIE);
-  return NextResponse.json({ ok: true, user: result.user });
+  const res = NextResponse.json({ ok: true, user: result.user });
+  // Persönlicher Login ist strikt stärker als das gemeinsame Übergangs-
+  // Passwort: das Gate-Cookie wird mitgesetzt, damit der vereinheitlichte
+  // Anmelde-Screen (AuthScreen am Gate) mit einem Schritt durchkommt.
+  // GATE_PASSWORD ist per env-Validator garantiert (lib/server/env.ts).
+  res.cookies.set(GATE_COOKIE_NAME, tokenize(process.env.GATE_PASSWORD!), GATE_COOKIE_OPTIONS);
+  return res;
 });

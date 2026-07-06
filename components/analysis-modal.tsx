@@ -258,7 +258,7 @@ export function AnalysisModal({ open, onOpenChange, onComplete }: AnalysisModalP
           <div className="flex items-center gap-3">
             <CapybaraModalAvatar variant="analyst" state={status} />
             <div className="flex-1 min-w-0">
-              <DialogTitle>Science Propaganda Ninja Analyse</DialogTitle>
+              <DialogTitle>ÖAW Presse Analyse</DialogTitle>
               <DialogDescription>
                 {status === 'idle' && 'Publikationen per LLM auf Story-Potenzial bewerten.'}
                 {status === 'running' && `Analysiere ${progress.processed} / ${progress.total} Publikationen...`}

@@ -17,11 +17,11 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  if (!UUID_RE.test(id)) return { title: 'Forscher:in | Science Propaganda Ninja' };
+  if (!UUID_RE.test(id)) return { title: 'Forscher:in | ÖAW Presse' };
   const detail = await getDetail(id);
   const p = detail?.person;
-  if (!p) return { title: 'Forscher:in | Science Propaganda Ninja' };
-  return { title: `${p.firstname} ${p.lastname} | Science Propaganda Ninja` };
+  if (!p) return { title: 'Forscher:in | ÖAW Presse' };
+  return { title: `${p.firstname} ${p.lastname} | ÖAW Presse` };
 }
 
 // Per ADR 0009: read-heavy, auth-gated, `since`-parametrised pages opt out
