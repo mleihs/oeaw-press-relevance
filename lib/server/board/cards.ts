@@ -12,11 +12,13 @@ import {
   activityRowToApi,
   cardChipFromRow,
   cardItemFromRow,
+  toIso,
 } from './to-api';
 import { writeActivity } from './activity';
 import { renderCardMarkdown } from './markdown';
 import { loadComments } from './comments';
 import { loadAttachments } from './attachments';
+import { loadReferences } from './references';
 
 /** ISO/Datums-String -> timestamptz-tauglicher ISO oder null. */
 function normalizeDue(value: string | null | undefined): string | null | undefined {
@@ -28,7 +30,7 @@ function normalizeDue(value: string | null | undefined): string | null | undefin
 /** Zeile mit Chip-Aggregaten + Karten-Metadaten für eine einzelne Karte. */
 const CARD_DETAIL_ROW = (cardId: string) => sql<Record<string, unknown>>`
   SELECT c.id, c.board_id, c.column_id, c.title, c.link_url, c.rank,
-         c.due_at, c.completed_at, c.assignee_id, c.description_md,
+         c.due_at, c.completed_at, c.archived_at, c.assignee_id, c.description_md,
          c.created_by, c.created_at, c.updated_at, c.converted_from_item_id,
          c.source_event_id, c.source_publication_id,
          COALESCE(ci.checklist_done, 0) AS checklist_done,
@@ -99,16 +101,18 @@ async function loadActivity(cardId: string) {
 }
 
 export async function getCardDetail(cardId: string): Promise<CardDetail> {
-  const [row, items, comments, attachments, activity] = await Promise.all([
+  const [row, items, comments, attachments, activity, references] = await Promise.all([
     loadChipRow(cardId),
     loadItems(cardId),
     loadComments(cardId),
     loadAttachments(cardId),
     loadActivity(cardId),
+    loadReferences(cardId),
   ]);
   const descriptionMd = (row.description_md as string | null) ?? null;
   return {
     ...cardChipFromRow(row),
+    archived_at: toIso(row.archived_at),
     description_md: descriptionMd,
     description_html: descriptionMd ? renderCardMarkdown(descriptionMd) : null,
     created_by: row.created_by as string,
@@ -121,6 +125,7 @@ export async function getCardDetail(cardId: string): Promise<CardDetail> {
     comments,
     attachments,
     activity,
+    references,
   };
 }
 
@@ -197,6 +202,9 @@ export async function patchCard(
   if (patch.completed !== undefined) {
     changes.completedAt = patch.completed ? new Date().toISOString() : null;
   }
+  if (patch.archived !== undefined) {
+    changes.archivedAt = patch.archived ? new Date().toISOString() : null;
+  }
 
   await db.update(cards).set(changes).where(eq(cards.id, cardId));
 
@@ -228,8 +236,37 @@ export async function patchCard(
       await writeActivity(cardId, userId, patch.completed ? 'completed' : 'reopened');
     }
   }
+  if (patch.archived !== undefined) {
+    const wasArchived = before.archivedAt !== null;
+    if (wasArchived !== patch.archived) {
+      await writeActivity(cardId, userId, patch.archived ? 'archived' : 'unarchived');
+    }
+  }
 
   return getCardDetail(cardId);
+}
+
+/**
+ * Alle ERLEDIGTEN (completed_at gesetzt), noch nicht archivierten Karten einer
+ * Spalte in einem Rutsch archivieren (Spalten-Aktion „Abgeschlossene
+ * archivieren"). Je archivierter Karte ein Activity-Eintrag. Gibt die Anzahl
+ * zurück (für den Toast).
+ */
+export async function archiveCompletedInColumn(
+  userId: string,
+  columnId: string,
+): Promise<number> {
+  const archivedIds = await db.execute<{ id: string }>(sql`
+    UPDATE cards SET archived_at = now()
+    WHERE column_id = ${columnId}
+      AND completed_at IS NOT NULL
+      AND archived_at IS NULL
+    RETURNING id`);
+  const ids = [...archivedIds].map((r) => r.id);
+  for (const id of ids) {
+    await writeActivity(id, userId, 'archived');
+  }
+  return ids.length;
 }
 
 /** Move = Kanal-/Board-Wechsel. Zielspalte impliziert Zielboard; Karte ans Ende

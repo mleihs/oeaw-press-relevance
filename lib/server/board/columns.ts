@@ -1,10 +1,11 @@
 import 'server-only';
 
-import { eq, sql } from 'drizzle-orm';
-import { db, boardColumns, cards } from '@/lib/server/db';
+import { and, eq, sql } from 'drizzle-orm';
+import { db, boardColumns, cards, userHiddenColumns } from '@/lib/server/db';
 import type { BoardColumn } from '@/lib/shared/board';
 import { BOARD_COLUMN_SWATCHES } from '@/lib/shared/board';
-import type { ColumnPatchPayload } from '@/lib/shared/board-schemas';
+import { initialRanks } from '@/lib/shared/rank';
+import type { ColumnPatchPayload, ColumnSortKey } from '@/lib/shared/board-schemas';
 import {
   BoardConflictError,
   ColumnNotEmptyError,
@@ -90,6 +91,135 @@ export async function patchColumn(
     .limit(1);
   if (!fresh) throw new ColumnNotFoundError();
   return columnRowToApi(fresh);
+}
+
+/**
+ * Alle Karten einer Spalte einmalig neu anordnen (kein persistenter
+ * Sortiermodus): nach Fälligkeit, alphabetisch oder Erstelldatum. Danach
+ * behalten die Karten ihre neue manuelle Reihenfolge (frische fraktionale
+ * Ranks in Sortierreihenfolge).
+ *
+ * Die Sortierung passiert in SQL, damit sie exakt der `ORDER BY rank`-Ordnung
+ * des Boards entspricht (Spalte COLLATE "C"; keine JS-Datumsparsing-Fallen):
+ *   - due:     due_at ASC, NULLs ans Ende, dann created_at/id als stabiler Tiebreak
+ *   - title:   lower(title) ASC
+ *   - created: created_at ASC
+ *
+ * GOTCHA `unique(column_id, rank)` (nicht deferrable, NICHT partiell): Bulk-
+ * Neuvergabe kann mit noch nicht aktualisierten Bestandsrängen kollidieren.
+ * Zwei-Phasen in EINER Transaktion — erst auf Temp-Ränge über allem Bestehenden
+ * (also disjunkt), dann auf die finalen Ränge.
+ *
+ * WICHTIG: Die Domäne umfasst ARCHIVIERTE Karten mit. Wir ranken nur die
+ * aktiven neu, aber archivierte behalten ihren Rang und teilen sich die
+ * (volle, nicht partielle) unique(column_id,rank)-Constraint. Würden Temp-/
+ * Zielränge nur gegen die aktiven Karten disjunkt gemacht, könnte ein finaler
+ * Rang auf einem archivierten landen → 23505 → 500. Darum fließen die
+ * archivierten Ränge in die Kollisions-Domäne ein.
+ */
+export async function sortColumnCards(columnId: string, by: ColumnSortKey): Promise<void> {
+  await loadColumn(columnId); // 404 wenn nicht vorhanden
+
+  const orderBy =
+    by === 'due'
+      ? sql`c.due_at ASC NULLS LAST, c.created_at ASC, c.id ASC`
+      : by === 'title'
+        ? sql`lower(c.title) ASC, c.created_at ASC, c.id ASC`
+        : sql`c.created_at ASC, c.id ASC`;
+
+  // NUR aktive Karten neu ranken — archivierte liegen außerhalb der
+  // Board-Ordnung und dürfen keine sichtbaren Ranks bekommen.
+  const rows = await db.execute<{ id: string; rank: string }>(sql`
+    SELECT id, rank FROM cards c
+    WHERE c.column_id = ${columnId} AND c.archived_at IS NULL
+    ORDER BY ${orderBy}`);
+  const list = [...rows];
+  if (list.length <= 1) return; // 0/1 aktive Karten: nichts umzuordnen
+
+  const ids = list.map((r) => r.id);
+  const activeCurrent = list.map((r) => r.rank);
+
+  // Archivierte Karten behalten ihren Rang, teilen sich aber die
+  // unique(column_id,rank)-Domäne → in die Kollisions-Betrachtung aufnehmen.
+  const archivedRows = await db.execute<{ rank: string }>(sql`
+    SELECT rank FROM cards c
+    WHERE c.column_id = ${columnId} AND c.archived_at IS NOT NULL`);
+  const archivedRanks = [...archivedRows].map((r) => r.rank);
+  const archivedSet = new Set(archivedRanks);
+
+  let finals = initialRanks(list.length);
+  // Würde ein sauberer initialRanks-Wert auf einem (belegten) archivierten Rang
+  // landen, die finalen Ränge komplett über ALLES Bestehende heben — dann
+  // garantiert disjunkt zu den archivierten (die belegt bleiben). Häufiger Fall
+  // (keine archivierten Karten in der Spalte) behält die kurzen initialRanks.
+  if (finals.some((f) => archivedSet.has(f))) {
+    const maxAll = [...activeCurrent, ...archivedRanks, ...finals].reduce(
+      (m, r) => (r > m ? r : m),
+      '',
+    );
+    finals = initialRanks(list.length).map((seed) => maxAll + seed);
+  }
+
+  // Temp-Namespace über der GESAMTEN Domäne (aktiv-aktuell ∪ archiviert ∪
+  // final): maxDomain ist echtes Präfix jedes Temp-Rangs ⇒ temp > maxDomain ≥
+  // jeder dieser Ränge (bytewise), also disjunkt zu allen dreien. Temp-Seeds
+  // eindeutig ⇒ Temps untereinander eindeutig.
+  const maxDomain = [...activeCurrent, ...archivedRanks, ...finals].reduce(
+    (m, r) => (r > m ? r : m),
+    '',
+  );
+  const temps = initialRanks(list.length).map((seed) => maxDomain + seed);
+
+  const bulk = (pairs: { id: string; rank: string }[]) => sql`
+    UPDATE cards AS c SET rank = v.rank
+    FROM (VALUES ${sql.join(
+      pairs.map((p) => sql`(${p.id}::uuid, ${p.rank}::text)`),
+      sql`, `,
+    )}) AS v(id, rank)
+    WHERE c.id = v.id`;
+
+  await db.transaction(async (tx) => {
+    await tx.execute(bulk(ids.map((id, i) => ({ id, rank: temps[i] }))));
+    await tx.execute(bulk(ids.map((id, i) => ({ id, rank: finals[i] }))));
+  });
+}
+
+// --- Per-User-Sichtbarkeit („Für mich ausblenden") ------------------------
+
+/** Kanal für den aktuellen Nutzer ausblenden (idempotent). */
+export async function hideColumn(userId: string, columnId: string): Promise<void> {
+  await loadColumn(columnId); // 404 wenn Kanal nicht existiert
+  await db
+    .insert(userHiddenColumns)
+    .values({ userId, columnId })
+    .onConflictDoNothing();
+}
+
+/** Kanal für den aktuellen Nutzer wieder einblenden (idempotent). */
+export async function unhideColumn(userId: string, columnId: string): Promise<void> {
+  await db
+    .delete(userHiddenColumns)
+    .where(
+      and(
+        eq(userHiddenColumns.userId, userId),
+        eq(userHiddenColumns.columnId, columnId),
+      ),
+    );
+}
+
+/** IDs der Kanäle EINES Boards, die der Nutzer für sich ausgeblendet hat. */
+export async function listHiddenColumnIds(
+  userId: string,
+  boardId: string,
+): Promise<string[]> {
+  const rows = await db
+    .select({ columnId: userHiddenColumns.columnId })
+    .from(userHiddenColumns)
+    .innerJoin(boardColumns, eq(boardColumns.id, userHiddenColumns.columnId))
+    .where(
+      and(eq(userHiddenColumns.userId, userId), eq(boardColumns.boardId, boardId)),
+    );
+  return rows.map((r) => r.columnId);
 }
 
 /**

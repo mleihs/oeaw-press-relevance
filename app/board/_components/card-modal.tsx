@@ -20,12 +20,21 @@ import {
   MoreHorizontal,
   Copy,
   Tag,
+  Archive,
+  RotateCcw,
 } from '@/lib/icons';
 import NextLink from 'next/link';
 import { toast } from 'sonner';
 import { cn } from '@/lib/shared/utils';
 import { QK } from '@/lib/client/query-keys';
-import type { BoardColumn, BoardLabel, BoardMember, CardDetail, CardItem } from '@/lib/shared/board';
+import type {
+  BoardColumn,
+  BoardLabel,
+  BoardMember,
+  CardDetail,
+  CardItem,
+  CardReference,
+} from '@/lib/shared/board';
 import {
   fetchCard,
   patchCardApi,
@@ -42,6 +51,7 @@ import {
   createLabelApi,
 } from '../_lib/api';
 import { cardDeepLink } from '@/lib/shared/board';
+import { useBoardAppearance } from '@/lib/client/hooks/use-board-appearance';
 import { LabelPill } from './label-pill';
 import { ChannelIcon } from '../_lib/channels';
 import { PROSE_CLASS } from '../_lib/prose';
@@ -50,6 +60,7 @@ import { BoardAvatar } from './board-avatar';
 import { displayNameOf, membersById } from '../_lib/people';
 import { CommentActivityStrand } from './comment-strand';
 import { AttachmentsSection } from './attachments-section';
+import { ReferencesSection } from './references-section';
 import { CardMovePopover } from './card-move-popover';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -120,6 +131,15 @@ export function CardModal({
     qc.invalidateQueries({ queryKey: ['board'] });
     qc.invalidateQueries({ queryKey: QK.boards });
   };
+  // Referenz-Mutationen antworten mit der vollen Referenzliste: sofort in den
+  // Cache schreiben (kein Flackern), dann invalidieren (Activity-Strand trägt
+  // reference_added/removed nach).
+  const applyReferences = (references: CardReference[]) => {
+    qc.setQueryData<CardDetail>(QK.card(cardId), (old) =>
+      old ? { ...old, references } : old,
+    );
+    qc.invalidateQueries({ queryKey: QK.card(cardId) });
+  };
 
   const column = card ? columns.find((c) => c.id === card.column_id) : undefined;
   const accent = column?.color ?? '#64748b';
@@ -131,6 +151,12 @@ export function CardModal({
   // das innere Layer, ein Klick darin gilt nicht als „außerhalb". Der
   // Text-Auswahl-Drag-Fehlschluss entfällt, weil Radix nur bei pointerdown
   // *außerhalb* des Contents schließt.
+  // Kanalband + Erscheinungsbild-Tokens am Modal (portaliert → erbt sonst nichts).
+  const [appearance] = useBoardAppearance();
+  // Gesättigtes Kanalband wie die neuen Spaltenköpfe (Richtung Schwarz vertieft,
+  // damit weiße Schrift auch auf hellen Kanalfarben trägt).
+  const bandBg = `color-mix(in srgb, ${accent} 82%, #06121f)`;
+
   return (
     <DialogPrimitive.Root open onOpenChange={(o) => !o && onClose()}>
       <DialogPrimitive.Portal>
@@ -139,6 +165,11 @@ export function CardModal({
           style={{ backgroundColor: 'rgba(13,36,80,.42)' }}
         />
         <DialogPrimitive.Content
+          data-board-appearance={appearance}
+          // Modalfläche auf dem Board-Karten-Token: neutrales Weiß im Standard,
+          // warmes Papier in „Atmosphäre" (die Sidebar sitzt darauf als
+          // eingesenkte Mulde). Der Kanalband-Kopf trägt die Farbe darüber.
+          style={{ backgroundColor: 'var(--board-card)' }}
           // Ohne gerenderte Description sonst eine Radix-Warnung; wir haben keine.
           aria-describedby={undefined}
           // Escape in einem Textarea (Beschreibung, Kommentar) bricht nur das
@@ -166,10 +197,11 @@ export function CardModal({
             <div className="p-10 text-center text-sm text-muted-foreground">Lädt…</div>
           ) : (
             <>
-              {/* Header */}
+              {/* Header — gesättigtes Kanalband (wie die Spaltenköpfe): solide
+                  Kanalfarbe, weiße Icons/Labels. Trägt Farbe + Identität. */}
               <div
-                className="flex shrink-0 items-center gap-2 border-b px-4 py-3 md:px-5 md:py-4"
-                style={{ backgroundColor: `${accent}14` }}
+                className="flex shrink-0 items-center gap-2 px-4 py-3 md:px-5 md:py-4"
+                style={{ backgroundColor: bandBg }}
               >
                 {/* Mobil steht der Schließen-Caret links (Mock Card-Sheet),
                     auf Desktop bleibt das X rechts außen (md:order-last). */}
@@ -177,19 +209,16 @@ export function CardModal({
                   <button
                     type="button"
                     aria-label="Schließen"
-                    className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground hover:text-foreground md:order-last"
+                    className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-md bg-white/15 text-white hover:bg-white/25 md:order-last"
                   >
                     <ChevronDown className="h-[18px] w-[18px] md:hidden" />
                     <X className="hidden h-4 w-4 md:block" />
                   </button>
                 </DialogPrimitive.Close>
                 {column && (
-                  <ChannelIcon name={column.name} className="h-[18px] w-[18px]" style={{ color: accent }} />
+                  <ChannelIcon name={column.name} className="h-[18px] w-[18px] text-white" />
                 )}
-                <span
-                  className="rounded-md border bg-card px-2 py-0.5 text-[12.5px] font-semibold"
-                  style={{ borderColor: `${accent}33`, color: accent }}
-                >
+                <span className="rounded-md bg-white/20 px-2 py-0.5 text-[12.5px] font-semibold text-white">
                   {column?.name ?? 'Kanal'}
                 </span>
                 <div className="ml-auto flex items-center gap-2">
@@ -221,11 +250,15 @@ export function CardModal({
                     members={byId}
                     onPatch={applyCard}
                     onInvalidate={invalidate}
+                    onReferences={applyReferences}
                     onOpenCard={onOpenCard}
                     columns={columns}
                   />
                 </div>
-                <div className="w-full shrink-0 overflow-y-auto border-t bg-muted/30 p-5 md:w-[248px] md:border-l md:border-t-0">
+                <div
+                  className="w-full shrink-0 overflow-y-auto border-t p-5 md:w-[248px] md:border-l md:border-t-0"
+                  style={{ backgroundColor: 'var(--board-trough)' }}
+                >
                   <Sidebar
                     key={card.id}
                     card={card}
@@ -309,6 +342,23 @@ function CardActionsMenu({
     onError: (e: Error) => toast.error(e.message),
   });
 
+  // Archivieren/Wiederherstellen (Feature 4): archivieren nimmt die Karte aus
+  // dem Board (Modal schließt); wiederherstellen holt sie in ihren Kanal zurück.
+  const isArchived = card.archived_at !== null;
+  const archive = useMutation({
+    mutationFn: () => patchCardApi(card.id, { archived: !isArchived }),
+    onSuccess: () => {
+      onInvalidate();
+      if (isArchived) {
+        toast.success('Wiederhergestellt.');
+      } else {
+        toast.success('Archiviert.');
+        onDeleted();
+      }
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   return (
     <>
       <DropdownMenu>
@@ -325,6 +375,10 @@ function CardActionsMenu({
           <DropdownMenuItem onSelect={() => void copyLink()}>
             <Copy className="h-4 w-4" />
             Link kopieren
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => archive.mutate()}>
+            {isArchived ? <RotateCcw className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
+            {isArchived ? 'Wiederherstellen' : 'Archivieren'}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
@@ -372,6 +426,7 @@ function MainColumn({
   members,
   onPatch,
   onInvalidate,
+  onReferences,
   onOpenCard,
   columns,
 }: {
@@ -379,6 +434,7 @@ function MainColumn({
   members: Map<string, BoardMember>;
   onPatch: (c: CardDetail) => void;
   onInvalidate: () => void;
+  onReferences: (references: CardReference[]) => void;
   onOpenCard: (id: string) => void;
   columns: BoardColumn[];
 }) {
@@ -461,6 +517,8 @@ function MainColumn({
         onOpenCard={onOpenCard}
         columns={columns}
       />
+
+      <ReferencesSection card={card} onReferences={onReferences} />
 
       <AttachmentsSection card={card} onInvalidate={onInvalidate} />
 
@@ -577,6 +635,36 @@ function DescriptionField({
   );
 }
 
+/** Kleiner Fortschritts-Ring für Checkliste/Unteraufgaben: der Blick erfasst den
+ *  Stand sofort (statt nur „3/5"). Fährt in der Sektionsfarbe hoch, springt bei
+ *  Vollständigkeit auf Grün. Track sitzt auf dem Board-Chip-Token (warm in
+ *  „Atmosphäre"). r=15 → Umfang 2πr ≈ 94.25. */
+function ProgressRing({ done, total, color }: { done: number; total: number; color: string }) {
+  const circumference = 2 * Math.PI * 15;
+  const pct = total > 0 ? done / total : 0;
+  const complete = total > 0 && done >= total;
+  return (
+    <span className="ml-auto flex items-center gap-1.5 font-mono text-[11px] text-muted-foreground">
+      <svg viewBox="0 0 36 36" className="h-[22px] w-[22px] -rotate-90" aria-hidden>
+        <circle cx="18" cy="18" r="15" fill="none" stroke="var(--board-chip-bg)" strokeWidth="4" />
+        <circle
+          cx="18"
+          cy="18"
+          r="15"
+          fill="none"
+          stroke={complete ? '#059669' : color}
+          strokeWidth="4"
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={circumference * (1 - pct)}
+          className="transition-[stroke-dashoffset] duration-300 ease-out"
+        />
+      </svg>
+      {done} / {total}
+    </span>
+  );
+}
+
 function ItemSection({
   card,
   kind,
@@ -626,11 +714,7 @@ function ItemSection({
       <div className="mb-2 flex items-center gap-2">
         <Icon className="h-4 w-4" style={{ color: accent }} />
         <span className="text-[13.5px] font-semibold text-foreground">{title}</span>
-        {items.length > 0 && (
-          <span className="font-mono text-[11px] text-muted-foreground">
-            {done} / {items.length}
-          </span>
-        )}
+        {items.length > 0 && <ProgressRing done={done} total={items.length} color={accent} />}
       </div>
       <ul className="space-y-1">
         {items.map((item) => (

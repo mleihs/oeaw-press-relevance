@@ -39,6 +39,10 @@ export const ACTIVITY_VERBS = [
   'item_unchecked',
   'attachment_added',
   'comment_added',
+  'archived',
+  'unarchived',
+  'reference_added',
+  'reference_removed',
 ] as const;
 export type ActivityVerb = (typeof ACTIVITY_VERBS)[number];
 
@@ -162,8 +166,96 @@ export interface CardActivityEntry {
   created_at: string;
 }
 
+// --- Smart-Objekte (BOARD_SMART_OBJECTS.md) --------------------------------
+
+/** Metadaten-Snapshot eines YouTube-Videos (external_objects.snapshot).
+ *  Via API v3 vollständig; via oEmbed-Fallback (kein YOUTUBE_API_KEY) fehlen
+ *  published_at/duration_seconds/view_count (null). */
+export interface YoutubeSnapshot {
+  title: string;
+  channel_title: string | null;
+  published_at: string | null;
+  duration_seconds: number | null;
+  view_count: number | null;
+  /** Quell-URL des Thumbnails (i.ytimg.com). Anzeige läuft über den
+   *  same-origin Proxy /api/board/objects/[id]/thumbnail (MinIO-Mirror mit
+   *  Hotlink-Fallback); diese URL ist der Fallback + Mirror-Input. */
+  thumbnail_url: string | null;
+}
+
+/** Referenz-Arten. Intern (event/publication) = Live-Join, extern (youtube) =
+ *  Registry-Snapshot. */
+export type CardReferenceKind = 'event' | 'publication' | 'youtube';
+
+/** Eine Referenz-Zeile der Karte (card_references), diskriminiert über kind.
+ *  `id` = Zeilen-UUID (refKey für DELETE). Interne Ziele tragen live gejointe
+ *  Metadaten, YouTube den Registry-Snapshot. */
+export type CardReference =
+  | {
+      id: string;
+      kind: 'event';
+      created_at: string;
+      target_id: string;
+      title: string;
+      event_at: string | null;
+      score: number | null;
+      decision: string | null;
+    }
+  | {
+      id: string;
+      kind: 'publication';
+      created_at: string;
+      target_id: string;
+      title: string;
+      published_at: string | null;
+      press_score: number | null;
+    }
+  | {
+      id: string;
+      kind: 'youtube';
+      created_at: string;
+      /** external_objects.id — Basis für Thumbnail-Proxy + Refresh. */
+      target_id: string;
+      url: string | null;
+      refreshed_at: string | null;
+      snapshot: YoutubeSnapshot;
+    };
+
+/** Vorschlag im „Objekt hinzufügen"-Picker (Tabs Veranstaltung/Publikation).
+ *  date/score sind je nach kind event_at/event_score bzw.
+ *  published_at/press_score; decision nur bei Events. */
+export interface ReferenceTargetSuggestion {
+  id: string;
+  title: string;
+  date: string | null;
+  score: number | null;
+  decision: string | null;
+}
+
+/** Eigenkanal-Video im YouTube-Tab des Pickers (Wire-Shape der Route
+ *  /api/board/connectors/youtube/videos). */
+export interface YoutubePickerVideo {
+  video_id: string;
+  title: string;
+  published_at: string | null;
+  thumbnail_url: string | null;
+}
+
+/** Sekunden -> "m:ss" bzw. "h:mm:ss" (YouTube-Dauer-Badge). */
+export function formatVideoDuration(totalSeconds: number): string {
+  const s = Math.max(0, Math.floor(totalSeconds));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = String(s % 60).padStart(2, '0');
+  return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${sec}` : `${m}:${sec}`;
+}
+
 /** Volle Karte fürs Modal. */
 export interface CardDetail extends CardChip {
+  /** Archiviert-Zeitpunkt (Feature 4) oder null = aktiv. Der Board-Chip trägt
+   *  ihn nicht (archivierte Karten sind aus dem Board raus); im Detail steht er,
+   *  damit ein per Deep-Link/Archiv geöffnetes Modal „Wiederherstellen" zeigt. */
+  archived_at: string | null;
   description_md: string | null;
   /** Server-gerendertes, gesäubertes HTML aus description_md (Markdown →
    *  marked → sanitize-html). Client rendert nur diese Ausgabe. */
@@ -178,6 +270,8 @@ export interface CardDetail extends CardChip {
   comments: CardComment[];
   attachments: CardAttachment[];
   activity: CardActivityEntry[];
+  /** Smart-Objekt-Referenzen (Events/Publikationen/YouTube), nach created_at. */
+  references: CardReference[];
 }
 
 /** Voller Board-Load für /board/[slug]. */
@@ -187,6 +281,10 @@ export interface BoardWithColumns {
   cards: CardChip[];
   /** Label-Palette des Boards (für Chips an Karten + Filter + Picker). */
   labels: BoardLabel[];
+  /** IDs der Kanäle, die der aktuelle Nutzer für sich ausgeblendet hat
+   *  (per-User, user_hidden_columns). Der Client rendert sie nicht, zeigt
+   *  aber eine „N ausgeblendet"-Leiste zum Wiedereinblenden. */
+  hidden_column_ids: string[];
 }
 
 /** Schlanke, board-übergreifende Karten-Referenz (Phase 4): Dashboard-Kachel,
@@ -201,6 +299,19 @@ export interface BoardCardRef {
   due_at: string | null;
   completed_at: string | null;
   created_at: string;
+}
+
+/** Archivierte Karte in der Archiv-Ansicht eines Boards (Feature 4). Trägt den
+ *  Herkunfts-Kanal (Name + Farbe) und den Archivierungszeitpunkt. */
+export interface ArchivedCard {
+  id: string;
+  title: string;
+  column_id: string;
+  column_name: string;
+  column_color: string;
+  due_at: string | null;
+  completed_at: string | null;
+  archived_at: string;
 }
 
 /** Deep-Link zu einer Karte (öffnet das Modal via ?card=-Query). */

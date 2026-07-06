@@ -65,6 +65,13 @@ export function AttachmentsSection({
     e.target.value = ''; // dieselbe Datei erneut wählbar machen
   };
 
+  const canRemove = (uploadedBy: string) => !!user && (uploadedBy === user.id || isAdmin);
+  // MeisterTasks Textur-Trick: Bild-Anhänge als echte Vorschau-Kacheln (bringen
+  // Material + Farbe in die Karte), Dokumente bleiben als Datei-Zeilen mit
+  // Name/Größe/Download. Content-Type kann null sein → dann Datei-Zeile.
+  const images = card.attachments.filter((a) => a.content_type?.startsWith('image/'));
+  const files = card.attachments.filter((a) => !a.content_type?.startsWith('image/'));
+
   return (
     <div>
       <div className="mb-2 flex items-center gap-2">
@@ -77,15 +84,50 @@ export function AttachmentsSection({
         )}
       </div>
 
-      {card.attachments.length > 0 && (
+      {images.length > 0 && (
+        <div className="mb-2 flex flex-wrap gap-2">
+          {images.map((a) => (
+            <div key={a.id} className="group/thumb relative">
+              <a
+                href={attachmentUrl(a.id)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block h-[62px] w-[92px] overflow-hidden rounded-lg border shadow-sm transition-shadow hover:shadow-md"
+                title={a.filename}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={attachmentUrl(a.id)}
+                  alt={a.filename}
+                  loading="lazy"
+                  className="h-full w-full object-cover"
+                />
+              </a>
+              {canRemove(a.uploaded_by) && (
+                <button
+                  type="button"
+                  onClick={() => del.mutate(a.id)}
+                  disabled={del.isPending}
+                  className="absolute right-1 top-1 rounded-md bg-black/55 p-1 text-white opacity-0 backdrop-blur-sm transition-opacity hover:bg-black/70 focus-visible:opacity-100 group-hover/thumb:opacity-100"
+                  aria-label={`„${a.filename}" löschen`}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {files.length > 0 && (
         <ul className="mb-2 space-y-1.5">
-          {card.attachments.map((a) => {
+          {files.map((a) => {
             const Icon = iconFor(a.content_type);
-            const canDelete = !!user && (a.uploaded_by === user.id || isAdmin);
             return (
               <li
                 key={a.id}
-                className="group flex items-center gap-2 rounded-md border bg-card px-2.5 py-1.5"
+                className="group flex items-center gap-2 rounded-md border px-2.5 py-1.5"
+                style={{ backgroundColor: 'var(--board-chip-bg)' }}
               >
                 <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <a
@@ -108,7 +150,7 @@ export function AttachmentsSection({
                 >
                   <Download className="h-3.5 w-3.5" />
                 </a>
-                {canDelete && (
+                {canRemove(a.uploaded_by) && (
                   <button
                     type="button"
                     onClick={() => del.mutate(a.id)}

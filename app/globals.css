@@ -283,6 +283,93 @@
   }
 }
 
+/* Dezente Diagonal-Linien-Textur für den Board-Hintergrund. color-mix mit
+   --foreground → in Light faint-dunkle, in Dark faint-helle Linien (theme-aware,
+   ohne .dark-Override). Die halbtransparent getönten Spalten lassen sie
+   durchscheinen, sodass die ganze Board-Fläche etwas Struktur bekommt.
+   Zweite Ebene = --board-field (none im Standard, getöntes Feld in „Atmosphäre"). */
+.board-texture {
+  background-image:
+    repeating-linear-gradient(
+      45deg,
+      color-mix(in srgb, var(--foreground) 3.5%, transparent) 0 1px,
+      transparent 1px 12px
+    ),
+    var(--board-field, none);
+}
+
+/* ── Board-Erscheinungsbild (per-User-Umschalter, use-board-appearance.ts) ──
+   Die Board-Tiefe läuft über Tokens: „standard" = Wertekontrast (weiße Karten
+   auf neutraler, leicht eingesenkter Mulde, weicher neutraler Schatten),
+   „atmosphere" = warmes Feld + Papierkarten. Der Umschalter setzt nur
+   data-board-appearance am Board-Root; Komponenten lesen die var()-Tokens. */
+[data-board-appearance] {
+  --board-field: none;
+  --board-trough: #e9edf2;
+  --board-trough-shadow: inset 0 1px 2px rgba(16,32,46,.09);
+  --board-card: #ffffff;
+  --board-card-ink: var(--n-ink-heading);
+  --board-card-border: transparent;
+  --board-card-shadow: 0 1px 2px rgba(16,32,46,.05), 0 4px 12px rgba(16,32,46,.08);
+  --board-card-shadow-hover: 0 2px 4px rgba(16,32,46,.06), 0 9px 22px rgba(16,32,46,.14);
+  --board-chip-bg: var(--n-fill);
+  --board-chip-ink: var(--n-ink-soft);
+}
+.dark [data-board-appearance] {
+  --board-trough: #0b1119;
+  --board-trough-shadow: inset 0 1px 3px rgba(0,0,0,.55);
+  --board-card: var(--n-surface);
+  --board-card-shadow: 0 1px 2px rgba(0,0,0,.4), 0 6px 16px rgba(0,0,0,.45);
+  --board-card-shadow-hover: 0 2px 6px rgba(0,0,0,.5), 0 11px 24px rgba(0,0,0,.55);
+}
+[data-board-appearance="atmosphere"] {
+  /* Wärme trägt hier die MULDE (Karten füllen die Spalten, das Feld ist unter
+     8 breiten Spalten kaum sichtbar) — warmes Papier-Beige statt kühlem Grau,
+     Creme-Karten schweben darauf mit warmem Schatten. Feld getönt für die Ränder. */
+  --board-field: linear-gradient(135deg,
+    color-mix(in srgb, #0d9488 24%, #f2ecdf),
+    color-mix(in srgb, #7c3aed 18%, #f2ecdf) 52%,
+    color-mix(in srgb, #e11d48 20%, #f2ecdf));
+  --board-trough: #efe6d5;
+  --board-trough-shadow: inset 0 1px 2px rgba(92,70,38,.12);
+  --board-card: #fefaf2;
+  --board-card-ink: #2c2620;
+  --board-card-border: #ebdfca;
+  --board-card-shadow: 0 1px 2px rgba(92,70,38,.08), 0 6px 16px rgba(92,70,38,.13);
+  --board-card-shadow-hover: 0 2px 5px rgba(92,70,38,.11), 0 11px 22px rgba(92,70,38,.18);
+  --board-chip-bg: #efe3cf;
+  --board-chip-ink: #6b5d47;
+}
+.dark [data-board-appearance="atmosphere"] {
+  --board-field: linear-gradient(135deg,
+    color-mix(in srgb, #0d9488 22%, #141018),
+    color-mix(in srgb, #7c3aed 18%, #141018) 52%,
+    color-mix(in srgb, #e11d48 20%, #141018));
+  --board-trough: rgba(18,14,9,.42);
+  --board-card: #1d1912;
+  --board-card-ink: #f0ebe2;
+  --board-card-border: #2f2820;
+  --board-card-shadow: 0 6px 16px rgba(0,0,0,.5);
+  --board-card-shadow-hover: 0 10px 24px rgba(0,0,0,.58);
+  --board-chip-bg: #2a2418;
+  --board-chip-ink: #c4b8a3;
+}
+
+/* Board-Karte: schwebt über der Mulde (Wertekontrast). Farbe/Schatten/Rand
+   kommen aus den Erscheinungsbild-Tokens; die Karte selbst setzt nur Radius +
+   Hover-Anhebung. Hintergrund/Ink setzen die Komponenten inline (theme- +
+   overdue-abhängig). */
+.board-card {
+  border-radius: 12px;
+  border: 1px solid var(--board-card-border);
+  box-shadow: var(--board-card-shadow);
+  transition: box-shadow .16s ease, transform .16s ease;
+}
+.board-card:hover {
+  box-shadow: var(--board-card-shadow-hover);
+  transform: translateY(-1px);
+}
+
 @keyframes haikuFade {
   from { opacity: 0; transform: translateY(2px); }
   to   { opacity: 1; transform: translateY(0); }

@@ -67,11 +67,16 @@ export const PRIMARY: NavLink[] = [
   { href: '/',                label: 'Dashboard',       icon: BarChart3 },
   { href: '/publications',    label: 'Publikationen',   icon: BookOpen },
   { href: '/events',          label: 'Veranstaltungen', icon: CalendarDays },
-  { href: '/review',          label: 'Triage',          icon: ClipboardCheck },
   { href: '/board',           label: 'Board',           icon: Kanban },
 ];
 
 const SECONDARY: NavLink[] = [
+  {
+    href: '/review',
+    label: 'Triage',
+    icon: ClipboardCheck,
+    desc: 'Sichtung & Redaktionsentscheidung für Publikationen und Veranstaltungen.',
+  },
   {
     href: '/press-releases',
     label: 'Pressemitteilungen',

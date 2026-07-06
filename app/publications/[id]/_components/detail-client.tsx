@@ -327,7 +327,7 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
         </Card>
       </div>
 
-      {/* ── Linke Spalte (Mock Z. 224–302): Pitch, Zusammenfassung, Haiku,
+      {/* ── Linke Spalte (Mock Z. 224–302): Pitch, Haiku, Zusammenfassung,
           Autor:innen, externe Anreicherung + unsere Zusatz-Karten. ── */}
       <div className="flex flex-col gap-6 md:col-start-1 md:row-start-2 min-w-0">
 
@@ -426,6 +426,13 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
         </Card>
       )}
 
+      {/* Haiku — poetic distillation of the content, bewusst VOR der WebDB-
+          Zusammenfassung platziert. Gradient-Karte nach Comp Z. 274–283
+          (blauer Verlauf, Lotus). */}
+      {pub.haiku && (
+        <HaikuBlock haiku={pub.haiku} model={pub.llm_model} variant="gradient" />
+      )}
+
       {/* Bilingual summaries from WebDB */}
       {(pub.summary_de || pub.summary_en) && (
         <Card>
@@ -450,12 +457,6 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
             )}
           </CardContent>
         </Card>
-      )}
-
-      {/* Haiku — poetic distillation of the content, placed right after the
-          summary. Gradient-Karte nach Comp Z. 274–283 (blauer Verlauf, Lotus). */}
-      {pub.haiku && (
-        <HaikuBlock haiku={pub.haiku} model={pub.llm_model} variant="gradient" />
       )}
 
       {/* Authors. OEAW-linked persons (external=false) render in brand-blue

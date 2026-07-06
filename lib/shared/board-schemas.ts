@@ -78,6 +78,15 @@ export const columnPatchSchema = z
   );
 export type ColumnPatchPayload = z.infer<typeof columnPatchSchema>;
 
+/** Einmaliges Neu-Anordnen aller Karten einer Spalte (kein Sortiermodus):
+ *  nach Fälligkeit, alphabetisch oder nach Erstelldatum. */
+export const COLUMN_SORT_KEYS = ['due', 'title', 'created'] as const;
+export type ColumnSortKey = (typeof COLUMN_SORT_KEYS)[number];
+export const columnSortSchema = z.object({
+  by: z.enum(COLUMN_SORT_KEYS),
+});
+export type ColumnSortPayload = z.infer<typeof columnSortSchema>;
+
 // --- Cards ----------------------------------------------------------------
 
 // Ein initiales Checklisten-/Unteraufgaben-Item beim Karten-Anlegen (Triage:
@@ -120,6 +129,9 @@ export const cardPatchSchema = z
     due_at: dueAtField.optional(),
     assignee_id: uuid.nullable().optional(),
     completed: z.boolean().optional(),
+    // Archiv (Feature 4): true = archivieren (aus dem Board raus, erhalten),
+    // false = wiederherstellen. Unabhängig von `completed`.
+    archived: z.boolean().optional(),
   })
   .refine((v) => Object.keys(v).length > 0, { message: 'Leerer Patch.' });
 export type CardPatchPayload = z.infer<typeof cardPatchSchema>;
@@ -187,3 +199,14 @@ export const cardLabelSchema = z.object({
   label_id: uuid,
 });
 export type CardLabelPayload = z.infer<typeof cardLabelSchema>;
+
+// --- Smart-Objekt-Referenzen (BOARD_SMART_OBJECTS.md) ----------------------
+
+// Referenz anlegen: intern per ID (Picker liefert sie), YouTube per URL/ID
+// (Paste ODER Eigenkanal-Picker — der schickt die watch-URL).
+export const referenceCreateSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('event'), id: uuid }),
+  z.object({ kind: z.literal('publication'), id: uuid }),
+  z.object({ kind: z.literal('youtube'), url: z.string().trim().min(1, 'URL erforderlich.').max(2048) }),
+]);
+export type ReferenceCreatePayload = z.infer<typeof referenceCreateSchema>;

@@ -13,6 +13,8 @@ import {
   ColumnNotEmptyError,
   ColumnNotFoundError,
   ItemAlreadyConvertedError,
+  ReferenceNotFoundError,
+  ReferenceTargetError,
 } from './errors';
 
 /**
@@ -35,13 +37,17 @@ export function boardErrorToResponse(err: unknown): Response | null {
   if (err instanceof AttachmentRejectedError) {
     return apiError(err.message, err.status);
   }
+  if (err instanceof ReferenceTargetError) {
+    return apiError(err.message, 400);
+  }
   if (
     err instanceof BoardNotFoundError ||
     err instanceof ColumnNotFoundError ||
     err instanceof CardNotFoundError ||
     err instanceof CardItemNotFoundError ||
     err instanceof CommentNotFoundError ||
-    err instanceof AttachmentNotFoundError
+    err instanceof AttachmentNotFoundError ||
+    err instanceof ReferenceNotFoundError
   ) {
     return apiError(err.message, 404);
   }

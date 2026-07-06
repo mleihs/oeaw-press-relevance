@@ -190,9 +190,16 @@ function CommentRow({
   };
 
   return (
-    <li className="group flex items-start gap-2">
-      <BoardAvatar member={member} size={24} />
-      <div className="min-w-0 flex-1">
+    <li className="group flex items-start gap-2.5">
+      <BoardAvatar member={member} size={26} />
+      {/* Warme Sprechblase (MeisterTask-Stil): der Kommentar sitzt in einer
+          getönten Blase mit Notch zum Avatar (rounded-tl-sm) — hebt den Austausch
+          von den flachen Aktivitätszeilen ab. Fläche = Board-Chip-Token (warm in
+          „Atmosphäre"). */}
+      <div
+        className="min-w-0 flex-1 rounded-xl rounded-tl-sm border px-3 py-2"
+        style={{ backgroundColor: 'var(--board-chip-bg)' }}
+      >
         <div className="flex items-center gap-2">
           <span className="text-[13px] font-medium text-foreground">{displayNameOf(member)}</span>
           <span className="text-[11.5px] text-muted-foreground">

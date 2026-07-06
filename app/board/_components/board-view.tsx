@@ -11,15 +11,16 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus } from '@/lib/icons';
+import { Plus, Eye, EyeOff, Archive } from '@/lib/icons';
 import { toast } from 'sonner';
 import { QK } from '@/lib/client/query-keys';
 import { rankBetween, compareRank } from '@/lib/shared/rank';
 import type { BoardMember, BoardWithColumns, CardChip } from '@/lib/shared/board';
-import { fetchBoardView, fetchMembers, moveCardApi } from '../_lib/api';
+import { fetchBoardView, fetchMembers, moveCardApi, patchColumnApi, deleteColumnApi, sortColumnApi, hideColumnApi, unhideColumnApi, archiveCompletedApi } from '../_lib/api';
 import { useBoardRealtime } from '../_lib/use-board-realtime';
 import { EMPTY_FILTERS, matchCard, type BoardFilters } from '../_lib/filter';
 import { firstNameOf, membersById } from '../_lib/people';
+import { useBoardAppearance } from '@/lib/client/hooks/use-board-appearance';
 import { Button } from '@/components/ui/button';
 import { BoardSwitcher } from './board-switcher';
 import { BoardColumn } from './board-column';
@@ -27,6 +28,7 @@ import { BoardFilterBar } from './board-filter-bar';
 import { PeopleBar } from './people-bar';
 import { CardModal } from './card-modal';
 import { QuickCreateDialog } from './quick-create-dialog';
+import { ArchiveModal } from './archive-modal';
 
 export function BoardView({
   slug,
@@ -70,7 +72,9 @@ export function BoardView({
   // aus Dashboard-Kachel, ⌘K-Suche und der „Im Board"-Anzeige an Event/Pub.
   const [openCardId, setOpenCardId] = useQueryState('card');
   const [quickCreateColumn, setQuickCreateColumn] = useState<string | null>(null);
+  const [showArchive, setShowArchive] = useState(false);
   const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [appearance] = useBoardAppearance();
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -139,7 +143,94 @@ export function BoardView({
     return map;
   }, [board, filters, resolveFirstName]);
 
-  const firstColumnId = board.columns[0]?.id ?? null;
+  // Per-User ausgeblendete Kanäle (Feature „Für mich ausblenden"): aus der
+  // gerenderten Liste filtern; die Spalten-Daten bleiben aber im Board-Load
+  // (für die „N ausgeblendet"-Leiste zum Wiedereinblenden). Verschieben/„Karte
+  // anlegen"-Ziel arbeiten auf der SICHTBAREN Liste, damit sie dem entsprechen,
+  // was der Nutzer sieht.
+  const hiddenSet = useMemo(
+    () => new Set(board.hidden_column_ids ?? []),
+    [board.hidden_column_ids],
+  );
+  const visibleColumns = useMemo(
+    () => board.columns.filter((c) => !hiddenSet.has(c.id)),
+    [board.columns, hiddenSet],
+  );
+  const hiddenColumns = useMemo(
+    () => board.columns.filter((c) => hiddenSet.has(c.id)),
+    [board.columns, hiddenSet],
+  );
+
+  const firstColumnId = visibleColumns[0]?.id ?? null;
+
+  // Inline-Spaltenverwaltung (Umbenennen/Farbe/Löschen) direkt am Kanalkopf —
+  // dieselben Endpunkte wie die Board-Verwaltung in den Einstellungen. Alle
+  // Member dürfen Spalten bearbeiten (BOARD_PLAN §3.1). Danach Board + Zähler
+  // neu laden.
+  const invalidateBoard = () => {
+    qc.invalidateQueries({ queryKey: QK.board(slug) });
+    qc.invalidateQueries({ queryKey: QK.boards });
+  };
+  const renameColumn = (id: string, name: string) =>
+    patchColumnApi(id, { name }).then(invalidateBoard).catch((e: Error) => toast.error(e.message));
+  const recolorColumn = (id: string, color: string) =>
+    patchColumnApi(id, { color }).then(invalidateBoard).catch((e: Error) => toast.error(e.message));
+  const deleteColumn = (id: string) =>
+    deleteColumnApi(id).then(invalidateBoard).catch((e: Error) => toast.error(e.message));
+
+  // Kanal um eine sichtbare Position verschieben (Menüpunkte am Kanalkopf).
+  // Ziel = die sichtbare Nachbar-Spalte, mit der getauscht wird. Die Anker
+  // (before_id/after_id) kommen aber aus der VOLLEN, rank-sortierten Liste
+  // (board.columns inkl. ausgeblendeter) — sonst könnte der Mittelpunkt zweier
+  // SICHTBARER Anker exakt auf dem Rang einer dazwischenliegenden AUSGEBLENDETEN
+  // Spalte landen und die unique(board_id,rank)-Constraint verletzen (→ 409, der
+  // sich mit fixen Ankern nie auflöst). Der Kanal landet unmittelbar vor (left)
+  // bzw. hinter (right) der Zielspalte in der DB-Reihenfolge → visuell genau der
+  // erwartete Tausch. Danach Board neu laden.
+  const moveColumn = (id: string, dir: 'left' | 'right') => {
+    const vi = visibleColumns.findIndex((c) => c.id === id);
+    if (vi < 0) return;
+    const target = dir === 'left' ? visibleColumns[vi - 1] : visibleColumns[vi + 1];
+    if (!target) return; // schon am sichtbaren Rand
+    const without = board.columns.filter((c) => c.id !== id); // volle Ordnung ohne die bewegte Spalte
+    const ti = without.findIndex((c) => c.id === target.id);
+    let beforeId: string | null;
+    let afterId: string | null;
+    if (dir === 'left') {
+      beforeId = without[ti - 1]?.id ?? null; // echter DB-Vorgänger der Zielspalte
+      afterId = target.id;
+    } else {
+      beforeId = target.id;
+      afterId = without[ti + 1]?.id ?? null; // echter DB-Nachfolger der Zielspalte
+    }
+    patchColumnApi(id, { before_id: beforeId, after_id: afterId })
+      .then(invalidateBoard)
+      .catch((e: Error) => toast.error(e.message));
+  };
+
+  // Karten der Spalte einmalig neu anordnen (Fälligkeit/alphabetisch/Erstelldatum).
+  const sortColumn = (id: string, by: 'due' | 'title' | 'created') =>
+    sortColumnApi(id, by)
+      .then(() => {
+        invalidateBoard();
+        toast.success('Neu angeordnet.');
+      })
+      .catch((e: Error) => toast.error(e.message));
+
+  // Kanal nur für den aktuellen Nutzer aus-/einblenden (per-User).
+  const hideColumn = (id: string) =>
+    hideColumnApi(id).then(invalidateBoard).catch((e: Error) => toast.error(e.message));
+  const showColumn = (id: string) =>
+    unhideColumnApi(id).then(invalidateBoard).catch((e: Error) => toast.error(e.message));
+
+  // Alle erledigten Karten einer Spalte archivieren.
+  const archiveCompleted = (id: string) =>
+    archiveCompletedApi(id)
+      .then((n) => {
+        invalidateBoard();
+        toast.success(n === 0 ? 'Keine erledigten Karten.' : `${n} archiviert.`);
+      })
+      .catch((e: Error) => toast.error(e.message));
 
   return (
     <div className="flex flex-col">
@@ -152,13 +243,18 @@ export function BoardView({
           cardCount={board.board.card_count}
           columnCount={board.columns.length}
         />
-        <Button
-          size="sm"
-          disabled={!firstColumnId}
-          onClick={() => setQuickCreateColumn(firstColumnId)}
-        >
-          <Plus className="mr-1 h-4 w-4" /> Karte anlegen
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => setShowArchive(true)}>
+            <Archive className="mr-1 h-4 w-4" /> Archiv
+          </Button>
+          <Button
+            size="sm"
+            disabled={!firstColumnId}
+            onClick={() => setQuickCreateColumn(firstColumnId)}
+          >
+            <Plus className="mr-1 h-4 w-4" /> Karte anlegen
+          </Button>
+        </div>
       </div>
 
       <BoardFilterBar
@@ -169,13 +265,45 @@ export function BoardView({
         labels={board.labels ?? []}
       />
 
-      <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
+      {hiddenColumns.length > 0 && (
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+          <EyeOff className="h-3.5 w-3.5 text-ink-muted" />
+          <span className="font-semibold text-ink-soft">Ausgeblendet</span>
+          {hiddenColumns.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => showColumn(c.id)}
+              title={`„${c.name}" wieder anzeigen`}
+              className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface py-1 pl-2.5 pr-1 text-[11.5px] font-semibold text-ink-strong shadow-card transition-colors hover:border-line-strong"
+            >
+              {/* Swatch trägt die Kanalfarbe, der Chip bleibt neutral (lesbarer
+                  als ein voll getönter Chip); das Auge signalisiert „einblenden". */}
+              <span className="h-2 w-2 rounded-[3px]" style={{ backgroundColor: c.color }} aria-hidden />
+              {c.name}
+              <span className="flex h-[18px] w-[18px] items-center justify-center rounded-full bg-fill text-ink-subtle">
+                <Eye className="h-2.5 w-2.5" aria-hidden />
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Stabiles `id` an den DndContext: dnd-kit leitet daraus die
+          aria-describedby-IDs der Draggables ab. Ohne id nutzt es einen
+          nicht-SSR-stabilen Zähler → Server- und Client-HTML divergieren
+          (Hydration-Mismatch an den CardChips). Ein fixes id macht die IDs
+          deterministisch. */}
+      <DndContext id="board-dnd" sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
         <div className="mt-3 flex gap-3">
-          <div className="flex flex-1 gap-3.5 overflow-x-auto pb-2">
+          <div
+            data-board-appearance={appearance}
+            className="board-texture flex flex-1 gap-3.5 overflow-x-auto rounded-lg pb-2"
+          >
             {board.columns.length === 0 ? (
               <EmptyBoardHint isAdmin={isAdmin} />
             ) : (
-              board.columns.map((col) => (
+              visibleColumns.map((col, i) => (
                 <BoardColumn
                   key={col.id}
                   column={col}
@@ -183,8 +311,17 @@ export function BoardView({
                   members={byId}
                   labels={labelsById}
                   isDragging={draggingId !== null}
+                  isFirst={i === 0}
+                  isLast={i === visibleColumns.length - 1}
                   onOpenCard={setOpenCardId}
                   onAddCard={() => setQuickCreateColumn(col.id)}
+                  onRename={renameColumn}
+                  onRecolor={recolorColumn}
+                  onMove={moveColumn}
+                  onSort={sortColumn}
+                  onHide={hideColumn}
+                  onArchiveCompleted={archiveCompleted}
+                  onDelete={deleteColumn}
                 />
               ))
             )}
@@ -219,6 +356,13 @@ export function BoardView({
           columns={board.columns}
           boardSlug={slug}
           onClose={() => setQuickCreateColumn(null)}
+        />
+      )}
+      {showArchive && (
+        <ArchiveModal
+          boardId={board.board.id}
+          boardSlug={slug}
+          onClose={() => setShowArchive(false)}
         />
       )}
     </div>

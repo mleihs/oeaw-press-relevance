@@ -127,6 +127,12 @@ const Schema = z.object({
   S3_SECRET_ACCESS_KEY: z.string().min(1).optional(),
   S3_BUCKET: z.string().min(1).optional(),
   S3_FORCE_PATH_STYLE: z.string().optional(),
+
+  // YouTube-Connector (Board-Smart-Objekte). Beide optional: ohne API-Key
+  // fällt der Connector auf oEmbed zurück (Titel/Kanal/Thumbnail, keine
+  // Dauer/Views); der Eigenkanal-Picker braucht Key + Kanal-ID.
+  YOUTUBE_API_KEY: z.string().min(1).optional(),
+  YOUTUBE_CHANNEL_ID: z.string().regex(/^UC[\w-]{22}$/, 'YouTube-Kanal-IDs beginnen mit UC').optional(),
 });
 
 type Normalized = Record<string, string | undefined>;

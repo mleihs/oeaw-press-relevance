@@ -25,6 +25,13 @@ function safeNextPath(raw: string | null): string {
   return '/';
 }
 
+/** Kontakt für Zugang/Passwort (admin-verwaltet, kein Self-Service-Reset).
+ *  admin@oeaw.ac.at ist die im Repo etablierte ÖAW-Adresse (Enrichment-Clients). */
+const ADMIN_CONTACT_EMAIL = 'admin@oeaw.ac.at';
+const ADMIN_CONTACT_SUBJECT = encodeURIComponent(
+  'Redaktions-Toolkit: Zugang oder Passwort',
+);
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -135,10 +142,22 @@ function LoginForm() {
             </Button>
           </form>
 
+          {/* Invite-only, admin-verwaltet: es gibt bewusst KEINE Self-Service-
+              Zurücksetzung (Passwörter setzt ein Admin in der Nutzerverwaltung,
+              /api/auth/users/[id]/reset-password). „Admin kontaktieren" ist
+              daher ein mailto an die ÖAW-Adresse (wie in den Enrichment-Clients)
+              statt ein Reset-Flow — mit vorbefülltem Betreff. */}
           <p className="mt-5 border-t border-border/60 pt-4 text-center text-xs leading-relaxed text-muted-foreground">
             Zugänge vergibt die Kommunikationsleitung.
             <br />
-            Passwort vergessen? Admin kontaktieren.
+            Passwort vergessen?{' '}
+            <a
+              href={`mailto:${ADMIN_CONTACT_EMAIL}?subject=${ADMIN_CONTACT_SUBJECT}`}
+              className="font-medium text-brand underline-offset-2 hover:underline"
+            >
+              Admin kontaktieren
+            </a>
+            .
           </p>
         </div>
       </div>

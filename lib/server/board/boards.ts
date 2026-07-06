@@ -9,6 +9,7 @@ import type {
   CardChip,
 } from '@/lib/shared/board';
 import { slugifyBoardName } from '@/lib/shared/board';
+import { listHiddenColumnIds } from './columns';
 import { BoardNotFoundError, isUniqueViolation } from './errors';
 import { listBoardLabels } from './labels';
 import { nextBoardRank } from './rank-util';
@@ -25,7 +26,7 @@ import {
  */
 const BOARD_SELECT = (userId: string) => sql`
   SELECT b.id, b.name, b.slug, b.rank, b.archived_at,
-    (SELECT count(*) FROM cards c WHERE c.board_id = b.id)::int AS card_count,
+    (SELECT count(*) FROM cards c WHERE c.board_id = b.id AND c.archived_at IS NULL)::int AS card_count,
     (SELECT max(a.created_at) FROM card_activity a
        JOIN cards c2 ON c2.id = a.card_id WHERE c2.board_id = b.id) AS last_activity_at,
     EXISTS(SELECT 1 FROM user_board_favorites f
@@ -94,7 +95,7 @@ async function listCardChips(boardId: string): Promise<CardChip[]> {
       FROM card_labels cl JOIN board_labels bl ON bl.id = cl.label_id
       WHERE cl.card_id = c.id
     ) lb ON true
-    WHERE c.board_id = ${boardId}
+    WHERE c.board_id = ${boardId} AND c.archived_at IS NULL
     ORDER BY c.column_id, c.rank`);
   return [...rows].map(cardChipFromRow);
 }
@@ -106,12 +107,13 @@ export async function getBoardWithColumns(
 ): Promise<BoardWithColumns> {
   const board = await getBoardSummary(userId, slug);
   if (!board) throw new BoardNotFoundError();
-  const [columns, cards, labels] = await Promise.all([
+  const [columns, cards, labels, hiddenColumnIds] = await Promise.all([
     listColumns(board.id),
     listCardChips(board.id),
     listBoardLabels(board.id),
+    listHiddenColumnIds(userId, board.id),
   ]);
-  return { board, columns, cards, labels };
+  return { board, columns, cards, labels, hidden_column_ids: hiddenColumnIds };
 }
 
 // --- Writes ---------------------------------------------------------------

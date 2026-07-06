@@ -94,6 +94,23 @@ export class BoardConflictError extends Error {
   }
 }
 
+/** Smart-Objekt-Referenz nicht (mehr) an der Karte (404). */
+export class ReferenceNotFoundError extends Error {
+  constructor(message = 'Referenz nicht gefunden.') {
+    super(message);
+    this.name = 'ReferenceNotFoundError';
+  }
+}
+
+/** Referenz-Ziel unbrauchbar (400): Event/Publikation existiert nicht,
+ *  YouTube-URL unparsebar oder Video nicht (mehr) erreichbar. */
+export class ReferenceTargetError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ReferenceTargetError';
+  }
+}
+
 /**
  * Postgres 23505 (unique_violation) — für den Rank-Kollisions-Retry und den
  * createBoard-Slug-Dedup-Loop. WICHTIG: drizzle-orm (0.45) wickelt Treiber-

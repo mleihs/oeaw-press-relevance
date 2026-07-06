@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { eq } from 'drizzle-orm';
-import { db, users, boards, cards, events, publications } from '@/lib/server/db';
+import { eq, sql } from 'drizzle-orm';
+import { db, users, boards, cards, events, publications, externalObjects } from '@/lib/server/db';
 import { slugifyBoardName } from '@/lib/shared/board';
 import {
   listBoards,
@@ -9,15 +9,17 @@ import {
   setBoardFavorite,
   getBoardWithColumns,
 } from './boards';
-import { createColumn, deleteColumn } from './columns';
+import { createColumn, deleteColumn, sortColumnCards } from './columns';
+import { RANK_PATTERN, compareRank } from '@/lib/shared/rank';
 import {
   createCard,
   patchCard,
   moveCard,
   getCardDetail,
   deleteCard,
+  archiveCompletedInColumn,
 } from './cards';
-import { getBoardDashboardCards, searchCards, getCardsForSource } from './queries';
+import { getBoardDashboardCards, searchCards, getCardsForSource, listArchivedCards } from './queries';
 import { addItem, patchItem, convertItemToCard } from './items';
 import { addWatcher } from './watchers';
 import { addComment, editComment, deleteComment } from './comments';
@@ -28,8 +30,10 @@ import {
   BoardForbiddenError,
   ColumnNotEmptyError,
   ItemAlreadyConvertedError,
+  ReferenceTargetError,
   isUniqueViolation,
 } from './errors';
+import { addReference, loadReferences, removeReference } from './references';
 import { MAX_ATTACHMENT_BYTES } from '@/lib/shared/board';
 import type { CurrentUser } from '@/lib/shared/types';
 
@@ -221,6 +225,143 @@ describe.skipIf(!isLocal)('board server lifecycle (lokaler Stack)', () => {
     }
   });
 
+  it('sortColumnCards ordnet nach Fälligkeit/Titel/Erstelldatum kollisionsfrei neu', async () => {
+    const [u] = await db.select().from(users).limit(1);
+    const uid = u.id;
+    const board = await createBoard('Sort Test Board');
+    try {
+      const col = await createColumn(board.id, 'Sortierspalte');
+      // Bewusst in einer Reihenfolge anlegen, die weder Titel- noch
+      // Fälligkeits-Sortierung entspricht (created-Reihenfolge = Anlege-Reihenfolge).
+      const c1 = await createCard(uid, { column_id: col.id, title: 'Banane', due_at: '2026-07-10' });
+      const c2 = await createCard(uid, { column_id: col.id, title: 'Apfel' }); // due null
+      const c3 = await createCard(uid, { column_id: col.id, title: 'Clementine', due_at: '2026-07-05' });
+      const c4 = await createCard(uid, { column_id: col.id, title: 'Dattel', due_at: '2026-07-20' });
+
+      const rankOrder = async (): Promise<string[]> => {
+        const rows = await db
+          .select({ id: cards.id, rank: cards.rank })
+          .from(cards)
+          .where(eq(cards.columnId, col.id));
+        // Ranks müssen gültig (rank.ts-Invariante) und eindeutig sein.
+        expect(rows.every((r) => RANK_PATTERN.test(r.rank))).toBe(true);
+        expect(new Set(rows.map((r) => r.rank)).size).toBe(rows.length);
+        return [...rows].sort((a, b) => compareRank(a.rank, b.rank)).map((r) => r.id);
+      };
+
+      await sortColumnCards(col.id, 'due'); // asc, NULLs ans Ende
+      expect(await rankOrder()).toEqual([c3.id, c1.id, c4.id, c2.id]);
+
+      await sortColumnCards(col.id, 'title'); // Apfel, Banane, Clementine, Dattel
+      expect(await rankOrder()).toEqual([c2.id, c1.id, c3.id, c4.id]);
+
+      await sortColumnCards(col.id, 'created'); // Anlege-Reihenfolge
+      expect(await rankOrder()).toEqual([c1.id, c2.id, c3.id, c4.id]);
+
+      await deleteCard(c1.id);
+      await deleteCard(c2.id);
+      await deleteCard(c3.id);
+      await deleteCard(c4.id);
+      await deleteColumn(col.id);
+    } finally {
+      await db.delete(boards).where(eq(boards.id, board.id));
+    }
+  });
+
+  it('sortColumnCards kollidiert nicht mit dem Rang einer archivierten Karte', async () => {
+    const [u] = await db.select().from(users).limit(1);
+    const uid = u.id;
+    const board = await createBoard('Sort-Archiv Test Board');
+    try {
+      const col = await createColumn(board.id, 'Spalte');
+      const a = await createCard(uid, { column_id: col.id, title: 'Beta' });
+      const b = await createCard(uid, { column_id: col.id, title: 'Alpha' });
+      const c = await createCard(uid, { column_id: col.id, title: 'Gamma' });
+      // Archivierte Karte auf 'j' setzen — genau den Rang, den initialRanks(2)
+      // der ersten aktiven Karte zuweisen würde. Ohne Archiv-Bewusstsein
+      // kollidiert Phase 2 der Bulk-Sortierung darauf (23505).
+      await db
+        .update(cards)
+        .set({ rank: 'j', archivedAt: new Date().toISOString() })
+        .where(eq(cards.id, c.id));
+
+      await expect(sortColumnCards(col.id, 'title')).resolves.toBeUndefined();
+
+      const all = await db
+        .select({ id: cards.id, rank: cards.rank, arch: cards.archivedAt })
+        .from(cards)
+        .where(eq(cards.columnId, col.id));
+      // Keine Rang-Kollision über aktive UND archivierte Karten hinweg.
+      expect(new Set(all.map((r) => r.rank)).size).toBe(all.length);
+      // Aktive Karten alphabetisch: Alpha(b) vor Beta(a).
+      const active = all
+        .filter((r) => r.arch === null)
+        .sort((x, y) => compareRank(x.rank, y.rank));
+      expect(active.map((r) => r.id)).toEqual([b.id, a.id]);
+      // Archivierte Karte behält ihren Rang.
+      expect(all.find((r) => r.id === c.id)?.rank).toBe('j');
+
+      await deleteCard(a.id);
+      await deleteCard(b.id);
+      await deleteCard(c.id);
+      await deleteColumn(col.id);
+    } finally {
+      await db.delete(boards).where(eq(boards.id, board.id));
+    }
+  });
+
+  it('Archiv: archivierte Karten fallen aus Board-Load/card_count/Suche, Restore holt sie zurück', async () => {
+    const [u] = await db.select().from(users).limit(1);
+    const uid = u.id;
+    const board = await createBoard('Archiv Test Board');
+    try {
+      const col = await createColumn(board.id, 'Erledigt-Spalte');
+      const done1 = await createCard(uid, { column_id: col.id, title: 'Archiv-Kandidat Alpha' });
+      const done2 = await createCard(uid, { column_id: col.id, title: 'Archiv-Kandidat Beta' });
+      const open = await createCard(uid, { column_id: col.id, title: 'Bleibt offen Gamma' });
+      await patchCard(uid, done1.id, { completed: true });
+      await patchCard(uid, done2.id, { completed: true });
+
+      // Bulk-Archivierung erfasst nur die erledigten (nicht die offene) Karte.
+      const n = await archiveCompletedInColumn(uid, col.id);
+      expect(n).toBe(2);
+
+      // Board-Load + card_count schließen archivierte Karten aus (keine
+      // Geisterkarten in den Zählern).
+      const full = await getBoardWithColumns(uid, board.slug);
+      expect(full.cards.map((c) => c.id)).toEqual([open.id]);
+      expect(full.board.card_count).toBe(1);
+      const summary = (await listBoards(uid)).find((b) => b.id === board.id);
+      expect(summary?.card_count).toBe(1);
+
+      // Board-übergreifende Suche findet die archivierte Karte NICHT mehr.
+      expect((await searchCards('Archiv-Kandidat Alpha')).some((c) => c.id === done1.id)).toBe(false);
+      // Die offene ist weiter auffindbar.
+      expect((await searchCards('Bleibt offen Gamma')).some((c) => c.id === open.id)).toBe(true);
+
+      // Archiv-Ansicht listet beide, neueste zuerst; Detail bleibt öffenbar.
+      const archived = await listArchivedCards(board.id);
+      expect(archived.map((c) => c.id).sort()).toEqual([done1.id, done2.id].sort());
+      expect(archived[0].column_name).toBe('Erledigt-Spalte');
+      const detail = await getCardDetail(done1.id);
+      expect(detail.activity.map((a) => a.verb)).toContain('archived');
+
+      // Wiederherstellen bringt die Karte zurück ins Board (+ Activity).
+      const restored = await patchCard(uid, done1.id, { archived: false });
+      expect(restored.activity.map((a) => a.verb)).toContain('unarchived');
+      const afterRestore = await getBoardWithColumns(uid, board.slug);
+      expect(afterRestore.cards.map((c) => c.id).sort()).toEqual([open.id, done1.id].sort());
+      expect(afterRestore.board.card_count).toBe(2);
+
+      await deleteCard(done1.id);
+      await deleteCard(done2.id);
+      await deleteCard(open.id);
+      await deleteColumn(col.id);
+    } finally {
+      await db.delete(boards).where(eq(boards.id, board.id));
+    }
+  });
+
   // Regressionen aus dem Phase-2-Code-Review (Fable).
   it('isUniqueViolation erkennt den in DrizzleQueryError gewrappten 23505', async () => {
     // Echter Duplicate-Insert (slug 'channels' ist geseedet) durch Drizzle.
@@ -322,6 +463,79 @@ describe.skipIf(!isLocal)('board server lifecycle (lokaler Stack)', () => {
     } finally {
       await db.delete(cards).where(eq(cards.boardId, board.id));
       await db.delete(boards).where(eq(boards.id, board.id));
+    }
+  });
+
+  it('Smart-Objekt-Referenzen: add (idempotent) / load / bidirektional / remove + Orphan-GC', async () => {
+    const [u] = await db.select().from(users).limit(1);
+    const [ev] = await db.select().from(events).limit(1);
+    const [pub] = await db.select().from(publications).limit(1);
+    if (!ev || !pub) return; // lokale DB ohne Fixtures -> nichts zu prüfen
+    const board = await createBoard('Referenzen Smoke Board');
+    try {
+      const col = await createColumn(board.id, 'Kanal');
+      const card = await createCard(u.id, { column_id: col.id, title: 'zzrefsmoke' });
+
+      // Event verknüpfen; zweiter Add desselben Ziels ist idempotent.
+      let refs = await addReference(u.id, card.id, { kind: 'event', id: ev.id });
+      refs = await addReference(u.id, card.id, { kind: 'event', id: ev.id });
+      expect(refs.filter((r) => r.kind === 'event')).toHaveLength(1);
+      const evRef = refs.find((r) => r.kind === 'event');
+      expect(evRef && evRef.kind === 'event' && evRef.title).toBe(ev.title);
+
+      // Publikation dazu; CardDetail trägt beide, Reihenfolge = created_at.
+      refs = await addReference(u.id, card.id, { kind: 'publication', id: pub.id });
+      expect(refs.map((r) => r.kind)).toEqual(['event', 'publication']);
+      const detail = await getCardDetail(card.id);
+      expect(detail.references.map((r) => r.kind)).toEqual(['event', 'publication']);
+      expect(detail.activity.filter((a) => a.verb === 'reference_added')).toHaveLength(2);
+
+      // Bidirektional: die Karte taucht ohne source_*_id am Event/der Pub auf.
+      const forEvent = await getCardsForSource({ eventId: ev.id });
+      expect(forEvent.map((c) => c.id)).toContain(card.id);
+      const forPub = await getCardsForSource({ publicationId: pub.id });
+      expect(forPub.map((c) => c.id)).toContain(card.id);
+
+      // Nicht-existentes Ziel -> ReferenceTargetError (400er-Pfad).
+      await expect(
+        addReference(u.id, card.id, { kind: 'event', id: '00000000-0000-0000-0000-000000000000' }),
+      ).rejects.toBeInstanceOf(ReferenceTargetError);
+
+      // Externes Objekt (Registry-Zeile direkt, ohne Netz) + Link; Remove der
+      // letzten Referenz räumt das verwaiste Objekt mit weg.
+      const [obj] = await db
+        .insert(externalObjects)
+        .values({
+          provider: 'youtube',
+          externalId: 'zzRefSmoke01',
+          url: 'https://www.youtube.com/watch?v=zzRefSmoke01',
+          snapshot: { title: 'Smoke-Video', channel_title: 'ÖAW' },
+        })
+        .returning({ id: externalObjects.id });
+      await db.execute(
+        sql`INSERT INTO card_references (card_id, object_id, created_by)
+            VALUES (${card.id}, ${obj.id}, ${u.id})`,
+      );
+      refs = await loadReferences(card.id);
+      const ytRef = refs.find((r) => r.kind === 'youtube');
+      expect(ytRef && ytRef.kind === 'youtube' && ytRef.snapshot.title).toBe('Smoke-Video');
+
+      refs = await removeReference(u.id, card.id, ytRef!.id);
+      expect(refs.find((r) => r.id === ytRef!.id)).toBeUndefined();
+      const orphan = await db
+        .select({ id: externalObjects.id })
+        .from(externalObjects)
+        .where(eq(externalObjects.id, obj.id));
+      expect(orphan).toHaveLength(0);
+
+      // Event-Referenz lösen -> Rück-Lookup leer (Karte hat keine source_*_id).
+      await removeReference(u.id, card.id, refs.find((r) => r.kind === 'event')!.id);
+      const forEventAfter = await getCardsForSource({ eventId: ev.id });
+      expect(forEventAfter.map((c) => c.id)).not.toContain(card.id);
+    } finally {
+      await db.delete(cards).where(eq(cards.boardId, board.id));
+      await db.delete(boards).where(eq(boards.id, board.id));
+      await db.delete(externalObjects).where(eq(externalObjects.externalId, 'zzRefSmoke01'));
     }
   });
 

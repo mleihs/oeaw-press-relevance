@@ -14,6 +14,8 @@ import {
 } from '@/lib/client/stores/settings-store';
 import { useInfoBubblesEnabled } from '@/lib/client/hooks/use-info-bubbles';
 import { useKeyboardShortcutsEnabled } from '@/lib/client/hooks/use-keyboard-shortcuts-enabled';
+import { useBoardAppearance } from '@/lib/client/hooks/use-board-appearance';
+import { cn } from '@/lib/shared/utils';
 import { openCheatSheet } from '@/lib/client/commands/controller';
 import { InfoBubble } from '@/components/info-bubble';
 import { SocialChannelsCard } from './_components/social-channels-card';
@@ -21,7 +23,7 @@ import { UserManagementCard } from './_components/user-management-card';
 import { BoardManagementCard } from './_components/board-management-card';
 import { SocialSettingsCard } from './_components/social-settings-card';
 import { EventWeightsCard } from './_components/event-weights-card';
-import { Save, CheckCircle2, Eye, EyeOff, Loader2, XCircle, ShieldCheck, Info, User, Keyboard } from '@/lib/icons';
+import { Save, CheckCircle2, Eye, EyeOff, Loader2, XCircle, ShieldCheck, Info, User, Keyboard, Sparkles } from '@/lib/icons';
 import { toast } from 'sonner';
 
 export default function SettingsPage() {
@@ -43,6 +45,7 @@ export default function SettingsPage() {
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [bubblesOn, setBubblesOn] = useInfoBubblesEnabled();
   const [shortcutsOn, setShortcutsOn] = useKeyboardShortcutsEnabled();
+  const [boardAppearance, setBoardAppearance] = useBoardAppearance();
 
   const updateSettings = (patch: Partial<AppSettings>) =>
     setDraft((d) => ({ ...(d ?? persisted), ...patch }));
@@ -139,6 +142,40 @@ export default function SettingsPage() {
               onCheckedChange={setBubblesOn}
               aria-label="Erklärungs-Bubbles umschalten"
             />
+          </div>
+
+          {/* Board-Erscheinungsbild — per-User (localStorage), nur eine
+              CSS-Token-Umschaltung am Board. Segmentiert statt Switch, weil es
+              zwei benannte Zustände sind, nicht an/aus. */}
+          <div className="mt-4 flex items-start justify-between gap-4 border-t border-border/60 pt-4">
+            <div className="space-y-1">
+              <Label className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-muted-foreground/70" />
+                Board-Erscheinungsbild
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                „Standard" = ruhige, schwebende Karten auf neutraler Mulde (empfohlen).
+                „Atmosphäre" = warmes, farbiges Board-Feld mit Papierkarten. Gilt nur für dich, auf diesem Gerät.
+              </p>
+            </div>
+            <div className="flex shrink-0 rounded-lg border border-border p-0.5" role="group" aria-label="Board-Erscheinungsbild">
+              {([['standard', 'Standard'], ['atmosphere', 'Atmosphäre']] as const).map(([val, label]) => (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => setBoardAppearance(val)}
+                  aria-pressed={boardAppearance === val}
+                  className={cn(
+                    'rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
+                    boardAppearance === val
+                      ? 'bg-brand text-white'
+                      : 'text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
         </CardContent>
       </Card>

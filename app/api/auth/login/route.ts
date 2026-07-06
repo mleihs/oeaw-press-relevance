@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { apiError, validateBody, withApiError } from '@/lib/server/http';
 import { loginPayloadSchema } from '@/lib/shared/schemas';
 import { createRateLimiter, getClientIp } from '@/lib/server/rate-limit';
 import { getSupabaseAuthClient } from '@/lib/server/auth/client';
 import { evaluateUserRow } from '@/lib/server/auth/require';
+import { IMPERSONATION_COOKIE } from '@/lib/server/auth/impersonation';
 import { db, users } from '@/lib/server/db';
 import { eq } from 'drizzle-orm';
 
@@ -45,5 +47,8 @@ export const POST = withApiError(async (req: NextRequest) => {
   }
 
   limiter.reset(ip);
+  // Frischer echter Login setzt den Impersonation-Zustand zurück (falls ein
+  // Herkunfts-Cookie aus einer alten Switcher-Sitzung übrig war).
+  (await cookies()).delete(IMPERSONATION_COOKIE);
   return NextResponse.json({ ok: true, user: result.user });
 });
