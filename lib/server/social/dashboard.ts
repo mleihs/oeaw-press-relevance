@@ -102,7 +102,11 @@ export async function getSocialDashboardData(): Promise<SocialDashboardData | nu
 
   const windowDays = snapshot.window_days || env.SOCIAL_WINDOW_DAYS;
   const windowMs = windowDays * 24 * 60 * 60 * 1000;
-  const windowStart = Date.now() - windowMs;
+  // Fenster am Snapshot verankern, nicht an now(): liegt der letzte Refresh
+  // länger zurück, fielen sonst ALLE Posts in die älteste Hälfte (Momentum
+  // pauschal −100 %, Sparkline nur ein Balken).
+  const windowEnd = new Date(snapshot.created_at).getTime() || Date.now();
+  const windowStart = windowEnd - windowMs;
 
   const themeItems = resolveThemePosts(snapshot.themes, pool);
   const themes = themeItems
