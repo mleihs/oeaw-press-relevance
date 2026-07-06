@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Rows, CalendarDays, type LucideIcon } from '@/lib/icons';
 import { cn } from '@/lib/shared/utils';
 import { buildEventsUrl, type EventsFilterState } from '../_lib/build-events-url';
-import type { EventsTab } from '@/lib/server/events/list';
+import type { EventsTab } from '@/lib/shared/events-filter';
 import type { CalendarView } from '../_lib/calendar-range';
 
 /** Tabelle / Kalender segmented control (Toolkit-Redesign.dc.html Z. 364–367):

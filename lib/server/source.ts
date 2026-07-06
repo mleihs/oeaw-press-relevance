@@ -1,3 +1,4 @@
+import 'server-only';
 import { docs } from '@/.source/server';
 import { loader } from 'fumadocs-core/source';
 

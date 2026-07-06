@@ -3,6 +3,7 @@
 // snooze, no rationale, no session linkage — just decision + (auto-managed)
 // decided_at via trg_events_decided_at_sync.
 
+import 'server-only';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db, events as eventsTable } from '@/lib/server/db';

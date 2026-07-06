@@ -1,22 +1,25 @@
 import { CalendarDays } from '@/lib/icons';
 import { MobileScreenHeader } from '@/components/mobile-screen-header';
 import {
-  DEFAULT_EVENTS_SORT,
   filtersForEventsTab,
   getEventsOverview,
   getUpcomingInstitutes,
-  isEventsSort,
-  isEventsTab,
   listEvents,
   listEventsInRange,
-  type EventsSort,
-  type EventsSortOrder,
-  type EventsTab,
 } from '@/lib/server/events/list';
 import { getCardsForEvents } from '@/lib/server/board';
 import { cardDeepLink } from '@/lib/shared/board';
 import { SCORE_BAND_HIGH } from '@/lib/shared/constants';
-import { isEventsBand, type EventsBand } from '@/lib/shared/events-filter';
+import {
+  DEFAULT_EVENTS_SORT,
+  isEventsBand,
+  isEventsSort,
+  isEventsTab,
+  type EventsBand,
+  type EventsSort,
+  type EventsSortOrder,
+  type EventsTab,
+} from '@/lib/shared/events-filter';
 import {
   computeCalendarWindow,
   isCalendarView,

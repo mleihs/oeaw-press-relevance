@@ -3,6 +3,7 @@
 // engines). Keep this file engine-agnostic so the scoring is one canonical
 // computation regardless of which model produced the dimension values.
 
+import 'server-only';
 import { computePressScore } from '@/lib/shared/scoring';
 import sessionModel from '@/lib/shared/session-model.json';
 import type { AnalysisResult } from '@/lib/shared/types';

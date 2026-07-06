@@ -49,10 +49,12 @@ fehlende Typografie-Skala, Credentials in Docs (OSS-Blocker).
 - [ ] **A1 Credentials rotieren (NUR USER):** Passwort des Kontos
       `matthias.leihs@oeaw.ac.at` ändern; Test-User `authtest.tmp@oeaw.ac.at`
       löschen; prüfen ob das historische Gate-Passwort noch irgendwo aktiv ist.
-- [ ] **A2 Docs bereinigen:** Klartext-Credentials durch `<redacted>` ersetzen in
-      `docs/PROD_SETUP_PLAN.md:184`, `docs/TECH_HANDOVER.md:167`,
-      `docs/RESUME_LOGIN_REDESIGN.md:95-98`, `docs/RESUME_BOARD_MT_PARITAET.md:107`.
-      (Historie bleibt schmutzig → bei OSS frisches Repo, siehe Gruppe G.)
+- [x] **A2 Docs bereinigen (DONE, Commit c858515 + RESUME_BOARD in Board-Commit):**
+      Klartext-Credentials durch `<redacted>` ersetzt in `docs/PROD_SETUP_PLAN.md`
+      (GATE_PASSWORD/GATE_TOKEN/MEISTERTASK_API_TOKEN), `docs/TECH_HANDOVER.md`,
+      `docs/RESUME_LOGIN_REDESIGN.md`, `docs/RESUME_BOARD_MT_PARITAET.md`,
+      `docs/RESUME_SOCIAL_REDESIGN.md`. (Historie bleibt schmutzig → bei OSS
+      frisches Repo, siehe Gruppe G.)
 
 ### Gruppe B — Typen-/Schema-Split (Fable, ERLEDIGT 2026-07-06)
 
@@ -82,27 +84,33 @@ fehlende Typografie-Skala, Credentials in Docs (OSS-Blocker).
       Feature-Dateien umziehen (mechanisch; nur nötig für den echten Paketschnitt,
       nicht für die Whole-App-OSS-Variante).
 
-### Gruppe C — Quick Wins Architektur (Opus Medium)
+### Gruppe C — Quick Wins Architektur (Opus Medium) — DONE bis auf C2 (Commit 1a54f6a)
 
-- [ ] **C1** Ungenutzten `Input`-Import entfernen: `app/board/_components/card-modal.tsx:73`.
-- [ ] **C2** `eslint-plugin-boundaries` auf v7 + die 7 Legacy-Selektoren in
-      `eslint.config.mjs` auf Objekt-Syntax migrieren (Migrationsguide:
-      jsboundaries.dev v5-to-v6/v7).
-- [ ] **C3** `import 'server-only'` flächendeckend in `lib/server/**` (aktuell
-      31/108). Ausnahme prüfen: Module, die von `scripts/` (tsx, außerhalb Next)
-      importiert werden, vertragen kein `server-only` → für diese stattdessen
-      Kommentar + ggf. eigenes Guard-Muster. Erst Import-Graph der Scripts prüfen!
-- [ ] **C4** MeisterTask-Push aus dem Decision-Kern: `lib/server/publications/decisions.ts:4,56`
-      → `DecisionSideEffect`-Hook-Interface (z. B. `onDecided(pub, decision)`),
-      MT-Push als registrierte Implementierung. Verhalten identisch halten
-      (fire-and-forget-Semantik prüfen).
-- [ ] **C5** Hardcodes → Env/Config mit Fallback: `lib/server/enrichment/unpaywall.ts:8`
-      (Kontakt-Mail), `scripts/match-external-by-title.mjs:44` (private Gmail!),
-      `components/auth/auth-screen.tsx:44` (admin@oeaw.ac.at → z. B.
-      `NEXT_PUBLIC_ADMIN_CONTACT`). `.env.example` ergänzen.
-- [ ] **C6** UI-Konstanten aus Server-Modul: `EVENTS_TAB_VALUES`
-      (`lib/server/events/list.ts:10`) + `EVENTS_SORT_VALUES` (:239) nach
-      `lib/shared/events-filter.ts`; Importstellen anpassen.
+- [x] **C1 (hinfällig)** Der ungenutzte `Input`-Import in card-modal.tsx war durch
+      die parallele Board-Arbeit bereits entfernt — nichts zu tun.
+- [ ] **C2 (DEFERRED)** `eslint-plugin-boundaries` auf v7 + die 7 Legacy-Selektoren
+      in `eslint.config.mjs` auf Objekt-Syntax migrieren (Migrationsguide:
+      jsboundaries.dev v5-to-v6/v7). **Zurückgestellt:** braucht package.json-Bump
+      + package-lock-Regen, die mit paralleler Board-Arbeit (frimousse/mammoth)
+      kollidierten (Lock nicht partiell stageable). Nachziehen, sobald der
+      Working-Tree sauber ist. Lint gibt bis dahin die bekannte Legacy-Warnung.
+- [x] **C3 (DONE)** `import 'server-only'` auf 25 weitere `lib/server/**`-Module
+      (jetzt 54/117). Ausgeschlossen: die 64 script-erreichbaren Module (transitiver
+      Import-Graph ab `scripts/` berechnet — tsx/Node wirft bei `server-only`).
+      Kein `use client`-Consumer importiert eines der 25 (statisch verifiziert,
+      inkl. Relativpfade) → build-safe. Per-Datei-Kommentar an den Ausnahmen
+      bewusst weggelassen (Rauschen); Rationale im Commit + hier.
+- [x] **C4 (DONE)** MeisterTask-Push aus dem Decision-Kern gelöst →
+      `DecisionSideEffect`-Hook in `lib/server/publications/decision-side-effects.ts`,
+      MT-Push als registrierte Implementierung. `decisions.ts` importiert kein
+      `meistertask/push` mehr; JSON-Contract `{ publication, meistertask }`
+      unverändert. Verhalten identisch (sequenziell, awaited, non-pitch → null).
+- [x] **C5 (DONE)** Hardcodes → Env/Config mit Fallback: `unpaywall.ts` +
+      `match-external-by-title.mjs` (privates Gmail raus) via `API_CONTACT_EMAIL`;
+      `auth-screen.tsx` via `NEXT_PUBLIC_ADMIN_CONTACT`. `.env.example` ergänzt.
+- [x] **C6 (DONE)** `EVENTS_TAB_VALUES` + `EVENTS_SORT_VALUES` (samt Validatoren,
+      Typen und `DEFAULT_EVENTS_SORT`) aus `events/list.ts` nach
+      `lib/shared/events-filter.ts` verschoben; alle Importstellen umgezogen.
 
 ### Gruppe D — Dedup (Opus Medium)
 

@@ -11,11 +11,11 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/shared/utils';
 import { buildEventsUrl, type EventsFilterState } from '../_lib/build-events-url';
 import type { CalendarView } from '../_lib/calendar-range';
+import { type EventsStats } from '@/lib/server/events/list';
 import {
   EVENTS_TAB_VALUES,
-  type EventsStats,
   type EventsTab,
-} from '@/lib/server/events/list';
+} from '@/lib/shared/events-filter';
 
 const TAB_DISPLAY: Record<
   EventsTab,

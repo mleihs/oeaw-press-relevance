@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { SQL } from 'drizzle-orm';
 import { PgDialect } from 'drizzle-orm/pg-core';
-import { EVENTS_TAB_VALUES, isEventsTab, filtersForEventsTab } from './list';
+import { filtersForEventsTab } from './list';
+import { EVENTS_TAB_VALUES, isEventsTab } from '@/lib/shared/events-filter';
 
 // Render a Drizzle filter to its parameterized text + params without a DB, so
 // we can assert the band thresholds, ILIKE-escaping and predicate composition.

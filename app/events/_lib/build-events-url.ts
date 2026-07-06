@@ -1,9 +1,9 @@
 import type {
+  EventsBand,
   EventsSort,
   EventsSortOrder,
   EventsTab,
-} from '@/lib/server/events/list';
-import type { EventsBand } from '@/lib/shared/events-filter';
+} from '@/lib/shared/events-filter';
 import type { CalendarView } from './calendar-range';
 
 /** Central /events URL builder so every nav surface (tabs, view switcher,

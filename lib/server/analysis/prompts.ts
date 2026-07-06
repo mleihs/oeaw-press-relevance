@@ -1,3 +1,4 @@
+import 'server-only';
 import { Publication } from '@/lib/shared/types';
 
 /** A publication enriched with the orgunits join, for use in the LLM prompt. */

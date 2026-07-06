@@ -9,6 +9,7 @@
 // bound to one entity + the not-found error to throw). See lib/server/events/
 // flag.ts and lib/server/publications/flag.ts for the ~10-line wrappers.
 
+import 'server-only';
 import type { FlagNote } from '@/lib/shared/types';
 import type { FlagSetPayload, FlagDeletePayload } from '@/lib/shared/schemas';
 

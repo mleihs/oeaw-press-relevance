@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from '@/lib/icons';
 import { buildEventsUrl, type EventsFilterState } from '../_lib/build-events-url';
-import type { EventsTab } from '@/lib/server/events/list';
+import type { EventsTab } from '@/lib/shared/events-filter';
 import type { CalendarWindow } from '../_lib/calendar-range';
 
 // UTC-pinned formatters: the anchors are pure civil-date strings (YYYY-MM-DD),

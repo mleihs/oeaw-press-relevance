@@ -1,3 +1,4 @@
+import 'server-only';
 import type { Publication } from '@/lib/shared/types';
 import { displayTitle } from '@/lib/shared/publication-display';
 import { SCORE_HIGH_THRESHOLD } from './constants';

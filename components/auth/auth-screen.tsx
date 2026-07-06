@@ -41,7 +41,10 @@ import {
  * E-Mail an die Administration vor statt einen Reset auszulösen.
  */
 
-const ADMIN_CONTACT_EMAIL = 'admin@oeaw.ac.at';
+// Address behind the "Admin kontaktieren" mailto. Override per deployment via
+// NEXT_PUBLIC_ADMIN_CONTACT (inlined at build); falls back to the ÖAW admin.
+const ADMIN_CONTACT_EMAIL =
+  process.env.NEXT_PUBLIC_ADMIN_CONTACT || 'admin@oeaw.ac.at';
 
 /** Nur same-origin-Pfade als Redirect-Ziel akzeptieren: führender `/`,
  *  danach weder `/` noch `\` — URL-Parser normalisieren `\` zu `/`,
