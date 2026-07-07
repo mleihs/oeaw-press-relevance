@@ -434,7 +434,7 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
                   <span className="h-px flex-1 bg-line" />
                 </div>
 
-                <div className="rounded-[14px] border border-line bg-fill/50 p-4">
+                <div className="relative overflow-hidden rounded-[14px] border border-line bg-fill/50 p-4">
                   <div className="mb-2 flex items-center gap-2.5">
                     <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[9px] bg-white text-ink-muted ring-1 ring-line-strong">
                       <LockKeyhole weight="duotone" className="h-[16px] w-[16px]" />
@@ -529,6 +529,11 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
                       </button>
                     </div>
                   </form>
+
+                  {/* „Auf Eis": animierter Frost-Effekt über der Karte. Liegt
+                      über dem Inhalt (zuletzt im DOM), pointer-events:none →
+                      das Formular darunter bleibt für Admins bedienbar. */}
+                  <FrostOverlay />
                 </div>
               </div>
             </div>
@@ -711,6 +716,62 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+/** „Auf Eis"-Frost-Overlay über dem Personen-Login. Rein CSS + Inline-SVG-
+ *  Rauschen (feTurbulence): Milchglas + kalter Ton, Frost-Korn, Eiskristall-
+ *  Kriechen aus den Ecken, Frost-Rand, wandernder Glanz-Sweep und funkelnde
+ *  Kristalle. `pointer-events-none` → das Formular darunter bleibt bedienbar.
+ *  Web-Recherche 2026-07-07: feTurbulence-Rauschen + backdrop-filter ist der
+ *  Standard für Frost/Milchglas ohne externe Library. */
+const FROST_NOISE =
+  "data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%27140%27%20height=%27140%27%3E%3Cfilter%20id=%27n%27%3E%3CfeTurbulence%20type=%27fractalNoise%27%20baseFrequency=%270.85%27%20numOctaves=%272%27%20stitchTiles=%27stitch%27/%3E%3CfeColorMatrix%20type=%27saturate%27%20values=%270%27/%3E%3C/filter%3E%3Crect%20width=%27100%25%27%20height=%27100%25%27%20filter=%27url(%23n)%27/%3E%3C/svg%3E";
+
+function FrostOverlay() {
+  return (
+    <div
+      aria-hidden
+      className="frost-freeze pointer-events-none absolute inset-0 overflow-hidden rounded-[14px]"
+    >
+      {/* Milchglas + kalter Blau-Weiß-Ton */}
+      <div
+        className="absolute inset-0 backdrop-blur-[2px]"
+        style={{
+          background:
+            'linear-gradient(135deg,rgba(219,234,255,.55),rgba(255,255,255,.28) 45%,rgba(191,219,254,.52))',
+        }}
+      />
+      {/* Frost-Korn (SVG-Rauschen) */}
+      <div
+        className="absolute inset-0 mix-blend-screen"
+        style={{ backgroundImage: `url("${FROST_NOISE}")`, backgroundSize: '150px 150px', opacity: 0.28 }}
+      />
+      {/* Eiskristall-Kriechen aus den Ecken */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            'radial-gradient(130px 90px at 0% 0%,rgba(255,255,255,.9),transparent 68%),radial-gradient(120px 90px at 100% 0%,rgba(255,255,255,.72),transparent 68%),radial-gradient(150px 120px at 100% 100%,rgba(207,226,255,.72),transparent 70%),radial-gradient(150px 120px at 0% 100%,rgba(207,226,255,.68),transparent 70%)',
+        }}
+      />
+      {/* Frost-Rand */}
+      <div
+        className="absolute inset-0 rounded-[14px]"
+        style={{ boxShadow: 'inset 0 0 0 1px rgba(255,255,255,.65),inset 0 0 26px rgba(191,219,254,.7)' }}
+      />
+      {/* Glanz-Sweep */}
+      <div
+        className="frost-shimmer absolute inset-y-0 left-0 w-1/3"
+        style={{ background: 'linear-gradient(90deg,transparent,rgba(255,255,255,.6),transparent)' }}
+      />
+      {/* Funkelnde Kristalle */}
+      <span className="ice-sparkle absolute text-white" style={{ top: '16%', left: '20%', fontSize: 11 }}>❄</span>
+      <span className="ice-sparkle absolute text-white" style={{ top: '64%', left: '11%', fontSize: 8, animationDelay: '.8s' }}>❄</span>
+      <span className="ice-sparkle absolute text-white" style={{ top: '30%', right: '15%', fontSize: 9, animationDelay: '1.5s' }}>✦</span>
+      <span className="ice-sparkle absolute text-white" style={{ top: '76%', right: '22%', fontSize: 11, animationDelay: '.4s' }}>❄</span>
+      <span className="ice-sparkle absolute text-white" style={{ top: '46%', left: '54%', fontSize: 7, animationDelay: '2.1s' }}>✦</span>
     </div>
   );
 }
