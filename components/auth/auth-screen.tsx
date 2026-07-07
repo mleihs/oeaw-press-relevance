@@ -22,6 +22,7 @@ import {
   Password,
   RadioButton,
   Send,
+  Snowflake,
   Sparkles,
 } from '@/lib/icons';
 
@@ -96,6 +97,17 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
   // Passwort vergessen
   const [fwEmail, setFwEmail] = useState('');
 
+  // „Board liegt auf Eis"-Gag: nur wenn man vom Board hierher geschickt wurde
+  // (/login?next=/board). Dann verschneit die rechte Ecke und man wird nach
+  // ~10 s zurückgeworfen. Direktes /login (echter Admin-Login) ist NICHT
+  // betroffen. Fasst man das Formular an (Fokus), wird der Rauswurf abgebrochen
+  // (`cancelled`), die Schnee-Ecke bleibt aber. `booting` ist abgeleitet, damit
+  // es nur EINE setState-Stelle im Effekt gibt.
+  const [frozenBoard, setFrozenBoard] = useState(false);
+  const [cancelled, setCancelled] = useState(false);
+  const [ejecting, setEjecting] = useState(false);
+  const booting = frozenBoard && !cancelled && !ejecting;
+
   const emailRef = useRef<HTMLInputElement>(null);
   const gatePwRef = useRef<HTMLInputElement>(null);
   // Gemerktes Übergangs-Passwort: in einem Ref gehalten, damit der Lade-Effekt
@@ -141,6 +153,34 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
     // handleGate schließt über das bereits geladene gatePw; nur an phase hängen.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
+
+  // „Board auf Eis"-Gag NUR wenn man vom Board hierher geschickt wurde
+  // (/login?next=/board…). Setzt die Schnee-Ecke + startet den Rauswurf-Timer.
+  useEffect(() => {
+    if (variant !== 'login') return;
+    const next = new URLSearchParams(window.location.search).get('next') ?? '';
+    if (!next.startsWith('/board')) return;
+    // Einmaliges Lesen des URL-Params NACH der Hydration (window). Lazy-Init
+    // im useState wäre SSR-inkonsistent (Server kennt window nicht) und würde
+    // die Ecke als Hydration-Mismatch flackern lassen — daher bewusst hier.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setFrozenBoard(true);
+  }, [variant]);
+
+  // Nach ~10 s das Zufrieren auslösen. `booting` fällt weg, sobald man das
+  // Formular anfasst (echte Anmeldung möglich); die Schnee-Ecke bleibt.
+  useEffect(() => {
+    if (!booting) return;
+    const t = setTimeout(() => setEjecting(true), 10_000);
+    return () => clearTimeout(t);
+  }, [booting]);
+
+  // Zufrier-Animation läuft, dann zurück aufs Dashboard.
+  useEffect(() => {
+    if (!ejecting) return;
+    const t = setTimeout(() => window.location.assign('/'), 1_400);
+    return () => clearTimeout(t);
+  }, [ejecting]);
 
   /** Nach erfolgreichem Auth: Session-Marker setzen und weiterleiten.
    *  `identity: true` (persönlicher Login) navigiert IMMER voll — die Seite
@@ -271,6 +311,10 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
     <div className="force-light fixed inset-0 z-50 flex overflow-y-auto bg-canvas text-ink" style={{ colorScheme: 'light' }}>
       {phase === 'boot' && <BootOverlay />}
       <BrandPanel />
+      {/* „Board auf Eis"-Gag: verschneite rechte Ecke + Zufrier-Rauswurf, nur
+          wenn man vom Board hierher geschickt wurde. */}
+      {variant === 'login' && frozenBoard && <WinterCorner />}
+      {ejecting && <FreezeOverEject />}
 
       {/* ===== Formular-Panel ===== */}
       <div className="flex flex-1 items-center justify-center px-7 py-10">
@@ -576,6 +620,8 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
                       autoComplete="email"
                       placeholder="vorname.nachname@oeaw.ac.at"
                       value={email}
+                      // Board-Gag: echte Anmeldung? Dann keinen Rauswurf.
+                      onFocus={() => setCancelled(true)}
                       onChange={(e) => {
                         setEmail(e.target.value);
                         setError(null);
@@ -605,6 +651,7 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
                       autoComplete="current-password"
                       placeholder="Passwort eingeben"
                       value={password}
+                      onFocus={() => setCancelled(true)}
                       onChange={(e) => {
                         setPassword(e.target.value);
                         setError(null);
@@ -847,6 +894,72 @@ function FrostOverlay() {
       <span className="ice-sparkle absolute text-white" style={{ top: '47%', left: '55%', fontSize: 13, animationDelay: '2s' }}>✦</span>
       <span className="ice-sparkle absolute text-white" style={{ top: '23%', left: '67%', fontSize: 17, animationDelay: '1.1s' }}>❄</span>
       <span className="ice-sparkle absolute text-white" style={{ top: '67%', left: '39%', fontSize: 15, animationDelay: '2.6s' }}>✦</span>
+    </div>
+  );
+}
+
+/** Verschneite rechte Ecke des „Willkommen zurück"-Screens (variant="login"),
+ *  den man beim Klick auf das eisige Board bekommt: dichter Schneefall
+ *  (tsParticles) + Frost-Wehe + Eiszapfen + geballte Kristalle. Nur Zierde,
+ *  pointer-events-none. */
+function WinterCorner() {
+  return (
+    <div aria-hidden className="pointer-events-none absolute right-0 top-0 z-10 h-80 w-80 overflow-hidden">
+      {/* dichter Schneefall in der Ecke */}
+      <SnowParticles />
+      {/* Frost-Schnee-Wehe: dicht in der Ecke, nach innen ausblendend */}
+      <div
+        className="absolute -right-24 -top-24 h-72 w-72 rounded-full"
+        style={{
+          background:
+            'radial-gradient(circle,rgba(255,255,255,.95),rgba(214,231,255,.7) 40%,rgba(214,231,255,.15) 66%,transparent 74%)',
+        }}
+      />
+      {/* Eiszapfen an der Oberkante (rechte Hälfte) */}
+      <div className="absolute right-0 top-0 flex w-3/4 justify-end gap-1.5 pr-1">
+        {[16, 24, 12, 28, 18, 22, 14, 20].map((h, i) => (
+          <span
+            key={i}
+            style={{
+              width: 6,
+              height: h,
+              background: 'linear-gradient(to bottom,rgba(255,255,255,.95),rgba(190,214,255,.25))',
+              clipPath: 'polygon(0 0,100% 0,50% 100%)',
+            }}
+          />
+        ))}
+      </div>
+      {/* geballte, funkelnde Kristalle in der Ecke */}
+      <span className="ice-sparkle absolute text-white drop-shadow" style={{ top: '9%', right: '10%', fontSize: 24 }}>❄</span>
+      <span className="ice-sparkle absolute text-white drop-shadow" style={{ top: '24%', right: '26%', fontSize: 16, animationDelay: '.7s' }}>❆</span>
+      <span className="ice-sparkle absolute text-white drop-shadow" style={{ top: '15%', right: '42%', fontSize: 13, animationDelay: '1.5s' }}>✦</span>
+      <span className="ice-sparkle absolute text-white drop-shadow" style={{ top: '38%', right: '14%', fontSize: 18, animationDelay: '.3s' }}>❄</span>
+      <span className="ice-sparkle absolute text-white drop-shadow" style={{ top: '30%', right: '50%', fontSize: 11, animationDelay: '2.1s' }}>✦</span>
+    </div>
+  );
+}
+
+/** „Zufrier"-Rauswurf: die Seite friert per clip-path-Kreis aus der oberen
+ *  rechten (verschneiten) Ecke zu — Whiteout + kurze Botschaft, dann Redirect.
+ *  Web-Recherche 2026-07-07: clip-path-Wipe ist der saubere Weg für so eine
+ *  Freeze-Over-Transition (Transition.css & Co.). */
+function FreezeOverEject() {
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center overflow-hidden" aria-hidden>
+      <div
+        className="freeze-over absolute inset-0"
+        style={{ background: 'radial-gradient(circle at 100% 0%,#ffffff,#eaf3ff 55%,#dbe7ff)' }}
+      >
+        <div
+          className="absolute inset-0"
+          style={{ backgroundImage: `url("${FROST_NOISE}")`, backgroundSize: '160px 160px', opacity: 0.22, mixBlendMode: 'multiply' }}
+        />
+      </div>
+      <div className="freeze-msg relative z-10 flex flex-col items-center gap-2 text-center">
+        <Snowflake weight="fill" className="h-14 w-14 text-brand-500" />
+        <p className="text-xl font-bold tracking-tight text-brand-700">Das Board liegt noch auf Eis.</p>
+        <p className="text-sm text-brand-500/80">Wird gleich zurückgebracht …</p>
+      </div>
     </div>
   );
 }
