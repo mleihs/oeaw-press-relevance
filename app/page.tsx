@@ -3,6 +3,7 @@ import { getSocialDashboardData } from '@/lib/server/social/dashboard';
 import { getBoardDashboardCards } from '@/lib/server/board';
 import { getCurrentUser } from '@/lib/server/auth/require';
 import {
+  DASHBOARD_SOCIAL_ENABLED,
   isDashboardPeriod,
   parseSortBy,
   parseTopPubsLimit,
@@ -43,7 +44,9 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   // den Aggregaten (unabhängig — sequenziell kostete er nur Latenz).
   const [data, socialData, boardCards] = await Promise.all([
     getDashboardData(period, topPubsLimit, sortBy),
-    getSocialDashboardData(),
+    // Feature-Flag (lib/shared/dashboard.ts): einstweilen aus → keine Abfrage,
+    // Kachel wird nirgends gerendert. Wiedereinschalten = Flag auf true.
+    DASHBOARD_SOCIAL_ENABLED ? getSocialDashboardData() : Promise.resolve(null),
     getCurrentUser().then((user) => (user ? getBoardDashboardCards() : null)),
   ]);
 

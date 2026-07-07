@@ -6,6 +6,14 @@
 // — which transitively imports `postgres` and `drizzle-orm` and would
 // otherwise fail the RSC → Client boundary check.
 
+// Feature-Flag: Social-Media-Trends-Kachel im Dashboard. Einstweilen AUS
+// (User-Wunsch 2026-07-07). WIEDEREINSCHALTEN: hier auf `true` setzen und
+// deployen — dann läuft die getSocialDashboardData-Abfrage wieder und die
+// Kachel erscheint (Desktop + Mobile). Bei `false` wird die Abfrage in
+// app/page.tsx übersprungen (socialData = null) und die Kachel nirgends
+// gerendert; das Voll-Breite-Layout der Board-Kachel greift dann automatisch.
+export const DASHBOARD_SOCIAL_ENABLED = false;
+
 // Breadth order is load-bearing: week (7d) ⊂ month (2 Mon) ⊂ year (1 J) ⊂
 // all. `buildPeriodHint` slices this array to find the periods *wider* than
 // the current one, so the order must stay smallest-to-largest.
