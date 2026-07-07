@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<!--
+  Login-Feintuning-Spielwiese (2026-07-07). EIGENSTÄNDIG — einfach im Browser
+  öffnen, kein Framework/Build. Bildet die neue Anmelde-Seite originalgetreu
+  nach (blaue Übergangszugang-Hero oben, „TBA / vorläufig auf Eis"-Personen-
+  Login unten, Marken-Panel mit echten Kennzahlen) inkl. Boot-Intro und
+  Auto-Login-Countdown.
+
+  ZWECK: das Animations-Feeling drehen, ohne den App-Round-Trip. Oben rechts
+  sitzt eine Tuning-Leiste (Boot-Dauer, Auto-Login-Dauer, Easing, „gemerkt"-
+  Umschalter, Replay). Wenn dir Werte gefallen, gib sie mir und ich porte sie
+  nach components/auth/auth-screen.tsx (BOOT_MS / AUTO_MS / @keyframes auth-boot
+  in app/globals.css).
+
+  Quelle der Wahrheit bleibt die React-Komponente; das hier ist nur ein
+  Tuning-Sandkasten. Zahlen sind statisch (App holt sie live via
+  /api/stats/landing).
+-->
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ÖAW Presse — Login-Feintuning</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+<style>
+  :root{
+    --brand-50:#eef4ff; --brand-100:#dbe7ff; --brand-200:#b8ccff;
+    --brand-500:#0047bb; --brand-600:#003ea3; --brand-700:#00337f;
+    --ink:#16202e; --ink-soft:#334155; --ink-subtle:#475569; --ink-muted:#7688a0;
+    --line:#e6ebf2; --line-strong:#d5dbe3; --fill:#eef1f6; --surface:#fff;
+    /* Tuning-Variablen (per Leiste gesetzt) */
+    --boot-ms:780ms; --auto-ms:1700ms; --boot-ease:ease;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;}
+  body{font-family:'Geist',system-ui,sans-serif;color:var(--ink);background:#0a1220;}
+  input::placeholder{color:#9aa4b2;}
+  @keyframes lg-spin{to{transform:rotate(360deg);}}
+  @keyframes lg-rise{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:none;}}
+  @keyframes lg-shake{10%,90%{transform:translateX(-1px);}20%,80%{transform:translateX(2px);}30%,50%,70%{transform:translateX(-4px);}40%,60%{transform:translateX(4px);}}
+  @keyframes lg-float{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
+  /* --- Boot-Intro --- */
+  @keyframes auth-boot{0%{opacity:0;transform:scale(1.015);}18%{opacity:1;transform:scale(1);}72%{opacity:1;}100%{opacity:0;transform:scale(.995);}}
+  @keyframes auth-boot-ring{0%{transform:scale(.55);opacity:0;}35%{opacity:.6;}100%{transform:scale(1.5);opacity:0;}}
+  @keyframes auth-progress{from{width:0;}to{width:100%;}}
+  .lg-in{animation:lg-rise .5s cubic-bezier(.2,.7,.3,1) both;}
+  .lg-shake{animation:lg-shake .5s;}
+
+  .screen{position:fixed;inset:0;display:flex;background:#f7f9fc;overflow:hidden;}
+  /* Marken-Panel */
+  .brand{position:relative;flex:1.05;overflow:hidden;color:#fff;display:none;flex-direction:column;padding:52px 56px;
+    background:linear-gradient(155deg,#0052d6 0%,var(--brand-500) 42%,var(--brand-700) 100%);}
+  @media(min-width:1024px){.brand{display:flex;}}
+  .blob{position:absolute;border-radius:50%;pointer-events:none;}
+  .ringwrap{position:absolute;right:70px;top:60px;width:150px;height:150px;}
+  .ringwrap span{position:absolute;border-radius:50%;}
+  .stat .n{font-family:'Geist Mono',monospace;font-size:26px;font-weight:600;letter-spacing:-.02em;}
+  .stat .l{font-size:12.5px;color:rgba(255,255,255,.66);margin-top:2px;}
+
+  /* Formular-Panel */
+  .formwrap{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 28px;}
+  .form{width:100%;max-width:392px;}
+  .field{display:flex;align-items:center;gap:10px;height:46px;padding:0 13px;border:1.5px solid var(--line-strong);border-radius:11px;background:#fff;transition:border-color .15s,box-shadow .15s;}
+  .field:focus-within{border-color:var(--brand-500);box-shadow:0 0 0 3px color-mix(in srgb,var(--brand-500) 13%,transparent);}
+  .field input{flex:1;min-width:0;border:none;outline:none;background:transparent;font-family:inherit;font-size:14.5px;color:var(--ink);}
+  .btn-primary{display:inline-flex;width:100%;align-items:center;justify-content:center;gap:9px;border:none;border-radius:11px;padding:13px;background:var(--brand-500);color:#fff;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;transition:background .15s;}
+  .btn-primary:hover{background:var(--brand-600);}
+  .btn-ghost{display:inline-flex;width:100%;align-items:center;justify-content:center;gap:8px;border:1.5px solid var(--line-strong);border-radius:11px;padding:11px;background:#fff;color:var(--ink-soft);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;}
+  .btn-ghost:hover{background:var(--fill);}
+  .pill{border-radius:999px;padding:1px 8px;font-size:11px;font-weight:600;}
+
+  /* Boot-Overlay */
+  #boot{position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;color:#fff;
+    background:linear-gradient(155deg,#0052d6 0%,var(--brand-500) 42%,var(--brand-700) 100%);
+    animation:auth-boot var(--boot-ms) var(--boot-ease) both;}
+  #boot .ring{position:relative;width:120px;height:120px;}
+  #boot .ring span{position:absolute;inset:0;border-radius:50%;}
+
+  /* Tuning-Leiste */
+  .tuner{position:fixed;top:12px;right:12px;z-index:90;background:rgba(12,18,32,.92);color:#e6ecf5;border:1px solid #26324a;border-radius:12px;padding:12px 14px;font:12px/1.4 'Geist Mono',monospace;width:250px;box-shadow:0 12px 32px rgba(0,0,0,.4);}
+  .tuner h4{margin:0 0 8px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#8ea3c4;}
+  .tuner label{display:block;margin:9px 0 2px;color:#aebbd2;}
+  .tuner input[type=range]{width:100%;}
+  .tuner .row{display:flex;justify-content:space-between;align-items:center;}
+  .tuner select,.tuner button{font-family:inherit;font-size:12px;}
+  .tuner button{margin-top:10px;width:100%;padding:7px;border:none;border-radius:8px;background:var(--brand-500);color:#fff;cursor:pointer;font-weight:600;}
+  .tuner .toggle{display:flex;align-items:center;gap:7px;margin-top:10px;cursor:pointer;color:#cdd8ea;}
+</style>
+</head>
+<body>
+
+<!-- ===== Tuning-Leiste ===== -->
+<div class="tuner">
+  <h4>Login-Feintuning</h4>
+  <div class="row"><label>Boot-Dauer</label><span id="bootVal">780 ms</span></div>
+  <input id="bootRange" type="range" min="300" max="3000" step="20" value="780">
+  <div class="row"><label>Auto-Login-Dauer</label><span id="autoVal">1700 ms</span></div>
+  <input id="autoRange" type="range" min="600" max="4000" step="50" value="1700">
+  <label>Boot-Easing</label>
+  <select id="easeSel" style="width:100%;padding:5px;border-radius:6px;">
+    <option value="ease">ease</option>
+    <option value="cubic-bezier(.2,.7,.3,1)">soft-out (.2,.7,.3,1)</option>
+    <option value="cubic-bezier(.65,0,.35,1)">in-out</option>
+    <option value="linear">linear</option>
+  </select>
+  <label class="toggle"><input id="rememberedChk" type="checkbox"> mit gemerktem Passwort (Auto-Login)</label>
+  <button id="replayBtn">▸ Replay</button>
+</div>
+
+<!-- ===== Boot-Overlay ===== -->
+<div id="boot">
+  <div class="ring">
+    <span style="border:1.5px solid rgba(255,255,255,.15);"></span>
+    <span class="pulse" style="border:1.5px solid rgba(255,255,255,.35);animation:auth-boot-ring 1.4s ease-out infinite;"></span>
+    <span class="pulse" style="border:1.5px solid rgba(255,255,255,.25);animation:auth-boot-ring 1.4s ease-out infinite;animation-delay:.35s;"></span>
+    <span style="inset:auto;display:flex;align-items:center;justify-content:center;width:100%;height:100%;"><i class="ph-fill ph-radio-button" style="font-size:48px;color:#9cc0ff;"></i></span>
+  </div>
+  <span style="font-size:19px;font-weight:600;letter-spacing:-.01em;">ÖAW Presse</span>
+  <div style="height:3px;width:160px;overflow:hidden;border-radius:999px;background:rgba(255,255,255,.2);">
+    <div id="bootBar" style="height:100%;border-radius:999px;background:#9cc0ff;"></div>
+  </div>
+</div>
+
+<!-- ===== Screen ===== -->
+<div class="screen">
+  <!-- Marken-Panel -->
+  <div class="brand">
+    <div class="blob" style="right:-120px;top:-120px;width:420px;height:420px;background:radial-gradient(circle,rgba(156,192,255,.32),transparent 70%);"></div>
+    <div class="blob" style="bottom:-160px;left:-80px;width:400px;height:400px;background:radial-gradient(circle,rgba(0,20,70,.5),transparent 70%);"></div>
+    <div class="ringwrap">
+      <span style="inset:0;border:1.5px solid rgba(255,255,255,.15);"></span>
+      <span style="inset:26px;border:1.5px solid rgba(255,255,255,.2);"></span>
+      <span style="inset:52px;background:rgba(156,192,255,.55);animation:lg-float 5s ease-in-out infinite;"></span>
+    </div>
+    <div style="position:relative;display:flex;align-items:center;gap:10px;">
+      <i class="ph-fill ph-radio-button" style="font-size:26px;color:#9cc0ff;"></i>
+      <span style="font-size:19px;font-weight:600;letter-spacing:-.01em;">ÖAW Presse</span>
+    </div>
+    <div style="position:relative;margin-top:auto;">
+      <div style="font-family:'Geist Mono',monospace;font-size:12px;font-weight:500;text-transform:uppercase;letter-spacing:.16em;color:#9cc0ff;margin-bottom:20px;">Press Relevance Toolkit</div>
+      <h1 style="margin:0;max-width:15ch;font-size:40px;font-weight:800;line-height:1.12;letter-spacing:-.02em;">Aus Forschung wird Geschichte.</h1>
+      <p style="margin:20px 0 0;max-width:42ch;font-size:15.5px;line-height:1.6;color:rgba(255,255,255,.8);">Publikationen bewerten, Veranstaltungen kuratieren, Social-Media-Lagebilder lesen und alles im Redaktionsboard zusammenführen.</p>
+      <div style="margin-top:32px;display:flex;gap:24px;">
+        <div class="stat"><div class="n">8.010</div><div class="l">Bewertete Publikationen</div></div>
+        <div style="width:1px;background:rgba(255,255,255,.2);"></div>
+        <div class="stat"><div class="n">157</div><div class="l">Anstehende Veranstaltungen</div></div>
+        <div style="width:1px;background:rgba(255,255,255,.2);"></div>
+        <div class="stat"><div class="n">174</div><div class="l">Pressemeldungen mit DOI</div></div>
+      </div>
+    </div>
+    <div style="position:relative;margin-top:44px;font-size:12px;color:rgba(255,255,255,.5);">© 2026 Österreichische Akademie der Wissenschaften · Interne Anwendung</div>
+  </div>
+
+  <!-- Formular-Panel -->
+  <div class="formwrap">
+    <div class="form lg-in" id="formPanel">
+      <h2 style="margin:0;font-size:25px;font-weight:700;letter-spacing:-.015em;">Willkommen bei ÖAW Presse</h2>
+      <p style="margin:8px 0 24px;font-size:14px;color:var(--ink-subtle);">Melde dich mit dem gemeinsamen Übergangszugang an; vorerst der reguläre Weg ins Toolkit.</p>
+
+      <!-- Übergangszugang Hero -->
+      <div style="position:relative;overflow:hidden;border:1.5px solid var(--brand-200);border-radius:16px;padding:20px;background:linear-gradient(158deg,#eef5ff,#fff 60%);box-shadow:0 16px 38px -18px rgba(0,71,187,.45);">
+        <div class="blob" style="right:-40px;top:-48px;width:144px;height:144px;background:radial-gradient(circle,rgba(0,71,187,.14),transparent 70%);"></div>
+        <div style="position:relative;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <span style="display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:11px;color:#fff;background:linear-gradient(135deg,#2f6ad0,var(--brand-600));box-shadow:0 5px 14px rgba(0,71,187,.4);"><i class="ph-fill ph-lock-key-open" style="font-size:20px;"></i></span>
+            <div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:15px;font-weight:700;color:var(--ink);">Übergangszugang</span>
+                <span class="pill" style="background:var(--brand-50);color:var(--brand-500);">Aktueller Zugang</span>
+              </div>
+              <div style="font-size:11px;color:var(--ink-muted);margin-top:1px;">Gemeinsames Passwort fürs Team</div>
+            </div>
+          </div>
+          <p style="margin:0 0 16px;font-size:12px;line-height:1.55;color:var(--ink-subtle);">Derzeit der reguläre Weg ins Toolkit. Das gemeinsame Passwort öffnet alle Bereiche <span style="font-weight:600;color:var(--ink-soft);">außer das Redaktionsboard</span>.</p>
+
+          <!-- Formular ODER Auto-Login -->
+          <div id="gateForm" style="display:flex;flex-direction:column;gap:12px;">
+            <div class="field">
+              <i class="ph ph-password" style="font-size:17px;color:var(--ink-muted);"></i>
+              <input type="password" placeholder="Gemeinsames Übergangs-Passwort">
+              <i class="ph ph-eye" style="font-size:18px;color:var(--ink-muted);cursor:pointer;"></i>
+            </div>
+            <label style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:500;color:var(--ink-subtle);cursor:pointer;">
+              <input type="checkbox" style="width:16px;height:16px;accent-color:var(--brand-500);"> Passwort merken
+            </label>
+            <button class="btn-primary"><i class="ph-fill ph-lock-key-open" style="font-size:17px;"></i>Anmelden</button>
+          </div>
+
+          <div id="gateAuto" style="display:none;flex-direction:column;gap:12px;">
+            <div style="display:flex;align-items:center;gap:10px;border:1px solid var(--brand-200);background:color-mix(in srgb,var(--brand-50) 60%,#fff);border-radius:11px;padding:11px 14px;">
+              <i class="ph ph-circle-notch" style="font-size:18px;color:var(--brand-500);animation:lg-spin .9s linear infinite;"></i>
+              <div>
+                <div style="font-size:14px;font-weight:600;color:var(--brand-700);">Passwort gemerkt · wird angemeldet …</div>
+                <div style="font-size:11px;color:var(--ink-muted);margin-top:1px;">Automatischer Übergangs-Login</div>
+              </div>
+            </div>
+            <div style="height:4px;overflow:hidden;border-radius:999px;background:var(--brand-100);">
+              <div id="autoBar" style="height:100%;border-radius:999px;background:var(--brand-500);"></div>
+            </div>
+            <button class="btn-ghost" id="cancelAuto">Abbrechen und selbst anmelden</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Personen-Login (TBA / auf Eis) -->
+      <div style="margin-top:24px;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+          <span style="height:1px;flex:1;background:var(--line);"></span>
+          <span style="font-size:11px;font-weight:600;letter-spacing:.05em;color:var(--ink-muted);">PERSÖNLICHER ZUGANG · TBA</span>
+          <span style="height:1px;flex:1;background:var(--line);"></span>
+        </div>
+        <div style="border:1px solid var(--line);background:color-mix(in srgb,var(--fill) 50%,#fff);border-radius:14px;padding:16px;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <span style="display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:9px;background:#fff;color:var(--ink-muted);box-shadow:inset 0 0 0 1px var(--line-strong);"><i class="ph-duotone ph-lock-key" style="font-size:16px;"></i></span>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-size:14px;font-weight:700;color:var(--ink-soft);">Persönlicher Login</span>
+              <span class="pill" style="background:var(--fill);color:var(--ink-muted);box-shadow:inset 0 0 0 1px var(--line-strong);"><i class="ph ph-info" style="font-size:11px;"></i> TBA</span>
+            </div>
+          </div>
+          <p style="margin:0 0 12px;font-size:12px;line-height:1.55;color:var(--ink-muted);"><span style="font-weight:600;color:var(--ink-soft);">Vorläufig auf Eis.</span> Der persönliche Zugang mit deiner ÖAW-Adresse wird erst mit dem Redaktionsboard aktiviert; dann tragen Kommentare und Zuständigkeiten deinen Namen. Bis dahin bitte den Zugang oben nutzen.</p>
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <div class="field" style="background:rgba(255,255,255,.7);"><i class="ph ph-envelope-simple" style="font-size:17px;color:var(--ink-muted);"></i><input type="email" placeholder="vorname.nachname@oeaw.ac.at"></div>
+            <div class="field" style="background:rgba(255,255,255,.7);"><i class="ph-duotone ph-lock-key" style="font-size:17px;color:var(--ink-muted);"></i><input type="password" placeholder="Passwort eingeben"><i class="ph ph-eye" style="font-size:18px;color:var(--ink-muted);"></i></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+              <button style="border:none;background:none;font:600 12px 'Geist',sans-serif;color:var(--ink-subtle);cursor:pointer;">Passwort vergessen?</button>
+              <button class="btn-ghost" style="width:auto;padding:8px 14px;"><i class="ph-fill ph-sign-in" style="font-size:16px;"></i>Persönlich anmelden</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const root = document.documentElement;
+  let bootMs = 780, autoMs = 1700, ease = 'ease';
+
+  function setBoot(v){ bootMs = +v; $('bootVal').textContent = v + ' ms'; root.style.setProperty('--boot-ms', v + 'ms'); }
+  function setAuto(v){ autoMs = +v; $('autoVal').textContent = v + ' ms'; root.style.setProperty('--auto-ms', v + 'ms'); }
+  $('bootRange').oninput = e => setBoot(e.target.value);
+  $('autoRange').oninput = e => setAuto(e.target.value);
+  $('easeSel').onchange = e => { ease = e.target.value; root.style.setProperty('--boot-ease', ease); };
+
+  function play(){
+    const boot = $('boot'), bar = $('bootBar'), autoBar = $('autoBar');
+    // Boot-Overlay neu starten
+    boot.style.display = 'flex';
+    boot.style.animation = 'none'; bar.style.animation = 'none';
+    void boot.offsetWidth;
+    boot.style.animation = `auth-boot ${bootMs}ms ${ease} both`;
+    bar.style.animation = `auth-progress ${bootMs}ms cubic-bezier(.3,.7,.3,1) both`;
+
+    setTimeout(() => {
+      boot.style.display = 'none';
+      const remembered = $('rememberedChk').checked;
+      $('gateForm').style.display = remembered ? 'none' : 'flex';
+      $('gateAuto').style.display = remembered ? 'flex' : 'none';
+      const panel = $('formPanel');
+      panel.classList.remove('lg-in'); void panel.offsetWidth; panel.classList.add('lg-in');
+      if (remembered){
+        autoBar.style.animation = 'none'; void autoBar.offsetWidth;
+        autoBar.style.animation = `auth-progress ${autoMs}ms linear both`;
+        window._autoT = setTimeout(() => {
+          // Demo: „Anmeldung läuft …" dann Reset (echte App navigiert weiter)
+          $('gateAuto').querySelector('div > div').textContent = 'Anmeldung läuft …';
+        }, autoMs);
+      }
+    }, bootMs);
+  }
+  $('cancelAuto').onclick = () => { clearTimeout(window._autoT); $('gateAuto').style.display='none'; $('gateForm').style.display='flex'; };
+  $('replayBtn').onclick = play;
+
+  play();
+</script>
+</body>
+</html>
