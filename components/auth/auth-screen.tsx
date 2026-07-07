@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useQueryClient } from '@tanstack/react-query';
 import { QK } from '@/lib/client/query-keys';
 import type { CurrentUser } from '@/lib/shared/types';
@@ -729,6 +730,32 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
 const FROST_NOISE =
   "data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%27140%27%20height=%27140%27%3E%3Cfilter%20id=%27n%27%3E%3CfeTurbulence%20type=%27fractalNoise%27%20baseFrequency=%270.85%27%20numOctaves=%272%27%20stitchTiles=%27stitch%27/%3E%3CfeColorMatrix%20type=%27saturate%27%20values=%270%27/%3E%3C/filter%3E%3Crect%20width=%27100%25%27%20height=%27100%25%27%20filter=%27url(%23n)%27/%3E%3C/svg%3E";
 
+// Dichter Canvas-Schneefall (tsParticles), lazy + ssr:false — nicht im
+// kritischen Login-Pfad. Der CSS-Frost bleibt Basis/Fallback, falls das
+// Skript (noch) nicht geladen ist.
+const SnowParticles = dynamic(() => import('./snow-particles'), { ssr: false });
+
+// Fallschnee-Kristalle (deterministisch für SSR — kein Math.random). Spalte,
+// Größe, Falldauer, Startverzögerung, horizontaler Drift, Glyph.
+const SNOW: Array<{ l: string; s: number; d: number; dl: number; dr: number; g: string }> = [
+  { l: '5%', s: 11, d: 7.5, dl: 0, dr: 16, g: '❄' },
+  { l: '12%', s: 6, d: 10, dl: 1.3, dr: -10, g: '❅' },
+  { l: '19%', s: 9, d: 8.5, dl: 3.1, dr: 8, g: '❄' },
+  { l: '27%', s: 5, d: 11, dl: 0.6, dr: -14, g: '·' },
+  { l: '34%', s: 13, d: 6.8, dl: 2.4, dr: 20, g: '❆' },
+  { l: '42%', s: 7, d: 9.5, dl: 4.2, dr: -6, g: '❄' },
+  { l: '50%', s: 8, d: 8, dl: 1.1, dr: 12, g: '❅' },
+  { l: '58%', s: 5, d: 10.5, dl: 3.6, dr: -16, g: '✦' },
+  { l: '65%', s: 12, d: 7, dl: 0.3, dr: 10, g: '❆' },
+  { l: '72%', s: 6, d: 9, dl: 2.9, dr: -12, g: '❄' },
+  { l: '79%', s: 9, d: 8.8, dl: 4.8, dr: 6, g: '❅' },
+  { l: '86%', s: 7, d: 10, dl: 1.7, dr: -8, g: '·' },
+  { l: '92%', s: 11, d: 7.3, dl: 3.3, dr: 18, g: '❄' },
+  { l: '9%', s: 5, d: 11.5, dl: 5.4, dr: -18, g: '✦' },
+  { l: '47%', s: 6, d: 9.2, dl: 6, dr: -10, g: '❄' },
+  { l: '76%', s: 5, d: 10.8, dl: 5.1, dr: 14, g: '❅' },
+];
+
 function FrostOverlay() {
   return (
     <div
@@ -737,41 +764,88 @@ function FrostOverlay() {
     >
       {/* Milchglas + kalter Blau-Weiß-Ton */}
       <div
-        className="absolute inset-0 backdrop-blur-[2px]"
+        className="absolute inset-0 backdrop-blur-[2.5px]"
         style={{
           background:
-            'linear-gradient(135deg,rgba(219,234,255,.55),rgba(255,255,255,.28) 45%,rgba(191,219,254,.52))',
+            'linear-gradient(135deg,rgba(214,231,255,.62),rgba(255,255,255,.34) 45%,rgba(186,214,255,.6))',
         }}
       />
-      {/* Frost-Korn (SVG-Rauschen) */}
+      {/* Frost-Korn (SVG-Rauschen), kräftiger */}
       <div
         className="absolute inset-0 mix-blend-screen"
-        style={{ backgroundImage: `url("${FROST_NOISE}")`, backgroundSize: '150px 150px', opacity: 0.28 }}
+        style={{ backgroundImage: `url("${FROST_NOISE}")`, backgroundSize: '140px 140px', opacity: 0.4 }}
       />
-      {/* Eiskristall-Kriechen aus den Ecken */}
+      {/* Eiskristall-Kriechen aus den Ecken + oben/unten, dichter */}
       <div
         className="absolute inset-0"
         style={{
           background:
-            'radial-gradient(130px 90px at 0% 0%,rgba(255,255,255,.9),transparent 68%),radial-gradient(120px 90px at 100% 0%,rgba(255,255,255,.72),transparent 68%),radial-gradient(150px 120px at 100% 100%,rgba(207,226,255,.72),transparent 70%),radial-gradient(150px 120px at 0% 100%,rgba(207,226,255,.68),transparent 70%)',
+            'radial-gradient(150px 110px at 0% 0%,rgba(255,255,255,.98),transparent 66%),radial-gradient(150px 110px at 100% 0%,rgba(255,255,255,.88),transparent 66%),radial-gradient(170px 140px at 100% 100%,rgba(213,231,255,.85),transparent 68%),radial-gradient(170px 140px at 0% 100%,rgba(213,231,255,.8),transparent 68%),radial-gradient(220px 60px at 50% 0%,rgba(255,255,255,.55),transparent 70%)',
         }}
       />
-      {/* Frost-Rand */}
+      {/* Eiszapfen am oberen Rand */}
+      <div className="absolute inset-x-0 top-0 h-5">
+        {[
+          { l: '10%', w: 5, h: 14 },
+          { l: '24%', w: 7, h: 20 },
+          { l: '38%', w: 4, h: 11 },
+          { l: '52%', w: 6, h: 17 },
+          { l: '66%', w: 5, h: 22 },
+          { l: '80%', w: 7, h: 13 },
+          { l: '90%', w: 4, h: 16 },
+        ].map((ic, i) => (
+          <span
+            key={i}
+            className="absolute top-0"
+            style={{
+              left: ic.l,
+              width: ic.w,
+              height: ic.h,
+              background: 'linear-gradient(to bottom,rgba(255,255,255,.95),rgba(200,224,255,.25))',
+              clipPath: 'polygon(0 0,100% 0,50% 100%)',
+            }}
+          />
+        ))}
+      </div>
+      {/* Frost-Rand mit pulsierendem Kälte-Glow */}
       <div
-        className="absolute inset-0 rounded-[14px]"
-        style={{ boxShadow: 'inset 0 0 0 1px rgba(255,255,255,.65),inset 0 0 26px rgba(191,219,254,.7)' }}
+        className="ice-glow absolute inset-0 rounded-[14px]"
+        style={{ boxShadow: 'inset 0 0 0 1.5px rgba(255,255,255,.8),inset 0 0 32px rgba(186,214,255,.85)' }}
       />
-      {/* Glanz-Sweep */}
+      {/* Doppelter Glanz-Sweep */}
       <div
-        className="frost-shimmer absolute inset-y-0 left-0 w-1/3"
-        style={{ background: 'linear-gradient(90deg,transparent,rgba(255,255,255,.6),transparent)' }}
+        className="frost-shimmer absolute inset-y-0 left-0 w-2/5"
+        style={{ background: 'linear-gradient(90deg,transparent,rgba(255,255,255,.7),transparent)' }}
       />
-      {/* Funkelnde Kristalle */}
-      <span className="ice-sparkle absolute text-white" style={{ top: '16%', left: '20%', fontSize: 11 }}>❄</span>
-      <span className="ice-sparkle absolute text-white" style={{ top: '64%', left: '11%', fontSize: 8, animationDelay: '.8s' }}>❄</span>
-      <span className="ice-sparkle absolute text-white" style={{ top: '30%', right: '15%', fontSize: 9, animationDelay: '1.5s' }}>✦</span>
-      <span className="ice-sparkle absolute text-white" style={{ top: '76%', right: '22%', fontSize: 11, animationDelay: '.4s' }}>❄</span>
-      <span className="ice-sparkle absolute text-white" style={{ top: '46%', left: '54%', fontSize: 7, animationDelay: '2.1s' }}>✦</span>
+      {/* Dichter Canvas-Schneefall (tsParticles) über dem Frost */}
+      <SnowParticles />
+      {/* Große CSS-Vordergrund-Flocken (Tiefe zusätzlich zum Canvas) */}
+      {SNOW.map((f, i) => (
+        <span
+          key={i}
+          className="snowflake absolute top-0 text-white"
+          style={
+            {
+              left: f.l,
+              fontSize: f.s,
+              lineHeight: 1,
+              animationDelay: `${f.dl}s`,
+              '--sdur': `${f.d}s`,
+              '--drift': `${f.dr}px`,
+            } as React.CSSProperties
+          }
+        >
+          {f.g}
+        </span>
+      ))}
+      {/* Stationär funkelnde Kristalle */}
+      <span className="ice-sparkle absolute text-white" style={{ top: '18%', left: '22%', fontSize: 13 }}>❄</span>
+      <span className="ice-sparkle absolute text-white" style={{ top: '58%', left: '9%', fontSize: 9, animationDelay: '.7s' }}>✦</span>
+      <span className="ice-sparkle absolute text-white" style={{ top: '34%', right: '13%', fontSize: 11, animationDelay: '1.4s' }}>❄</span>
+      <span className="ice-sparkle absolute text-white" style={{ top: '78%', right: '20%', fontSize: 13, animationDelay: '.4s' }}>❆</span>
+      <span className="ice-sparkle absolute text-white" style={{ top: '48%', left: '56%', fontSize: 8, animationDelay: '2s' }}>✦</span>
+      <span className="ice-sparkle absolute text-white" style={{ top: '24%', left: '68%', fontSize: 10, animationDelay: '1.1s' }}>❄</span>
+      <span className="ice-sparkle absolute text-white" style={{ top: '68%', left: '40%', fontSize: 9, animationDelay: '2.6s' }}>✦</span>
     </div>
   );
 }

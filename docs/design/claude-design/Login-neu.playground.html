@@ -25,6 +25,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+<!-- tsParticles (Snow-Preset) via CDN — dichter Canvas-Schneefall wie in der App.
+     Fällt aus, falls offline; der CSS-Frost bleibt als Basis. -->
+<script src="https://cdn.jsdelivr.net/npm/@tsparticles/preset-snow@4/tsparticles.preset.snow.bundle.min.js"></script>
 <style>
   :root{
     --brand-50:#eef4ff; --brand-100:#dbe7ff; --brand-200:#b8ccff;
@@ -242,7 +245,9 @@
             <div style="position:absolute;inset:0;mix-blend-mode:screen;opacity:.28;background-size:150px 150px;background-image:url('data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%27140%27%20height=%27140%27%3E%3Cfilter%20id=%27n%27%3E%3CfeTurbulence%20type=%27fractalNoise%27%20baseFrequency=%270.85%27%20numOctaves=%272%27%20stitchTiles=%27stitch%27/%3E%3CfeColorMatrix%20type=%27saturate%27%20values=%270%27/%3E%3C/filter%3E%3Crect%20width=%27100%25%27%20height=%27100%25%27%20filter=%27url(%23n)%27/%3E%3C/svg%3E');"></div>
             <div style="position:absolute;inset:0;background:radial-gradient(130px 90px at 0% 0%,rgba(255,255,255,.9),transparent 68%),radial-gradient(120px 90px at 100% 0%,rgba(255,255,255,.72),transparent 68%),radial-gradient(150px 120px at 100% 100%,rgba(207,226,255,.72),transparent 70%),radial-gradient(150px 120px at 0% 100%,rgba(207,226,255,.68),transparent 70%);"></div>
             <div style="position:absolute;inset:0;border-radius:14px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.65),inset 0 0 26px rgba(191,219,254,.7);"></div>
-            <div class="frost-shimmer" style="position:absolute;top:0;bottom:0;left:0;width:33%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.6),transparent);"></div>
+            <div class="frost-shimmer" style="position:absolute;top:0;bottom:0;left:0;width:40%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.7),transparent);"></div>
+          <!-- tsParticles-Canvas-Schneefall (füllt die Karte) -->
+          <div id="frost-snow" style="position:absolute;inset:0;pointer-events:none;"></div>
             <span class="ice-sparkle" style="position:absolute;top:16%;left:20%;font-size:11px;color:#fff;">❄</span>
             <span class="ice-sparkle" style="position:absolute;top:64%;left:11%;font-size:8px;color:#fff;animation-delay:.8s;">❄</span>
             <span class="ice-sparkle" style="position:absolute;top:30%;right:15%;font-size:9px;color:#fff;animation-delay:1.5s;">✦</span>
@@ -296,6 +301,33 @@
   $('replayBtn').onclick = play;
 
   play();
+
+  // Dichter Canvas-Schneefall (tsParticles) wie in der App. Fallback: bei
+  // fehlendem CDN bleibt der CSS-Frost.
+  (async function initSnow(){
+    try {
+      if (!window.tsParticles || !window.loadSnowPreset) return;
+      await window.loadSnowPreset(window.tsParticles);
+      await window.tsParticles.load({
+        element: document.getElementById('frost-snow'),
+        options: {
+          preset: 'snow',
+          fullScreen: { enable: false },
+          background: { color: { value: 'transparent' } },
+          fpsLimit: 60, detectRetina: true,
+          particles: {
+            number: { value: 130, density: { enable: true } },
+            color: { value: '#ffffff' },
+            opacity: { value: { min: 0.25, max: 0.95 } },
+            size: { value: { min: 1, max: 5.5 } },
+            move: { speed: { min: 1, max: 3.4 }, straight: false },
+            wobble: { enable: true, distance: 14, speed: { min: -8, max: 8 } },
+            zIndex: { value: { min: 0, max: 50 } },
+          },
+        },
+      });
+    } catch (e) { /* offline: CSS-Frost bleibt */ }
+  })();
 </script>
 </body>
 </html>
