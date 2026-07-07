@@ -52,8 +52,9 @@ export function CardChip({
     id: card.id,
   });
   const completed = card.completed_at !== null;
-  // Offen & vor heute → rote Hervorhebung der ganzen Karte (MeisterTask-Stil:
-  // rosa Karte + rotes Datum). Erledigte gelten nie als überfällig.
+  // Offen & vor heute → warme Bernstein-Tönung der ganzen Karte (MeisterTask-
+  // Stil: Orange statt Alarm-Rot — Warnung, kein Notruf). Erledigte gelten nie
+  // als überfällig. Erledigte bekommen im Gegenzug einen grünen Erledigt-Schimmer.
   const overdue = dueState(card.due_at, card.completed_at) === 'overdue';
   const hasMeta =
     card.due_at ||
@@ -91,17 +92,35 @@ export function CardChip({
         // Board-Tiefe: Karte schwebt über der Mulde (Schatten/Rand/Radius via
         // .board-card + Erscheinungsbild-Tokens). Kein 3px-Streifen mehr — die
         // Kanalfarbe sitzt im Spaltenkopf; Identität an der Karte trägt der
-        // Assignee-Ring. Überfällig bleibt rot getönt.
-        background: overdue ? 'var(--danger-tint)' : 'var(--board-card)',
-        borderColor: overdue ? 'var(--danger-line)' : undefined,
-        opacity: isDragging ? 0.4 : completed ? 0.62 : 1,
+        // Assignee-Ring.
+        //
+        // Zustandstönung als sanfter Hauch, nicht als Vollfläche: der State-Tint
+        // wird nur anteilig in die (theme-/erscheinungsbild-abhängige) Kartenfarbe
+        // gemischt, damit die Karte weiter „schwebt". Überfällig = warmes Bernstein
+        // (warning), Erledigt = ruhiges Grün (success) — beide passen sich über
+        // color-mix automatisch an Standard/Atmosphäre und Light/Dark an.
+        // Die frühere Voll-Deckkraft 0.62 („depressiv, ausgegraut") entfällt;
+        // Erledigt trägt jetzt ein positives Grün statt allgemeiner Blässe.
+        background: overdue
+          ? 'color-mix(in srgb, var(--state-warning-tint) 62%, var(--board-card))'
+          : completed
+            ? 'color-mix(in srgb, var(--state-success-tint) 55%, var(--board-card))'
+            : 'var(--board-card)',
+        borderColor: overdue
+          ? 'var(--state-warning-line)'
+          : completed
+            ? 'color-mix(in srgb, var(--state-success) 26%, var(--board-card))'
+            : undefined,
+        opacity: isDragging ? 0.4 : 1,
       }}
       className={cn('board-card cursor-pointer px-[13px] py-3')}
     >
-      {/* Überfällig klar benennen statt nur rosa Tönung (MeisterTask
-          schreibt es wörtlich über die Karte — User-Wunsch 2026-07-06). */}
+      {/* Überfällig klar benennen statt nur getönter Fläche (MeisterTask
+          schreibt es wörtlich über die Karte — User-Wunsch 2026-07-06).
+          Bernstein statt Rot: warning-ink liest kräftig auf dem warmen Hauch,
+          ohne die Alarm-Wirkung des früheren Rots. */}
       {overdue && (
-        <div className="mb-1.5 flex items-center gap-1 font-mono text-2xs font-bold uppercase tracking-wider text-danger">
+        <div className="mb-1.5 flex items-center gap-1 font-mono text-2xs font-bold uppercase tracking-wider text-warning-ink">
           <AlarmClock weight="fill" className="h-3 w-3" />
           Überfällig
         </div>
@@ -115,16 +134,21 @@ export function CardChip({
       )}
 
       <div className="flex items-start gap-1.5">
-        {completed && <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success" />}
+        {/* Gefüllter grüner Haken als positives Erledigt-Zeichen (nicht der
+            dünne Umriss von früher) — trägt zusammen mit dem grünen Hauch die
+            „geschafft"-Aussage, damit die Karte nicht mehr ausgegraut wirkt. */}
+        {completed && <CheckCircle2 weight="fill" className="mt-0.5 h-4 w-4 shrink-0 text-success" />}
         <div
           className={cn(
             // min-w-0 + break-words: lange, ungebrochene Tokens (URLs als Titel)
             // brechen um statt über den Kartenrand zu laufen.
             'min-w-0 flex-1 break-words text-sm font-semibold leading-snug',
-            completed && 'text-ink-muted line-through',
+            // Erledigt: durchgestrichen als „abgehakt"-Konvention, aber in
+            // lesbarem ink-soft mit grüner Streichlinie — nicht blass/tot.
+            completed && 'text-ink-soft line-through decoration-success/60 decoration-[1.5px]',
           )}
           // Ink aus dem Erscheinungsbild-Token (Slate im Standard, warm in
-          // „Atmosphäre"); erledigte Karten bleiben gedämpft/durchgestrichen.
+          // „Atmosphäre"); erledigte Karten lesen in ink-soft (Klasse oben).
           style={completed ? undefined : { color: 'var(--board-card-ink)' }}
         >
           {card.title}
