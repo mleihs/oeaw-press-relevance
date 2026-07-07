@@ -22,6 +22,7 @@ import {
   Password,
   RadioButton,
   Send,
+  Sparkles,
 } from '@/lib/icons';
 
 /**
@@ -883,6 +884,40 @@ function BootOverlay() {
   );
 }
 
+/** Dezentes Ambient-Fade der neuesten hoch bewerteten Titel im Freiraum des
+ *  Brandpanels: crossfadet alle ~5 s zum nächsten Titel (Opacity-Transition).
+ *  Nur Titel (kein Score) — pre-Gate. */
+function HotPubsRotator({ titles }: { titles: string[] }) {
+  const [i, setI] = useState(0);
+  useEffect(() => {
+    if (titles.length < 2) return;
+    const t = setInterval(() => setI((n) => (n + 1) % titles.length), 5200);
+    return () => clearInterval(t);
+  }, [titles.length]);
+
+  return (
+    <div className="max-w-[30ch]">
+      <div className="mb-2 inline-flex items-center gap-1.5 font-mono text-2xs font-medium uppercase tracking-[.15em] text-[#9cc0ff]/85">
+        <Sparkles weight="fill" className="h-3 w-3" />
+        Frisch &amp; hoch bewertet
+      </div>
+      <div className="relative h-[3.4em]">
+        {titles.map((t, idx) => (
+          <p
+            key={idx}
+            aria-hidden={idx !== i}
+            className={`absolute inset-x-0 top-0 line-clamp-2 text-[18px] font-semibold leading-snug tracking-tight text-white/90 transition-opacity duration-1000 ${
+              idx === i ? 'opacity-100' : 'opacity-0'
+            }`}
+          >
+            „{t}"
+          </p>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /** Linkes Marken-Panel (nur ≥lg): Blau-Verlauf, Ring-Motiv, Claim, Kennzahlen. */
 function BrandPanel() {
   // Kennzahlen live (gate-öffentlicher, gecachter Endpoint); Ellipsen-Platzhalter
@@ -892,6 +927,7 @@ function BrandPanel() {
     scoredPublications: number;
     upcomingEvents: number;
     pressReleasesWithDoi: number;
+    hotPublications?: string[];
   } | null>(null);
   useEffect(() => {
     let alive = true;
@@ -934,6 +970,14 @@ function BrandPanel() {
         <RadioButton weight="fill" aria-hidden className="h-[26px] w-[26px] text-[#9cc0ff]" />
         <span className="text-[19px] font-semibold tracking-tight">ÖAW Presse</span>
       </div>
+
+      {/* Freiraum: die neuesten hoch bewerteten Titel dezent ein-/ausfaden
+          (nur Titel, kein Score — der Endpoint ist gate-öffentlich). */}
+      {stats?.hotPublications && stats.hotPublications.length > 0 && (
+        <div className="relative mt-auto">
+          <HotPubsRotator titles={stats.hotPublications} />
+        </div>
+      )}
 
       <div className="relative mt-auto">
         <div className="mb-5 font-mono text-xs font-medium uppercase tracking-[.16em] text-[#9cc0ff]">
