@@ -643,6 +643,22 @@
 .snowflake { animation: snow-fall var(--sdur, 8s) linear infinite; will-change: transform; }
 .ice-glow { animation: ice-glow 3.5s ease-in-out infinite; }
 
+/* Mikro-Eis fürs „Board"-Nav-Item (components/nav.tsx, nur eingeloggt): ruhig
+   im Ruhezustand, bei Hover rieseln winzige Flocken herab und schmelzen dabei
+   (schrumpfen + verblassen) — Callback zum Login-Eis, aber dezent. Bewegung nur
+   bei Hover: kein Dauer-Geflacker in der Arbeits-Nav. */
+@keyframes ice-nav-fall {
+  0% { transform: translateY(-7px) scale(1); opacity: 0; }
+  15% { opacity: .95; }
+  100% { transform: translateY(24px) scale(.35); opacity: 0; }
+}
+.ice-nav-flake { position: absolute; top: 0; line-height: 1; pointer-events: none; opacity: 0;
+  color: #eaf3ff; text-shadow: 0 0 4px rgba(180, 210, 255, .7); }
+.ice-nav:hover .ice-nav-flake { animation: ice-nav-fall var(--fdur, 1.9s) linear infinite; animation-delay: var(--fdel, 0s); }
+.ice-nav-sheen { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .3s;
+  background: linear-gradient(120deg, transparent, rgba(255, 255, 255, .18) 50%, transparent); }
+.ice-nav:hover .ice-nav-sheen { opacity: 1; }
+
 /* ===== Board-Abschluss-Celebration (app/board/_components/celebration.tsx)
    Design: docs/design/claude-design/Board-Celebration.dc.html. Der globale
    prefers-reduced-motion-Reset (oben) neutralisiert alle Animationen. */

@@ -40,6 +40,7 @@ import {
 } from '@/components/ui/sheet';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { AvatarMenu } from '@/components/avatar-menu';
+import { useCurrentUser } from '@/lib/client/hooks/use-current-user';
 import { DevUserSwitcher } from '@/components/dev-user-switcher';
 import { CommandMenuButton } from '@/components/command/command-menu-button';
 import { openCommandMenu, openCheatSheet } from '@/lib/client/commands/controller';
@@ -125,7 +126,8 @@ function NavTabLink({
   label,
   icon: Icon,
   pathname,
-}: NavLink & { pathname: string }) {
+  ice,
+}: NavLink & { pathname: string; ice?: boolean }) {
   const isActive = isActiveLink(href, pathname);
   return (
     <Link
@@ -133,14 +135,52 @@ function NavTabLink({
       aria-current={isActive ? 'page' : undefined}
       className={cn(
         'flex items-center gap-2 rounded-md px-2.5 py-2 text-sm font-medium transition-colors',
+        ice && 'ice-nav relative overflow-hidden',
         isActive
           ? 'bg-white/20 text-white'
           : 'text-white/70 hover:bg-white/10 hover:text-white',
       )}
     >
-      <Icon className="h-4 w-4" />
+      {/* Dauer-Hinweis: frostiges Icon (Eis-Blau) im Ruhezustand. */}
+      <Icon className={cn('h-4 w-4', ice && !isActive && 'text-[#9cc0ff]')} />
       {label}
+      {ice && <IceNavFrost />}
     </Link>
+  );
+}
+
+/** Mikro-Eis fürs Board-Item: bei Hover rieseln winzige Flocken herab und
+ *  schmelzen (Callback zum Login-Eis), plus ein feiner Frost-Schimmer. Rein
+ *  CSS, pointer-events-none, out-of-flow — stört Layout/Klick nicht. */
+function IceNavFrost() {
+  const flakes = [
+    { l: '9%', s: 8, dur: '2.1s', del: '0s' },
+    { l: '27%', s: 6, dur: '1.7s', del: '.6s' },
+    { l: '44%', s: 9, dur: '2.4s', del: '.2s' },
+    { l: '60%', s: 7, dur: '1.9s', del: '.9s' },
+    { l: '76%', s: 6, dur: '2.2s', del: '.4s' },
+    { l: '90%', s: 8, dur: '1.8s', del: '1.1s' },
+  ];
+  return (
+    <span aria-hidden>
+      <span className="ice-nav-sheen" />
+      {flakes.map((f, i) => (
+        <span
+          key={i}
+          className="ice-nav-flake"
+          style={
+            {
+              left: f.l,
+              fontSize: f.s,
+              '--fdur': f.dur,
+              '--fdel': f.del,
+            } as React.CSSProperties
+          }
+        >
+          ❄
+        </span>
+      ))}
+    </span>
   );
 }
 
@@ -265,6 +305,9 @@ export function Nav() {
   const pathname = usePathname();
   const [sheetOpen, setSheetOpen] = useState(false);
   const helpActive = isActiveLink('/help', pathname);
+  // Mikro-Eis am Board-Item nur, wenn ein echter Nutzer angemeldet ist (das
+  // Board hängt an der noch „auf Eis" liegenden persönlichen Anmeldung).
+  const { user } = useCurrentUser();
 
   return (
     <header className="bg-brand shadow-md">
@@ -278,7 +321,12 @@ export function Nav() {
         {/* Desktop primary tabs + Mehr dropdown */}
         <nav className="hidden md:flex items-center gap-0.5">
           {PRIMARY.map((link) => (
-            <NavTabLink key={link.href} {...link} pathname={pathname} />
+            <NavTabLink
+              key={link.href}
+              {...link}
+              pathname={pathname}
+              ice={link.href === '/board' && !!user}
+            />
           ))}
           <NavDropdown
             label="Mehr"
