@@ -206,13 +206,13 @@ export function DashboardClient({ data, period, sortBy, boardCards, socialData }
       <div className="grid items-start gap-4 lg:grid-cols-[1.6fr_1fr]">
         {/* Top-Storys */}
         <div className={`${CARD} overflow-hidden`}>
-          {/* Kopf im Stil der Social-/Board-Kacheln: warmer Verlauf + Icon-
-              Quadrat. BookOpen (= Publikationen-Nav-Icon) + „Publikationen" im
+          {/* Kopf im Stil der Social-/Board-Kacheln: Verlauf + Icon-Quadrat.
+              BookOpen (= Publikationen-Nav-Icon) + „Publikationen" im
               Untertitel machen unmissverständlich, dass hier Publikationen
-              ranken — „Top-Storys" bleibt als redaktioneller Name. Bernstein
-              als Akzent, weil das die Story-Score-Farbe hoher Werte ist. */}
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-line bg-[linear-gradient(120deg,#fff7ed,#fffdf7_52%,#fef4ee)] px-4 pb-[13px] pt-[15px] dark:bg-none">
-            <span className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[10px] bg-[linear-gradient(135deg,#f59e0b,#e8590c)] text-white shadow-[0_3px_10px_rgba(234,88,12,.28)]">
+              ranken — „Top-Storys" bleibt als redaktioneller Name. Brand-Blau
+              als Akzent (Board trägt jetzt Bernstein). */}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-line bg-[linear-gradient(120deg,#eef4ff,#f8fbff)] px-4 pb-[13px] pt-[15px] dark:bg-none">
+            <span className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[10px] bg-brand text-white shadow-[0_3px_10px_rgba(0,71,187,.3)]">
               <BookOpen className="h-[19px] w-[19px]" weight="duotone" />
             </span>
             <div className="min-w-0">
@@ -220,7 +220,7 @@ export function DashboardClient({ data, period, sortBy, boardCards, socialData }
                 <span className="text-sm font-bold tracking-tight text-ink">Top-Storys</span>
                 <InfoBubble id="top10_panel" size="sm" />
               </div>
-              <div className="mt-px font-mono text-2xs text-[#b3762b] dark:text-amber-300/80">
+              <div className="mt-px font-mono text-2xs text-[#6f8bbf] dark:text-brand-300/80">
                 Publikationen nach Story Score
                 {topPubsTotal > topPubs.length && ` · ${topPubsTotal.toLocaleString('de-AT')} im Pool`}
               </div>
@@ -415,13 +415,13 @@ export function DashboardClient({ data, period, sortBy, boardCards, socialData }
 
       {/* Top-Storys, kompakte Zeilen (Rang · Titel/Meta · Score) */}
       <div className={`${CARD} overflow-hidden`}>
-        <div className="flex items-center gap-2.5 border-b border-line bg-[linear-gradient(120deg,#fff7ed,#fffdf7_52%,#fef4ee)] px-[15px] pb-[11px] pt-3 dark:bg-none">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] bg-[linear-gradient(135deg,#f59e0b,#e8590c)] text-white shadow-[0_3px_10px_rgba(234,88,12,.28)]">
+        <div className="flex items-center gap-2.5 border-b border-line bg-[linear-gradient(120deg,#eef4ff,#f8fbff)] px-[15px] pb-[11px] pt-3 dark:bg-none">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] bg-brand text-white shadow-[0_3px_10px_rgba(0,71,187,.3)]">
             <BookOpen className="h-[17px] w-[17px]" weight="duotone" />
           </span>
           <div className="min-w-0 flex-1">
             <div className="text-sm font-bold tracking-tight text-ink">Top-Storys</div>
-            <div className="mt-px font-mono text-2xs text-[#b3762b] dark:text-amber-300/80">
+            <div className="mt-px font-mono text-2xs text-[#6f8bbf] dark:text-brand-300/80">
               Publikationen · {topPubsTotal.toLocaleString('de-AT')} im Pool
             </div>
           </div>
@@ -498,13 +498,13 @@ function BoardTile({ cards, overdueCount }: { cards: BoardCardRef[]; overdueCoun
   const shown = cards.slice(0, 5);
   return (
     <div className={`${CARD} flex flex-col overflow-hidden`}>
-      <div className="flex items-center gap-[11px] border-b border-line bg-[linear-gradient(120deg,#eef4ff,#f8fbff)] px-4 pb-[13px] pt-[15px] dark:bg-none">
-        <span className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[10px] bg-brand text-white shadow-[0_3px_10px_rgba(0,71,187,.3)]">
+      <div className="flex items-center gap-[11px] border-b border-line bg-[linear-gradient(120deg,#fff7ed,#fffdf7_52%,#fef4ee)] px-4 pb-[13px] pt-[15px] dark:bg-none">
+        <span className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[10px] bg-[linear-gradient(135deg,#f59e0b,#e8590c)] text-white shadow-[0_3px_10px_rgba(234,88,12,.28)]">
           <Kanban className="h-[19px] w-[19px]" weight="duotone" />
         </span>
         <div className="min-w-0 flex-1">
           <div className="text-sm font-bold tracking-tight text-ink">Redaktionsboard</div>
-          <div className="mt-px font-mono text-2xs text-[#6f8bbf]">
+          <div className="mt-px font-mono text-2xs text-[#b3762b] dark:text-amber-300/80">
             Überfällig &amp; demnächst fällig
           </div>
         </div>
