@@ -141,8 +141,9 @@ function NavTabLink({
           : 'text-white/70 hover:bg-white/10 hover:text-white',
       )}
     >
-      {/* Dauer-Hinweis: frostiges Icon (Eis-Blau) im Ruhezustand. */}
-      <Icon className={cn('h-4 w-4', ice && !isActive && 'text-[#9cc0ff]')} />
+      {/* Dauer-Hinweis: leicht frostiges Icon im Ruhezustand — bewusst nur ein
+          Hauch Blau (fast weiß), nicht kräftig. */}
+      <Icon className={cn('h-4 w-4', ice && !isActive && 'text-[#e2ecfb]')} />
       {label}
       {ice && <IceNavFrost />}
     </Link>
@@ -153,13 +154,15 @@ function NavTabLink({
  *  schmelzen (Callback zum Login-Eis), plus ein feiner Frost-Schimmer. Rein
  *  CSS, pointer-events-none, out-of-flow — stört Layout/Klick nicht. */
 function IceNavFrost() {
+  // Langsam rieseln + sanft wegschmelzen (User-Wunsch). Versetzte Starts,
+  // damit nicht alle gleichzeitig fallen.
   const flakes = [
-    { l: '9%', s: 8, dur: '2.1s', del: '0s' },
-    { l: '27%', s: 6, dur: '1.7s', del: '.6s' },
-    { l: '44%', s: 9, dur: '2.4s', del: '.2s' },
-    { l: '60%', s: 7, dur: '1.9s', del: '.9s' },
-    { l: '76%', s: 6, dur: '2.2s', del: '.4s' },
-    { l: '90%', s: 8, dur: '1.8s', del: '1.1s' },
+    { l: '9%', s: 8, dur: '4.4s', del: '0s' },
+    { l: '27%', s: 6, dur: '3.8s', del: '1.3s' },
+    { l: '44%', s: 9, dur: '5.0s', del: '.5s' },
+    { l: '60%', s: 7, dur: '4.2s', del: '2.1s' },
+    { l: '76%', s: 6, dur: '4.7s', del: '.9s' },
+    { l: '90%', s: 8, dur: '4.0s', del: '2.7s' },
   ];
   return (
     <span aria-hidden>
