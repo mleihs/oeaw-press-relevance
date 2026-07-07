@@ -81,9 +81,14 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
   const [fwEmail, setFwEmail] = useState('');
 
   const emailRef = useRef<HTMLInputElement>(null);
+  const gatePwRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
-    if (mode === 'signin') emailRef.current?.focus();
-  }, [mode]);
+    if (mode !== 'signin') return;
+    // Gate-Variante: der Übergangszugang ist der primäre Weg → dessen Feld
+    // bekommt den Fokus, nicht das gedämpfte Personen-Login-Feld darunter.
+    if (variant === 'gate') gatePwRef.current?.focus();
+    else emailRef.current?.focus();
+  }, [mode, variant]);
 
   /** Nach erfolgreichem Auth: Session-Marker setzen und weiterleiten.
    *  `identity: true` (persönlicher Login) navigiert IMMER voll — die Seite
@@ -198,7 +203,206 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
             <span className="text-lg font-semibold tracking-tight">ÖAW Presse</span>
           </div>
 
-          {mode === 'signin' && (
+          {mode === 'signin' && variant === 'gate' && (
+            <div className="auth-rise">
+              <h2 className="text-[25px] font-bold tracking-tight">Willkommen bei ÖAW Presse</h2>
+              <p className="mb-6 mt-2 text-sm text-ink-subtle">
+                Melde dich mit dem gemeinsamen Übergangszugang an; vorerst der reguläre Weg ins
+                Toolkit.
+              </p>
+
+              {/* ===== Übergangszugang — Hero (primär, blau) ===== */}
+              <div className="relative overflow-hidden rounded-[16px] border-[1.5px] border-brand-200 bg-[linear-gradient(158deg,#eef5ff,#ffffff_60%)] p-5 shadow-[0_16px_38px_-18px_rgba(0,71,187,.45)]">
+                {/* Dekor: weicher blauer Radial-Fleck oben rechts */}
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute -right-10 -top-12 h-36 w-36 rounded-full bg-[radial-gradient(circle,rgba(0,71,187,.14),transparent_70%)]"
+                />
+                <div className="relative">
+                  <div className="mb-3 flex items-center gap-2.5">
+                    <span className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[11px] bg-[linear-gradient(135deg,#2f6ad0,var(--brand-600))] text-white shadow-[0_5px_14px_rgba(0,71,187,.4)]">
+                      <LockKeyOpen weight="fill" className="h-5 w-5" />
+                    </span>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-[15px] font-bold text-ink">Übergangszugang</span>
+                        <span className="rounded-full bg-brand-50 px-2 py-px text-2xs font-semibold text-brand">
+                          Aktueller Zugang
+                        </span>
+                      </div>
+                      <div className="mt-px text-2xs text-ink-muted">
+                        Gemeinsames Passwort fürs Team
+                      </div>
+                    </div>
+                  </div>
+                  <p className="mb-4 text-xs leading-relaxed text-ink-subtle">
+                    Bis zur vollständigen Umstellung genügt das gemeinsame Übergangs-Passwort. Es
+                    öffnet alle Bereiche{' '}
+                    <span className="font-semibold text-ink-soft">außer das Redaktionsboard</span>.
+                  </p>
+
+                  {gateError && (
+                    <div
+                      key={gateNonce}
+                      role="alert"
+                      className="auth-shake mb-3 flex items-center gap-2 rounded-[9px] border border-red-200 bg-red-50 px-2.5 py-2 text-xs font-medium text-red-600"
+                    >
+                      <AlertCircle weight="fill" className="h-[15px] w-[15px] shrink-0" />
+                      {gateError}
+                    </div>
+                  )}
+
+                  <form onSubmit={handleGate} className="space-y-3">
+                    <div className="auth-field">
+                      <Password className="h-[17px] w-[17px] shrink-0 text-ink-muted" />
+                      <input
+                        ref={gatePwRef}
+                        type={showGatePw ? 'text' : 'password'}
+                        aria-label="Gemeinsames Übergangs-Passwort"
+                        placeholder="Gemeinsames Übergangs-Passwort"
+                        autoComplete="off"
+                        value={gatePw}
+                        onChange={(e) => {
+                          setGatePw(e.target.value);
+                          setGateError(null);
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowGatePw((v) => !v)}
+                        aria-label={showGatePw ? 'Passwort verbergen' : 'Passwort anzeigen'}
+                        className="flex p-1 text-ink-muted hover:text-ink-soft"
+                      >
+                        {showGatePw ? <EyeOff className="h-[18px] w-[18px]" /> : <Eye className="h-[18px] w-[18px]" />}
+                      </button>
+                    </div>
+                    <button type="submit" disabled={gateBusy} className="auth-btn-primary">
+                      {gateBusy ? (
+                        <>
+                          <Loader2 className="h-[17px] w-[17px] animate-spin" />
+                          Anmeldung läuft …
+                        </>
+                      ) : (
+                        <>
+                          <LockKeyOpen weight="fill" className="h-[17px] w-[17px]" />
+                          Anmelden
+                        </>
+                      )}
+                    </button>
+                  </form>
+                </div>
+              </div>
+
+              {/* ===== Persönlicher Login — später, gedämpft ===== */}
+              <div className="mt-6">
+                <div className="mb-4 flex items-center gap-3">
+                  <span className="h-px flex-1 bg-line" />
+                  <span className="text-2xs font-semibold tracking-wide text-ink-muted">
+                    DEMNÄCHST · PERSÖNLICHER ZUGANG
+                  </span>
+                  <span className="h-px flex-1 bg-line" />
+                </div>
+
+                <div className="rounded-[14px] border border-line bg-fill/50 p-4">
+                  <div className="mb-2 flex items-center gap-2.5">
+                    <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[9px] bg-white text-ink-muted ring-1 ring-line-strong">
+                      <LockKeyhole weight="duotone" className="h-[16px] w-[16px]" />
+                    </span>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm font-bold text-ink-soft">Persönlicher Login</span>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-fill px-2 py-px text-2xs font-semibold text-ink-muted ring-1 ring-line-strong">
+                        <Info className="h-3 w-3" /> Bald verfügbar
+                      </span>
+                    </div>
+                  </div>
+                  <p className="mb-3 text-xs leading-relaxed text-ink-muted">
+                    Der persönliche Zugang mit deiner ÖAW-Adresse schaltet mit dem Redaktionsboard
+                    frei. Dann tragen Kommentare und Zuständigkeiten deinen Namen. Vorerst bitte
+                    den Übergangszugang oben nutzen.
+                  </p>
+
+                  {error && (
+                    <div
+                      key={errNonce}
+                      role="alert"
+                      className="auth-shake mb-3 flex items-center gap-2 rounded-[9px] border border-red-200 bg-red-50 px-2.5 py-2 text-xs font-medium text-red-600"
+                    >
+                      <AlertCircle weight="fill" className="h-[15px] w-[15px] shrink-0" />
+                      {error}
+                    </div>
+                  )}
+
+                  <form onSubmit={handleLogin} className="space-y-3">
+                    <div className="auth-field bg-white/70">
+                      <Mail className="h-[17px] w-[17px] shrink-0 text-ink-muted" />
+                      <input
+                        ref={emailRef}
+                        type="email"
+                        autoComplete="email"
+                        aria-label="E-Mail-Adresse"
+                        placeholder="vorname.nachname@oeaw.ac.at"
+                        value={email}
+                        onChange={(e) => {
+                          setEmail(e.target.value);
+                          setError(null);
+                        }}
+                      />
+                    </div>
+                    <div className="auth-field bg-white/70">
+                      <LockKeyhole className="h-[17px] w-[17px] shrink-0 text-ink-muted" />
+                      <input
+                        type={showPw ? 'text' : 'password'}
+                        autoComplete="current-password"
+                        aria-label="Passwort"
+                        placeholder="Passwort eingeben"
+                        value={password}
+                        onChange={(e) => {
+                          setPassword(e.target.value);
+                          setError(null);
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPw((v) => !v)}
+                        aria-label={showPw ? 'Passwort verbergen' : 'Passwort anzeigen'}
+                        className="flex p-1 text-ink-muted hover:text-ink-soft"
+                      >
+                        {showPw ? <EyeOff className="h-[18px] w-[18px]" /> : <Eye className="h-[18px] w-[18px]" />}
+                      </button>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setMode('forgot')}
+                        className="text-xs font-semibold text-ink-subtle hover:text-brand"
+                      >
+                        Passwort vergessen?
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={busy}
+                        className="inline-flex items-center justify-center gap-2 rounded-[10px] border-[1.5px] border-line-strong bg-white px-3.5 py-2 text-sm font-semibold text-ink-soft transition-colors hover:bg-fill disabled:opacity-60"
+                      >
+                        {busy ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Anmeldung läuft …
+                          </>
+                        ) : (
+                          <>
+                            <LogIn weight="fill" className="h-4 w-4" />
+                            Persönlich anmelden
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {mode === 'signin' && variant === 'login' && (
             <div className="auth-rise">
               <h2 className="text-[25px] font-bold tracking-tight">Willkommen zurück</h2>
               <p className="mb-6 mt-2 text-sm text-ink-subtle">
@@ -300,87 +504,6 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
                   Problemen bitte an die Administration wenden.
                 </span>
               </div>
-
-              {variant === 'gate' && (
-                <>
-                  <div className="my-5 flex items-center gap-3">
-                    <span className="h-px flex-1 bg-line" />
-                    <span className="text-2xs font-semibold tracking-wide text-ink-muted">
-                      ODER ÜBERGANGSWEISE
-                    </span>
-                    <span className="h-px flex-1 bg-line" />
-                  </div>
-
-                  <div className="rounded-[13px] border-[1.5px] border-[#e3ddc8] bg-[#fdfbf3] p-4">
-                    <div className="mb-2 flex items-center gap-2.5">
-                      <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[9px] bg-[#fbf0d6] text-amber-700">
-                        <Key weight="duotone" className="h-[17px] w-[17px]" />
-                      </span>
-                      <div className="text-sm font-bold text-[#8a5a12]">
-                        Übergangszugang
-                      </div>
-                    </div>
-                    <p className="mb-3 text-xs leading-relaxed text-[#7d6a45]">
-                      Bis zur vollständigen Umstellung ist ein gemeinsames Übergangs-Passwort aktiv.
-                      Es gibt Zugriff auf alle Bereiche{' '}
-                      <span className="font-semibold">außer das Redaktionsboard</span>.
-                    </p>
-
-                    {gateError && (
-                      <div
-                        key={gateNonce}
-                        role="alert"
-                        className="auth-shake mb-3 flex items-center gap-2 rounded-[9px] border border-red-200 bg-red-50 px-2.5 py-2 text-xs font-medium text-red-600"
-                      >
-                        <AlertCircle weight="fill" className="h-[15px] w-[15px] shrink-0" />
-                        {gateError}
-                      </div>
-                    )}
-
-                    <form onSubmit={handleGate}>
-                      <div className="auth-field mb-3 h-11 border-[#e0d7bc]">
-                        <Password className="h-4 w-4 shrink-0 text-[#b89a5e]" />
-                        <input
-                          type={showGatePw ? 'text' : 'password'}
-                          aria-label="Gemeinsames Übergangs-Passwort"
-                          placeholder="Gemeinsames Übergangs-Passwort"
-                          autoComplete="off"
-                          value={gatePw}
-                          onChange={(e) => {
-                            setGatePw(e.target.value);
-                            setGateError(null);
-                          }}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowGatePw((v) => !v)}
-                          aria-label={showGatePw ? 'Passwort verbergen' : 'Passwort anzeigen'}
-                          className="flex p-1 text-[#b89a5e] hover:text-[#8a5a12]"
-                        >
-                          {showGatePw ? <EyeOff className="h-[17px] w-[17px]" /> : <Eye className="h-[17px] w-[17px]" />}
-                        </button>
-                      </div>
-                      <button
-                        type="submit"
-                        disabled={gateBusy}
-                        className="flex w-full items-center justify-center gap-2 rounded-[10px] bg-amber-700 px-3 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-amber-800 disabled:opacity-60"
-                      >
-                        {gateBusy ? (
-                          <>
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            Anmeldung läuft …
-                          </>
-                        ) : (
-                          <>
-                            <LockKeyOpen weight="fill" className="h-4 w-4" />
-                            Übergangsweise anmelden
-                          </>
-                        )}
-                      </button>
-                    </form>
-                  </div>
-                </>
-              )}
             </div>
           )}
 
