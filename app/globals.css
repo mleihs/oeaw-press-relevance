@@ -626,11 +626,22 @@
    Formular darunter bleibt bedienbar. „Zufrieren" beim Laden, dann Dauer-
    Shimmer + funkelnde Kristalle. */
 @keyframes frost-creep { from { opacity: 0; transform: scale(1.05); } to { opacity: 1; transform: none; } }
-@keyframes ice-shimmer { 0% { transform: translateX(-180%) skewX(-14deg); } 62%, 100% { transform: translateX(360%) skewX(-14deg); } }
-@keyframes ice-sparkle { 0%, 100% { opacity: .12; transform: scale(.6); } 50% { opacity: .95; transform: scale(1); } }
+@keyframes ice-shimmer { 0% { transform: translateX(-180%) skewX(-14deg); } 55%, 100% { transform: translateX(360%) skewX(-14deg); } }
+@keyframes ice-sparkle { 0%, 100% { opacity: .1; transform: scale(.55); } 50% { opacity: 1; transform: scale(1.05); } }
+/* Fallschnee: translate3d-Drift + Drehung, GPU-seitig (Web-Recherche 2026-07-07). */
+@keyframes snow-fall {
+  0% { transform: translate3d(0, -26px, 0) rotate(0deg); opacity: 0; }
+  8% { opacity: .95; }
+  90% { opacity: .85; }
+  100% { transform: translate3d(var(--drift, 10px), 320px, 0) rotate(300deg); opacity: 0; }
+}
+/* Pulsierender Kälte-Glow am Frost-Rand. */
+@keyframes ice-glow { 0%, 100% { opacity: .45; } 50% { opacity: 1; } }
 .frost-freeze { animation: frost-creep 1.2s cubic-bezier(.2,.7,.3,1) both; }
-.frost-shimmer { animation: ice-shimmer 6s ease-in-out infinite; }
-.ice-sparkle { animation: ice-sparkle 3.2s ease-in-out infinite; }
+.frost-shimmer { animation: ice-shimmer 5.5s ease-in-out infinite; }
+.ice-sparkle { animation: ice-sparkle 3s ease-in-out infinite; }
+.snowflake { animation: snow-fall var(--sdur, 8s) linear infinite; will-change: transform; }
+.ice-glow { animation: ice-glow 3.5s ease-in-out infinite; }
 
 /* ===== Board-Abschluss-Celebration (app/board/_components/celebration.tsx)
    Design: docs/design/claude-design/Board-Celebration.dc.html. Der globale
