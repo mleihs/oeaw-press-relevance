@@ -772,7 +772,11 @@ function BrandPanel() {
       alive = false;
     };
   }, []);
-  const fmt = (n: number | undefined) => (n == null ? '…' : n.toLocaleString('de-AT'));
+  // Tausender mit Punkt, deterministisch: toLocaleString('de-AT') liefert im
+  // Browser ein Schmalspatium (U+202F) statt des Punkts („8 010"). Eigene
+  // Gruppierung vermeidet die ICU-Abhängigkeit.
+  const fmt = (n: number | undefined) =>
+    n == null ? '…' : String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 
   return (
     <div className="relative hidden flex-[1.05] flex-col overflow-hidden bg-[linear-gradient(155deg,#0052d6_0%,var(--brand-500)_42%,var(--brand-700)_100%)] p-[52px_56px] text-white lg:flex">
