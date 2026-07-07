@@ -203,7 +203,7 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
     const pw = gatePw || rememberedGateRef.current || '';
     if (!pw) {
       setPhase('ready');
-      setGateError('Bitte das Übergangs-Passwort eingeben.');
+      setGateError('Bitte das gemeinsame Passwort eingeben.');
       setGateNonce((n) => n + 1);
       return;
     }
@@ -227,7 +227,7 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
           rememberedGateRef.current = null;
           setRememberGate(false);
         }
-        setGateError('Übergangs-Passwort ist nicht korrekt.');
+        setGateError('Das gemeinsame Passwort ist nicht korrekt.');
         setGateNonce((n) => n + 1);
         setGatePw('');
         setPhase('ready');
@@ -283,11 +283,11 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
             <div className="auth-rise">
               <h2 className="text-[25px] font-bold tracking-tight">Willkommen bei ÖAW Presse</h2>
               <p className="mb-6 mt-2 text-sm text-ink-subtle">
-                Melde dich mit dem gemeinsamen Übergangszugang an; vorerst der reguläre Weg ins
+                Melde dich mit dem gemeinsamen Team-Zugang an; derzeit der reguläre Weg ins
                 Toolkit.
               </p>
 
-              {/* ===== Übergangszugang — Hero (primär, blau) ===== */}
+              {/* ===== Team-Zugang — Hero (primär, blau) ===== */}
               <div className="relative overflow-hidden rounded-[16px] border-[1.5px] border-brand-200 bg-[linear-gradient(158deg,#eef5ff,#ffffff_60%)] p-5 shadow-[0_16px_38px_-18px_rgba(0,71,187,.45)]">
                 {/* Dekor: weicher blauer Radial-Fleck oben rechts */}
                 <div
@@ -301,7 +301,7 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
                     </span>
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-[15px] font-bold text-ink">Übergangszugang</span>
+                        <span className="text-[15px] font-bold text-ink">Team-Zugang</span>
                         <span className="rounded-full bg-brand-50 px-2 py-px text-2xs font-semibold text-brand">
                           Aktueller Zugang
                         </span>
@@ -338,7 +338,7 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
                             {gateBusy ? 'Anmeldung läuft …' : 'Passwort gemerkt · wird angemeldet …'}
                           </div>
                           <div className="mt-px text-2xs text-ink-muted">
-                            Automatischer Übergangs-Login
+                            Automatische Anmeldung
                           </div>
                         </div>
                       </div>
@@ -369,8 +369,8 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
                         <input
                           ref={gatePwRef}
                           type={showGatePw ? 'text' : 'password'}
-                          aria-label="Gemeinsames Übergangs-Passwort"
-                          placeholder="Gemeinsames Übergangs-Passwort"
+                          aria-label="Gemeinsames Passwort"
+                          placeholder="Gemeinsames Passwort"
                           autoComplete="off"
                           value={gatePw}
                           onChange={(e) => {
