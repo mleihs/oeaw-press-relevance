@@ -623,12 +623,17 @@ function SocialTrendsTile({ data }: { data: SocialDashboardData }) {
         <div className="px-1.5 pb-[7px] pt-0.5 font-mono text-3xs font-semibold uppercase tracking-wider text-ink-muted">
           Trend-Themen
         </div>
+        {/* Alle Themen mit internem Scrollbalken (wie die Kanäle im Board):
+            max-Höhe deckelt die Kachel, die Liste scrollt darin. */}
+        <div className="max-h-[196px] overflow-y-auto">
         {data.themes.map((t) => {
           const accent = socialAccent(t.accent_index);
           return (
             <Link
               key={t.name}
-              href="/social"
+              // Deep-Link auf das Thema (per Name; /social löst ihn auf den
+              // Theme-Index auf und scrollt/fokussiert die Gruppe).
+              href={`/social?theme=${encodeURIComponent(t.name)}`}
               className="flex items-center gap-[11px] rounded-[10px] px-1.5 py-2 transition-colors hover:bg-canvas"
             >
               <span className={`h-2.5 w-2.5 shrink-0 rounded-[3px] ${accent.dot}`} />
@@ -643,6 +648,7 @@ function SocialTrendsTile({ data }: { data: SocialDashboardData }) {
             </Link>
           );
         })}
+        </div>
       </div>
 
       {data.top_post && (

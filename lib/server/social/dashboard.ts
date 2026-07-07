@@ -132,8 +132,10 @@ async function computeSocialDashboardData(): Promise<SocialDashboardData | null>
       spark: sparkline(item.posts, windowStart, windowMs),
     }))
     .filter((t) => t.post_count > 0)
-    .sort((a, b) => b.likes - a.likes)
-    .slice(0, 3);
+    .sort((a, b) => b.likes - a.likes);
+  // Kein Top-3-Cap mehr: die Dashboard-Kachel zeigt ALLE Themen mit einem
+  // internen Scrollbalken (wie die Kanäle im Board). accent_index bleibt der
+  // ursprüngliche Snapshot-Index (vor Sort) → deckt sich mit /social theme-${i}.
 
   const channelById = new Map(channels.map((c) => [c.id, c]));
   const top = [...pool].sort((a, b) => (b.like_count ?? 0) - (a.like_count ?? 0))[0];
