@@ -39,6 +39,7 @@ export function columnRowToApi(row: typeof boardColumns.$inferSelect): BoardColu
     board_id: row.boardId,
     name: row.name,
     color: row.color,
+    icon: row.icon,
     rank: row.rank,
   };
 }
@@ -92,6 +93,16 @@ export function activityRowToApi(r: Record<string, unknown>): CardActivityEntry 
   };
 }
 
+/** Stabile Kurz-Version des Storage-Keys → als `?v=` an die Avatar-URL gehängt.
+ *  Der Key bekommt bei jedem Upload eine neue UUID, die URL ändert sich also
+ *  mit dem Bild → Browser-Cache bricht von selbst, obwohl die Proxy-Route lange
+ *  cachen darf (kein „altes Bild bleibt tagelang"-Problem). */
+function avatarVersion(key: string): string {
+  let h = 0;
+  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0;
+  return h.toString(36);
+}
+
 export function memberRowToApi(row: typeof users.$inferSelect): BoardMember {
   return {
     id: row.id,
@@ -99,6 +110,8 @@ export function memberRowToApi(row: typeof users.$inferSelect): BoardMember {
     email: row.email,
     role: row.role as UserRole,
     disabled_at: row.disabledAt,
-    avatar_url: row.avatarKey ? `/api/users/${row.id}/avatar` : null,
+    avatar_url: row.avatarKey
+      ? `/api/users/${row.id}/avatar?v=${avatarVersion(row.avatarKey)}`
+      : null,
   };
 }

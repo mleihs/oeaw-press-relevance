@@ -12,6 +12,44 @@ export const BOARD_COLUMN_SWATCHES = [
   '#16a34a', '#e11d48', '#64748b', '#0891b2', '#d97706',
 ] as const;
 
+/** Frei wählbare Kanal-Icons (Spalten-„…"-Menü → „Icon ändern"). Der Schlüssel
+ *  wird in board_columns.icon gespeichert; die Zuordnung Schlüssel→Komponente
+ *  lebt clientseitig in app/board/_lib/channels.tsx (Phosphor). Absenz/NULL →
+ *  Fallback aufs namensbasierte Mapping. Reihenfolge = Reihenfolge im Picker.
+ *  Nur Daten (kein Icon-Import), damit die shared→shared-Boundary hält. */
+export const BOARD_COLUMN_ICONS = [
+  { key: 'megaphone', label: 'Megafon' },
+  { key: 'globe', label: 'Weltkugel' },
+  { key: 'pen', label: 'Stift' },
+  { key: 'mic', label: 'Mikrofon' },
+  { key: 'calendar', label: 'Kalender' },
+  { key: 'monitor', label: 'Bildschirm' },
+  { key: 'sparkles', label: 'Funkeln' },
+  { key: 'archive', label: 'Archiv' },
+  { key: 'newspaper', label: 'Zeitung' },
+  { key: 'radio', label: 'Radio' },
+  { key: 'camera', label: 'Kamera' },
+  { key: 'image', label: 'Bild' },
+  { key: 'instagram', label: 'Instagram' },
+  { key: 'mail', label: 'E-Mail' },
+  { key: 'message', label: 'Nachricht' },
+  { key: 'flame', label: 'Flamme' },
+  { key: 'star', label: 'Stern' },
+  { key: 'heart', label: 'Herz' },
+  { key: 'award', label: 'Auszeichnung' },
+  { key: 'crown', label: 'Krone' },
+  { key: 'radar', label: 'Radar' },
+  { key: 'map', label: 'Ort' },
+  { key: 'users', label: 'Team' },
+  { key: 'tag', label: 'Etikett' },
+] as const;
+export type BoardColumnIconKey = (typeof BOARD_COLUMN_ICONS)[number]['key'];
+const BOARD_COLUMN_ICON_KEY_SET = new Set<string>(BOARD_COLUMN_ICONS.map((i) => i.key));
+/** Laufzeit-Guard (Zod/Server): ist der String ein gültiger Icon-Schlüssel? */
+export function isBoardColumnIconKey(v: string): v is BoardColumnIconKey {
+  return BOARD_COLUMN_ICON_KEY_SET.has(v);
+}
+
 /** Obergrenze pro Anhang (Bytes). Geteilt zwischen Server-Validierung
  *  (lib/server/board/attachments.ts) und UI-Hinweis. Bewusst konservativ wegen
  *  Vercels ~4,5-MB-Request-Body-Limit bei server-proxiertem Upload. */
@@ -76,8 +114,11 @@ export interface BoardColumn {
   id: string;
   board_id: string;
   name: string;
-  /** Hex-Akzent (#rrggbb). Client mappt Spaltenname -> Kanal-Icon. */
+  /** Hex-Akzent (#rrggbb). */
   color: string;
+  /** Icon-Schlüssel (BOARD_COLUMN_ICONS) oder null → Fallback aufs
+   *  namensbasierte Kanal-Mapping (channels.tsx). */
+  icon: string | null;
   rank: string;
 }
 

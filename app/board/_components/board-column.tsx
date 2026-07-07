@@ -3,11 +3,11 @@
 import { useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { Plus, MoreHorizontal, Pencil, Trash2, ArrowLeft, ArrowRight, ArrowUpDown, CalendarDays, List, Clock, EyeOff, Archive } from '@/lib/icons';
+import { Plus, MoreHorizontal, Pencil, Trash2, ArrowLeft, ArrowRight, ArrowUpDown, CalendarDays, List, Clock, EyeOff, Archive, Sparkles } from '@/lib/icons';
 import { cn } from '@/lib/shared/utils';
 import type { BoardColumn as BoardColumnT, BoardLabel, BoardMember, CardChip as CardChipT } from '@/lib/shared/board';
 import { BOARD_COLUMN_SWATCHES } from '@/lib/shared/board';
-import { ChannelIcon } from '../_lib/channels';
+import { ColumnIcon, COLUMN_ICON_CHOICES } from '../_lib/channels';
 import { CardChip } from './card-chip';
 import {
   DropdownMenu,
@@ -32,6 +32,7 @@ export function BoardColumn({
   onAddCard,
   onRename,
   onRecolor,
+  onSetIcon,
   onMove,
   onSort,
   onHide,
@@ -49,6 +50,7 @@ export function BoardColumn({
   onAddCard: () => void;
   onRename: (id: string, name: string) => void;
   onRecolor: (id: string, color: string) => void;
+  onSetIcon: (id: string, icon: string | null) => void;
   onMove: (id: string, dir: 'left' | 'right') => void;
   onSort: (id: string, by: 'due' | 'title' | 'created') => void;
   onHide: (id: string) => void;
@@ -84,7 +86,7 @@ export function BoardColumn({
         className="mb-2 flex items-center gap-2 rounded-[10px] px-3 py-2.5 shadow-[0_1px_2px_rgba(16,32,46,.16)]"
         style={{ backgroundColor: headBg }}
       >
-        <ChannelIcon name={column.name} className="h-5 w-5 shrink-0" style={{ color: iconColor }} />
+        <ColumnIcon column={column} className="h-5 w-5 shrink-0" style={{ color: iconColor }} />
         {editing ? (
           <input
             autoFocus
@@ -161,6 +163,42 @@ export function BoardColumn({
                     />
                   ))}
                 </div>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <ColumnIcon column={column} className="h-4 w-4" />
+                Icon ändern
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent className="p-2">
+                {/* Touch-taugliches Icon-Raster (h-8/w-8 ≈ 32px Ziel), passt in
+                    die 296px-Spalte; align="end" öffnet zum Kopf hin. */}
+                <div className="grid grid-cols-6 gap-1">
+                  {COLUMN_ICON_CHOICES.map(({ key, label, Icon }) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => onSetIcon(column.id, key)}
+                      title={label}
+                      aria-label={label}
+                      aria-pressed={column.icon === key}
+                      className={cn(
+                        'flex h-8 w-8 items-center justify-center rounded-md text-foreground/80 transition-colors hover:bg-accent',
+                        column.icon === key && 'bg-accent text-foreground ring-2 ring-foreground',
+                      )}
+                    >
+                      <Icon className="h-[18px] w-[18px]" />
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onSetIcon(column.id, null)}
+                  className="mt-2 flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Standard (nach Kanalname)
+                </button>
               </DropdownMenuSubContent>
             </DropdownMenuSub>
             <DropdownMenuItem disabled={isFirst} onSelect={() => onMove(column.id, 'left')}>
