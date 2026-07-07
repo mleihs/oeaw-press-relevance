@@ -55,3 +55,42 @@ export default function SnowParticles() {
     </ParticlesProvider>
   );
 }
+
+// „Board auf Eis"-Blizzard fürs „Willkommen zurück" (via Board-Klick). Eine
+// dichte Canvas ÜBER allem, damit der Schnee das Login-Panel umspielt/überzieht.
+// Lehren aus der Iteration 2026-07-07:
+//  - density AUS (sonst skaliert tsParticles die Menge nach Fläche runter),
+//  - STEADY Opazität/Größe (der Schmelz-Fade dünnte den Blizzard sichtbar aus),
+//  - Partikel-shadow (blauer Glow), damit weiße Flocken auch auf dem HELLEN
+//    Login-Panel Kontrast haben (weiß-auf-hell war fast unsichtbar),
+//  - Tiefe über Größen-Streuung + zIndex statt zweiter Ebene (die zweite
+//    Particles-Instanz unter einem Provider lief unzuverlässig).
+const BLIZZARD: ISourceOptions = {
+  preset: 'snow',
+  fullScreen: { enable: false },
+  background: { color: { value: 'transparent' } },
+  fpsLimit: 60,
+  detectRetina: true,
+  particles: {
+    number: { value: 420, density: { enable: false } },
+    color: { value: '#ffffff' },
+    shadow: { enable: true, color: '#5b8bff', blur: 6 },
+    opacity: { value: { min: 0.45, max: 0.95 } },
+    size: { value: { min: 1, max: 15 } },
+    move: { speed: { min: 2, max: 6.5 }, straight: false, drift: { min: -2, max: 2 } },
+    wobble: { enable: true, distance: 28, speed: { min: -14, max: 14 } },
+    // Tiefe: weiter „hintere" Flocken kleiner/langsamer via zIndex-Rate.
+    zIndex: { value: { min: 0, max: 70 }, opacityRate: 0.2, sizeRate: 1.1 },
+  },
+};
+
+export function BoardBlizzard() {
+  return (
+    <ParticlesProvider init={initSnowEngine}>
+      {/* Über den Panels (z-35 < FreezeOverEject z-70), pointer-events aus. */}
+      <div className="pointer-events-none absolute inset-0" style={{ zIndex: 35 }}>
+        <Particles id="board-blizzard" className="absolute inset-0" options={BLIZZARD} />
+      </div>
+    </ParticlesProvider>
+  );
+}
