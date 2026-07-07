@@ -657,10 +657,27 @@
 }
 .ice-nav-flake { position: absolute; top: 0; line-height: 1; pointer-events: none; opacity: 0;
   color: #eaf3ff; text-shadow: 0 0 4px rgba(180, 210, 255, .7); }
-.ice-nav:hover .ice-nav-flake { animation: ice-nav-fall var(--fdur, 1.9s) linear infinite; animation-delay: var(--fdel, 0s); }
+/* Dauerhaft (nicht nur Hover), damit man den Schnee immer sieht — dezent,
+   langsam, schmelzend. Bei Hover kommt zusätzlich der Frost-Schimmer. */
+.ice-nav .ice-nav-flake { animation: ice-nav-fall var(--fdur, 1.9s) linear infinite; animation-delay: var(--fdel, 0s); }
 .ice-nav-sheen { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .3s;
   background: linear-gradient(120deg, transparent, rgba(255, 255, 255, .18) 50%, transparent); }
 .ice-nav:hover .ice-nav-sheen { opacity: 1; }
+
+/* „Zufrier"-Rauswurf (components/auth/auth-screen.tsx FreezeOverEject): die
+   Seite friert per clip-path-Kreis aus der oberen rechten Ecke zu, dann kommt
+   die Botschaft; danach folgt der Redirect (JS-Timer). */
+@keyframes freeze-over {
+  0% { clip-path: circle(0% at 100% 0%); }
+  100% { clip-path: circle(165% at 100% 0%); }
+}
+.freeze-over { animation: freeze-over .95s cubic-bezier(.5, 0, .3, 1) both; }
+@keyframes freeze-msg {
+  0%, 48% { opacity: 0; transform: scale(.9) translateY(6px); }
+  72% { opacity: 1; transform: scale(1) translateY(0); }
+  100% { opacity: 1; }
+}
+.freeze-msg { animation: freeze-msg 1.4s ease both; }
 
 /* ===== Board-Abschluss-Celebration (app/board/_components/celebration.tsx)
    Design: docs/design/claude-design/Board-Celebration.dc.html. Der globale

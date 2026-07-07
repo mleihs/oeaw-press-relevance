@@ -152,6 +152,7 @@ export {
   SlidersHorizontal as SlidersHorizontal,
   Smiley as Smile,
   Sparkle as Sparkles,
+  Snowflake as Snowflake,
   Timer as Timer,
   Square as Square,
   ArrowSquareOut as SquareArrowOutUpRight,
