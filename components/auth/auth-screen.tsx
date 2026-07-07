@@ -311,13 +311,18 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
     <div className="force-light fixed inset-0 z-50 flex overflow-y-auto bg-canvas text-ink" style={{ colorScheme: 'light' }}>
       {phase === 'boot' && <BootOverlay />}
       <BrandPanel />
-      {/* „Board auf Eis"-Gag: verschneite rechte Ecke + Zufrier-Rauswurf, nur
-          wenn man vom Board hierher geschickt wurde. */}
-      {variant === 'login' && frozenBoard && <WinterCorner />}
+      {/* „Board auf Eis"-Gag: vollflächiger Blizzard (umspielt das Panel) +
+          verschneite Ecke + Zufrier-Rauswurf, nur wenn man vom Board kommt. */}
+      {variant === 'login' && frozenBoard && (
+        <>
+          <BoardBlizzard />
+          <WinterCorner />
+        </>
+      )}
       {ejecting && <FreezeOverEject />}
 
       {/* ===== Formular-Panel ===== */}
-      <div className="flex flex-1 items-center justify-center px-7 py-10">
+      <div className="relative z-10 flex flex-1 items-center justify-center px-7 py-10">
         <div className="w-full max-w-[392px]">
           {/* Mobile-Logo (Brand-Panel ist unter lg ausgeblendet) */}
           <div className="mb-7 flex items-center gap-2.5 lg:hidden">
@@ -782,6 +787,10 @@ const FROST_NOISE =
 // kritischen Login-Pfad. Der CSS-Frost bleibt Basis/Fallback, falls das
 // Skript (noch) nicht geladen ist.
 const SnowParticles = dynamic(() => import('./snow-particles'), { ssr: false });
+const BoardBlizzard = dynamic(
+  () => import('./snow-particles').then((m) => m.BoardBlizzard),
+  { ssr: false },
+);
 
 // Fallschnee-Kristalle (deterministisch für SSR — kein Math.random). Spalte,
 // Größe, Falldauer, Startverzögerung, horizontaler Drift, Glyph.
@@ -904,9 +913,8 @@ function FrostOverlay() {
  *  pointer-events-none. */
 function WinterCorner() {
   return (
-    <div aria-hidden className="pointer-events-none absolute right-0 top-0 z-10 h-80 w-80 overflow-hidden">
-      {/* dichter Schneefall in der Ecke */}
-      <SnowParticles />
+    <div aria-hidden className="pointer-events-none absolute right-0 top-0 z-20 h-80 w-80 overflow-hidden">
+      {/* Fallender Schnee kommt vom BoardBlizzard; hier nur statischer Frost. */}
       {/* Frost-Schnee-Wehe: dicht in der Ecke, nach innen ausblendend */}
       <div
         className="absolute -right-24 -top-24 h-72 w-72 rounded-full"
@@ -1063,7 +1071,7 @@ function BrandPanel() {
     n == null ? '…' : String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 
   return (
-    <div className="relative hidden flex-[1.05] flex-col overflow-hidden bg-[linear-gradient(155deg,#0052d6_0%,var(--brand-500)_42%,var(--brand-700)_100%)] p-[52px_56px] text-white lg:flex">
+    <div className="relative z-10 hidden flex-[1.05] flex-col overflow-hidden bg-[linear-gradient(155deg,#0052d6_0%,var(--brand-500)_42%,var(--brand-700)_100%)] p-[52px_56px] text-white lg:flex">
       {/* Dekor: weiche Radial-Flecken + konzentrisches Ring-Motiv */}
       <div
         aria-hidden
