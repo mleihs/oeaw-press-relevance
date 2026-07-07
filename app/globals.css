@@ -604,6 +604,23 @@
 }
 .auth-float { animation: auth-float 5s ease-in-out infinite; }
 
+/* Marken-Intro-Overlay (components/auth/auth-screen.tsx BootOverlay): kurzer
+   Aufbau beim Laden, blendet zum Ende hin aus und wird dann ausgehängt. */
+@keyframes auth-boot {
+  0% { opacity: 0; transform: scale(1.015); }
+  18% { opacity: 1; transform: scale(1); }
+  72% { opacity: 1; }
+  100% { opacity: 0; transform: scale(.995); }
+}
+@keyframes auth-boot-ring {
+  0% { transform: scale(.55); opacity: 0; }
+  35% { opacity: .6; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+.auth-boot-ring { animation: auth-boot-ring 1.4s ease-out infinite; }
+/* Fortschrittsbalken (Boot-Intro + Auto-Login-Countdown): 0 → volle Breite. */
+@keyframes auth-progress { from { width: 0; } to { width: 100%; } }
+
 /* ===== Board-Abschluss-Celebration (app/board/_components/celebration.tsx)
    Design: docs/design/claude-design/Board-Celebration.dc.html. Der globale
    prefers-reduced-motion-Reset (oben) neutralisiert alle Animationen. */

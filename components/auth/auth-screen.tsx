@@ -46,6 +46,16 @@ import {
 const ADMIN_CONTACT_EMAIL =
   process.env.NEXT_PUBLIC_ADMIN_CONTACT || 'admin@oeaw.ac.at';
 
+// localStorage-Schlüssel fürs gemerkte Übergangs-Passwort (geteiltes
+// Team-Passwort, reiner Komfort — siehe Kommentar am Lade-Effekt).
+const GATE_REMEMBER_KEY = 'oeaw:gate-remember';
+
+// Kurze, bewusste Marken-Aufbauphase beim Laden (immer). Danach: bei
+// gemerktem Passwort ein Auto-Login-Countdown mit Abbrechen (nie ungefragt),
+// sonst das normale Formular. Best-Practice-Muster „auto-resume with cancel".
+const BOOT_MS = 780;
+const AUTO_MS = 1700;
+
 /** Nur same-origin-Pfade als Redirect-Ziel akzeptieren: führender `/`,
  *  danach weder `/` noch `\` — URL-Parser normalisieren `\` zu `/`,
  *  `/\evil.com` wäre sonst ein Open Redirect (Security-Review 2026-07-03). */
@@ -61,6 +71,9 @@ type Mode = 'signin' | 'forgot' | 'forgot-sent';
 export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
   const queryClient = useQueryClient();
   const [mode, setMode] = useState<Mode>('signin');
+  // Aufbau-Phase: 'boot' = Marken-Intro (immer kurz), 'auto' = Auto-Login-
+  // Countdown (nur bei gemerktem Passwort), 'ready' = normales Formular.
+  const [phase, setPhase] = useState<'boot' | 'auto' | 'ready'>('boot');
 
   // Persönlicher Login
   const [email, setEmail] = useState('');
@@ -76,19 +89,56 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
   const [gateBusy, setGateBusy] = useState(false);
   const [gateError, setGateError] = useState<string | null>(null);
   const [gateNonce, setGateNonce] = useState(0);
+  const [rememberGate, setRememberGate] = useState(false);
 
   // Passwort vergessen
   const [fwEmail, setFwEmail] = useState('');
 
   const emailRef = useRef<HTMLInputElement>(null);
   const gatePwRef = useRef<HTMLInputElement>(null);
+  // Gemerktes Übergangs-Passwort: in einem Ref gehalten, damit der Lade-Effekt
+  // KEIN synchrones setState braucht (Cascading-Render-Warnung). Der
+  // Auto-Login liest direkt daraus; sichtbar vorbefüllt wird das Feld erst
+  // beim Abbrechen. Bewusst localStorage: geteiltes Team-Passwort (kein
+  // persönliches Geheimnis), internes Tool — reiner Komfort.
+  const rememberedGateRef = useRef<string | null>(null);
+
   useEffect(() => {
-    if (mode !== 'signin') return;
+    // Fokus erst wenn das Formular sichtbar ist (nicht während Boot/Auto).
+    if (mode !== 'signin' || phase !== 'ready') return;
     // Gate-Variante: der Übergangszugang ist der primäre Weg → dessen Feld
     // bekommt den Fokus, nicht das gedämpfte Personen-Login-Feld darunter.
     if (variant === 'gate') gatePwRef.current?.focus();
     else emailRef.current?.focus();
-  }, [mode, variant]);
+  }, [mode, variant, phase]);
+
+  // Kurzes Marken-Intro (immer). Bei gemerktem Passwort danach Auto-Login.
+  useEffect(() => {
+    let saved: string | null = null;
+    if (variant === 'gate') {
+      try {
+        saved = localStorage.getItem(GATE_REMEMBER_KEY);
+      } catch {
+        /* localStorage gesperrt (Private Mode) — Komfort entfällt still. */
+      }
+      rememberedGateRef.current = saved;
+    }
+    const t = setTimeout(() => setPhase(saved ? 'auto' : 'ready'), BOOT_MS);
+    return () => clearTimeout(t);
+  }, [variant]);
+
+  // Auto-Login-Countdown: nach der Intro startet bei gemerktem Passwort ein
+  // Timer, der das Übergangs-Login auslöst. Wechselt phase auf 'ready'
+  // (Abbrechen / Feld-Interaktion), räumt die Cleanup den Timer ab.
+  useEffect(() => {
+    if (phase !== 'auto') return;
+    const t = setTimeout(() => {
+      void handleGate();
+    }, AUTO_MS);
+    return () => clearTimeout(t);
+    // handleGate schließt über das bereits geladene gatePw; nur an phase hängen.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
 
   /** Nach erfolgreichem Auth: Session-Marker setzen und weiterleiten.
    *  `identity: true` (persönlicher Login) navigiert IMMER voll — die Seite
@@ -145,10 +195,14 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
     }
   }
 
-  async function handleGate(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleGate(e?: React.FormEvent) {
+    e?.preventDefault();
     if (gateBusy) return;
-    if (!gatePw) {
+    // Auto-Login nutzt das gemerkte Passwort aus dem Ref (Feld bleibt leer).
+    const usingRemembered = !gatePw && !!rememberedGateRef.current;
+    const pw = gatePw || rememberedGateRef.current || '';
+    if (!pw) {
+      setPhase('ready');
       setGateError('Bitte das Übergangs-Passwort eingeben.');
       setGateNonce((n) => n + 1);
       return;
@@ -159,18 +213,39 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
       const res = await fetch('/api/auth/gate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: gatePw }),
+        body: JSON.stringify({ password: pw }),
       });
       if (!res.ok) {
+        // Stale gemerktes Passwort (Gate-Passwort geändert): verwerfen und
+        // zurück aufs Formular, damit man es neu eingeben kann.
+        if (usingRemembered) {
+          try {
+            localStorage.removeItem(GATE_REMEMBER_KEY);
+          } catch {
+            /* localStorage gesperrt — nichts zu tun. */
+          }
+          rememberedGateRef.current = null;
+          setRememberGate(false);
+        }
         setGateError('Übergangs-Passwort ist nicht korrekt.');
         setGateNonce((n) => n + 1);
         setGatePw('');
+        setPhase('ready');
         return;
+      }
+      // Merken erst nach erfolgreicher Anmeldung persistieren (kein falsches
+      // Passwort im Storage). Auto-Login-Fall bleibt gemerkt.
+      try {
+        if (rememberGate || usingRemembered) localStorage.setItem(GATE_REMEMBER_KEY, pw);
+        else localStorage.removeItem(GATE_REMEMBER_KEY);
+      } catch {
+        /* localStorage gesperrt — ohne Merken weiter. */
       }
       finishAuth(false);
     } catch {
       setGateError('Anmeldung fehlgeschlagen. Bitte erneut versuchen.');
       setGateNonce((n) => n + 1);
+      setPhase('ready');
     } finally {
       setGateBusy(false);
     }
@@ -192,6 +267,7 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
   // (globals.css) — der Screen ist bewusst light-only, auch bei html.dark.
   return (
     <div className="force-light fixed inset-0 z-50 flex overflow-y-auto bg-canvas text-ink" style={{ colorScheme: 'light' }}>
+      {phase === 'boot' && <BootOverlay />}
       <BrandPanel />
 
       {/* ===== Formular-Panel ===== */}
@@ -236,8 +312,8 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
                     </div>
                   </div>
                   <p className="mb-4 text-xs leading-relaxed text-ink-subtle">
-                    Bis zur vollständigen Umstellung genügt das gemeinsame Übergangs-Passwort. Es
-                    öffnet alle Bereiche{' '}
+                    Derzeit der reguläre Weg ins Toolkit. Das gemeinsame Passwort öffnet alle
+                    Bereiche{' '}
                     <span className="font-semibold text-ink-soft">außer das Redaktionsboard</span>.
                   </p>
 
@@ -252,44 +328,99 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
                     </div>
                   )}
 
-                  <form onSubmit={handleGate} className="space-y-3">
-                    <div className="auth-field">
-                      <Password className="h-[17px] w-[17px] shrink-0 text-ink-muted" />
-                      <input
-                        ref={gatePwRef}
-                        type={showGatePw ? 'text' : 'password'}
-                        aria-label="Gemeinsames Übergangs-Passwort"
-                        placeholder="Gemeinsames Übergangs-Passwort"
-                        autoComplete="off"
-                        value={gatePw}
-                        onChange={(e) => {
-                          setGatePw(e.target.value);
-                          setGateError(null);
-                        }}
-                      />
+                  {phase === 'auto' ? (
+                    /* Auto-Login: gemerktes Passwort → Countdown mit Abbrechen. */
+                    <div className="auth-rise space-y-3">
+                      <div className="flex items-center gap-2.5 rounded-[11px] border border-brand-200 bg-brand-50/60 px-3.5 py-3">
+                        <Loader2 className="h-[18px] w-[18px] shrink-0 animate-spin text-brand" />
+                        <div className="min-w-0">
+                          <div className="text-sm font-semibold text-brand-700">
+                            {gateBusy ? 'Anmeldung läuft …' : 'Passwort gemerkt · wird angemeldet …'}
+                          </div>
+                          <div className="mt-px text-2xs text-ink-muted">
+                            Automatischer Übergangs-Login
+                          </div>
+                        </div>
+                      </div>
+                      <div className="h-1 overflow-hidden rounded-full bg-brand-100">
+                        <div
+                          className="h-full rounded-full bg-brand"
+                          style={{ animation: `auth-progress ${AUTO_MS}ms linear both` }}
+                        />
+                      </div>
                       <button
                         type="button"
-                        onClick={() => setShowGatePw((v) => !v)}
-                        aria-label={showGatePw ? 'Passwort verbergen' : 'Passwort anzeigen'}
-                        className="flex p-1 text-ink-muted hover:text-ink-soft"
+                        onClick={() => {
+                          // Gemerktes Passwort sichtbar vorbefüllen, damit man
+                          // direkt anmelden oder editieren kann.
+                          setGatePw(rememberedGateRef.current ?? '');
+                          setRememberGate(!!rememberedGateRef.current);
+                          setPhase('ready');
+                        }}
+                        className="flex w-full items-center justify-center gap-2 rounded-[11px] border-[1.5px] border-line-strong bg-white px-3 py-2.5 text-sm font-semibold text-ink-soft transition-colors hover:bg-fill"
                       >
-                        {showGatePw ? <EyeOff className="h-[18px] w-[18px]" /> : <Eye className="h-[18px] w-[18px]" />}
+                        Abbrechen und selbst anmelden
                       </button>
                     </div>
-                    <button type="submit" disabled={gateBusy} className="auth-btn-primary">
-                      {gateBusy ? (
-                        <>
-                          <Loader2 className="h-[17px] w-[17px] animate-spin" />
-                          Anmeldung läuft …
-                        </>
-                      ) : (
-                        <>
-                          <LockKeyOpen weight="fill" className="h-[17px] w-[17px]" />
-                          Anmelden
-                        </>
-                      )}
-                    </button>
-                  </form>
+                  ) : (
+                    <form onSubmit={handleGate} className="space-y-3">
+                      <div className="auth-field">
+                        <Password className="h-[17px] w-[17px] shrink-0 text-ink-muted" />
+                        <input
+                          ref={gatePwRef}
+                          type={showGatePw ? 'text' : 'password'}
+                          aria-label="Gemeinsames Übergangs-Passwort"
+                          placeholder="Gemeinsames Übergangs-Passwort"
+                          autoComplete="off"
+                          value={gatePw}
+                          onChange={(e) => {
+                            setGatePw(e.target.value);
+                            setGateError(null);
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowGatePw((v) => !v)}
+                          aria-label={showGatePw ? 'Passwort verbergen' : 'Passwort anzeigen'}
+                          className="flex p-1 text-ink-muted hover:text-ink-soft"
+                        >
+                          {showGatePw ? <EyeOff className="h-[18px] w-[18px]" /> : <Eye className="h-[18px] w-[18px]" />}
+                        </button>
+                      </div>
+                      <label className="flex cursor-pointer select-none items-center gap-2 text-xs font-medium text-ink-subtle">
+                        <input
+                          type="checkbox"
+                          checked={rememberGate}
+                          onChange={(e) => {
+                            setRememberGate(e.target.checked);
+                            if (!e.target.checked) {
+                              try {
+                                localStorage.removeItem(GATE_REMEMBER_KEY);
+                              } catch {
+                                /* localStorage gesperrt — nichts zu tun. */
+                              }
+                            }
+                          }}
+                          className="h-4 w-4 rounded"
+                          style={{ accentColor: 'var(--brand-500)' }}
+                        />
+                        Passwort merken
+                      </label>
+                      <button type="submit" disabled={gateBusy} className="auth-btn-primary">
+                        {gateBusy ? (
+                          <>
+                            <Loader2 className="h-[17px] w-[17px] animate-spin" />
+                            Anmeldung läuft …
+                          </>
+                        ) : (
+                          <>
+                            <LockKeyOpen weight="fill" className="h-[17px] w-[17px]" />
+                            Anmelden
+                          </>
+                        )}
+                      </button>
+                    </form>
+                  )}
                 </div>
               </div>
 
@@ -298,7 +429,7 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
                 <div className="mb-4 flex items-center gap-3">
                   <span className="h-px flex-1 bg-line" />
                   <span className="text-2xs font-semibold tracking-wide text-ink-muted">
-                    DEMNÄCHST · PERSÖNLICHER ZUGANG
+                    PERSÖNLICHER ZUGANG · TBA
                   </span>
                   <span className="h-px flex-1 bg-line" />
                 </div>
@@ -310,15 +441,16 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
                     </span>
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-sm font-bold text-ink-soft">Persönlicher Login</span>
-                      <span className="inline-flex items-center gap-1 rounded-full bg-fill px-2 py-px text-2xs font-semibold text-ink-muted ring-1 ring-line-strong">
-                        <Info className="h-3 w-3" /> Bald verfügbar
+                      <span className="inline-flex items-center gap-1 rounded-full bg-fill px-2 py-px font-mono text-2xs font-semibold uppercase tracking-wide text-ink-muted ring-1 ring-line-strong">
+                        <Info className="h-3 w-3" /> tba
                       </span>
                     </div>
                   </div>
                   <p className="mb-3 text-xs leading-relaxed text-ink-muted">
-                    Der persönliche Zugang mit deiner ÖAW-Adresse schaltet mit dem Redaktionsboard
-                    frei. Dann tragen Kommentare und Zuständigkeiten deinen Namen. Vorerst bitte
-                    den Übergangszugang oben nutzen.
+                    <span className="font-semibold text-ink-soft">Vorläufig auf Eis.</span> Der
+                    persönliche Zugang mit deiner ÖAW-Adresse wird erst mit dem Redaktionsboard
+                    aktiviert; dann tragen Kommentare und Zuständigkeiten deinen Namen. Bis dahin
+                    bitte den Zugang oben nutzen.
                   </p>
 
                   {error && (
@@ -583,8 +715,65 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
   );
 }
 
+/** Kurzes Marken-Intro beim Laden („immer kurz geladen", User-Wunsch): blaues
+ *  Vollbild mit pulsierendem Ring-Motiv, Logo und Fortschrittsbalken. Wird nach
+ *  BOOT_MS ausgehängt; die dahinterliegende Seite ist dann bereits aufgebaut
+ *  (auth-rise), sodass das Overlay in die fertige Seite übergeht. */
+function BootOverlay() {
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex flex-col items-center justify-center gap-6 bg-[linear-gradient(155deg,#0052d6_0%,var(--brand-500)_42%,var(--brand-700)_100%)] text-white"
+      style={{ animation: `auth-boot ${BOOT_MS}ms ease both` }}
+      aria-hidden
+    >
+      <div className="relative h-[120px] w-[120px]">
+        <span className="absolute inset-0 rounded-full border-[1.5px] border-white/15" />
+        <span className="auth-boot-ring absolute inset-0 rounded-full border-[1.5px] border-white/35" />
+        <span
+          className="auth-boot-ring absolute inset-0 rounded-full border-[1.5px] border-white/25"
+          style={{ animationDelay: '.35s' }}
+        />
+        <span className="absolute inset-0 flex items-center justify-center">
+          <RadioButton weight="fill" className="h-12 w-12 text-[#9cc0ff]" />
+        </span>
+      </div>
+      <span className="text-[19px] font-semibold tracking-tight">ÖAW Presse</span>
+      <div className="h-[3px] w-40 overflow-hidden rounded-full bg-white/20">
+        <div
+          className="h-full rounded-full bg-[#9cc0ff]"
+          style={{ animation: `auth-progress ${BOOT_MS}ms cubic-bezier(.3,.7,.3,1) both` }}
+        />
+      </div>
+    </div>
+  );
+}
+
 /** Linkes Marken-Panel (nur ≥lg): Blau-Verlauf, Ring-Motiv, Claim, Kennzahlen. */
 function BrandPanel() {
+  // Kennzahlen live (gate-öffentlicher, gecachter Endpoint); Ellipsen-Platzhalter
+  // bis geladen. Sichtbar erst nach dem Boot-Overlay, das den kurzen Ladeblick
+  // ohnehin verdeckt. Kein Fallback-Hardcoding (das wäre die alte Falschzahl).
+  const [stats, setStats] = useState<{
+    scoredPublications: number;
+    upcomingEvents: number;
+    pressReleasesWithDoi: number;
+  } | null>(null);
+  useEffect(() => {
+    let alive = true;
+    fetch('/api/stats/landing')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (alive && d) setStats(d);
+      })
+      .catch(() => {
+        /* Kennzahlen sind Zierde — bei Fehler bleibt der Platzhalter. */
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
+  const fmt = (n: number | undefined) => (n == null ? '…' : n.toLocaleString('de-AT'));
+
   return (
     <div className="relative hidden flex-[1.05] flex-col overflow-hidden bg-[linear-gradient(155deg,#0052d6_0%,var(--brand-500)_42%,var(--brand-700)_100%)] p-[52px_56px] text-white lg:flex">
       {/* Dekor: weiche Radial-Flecken + konzentrisches Ring-Motiv */}
@@ -619,11 +808,11 @@ function BrandPanel() {
           alles im Redaktionsboard zusammenführen.
         </p>
         <div className="mt-8 flex gap-6">
-          <BrandStat value="38.900+" label="Publikationen" />
+          <BrandStat value={fmt(stats?.scoredPublications)} label="Bewertete Publikationen" />
           <div className="w-px bg-white/20" />
-          <BrandStat value="8.000+" label="Veranstaltungen" />
+          <BrandStat value={fmt(stats?.upcomingEvents)} label="Anstehende Veranstaltungen" />
           <div className="w-px bg-white/20" />
-          <BrandStat value="170+" label="Pressemeldungen" />
+          <BrandStat value={fmt(stats?.pressReleasesWithDoi)} label="Pressemeldungen mit DOI" />
         </div>
       </div>
 
