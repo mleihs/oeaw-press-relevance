@@ -40,7 +40,6 @@ import {
 } from '@/components/ui/sheet';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { AvatarMenu } from '@/components/avatar-menu';
-import { useCurrentUser } from '@/lib/client/hooks/use-current-user';
 import { DevUserSwitcher } from '@/components/dev-user-switcher';
 import { CommandMenuButton } from '@/components/command/command-menu-button';
 import { openCommandMenu, openCheatSheet } from '@/lib/client/commands/controller';
@@ -309,9 +308,6 @@ export function Nav() {
   const pathname = usePathname();
   const [sheetOpen, setSheetOpen] = useState(false);
   const helpActive = isActiveLink('/help', pathname);
-  // Mikro-Eis am Board-Item nur, wenn ein echter Nutzer angemeldet ist (das
-  // Board hängt an der noch „auf Eis" liegenden persönlichen Anmeldung).
-  const { user } = useCurrentUser();
 
   return (
     <header className="bg-brand shadow-md">
@@ -329,7 +325,7 @@ export function Nav() {
               key={link.href}
               {...link}
               pathname={pathname}
-              ice={link.href === '/board' && !!user}
+              ice={link.href === '/board'}
             />
           ))}
           <NavDropdown
