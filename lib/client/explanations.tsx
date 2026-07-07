@@ -1836,6 +1836,32 @@ export const EXPL = {
       </Para>
     ),
   },
+  social_momentum: {
+    title: 'Momentum',
+    formula: '((Likes jüngere Hälfte − Likes ältere Hälfte) / ältere Hälfte) × 100',
+    body: (
+      <Para>
+        Vergleicht die Likes der jüngeren Hälfte des Beobachtungszeitraums mit
+        der älteren Hälfte. Ein positiver Wert heißt: Die Beiträge der letzten
+        Fensterhälfte kommen besser an als davor; ein negativer Wert heißt, das
+        Interesse hat nachgelassen. Im Kachelkopf über alle Posts gerechnet, an
+        den Themenzeilen jeweils nur über die Posts des Themas.
+      </Para>
+    ),
+    example: (
+      <Para>
+        −10 % bei „14 Tage" bedeutet: Die Posts der letzten 7 Tage haben zusammen
+        10 % weniger Likes als die der 7 Tage davor.
+      </Para>
+    ),
+    note: (
+      <Para>
+        Ohne Likes in der älteren Fensterhälfte fehlt der Bezugswert, es wird
+        dann kein Chip angezeigt. Junge Posts hatten zudem weniger Zeit, Likes
+        zu sammeln; kleine Ausschläge nicht überbewerten.
+      </Para>
+    ),
+  },
   social_briefing: {
     title: 'Lagebild',
     body: (
@@ -2086,6 +2112,7 @@ export const EXPL_KB_MAP: Partial<Record<keyof typeof EXPL, KbAnchor>> = {
   social_kpi_channels:       { path: '/help/social/kanaele-verwalten', hash: 'crud' },
   social_window:             { path: '/help/social/kanaele-verwalten', hash: 'zeitraum' },
   social_cost:               { path: '/help/social/kanaele-verwalten', hash: 'datenquelle' },
+  social_momentum:           { path: '/help/dashboard/dashboard-tour', hash: 'social-trends' },
 
   // ─── events: relevanz-score ──────────────────────────────────────────────
   event_score:               { path: '/help/events/relevanz-score', hash: 'score' },

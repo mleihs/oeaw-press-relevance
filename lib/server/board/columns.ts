@@ -54,15 +54,16 @@ export async function patchColumn(
 ): Promise<BoardColumn> {
   const col = await loadColumn(columnId);
 
-  const setName = patch.name !== undefined || patch.color !== undefined;
+  const setFields = patch.name !== undefined || patch.color !== undefined || patch.icon !== undefined;
   const reordering = patch.before_id !== undefined || patch.after_id !== undefined;
 
-  // Reorder braucht evtl. einen Retry (Rank-Kollision), Name/Farbe nicht — daher
-  // getrennt behandeln, aber am Ende die frische Zeile zurückgeben.
-  if (setName) {
+  // Reorder braucht evtl. einen Retry (Rank-Kollision), Name/Farbe/Icon nicht —
+  // daher getrennt behandeln, aber am Ende die frische Zeile zurückgeben.
+  if (setFields) {
     const changes: Partial<typeof boardColumns.$inferInsert> = {};
     if (patch.name !== undefined) changes.name = patch.name;
     if (patch.color !== undefined) changes.color = patch.color;
+    if (patch.icon !== undefined) changes.icon = patch.icon;
     await db.update(boardColumns).set(changes).where(eq(boardColumns.id, columnId));
   }
 

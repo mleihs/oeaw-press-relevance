@@ -114,8 +114,28 @@ OpenAlex, Semantic Scholar etc.). Größe ∝ Häufigkeit. Nur aus
 OpenAccess- und angereicherten Pubs, Closed-Access ohne API-Daten fehlt
 hier.
 
+## Social-Media-Trends {#social-trends}
+
+Kompaktes Lagebild der beobachteten Instagram-Kanäle: die drei
+Like-stärksten Themen des letzten Social-Refreshs, eine Aktivitäts-Sparkline
+pro Thema und der stärkste Einzelpost. Klick führt jeweils auf `/social`.
+
+**Momentum (die %-Chips):** Vergleicht die Likes der jüngeren Hälfte des
+Beobachtungszeitraums mit der älteren Hälfte, als Formel:
+`((neu − alt) / alt) × 100`. Beispiel: −10 % bei einem 14-Tage-Fenster
+heißt, die Posts der letzten 7 Tage haben zusammen 10 % weniger Likes als
+die der 7 Tage davor. Der Chip im Kachelkopf rechnet über alle Posts, die
+kleinen Chips an den Themenzeilen nur über die Posts des jeweiligen Themas.
+
+Zwei Einschränkungen: Ohne Likes in der älteren Fensterhälfte fehlt der
+Bezugswert und es erscheint kein Chip. Und junge Posts hatten schlicht
+weniger Zeit, Likes zu sammeln; kleine Ausschläge daher nicht
+überbewerten. Das Fenster ist am Zeitpunkt des letzten Refreshs verankert;
+die Zahl ändert sich nur, wenn neue Daten geladen werden.
+
 ## Verwandte Themen
 
 - [Zeitfenster](/help/filter/zeitfenster): die Tab-Logik des Dashboards
+- [Social Media: Seiten-Tour](/help/social/seiten-tour): Themen, Kanäle und Lagebild im Detail
 - [Die fünf Dimensionen](/help/scores/dimensionen): was das Radar-Chart visualisiert
 - [Score-Bänder](/help/scores/score-baender): wo die 70-%-Linie für „Hohes Story-Potenzial" herkommt

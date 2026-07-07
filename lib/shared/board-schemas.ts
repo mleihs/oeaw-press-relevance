@@ -3,7 +3,14 @@
 // (Rank-Neuberechnung, Activity, Löschguards) leben in lib/server/board/*.
 
 import { z } from 'zod';
-import { CARD_ITEM_KINDS } from './board';
+import { CARD_ITEM_KINDS, isBoardColumnIconKey } from './board';
+
+/** Icon-Schlüssel (BOARD_COLUMN_ICONS) oder null (→ Fallback aufs
+ *  namensbasierte Mapping). Absenz im PATCH = unverändert. */
+const columnIconField = z
+  .string()
+  .refine(isBoardColumnIconKey, 'Unbekanntes Icon.')
+  .nullable();
 
 const uuid = z.uuid('Ungültige ID.');
 
@@ -63,6 +70,7 @@ export const columnPatchSchema = z
   .object({
     name: z.string().trim().min(1).max(80).optional(),
     color: hexColor.optional(),
+    icon: columnIconField.optional(),
     // Reorder: zwischen diese beiden Nachbarn setzen (Client liefert die IDs
     // aus dem Drop). null/absent = jeweils offenes Ende.
     before_id: uuid.nullish(),
@@ -72,6 +80,7 @@ export const columnPatchSchema = z
     (v) =>
       v.name !== undefined ||
       v.color !== undefined ||
+      v.icon !== undefined ||
       v.before_id !== undefined ||
       v.after_id !== undefined,
     { message: 'Leerer Patch.' },

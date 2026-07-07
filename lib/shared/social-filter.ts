@@ -28,10 +28,18 @@ export function matchesQuery(haystack: string, query: string): boolean {
 }
 
 /** Is a post within the last `days`? Undated posts count as recent (kept).
- *  Used for the fresh-window split and the time-range quick-filter. */
-export function isWithinDays(postedAt: string | null, days: number): boolean {
+ *  Used for the fresh-window split and the time-range quick-filter.
+ *  `asOfMs` verankert das Fenster: Default = jetzt (Anzeige-Filter); das
+ *  Dashboard übergibt den Snapshot-Zeitpunkt, damit Momentum/Sparkline nicht
+ *  driften, wenn der letzte Refresh altert (now-relativ fallen sonst laufend
+ *  Posts aus der älteren Fensterhälfte und das Momentum bläht sich auf). */
+export function isWithinDays(
+  postedAt: string | null,
+  days: number,
+  asOfMs: number = Date.now(),
+): boolean {
   if (!postedAt) return true;
-  return new Date(postedAt).getTime() >= Date.now() - days * 24 * 60 * 60 * 1000;
+  return new Date(postedAt).getTime() >= asOfMs - days * 24 * 60 * 60 * 1000;
 }
 
 export function sortPosts(posts: SocialPost[], sort: SocialSort): SocialPost[] {

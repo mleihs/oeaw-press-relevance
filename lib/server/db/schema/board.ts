@@ -36,6 +36,9 @@ export const boardColumns = pgTable("board_columns", {
 	boardId: uuid("board_id").notNull(),
 	name: text().notNull(),
 	color: text().default('#64748b').notNull(),
+	// Frei wählbares Icon (Schlüssel aus lib/shared/board.ts BOARD_COLUMN_ICONS);
+	// NULL → Fallback aufs namensbasierte Kanal-Mapping (channels.tsx).
+	icon: text(),
 	rank: text().notNull(),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 }, (table) => [

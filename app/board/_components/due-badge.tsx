@@ -6,7 +6,9 @@ import { dueState, formatDueLabel } from '../_lib/due';
 // Fälligkeits-Badge mit overdue/soon/normal-Zuständen (Design Book §2.3).
 // Konsumiert die Phase-A-Tokens (bg-*-tint + Zustandstext) statt Inline-Hex.
 const STYLES: Record<'overdue' | 'soon' | 'normal', string> = {
-  overdue: 'text-danger bg-danger-tint',
+  // Überfällig in Bernstein (warning) statt Alarm-Rot — passt zur warmen
+  // Kartentönung; warning-ink liest kräftig auf dem Tint.
+  overdue: 'text-warning-ink bg-warning-tint',
   soon: 'text-soon bg-soon-tint',
   normal: 'text-ink-soft bg-fill',
 };

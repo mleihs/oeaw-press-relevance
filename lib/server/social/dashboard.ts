@@ -96,12 +96,17 @@ async function computeSocialDashboardData(): Promise<SocialDashboardData | null>
   const env = getEnv();
   const snapshot = await getLatestThemeSnapshot();
   if (!snapshot) return null;
-  // Pool im Fenster des SNAPSHOTS laden, nicht im globalen Default — sonst
-  // zählen bei abweichender Konfiguration Posts außerhalb des Snapshot-
-  // Fensters in Momentum/Sparkline hinein (alles im ältesten Bucket).
-  const channels = await listChannelsWithRecentPosts(
-    snapshot.window_days || env.SOCIAL_WINDOW_DAYS,
-  );
+  const windowDays = snapshot.window_days || env.SOCIAL_WINDOW_DAYS;
+  // Fenster am Snapshot verankern, nicht an now(): liegt der letzte Refresh
+  // länger zurück, fielen sonst ALLE Posts in die älteste Hälfte (Momentum
+  // pauschal −100 %, Sparkline nur ein Balken).
+  const windowEnd = new Date(snapshot.created_at).getTime() || Date.now();
+  // Pool im Fenster des SNAPSHOTS laden — Tage UND Anker. Mit now-relativem
+  // Anker rutschen mit jedem Tag seit dem letzten Refresh Posts aus der
+  // älteren Fensterhälfte aus dem Pool: der Momentum-Nenner schrumpft und
+  // der Wert bläht sich auf (beobachtet: −10 % → +133 % über Nacht, ohne
+  // neue Daten — sah aus wie ein Caching-Fehler, war aber Drift).
+  const channels = await listChannelsWithRecentPosts(windowDays, windowEnd);
 
   const allPosts = channels.flatMap((c) => c.posts);
   // Wie auf /social: Snapshot-referenzierte Posts außerhalb der Kanal-Kappung
@@ -113,12 +118,7 @@ async function computeSocialDashboardData(): Promise<SocialDashboardData | null>
   const pool = missing.length ? [...allPosts, ...(await getPostsByIds(missing))] : allPosts;
   if (pool.length === 0) return null;
 
-  const windowDays = snapshot.window_days || env.SOCIAL_WINDOW_DAYS;
   const windowMs = windowDays * 24 * 60 * 60 * 1000;
-  // Fenster am Snapshot verankern, nicht an now(): liegt der letzte Refresh
-  // länger zurück, fielen sonst ALLE Posts in die älteste Hälfte (Momentum
-  // pauschal −100 %, Sparkline nur ein Balken).
-  const windowEnd = new Date(snapshot.created_at).getTime() || Date.now();
   const windowStart = windowEnd - windowMs;
 
   const themeItems = resolveThemePosts(snapshot.themes, pool);

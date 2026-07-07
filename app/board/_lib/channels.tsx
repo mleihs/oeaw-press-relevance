@@ -8,8 +8,25 @@ import {
   Monitor,
   Sparkles,
   Archive,
+  Newspaper,
+  Radio,
+  Camera,
+  Image,
+  InstagramLogo,
+  Mail,
+  MessageCircle,
+  Flame,
+  Star,
+  Heart,
+  Award,
+  Crown,
+  Radar,
+  MapPin,
+  Users,
+  Tag,
   type LucideIcon,
 } from '@/lib/icons';
+import { BOARD_COLUMN_ICONS, type BoardColumn, type BoardColumnIconKey } from '@/lib/shared/board';
 
 /**
  * Kanalname -> Icon + Kurzname (Design Book). Keine DB-Spalte: die 8
@@ -33,6 +50,65 @@ const CHANNELS: Record<string, { icon: LucideIcon; short: string }> = {
 
 export function channelIcon(name: string): LucideIcon | null {
   return CHANNELS[name.trim().toLowerCase()]?.icon ?? null;
+}
+
+/**
+ * Frei wählbare Kanal-Icons: Schlüssel (BOARD_COLUMN_ICONS, gespeichert in
+ * board_columns.icon) → Phosphor-Komponente. `Record<BoardColumnIconKey, …>`
+ * erzwingt Vollständigkeit — fehlt ein Schlüssel, bricht der Typecheck. Die
+ * Reihenfolge/Labels des Pickers kommen aus BOARD_COLUMN_ICONS (shared).
+ */
+const COLUMN_ICONS: Record<BoardColumnIconKey, LucideIcon> = {
+  megaphone: Megaphone,
+  globe: Globe,
+  pen: PenTool,
+  mic: Mic,
+  calendar: CalendarDays,
+  monitor: Monitor,
+  sparkles: Sparkles,
+  archive: Archive,
+  newspaper: Newspaper,
+  radio: Radio,
+  camera: Camera,
+  image: Image,
+  instagram: InstagramLogo,
+  mail: Mail,
+  message: MessageCircle,
+  flame: Flame,
+  star: Star,
+  heart: Heart,
+  award: Award,
+  crown: Crown,
+  radar: Radar,
+  map: MapPin,
+  users: Users,
+  tag: Tag,
+};
+
+export function columnIconByKey(key: string | null | undefined): LucideIcon | null {
+  return key ? (COLUMN_ICONS[key as BoardColumnIconKey] ?? null) : null;
+}
+
+/** Picker-Auswahl (Schlüssel + Label + Komponente) in Anzeige-Reihenfolge. */
+export const COLUMN_ICON_CHOICES: { key: BoardColumnIconKey; label: string; Icon: LucideIcon }[] =
+  BOARD_COLUMN_ICONS.map((c) => ({ key: c.key, label: c.label, Icon: COLUMN_ICONS[c.key] }));
+
+/**
+ * Effektives Spalten-Icon: explizit gewähltes Icon (column.icon) hat Vorrang,
+ * sonst das namensbasierte Kanal-Mapping (Rückwärtskompatibilität). null → nur
+ * der Farbkopf ohne Icon.
+ */
+export function ColumnIcon({
+  column,
+  className,
+  style,
+}: {
+  column: Pick<BoardColumn, 'icon' | 'name'>;
+  className?: string;
+  style?: CSSProperties;
+}) {
+  const icon = columnIconByKey(column.icon) ?? channelIcon(column.name);
+  return icon ? createElement(icon, { className, style }) : null;
 }
 
 export function channelShort(name: string): string {

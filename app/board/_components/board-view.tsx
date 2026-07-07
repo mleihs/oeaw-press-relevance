@@ -235,6 +235,8 @@ export function BoardView({
     patchColumnApi(id, { name }).then(invalidateBoard).catch((e: Error) => toast.error(e.message));
   const recolorColumn = (id: string, color: string) =>
     patchColumnApi(id, { color }).then(invalidateBoard).catch((e: Error) => toast.error(e.message));
+  const setColumnIcon = (id: string, icon: string | null) =>
+    patchColumnApi(id, { icon }).then(invalidateBoard).catch((e: Error) => toast.error(e.message));
   const deleteColumn = (id: string) =>
     deleteColumnApi(id).then(invalidateBoard).catch((e: Error) => toast.error(e.message));
 
@@ -387,6 +389,7 @@ export function BoardView({
                   onAddCard={() => setQuickCreateColumn(col.id)}
                   onRename={renameColumn}
                   onRecolor={recolorColumn}
+                  onSetIcon={setColumnIcon}
                   onMove={moveColumn}
                   onSort={sortColumn}
                   onHide={hideColumn}

@@ -23,6 +23,7 @@ import { UserManagementCard } from './_components/user-management-card';
 import { BoardManagementCard } from './_components/board-management-card';
 import { SocialSettingsCard } from './_components/social-settings-card';
 import { EventWeightsCard } from './_components/event-weights-card';
+import { ProfileCard } from './_components/profile-card';
 import { Save, CheckCircle2, Eye, EyeOff, Loader2, XCircle, ShieldCheck, Info, User, Keyboard, Sparkles } from '@/lib/icons';
 import { toast } from 'sonner';
 
@@ -119,6 +120,9 @@ export default function SettingsPage() {
           </p>
         </CardContent>
       </Card>
+
+      {/* Profilbild — Upload nach MinIO, erscheint auf Board-Avataren */}
+      <ProfileCard />
 
       {/* Display preferences */}
       <Card>

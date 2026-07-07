@@ -70,7 +70,13 @@ export const createColumnApi = (boardId: string, name: string, color?: string) =
   }).then((r) => r.column);
 export const patchColumnApi = (
   id: string,
-  patch: { name?: string; color?: string; before_id?: string | null; after_id?: string | null },
+  patch: {
+    name?: string;
+    color?: string;
+    icon?: string | null;
+    before_id?: string | null;
+    after_id?: string | null;
+  },
 ) => send<{ column: BoardColumn }>(`/api/board/columns/${id}`, 'PATCH', patch).then((r) => r.column);
 export const deleteColumnApi = (id: string) =>
   send<{ ok: true }>(`/api/board/columns/${id}`, 'DELETE');
