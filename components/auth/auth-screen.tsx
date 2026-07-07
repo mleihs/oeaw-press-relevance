@@ -441,8 +441,8 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
                     </span>
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-sm font-bold text-ink-soft">Persönlicher Login</span>
-                      <span className="inline-flex items-center gap-1 rounded-full bg-fill px-2 py-px font-mono text-2xs font-semibold uppercase tracking-wide text-ink-muted ring-1 ring-line-strong">
-                        <Info className="h-3 w-3" /> tba
+                      <span className="rounded-full bg-fill px-2 py-px font-mono text-2xs font-semibold uppercase tracking-wide text-ink-muted ring-1 ring-line-strong">
+                        tba
                       </span>
                     </div>
                   </div>
