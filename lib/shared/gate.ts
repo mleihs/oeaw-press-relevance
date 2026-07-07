@@ -10,7 +10,10 @@ export const GATE_COOKIE_NAME = 'gate';
 // Screen (AuthScreen am Gate) bietet den persönlichen Login VOR dem Gate an.
 // Die Route ist rate-limitiert und verlangt echte Supabase-Credentials;
 // bei Erfolg setzt sie das Gate-Cookie gleich mit (app/api/auth/login).
-const PUBLIC_PATHS = ['/api/auth/gate', '/api/auth/login', '/robots.txt', '/favicon.ico', '/icon.svg'];
+// /api/stats/landing ist gate-öffentlich: der Anmelde-Screen zeigt die drei
+// aggregierten Kennzahlen (bewertete Pubs / anstehende Events / PMs mit DOI)
+// VOR dem Gate. Nur unsensible count(*)-Werte, keine Auth-Logik.
+const PUBLIC_PATHS = ['/api/auth/gate', '/api/auth/login', '/api/stats/landing', '/robots.txt', '/favicon.ico', '/icon.svg'];
 const PUBLIC_PREFIXES = ['/_next/', '/capybara'];
 
 export function isPublicGatePath(pathname: string): boolean {
