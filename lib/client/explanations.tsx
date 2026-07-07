@@ -1856,9 +1856,10 @@ export const EXPL = {
     ),
     note: (
       <Para>
-        Ohne Likes in der älteren Fensterhälfte fehlt der Bezugswert, es wird
-        dann kein Chip angezeigt. Junge Posts hatten zudem weniger Zeit, Likes
-        zu sammeln; kleine Ausschläge nicht überbewerten.
+        Ohne Likes in der älteren Fensterhälfte fehlt der Bezugswert; dann steht
+        statt einer Prozentzahl ein „neu" (frisches Thema), nicht etwa ±0 %.
+        Junge Posts hatten zudem weniger Zeit, Likes zu sammeln; kleine
+        Ausschläge nicht überbewerten.
       </Para>
     ),
   },
