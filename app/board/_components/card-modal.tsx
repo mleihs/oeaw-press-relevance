@@ -65,7 +65,6 @@ import {
   CelebrationOverlay,
   CompletionBanner,
   fireCelebrationConfetti,
-  prefersReducedMotion,
 } from './celebration';
 import { AttachmentsSection } from './attachments-section';
 import { ReferencesSection } from './references-section';
@@ -167,7 +166,11 @@ export function CardModal({
   const contentRef = useRef<HTMLDivElement>(null);
   useEffect(() => () => window.clearTimeout(celebrateTimer.current), []);
   const celebrate = () => {
-    if (prefersReducedMotion()) return;
+    // Konfetti bleibt reduced-motion-gated (fireCelebrationConfetti self-guardt),
+    // aber das Badge-Overlay zeigen wir IMMER: unter „Bewegung reduzieren" friert
+    // globals.css die Keyframes auf den Endzustand → statisches grünes Häkchen-
+    // Badge. So bekommt auch ein Reduced-Motion-Nutzer eine Abschluss-Bestätigung
+    // statt gar nichts (vorher unterdrückte der Early-Return beides).
     void fireCelebrationConfetti(contentRef.current);
     setCelebrating(true);
     window.clearTimeout(celebrateTimer.current);

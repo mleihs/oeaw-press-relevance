@@ -28,6 +28,7 @@ import { ActiveFilters } from './active-filters';
 import { FilterSheet } from './filter-sheet';
 import { PresetBar } from './preset-bar';
 import { ShowAllToggle } from './show-all-toggle';
+import { SortDropdown } from './sort-dropdown';
 import { useLookups } from './use-lookups';
 
 interface Props {
@@ -214,18 +215,21 @@ export function FiltersBar({ total, hidden }: Props) {
           Show-All-Toggle/Filter-Sheet/Active-Filters bleiben Desktop (Mock hat
           sie nicht; via Chips gesetzte Filter sind am Chip selbst sichtbar). */}
       <div className="space-y-2.5 md:hidden">
-        <div className="flex h-10 items-center gap-2 rounded-[10px] border border-line-strong bg-surface px-[11px]">
-          <Search aria-hidden className="h-4 w-4 shrink-0 text-ink-muted" />
-          <label htmlFor="publications-search-mobile" className="sr-only">
-            Publikationen suchen
-          </label>
-          <input
-            id="publications-search-mobile"
-            value={searchInput}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            placeholder="Titel, Autor:in, Zusammenfassung…"
-            className="min-w-0 flex-1 border-none bg-transparent text-sm text-ink outline-none placeholder:text-ink-muted"
-          />
+        <div className="flex items-center gap-2">
+          <div className="flex h-10 flex-1 items-center gap-2 rounded-[10px] border border-line-strong bg-surface px-[11px]">
+            <Search aria-hidden className="h-4 w-4 shrink-0 text-ink-muted" />
+            <label htmlFor="publications-search-mobile" className="sr-only">
+              Publikationen suchen
+            </label>
+            <input
+              id="publications-search-mobile"
+              value={searchInput}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              placeholder="Titel, Autor:in, Zusammenfassung…"
+              className="min-w-0 flex-1 border-none bg-transparent text-sm text-ink outline-none placeholder:text-ink-muted"
+            />
+          </div>
+          <SortDropdown sort={filters.sort} order={filters.order} setFilters={setFilters} compact />
         </div>
         {/* x-scroll bis an den Viewport-Rand (main hat px-4) — Muster wie die
             Perioden-Chips des Mobile-Dashboards (M3). */}
@@ -295,6 +299,7 @@ export function FiltersBar({ total, hidden }: Props) {
               onChange={(v) => setFilters({ showAll: v, page: 1 })}
               hiddenCount={hidden}
             />
+            <SortDropdown sort={filters.sort} order={filters.order} setFilters={setFilters} />
             <FilterSheet filters={filters} setFilters={setFilters} lookups={lookups} />
           </div>
         </div>

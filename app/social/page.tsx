@@ -20,7 +20,11 @@ import { SocialDashboard } from './_components/social-dashboard';
 // or LLM work happens on view, so the page itself is free.
 export const dynamic = 'force-dynamic';
 
-export default async function SocialPage() {
+export default async function SocialPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ theme?: string | string[] }>;
+}) {
   const env = getEnv();
   const apifyConfigured = Boolean(env.APIFY_TOKEN);
 
@@ -48,6 +52,16 @@ export default async function SocialPage() {
     const pool = missing.length ? [...allPosts, ...(await getPostsByIds(missing))] : allPosts;
     themeItems = resolveThemePosts(snapshot.themes, pool);
   }
+
+  // Deep-Link vom Dashboard (?theme=<Name>): Thema per Name auf seinen Index
+  // auflösen (order-unabhängig, robuster als ein Index-Param). Kein Treffer →
+  // kein Fokus (harmlos, generelle Ansicht).
+  const themeParamRaw = (await searchParams)?.theme;
+  const themeParam = Array.isArray(themeParamRaw) ? themeParamRaw[0] : themeParamRaw;
+  const themeIdx = themeParam
+    ? themeItems.findIndex((t) => t.theme.theme === themeParam)
+    : -1;
+  const initialThemeKey = themeIdx >= 0 ? `theme-${themeIdx}` : null;
 
   return (
     <div className="space-y-6">
@@ -83,6 +97,7 @@ export default async function SocialPage() {
       ) : (
         <SocialDashboard
           themeItems={themeItems}
+          initialThemeKey={initialThemeKey}
           channels={channels}
           channelById={channelById}
           windowDays={env.SOCIAL_WINDOW_DAYS}

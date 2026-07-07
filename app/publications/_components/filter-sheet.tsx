@@ -70,7 +70,7 @@ export function FilterSheet({ filters, setFilters, lookups }: Props) {
         <SheetHeader className="sticky top-0 z-10 bg-background border-b px-5 py-4">
           <SheetTitle>Filter</SheetTitle>
           <SheetDescription className="sr-only">
-            Publikationen nach Score, Zeitraum, Typ und weiteren Kriterien filtern und sortieren.
+            Publikationen nach Score, Zeitraum, Typ und weiteren Kriterien filtern.
           </SheetDescription>
         </SheetHeader>
         <div className="px-5 py-5 space-y-6">

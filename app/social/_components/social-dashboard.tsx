@@ -33,6 +33,7 @@ export interface ThemeWithPosts {
 
 export function SocialDashboard({
   themeItems,
+  initialThemeKey = null,
   channels,
   channelById,
   windowDays,
@@ -40,6 +41,8 @@ export function SocialDashboard({
   briefing,
 }: {
   themeItems: ThemeWithPosts[];
+  /** Deep-Link-Fokus vom Dashboard (`theme-${i}`); seedet den Themen-Fokus. */
+  initialThemeKey?: string | null;
   channels: SocialChannelWithPosts[];
   channelById: Record<string, PostCardChannel>;
   windowDays: number;
@@ -55,8 +58,10 @@ export function SocialDashboard({
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [sort, setSort] = useState<SocialSort>('recent');
   const [range, setRange] = useState<number | null>(null); // time-range quick-filter (days); null = Alle
-  const [focusedThemeKey, setFocusedThemeKey] = useState<string | null>(null);
-  const [focusNonce, setFocusNonce] = useState(0); // bumps so re-clicking the same theme re-opens it
+  // Seed aus dem Deep-Link (?theme=): focusNonce=1, damit der Scroll-in-View-
+  // Effekt in GroupSection schon beim Mount feuert.
+  const [focusedThemeKey, setFocusedThemeKey] = useState<string | null>(initialThemeKey);
+  const [focusNonce, setFocusNonce] = useState(initialThemeKey ? 1 : 0); // bumps so re-clicking the same theme re-opens it
 
   // Tags are a disjunctive (OR) facet: a post matches if it carries ANY active
   // tag. Toggle is case-insensitive; the displayed casing is preserved.
