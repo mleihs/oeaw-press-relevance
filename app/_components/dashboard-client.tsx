@@ -12,6 +12,7 @@ import {
   Kanban,
   MessageCircle,
   Pin,
+  Sparkles,
   TrendingDown,
   TrendingUp,
 } from '@/lib/icons';
@@ -47,19 +48,6 @@ import { KeywordCloud } from './keyword-cloud';
 // Panels als ein System lesen. Tokens statt Hex (docs/DESIGN_SYSTEM.md §2).
 const CARD =
   'rounded-[14px] border border-line bg-surface shadow-[0_1px_2px_rgba(16,32,46,.05)]';
-
-function getTimeRangeLabel(period: DashboardPeriod): string {
-  switch (period) {
-    case 'week':
-      return 'Letzte 7 Tage';
-    case 'month':
-      return 'Letzte 2 Monate';
-    case 'year':
-      return 'Letztes Jahr';
-    case 'all':
-      return 'Alle Zeiträume';
-  }
-}
 
 function greetingFor(hour: number): string {
   if (hour < 5) return 'Gute Nacht';
@@ -196,36 +184,12 @@ export function DashboardClient({ data, period, sortBy, boardCards, socialData }
 
     {/* ── Desktop-Layer (≥ md) ─────────────────────────────────────────── */}
     <div className="hidden space-y-4 md:block">
-      {/* Header: Gruß + Perioden-Tabs */}
-      <div className="mb-1 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-ink">{greeting.line}</h1>
-          <p className="mt-1.5 text-sm text-ink-subtle">{subParts.join(' · ')}</p>
-        </div>
-        <div className="flex items-center gap-1.5">
-        <InfoBubble id="dashboard_time_range" size="sm" />
-        <nav
-          aria-label="Zeitraum"
-          className="flex gap-0.5 rounded-[9px] bg-fill p-[3px]"
-        >
-          {DASHBOARD_PERIODS.map((value) => (
-            // Native <a> statt Link: query-only-Navigation no-opt in diesem
-            // Next.js-Setup (bestehende Regression, s. Git-Historie).
-            <a
-              key={value}
-              href={buildDashboardHref({ period: value, topPubs: topPubsLimit, sortBy })}
-              aria-current={period === value ? 'page' : undefined}
-              className={`rounded-[7px] px-3 py-1.5 text-xs font-medium transition-colors ${
-                period === value
-                  ? 'bg-surface text-ink shadow-sm'
-                  : 'text-ink-subtle hover:text-ink'
-              }`}
-            >
-              {PERIOD_LABELS[value]}
-            </a>
-          ))}
-        </nav>
-        </div>
+      {/* Header: Gruß. Der Zeitraum-Umschalter lebt jetzt im Kopf der
+          Top-Storys-Kachel — er scoped nur diese Zeile (Row 3), nicht die
+          Stat-Kacheln, und wirkte im Seitenkopf fälschlich global. */}
+      <div className="mb-1">
+        <h1 className="text-2xl font-bold tracking-tight text-ink">{greeting.line}</h1>
+        <p className="mt-1.5 text-sm text-ink-subtle">{subParts.join(' · ')}</p>
       </div>
 
       {/* Row 1 — Social-Trends + Redaktionsboard (Design Toolkit-Redesign
@@ -233,7 +197,7 @@ export function DashboardClient({ data, period, sortBy, boardCards, socialData }
           angemeldet), nimmt die andere die volle Breite. */}
       {(socialData || boardCards) && (
         <div className={`grid items-stretch gap-4 ${socialData && boardCards ? 'lg:grid-cols-2' : ''}`}>
-          {socialData && <SocialTrendsTile data={socialData} />}
+          {socialData && <SocialTrendsTile data={socialData} fullWidth={!boardCards} />}
           {boardCards && <BoardTile cards={dueCards} overdueCount={overdueCount} />}
         </div>
       )}
@@ -242,18 +206,38 @@ export function DashboardClient({ data, period, sortBy, boardCards, socialData }
       <div className="grid items-start gap-4 lg:grid-cols-[1.6fr_1fr]">
         {/* Top-Storys */}
         <div className={`${CARD} overflow-hidden`}>
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-line px-[18px] pb-3 pt-4">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-2 border-b border-line px-[18px] pb-3 pt-4">
             <span className="text-[14.5px] font-semibold text-ink">Top-Storys</span>
-            <span className="text-xs text-ink-muted">
-              nach Story Score · {getTimeRangeLabel(period)} · ohne Pop-Science
-            </span>
+            <span className="text-xs text-ink-muted">nach Story Score · ohne Pop-Science</span>
             <InfoBubble id="top10_panel" size="sm" />
-            <span className="flex-1" />
             {topPubsTotal > topPubs.length && (
               <span className="font-mono text-xs text-ink-muted">
-                {topPubsTotal.toLocaleString('de-AT')} im Pool
+                · {topPubsTotal.toLocaleString('de-AT')} im Pool
               </span>
             )}
+            <span className="flex-1" />
+            {/* Zeitraum-Umschalter — scoped Top-Storys + die Analytik rechts. */}
+            <div className="flex items-center gap-1.5">
+              <InfoBubble id="dashboard_time_range" size="sm" />
+              <nav aria-label="Zeitraum" className="flex gap-0.5 rounded-[9px] bg-fill p-[3px]">
+                {DASHBOARD_PERIODS.map((value) => (
+                  // Native <a> statt Link: query-only-Navigation no-opt in
+                  // diesem Next.js-Setup (bestehende Regression, s. Git-Historie).
+                  <a
+                    key={value}
+                    href={buildDashboardHref({ period: value, topPubs: topPubsLimit, sortBy })}
+                    aria-current={period === value ? 'page' : undefined}
+                    className={`rounded-[7px] px-2.5 py-1 text-xs font-medium transition-colors ${
+                      period === value
+                        ? 'bg-surface text-ink shadow-sm'
+                        : 'text-ink-subtle hover:text-ink'
+                    }`}
+                  >
+                    {PERIOD_LABELS[value]}
+                  </a>
+                ))}
+              </nav>
+            </div>
           </div>
           <div className="px-2 py-2">
             {topPubs.length > 0 ? (
@@ -362,30 +346,6 @@ export function DashboardClient({ data, period, sortBy, boardCards, socialData }
         Gruß trägt der blaue App-Header oben (M2); Score-Verteilung hat der
         Mobile-Mock bewusst nicht. */}
     <div className="space-y-3.5 md:hidden">
-      {/* Perioden-Chips, x-scroll bis an den Viewport-Rand (main hat px-4) */}
-      <nav
-        aria-label="Zeitraum"
-        className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-      >
-        <div className="flex min-w-max gap-[7px]">
-          {DASHBOARD_PERIODS.map((value) => (
-            // Native <a> statt Link — wie bei den Desktop-Tabs oben.
-            <a
-              key={value}
-              href={buildDashboardHref({ period: value, topPubs: topPubsLimit, sortBy })}
-              aria-current={period === value ? 'page' : undefined}
-              className={`shrink-0 whitespace-nowrap rounded-lg px-[13px] py-[7px] text-xs font-semibold transition-colors ${
-                period === value
-                  ? 'bg-brand text-white'
-                  : 'border border-line bg-surface text-ink-subtle'
-              }`}
-            >
-              {PERIOD_LABELS[value]}
-            </a>
-          ))}
-        </div>
-      </nav>
-
       {/* Board-Kachel (wie Desktop, Karte trägt Fälliges + „Zum Board") */}
       {boardCards && <BoardTile cards={dueCards} overdueCount={overdueCount} />}
 
@@ -417,6 +377,31 @@ export function DashboardClient({ data, period, sortBy, boardCards, socialData }
           label="für Triage geflaggt"
         />
       </div>
+
+      {/* Zeitraum-Chips — direkt über Top-Storys, weil sie nur diese Liste
+          scopen (nicht die Stat-Kacheln darüber). x-scroll bis Viewport-Rand. */}
+      <nav
+        aria-label="Zeitraum"
+        className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        <div className="flex min-w-max gap-[7px]">
+          {DASHBOARD_PERIODS.map((value) => (
+            // Native <a> statt Link — wie bei den Desktop-Tabs.
+            <a
+              key={value}
+              href={buildDashboardHref({ period: value, topPubs: topPubsLimit, sortBy })}
+              aria-current={period === value ? 'page' : undefined}
+              className={`shrink-0 whitespace-nowrap rounded-lg px-[13px] py-[7px] text-xs font-semibold transition-colors ${
+                period === value
+                  ? 'bg-brand text-white'
+                  : 'border border-line bg-surface text-ink-subtle'
+              }`}
+            >
+              {PERIOD_LABELS[value]}
+            </a>
+          ))}
+        </div>
+      </nav>
 
       {/* Top-Storys, kompakte Zeilen (Rang · Titel/Meta · Score) */}
       <div className={`${CARD} overflow-hidden`}>
@@ -601,31 +586,20 @@ function ThemeSparkline({ theme }: { theme: SocialDashboardTheme }) {
   );
 }
 
-function SocialTrendsTile({ data }: { data: SocialDashboardData }) {
+function SocialTrendsTile({ data, fullWidth }: { data: SocialDashboardData; fullWidth?: boolean }) {
   const topAccent = data.top_post ? socialAccent(data.top_post.accent_index) : null;
-  return (
-    <div className={`${CARD} flex flex-col overflow-hidden`}>
-      <div className="flex items-center gap-[11px] border-b border-line bg-[linear-gradient(120deg,#fbf1ff,#eef4ff_52%,#eafaf4)] px-4 pb-[13px] pt-[15px] dark:bg-none">
-        <span className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[10px] bg-[linear-gradient(135deg,#7a3ab4,#c13584_52%,#f0842e)] text-white shadow-[0_3px_10px_rgba(193,53,132,.32)]">
-          <InstagramLogo weight="fill" className="h-[19px] w-[19px]" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <div className="text-sm font-bold tracking-tight text-ink">Social-Media-Trends</div>
-          <div className="mt-px font-mono text-2xs text-[#9a7fb5]">
-            Instagram · {data.channel_count} Kanäle · {data.window_days} Tage
-          </div>
-        </div>
-        <DeltaChip pct={data.delta_pct} />
-        <InfoBubble id="social_momentum" size="sm" />
-      </div>
+  // Voll-Breite (kein angemeldeter ÖAW-Nutzer → keine Board-Kachel daneben) +
+  // vorhandenes Lagebild → die rechte Hälfte trägt das KI-Narrativ statt Luft.
+  const showBriefing = !!fullWidth && !!data.narrative;
 
-      <div className="flex-1 px-2.5 pb-1 pt-2">
-        <div className="px-1.5 pb-[7px] pt-0.5 font-mono text-3xs font-semibold uppercase tracking-wider text-ink-muted">
-          Trend-Themen
-        </div>
-        {/* Alle Themen mit internem Scrollbalken (wie die Kanäle im Board):
-            max-Höhe deckelt die Kachel, die Liste scrollt darin. */}
-        <div className="max-h-[196px] overflow-y-auto">
+  const themesBlock = (
+    <div className="flex-1 px-2.5 pb-1 pt-2">
+      <div className="px-1.5 pb-[7px] pt-0.5 font-mono text-3xs font-semibold uppercase tracking-wider text-ink-muted">
+        Trend-Themen
+      </div>
+      {/* Alle Themen mit internem Scrollbalken (wie die Kanäle im Board):
+          max-Höhe deckelt die Kachel, die Liste scrollt darin. */}
+      <div className={showBriefing ? 'max-h-[248px] overflow-y-auto' : 'max-h-[196px] overflow-y-auto'}>
         {data.themes.map((t) => {
           const accent = socialAccent(t.accent_index);
           return (
@@ -648,43 +622,76 @@ function SocialTrendsTile({ data }: { data: SocialDashboardData }) {
             </Link>
           );
         })}
+      </div>
+    </div>
+  );
+
+  const topPostBlock = data.top_post && (
+    <div className="mx-2.5 mb-2.5 border-t border-line pt-2">
+      <div className="px-1.5 pb-1.5 font-mono text-3xs font-semibold uppercase tracking-wider text-ink-muted">
+        Stärkster Post
+      </div>
+      <Link
+        href="/social"
+        className="flex items-center gap-[11px] rounded-[10px] px-1.5 py-2 transition-colors hover:bg-canvas"
+      >
+        <span
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-white ${topAccent?.avatar ?? 'bg-brand'}`}
+        >
+          <InstagramLogo weight="fill" className="h-[18px] w-[18px]" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-xs font-semibold leading-[1.3] text-ink">
+            {data.top_post.topic}
+          </div>
+          <div className="mt-0.5 font-mono text-2xs text-ink-muted">
+            {data.top_post.handle}
+          </div>
         </div>
+        <div className="flex shrink-0 flex-col items-end gap-0.5">
+          <span className="inline-flex items-center gap-1 font-mono text-xs font-semibold text-[#e1306c]">
+            <Heart weight="fill" className="h-[13px] w-[13px]" />
+            {formatCompact(data.top_post.likes)}
+          </span>
+          <span className="inline-flex items-center gap-1 font-mono text-2xs text-ink-muted">
+            <MessageCircle className="h-[11px] w-[11px]" />
+            {data.top_post.comments.toLocaleString('de-AT')}
+          </span>
+        </div>
+      </Link>
+    </div>
+  );
+
+  return (
+    <div className={`${CARD} flex flex-col overflow-hidden`}>
+      <div className="flex items-center gap-[11px] border-b border-line bg-[linear-gradient(120deg,#fbf1ff,#eef4ff_52%,#eafaf4)] px-4 pb-[13px] pt-[15px] dark:bg-none">
+        <span className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[10px] bg-[linear-gradient(135deg,#7a3ab4,#c13584_52%,#f0842e)] text-white shadow-[0_3px_10px_rgba(193,53,132,.32)]">
+          <InstagramLogo weight="fill" className="h-[19px] w-[19px]" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="text-sm font-bold tracking-tight text-ink">Social-Media-Trends</div>
+          <div className="mt-px font-mono text-2xs text-[#9a7fb5]">
+            Instagram · {data.channel_count} Kanäle · {data.window_days} Tage
+          </div>
+        </div>
+        <DeltaChip pct={data.delta_pct} />
+        <InfoBubble id="social_momentum" size="sm" />
       </div>
 
-      {data.top_post && (
-        <div className="mx-2.5 mb-2.5 border-t border-line pt-2">
-          <div className="px-1.5 pb-1.5 font-mono text-3xs font-semibold uppercase tracking-wider text-ink-muted">
-            Stärkster Post
+      {showBriefing ? (
+        // Voll-Breite: links Themen/Top-Post, rechts das Lagebild-Panel.
+        <div className="grid flex-1 lg:grid-cols-2">
+          <div className="flex min-w-0 flex-col lg:border-r lg:border-line">
+            {themesBlock}
+            {topPostBlock}
           </div>
-          <Link
-            href="/social"
-            className="flex items-center gap-[11px] rounded-[10px] px-1.5 py-2 transition-colors hover:bg-canvas"
-          >
-            <span
-              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-white ${topAccent?.avatar ?? 'bg-brand'}`}
-            >
-              <InstagramLogo weight="fill" className="h-[18px] w-[18px]" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-xs font-semibold leading-[1.3] text-ink">
-                {data.top_post.topic}
-              </div>
-              <div className="mt-0.5 font-mono text-2xs text-ink-muted">
-                {data.top_post.handle}
-              </div>
-            </div>
-            <div className="flex shrink-0 flex-col items-end gap-0.5">
-              <span className="inline-flex items-center gap-1 font-mono text-xs font-semibold text-[#e1306c]">
-                <Heart weight="fill" className="h-[13px] w-[13px]" />
-                {formatCompact(data.top_post.likes)}
-              </span>
-              <span className="inline-flex items-center gap-1 font-mono text-2xs text-ink-muted">
-                <MessageCircle className="h-[11px] w-[11px]" />
-                {data.top_post.comments.toLocaleString('de-AT')}
-              </span>
-            </div>
-          </Link>
+          <BriefingPanel narrative={data.narrative!} channelCount={data.channel_count} windowDays={data.window_days} />
         </div>
+      ) : (
+        <>
+          {themesBlock}
+          {topPostBlock}
+        </>
       )}
 
       <Link
@@ -695,6 +702,48 @@ function SocialTrendsTile({ data }: { data: SocialDashboardData }) {
         <span className="flex-1" />
         <ArrowRight className="h-3.5 w-3.5" />
       </Link>
+    </div>
+  );
+}
+
+/** Rechte Hälfte der Voll-Breite-Kachel: das KI-Lagebild grafisch ausgespielt
+ *  (Gradient + Sparkle wie die /social-Briefing-Karte, hier als hohes Panel).
+ *  Deckt sich in Begriff und Optik mit dem „Lagebild" auf /social. */
+function BriefingPanel({
+  narrative,
+  channelCount,
+  windowDays,
+}: {
+  narrative: string;
+  channelCount: number;
+  windowDays: number;
+}) {
+  return (
+    <div className="relative flex min-w-0 flex-col gap-3 overflow-hidden border-t border-line bg-gradient-to-br from-brand-50 to-surface-muted p-5 lg:border-t-0 dark:from-brand-500/10 dark:to-transparent">
+      {/* Dekoratives, stark abgeblendetes Sparkle als Flächen-Akzent. */}
+      <Sparkles
+        aria-hidden
+        weight="fill"
+        className="pointer-events-none absolute -right-5 -top-5 h-28 w-28 text-brand-500/[0.07] dark:text-brand-300/[0.06]"
+      />
+      <div className="relative flex items-center gap-2">
+        <span
+          aria-hidden
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-brand-500 text-white shadow-[0_4px_12px_rgba(0,71,187,.28)]"
+        >
+          <Sparkles className="h-4 w-4" weight="fill" />
+        </span>
+        <p className="flex flex-wrap items-center gap-1.5 text-sm font-bold text-brand-700 dark:text-brand-300">
+          Lagebild
+          <span className="rounded-full bg-surface px-2 py-px font-mono text-2xs font-medium text-brand-400 dark:bg-brand-500/15 dark:text-brand-300">
+            KI-Zusammenfassung
+          </span>
+        </p>
+      </div>
+      <p className="relative text-sm leading-relaxed text-foreground/90">{narrative}</p>
+      <div className="relative mt-auto pt-1 font-mono text-2xs text-ink-muted">
+        {channelCount} Kanäle · {windowDays} Tage
+      </div>
     </div>
   );
 }

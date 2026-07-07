@@ -44,6 +44,10 @@ export interface SocialDashboardData {
   delta_pct: number | null;
   themes: SocialDashboardTheme[];
   top_post: SocialDashboardTopPost | null;
+  /** KI-Lagebild-Narrativ des letzten Snapshots (null ohne Zusammenfassung).
+   *  Das Dashboard zeigt es in der Voll-Breite-Variante der Kachel (kein
+   *  angemeldeter ÖAW-Nutzer → keine Board-Kachel → freie rechte Hälfte). */
+  narrative: string | null;
 }
 
 const SPARK_BUCKETS = 6;
@@ -146,6 +150,7 @@ async function computeSocialDashboardData(): Promise<SocialDashboardData | null>
     window_days: windowDays,
     channel_count: channels.length,
     delta_pct: momentumPct(pool, windowStart, windowMs),
+    narrative: snapshot.narrative_de?.trim() || null,
     themes,
     top_post: top
       ? {
