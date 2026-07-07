@@ -20,9 +20,16 @@ const SNOW_OPTIONS: ISourceOptions = {
   particles: {
     number: { value: 130, density: { enable: true } },
     color: { value: '#ffffff' },
-    opacity: { value: { min: 0.25, max: 0.95 } },
-    // Tiefe: kleine ferne bis große nahe Flocken (größer, User-Wunsch).
-    size: { value: { min: 2, max: 8.5 } },
+    // „Schmelzen" auf dem Weg (User-Wunsch): über die Lebenszeit verblassen…
+    opacity: {
+      value: { min: 0, max: 0.95 },
+      animation: { enable: true, speed: 0.4, startValue: 'max', destroy: 'min', sync: false },
+    },
+    // …und schrumpfen. Tiefe: kleine ferne bis große nahe Flocken.
+    size: {
+      value: { min: 0.5, max: 8.5 },
+      animation: { enable: true, speed: 1.8, startValue: 'max', destroy: 'none', sync: false },
+    },
     move: { speed: { min: 1, max: 3.4 }, straight: false },
     // Seitliches Treiben für lebendigen Fall.
     wobble: { enable: true, distance: 14, speed: { min: -8, max: 8 } },
