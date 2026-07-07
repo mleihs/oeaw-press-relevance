@@ -649,8 +649,11 @@
    bei Hover: kein Dauer-Geflacker in der Arbeits-Nav. */
 @keyframes ice-nav-fall {
   0% { transform: translateY(-7px) scale(1); opacity: 0; }
-  15% { opacity: .95; }
-  100% { transform: translateY(24px) scale(.35); opacity: 0; }
+  18% { opacity: .9; }
+  /* schmilzt auf dem Weg weg: schrumpft + verblendet sanft, verschwindet
+     schon in der Luft (nicht erst am Rand). */
+  70% { opacity: .35; }
+  100% { transform: translateY(24px) scale(.25); opacity: 0; }
 }
 .ice-nav-flake { position: absolute; top: 0; line-height: 1; pointer-events: none; opacity: 0;
   color: #eaf3ff; text-shadow: 0 0 4px rgba(180, 210, 255, .7); }
