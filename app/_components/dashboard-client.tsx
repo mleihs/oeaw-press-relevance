@@ -206,20 +206,30 @@ export function DashboardClient({ data, period, sortBy, boardCards, socialData }
       <div className="grid items-start gap-4 lg:grid-cols-[1.6fr_1fr]">
         {/* Top-Storys */}
         <div className={`${CARD} overflow-hidden`}>
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-2 border-b border-line px-[18px] pb-3 pt-4">
-            <span className="text-[14.5px] font-semibold text-ink">Top-Storys</span>
-            <span className="text-xs text-ink-muted">nach Story Score · ohne Pop-Science</span>
-            <InfoBubble id="top10_panel" size="sm" />
-            {topPubsTotal > topPubs.length && (
-              <span className="font-mono text-xs text-ink-muted">
-                · {topPubsTotal.toLocaleString('de-AT')} im Pool
-              </span>
-            )}
+          {/* Kopf im Stil der Social-/Board-Kacheln: warmer Verlauf + Icon-
+              Quadrat. BookOpen (= Publikationen-Nav-Icon) + „Publikationen" im
+              Untertitel machen unmissverständlich, dass hier Publikationen
+              ranken — „Top-Storys" bleibt als redaktioneller Name. Bernstein
+              als Akzent, weil das die Story-Score-Farbe hoher Werte ist. */}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-line bg-[linear-gradient(120deg,#fff7ed,#fffdf7_52%,#fef4ee)] px-4 pb-[13px] pt-[15px] dark:bg-none">
+            <span className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[10px] bg-[linear-gradient(135deg,#f59e0b,#e8590c)] text-white shadow-[0_3px_10px_rgba(234,88,12,.28)]">
+              <BookOpen className="h-[19px] w-[19px]" weight="duotone" />
+            </span>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm font-bold tracking-tight text-ink">Top-Storys</span>
+                <InfoBubble id="top10_panel" size="sm" />
+              </div>
+              <div className="mt-px font-mono text-2xs text-[#b3762b] dark:text-amber-300/80">
+                Publikationen nach Story Score
+                {topPubsTotal > topPubs.length && ` · ${topPubsTotal.toLocaleString('de-AT')} im Pool`}
+              </div>
+            </div>
             <span className="flex-1" />
             {/* Zeitraum-Umschalter — scoped Top-Storys + die Analytik rechts. */}
             <div className="flex items-center gap-1.5">
               <InfoBubble id="dashboard_time_range" size="sm" />
-              <nav aria-label="Zeitraum" className="flex gap-0.5 rounded-[9px] bg-fill p-[3px]">
+              <nav aria-label="Zeitraum" className="flex gap-0.5 rounded-[9px] bg-surface/70 p-[3px] shadow-sm dark:bg-fill">
                 {DASHBOARD_PERIODS.map((value) => (
                   // Native <a> statt Link: query-only-Navigation no-opt in
                   // diesem Next.js-Setup (bestehende Regression, s. Git-Historie).
@@ -405,12 +415,16 @@ export function DashboardClient({ data, period, sortBy, boardCards, socialData }
 
       {/* Top-Storys, kompakte Zeilen (Rang · Titel/Meta · Score) */}
       <div className={`${CARD} overflow-hidden`}>
-        <div className="flex items-center gap-2 border-b border-line px-[15px] pb-[11px] pt-3.5">
-          <span className="text-sm font-semibold text-ink">Top-Storys</span>
-          <span className="flex-1" />
-          <span className="font-mono text-2xs text-ink-muted">
-            {topPubsTotal.toLocaleString('de-AT')} im Pool
+        <div className="flex items-center gap-2.5 border-b border-line bg-[linear-gradient(120deg,#fff7ed,#fffdf7_52%,#fef4ee)] px-[15px] pb-[11px] pt-3 dark:bg-none">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] bg-[linear-gradient(135deg,#f59e0b,#e8590c)] text-white shadow-[0_3px_10px_rgba(234,88,12,.28)]">
+            <BookOpen className="h-[17px] w-[17px]" weight="duotone" />
           </span>
+          <div className="min-w-0 flex-1">
+            <div className="text-sm font-bold tracking-tight text-ink">Top-Storys</div>
+            <div className="mt-px font-mono text-2xs text-[#b3762b] dark:text-amber-300/80">
+              Publikationen · {topPubsTotal.toLocaleString('de-AT')} im Pool
+            </div>
+          </div>
         </div>
         <div className="px-[7px] pb-[7px] pt-[5px]">
           {topPubs.length > 0 ? (
