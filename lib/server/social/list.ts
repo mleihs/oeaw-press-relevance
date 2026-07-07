@@ -35,6 +35,9 @@ const POSTS_PER_CHANNEL = 24;
  */
 export async function listChannelsWithRecentPosts(
   globalDefaultDays: number,
+  /** Fenster-Anker (ms); Default = jetzt. Das Dashboard übergibt den
+   *  Snapshot-Zeitpunkt — Begründung bei isWithinDays (social-filter). */
+  asOfMs?: number,
 ): Promise<SocialChannelWithPosts[]> {
   const rows = await db.query.socialChannels.findMany({
     where: eq(socialChannels.active, true),
@@ -50,7 +53,7 @@ export async function listChannelsWithRecentPosts(
   return rows.map((row) => {
     const days = effectiveLookbackDays(row.lookbackDays, globalDefaultDays);
     const posts = (row.socialPosts ?? [])
-      .filter((p) => withinLookback(p.postedAt, days))
+      .filter((p) => withinLookback(p.postedAt, days, asOfMs))
       .map(socialPostToApi);
     return { ...socialChannelToApi(row), posts };
   });

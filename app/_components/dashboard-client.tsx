@@ -616,6 +616,7 @@ function SocialTrendsTile({ data }: { data: SocialDashboardData }) {
           </div>
         </div>
         <DeltaChip pct={data.delta_pct} />
+        <InfoBubble id="social_momentum" size="sm" />
       </div>
 
       <div className="flex-1 px-2.5 pb-1 pt-2">
