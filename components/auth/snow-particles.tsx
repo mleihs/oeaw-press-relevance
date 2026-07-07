@@ -21,8 +21,8 @@ const SNOW_OPTIONS: ISourceOptions = {
     number: { value: 130, density: { enable: true } },
     color: { value: '#ffffff' },
     opacity: { value: { min: 0.25, max: 0.95 } },
-    // Tiefe: kleine ferne bis große nahe Flocken.
-    size: { value: { min: 1, max: 5.5 } },
+    // Tiefe: kleine ferne bis große nahe Flocken (größer, User-Wunsch).
+    size: { value: { min: 2, max: 8.5 } },
     move: { speed: { min: 1, max: 3.4 }, straight: false },
     // Seitliches Treiben für lebendigen Fall.
     wobble: { enable: true, distance: 14, speed: { min: -8, max: 8 } },

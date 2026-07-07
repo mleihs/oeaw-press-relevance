@@ -827,7 +827,7 @@ function FrostOverlay() {
           style={
             {
               left: f.l,
-              fontSize: f.s,
+              fontSize: f.s * 1.6,
               lineHeight: 1,
               animationDelay: `${f.dl}s`,
               '--sdur': `${f.d}s`,
@@ -838,14 +838,14 @@ function FrostOverlay() {
           {f.g}
         </span>
       ))}
-      {/* Stationär funkelnde Kristalle */}
-      <span className="ice-sparkle absolute text-white" style={{ top: '18%', left: '22%', fontSize: 13 }}>❄</span>
-      <span className="ice-sparkle absolute text-white" style={{ top: '58%', left: '9%', fontSize: 9, animationDelay: '.7s' }}>✦</span>
-      <span className="ice-sparkle absolute text-white" style={{ top: '34%', right: '13%', fontSize: 11, animationDelay: '1.4s' }}>❄</span>
-      <span className="ice-sparkle absolute text-white" style={{ top: '78%', right: '20%', fontSize: 13, animationDelay: '.4s' }}>❆</span>
-      <span className="ice-sparkle absolute text-white" style={{ top: '48%', left: '56%', fontSize: 8, animationDelay: '2s' }}>✦</span>
-      <span className="ice-sparkle absolute text-white" style={{ top: '24%', left: '68%', fontSize: 10, animationDelay: '1.1s' }}>❄</span>
-      <span className="ice-sparkle absolute text-white" style={{ top: '68%', left: '40%', fontSize: 9, animationDelay: '2.6s' }}>✦</span>
+      {/* Stationär funkelnde Kristalle (größer, User-Wunsch) */}
+      <span className="ice-sparkle absolute text-white" style={{ top: '17%', left: '21%', fontSize: 22 }}>❄</span>
+      <span className="ice-sparkle absolute text-white" style={{ top: '58%', left: '8%', fontSize: 15, animationDelay: '.7s' }}>✦</span>
+      <span className="ice-sparkle absolute text-white" style={{ top: '33%', right: '12%', fontSize: 19, animationDelay: '1.4s' }}>❄</span>
+      <span className="ice-sparkle absolute text-white" style={{ top: '77%', right: '18%', fontSize: 23, animationDelay: '.4s' }}>❆</span>
+      <span className="ice-sparkle absolute text-white" style={{ top: '47%', left: '55%', fontSize: 13, animationDelay: '2s' }}>✦</span>
+      <span className="ice-sparkle absolute text-white" style={{ top: '23%', left: '67%', fontSize: 17, animationDelay: '1.1s' }}>❄</span>
+      <span className="ice-sparkle absolute text-white" style={{ top: '67%', left: '39%', fontSize: 15, animationDelay: '2.6s' }}>✦</span>
     </div>
   );
 }
