@@ -604,6 +604,17 @@
 }
 .auth-float { animation: auth-float 5s ease-in-out infinite; }
 
+/* „Neu im Programm"-Haiku (components/auth/auth-screen.tsx HaikuRotator): eine
+   poetische Erscheinung im blauen Freiraum. Pro ZEILE ein Durchlauf, mit
+   gestaffeltem animation-delay → die drei Zeilen tauchen nacheinander weich aus
+   dem Hintergrund auf (Blur + sanftes Aufsteigen), halten, faden wieder aus. */
+@keyframes auth-haiku-line {
+  0%   { opacity: 0; transform: translateY(9px); filter: blur(6px); }
+  16%  { opacity: .6; transform: translateY(0); filter: blur(0); }
+  72%  { opacity: .6; transform: translateY(0); filter: blur(0); }
+  100% { opacity: 0; transform: translateY(-7px); filter: blur(6px); }
+}
+
 /* Marken-Intro-Overlay (components/auth/auth-screen.tsx BootOverlay): kurzer
    Aufbau beim Laden, blendet zum Ende hin aus und wird dann ausgehängt. */
 @keyframes auth-boot {

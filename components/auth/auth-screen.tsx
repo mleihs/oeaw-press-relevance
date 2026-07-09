@@ -23,7 +23,6 @@ import {
   RadioButton,
   Send,
   Snowflake,
-  Sparkles,
 } from '@/lib/icons';
 
 /**
@@ -1008,38 +1007,35 @@ function BootOverlay() {
 /** Dezentes Ambient-Fade der neuesten hoch bewerteten Titel im Freiraum des
  *  Brandpanels: crossfadet alle ~5 s zum nächsten Titel (Opacity-Transition).
  *  Nur Titel (kein Score) — pre-Gate. */
+/** Ambient-Haiku im blauen Freiraum: ein Haiku taucht weich aus dem Hintergrund
+ *  auf, hält kurz, faedet wieder aus, dann das nächste. Ohne Überschrift — eine
+ *  poetische Erscheinung, kein Kachel-Element. `key={i}` startet die Breath-
+ *  Animation bei jedem Wechsel neu; das Intervall ist auf ihre Dauer getaktet. */
 function HaikuRotator({ haikus }: { haikus: string[] }) {
   const [i, setI] = useState(0);
   useEffect(() => {
     if (haikus.length < 2) return;
-    const t = setInterval(() => setI((n) => (n + 1) % haikus.length), 5600);
+    const t = setInterval(() => setI((n) => (n + 1) % haikus.length), 10000);
     return () => clearInterval(t);
   }, [haikus.length]);
 
+  const lines = (haikus[i] ?? '').split('/').map((l) => l.trim()).filter(Boolean);
   return (
-    <div className="w-[34ch] text-right">
-      <div className="mb-2 inline-flex items-center gap-1.5 font-mono text-2xs font-medium uppercase tracking-[.15em] text-[#9cc0ff]/85">
-        <Sparkles weight="fill" className="h-3 w-3" />
-        Neu im Programm
-      </div>
-      <div className="relative h-[4.6em]">
-        {haikus.map((h, idx) => (
-          <p
-            key={idx}
-            aria-hidden={idx !== i}
-            className={`absolute inset-x-0 bottom-0 text-[17px] font-medium italic leading-snug tracking-tight text-white/90 transition-opacity duration-1000 ${
-              idx === i ? 'opacity-100' : 'opacity-0'
-            }`}
-          >
-            {h.split('/').map((line, li) => (
-              <span key={li} className="block whitespace-nowrap">
-                {line.trim()}
-              </span>
-            ))}
-          </p>
-        ))}
-      </div>
-    </div>
+    <p
+      key={i}
+      aria-hidden
+      className="text-[22px] font-light italic leading-[1.6] tracking-tight text-white"
+    >
+      {lines.map((line, li) => (
+        <span
+          key={li}
+          className="block whitespace-nowrap"
+          style={{ animation: 'auth-haiku-line 8s ease-in-out both', animationDelay: `${li * 0.7}s` }}
+        >
+          {line}
+        </span>
+      ))}
+    </p>
   );
 }
 
@@ -1096,6 +1092,19 @@ function BrandPanel() {
         <span className="text-[19px] font-semibold tracking-tight">ÖAW Presse</span>
       </div>
 
+      {/* „Neu im Programm"-Haiku: poetische Erscheinung im blauen Freiraum —
+          taucht sanft aus dem Hintergrund auf und faedet wieder aus. Ohne
+          Überschrift, nur das Haiku (gate-öffentlich, kein Score/Titel-Leak). */}
+      {stats?.hotHaikus && stats.hotHaikus.length > 0 && (
+        // Rechts oben unter dem Ring-Motiv im blauen Freiraum, rechtsbündig.
+        // Freistehend + absolut → bei zu kleinem Panel überlappt es den Claim-
+        // Block, daher NUR bei genug Breite UND Höhe zeigen (sonst weg), damit
+        // „Aus Forschung wird Geschichte"/„Press Relevance Toolkit" frei bleibt.
+        <div className="pointer-events-none absolute right-[70px] top-[248px] z-[5] hidden text-right xl:[@media(min-height:800px)]:block">
+          <HaikuRotator haikus={stats.hotHaikus} />
+        </div>
+      )}
+
 
       <div className="relative mt-auto">
         <div className="mb-5 font-mono text-xs font-medium uppercase tracking-[.16em] text-[#9cc0ff]">
@@ -1108,13 +1117,6 @@ function BrandPanel() {
           Publikationen bewerten, Veranstaltungen kuratieren, Social-Media-Lagebilder lesen und
           alles im Redaktionsboard zusammenführen.
         </p>
-        {/* „Neu im Programm": Haiku der höchstbewerteten Neuzugänge, rechtsbündig
-            überm Kennzahlen-Band (3 Zeilen, poetische Verdichtung des Inhalts). */}
-        {stats?.hotHaikus && stats.hotHaikus.length > 0 && (
-          <div className="mt-7 hidden justify-end lg:flex">
-            <HaikuRotator haikus={stats.hotHaikus} />
-          </div>
-        )}
         <div className="mt-8 flex gap-6">
           <BrandStat value={fmt(stats?.scoredPublications)} label="Bewertete Publikationen" />
           <div className="w-px bg-white/20" />
