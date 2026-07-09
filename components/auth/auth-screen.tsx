@@ -57,7 +57,7 @@ const GATE_REMEMBER_KEY = 'oeaw:gate-remember';
 // gemerktem Passwort ein Auto-Login-Countdown mit Abbrechen (nie ungefragt),
 // sonst das normale Formular. Best-Practice-Muster „auto-resume with cancel".
 const BOOT_MS = 1300;
-const AUTO_MS = 3000;
+const AUTO_MS = 6000;
 
 /** Nur same-origin-Pfade als Redirect-Ziel akzeptieren: führender `/`,
  *  danach weder `/` noch `\` — URL-Parser normalisieren `\` zu `/`,
@@ -1017,17 +1017,17 @@ function HotPubsRotator({ titles }: { titles: string[] }) {
   }, [titles.length]);
 
   return (
-    <div className="max-w-[24ch] text-right">
+    <div className="max-w-[25ch] text-right">
       <div className="mb-2 inline-flex items-center gap-1.5 font-mono text-2xs font-medium uppercase tracking-[.15em] text-[#9cc0ff]/85">
         <Sparkles weight="fill" className="h-3 w-3" />
         Neu im Programm
       </div>
-      <div className="relative h-[3.4em]">
+      <div className="relative h-[4.6em]">
         {titles.map((t, idx) => (
           <p
             key={idx}
             aria-hidden={idx !== i}
-            className={`absolute inset-x-0 bottom-0 line-clamp-2 text-[18px] font-semibold leading-snug tracking-tight text-white/90 transition-opacity duration-1000 ${
+            className={`absolute inset-x-0 bottom-0 line-clamp-3 text-[18px] font-semibold leading-snug tracking-tight text-white/90 transition-opacity duration-1000 ${
               idx === i ? 'opacity-100' : 'opacity-0'
             }`}
           >
@@ -1092,6 +1092,7 @@ function BrandPanel() {
         <span className="text-[19px] font-semibold tracking-tight">ÖAW Presse</span>
       </div>
 
+
       <div className="relative mt-auto">
         <div className="mb-5 font-mono text-xs font-medium uppercase tracking-[.16em] text-[#9cc0ff]">
           Press Relevance Toolkit
@@ -1103,8 +1104,8 @@ function BrandPanel() {
           Publikationen bewerten, Veranstaltungen kuratieren, Social-Media-Lagebilder lesen und
           alles im Redaktionsboard zusammenführen.
         </p>
-        {/* Kennzahlen-Band; „Neu im Programm"-Rotator sitzt rechtsbündig als
-            viertes Element mit derselben Unterkante (bündig, nicht schwebend). */}
+        {/* Kennzahlen-Band; „Neu im Programm"-Rotator (3-zeilig) sitzt rechtsbündig
+            als viertes Element mit derselben Unterkante. */}
         <div className="mt-8 flex items-end justify-between gap-8">
           <div className="flex shrink-0 gap-6">
             <BrandStat value={fmt(stats?.scoredPublications)} label="Bewertete Publikationen" />

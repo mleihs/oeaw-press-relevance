@@ -6,7 +6,10 @@ import { db } from '@/lib/server/db';
 /**
  * Drei Kennzahlen fürs Marken-Panel des Anmelde-Screens. Bewusst die
  * AUSSAGEKRÄFTIGEN Zahlen, nicht die Rohbestände:
- *  - bewertete Publikationen (mit Press-Score), nicht der WebDB-Gesamtimport,
+ *  - bewertete Publikationen = die KANONISCHE press_eligible_publications-Sicht
+ *    (analysiert, nicht archiviert, kein ITA-Subtree, keine Pop-Science, presse-
+ *    tauglicher Typ) — dieselbe Scope-Definition wie Publikationen/Dashboard,
+ *    NICHT ein roher press_score-Count (der ITA/Theses/archivierte mitzählte),
  *  - anstehende Veranstaltungen (in der Zukunft), nicht alle je importierten,
  *  - Pressemeldungen mit DOI (also solche, die eine Publikation referenzieren).
  *
@@ -31,7 +34,7 @@ async function computeLandingStats(): Promise<LandingStats> {
     press: number;
   }>(sql`
     SELECT
-      (SELECT count(*) FROM publications WHERE press_score IS NOT NULL)::int AS scored,
+      (SELECT count(*) FROM press_eligible_publications)::int AS scored,
       (SELECT count(*) FROM events WHERE event_at >= now())::int AS upcoming,
       (SELECT count(*) FROM press_releases WHERE doi IS NOT NULL AND doi <> '')::int AS press
   `);

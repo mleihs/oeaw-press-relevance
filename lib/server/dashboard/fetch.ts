@@ -129,11 +129,18 @@ async function getWebdbAsOf(): Promise<string | null> {
 }
 
 async function getStats(defaultEligible: boolean): Promise<DashboardStats> {
-  const [base, similarityBuckets] = await Promise.all([
+  const [base, similarityBuckets, eligibleRows] = await Promise.all([
     fetchPublicationDashboardStats(defaultEligible),
     getSimilarityDistribution(),
+    // „analysiert"-Kachel auf die KANONISCHE press_eligible_publications-Sicht
+    // angleichen — dieselbe Zahl wie der Titelscreen und Publikationen. Der rohe
+    // `analyzed` aus publication_dashboard_stats zählt ITA-Subtree + Pop-Science
+    // mit und wich daher ab (Titelscreen 7.444 vs. Dashboard 7.9xx). Nur die
+    // Kachel „N analysiert · X % des Bestands" nutzt stats.analyzed.
+    db.execute<{ n: number }>(sql`SELECT count(*)::int AS n FROM press_eligible_publications`),
   ]);
-  return { ...base, similarity_distribution: similarityBuckets };
+  const analyzed = eligibleRows[0]?.n ?? base.analyzed;
+  return { ...base, analyzed, similarity_distribution: similarityBuckets };
 }
 
 // Eligible-pub counts for all four dashboard periods in ONE conditional-
