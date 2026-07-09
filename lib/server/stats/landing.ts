@@ -17,10 +17,10 @@ export interface LandingStats {
   scoredPublications: number;
   upcomingEvents: number;
   pressReleasesWithDoi: number;
-  /** Titel der neuesten hoch bewerteten Publikationen fürs Ambient-Fade im
-   *  Login-Brandpanel. BEWUSST nur Titel (kein Score): der Endpoint ist
-   *  gate-öffentlich, die interne Wertung soll nicht vor dem Gate leaken.
-   *  Titel = bereits veröffentlichte Forschung, unkritisch. */
+  /** Titel der höchstbewerteten NEU IM PROGRAMM (letzte 2 Wochen importiert)
+   *  fürs Ambient-Fade im Login-Brandpanel. BEWUSST nur Titel (kein Score): der
+   *  Endpoint ist gate-öffentlich, die interne Wertung soll nicht vor dem Gate
+   *  leaken. Titel = bereits veröffentlichte Forschung, unkritisch. */
   hotPublications: string[];
 }
 
@@ -37,17 +37,18 @@ async function computeLandingStats(): Promise<LandingStats> {
   `);
   const r = rows[0];
 
-  // Die 40 höchstbewerteten Pubs, davon die 6 NEUESTEN → „neueste heiße".
+  // „Neu im Programm": die höchstbewerteten Pubs, die in den letzten 2 Wochen
+  // importiert wurden (created_at). ITA-Subtree ausgeschlossen — identisch zum
+  // exclude_ita-Filter unter Publikationen/Dashboard (is_ita_subtree = false).
   const hot = await db.execute<{ title: string }>(sql`
-    SELECT title FROM (
-      SELECT title, published_at
-      FROM publications
-      WHERE press_score IS NOT NULL AND title IS NOT NULL AND btrim(title) <> ''
-      ORDER BY press_score DESC
-      LIMIT 40
-    ) t
-    ORDER BY published_at DESC NULLS LAST
-    LIMIT 6
+    SELECT title
+    FROM publications
+    WHERE press_score IS NOT NULL
+      AND title IS NOT NULL AND btrim(title) <> ''
+      AND is_ita_subtree = false
+      AND created_at >= now() - interval '14 days'
+    ORDER BY press_score DESC
+    LIMIT 8
   `);
 
   return {

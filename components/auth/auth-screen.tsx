@@ -56,8 +56,8 @@ const GATE_REMEMBER_KEY = 'oeaw:gate-remember';
 // Kurze, bewusste Marken-Aufbauphase beim Laden (immer). Danach: bei
 // gemerktem Passwort ein Auto-Login-Countdown mit Abbrechen (nie ungefragt),
 // sonst das normale Formular. Best-Practice-Muster „auto-resume with cancel".
-const BOOT_MS = 780;
-const AUTO_MS = 1700;
+const BOOT_MS = 1300;
+const AUTO_MS = 3000;
 
 /** Nur same-origin-Pfade als Redirect-Ziel akzeptieren: führender `/`,
  *  danach weder `/` noch `\` — URL-Parser normalisieren `\` zu `/`,
@@ -365,7 +365,7 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
                   <p className="mb-4 text-xs leading-relaxed text-ink-subtle">
                     Derzeit der reguläre Weg ins Toolkit. Das gemeinsame Passwort öffnet alle
                     Bereiche{' '}
-                    <span className="font-semibold text-ink-soft">außer das Redaktionsboard</span>.
+                    <span className="text-ink-soft">außer das Redaktionsboard</span>.
                   </p>
 
                   {gateError && (
@@ -1017,10 +1017,10 @@ function HotPubsRotator({ titles }: { titles: string[] }) {
   }, [titles.length]);
 
   return (
-    <div className="max-w-[30ch]">
+    <div className="max-w-[30ch] text-right">
       <div className="mb-2 inline-flex items-center gap-1.5 font-mono text-2xs font-medium uppercase tracking-[.15em] text-[#9cc0ff]/85">
         <Sparkles weight="fill" className="h-3 w-3" />
-        Frisch &amp; hoch bewertet
+        Neu im Programm
       </div>
       <div className="relative h-[3.4em]">
         {titles.map((t, idx) => (
@@ -1092,10 +1092,11 @@ function BrandPanel() {
         <span className="text-[19px] font-semibold tracking-tight">ÖAW Presse</span>
       </div>
 
-      {/* Freiraum: die neuesten hoch bewerteten Titel dezent ein-/ausfaden
-          (nur Titel, kein Score — der Endpoint ist gate-öffentlich). */}
+      {/* „Neu im Programm": höchstbewertete Titel der letzten 2 Wochen dezent
+          ein-/ausfaden, rechts unten im Freiraum überm Kennzahlen-Band (nur
+          Titel, kein Score — der Endpoint ist gate-öffentlich). */}
       {stats?.hotPublications && stats.hotPublications.length > 0 && (
-        <div className="relative mt-auto">
+        <div className="absolute bottom-[124px] right-[56px] z-10 hidden max-w-[46%] xl:block">
           <HotPubsRotator titles={stats.hotPublications} />
         </div>
       )}
