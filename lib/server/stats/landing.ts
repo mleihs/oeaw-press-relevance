@@ -20,11 +20,12 @@ export interface LandingStats {
   scoredPublications: number;
   upcomingEvents: number;
   pressReleasesWithDoi: number;
-  /** Titel der höchstbewerteten NEU IM PROGRAMM (letzte 2 Wochen importiert)
-   *  fürs Ambient-Fade im Login-Brandpanel. BEWUSST nur Titel (kein Score): der
-   *  Endpoint ist gate-öffentlich, die interne Wertung soll nicht vor dem Gate
-   *  leaken. Titel = bereits veröffentlichte Forschung, unkritisch. */
-  hotPublications: string[];
+  /** Haikus der höchstbewerteten NEU IM PROGRAMM (letzte 2 Wochen importiert)
+   *  fürs Ambient-Fade im Login-Brandpanel. BEWUSST nur das Haiku (kein Score,
+   *  kein Titel): der Endpoint ist gate-öffentlich; das Haiku ist eine poetische
+   *  Verdichtung des (öffentlichen) Inhalts und leakt keine interne Wertung.
+   *  Format „5 / 7 / 5" mit „/"-Trennern — die UI rendert drei Zeilen. */
+  hotHaikus: string[];
 }
 
 async function computeLandingStats(): Promise<LandingStats> {
@@ -40,17 +41,17 @@ async function computeLandingStats(): Promise<LandingStats> {
   `);
   const r = rows[0];
 
-  // „Neu im Programm": die höchstbewerteten Pubs, die in den letzten 2 Wochen
-  // importiert wurden (created_at). ITA-Subtree ausgeschlossen — identisch zum
-  // exclude_ita-Filter unter Publikationen/Dashboard (is_ita_subtree = false).
-  const hot = await db.execute<{ title: string }>(sql`
-    SELECT title
-    FROM publications
-    WHERE press_score IS NOT NULL
-      AND title IS NOT NULL AND btrim(title) <> ''
-      AND is_ita_subtree = false
-      AND created_at >= now() - interval '14 days'
-    ORDER BY press_score DESC
+  // „Neu im Programm": Haikus der höchstbewerteten Pubs, die in den letzten 2
+  // Wochen importiert wurden (created_at) — auf die kanonische eligibility-Sicht
+  // gejoint (kein ITA/Pop-Science/archiviert/untauglicher Typ), damit identisch
+  // zur Titelscreen-Zahl gescopt.
+  const hot = await db.execute<{ haiku: string }>(sql`
+    SELECT p.haiku
+    FROM publications p
+    JOIN press_eligible_publications e ON e.id = p.id
+    WHERE p.created_at >= now() - interval '14 days'
+      AND p.haiku IS NOT NULL AND btrim(p.haiku) <> ''
+    ORDER BY p.press_score DESC
     LIMIT 8
   `);
 
@@ -58,7 +59,7 @@ async function computeLandingStats(): Promise<LandingStats> {
     scoredPublications: Number(r?.scored ?? 0),
     upcomingEvents: Number(r?.upcoming ?? 0),
     pressReleasesWithDoi: Number(r?.press ?? 0),
-    hotPublications: [...hot].map((h) => h.title).filter(Boolean),
+    hotHaikus: [...hot].map((h) => h.haiku).filter(Boolean),
   };
 }
 
