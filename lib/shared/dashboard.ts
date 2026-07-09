@@ -12,7 +12,7 @@
 // Kachel erscheint (Desktop + Mobile). Bei `false` wird die Abfrage in
 // app/page.tsx übersprungen (socialData = null) und die Kachel nirgends
 // gerendert; das Voll-Breite-Layout der Board-Kachel greift dann automatisch.
-export const DASHBOARD_SOCIAL_ENABLED = false;
+export const DASHBOARD_SOCIAL_ENABLED = true;
 
 // Breadth order is load-bearing: week (7d) ⊂ month (2 Mon) ⊂ year (1 J) ⊂
 // all. `buildPeriodHint` slices this array to find the periods *wider* than

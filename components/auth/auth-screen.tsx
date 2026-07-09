@@ -23,7 +23,6 @@ import {
   RadioButton,
   Send,
   Snowflake,
-  Sparkles,
 } from '@/lib/icons';
 
 /**
@@ -56,8 +55,8 @@ const GATE_REMEMBER_KEY = 'oeaw:gate-remember';
 // Kurze, bewusste Marken-Aufbauphase beim Laden (immer). Danach: bei
 // gemerktem Passwort ein Auto-Login-Countdown mit Abbrechen (nie ungefragt),
 // sonst das normale Formular. Best-Practice-Muster „auto-resume with cancel".
-const BOOT_MS = 780;
-const AUTO_MS = 1700;
+const BOOT_MS = 1300;
+const AUTO_MS = 6000;
 
 /** Nur same-origin-Pfade als Redirect-Ziel akzeptieren: führender `/`,
  *  danach weder `/` noch `\` — URL-Parser normalisieren `\` zu `/`,
@@ -365,7 +364,7 @@ export function AuthScreen({ variant }: { variant: 'gate' | 'login' }) {
                   <p className="mb-4 text-xs leading-relaxed text-ink-subtle">
                     Derzeit der reguläre Weg ins Toolkit. Das gemeinsame Passwort öffnet alle
                     Bereiche{' '}
-                    <span className="font-semibold text-ink-soft">außer das Redaktionsboard</span>.
+                    <span className="text-ink-soft">außer das Redaktionsboard</span>.
                   </p>
 
                   {gateError && (
@@ -1008,34 +1007,35 @@ function BootOverlay() {
 /** Dezentes Ambient-Fade der neuesten hoch bewerteten Titel im Freiraum des
  *  Brandpanels: crossfadet alle ~5 s zum nächsten Titel (Opacity-Transition).
  *  Nur Titel (kein Score) — pre-Gate. */
-function HotPubsRotator({ titles }: { titles: string[] }) {
+/** Ambient-Haiku im blauen Freiraum: ein Haiku taucht weich aus dem Hintergrund
+ *  auf, hält kurz, faedet wieder aus, dann das nächste. Ohne Überschrift — eine
+ *  poetische Erscheinung, kein Kachel-Element. `key={i}` startet die Breath-
+ *  Animation bei jedem Wechsel neu; das Intervall ist auf ihre Dauer getaktet. */
+function HaikuRotator({ haikus }: { haikus: string[] }) {
   const [i, setI] = useState(0);
   useEffect(() => {
-    if (titles.length < 2) return;
-    const t = setInterval(() => setI((n) => (n + 1) % titles.length), 5200);
+    if (haikus.length < 2) return;
+    const t = setInterval(() => setI((n) => (n + 1) % haikus.length), 10000);
     return () => clearInterval(t);
-  }, [titles.length]);
+  }, [haikus.length]);
 
+  const lines = (haikus[i] ?? '').split('/').map((l) => l.trim()).filter(Boolean);
   return (
-    <div className="max-w-[30ch]">
-      <div className="mb-2 inline-flex items-center gap-1.5 font-mono text-2xs font-medium uppercase tracking-[.15em] text-[#9cc0ff]/85">
-        <Sparkles weight="fill" className="h-3 w-3" />
-        Frisch &amp; hoch bewertet
-      </div>
-      <div className="relative h-[3.4em]">
-        {titles.map((t, idx) => (
-          <p
-            key={idx}
-            aria-hidden={idx !== i}
-            className={`absolute inset-x-0 top-0 line-clamp-2 text-[18px] font-semibold leading-snug tracking-tight text-white/90 transition-opacity duration-1000 ${
-              idx === i ? 'opacity-100' : 'opacity-0'
-            }`}
-          >
-            „{t}"
-          </p>
-        ))}
-      </div>
-    </div>
+    <p
+      key={i}
+      aria-hidden
+      className="text-[22px] font-light italic leading-[1.6] tracking-tight text-white"
+    >
+      {lines.map((line, li) => (
+        <span
+          key={li}
+          className="block whitespace-nowrap"
+          style={{ animation: 'auth-haiku-line 8s ease-in-out both', animationDelay: `${li * 0.7}s` }}
+        >
+          {line}
+        </span>
+      ))}
+    </p>
   );
 }
 
@@ -1048,7 +1048,7 @@ function BrandPanel() {
     scoredPublications: number;
     upcomingEvents: number;
     pressReleasesWithDoi: number;
-    hotPublications?: string[];
+    hotHaikus?: string[];
   } | null>(null);
   useEffect(() => {
     let alive = true;
@@ -1092,13 +1092,19 @@ function BrandPanel() {
         <span className="text-[19px] font-semibold tracking-tight">ÖAW Presse</span>
       </div>
 
-      {/* Freiraum: die neuesten hoch bewerteten Titel dezent ein-/ausfaden
-          (nur Titel, kein Score — der Endpoint ist gate-öffentlich). */}
-      {stats?.hotPublications && stats.hotPublications.length > 0 && (
-        <div className="relative mt-auto">
-          <HotPubsRotator titles={stats.hotPublications} />
+      {/* „Neu im Programm"-Haiku: poetische Erscheinung im blauen Freiraum —
+          taucht sanft aus dem Hintergrund auf und faedet wieder aus. Ohne
+          Überschrift, nur das Haiku (gate-öffentlich, kein Score/Titel-Leak). */}
+      {stats?.hotHaikus && stats.hotHaikus.length > 0 && (
+        // Rechts oben unter dem Ring-Motiv im blauen Freiraum, rechtsbündig.
+        // Freistehend + absolut → bei zu kleinem Panel überlappt es den Claim-
+        // Block, daher NUR bei genug Breite UND Höhe zeigen (sonst weg), damit
+        // „Aus Forschung wird Geschichte"/„Press Relevance Toolkit" frei bleibt.
+        <div className="pointer-events-none absolute right-[70px] top-[248px] z-[5] hidden text-right xl:[@media(min-height:800px)]:block">
+          <HaikuRotator haikus={stats.hotHaikus} />
         </div>
       )}
+
 
       <div className="relative mt-auto">
         <div className="mb-5 font-mono text-xs font-medium uppercase tracking-[.16em] text-[#9cc0ff]">
