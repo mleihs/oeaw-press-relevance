@@ -1017,7 +1017,7 @@ function HotPubsRotator({ titles }: { titles: string[] }) {
   }, [titles.length]);
 
   return (
-    <div className="max-w-[30ch] text-right">
+    <div className="max-w-[24ch] text-right">
       <div className="mb-2 inline-flex items-center gap-1.5 font-mono text-2xs font-medium uppercase tracking-[.15em] text-[#9cc0ff]/85">
         <Sparkles weight="fill" className="h-3 w-3" />
         Neu im Programm
@@ -1027,7 +1027,7 @@ function HotPubsRotator({ titles }: { titles: string[] }) {
           <p
             key={idx}
             aria-hidden={idx !== i}
-            className={`absolute inset-x-0 top-0 line-clamp-2 text-[18px] font-semibold leading-snug tracking-tight text-white/90 transition-opacity duration-1000 ${
+            className={`absolute inset-x-0 bottom-0 line-clamp-2 text-[18px] font-semibold leading-snug tracking-tight text-white/90 transition-opacity duration-1000 ${
               idx === i ? 'opacity-100' : 'opacity-0'
             }`}
           >
@@ -1092,15 +1092,6 @@ function BrandPanel() {
         <span className="text-[19px] font-semibold tracking-tight">ÖAW Presse</span>
       </div>
 
-      {/* „Neu im Programm": höchstbewertete Titel der letzten 2 Wochen dezent
-          ein-/ausfaden, rechts unten im Freiraum überm Kennzahlen-Band (nur
-          Titel, kein Score — der Endpoint ist gate-öffentlich). */}
-      {stats?.hotPublications && stats.hotPublications.length > 0 && (
-        <div className="absolute bottom-[124px] right-[56px] z-10 hidden max-w-[46%] xl:block">
-          <HotPubsRotator titles={stats.hotPublications} />
-        </div>
-      )}
-
       <div className="relative mt-auto">
         <div className="mb-5 font-mono text-xs font-medium uppercase tracking-[.16em] text-[#9cc0ff]">
           Press Relevance Toolkit
@@ -1112,12 +1103,21 @@ function BrandPanel() {
           Publikationen bewerten, Veranstaltungen kuratieren, Social-Media-Lagebilder lesen und
           alles im Redaktionsboard zusammenführen.
         </p>
-        <div className="mt-8 flex gap-6">
-          <BrandStat value={fmt(stats?.scoredPublications)} label="Bewertete Publikationen" />
-          <div className="w-px bg-white/20" />
-          <BrandStat value={fmt(stats?.upcomingEvents)} label="Anstehende Veranstaltungen" />
-          <div className="w-px bg-white/20" />
-          <BrandStat value={fmt(stats?.pressReleasesWithDoi)} label="Pressemeldungen mit DOI" />
+        {/* Kennzahlen-Band; „Neu im Programm"-Rotator sitzt rechtsbündig als
+            viertes Element mit derselben Unterkante (bündig, nicht schwebend). */}
+        <div className="mt-8 flex items-end justify-between gap-8">
+          <div className="flex shrink-0 gap-6">
+            <BrandStat value={fmt(stats?.scoredPublications)} label="Bewertete Publikationen" />
+            <div className="w-px bg-white/20" />
+            <BrandStat value={fmt(stats?.upcomingEvents)} label="Anstehende Veranstaltungen" />
+            <div className="w-px bg-white/20" />
+            <BrandStat value={fmt(stats?.pressReleasesWithDoi)} label="Pressemeldungen mit DOI" />
+          </div>
+          {stats?.hotPublications && stats.hotPublications.length > 0 && (
+            <div className="hidden min-w-0 xl:block">
+              <HotPubsRotator titles={stats.hotPublications} />
+            </div>
+          )}
         </div>
       </div>
 
