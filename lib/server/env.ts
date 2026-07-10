@@ -133,6 +133,22 @@ const Schema = z.object({
   // Dauer/Views); der Eigenkanal-Picker braucht Key + Kanal-ID.
   YOUTUBE_API_KEY: z.string().min(1).optional(),
   YOUTUBE_CHANNEL_ID: z.string().regex(/^UC[\w-]{22}$/, 'YouTube-Kanal-IDs beginnen mit UC').optional(),
+
+  // Sentry error monitoring. All optional / fail-open: with no DSN the SDK
+  // initialises disabled and every capture is a no-op, so local dev + CI need
+  // no Sentry account. `SENTRY_DSN` is the server/edge DSN; the client reads
+  // `NEXT_PUBLIC_SENTRY_DSN` (validated by Next's public-env inlining, not
+  // here). `SENTRY_ENVIRONMENT` distinguishes the two deploy targets
+  // (Vercel vs Coolify) in the Sentry UI; `SENTRY_RELEASE` falls back to the
+  // platform Git-SHA. The `AUTH_TOKEN`/`ORG`/`PROJECT` trio is build-time only
+  // (source-map upload via withSentryConfig) — kept here so a stray value
+  // fails schema-shape, not so the app reads them at runtime.
+  SENTRY_DSN: z.string().min(1).optional(),
+  SENTRY_ENVIRONMENT: z.string().min(1).optional(),
+  SENTRY_RELEASE: z.string().min(1).optional(),
+  SENTRY_AUTH_TOKEN: z.string().min(1).optional(),
+  SENTRY_ORG: z.string().min(1).optional(),
+  SENTRY_PROJECT: z.string().min(1).optional(),
 });
 
 type Normalized = Record<string, string | undefined>;

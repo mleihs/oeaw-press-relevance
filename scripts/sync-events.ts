@@ -26,6 +26,7 @@
 // outside the repo.
 
 import { loadDbUrl, parseScriptArgs, confirmProd, redactedDatabaseUrl } from './lib/db.mjs';
+import { initScriptSentry, captureScriptError, flushAndExit } from './lib/sentry.mjs';
 
 const { target, flags } = parseScriptArgs();
 const isProd = target === 'prod';
@@ -34,6 +35,7 @@ const isProd = target === 'prod';
 //    .env.local. process.loadEnvFile preserves any value already set in
 //    process.env (shell vars win) — that matches the rest of the project.
 process.loadEnvFile('.env.local');
+initScriptSentry('sync-events');
 
 // 2) Target switch: for prod we hard-override DATABASE_URL with the value
 //    from the prod-credentials file, beating any shell-level shadow.
@@ -67,5 +69,6 @@ async function main(): Promise<void> {
 
 main().catch((err: unknown) => {
   console.error('[sync-events] failed:', err);
-  process.exit(1);
+  captureScriptError(err);
+  void flushAndExit(1);
 });

@@ -2,6 +2,7 @@
 
 import { ApiErrorCard } from '@/components/api-error-card';
 import { Button } from '@/components/ui/button';
+import { useReportError } from '@/components/use-report-error';
 
 /**
  * Shared body for the route-segment `error.tsx` boundaries (press-releases,
@@ -19,6 +20,7 @@ export function RouteError({
   reset: () => void;
   title?: string;
 }) {
+  useReportError(error);
   return (
     <div className="space-y-4">
       <ApiErrorCard

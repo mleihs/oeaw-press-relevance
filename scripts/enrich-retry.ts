@@ -15,7 +15,10 @@
 //   npx tsx scripts/enrich-retry.ts --status=partial                  # all
 //   npx tsx scripts/enrich-retry.ts --status=failed --since=2026-01-01 --max=5
 
+import { initScriptSentry, captureScriptError, flushAndExit } from './lib/sentry.mjs';
+
 process.loadEnvFile('.env.local');
+initScriptSentry('enrich-retry');
 
 const log = (...a: unknown[]) =>
   console.log(new Date().toISOString().slice(11, 19), ...a);
@@ -94,7 +97,8 @@ async function main() {
 
 main().catch((e) => {
   console.error(e);
-  process.exit(1);
+  captureScriptError(e);
+  void flushAndExit(1);
 });
 
 export {}; // module scope — keeps the top-level `log` out of the global namespace

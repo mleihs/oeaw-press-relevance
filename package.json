@@ -43,6 +43,8 @@
     "@schedule-x/events-service": "4.6.0",
     "@schedule-x/react": "4.1.0",
     "@schedule-x/theme-default": "4.6.0",
+    "@sentry/nextjs": "^10.65.0",
+    "@sentry/node": "^10.65.0",
     "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.105.1",
     "@tanstack/react-query": "^5.100.9",

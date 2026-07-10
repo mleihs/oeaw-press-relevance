@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { useReportError } from '@/components/use-report-error';
 import { AlertTriangle } from '@/lib/icons';
 
 // Global error boundary for the App Router. Replaces the default Next.js
@@ -14,6 +15,7 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  useReportError(error);
   useEffect(() => {
     console.error('[error.tsx]', error);
   }, [error]);
