@@ -34,13 +34,30 @@ ENV NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL} \
     NEXT_PUBLIC_SENTRY_ENVIRONMENT=${NEXT_PUBLIC_SENTRY_ENVIRONMENT} \
     NODE_ENV=production
 
-# Sentry source-map upload (withSentryConfig) needs the auth token + org/project
-# at build time. Declared as ARGs (Coolify passes is_buildtime vars as
-# --build-arg) and used INLINE on the build RUN so the secret never persists in
-# an image layer. Absent => withSentryConfig skips the upload, build stays green.
+# Sentry source-map upload (withSentryConfig, runs inside `next build`) needs the
+# auth token + org/project. Coolify passes is_buildtime vars as --build-arg;
+# promote them to ENV *in the builder stage only* so `next build` sees them
+# reliably. The runner stage below starts FROM a fresh base (multi-stage), so the
+# org:ci-scoped token — which can only upload source maps / create releases,
+# never read data — never reaches the final image; it lives solely in the
+# discarded builder. This is deliberately more robust than inline `${VAR}` on the
+# RUN (whose expansion silently yielded no upload) and lets the guard below
+# assert presence.
 ARG SENTRY_AUTH_TOKEN
 ARG SENTRY_ORG
 ARG SENTRY_PROJECT
+ENV SENTRY_AUTH_TOKEN=${SENTRY_AUTH_TOKEN} \
+    SENTRY_ORG=${SENTRY_ORG} \
+    SENTRY_PROJECT=${SENTRY_PROJECT}
+
+# Fail-loud, not silent no-op: without these creds the build still succeeds but
+# ships minified production stack traces. Make the state unmissable in the log
+# (never prints the token itself — length only).
+RUN if [ -n "$SENTRY_AUTH_TOKEN" ] && [ -n "$SENTRY_ORG" ] && [ -n "$SENTRY_PROJECT" ]; then \
+      echo "[sentry] build creds present (token ${#SENTRY_AUTH_TOKEN} chars, org=$SENTRY_ORG, project=$SENTRY_PROJECT) -> source maps will upload"; \
+    else \
+      echo "[sentry] WARNING: build creds MISSING -> source maps will NOT upload; production client stacks stay minified"; \
+    fi
 
 # `npm run build` runs the `prebuild` hook (fumadocs-mdx codegen -> .source/)
 # then `next build` (type-checking on; ignoreBuildErrors:false).
@@ -53,9 +70,6 @@ RUN DATABASE_URL=postgresql://build:build@127.0.0.1:5432/build \
     SUPABASE_SERVICE_ROLE_KEY=build-placeholder \
     GATE_PASSWORD=build-placeholder \
     GATE_TOKEN=build-placeholder \
-    SENTRY_AUTH_TOKEN=${SENTRY_AUTH_TOKEN} \
-    SENTRY_ORG=${SENTRY_ORG} \
-    SENTRY_PROJECT=${SENTRY_PROJECT} \
     npm run build
 
 # ---- Runner (standalone) ----
