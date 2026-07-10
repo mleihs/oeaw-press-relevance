@@ -1,6 +1,6 @@
 // TYPO3-events JSON-export adapter. Pure transform: parses the grouped JSON
 // export that OeAW/Florian publishes (Redmine #4165,
-// https://wwwt2.oeaw.ac.at/fileadmin/exports/event_news_grouped.json) into the
+// https://www.oeaw.ac.at/fileadmin/exports/event_news_grouped.json) into the
 // same NormalizedEvent shape the WEBDB-MySQL adapter (./typo3-events) produces,
 // so both feed the identical UPSERT in lib/server/events/sync.ts.
 //

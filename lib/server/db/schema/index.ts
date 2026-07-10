@@ -7,6 +7,7 @@
  *  scripts/check-schema-drift.mjs scannt dieses Verzeichnis. */
 
 export * from "./auth";
+export * from "./ingest";
 export * from "./webdb";
 export * from "./publications";
 export * from "./press-releases";
