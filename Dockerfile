@@ -11,6 +11,14 @@ FROM node:24-bookworm-slim AS base
 ENV NEXT_TELEMETRY_DISABLED=1
 WORKDIR /app
 
+# The -slim base omits the system CA bundle. Node ships its own (so npm works),
+# but sentry-cli (Rust, uses the OS trust store) needs it to verify TLS when
+# uploading source maps to Sentry during `next build`. Without it the upload
+# fails with "[60] unable to get local issuer certificate" and production client
+# stack traces stay minified. Installed in `base` so deps + builder inherit it.
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
 # ---- Dependencies (cached on package*.json) ----
 FROM base AS deps
 COPY package.json package-lock.json ./
