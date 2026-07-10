@@ -9,9 +9,11 @@
 
 import { readFileSync } from 'node:fs';
 import { loadDbUrl, parseScriptArgs } from './lib/db.mjs';
+import { initScriptSentry, captureScriptError, flushAndExit } from './lib/sentry.mjs';
 
 const { target, flags } = parseScriptArgs();
 process.loadEnvFile('.env.local');
+initScriptSentry('apply-event-scores');
 process.env.DATABASE_URL = loadDbUrl(target);
 
 const fileFlag = flags.find((f) => f.startsWith('--file='));
@@ -75,5 +77,6 @@ async function main(): Promise<void> {
 
 main().catch((err: unknown) => {
   console.error('[apply-event-scores] failed:', err);
-  process.exit(1);
+  captureScriptError(err);
+  void flushAndExit(1);
 });

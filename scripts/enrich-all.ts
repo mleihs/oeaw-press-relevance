@@ -13,8 +13,12 @@
 //   npm run enrich-all -- --max=20        # bounded smoke test
 
 // .env.local must load BEFORE the server modules (env validation +
-// DATABASE_URL) — hence the dynamic imports after loadEnvFile().
+// DATABASE_URL) — hence the dynamic imports after loadEnvFile(). The Sentry
+// bootstrap is a plain external lib (no env read at import), so it's static.
+import { initScriptSentry, captureScriptError, flushAndExit } from './lib/sentry.mjs';
+
 process.loadEnvFile('.env.local');
+initScriptSentry('enrich-all');
 
 const log = (...a: unknown[]) =>
   console.log(new Date().toISOString().slice(11, 19), ...a);
@@ -94,7 +98,8 @@ async function main() {
 
 main().catch((e) => {
   console.error(e);
-  process.exit(1);
+  captureScriptError(e);
+  void flushAndExit(1);
 });
 
 export {}; // module scope — keeps the top-level `log` out of the global namespace

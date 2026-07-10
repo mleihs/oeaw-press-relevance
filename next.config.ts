@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import { createMDX } from "fumadocs-mdx/next";
+import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
   // Self-hosting (Coolify/Docker): emit a minimal standalone server bundle at
@@ -58,4 +59,26 @@ const nextConfig: NextConfig = {
 // Wires the fumadocs-mdx codegen plugin into the Next build/dev pipeline.
 const withMDX = createMDX();
 
-export default withMDX(nextConfig);
+/**
+ * Sentry build wrapper. Two jobs: inject the client/server SDK and upload
+ * source maps so production stack traces are un-minified.
+ *
+ * - Source-map upload only happens when `SENTRY_AUTH_TOKEN` + org/project are
+ *   present, so local builds and token-less CI stay green (withSentryConfig is
+ *   a no-op for uploads without a token).
+ * - `tunnelRoute` proxies browser → Sentry through our own origin, which dodges
+ *   ad-blockers and keeps the request same-origin (no CSP connect-src change:
+ *   the CSP above never restricts connect-src/script-src).
+ * - `silent` keeps the build log clean; `widenClientFileUpload` maps more of
+ *   the client bundle.
+ */
+export default withSentryConfig(withMDX(nextConfig), {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: !process.env.CI,
+  widenClientFileUpload: true,
+  tunnelRoute: "/monitoring",
+  // Tree-shake Sentry's own debug logging out of the production bundle.
+  disableLogger: true,
+});

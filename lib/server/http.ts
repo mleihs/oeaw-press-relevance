@@ -1,6 +1,7 @@
 import 'server-only';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import * as Sentry from '@sentry/nextjs';
 import { log, requestLogger } from './log';
 
 /**
@@ -319,6 +320,23 @@ export function withApiError<Args extends unknown[]>(
         rlog().warn('auth_rejected', { status: err.status, message: err.message });
         return apiError(err.message, err.status);
       }
+      // Genuine 500: report to Sentry in addition to the structured log.
+      // ApiValidationError/ApiAuthError are handled above and deliberately not
+      // reported — they are expected client errors, not route faults. Because
+      // this seam catches the throw and returns a Response, Next's automatic
+      // instrumentation never sees it, so this manual capture is the only
+      // report (no double counting with `onRequestError`).
+      let route = 'unknown';
+      if (isReq) {
+        try {
+          route = new URL(req.url).pathname;
+        } catch {
+          // Non-URL request double — keep 'unknown'.
+        }
+      }
+      Sentry.captureException(err, {
+        tags: { seam: 'withApiError', route, method: isReq ? req.method : 'unknown' },
+      });
       rlog().error('route_unhandled_error', { err });
       return errorToApiResponse(err);
     }

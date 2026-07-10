@@ -29,12 +29,14 @@
 import { readFileSync } from 'node:fs';
 import { extractDoiFromRow } from './lib/doi-extract.mjs';
 import { connectDb, loadDbUrl, parseScriptArgs, confirmProd, redactedDatabaseUrl } from './lib/db.mjs';
+import { initScriptSentry, captureScriptError, flushAndExit } from './lib/sentry.mjs';
 
 const { target, flags } = parseScriptArgs();
 const isProd = target === 'prod';
 
 process.loadEnvFile('.env.local');
 process.env.DATABASE_URL = loadDbUrl(target);
+initScriptSentry('import-publications-delta');
 
 const DEFAULT_URL =
   'https://www.oeaw.ac.at/fileadmin/exports/publications_incremental_change_2.json';
@@ -150,5 +152,6 @@ async function main(): Promise<void> {
 
 main().catch((err: unknown) => {
   console.error('[import-publications-delta] failed:', err);
-  process.exit(1);
+  captureScriptError(err);
+  void flushAndExit(1);
 });

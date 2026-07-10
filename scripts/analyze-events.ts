@@ -12,11 +12,13 @@
 //   npm run analyze-events -- --target=prod --yes --limit=200 --force
 
 import { loadDbUrl, parseScriptArgs, confirmProd, redactedDatabaseUrl } from './lib/db.mjs';
+import { initScriptSentry, captureScriptError, flushAndExit } from './lib/sentry.mjs';
 
 const { target, flags } = parseScriptArgs();
 const isProd = target === 'prod';
 
 process.loadEnvFile('.env.local');
+initScriptSentry('analyze-events');
 process.env.DATABASE_URL = loadDbUrl(target);
 
 const limitFlag = flags.find((f) => /^--limit=\d+$/.test(f));
@@ -72,5 +74,6 @@ async function main(): Promise<void> {
 
 main().catch((err: unknown) => {
   console.error('[analyze-events] failed:', err);
-  process.exit(1);
+  captureScriptError(err);
+  void flushAndExit(1);
 });
