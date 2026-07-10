@@ -69,16 +69,20 @@ const withMDX = createMDX();
  * - `tunnelRoute` proxies browser → Sentry through our own origin, which dodges
  *   ad-blockers and keeps the request same-origin (no CSP connect-src change:
  *   the CSP above never restricts connect-src/script-src).
- * - `silent` keeps the build log clean; `widenClientFileUpload` maps more of
- *   the client bundle.
+ * - `silent` is tied to token presence, not the build host: quiet locally
+ *   (no token → the plugin no-ops anyway), but verbose on every real deploy
+ *   build (Vercel + Coolify) so a successful *or failed* source-map upload is
+ *   always visible in the deploy log — no more silent skips.
+ * - `widenClientFileUpload` maps more of the client bundle.
  */
 export default withSentryConfig(withMDX(nextConfig), {
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
   authToken: process.env.SENTRY_AUTH_TOKEN,
-  silent: !process.env.CI,
+  silent: !process.env.SENTRY_AUTH_TOKEN,
   widenClientFileUpload: true,
   tunnelRoute: "/monitoring",
-  // Tree-shake Sentry's own debug logging out of the production bundle.
-  disableLogger: true,
+  // Tree-shake Sentry's own debug logging out of the production bundle
+  // (replaces the deprecated top-level `disableLogger`).
+  webpack: { treeshake: { removeDebugLogging: true } },
 });

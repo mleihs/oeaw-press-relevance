@@ -16,3 +16,8 @@ Sentry.init({
   release: process.env.NEXT_PUBLIC_SENTRY_RELEASE,
   ...sentryBaseOptions,
 });
+
+// App-Router navigation hook the Next SDK expects to be re-exported from this
+// file. A no-op while tracing is off (tracesSampleRate 0), but wiring it now
+// keeps client instrumentation complete and silences the SDK's build warning.
+export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
