@@ -21,6 +21,7 @@
     "enrich-orphans": "tsx scripts/enrich-orphans.ts",
     "sync-events": "tsx scripts/sync-events.ts",
     "import-events-json": "tsx scripts/import-events-json.ts",
+    "import-publications-delta": "tsx scripts/import-publications-delta.ts",
     "analyze-events": "tsx scripts/analyze-events.ts",
     "apply-event-scores": "tsx scripts/apply-event-scores.ts",
     "sync-social": "tsx scripts/sync-social.ts",

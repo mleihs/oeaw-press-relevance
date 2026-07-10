@@ -1,16 +1,23 @@
 #!/usr/bin/env tsx
-// CLI: import upcoming events from the TYPO3 JSON export (event_news_grouped.json,
-// OeAW/Florian, Redmine #4165) into the events table. Parallel ingestion path to
+// CLI: import upcoming events from the canonical TYPO3 JSON export
+// (https://www.oeaw.ac.at/fileadmin/exports/event_news_grouped.json, OeAW/Florian,
+// Redmine #4165) into the events table. Parallel ingestion path to
 // scripts/sync-events.ts (which reads the WEBDB MySQL): it produces the SAME
 // NormalizedEvent shape and reuses the SAME UPSERT (lib/server/events/sync.ts →
 // upsertEvents, conflict key webdb_uid), so maintainer state (decision, flag_notes)
 // and LLM scores survive re-runs identically.
 //
+// UPDATES, not just inserts: the export is meant to carry CHANGED events (same
+// webdb_uid) too, and the ON CONFLICT DO UPDATE overwrites their WebDB-owned
+// columns while preserving analysis/decision — no insert-only assumption.
+//
 // UPSERT-ONLY — unlike the MySQL sync this does NOT prune events missing from the
-// feed. The export is currently grouped per-institute and only partially populated
-// (one institute "GMI" so far); a global prune would delete every other institute's
-// future events, and a per-institute prune is unsafe until the export is known to be
-// complete. Add a scoped prune once the export covers all institutes (Redmine #4165).
+// feed. The export is grouped per-institute (GMI, MBI, ÖAI, IQOQI, …) and may be
+// partial; a global prune would delete other institutes' future events, and a
+// per-institute prune is unsafe until the export is known to be complete. The feed
+// has no records_to_delete section, so cancellations are not signalled here — they
+// heal via the periodic full reconciliation (sync-events prune). Add a scoped
+// prune / delete-path once the export gains a delta structure (Redmine #4165).
 //
 // Imported events land with analysis_status='pending' / event_score=NULL (column
 // defaults, never set here) so they become scoring candidates automatically
@@ -33,7 +40,7 @@ process.loadEnvFile('.env.local');
 process.env.DATABASE_URL = loadDbUrl(target);
 
 const DEFAULT_URL =
-  'https://wwwt2.oeaw.ac.at/fileadmin/exports/event_news_grouped.json';
+  'https://www.oeaw.ac.at/fileadmin/exports/event_news_grouped.json';
 const dryRun = flags.includes('--dry-run');
 const flagValue = (name: string): string | undefined =>
   flags.find((f) => f.startsWith(`${name}=`))?.slice(name.length + 1);
@@ -43,10 +50,10 @@ const sourceLabel = fileArg ? `file:${fileArg}` : (urlArg ?? DEFAULT_URL);
 
 async function loadExport(): Promise<unknown> {
   if (fileArg) return JSON.parse(readFileSync(fileArg, 'utf-8'));
-  const url = urlArg ?? DEFAULT_URL;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`fetch ${url} → HTTP ${res.status}`);
-  return res.json();
+  // Shared CF-hardened fetch: fails loudly on a Cloudflare challenge / HTML page
+  // instead of a cryptic JSON parse error deep in the adapter.
+  const { fetchJsonExport } = await import('@/lib/server/ingest/fetch-export');
+  return fetchJsonExport(urlArg ?? DEFAULT_URL);
 }
 
 async function main(): Promise<void> {

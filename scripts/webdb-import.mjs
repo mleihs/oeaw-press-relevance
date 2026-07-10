@@ -502,21 +502,13 @@ async function importJunctions() {
     await upsert('orgunit_publications', filtered, 'orgunit_id, publication_id',
       ['highlight', 'sorting']);
 
-    // Refresh the cached publications.is_ita_subtree boolean. Same predicate
-    // as the migration's initial backfill — flips the column for any pub
-    // whose ITA-membership changed since the previous import.
-    const itaRefresh = await pgClient.query(`
-      WITH ita_pubs AS (
-        SELECT DISTINCT op.publication_id AS pid
-        FROM orgunit_publications op
-        JOIN orgunits o ON o.id = op.orgunit_id
-        WHERE o.akronym_de ILIKE 'ITA%'
-      )
-      UPDATE publications p
-      SET is_ita_subtree = (p.id IN (SELECT pid FROM ita_pubs))
-      WHERE p.is_ita_subtree IS DISTINCT FROM (p.id IN (SELECT pid FROM ita_pubs))
-    `);
-    log(`  refreshed is_ita_subtree on ${itaRefresh.rowCount} publications`);
+    // Refresh the cached publications.is_ita_subtree boolean via the shared DB
+    // function (single source of truth, also used by the delta importer). NULL
+    // arg = recompute the whole corpus (a full import touches every pub).
+    const itaRefresh = await pgClient.query(
+      'SELECT refresh_publication_ita_subtree(NULL) AS n',
+    );
+    log(`  refreshed is_ita_subtree on ${itaRefresh.rows[0].n} publications`);
   }
 
   // publication_projects
