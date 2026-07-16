@@ -42,6 +42,8 @@ import {
 import { cardDeepLink, type BoardCardRef } from '@/lib/shared/board';
 import type { DashboardData } from '@/lib/server/dashboard/fetch';
 import type { BoardDashboardCards } from '@/lib/shared/board';
+import type { ScoringStatus } from '@/lib/server/ingest/status';
+import { ScoringStatusTile } from './scoring-status-tile';
 import { KeywordCloud } from './keyword-cloud';
 
 // Kartengrund nach Design System §5 (Elevation-1) — überall gleich, damit die
@@ -105,9 +107,11 @@ interface DashboardClientProps {
   boardCards: BoardDashboardCards | null;
   /** Social-Trends-Karte (null solange kein Themen-Snapshot existiert). */
   socialData: SocialDashboardData | null;
+  /** Bewertungs-Status je Entität (Import-Datum + unbewertete Kandidaten). */
+  scoringStatus: ScoringStatus;
 }
 
-export function DashboardClient({ data, period, sortBy, boardCards, socialData }: DashboardClientProps) {
+export function DashboardClient({ data, period, sortBy, boardCards, socialData, scoringStatus }: DashboardClientProps) {
   const {
     stats,
     topPubs,
@@ -201,6 +205,9 @@ export function DashboardClient({ data, period, sortBy, boardCards, socialData }
           {boardCards && <BoardTile cards={dueCards} overdueCount={overdueCount} />}
         </div>
       )}
+
+      {/* Row 2 — Bewertungs-Status (Import-Datum + unbewertete Kandidaten + Fallback-Bewerten) */}
+      <ScoringStatusTile status={scoringStatus} />
 
       {/* Row 3 — top storys + analytics */}
       <div className="grid items-start gap-4 lg:grid-cols-[1.6fr_1fr]">
@@ -361,6 +368,9 @@ export function DashboardClient({ data, period, sortBy, boardCards, socialData }
 
       {/* Social-Trends (Mock Board-Mobile §Dashboard 2026-07-06) */}
       {socialData && <SocialTrendsTile data={socialData} />}
+
+      {/* Bewertungs-Status (identisch zum Desktop-Layer) */}
+      <ScoringStatusTile status={scoringStatus} />
 
       {/* 2-Spalten-Stat-Grid; 4. Kachel = Triage (Desktop-Aktions-Kachel) */}
       <div className="grid grid-cols-2 gap-2.5">

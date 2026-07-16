@@ -2,53 +2,38 @@
 
 import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Brain, Sparkles } from '@/lib/icons';
+import { Brain } from '@/lib/icons';
 import { Button } from '@/components/ui/button';
-import { EnrichmentModal } from '@/components/enrichment-modal';
-import { AnalysisModal } from '@/components/analysis-modal';
+import { ScoringModal } from '@/components/scoring-modal';
 
-// Triggers the two batch ETL pipelines (enrichment + analyse) the press
-// editorial team runs from this page. Rendered as a compact button cluster in
-// the page header (Toolkit-Redesign-Comp: header → filter → list, keine großen
-// Panels), statt der früheren zwei Karten. Die Modals sind bestehende
-// kontrollierte Dialoge; `router.refresh()` erzwingt einen Server-Re-Fetch der
-// Liste für die RSC-Seite.
+// „Bewerten"-Aktion im Seitenkopf der Publikationsliste (Toolkit-Redesign-Comp:
+// header → filter → list). Enrichment gibt es hier NICHT mehr als eigenen Knopf:
+// es läuft automatisch beim Nacht-Import (lib/server/ingest/run-enrichment.ts) —
+// „nur enrichen ohne zu bewerten" ergab keinen Sinn. Bevorzugt bleibt das
+// kostenlose In-Chat-Scoring; dieser Button ist der OpenRouter-Fallback.
+// `router.refresh()` erzwingt einen Server-Re-Fetch der Liste (RSC-Seite).
 export function PipelineActions() {
   const router = useRouter();
-  const [enrichOpen, setEnrichOpen] = useState(false);
-  const [analysisOpen, setAnalysisOpen] = useState(false);
+  const [scoringOpen, setScoringOpen] = useState(false);
   const refetch = useCallback(() => router.refresh(), [router]);
 
   return (
     <>
       <div className="flex items-center gap-2">
         <Button
-          onClick={() => setEnrichOpen(true)}
+          onClick={() => setScoringOpen(true)}
           size="sm"
           variant="outline"
-          title="Metadaten aus CrossRef + OpenAlex anreichern"
-        >
-          <Sparkles className="h-4 w-4" />
-          Anreichern
-        </Button>
-        <Button
-          onClick={() => setAnalysisOpen(true)}
-          size="sm"
-          variant="outline"
-          title="LLM-Bewertung über OpenRouter"
+          title="LLM-Bewertung über OpenRouter (Fallback zum In-Chat-Scoring)"
         >
           <Brain className="h-4 w-4" />
-          Analysieren
+          Bewerten
         </Button>
       </div>
-      <EnrichmentModal
-        open={enrichOpen}
-        onOpenChange={setEnrichOpen}
-        onComplete={refetch}
-      />
-      <AnalysisModal
-        open={analysisOpen}
-        onOpenChange={setAnalysisOpen}
+      <ScoringModal
+        entity="publications"
+        open={scoringOpen}
+        onOpenChange={setScoringOpen}
         onComplete={refetch}
       />
     </>

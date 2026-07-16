@@ -108,8 +108,8 @@ export const DEFAULT_REVIEWER_NAME = 'team';
 
 /**
  * Single source of truth for enrichment-source labels and color tokens.
- * Per-component overrides (e.g. enrichment-modal uses "PDF Extract") still
- * live next to the component if intentionally different.
+ * Consumed by the publications UI (source badges) and any future surface that
+ * displays the enrichment cascade; the cascade itself runs unattended at import.
  */
 export const SOURCE_LABELS: Record<string, string> = {
   crossref: 'CrossRef',
