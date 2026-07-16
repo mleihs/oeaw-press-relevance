@@ -67,6 +67,24 @@ const Schema = z.object({
   MEISTERTASK_HIGH_LABEL_ID: z.string().min(1).optional(),
   MEISTERTASK_MID_LABEL_ID: z.string().min(1).optional(),
 
+  // Unbeaufsichtigter Ingest-Cron (POST /api/ingest/run). Optional/fail-safe:
+  // ist das Secret NICHT gesetzt, antwortet die Route mit 503 (Feature aus) —
+  // die App bootet ohne. Ist es gesetzt, MUSS es lang genug sein (min. 32
+  // Zeichen; `openssl rand -hex 32`), sonst bricht der Boot mit klarer Meldung.
+  INGEST_CRON_SECRET: z.string().min(32, 'INGEST_CRON_SECRET muss ≥ 32 Zeichen haben (openssl rand -hex 32)').optional(),
+
+  // Obergrenze für das automatische Enrichment je Nacht-Ingest-Lauf (Vorstufe
+  // zum Bewerten). Bounded, damit ein großer Rückstau die Route nicht stundenlang
+  // belegt; der Rest drainiert über Folgenächte. Default 200 (im Runner).
+  INGEST_ENRICH_LIMIT: z.coerce.number().int().positive().optional(),
+
+  // Cloudflare-Origin-Pin für die OeAW-JSON-Exporte (lib/server/ingest/
+  // fetch-export.ts). Optional: leer → normaler DNS (läuft lokal ins CF-
+  // Challenge). Auf dem VPS die Origin-IP von voxy.arz.oeaw.ac.at setzen, dann
+  // löst der Fetch www.oeaw.ac.at auf diese IP auf (SNI/Host bleiben, TLS
+  // validiert weiter) und umgeht den CF-Proxy sauber.
+  OEAW_EXPORT_ORIGIN_IP: z.string().min(1).optional(),
+
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 
   // Optional override for the allow-list used by assertAllowedOrigin

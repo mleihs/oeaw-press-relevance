@@ -4,7 +4,7 @@
 // SSE event names match the publication analysis modal so the event modal can
 // reuse the same progress UI.
 
-import { and, asc, eq, gte, inArray, sql } from 'drizzle-orm';
+import { asc, eq, gte, inArray, sql } from 'drizzle-orm';
 import { db, events as eventsTable } from '@/lib/server/db';
 import {
   chatCompletionJson,
@@ -36,14 +36,17 @@ export interface EventsAnalyzeFilters {
 export async function fetchEventsForAnalysis(
   filters: EventsAnalyzeFilters,
 ): Promise<EventRow[]> {
-  const clauses = [gte(eventsTable.eventAt, sql`NOW()`)];
-  if (!filters.forceReanalyze) {
-    clauses.push(eq(eventsTable.analysisStatus, 'pending'));
-  }
+  // Non-force: the canonical candidate view (upcoming + event_score IS NULL,
+  // incl. failed-retry) — the single source shared with scripts/event-
+  // candidates.mjs and the status tile. Force: all upcoming events regardless
+  // of score, so a maintainer can re-score everything ahead.
+  const where = filters.forceReanalyze
+    ? gte(eventsTable.eventAt, sql`NOW()`)
+    : sql`${eventsTable.id} IN (SELECT id FROM event_scoring_candidates)`;
   return db
     .select()
     .from(eventsTable)
-    .where(and(...clauses))
+    .where(where)
     .orderBy(asc(eventsTable.eventAt))
     .limit(filters.limit);
 }

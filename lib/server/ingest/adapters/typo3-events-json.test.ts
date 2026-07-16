@@ -93,6 +93,16 @@ describe('parseEventNewsGrouped', () => {
     expect(r.duplicates).toBe(0);
   });
 
+  it('surfaces meta.generated_at_timestamp as the ingest_runs cursor key', () => {
+    const withTs: EventNewsGroupedExport = {
+      meta: { generated_at_timestamp: 1752300000, generated_at_readable: '2026-07-16 06:00' },
+      data: { GMI: { events: [raw()] } },
+    };
+    expect(parseEventNewsGrouped(withTs).generatedAtTimestamp).toBe(1752300000);
+    // Fehlt der Zeitstempel im Feed → null (der Runner fällt dann auf 0 zurück).
+    expect(parseEventNewsGrouped(exp({ GMI: { events: [raw()] } })).generatedAtTimestamp).toBeNull();
+  });
+
   it('dedupes a webdb_uid that appears under two institutes (first wins)', () => {
     const r = parseEventNewsGrouped(
       exp({ GMI: { events: [raw({ uid: 7 })] }, IMBA: { events: [raw({ uid: 7 })] } }),

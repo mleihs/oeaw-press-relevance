@@ -21,13 +21,13 @@ const limit = limitFlag ? parseInt(limitFlag.split('=')[1], 10) : null;
 
 const client = await connectDb({ target });
 try {
+  // Kanonische Kandidaten-View (event_at >= now AND event_score IS NULL) —
+  // eine Wahrheit, geteilt mit lib/server/events/analyze.ts und der Status-Kachel.
   const { rows } = await client.query(
     `SELECT id, webdb_uid, title, teaser, bodytext, event_information,
             event_at, event_end_at, location_title, organizer_title,
             institute, url, lang
-       FROM events
-      WHERE event_at >= now()
-        AND event_score IS NULL
+       FROM event_scoring_candidates
       ORDER BY event_at ASC
       ${limit ? `LIMIT ${limit}` : ''}`,
   );

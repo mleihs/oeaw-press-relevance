@@ -44,7 +44,7 @@
  */
 import mysql from 'mysql2/promise';
 import { connectDb } from './lib/db.mjs';
-import { cleanDoi, extractDoiFromText } from './lib/doi-extract.mjs';
+import { cleanDoi, extractDoiFromText } from '../lib/shared/doi-extract.mjs';
 
 // .env.local carries WEBDB_MYSQL_* (shell vars still win — process.loadEnvFile
 // does not overwrite already-set keys), matching the rest of the importers.

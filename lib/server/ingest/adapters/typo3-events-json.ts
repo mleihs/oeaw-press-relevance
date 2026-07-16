@@ -58,7 +58,11 @@ export interface ParsedEventExport {
   duplicates: number;
   /** institute group keys seen, in export order. */
   institutes: string[];
+  /** meta.generated_at_readable — human-readable export timestamp. */
   generatedAt: string | null;
+  /** meta.generated_at_timestamp — the ingest_runs cursor key for this feed
+   *  (idempotency: skip a (feed, generated_at_timestamp) already applied). */
+  generatedAtTimestamp: number | null;
 }
 
 /** Pure transform of one raw export event. Returns null when the row has no
@@ -130,5 +134,6 @@ export function parseEventNewsGrouped(
     duplicates,
     institutes,
     generatedAt: json?.meta?.generated_at_readable ?? null,
+    generatedAtTimestamp: json?.meta?.generated_at_timestamp ?? null,
   };
 }

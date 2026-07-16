@@ -59,25 +59,19 @@ export const enrichmentBatchPayloadSchema = z.object({
 
 export type EnrichmentBatchPayload = z.infer<typeof enrichmentBatchPayloadSchema>;
 
-export const analysisBatchPayloadSchema = z.object({
+// Vereinheitlichtes Payload fürs Relevanz-Scoring — für Publikationen UND
+// Events (der „Bewerten"-Fallback nutzt für beide dasselbe Modal + Endpunkt-
+// Kontrakt). Die Kandidaten kommen aus den kanonischen Views
+// (publication_scoring_candidates / event_scoring_candidates), daher gibt es
+// KEINE enrichment-/word-count-Filter mehr: `limit` begrenzt die Batch-Menge,
+// `forceReanalyze` re-bewertet auch bereits Bewertetes (überschreibt), sonst nur
+// offene Kandidaten aus der View.
+export const scoringBatchPayloadSchema = z.object({
   limit: z.coerce.number().int().min(1).max(1000).default(20),
   batchSize: z.coerce.number().int().min(1).max(5).default(3),
-  minWordCount: z.coerce.number().int().min(0).default(0),
-  forceReanalyze: z.boolean().default(false),
-  enrichedOnly: z.boolean().default(true),
-  includePartial: z.boolean().default(false),
-});
-
-export type AnalysisBatchPayload = z.infer<typeof analysisBatchPayloadSchema>;
-
-// Event relevance scoring (/events „Analysieren"). Mirrors the analysis batch
-// payload, minus the enrichment-specific filters (events have no enrichment).
-export const eventsAnalyzeBatchPayloadSchema = z.object({
-  limit: z.coerce.number().int().min(1).max(1000).default(50),
-  batchSize: z.coerce.number().int().min(1).max(5).default(3),
   forceReanalyze: z.boolean().default(false),
 });
-export type EventsAnalyzeBatchPayload = z.infer<typeof eventsAnalyzeBatchPayloadSchema>;
+export type ScoringBatchPayload = z.infer<typeof scoringBatchPayloadSchema>;
 
 // ---------------------------------------------------------------------------
 // Social-media monitoring (/social).
