@@ -99,7 +99,10 @@ export interface RawDeltaOrgunitPublication {
 
 interface RawTableGroup {
   tx_hebowebdb_domain_model_publication?: RawDeltaPublication[];
-  tx_hebowebdb_domain_model_person?: RawDeltaPerson[];
+  // Personen kommen upstream inkonsistent: teils als flaches {…}, teils als
+  // [{…}] (Ein-Element-Array) gewrappt. Beide Formen werden akzeptiert und vor
+  // der Nutzung durch unwrapPersonRows entpackt.
+  tx_hebowebdb_domain_model_person?: (RawDeltaPerson | [RawDeltaPerson])[];
   tx_hebowebdb_domain_model_personpublication?: RawDeltaPersonPublication[];
   tx_hebowebdb_domain_model_orgunitpublication?: RawDeltaOrgunitPublication[];
 }
@@ -247,15 +250,35 @@ const lookupUid = (v: unknown): number | null => {
 const truthy = (v: unknown): boolean => Number(v) === 1;
 const isDeleted = (v: unknown): boolean => Number(v) === 1;
 
-const looseRecordArray = z.array(z.record(z.string(), z.unknown()));
+const looseRecord = z.record(z.string(), z.unknown());
+const looseRecordArray = z.array(looseRecord);
+// Personen kommen upstream teils als [{…}] (Ein-Element-Array) statt {…} —
+// beide Formen zulassen (die Hüllenvalidierung soll bei ECHTEM Drift laut
+// scheitern, aber diese bekannte Inkonsistenz nicht als Fehler werten).
+const personRowArray = z.array(z.union([looseRecord, z.array(looseRecord)]));
 const tableGroupSchema = z
   .object({
     tx_hebowebdb_domain_model_publication: looseRecordArray.optional(),
-    tx_hebowebdb_domain_model_person: looseRecordArray.optional(),
+    tx_hebowebdb_domain_model_person: personRowArray.optional(),
     tx_hebowebdb_domain_model_personpublication: looseRecordArray.optional(),
     tx_hebowebdb_domain_model_orgunitpublication: looseRecordArray.optional(),
   })
   .optional();
+
+/** Personen kommen upstream inkonsistent als flaches `{…}` ODER als `[{…}]`
+ *  (Ein-Element-Array) gewrappt. Entpackt beide Formen zu flachen Records und
+ *  verwirft Leeres — damit die restliche Delta-Logik nur mit Records arbeitet. */
+function unwrapPersonRows(
+  rows: (RawDeltaPerson | [RawDeltaPerson])[] | undefined,
+): RawDeltaPerson[] {
+  if (!rows) return [];
+  const out: RawDeltaPerson[] = [];
+  for (const r of rows) {
+    const rec = Array.isArray(r) ? r[0] : r;
+    if (rec && typeof rec === 'object') out.push(rec);
+  }
+  return out;
+}
 
 /** Zod-Schema NUR für die Hülle: `meta.generated_at_timestamp` + die beiden
  *  records_*-Gruppen. Die einzelnen TYPO3-Records bleiben lose (z.record) —
@@ -337,7 +360,7 @@ export function parsePublicationsDelta(
   // --- Personen: deleted:"1" abzweigen, dedupe uid -------------------------
   const personUpsertByUid = new Map<number, NormalizedDeltaPerson>();
   const personDeleteUids = new Set<number>();
-  for (const raw of add.tx_hebowebdb_domain_model_person ?? []) {
+  for (const raw of unwrapPersonRows(add.tx_hebowebdb_domain_model_person)) {
     const uid = toId(raw.uid);
     if (!Number.isFinite(uid)) continue;
     if (isDeleted(raw.deleted)) {
@@ -348,7 +371,7 @@ export function parsePublicationsDelta(
     if (personUpsertByUid.has(uid)) stats.duplicatePersons++;
     personUpsertByUid.set(uid, normalizePerson(raw, uid));
   }
-  for (const v of del.tx_hebowebdb_domain_model_person ?? []) {
+  for (const v of unwrapPersonRows(del.tx_hebowebdb_domain_model_person)) {
     const uid = toId(v.uid);
     if (Number.isFinite(uid)) personDeleteUids.add(uid);
   }

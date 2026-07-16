@@ -150,6 +150,37 @@ describe('parsePublicationsDelta — persons', () => {
     );
     expect(payload.upsert.persons[0].member_type_webdb_uid).toBeNull();
   });
+
+  it('tolerates upstream persons wrapped as [{…}] (single-element arrays)', () => {
+    // Live-Export (2026-07) liefert Personen inkonsistent als [{…}] statt {…};
+    // beide Formen dürfen nebeneinander vorkommen und müssen entpackt werden.
+    const { payload } = parsePublicationsDelta(
+      wrap({
+        records_to_add_or_update: {
+          tx_hebowebdb_domain_model_person: [
+            [person({ uid: 2001 })] as never, // gewrappt
+            person({ uid: 2002 }), // flach
+          ],
+        },
+      }),
+      stubDoi,
+    );
+    const uids = payload.upsert.persons.map((p) => p.webdb_uid).sort();
+    expect(uids).toEqual([2001, 2002]);
+  });
+
+  it('routes a wrapped person with deleted:"1" to the delete set', () => {
+    const { payload } = parsePublicationsDelta(
+      wrap({
+        records_to_add_or_update: {
+          tx_hebowebdb_domain_model_person: [[person({ uid: 2003, deleted: '1' })] as never],
+        },
+      }),
+      stubDoi,
+    );
+    expect(payload.upsert.persons).toHaveLength(0);
+    expect(payload.delete.persons).toContain(2003);
+  });
 });
 
 describe('parsePublicationsDelta — junctions', () => {
