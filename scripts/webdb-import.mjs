@@ -20,7 +20,7 @@
 
 import mysql from 'mysql2/promise';
 import pg from 'pg';
-import { extractDoiFromRow } from './lib/doi-extract.mjs';
+import { extractDoiFromRow } from '../lib/shared/doi-extract.mjs';
 
 const MYSQL = {
   host: process.env.MYSQL_HOST || '127.0.0.1',

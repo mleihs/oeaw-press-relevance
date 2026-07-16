@@ -46,6 +46,12 @@ export const TOP_PUBS_DEFAULT = 20;
 export const TOP_PUBS_STEP = 20;
 export const TOP_PUBS_MAX = 200;
 
+// Bewertungs-Status-Kachel (app/_components/scoring-status-tile.tsx): ab wie
+// vielen Tagen die älteste unbewertete Entität als „überfällig" (danger-tint +
+// Wecker) gilt. Darunter genügt der warning-Ton. Der Import läuft nächtlich,
+// das Scoring bei Bedarf — eine Woche Rückstau ist die Schwelle zum „dranbleiben".
+export const SCORING_STALE_DANGER_DAYS = 7;
+
 // Press-Similarity histogram X-axis range. SPECTER2 cosine between two
 // scientific abstracts is naturally clustered in the upper band even for
 // thematically unrelated papers (min ≈ 0.80, max ≈ 0.95 on the live

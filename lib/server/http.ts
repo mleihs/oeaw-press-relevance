@@ -286,10 +286,18 @@ export function validateParams<S extends z.ZodType>(
  * parse → 400 "Invalid request", payload validation → 400 with a
  * specific error class), keep an inner try/catch and call
  * `errorToApiResponse(err, status, fallback)` directly.
+ *
+ * `opts.csrf` (default `true`) can be set to `false` for machine-to-machine
+ * endpoints authenticated by a Bearer token, not the gate cookie (e.g. the
+ * unattended ingest cron). Those requests carry no browser Origin and are not
+ * CSRF-exploitable via an ambient cookie — the same-origin check would only
+ * ever reject the legitimate cron. The Bearer secret is the auth boundary.
  */
 export function withApiError<Args extends unknown[]>(
   handler: (...args: Args) => Promise<Response> | Response,
+  opts: { csrf?: boolean } = {},
 ): (...args: Args) => Promise<Response> {
+  const csrfEnabled = opts.csrf ?? true;
   return async (...args: Args) => {
     const req = args[0];
     const isReq = req instanceof Request;
@@ -299,7 +307,7 @@ export function withApiError<Args extends unknown[]>(
     // the hot path.
     const rlog = () => (isReq ? requestLogger(req) : log);
     try {
-      if (isReq && MUTATING_METHODS.has(req.method.toUpperCase())) {
+      if (csrfEnabled && isReq && MUTATING_METHODS.has(req.method.toUpperCase())) {
         const csrfFail = assertSameOrigin(req);
         if (csrfFail) {
           rlog().warn('csrf_rejected', { status: csrfFail.status });

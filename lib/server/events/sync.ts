@@ -57,6 +57,13 @@ export interface EventsUpsertResult {
   updated: number;
 }
 
+/** Drizzle-Executor: entweder der Pool-`db` oder eine laufende Transaktion.
+ *  Lässt Aufrufer den Upsert in eine größere atomare Einheit ziehen (z. B. der
+ *  JSON-Import-Runner, der Upsert + ingest_runs-Journal gemeinsam committet). */
+export type EventsDbExecutor =
+  | typeof db
+  | Parameters<Parameters<typeof db.transaction>[0]>[0];
+
 /** Bulk INSERT … ON CONFLICT (webdb_uid) DO UPDATE in a single round-trip.
  *  The maintainer columns (decision, decided_at, flag_notes, created_at) are
  *  omitted from the SET list by construction, so a re-sync from ANY source
@@ -82,6 +89,7 @@ export interface EventsUpsertResult {
  *  the two ingestion paths. */
 export async function upsertEvents(
   normalized: NormalizedEvent[],
+  executor: EventsDbExecutor = db,
 ): Promise<EventsUpsertResult> {
   if (normalized.length === 0) return { imported: 0, updated: 0 };
   // TRUE when this re-sync changes scoring-relevant content of an upcoming event
@@ -95,7 +103,7 @@ export async function upsertEvents(
       ${eventsTable.eventAt} IS DISTINCT FROM excluded.event_at
     )
   )`;
-  const upserted = await db
+  const upserted = await executor
     .insert(eventsTable)
     .values(normalized)
     .onConflictDoUpdate({

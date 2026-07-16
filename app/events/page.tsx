@@ -39,7 +39,7 @@ import { CalendarLegend, type CalendarSummary } from './_components/calendar-leg
 import { EventsCalendarLoader } from './_components/events-calendar-loader';
 import { RefreshButton } from './_components/refresh-button';
 import { MainNewsToggle } from './_components/main-news-toggle';
-import { EventAnalyzeModal } from './_components/event-analyze-modal';
+import { EventScoreButton } from './_components/event-score-button';
 
 // Force-dynamic per ADR 0009: the page has per-row maintainer state
 // (decision badges, flag-popovers) that mutates and must reflect immediately,
@@ -195,7 +195,7 @@ export default async function EventsPage({
               filters={filters}
             />
             <span className="flex-1" />
-            <EventAnalyzeModal />
+            <EventScoreButton />
             <RefreshButton lastSync={overview.last_synced} />
           </div>
           {summary && <CalendarLegend summary={summary} />}
@@ -221,7 +221,7 @@ export default async function EventsPage({
             />
             <span className="flex-1" />
             <MainNewsToggle showMainNews={includeMainNews} />
-            <EventAnalyzeModal />
+            <EventScoreButton />
             <RefreshButton lastSync={overview.last_synced} />
           </div>
           <EventsFilterBar

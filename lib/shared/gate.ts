@@ -13,7 +13,10 @@ export const GATE_COOKIE_NAME = 'gate';
 // /api/stats/landing ist gate-öffentlich: der Anmelde-Screen zeigt die drei
 // aggregierten Kennzahlen (bewertete Pubs / anstehende Events / PMs mit DOI)
 // VOR dem Gate. Nur unsensible count(*)-Werte, keine Auth-Logik.
-const PUBLIC_PATHS = ['/api/auth/gate', '/api/auth/login', '/api/stats/landing', '/robots.txt', '/favicon.ico', '/icon.svg'];
+// /api/ingest/run ist gate-öffentlich, aber NICHT ungeschützt: die Route
+// authentifiziert sich per Bearer INGEST_CRON_SECRET (assertCronSecret). Der
+// Nacht-Cron hat kein Gate-Cookie; das Gate-Cookie allein reicht dort NIE.
+const PUBLIC_PATHS = ['/api/auth/gate', '/api/auth/login', '/api/stats/landing', '/api/ingest/run', '/robots.txt', '/favicon.ico', '/icon.svg'];
 const PUBLIC_PREFIXES = ['/_next/', '/capybara'];
 
 export function isPublicGatePath(pathname: string): boolean {

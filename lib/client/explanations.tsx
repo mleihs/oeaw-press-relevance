@@ -1964,6 +1964,32 @@ export const EXPL = {
       </Para>
     ),
   },
+  scoring_status: {
+    title: 'Bewertung',
+    body: (
+      <>
+        <Para>
+          Die Importe (Publikationen &amp; Events) laufen nächtlich um 06:00 automatisch;
+          Publikationen werden dabei gleich angereichert (CrossRef, OpenAlex &amp; Co.), damit
+          sie bewertbar werden. Bewertet wird dabei bewusst NICHT. Die Kachel zeigt je Entität,
+          wann zuletzt importiert wurde und wie viele Datensätze noch unbewertet sind (älteste
+          ab <Code>7 Tagen</Code> rot markiert).
+        </Para>
+        <Para>
+          Der bevorzugte Weg zu bewerten ist das In-Chat-Scoring (Opus, kostenlos) durch die
+          Redaktion. Der Knopf <strong>„Bewerten"</strong> ist der Fallback: er bewertet über
+          OpenRouter und <strong>kostet Guthaben</strong> (Modellwahl im Dialog), gedacht für
+          Fälle, in denen das In-Chat-Scoring nicht rechtzeitig passiert.
+        </Para>
+      </>
+    ),
+    note: (
+      <Para>
+        Schlägt ein nächtlicher Import fehl, meldet das die Kachel („Letzter Import
+        fehlgeschlagen") und zusätzlich eine Mail an websites@oeaw.ac.at.
+      </Para>
+    ),
+  },
 } satisfies Record<string, Explanation>;
 
 // ─── KB-Anchor-Map ──────────────────────────────────────────────────────────

@@ -24,7 +24,7 @@ import { runIngest } from '@/lib/server/ingest';
 import { WebdbAdapter } from '@/lib/server/ingest/adapters/webdb';
 // Shared single-source DOI extractor (scripts -> scripts; same module the
 // legacy ETL + session-pipeline doi-backfill use — zero drift).
-import { extractDoiFromRow } from './lib/doi-extract.mjs';
+import { extractDoiFromRow } from '../lib/shared/doi-extract.mjs';
 
 const LOCAL_HOSTS = new Set(['127.0.0.1', 'localhost', '::1']);
 const DEFAULT_LOCAL_URL =

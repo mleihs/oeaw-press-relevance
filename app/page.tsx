@@ -1,6 +1,7 @@
 import { getDashboardData } from '@/lib/server/dashboard/fetch';
 import { getSocialDashboardData } from '@/lib/server/social/dashboard';
 import { getBoardDashboardCards } from '@/lib/server/board';
+import { getScoringStatus } from '@/lib/server/ingest/status';
 import { getCurrentUser } from '@/lib/server/auth/require';
 import {
   DASHBOARD_SOCIAL_ENABLED,
@@ -42,12 +43,17 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   // Cookies → im unstable_cache-Wrapper von getDashboardData nicht erlaubt) und
   // die Karten sollen pro Request frisch sein. Der Zweig läuft parallel zu
   // den Aggregaten (unabhängig — sequenziell kostete er nur Latenz).
-  const [data, socialData, boardCards] = await Promise.all([
+  // scoringStatus bewusst UNGECACHT + auf Page-Ebene (nicht in getDashboardData):
+  // nach einem „Bewerten"-Lauf löst das Modal router.refresh() aus, und die
+  // Kachel muss sofort die gesunkene Zahl zeigen. Läuft parallel zu den
+  // Aggregaten (unabhängig).
+  const [data, socialData, boardCards, scoringStatus] = await Promise.all([
     getDashboardData(period, topPubsLimit, sortBy),
     // Feature-Flag (lib/shared/dashboard.ts): einstweilen aus → keine Abfrage,
     // Kachel wird nirgends gerendert. Wiedereinschalten = Flag auf true.
     DASHBOARD_SOCIAL_ENABLED ? getSocialDashboardData() : Promise.resolve(null),
     getCurrentUser().then((user) => (user ? getBoardDashboardCards() : null)),
+    getScoringStatus(),
   ]);
 
   return (
@@ -57,6 +63,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       sortBy={sortBy}
       boardCards={boardCards}
       socialData={socialData}
+      scoringStatus={scoringStatus}
     />
   );
 }

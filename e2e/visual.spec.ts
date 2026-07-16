@@ -164,7 +164,7 @@ test.describe('Visual: interactive states', () => {
   }
 
   for (const theme of THEMES) {
-    test(`enrichment modal on /publications — ${theme}`, async ({ page, context }) => {
+    test(`scoring modal on /publications — ${theme}`, async ({ page, context }) => {
       const errors: string[] = [];
       page.on('pageerror', (err) => errors.push(`pageerror: ${err.message}`));
 
@@ -173,15 +173,15 @@ test.describe('Visual: interactive states', () => {
       await page.waitForLoadState('networkidle');
       await page.waitForTimeout(HYDRATE_MS);
 
-      // Enrichment / Analyse cards have a "Starten"-button — first one is Enrichment.
-      const startBtn = page.getByRole('button', { name: 'Starten' }).first();
-      await startBtn.click();
+      // Enrichment läuft jetzt beim Nacht-Import; auf der Seite bleibt nur der
+      // „Bewerten"-Fallback (öffnet das gemeinsame ScoringModal).
+      await page.getByRole('button', { name: 'Bewerten' }).first().click();
       await page.waitForTimeout(600);
 
       await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5_000 });
 
       await page.screenshot({
-        path: path.join(SHOT_DIR, `enrichment-modal-${theme}.png`),
+        path: path.join(SHOT_DIR, `scoring-modal-${theme}.png`),
       });
 
       expect(errors).toHaveLength(0);

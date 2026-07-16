@@ -1,5 +1,5 @@
 import 'server-only';
-import { and, eq, gte, inArray } from 'drizzle-orm';
+import { eq, inArray, sql } from 'drizzle-orm';
 import { db, publications, descNullsLast } from '@/lib/server/db';
 import { analyzePublications } from './analyze';
 import { calculatePressScore } from './score';
@@ -12,33 +12,26 @@ import {
 import type { AnalysisResult } from '@/lib/shared/types';
 import type { PublicationForPrompt } from './prompts';
 import { publicationToApi } from '../publications/to-api';
-import type { AnalysisBatchPayload } from '@/lib/shared/schemas';
+import type { ScoringBatchPayload } from '@/lib/shared/schemas';
 
 // Wire shape and internal filter shape match 1:1 (camelCase throughout).
-export type AnalysisBatchFilters = AnalysisBatchPayload;
+export type AnalysisBatchFilters = ScoringBatchPayload;
 
 export async function fetchPublicationsForAnalysis(
   filters: AnalysisBatchFilters,
 ): Promise<PublicationForPrompt[]> {
-  const clauses = [];
-  if (!filters.forceReanalyze) {
-    clauses.push(eq(publications.analysisStatus, 'pending'));
-  }
-  if (filters.enrichedOnly) {
-    if (filters.includePartial) {
-      clauses.push(
-        inArray(publications.enrichmentStatus, ['enriched', 'partial']),
-      );
-    } else {
-      clauses.push(eq(publications.enrichmentStatus, 'enriched'));
-    }
-  }
-  if (filters.minWordCount > 0) {
-    clauses.push(gte(publications.wordCount, filters.minWordCount));
-  }
+  // Non-force: restrict to the canonical scoring-candidate view — the single
+  // source of the „bewertbar"-predicate, shared with the in-chat pipeline
+  // (scripts/session-pipeline.mjs) and the status tile. The view enforces
+  // content-gate / enrichment / press_score IS NULL / not-ITA. Force ignores the
+  // view and re-analyses anything (top-N by published_at), so a maintainer can
+  // deliberately re-score already-scored material (overwrites).
+  const where = filters.forceReanalyze
+    ? undefined
+    : sql`${publications.id} IN (SELECT id FROM publication_scoring_candidates)`;
 
   const rows = await db.query.publications.findMany({
-    where: clauses.length > 0 ? and(...clauses) : undefined,
+    where,
     orderBy: descNullsLast(publications.publishedAt),
     limit: filters.limit,
     with: {

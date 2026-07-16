@@ -17,7 +17,7 @@
 
 import pg from 'pg';
 import { readFileSync } from 'fs';
-import { extractDoiFromRow, DOI_CANDIDATE_WHERE_CLAUSE } from './lib/doi-extract.mjs';
+import { extractDoiFromRow, DOI_CANDIDATE_WHERE_CLAUSE } from '../lib/shared/doi-extract.mjs';
 
 const PG_URL = process.env.PG_DATABASE_URL
   || 'postgresql://postgres:postgres@127.0.0.1:54422/postgres';
@@ -234,31 +234,28 @@ async function cmdCandidates(opts, positional) {
   const toDate = opts['to'] || null;
   const importedAfter = opts['imported-after'] || null;
 
-  // Default: nur Pubs mit tatsächlich vorhandener Inhalts-Substanz.
-  // Ein Status 'enriched' allein reicht nicht — manche Pubs haben den Loop ohne
-  // Quellen-Treffer durchlaufen und haben leere Abstract-Felder. Solche Pubs
-  // dürfen nicht bewertet werden, sonst entstehen aus Titeln freie Fabrikationen.
+  // Basis-Prädikat („bewertbar") lebt jetzt in der kanonischen View
+  // publication_scoring_candidates (eine Wahrheit, geteilt mit dem Server-
+  // Batch-Pfad lib/server/analysis/batch.ts und der Status-Kachel). Default
+  // (ohne ITA) selektiert direkt aus der View. Der includeIta-Override ist ein
+  // seltener Debug-Escape-Hatch — die View schließt ITA fest aus, also wird das
+  // Prädikat dort inline nachgebaut (ohne ITA-Klausel), semantisch identisch.
   const MIN_CONTENT_LEN = 120; // Mindestlänge in Zeichen für „bewertbar".
-  const conditions = [
-    'p.archived = false',
-    "p.analysis_status = 'pending'",
-    // Hard guard: never surface an already-scored publication as a candidate,
-    // even if the analysis_status<->press_score invariant were ever violated.
-    'p.press_score IS NULL',
-    // 'failed' bewusst inkludiert: eine Pub ohne DOI durchläuft die API-Cascade
-    // erfolglos (→ failed), kann aber eine echte WebDB-summary_de tragen. Der
-    // Inhaltsgate GREATEST(...) >= 120 unten ist der eigentliche Bewertbarkeits-
-    // Test; der Status schließt hier nur noch 'pending' aus (→ erst enrich-all).
-    "p.enrichment_status IN ('enriched', 'partial', 'failed')",
-    `GREATEST(
-      length(COALESCE(p.summary_de,'')),
-      length(COALESCE(p.summary_en,'')),
-      length(COALESCE(p.enriched_abstract,'')),
-      length(COALESCE(p.abstract,''))
-    ) >= ${MIN_CONTENT_LEN}`,
-  ];
-  if (!includeIta) {
-    conditions.push(ITA_EXCLUDE_CLAUSE);
+  const baseRelation = includeIta ? 'publications p' : 'publication_scoring_candidates p';
+  const conditions = [];
+  if (includeIta) {
+    conditions.push(
+      'p.archived = false',
+      "p.analysis_status IN ('pending', 'failed')",
+      'p.press_score IS NULL',
+      "p.enrichment_status IN ('enriched', 'partial', 'failed')",
+      `GREATEST(
+        length(COALESCE(p.summary_de,'')),
+        length(COALESCE(p.summary_en,'')),
+        length(COALESCE(p.enriched_abstract,'')),
+        length(COALESCE(p.abstract,''))
+      ) >= ${MIN_CONTENT_LEN}`,
+    );
   }
   const params = [];
   if (onlySummaryDe) {
@@ -318,8 +315,8 @@ async function cmdCandidates(opts, positional) {
           JOIN orgunits ou ON ou.id = op.orgunit_id
           WHERE op.publication_id = p.id AND ou.akronym_de IS NOT NULL
         ) AS institute_akronyms
-      FROM publications p
-      WHERE ${conditions.join(' AND ')}
+      FROM ${baseRelation}
+      WHERE ${conditions.length ? conditions.join(' AND ') : 'true'}
       ORDER BY
         ${requireMahighlight ? '' : 'p.popular_science DESC,'}
         p.published_at DESC NULLS LAST,
