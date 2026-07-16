@@ -48,6 +48,7 @@ import argparse
 import gc
 import hashlib
 import os
+import re
 import sys
 import time
 from dataclasses import dataclass
@@ -74,13 +75,39 @@ PROD_CRED_PATH = os.path.expanduser("~/.config/oeaw-press-release/prod-credentia
 # DB / utilities (unchanged)
 # ---------------------------------------------------------------------------
 
+TUNNEL_HOST = "127.0.0.1"
+TUNNEL_PORT = "5433"
+
+
 def load_db_url(target: str) -> str:
     if target == "prod":
+        # Escape hatch: a fully-formed URL wins over everything (rarely needed).
+        override = os.environ.get("PROD_DB_URL_OVERRIDE", "").strip()
+        if override:
+            return override
+        url = None
         with open(PROD_CRED_PATH, "r") as f:
             for line in f:
                 if line.startswith("PROD_DB_URL_POOLER="):
-                    return line.split("=", 1)[1].strip()
-        raise RuntimeError(f"PROD_DB_URL_POOLER not found in {PROD_CRED_PATH}")
+                    url = line.split("=", 1)[1].strip()
+                    break
+        if url is None:
+            raise RuntimeError(f"PROD_DB_URL_POOLER not found in {PROD_CRED_PATH}")
+
+        # PROD_DB_TUNNEL=1 routes through the SSH tunnel — needed from networks
+        # where the direct pooler path is blocked (the OeAW office firewall resets
+        # the TLS handshake to :5432). Rewrite host:port to the tunnel and force
+        # sslmode=require: for libpq/psycopg2, `require` means "encrypt but do not
+        # verify the CA", which accepts the pooler's self-signed cert over the
+        # already-authenticated SSH transport — so NO libpq CA config is needed.
+        # Mirrors scripts/lib/db.mjs::loadDbUrl for the JS pipeline.
+        if os.environ.get("PROD_DB_TUNNEL") in ("1", "true"):
+            url = re.sub(r"@[^/@:]+:\d+/", f"@{TUNNEL_HOST}:{TUNNEL_PORT}/", url)
+            if "sslmode=" in url:
+                url = re.sub(r"sslmode=[^&]*", "sslmode=require", url)
+            else:
+                url += ("&" if "?" in url else "?") + "sslmode=require"
+        return url
     return LOCAL_URL
 
 

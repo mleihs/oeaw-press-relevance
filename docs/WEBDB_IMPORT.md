@@ -86,10 +86,17 @@ node scripts/import-press-news.mjs --target=prod --apply
 
 # 9. SPECTER2 press-similarity embeddings for the new pubs. Runs AFTER step 8 so
 #    the orphan set is final before the centroid / press_similarity refresh.
-#    Idempotent (hash-skip); embeddings live only in prod; --since scopes the
-#    publications pass to this import's window (orphans pass always runs).
-scripts/embeddings/.venv/bin/python scripts/embeddings/compute-embeddings.py \
-  --target=prod --since=<import-year>-01-01
+#    Idempotent (hash-skip); embeddings live only in prod. From the OeAW office
+#    start the SSH tunnel first (npm run db:tunnel &) + prefix PROD_DB_TUNNEL=1 —
+#    the script now honors it (rewrites host→127.0.0.1:5433, sslmode=require),
+#    same as scripts/lib/db.mjs. Do NOT use --since blindly: it filters on
+#    published_at, and newly-scored pubs often have OLDER/NULL publication dates,
+#    so --since=<import-year>-01-01 can silently skip every new pub. Omitting
+#    --since scans all analyzed pubs and hash-skips the unchanged ones (cheap —
+#    only genuinely-missing embeddings get computed). Prefer the no-since form
+#    unless you have a specific window to scope.
+PROD_DB_TUNNEL=1 scripts/embeddings/.venv/bin/python \
+  scripts/embeddings/compute-embeddings.py --target=prod
 
 # 10. Cleanup
 docker stop oeaw-webdb-mysql && docker rm oeaw-webdb-mysql
@@ -398,15 +405,26 @@ does NOT copy them — so newly-scored pubs carry no embedding until the SPECTER
 pass runs against prod:
 
 ```bash
-scripts/embeddings/.venv/bin/python scripts/embeddings/compute-embeddings.py \
-  --target=prod --since=2026-01-01
+# from the OeAW office: tunnel + PROD_DB_TUNNEL=1 (see step 9 / connection note)
+PROD_DB_TUNNEL=1 scripts/embeddings/.venv/bin/python \
+  scripts/embeddings/compute-embeddings.py --target=prod
 ```
 
 - `--scope=analyzed` (default) embeds pubs that have a `press_score` or a
   `press_release` — exactly the cluster reference set. Do **not** widen to
   `--scope=all`; that pulls unscored pubs into the reference cluster.
-- `--since=YYYY-MM-DD` scopes the publications pass to one import window; the
-  orphan-press-release pass always runs. Hash-idempotent — safe to re-run.
+- `--since=YYYY-MM-DD` filters the publications pass on **`published_at`**, NOT
+  import date. Newly-scored pubs frequently have older or NULL publication dates
+  (verified 2026-07-16: all 70 missing embeddings had `published_at < 2026`), so
+  a `--since=<import-year>` cutoff can skip the entire new cohort. **Default to
+  omitting `--since`** — the hash-skip makes a full-scope run idempotent and only
+  the genuinely-missing/changed embeddings are computed (70 pubs ≈ 6 s of encode).
+  The orphan-press-release pass always runs regardless.
+- `PROD_DB_TUNNEL=1` is honored by this script (mirrors `scripts/lib/db.mjs`):
+  it rewrites the pooler host to `127.0.0.1:5433` and forces `sslmode=require`
+  (libpq `require` = encrypt without CA-verify, accepts the pooler's self-signed
+  cert over the SSH transport). Needed from any network where the direct
+  `:5432` path is firewall-reset.
 - Run it **after** the press-news match (step 8) so the centroid +
   `press_similarity` refresh at the end reflects the final orphan set.
 

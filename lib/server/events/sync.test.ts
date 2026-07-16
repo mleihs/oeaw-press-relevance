@@ -73,11 +73,9 @@ function makeEvent(overrides: Partial<NormalizedEvent> = {}): NormalizedEvent {
   };
 }
 
-// Columns the sync is ALLOWED to overwrite on re-sync (fresh content from the
-// source of truth). Anything outside this set must never be in the SET list.
-// Exact-equality below means ANY column added to the SET list reds this test —
-// the author then has to consciously confirm it should resync.
-const EXPECTED_SET_COLUMNS = [
+// Content columns the sync ALWAYS overwrites on re-sync (fresh content from the
+// source of truth), written as a bare `excluded.<col>`.
+const CONTENT_SET_COLUMNS = [
   'title',
   'teaser',
   'bodytext',
@@ -91,18 +89,13 @@ const EXPECTED_SET_COLUMNS = [
   'lang',
   'availableLangs',
   'syncedAt',
-].sort();
+];
 
-// Maintainer-triage + LLM-analysis columns (property names from the `events`
-// table in lib/server/db/schema.ts). A re-sync from ANY source must leave these
-// untouched, so they must be ABSENT from the UPSERT SET list.
-const PROTECTED_COLUMNS = [
-  // maintainer triage
-  'decision',
-  'decidedAt',
-  'flagNotes',
-  'createdAt',
-  // LLM analysis / scoring
+// LLM-analysis columns present in the SET list but ONLY as a guarded reset:
+// a CASE that nulls them (analysis_status→'pending') iff scoring-relevant content
+// of a still-upcoming event changed, so the event is re-scored; an idempotent
+// re-sync leaves them intact. See upsertEvents' `rescore` predicate.
+const RESCORE_RESET_COLUMNS = [
   'analysisStatus',
   'eventScore',
   'publicAppeal',
@@ -115,6 +108,22 @@ const PROTECTED_COLUMNS = [
   'reasoning',
   'llmModel',
   'analysisCost',
+];
+
+// The full SET list. Exact-equality below means ANY column added to the SET list
+// reds this test — the author then has to consciously confirm it should resync.
+const EXPECTED_SET_COLUMNS = [...CONTENT_SET_COLUMNS, ...RESCORE_RESET_COLUMNS].sort();
+
+// Maintainer-triage columns (property names from the `events` table in
+// lib/server/db/schema.ts). A re-sync from ANY source must leave these fully
+// untouched — never overwritten AND never reset — so they must be ABSENT from
+// the UPSERT SET list. (The LLM-analysis columns are NO LONGER here: they are in
+// the SET list as a guarded re-score reset — see RESCORE_RESET_COLUMNS.)
+const PROTECTED_COLUMNS = [
+  'decision',
+  'decidedAt',
+  'flagNotes',
+  'createdAt',
   'analyzedAt',
 ];
 
@@ -126,7 +135,7 @@ beforeEach(() => {
 });
 
 describe('upsertEvents — maintainer/score-column protection', () => {
-  it('omits every maintainer and LLM column from the ON CONFLICT SET list', async () => {
+  it('omits every maintainer column from the ON CONFLICT SET list', async () => {
     h.setReturning([{ inserted: true }]);
     await upsertEvents([makeEvent()]);
 
@@ -139,7 +148,27 @@ describe('upsertEvents — maintainer/score-column protection', () => {
     }
   });
 
-  it('updates exactly the content columns on conflict (snapshot of the contract)', async () => {
+  it('includes the re-score reset columns as guarded CASE expressions, not bare overwrites', async () => {
+    h.setReturning([{ inserted: true }]);
+    await upsertEvents([makeEvent()]);
+
+    const set = (h.captured.set ?? {}) as Record<string, unknown>;
+    const rawSql = (v: unknown): string =>
+      ((v as { queryChunks?: unknown[] }).queryChunks ?? [])
+        .map((c) => {
+          const cv = (c as { value?: unknown }).value;
+          return Array.isArray(cv) ? cv.join('') : typeof cv === 'string' ? cv : '';
+        })
+        .join(' ')
+        .toUpperCase();
+    for (const col of RESCORE_RESET_COLUMNS) {
+      expect(set, `re-score column "${col}" missing from SET`).toHaveProperty(col);
+      expect(rawSql(set[col]), `re-score column "${col}" must be a guarded CASE, not a blind overwrite`)
+        .toContain('CASE WHEN');
+    }
+  });
+
+  it('updates exactly the content + re-score columns on conflict (snapshot of the contract)', async () => {
     h.setReturning([{ inserted: true }]);
     await upsertEvents([makeEvent()]);
 

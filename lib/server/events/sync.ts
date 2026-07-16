@@ -58,9 +58,20 @@ export interface EventsUpsertResult {
 }
 
 /** Bulk INSERT … ON CONFLICT (webdb_uid) DO UPDATE in a single round-trip.
- *  The maintainer columns (decision, decided_at, flag_notes, created_at) and
- *  the LLM scoring columns are omitted from the SET list by construction, so
- *  a re-sync from ANY source never overwrites triage progress or scores.
+ *  The maintainer columns (decision, decided_at, flag_notes, created_at) are
+ *  omitted from the SET list by construction, so a re-sync from ANY source
+ *  never overwrites triage progress.
+ *
+ *  RE-SCORE ON CONTENT CHANGE: the LLM scoring columns are normally preserved
+ *  too, BUT when a re-sync brings genuinely different scoring-relevant content
+ *  (title/teaser/bodytext/event_information/event_at) for a STILL-UPCOMING event,
+ *  they are reset (analysis_status→'pending', score/dims/text→NULL) so the event
+ *  re-enters the candidate pool (event-candidates filters event_score IS NULL) and
+ *  gets re-scored — a stale edit shouldn't keep an outdated score. The `event_at
+ *  >= NOW()` guard means a past event that gets edited never loses its historical
+ *  score (past events are never re-scored). An idempotent re-sync (identical
+ *  content) is a no-op via IS DISTINCT FROM, so scores survive normal re-syncs.
+ *
  *  `xmax = 0` is Postgres' canonical inserted-vs-updated marker on UPSERT — a
  *  freshly inserted row has xmax = 0, a row updated by the ON CONFLICT branch
  *  carries the current transaction id, so the same RETURNING column tells us
@@ -73,6 +84,17 @@ export async function upsertEvents(
   normalized: NormalizedEvent[],
 ): Promise<EventsUpsertResult> {
   if (normalized.length === 0) return { imported: 0, updated: 0 };
+  // TRUE when this re-sync changes scoring-relevant content of an upcoming event
+  // → its cached analysis is stale and must be recomputed.
+  const rescore = sql`(
+    excluded.event_at >= NOW() AND (
+      ${eventsTable.title} IS DISTINCT FROM excluded.title OR
+      ${eventsTable.teaser} IS DISTINCT FROM excluded.teaser OR
+      ${eventsTable.bodytext} IS DISTINCT FROM excluded.bodytext OR
+      ${eventsTable.eventInformation} IS DISTINCT FROM excluded.event_information OR
+      ${eventsTable.eventAt} IS DISTINCT FROM excluded.event_at
+    )
+  )`;
   const upserted = await db
     .insert(eventsTable)
     .values(normalized)
@@ -92,6 +114,19 @@ export async function upsertEvents(
         lang: sql`excluded.lang`,
         availableLangs: sql`excluded.available_langs`,
         syncedAt: sql`NOW()`,
+        // Re-score triggers: reset cached analysis iff content materially changed.
+        analysisStatus: sql`CASE WHEN ${rescore} THEN 'pending' ELSE ${eventsTable.analysisStatus} END`,
+        eventScore: sql`CASE WHEN ${rescore} THEN NULL ELSE ${eventsTable.eventScore} END`,
+        publicAppeal: sql`CASE WHEN ${rescore} THEN NULL ELSE ${eventsTable.publicAppeal} END`,
+        scientificSignificance: sql`CASE WHEN ${rescore} THEN NULL ELSE ${eventsTable.scientificSignificance} END`,
+        reach: sql`CASE WHEN ${rescore} THEN NULL ELSE ${eventsTable.reach} END`,
+        timeliness: sql`CASE WHEN ${rescore} THEN NULL ELSE ${eventsTable.timeliness} END`,
+        pitchSuggestion: sql`CASE WHEN ${rescore} THEN NULL ELSE ${eventsTable.pitchSuggestion} END`,
+        suggestedAngle: sql`CASE WHEN ${rescore} THEN NULL ELSE ${eventsTable.suggestedAngle} END`,
+        targetAudience: sql`CASE WHEN ${rescore} THEN NULL ELSE ${eventsTable.targetAudience} END`,
+        reasoning: sql`CASE WHEN ${rescore} THEN NULL ELSE ${eventsTable.reasoning} END`,
+        llmModel: sql`CASE WHEN ${rescore} THEN NULL ELSE ${eventsTable.llmModel} END`,
+        analysisCost: sql`CASE WHEN ${rescore} THEN NULL ELSE ${eventsTable.analysisCost} END`,
       },
     })
     .returning({ inserted: sql<boolean>`(xmax = 0)` });
