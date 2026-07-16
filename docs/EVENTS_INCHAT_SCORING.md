@@ -8,48 +8,121 @@ Script in die **prod**-DB. Resume-Trigger nach `/clear`:
 > Schwester-Doc: `docs/PUBLICATIONS_INCHAT_SCORING.md` (Publikationen). Der
 > WebDB-Re-Import end-to-end ist `docs/WEBDB_IMPORT.md`.
 
-## Schlüssel-Fakt: Events werden DIREKT AUF PROD bewertet
+## Schlüssel-Fakt 1: Events werden DIREKT AUF PROD bewertet
 
 Anders als Publikationen (lokal kanonisch, dann gepusht) werden **Events gegen prod**
 bewertet. Gründe (gelernt 2026-06-25):
 - Lokale und prod-Event-Rows haben **verschiedene `id` (uuid)**. Stabiler
   Natural Key ist **`webdb_uid`** (TYPO3 news uid).
 - `scripts/apply-event-scores.ts` matcht per **`id`**, also müssen die **prod**-ids
-  verwendet werden. Die bestehenden in-chat-Scores wurden mit `--target=prod`
-  geschrieben.
+  verwendet werden.
 - Daher: Kandidaten von **prod** ziehen, bewerten, auf **prod** anwenden. Das lokale
   events-Table NICHT bewerten (ids matchen nicht).
 
 Prod ist vorwärtsgerichtet: nur **zukünftige** Events (`event_at >= now()`) werden
 bewertet. Vergangene unbewertete Events bleiben liegen (keine Presserelevanz mehr).
 
-## Stand (2026-06-25, erledigt)
+## Schlüssel-Fakt 2: prod = ZWEI DBs (VPS kanonisch + Cloud-Warm-Standby)
 
-Frischer WebDB-Re-Import; `sync-events --target=prod` hatte die neuen Events nach prod
-gebracht (UPSERT erhält die Analyse-Spalten, die 162 bereits gescorten Rows blieben
-unangetastet). Die **29 Zukunfts-Events mit `event_score IS NULL`** wurden in-chat als
-Opus 4.8 bewertet und auf prod geschrieben: **prod `events` 162 → 191 gescort,
-Zukunfts-unscored → 0**, alle 29 mit Tag `anthropic/claude-opus-4.8 (in-chat)`,
-Kosten 0. Kalibrierung hielt (Mittel ~0.25, Spanne 0.068–0.666, linksschief; Top:
-Schrödinger-Centenary 0.666, Atomkriegs-Workshop 0.591, Forscherinnen-Ausstellung
-0.545, Kinderuni 0.469; Boden ~0.07 interne Seminare / Calls for Papers). Die Pub-Seite
-des Imports ist komplett live (prod == local: 38.916 Pubs / 8.001 scored, Embeddings
-refreshed). **Nichts offen** — diese Datei bleibt das wiederverwendbare Runbook für den
-nächsten Import (Trigger erneut feuern, wenn `event-candidates.mjs` wieder `count > 0`
-liefert).
+Seit dem Self-Hosting-Umzug gibt es **zwei** prod-Datenbanken (verifiziert 2026-07-16):
 
-## Schritt 1 — unbewertete Events holen (neuer Puller)
+1. **VPS `db-oeaw.metaspots.net` = die eine Live-DB (kanonisch).** App + alle Scripts
+   lesen/schreiben ausschließlich hier. **Nur hierhin scoren.**
+2. **Supabase-Cloud (`…duqybyxpgghietjbrxnc…`, eu-west-3) = passiver Warm-Standby.**
+   Wird **einmal pro Nacht um 03:30 UTC** komplett neu überschrieben durch
+   `oeaw-db-mirror.timer` → `/usr/local/sbin/mirror-oeaw-db-to-cloud.sh`
+   (`pg_dump --schema=public --clean --if-exists` von der VPS, per `psql` in die Cloud,
+   einseitig VPS→Cloud). Kein Live-Mit-System, kein Doppel-Write nötig.
+
+⇒ **Scores nur auf die VPS schreiben.** Der 03:30-Mirror trägt sie automatisch in die
+Cloud (ein manueller Cloud-Write würde beim nächsten Mirror eh überschrieben).
+
+## Schlüssel-Fakt 3: VERBINDUNG geht über SSH-Tunnel (WICHTIG, aber sauber)
+
+Von der ÖAW-Office-IP resettet die Firewall den TLS-Handshake zum öffentlichen
+Pooler `db-oeaw.metaspots.net:5432` (`ECONNRESET`). Der Pooler selbst ist gesund; nur
+der Netzpfad wird abgewürgt (Corporate-Firewall der ÖAW, nicht unsere Infra). Ein
+SSH-Tunnel über `:22` ist der korrekte, sichere Dev→Prod-Zugang. Seit 2026-07-16 ist er
+first-class integriert, **kein** manuelles URL-Basteln und **kein** prozessweites
+`NODE_TLS_REJECT_UNAUTHORIZED=0` mehr:
 
 ```bash
-node scripts/event-candidates.mjs --target=prod            # alle 29
-node scripts/event-candidates.mjs --target=prod --limit=15 # Batch
+npm run db:tunnel &        # ssh -N -L 5433:127.0.0.1:5432 metaspots (Hintergrund)
+# danach jedem prod-Befehl PROD_DB_TUNNEL=1 voranstellen:
+PROD_DB_TUNNEL=1 node scripts/event-candidates.mjs --target=prod
+```
+
+Wie das sauber funktioniert (`scripts/lib/db.mjs`):
+- `PROD_DB_TUNNEL=1` → `loadDbUrl('prod')` schreibt Host:Port der Pooler-URL auf
+  `127.0.0.1:5433` um und normalisiert auf `sslmode=require`. Gilt für **alle**
+  prod-Scripts (`event-candidates`, `sync-events`, `apply-event-scores`, …).
+- **postgres-js (Drizzle, `lib/server/db`)** toleriert das self-signed Cert des Poolers
+  unter `sslmode=require` (genau wie die Live-App) — kein Flag nötig.
+- **node-pg (`connectDb`)** bekommt ein **verbindungsgebundenes**
+  `ssl:{rejectUnauthorized:false}` (nicht prozessweit!), und `sslmode` wird aus der URL
+  gestrippt, damit dieses ssl-Objekt greift. Jede andere TLS im Prozess (Sentry,
+  OpenRouter) bleibt voll verifiziert.
+- `PROD_DB_URL_OVERRIDE` existiert weiter als Escape-Hatch (fertige URL gewinnt).
+- Für reines `psql` (libpq kennt `no-verify`/`require`-self-signed): URL
+  `…@127.0.0.1:5433/postgres?sslmode=require` verwenden.
+- Env verschwindet pro Shell-Aufruf → Tunnel-Check + `PROD_DB_TUNNEL=1` je Bash-Block
+  (Snippet unten in Schritt 0).
+
+> **Offen (tiefere Infra-Wurzel, separat):** Der Pooler ist öffentlich auf
+> `0.0.0.0:5432/6543` exponiert und präsentiert ein self-signed Cert; VPS-App **und**
+> Vercel hängen am öffentlichen `db-oeaw.metaspots.net:5432`. Echter Wurzel-Fix = echtes
+> LE-Cert via Traefik-TLS-Termination + Port entöffentlichen/IP-allowlisten + Clients auf
+> `verify-full` repointen. Berührt den Live-Proxy (coolify-proxy) + Vercel + Coolify-
+> Persistenz → als eigener, abgesicherter Schritt geplant, nicht mitten im Scoring.
+
+## Neu UND aktualisiert: `sync-events` erfasst beides automatisch
+
+`sync-events` liest **TYPO3-MySQL** (Source of Truth, Container `oeaw-webdb-mysql`),
+nicht das lokale Postgres, und upsertet direkt in prod. Der UPSERT in
+`lib/server/events/sync.ts::upsertEvents` (Re-Score-Logik):
+- **Neue** Events → INSERT mit `event_score = NULL` ⇒ Kandidat.
+- **Aktualisierte** Events → wenn scoring-relevanter Inhalt (title/teaser/bodytext/
+  event_information/event_at) eines **zukünftigen** Events sich ändert (`IS DISTINCT
+  FROM`), werden `analysis_status→'pending'` und alle Score-/Text-Spalten auf `NULL`
+  zurückgesetzt ⇒ Event fällt zurück in den Kandidaten-Pool und wird neu bewertet.
+- Idempotenter Re-Sync (identischer Inhalt) = No-op, Scores überleben.
+- Vergangene Events (`event_at < NOW()`) verlieren ihren Score NIE.
+
+⇒ Nach einem neuen WebDB-Import genügt **ein**
+`PROD_DB_TUNNEL=1 npm run sync-events -- --target=prod --yes` (MySQL-Container
+`oeaw-webdb-mysql` muss laufen); danach listet `event-candidates` automatisch neu +
+materiell geändert (beide `event_score IS NULL`).
+
+## Stand (2026-07-16)
+
+Frischer WebDB-Re-Import (lokal kanonisch). `sync-events --target=prod` gelaufen
+(durch Tunnel): **imported 9, updated 157, pruned 0** (166 aus TYPO3). Danach auf prod:
+**18 future-unscored Kandidaten** (9 brandneu + 9 materiell geänderte), 166 future-total.
+⇒ 1–2 Batches. Verbindungsweg (Tunnel + Override + TLS-Flag) verifiziert.
+
+Vorheriger Stand (2026-06-25): 29 Zukunfts-Events als Opus 4.8 bewertet, prod 162→191;
+Kalibrierung hielt (Mittel ~0.25, Top Schrödinger-Centenary 0.666).
+
+## Schritt 0 — Session-Setup (Verbindung herstellen)
+
+Tunnel einmal je Session starten, dann jedem prod-Befehl `PROD_DB_TUNNEL=1` voranstellen.
+Tunnel-Check-Snippet für jeden Bash-Block:
+```bash
+if ! pgrep -f '5433:127.0.0.1:5432' >/dev/null; then npm run db:tunnel & sleep 3; fi
+# danach z.B.: PROD_DB_TUNNEL=1 node scripts/event-candidates.mjs --target=prod
+```
+
+## Schritt 1 — unbewertete Events holen
+
+```bash
+PROD_DB_TUNNEL=1 node scripts/event-candidates.mjs --target=prod            # alle offenen
+PROD_DB_TUNNEL=1 node scripts/event-candidates.mjs --target=prod --limit=15 # Batch
 ```
 
 Gibt JSON `{count, rubric_dims, events:[{id, webdb_uid, title, teaser, bodytext,
 event_information, event_at, location_title, organizer_title, institute, url, lang,
 content, content_chars}]}`. `content` ist HTML-bereinigt — direkt daraus bewerten.
-`count: 0` ⇒ nichts mehr offen (nach einem neuen Import erst `sync-events
---target=prod`, dann tauchen die nächsten Zukunfts-Events auf).
+`count: 0` ⇒ nichts mehr offen. Bei neuem Import erst `sync-events --target=prod`.
 
 ## Schritt 2 — bewerten (Rubrik, identisch zu lib/server/events/prompts.ts)
 
@@ -72,14 +145,14 @@ Gedankenstriche „—"; KEINE Anführungszeichen, die brechen das JSON):
 - **target_audience** — 1-3 Angaben (z.B. breite Öffentlichkeit, Fachpublikum).
 - **reasoning** — 2-3 Sätze Begründung, rein inhaltlich, kein Feld-/Variablenname.
 
-### Kalibrierung (aus den 162 prod-gescorten Events, 2026-06-25)
+### Kalibrierung (aus den prod-gescorten Events)
 Mittel ~0.23, Spanne 0.0–0.87. Anker:
 - **0.0–0.10**: interne/technische Seminare, Workshops, Group Meetings.
 - **0.20–0.40**: spezialisierte öffentliche Vorträge/Kolloquien, enges Thema.
 - **0.55–0.75**: öffentliche Vorträge mit breiter/aktueller Resonanz.
 - **0.80–0.90**: Flaggschiff-Events zu gesellschaftlichen Hot-Topics (KI,
   Geopolitik, Klima, prominente Gastvorträge).
-Viele der 29 sind Seminare/Fachvorträge → erwarte linksschiefe Verteilung mit
+Viele Kandidaten sind Seminare/Fachvorträge → erwarte linksschiefe Verteilung mit
 mehreren Near-Zero-Items. Ehrlich aus dem Content bewerten.
 
 ## Schritt 3 — schreiben
@@ -91,22 +164,25 @@ per **prod-`id`** aus dem Puller:
    "timeliness":0.0,"pitch_suggestion":"…","suggested_angle":"…",
    "target_audience":"…","reasoning":"…" }]
 ```
-Dann anwenden (reuse computeEventScore, Provenienz `anthropic/claude-opus-4.8
-(in-chat)`, cost 0; kein `--apply`-Flag, `--yes` bestätigt den prod-Write):
+Dann anwenden (Verbindung aus Schritt 0 muss aktiv sein; reuse computeEventScore,
+Provenienz `anthropic/claude-opus-4.8 (in-chat)`, cost 0; `--yes` bestätigt den
+prod-Write):
 ```bash
-npm run apply-event-scores -- --target=prod --yes --file=/tmp/events-batch-N.json
+PROD_DB_TUNNEL=1 npm run apply-event-scores -- --target=prod --yes --file=/tmp/events-batch-N.json
 ```
-Nach jedem Batch verifizieren:
+Nach jedem Batch verifizieren (Tunnel aktiv; psql braucht `sslmode=require`):
 ```bash
 PSQL=$(ls /opt/homebrew/Cellar/libpq/*/bin/psql | head -1)
-URL=$(grep '^PROD_DB_URL_POOLER=' ~/.config/oeaw-press-release/prod-credentials | cut -d= -f2-)
-"$PSQL" "$URL" -tAc "select count(*) filter (where event_score is null and event_at>=now()) from events;"
+PW=$(grep '^PROD_DB_URL_POOLER=' ~/.config/oeaw-press-release/prod-credentials | cut -d= -f2- | sed -E 's#.*//postgres.dev_tenant:([^@]+)@.*#\1#')
+"$PSQL" "postgresql://postgres.dev_tenant:${PW}@127.0.0.1:5433/postgres?sslmode=require" -tAc \
+  "select count(*) filter (where event_score is null and event_at>=now()) from events;"
 ```
-Wiederholen bis 0. Fertig, wenn alle Zukunfts-Events `analyzed`.
+Wiederholen bis 0. Fertig, wenn alle Zukunfts-Events gescort.
 
 ## Nicht vergessen
 - KEIN OpenRouter-Lauf für Events (kein `npm run analyze-events`).
-- Modell-Tag steht jetzt auf `anthropic/claude-opus-4.8 (in-chat)`
-  (`scripts/apply-event-scores.ts`); die 139 Alt-Scores tragen `…-opus-4 (in-chat)`.
+- Modell-Tag steht auf `anthropic/claude-opus-4.8 (in-chat)`
+  (`scripts/apply-event-scores.ts`).
 - Das Feature ist deployt (Vercel + VPS); Scores erscheinen live, sobald geschrieben.
-- `scripts/event-candidates.mjs` ist neu (dieser Import) und uncommitted.
+- Der Cloud-Standby braucht KEINEN manuellen Write (nächtlicher 03:30-Mirror).
+</content>
