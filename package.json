@@ -19,6 +19,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "enrich-orphans": "tsx scripts/enrich-orphans.ts",
+    "db:tunnel": "ssh -N -L 5433:127.0.0.1:5432 metaspots",
     "sync-events": "tsx scripts/sync-events.ts",
     "import-events-json": "tsx scripts/import-events-json.ts",
     "import-publications-delta": "tsx scripts/import-publications-delta.ts",
