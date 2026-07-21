@@ -4,7 +4,7 @@
 // SSE event names match the publication analysis modal so the event modal can
 // reuse the same progress UI.
 
-import { and, asc, eq, gte, inArray, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 import { db, events as eventsTable } from '@/lib/server/db';
 import {
   chatCompletionJson,
@@ -41,35 +41,51 @@ export interface EventsAnalysisScope {
   skipped: number;
 }
 
-/** Upcoming events awaiting analysis (or all upcoming when forcing). */
-export async function fetchEventsForAnalysis(
-  filters: EventsAnalyzeFilters,
-): Promise<EventsAnalysisScope> {
-  // Non-force: the canonical candidate view (upcoming + event_score IS NULL,
-  // incl. failed-retry) — the single source shared with scripts/event-
-  // candidates.mjs and the status tile. Force: all upcoming events regardless
-  // of score, so a maintainer can re-score everything ahead.
-  //
-  // Bewusst KEIN created_at-Fenster (anders als bei den Publikationen, wo
-  // SCORING_RECENT_DAYS den Altbestand vom teuren OpenRouter-Pfad fernhält):
-  // `event_at >= now()` begrenzt die Menge hier schon von selbst — es gibt
-  // keinen Event-Altbestand, weil vergangene Events nie wieder Kandidaten
-  // werden. Ein zusätzliches Eingangsfenster würde nur frisch importierte,
-  // weit in der Zukunft liegende Events willkürlich ausschließen.
-  const pool = filters.forceReanalyze
-    ? gte(eventsTable.eventAt, sql`NOW()`)
-    : sql`${eventsTable.id} IN (SELECT id FROM event_scoring_candidates)`;
+/**
+ * Der Scope EINES Event-Bewertungslaufs. Symmetrisch zu
+ * buildAnalysisScopeWhere in lib/server/analysis/batch.ts, mit einem
+ * begründeten Unterschied.
+ *
+ * Beide Gates sind Views, keine nachgebauten Prädikate (Migration
+ * 20260721000002): non-force nimmt die offenen Kandidaten
+ * (`event_scoring_candidates`: künftig + event_score IS NULL, inkl.
+ * failed-Retry), force den ganzen Pool (`event_rescore_pool`: künftig, egal
+ * ob schon bewertet). Bis 2026-07-21 stand die Force-Bedingung als
+ * `event_at >= NOW()` im TypeScript und wäre damit hinter jeder künftigen
+ * Verschärfung der Kandidaten-View zurückgeblieben.
+ *
+ * Bewusst KEIN created_at-Fenster (anders als bei den Publikationen, wo
+ * SCORING_RECENT_DAYS den Altbestand vom teuren OpenRouter-Pfad fernhält):
+ * `event_at >= now()` begrenzt die Menge hier schon von selbst — es gibt
+ * keinen Event-Altbestand, weil vergangene Events nie wieder Kandidaten
+ * werden. Ein zusätzliches Eingangsfenster würde nur frisch importierte, weit
+ * in der Zukunft liegende Events willkürlich ausschließen.
+ *
+ * Exportiert, damit lib/server/events/analyze.test.ts das gerenderte SQL
+ * prüfen kann, ohne eine DB zu brauchen.
+ */
+export function buildEventScopeWhere(filters: EventsAnalyzeFilters) {
+  const view = sql.raw(
+    filters.forceReanalyze ? 'event_rescore_pool' : 'event_scoring_candidates',
+  );
+  const pool = sql`${eventsTable.id} IN (SELECT id FROM ${view})`;
   // Einzel-/Auswahl-Bewertung: die benannten ids, geschnitten mit dem Pool
   // (ein vergangenes Event bleibt also auch dann außen vor, wenn man es
   // ausdrücklich benennt). sql.param()::uuid[] wegen des Pooler-Bugs bei
   // barem ${array} (Memory drizzle-any-array-prod-bug).
-  const where = filters.ids?.length
+  return filters.ids?.length
     ? and(pool, sql`${eventsTable.id} = ANY(${sql.param(filters.ids)}::uuid[])`)
     : pool;
+}
+
+/** Upcoming events awaiting analysis (or all upcoming when forcing). */
+export async function fetchEventsForAnalysis(
+  filters: EventsAnalyzeFilters,
+): Promise<EventsAnalysisScope> {
   const events = await db
     .select()
     .from(eventsTable)
-    .where(where)
+    .where(buildEventScopeWhere(filters))
     .orderBy(asc(eventsTable.eventAt))
     .limit(filters.ids?.length ?? filters.limit);
 
