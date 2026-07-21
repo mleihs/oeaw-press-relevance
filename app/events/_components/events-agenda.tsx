@@ -16,7 +16,7 @@ interface Props {
 /**
  * Mobile-Agenda (M5, Mock Board-Mobile Z. 443–485): Events gruppiert nach
  * Wiener Kalendertag („Fr · 4. Juli" + Hairline), pro Event eine Karte mit
- * Titel/Venue/Score und full-width Pitchen/Verwerfen darunter. Ersetzt auf
+ * Titel/Venue/Score und full-width Relevant/Verwerfen darunter. Ersetzt auf
  * < md die Desktop-Tabelle (dort ~200px H-Overflow bei 390px, §M1-Befund).
  * Seit M6b öffnet der Titel-Tap das Detail-Bottom-Sheet (mobile-event-card).
  */

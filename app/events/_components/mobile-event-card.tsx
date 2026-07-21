@@ -19,6 +19,7 @@ import {
 } from '../_lib/event-format';
 import { getScoreBand, type ScoreBand } from '@/lib/shared/score-utils';
 import type { Event } from '@/lib/shared/types';
+import { getDecisionLabel } from '@/components/decision-badge';
 
 /** Linker Akzentbalken nach Score-Band (Mock `evBand.bar`), tokenisiert wie
  *  der Datum-Block der Desktop-Tabelle: high=brand, mid=warning, low=soon. */
@@ -142,11 +143,7 @@ function DecisionPill({ decision }: { decision: Event['decision'] }) {
             : 'bg-fill text-ink-muted',
       )}
     >
-      {decision === 'pitch'
-        ? 'Übernommen'
-        : decision === 'hold'
-          ? 'Warten'
-          : 'Verworfen'}
+      {getDecisionLabel(decision, 'events')}
     </span>
   );
 }

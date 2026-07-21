@@ -1766,12 +1766,12 @@ export const EXPL = {
     ),
   },
   event_decision_pitch: {
-    title: 'Status: Übernommen',
+    title: 'Status: Markiert',
     body: (
       <Para>
-        Das Event ist im zentralen Kalender eingetragen, keine weitere
-        Maintainer-Aktion nötig. Aus der Default-Liste „Offen" verschwindet es
-        und taucht im Tab „Übernommen" auf.
+        Das Event ist als relevant markiert und im zentralen Kalender
+        eingetragen, keine weitere Maintainer-Aktion nötig. Aus der
+        Default-Liste „Offen" verschwindet es und taucht im Tab „Markiert" auf.
       </Para>
     ),
   },
