@@ -33,12 +33,11 @@ export const POST = withApiError(async (req: NextRequest) => {
 
   const filters = await validateBody(req, scoringBatchPayloadSchema);
 
-  // Uncaught throws bubble to withApiError → 500.
-  const pubs = await fetchPublicationsForAnalysis(filters);
-  // Bei ausdrücklich benannten ids: was davon an den Bewertbarkeits-Gates
-  // hängen bleibt, wird gezählt und im complete-Frame ausgewiesen — sonst
-  // stünde im Modal „0 bewertet" ohne Grund.
-  const skipped = filters.ids ? filters.ids.length - pubs.length : 0;
+  // Uncaught throws bubble to withApiError → 500. `skipped` = benannte ids,
+  // die an den Bewertbarkeits-Gates hängen blieben; der Fetcher rechnet das,
+  // weil nur er die angefragte gegen die gefundene Menge kennt. Sonst stünde
+  // im Modal „0 bewertet" ohne Grund.
+  const { pubs, skipped } = await fetchPublicationsForAnalysis(filters);
   if (pubs.length === 0) {
     return NextResponse.json({ message: 'No publications to analyze', skipped });
   }

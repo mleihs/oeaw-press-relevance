@@ -34,10 +34,17 @@ export interface EventsAnalyzeFilters {
   ids?: string[];
 }
 
+export interface EventsAnalysisScope {
+  events: EventRow[];
+  /** Siehe AnalysisScope in lib/server/analysis/batch.ts: benannte ids, die an
+   *  den Gates hängengeblieben sind. Ohne `ids` immer 0. */
+  skipped: number;
+}
+
 /** Upcoming events awaiting analysis (or all upcoming when forcing). */
 export async function fetchEventsForAnalysis(
   filters: EventsAnalyzeFilters,
-): Promise<EventRow[]> {
+): Promise<EventsAnalysisScope> {
   // Non-force: the canonical candidate view (upcoming + event_score IS NULL,
   // incl. failed-retry) — the single source shared with scripts/event-
   // candidates.mjs and the status tile. Force: all upcoming events regardless
@@ -59,12 +66,14 @@ export async function fetchEventsForAnalysis(
   const where = filters.ids?.length
     ? and(pool, sql`${eventsTable.id} = ANY(${sql.param(filters.ids)}::uuid[])`)
     : pool;
-  return db
+  const events = await db
     .select()
     .from(eventsTable)
     .where(where)
     .orderBy(asc(eventsTable.eventAt))
     .limit(filters.ids?.length ?? filters.limit);
+
+  return { events, skipped: filters.ids ? filters.ids.length - events.length : 0 };
 }
 
 /** One LLM call for a batch of events → parsed evaluations + cost. Throws on a
