@@ -33,6 +33,7 @@ export function EventFlag({
       extraPopoverContent={
         <EventDecisionButtons eventId={eventId} current={decision} />
       }
+      vocabulary="events"
       infoBubbleId="event_flag"
     />
   );

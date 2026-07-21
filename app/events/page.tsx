@@ -148,7 +148,7 @@ export default async function EventsPage({
     <MobileScreenHeader
       icon={<CalendarDays size={16} weight="fill" />}
       title="Veranstaltungen"
-      sub="Bewerten · pitchen · ins Board"
+      sub="Bewerten · markieren · ins Board"
     />
     <div className="space-y-6">
       {/* Header + Darstellungs-Umschalter (Toolkit-Redesign.dc.html Z. 359–368):
@@ -159,8 +159,8 @@ export default async function EventsPage({
             Veranstaltungen
           </h1>
           <p className="text-muted-foreground text-sm mt-1.5">
-            Bewerten, pitchen, ins Redaktionsboard übernehmen. Eine Entscheidung
-            wird zur vorbefüllten Karte.
+            Bewerten, als relevant markieren, ins Redaktionsboard übernehmen.
+            Eine Entscheidung wird zur vorbefüllten Karte.
           </p>
         </div>
         <EventsModeSwitcher

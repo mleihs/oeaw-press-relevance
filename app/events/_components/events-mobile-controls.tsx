@@ -7,14 +7,15 @@ import {
   EVENTS_TAB_VALUES,
   type EventsTab,
 } from '@/lib/shared/events-filter';
+import { getDecisionLabel } from '@/components/decision-badge';
 
 // Kurzlabels für die schmalen Mobile-Chips (Desktop-Pendant: EventsTabsNav).
 const TAB_LABELS: Record<EventsTab, string> = {
   upcoming: 'Alle',
   undecided: 'Offen',
-  pitch: 'Übernommen',
-  hold: 'Warten',
-  skip: 'Verworfen',
+  pitch: getDecisionLabel('pitch', 'events'),
+  hold: getDecisionLabel('hold', 'events'),
+  skip: getDecisionLabel('skip', 'events'),
 };
 
 /**

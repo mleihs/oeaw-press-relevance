@@ -57,7 +57,7 @@ export function EventDecisionButtons({ eventId, current }: Props) {
       toast.success(
         data.decision === 'undecided'
           ? 'Entscheidung zurückgesetzt'
-          : `Status gesetzt: ${getDecisionLabel(data.decision)}`,
+          : `Status gesetzt: ${getDecisionLabel(data.decision, 'events')}`,
       );
     },
     onError: (err: Error) =>
@@ -92,7 +92,7 @@ export function EventDecisionButtons({ eventId, current }: Props) {
                 ) : (
                   <Icon className="h-3 w-3 mr-1" />
                 )}
-                {v.label}
+                {getDecisionLabel(d, 'events')}
               </Button>
               <InfoBubble id={INFO_BUBBLE_BY_DECISION[d]} size="sm" />
             </span>

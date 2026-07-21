@@ -11,6 +11,7 @@ import { getScoreBand } from '@/lib/shared/score-utils';
 import { cn } from '@/lib/shared/utils';
 import type { Decision } from '@/lib/shared/types';
 import { readChipData } from '../_lib/to-calendar-event';
+import { getDecisionLabel } from '@/components/decision-badge';
 
 type SxEventProp = { calendarEvent: Record<string, unknown> };
 
@@ -47,9 +48,9 @@ const DECISION: Record<
   Exclude<Decision, 'undecided'>,
   { cls: string; Icon: LucideIcon; label: string }
 > = {
-  pitch: { cls: 'text-success dark:text-emerald-400', Icon: Check, label: 'Pitch' },
-  hold: { cls: 'text-info dark:text-brand-300', Icon: Pause, label: 'Hold' },
-  skip: { cls: 'text-muted-foreground', Icon: XIcon, label: 'Skip' },
+  pitch: { cls: 'text-success dark:text-emerald-400', Icon: Check, label: getDecisionLabel('pitch', 'events') },
+  hold: { cls: 'text-info dark:text-brand-300', Icon: Pause, label: getDecisionLabel('hold', 'events') },
+  skip: { cls: 'text-muted-foreground', Icon: XIcon, label: getDecisionLabel('skip', 'events') },
 };
 
 function EventChip({

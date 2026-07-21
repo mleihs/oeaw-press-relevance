@@ -1,5 +1,6 @@
 import { Check, Pause, X as XIcon, type LucideIcon } from '@/lib/icons';
 import { cn } from '@/lib/shared/utils';
+import { getDecisionLabel } from '@/components/decision-badge';
 
 export interface CalendarSummary {
   total: number;
@@ -43,9 +44,9 @@ export function CalendarLegend({ summary }: { summary: CalendarSummary }) {
         <Swatch className="bg-orange-500" label="Niedrig" />
         <Swatch className="bg-muted-foreground/40" label="Unbewertet" />
         <span className="ml-1 font-medium text-foreground/70">Status:</span>
-        <IconItem Icon={Check} className="text-success dark:text-emerald-400" label="Pitch" />
-        <IconItem Icon={Pause} className="text-info dark:text-brand-300" label="Hold" />
-        <IconItem Icon={XIcon} className="text-muted-foreground" label="Skip" />
+        <IconItem Icon={Check} className="text-success dark:text-emerald-400" label={getDecisionLabel('pitch', 'events')} />
+        <IconItem Icon={Pause} className="text-info dark:text-brand-300" label={getDecisionLabel('hold', 'events')} />
+        <IconItem Icon={XIcon} className="text-muted-foreground" label={getDecisionLabel('skip', 'events')} />
       </div>
 
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 whitespace-nowrap tabular-nums">

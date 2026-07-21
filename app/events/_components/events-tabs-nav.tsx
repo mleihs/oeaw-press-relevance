@@ -16,6 +16,10 @@ import {
   EVENTS_TAB_VALUES,
   type EventsTab,
 } from '@/lib/shared/events-filter';
+import { getDecisionLabel } from '@/components/decision-badge';
+
+// Kurzname, damit die Tabelle unten in einer Zeile je Tab lesbar bleibt.
+const EV = (d: 'pitch' | 'hold' | 'skip') => getDecisionLabel(d, 'events');
 
 const TAB_DISPLAY: Record<
   EventsTab,
@@ -23,9 +27,9 @@ const TAB_DISPLAY: Record<
 > = {
   upcoming:  { label: 'Alle zukünftig', Icon: CalendarDays, statsKey: 'upcoming'  },
   undecided: { label: 'Offen',          Icon: CircleHelp,   statsKey: 'undecided' },
-  pitch:     { label: 'Übernommen',     Icon: Check,        statsKey: 'pitch'     },
-  hold:      { label: 'Warten',         Icon: Pause,        statsKey: 'hold'      },
-  skip:      { label: 'Verworfen',      Icon: XIcon,        statsKey: 'skip'      },
+  pitch:     { label: EV('pitch'),      Icon: Check,        statsKey: 'pitch'     },
+  hold:      { label: EV('hold'),       Icon: Pause,        statsKey: 'hold'      },
+  skip:      { label: EV('skip'),       Icon: XIcon,        statsKey: 'skip'      },
 };
 
 /** URL-driven nav-as-routes (same pattern as PressReleasesTabsNav). The

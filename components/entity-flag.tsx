@@ -8,7 +8,11 @@ import { toast } from 'sonner';
 import type { FlagNote, Decision } from '@/lib/shared/types';
 import { loadSettings, getApiHeaders } from '@/lib/client/stores/settings-store';
 import { DEFAULT_REVIEWER_NAME } from '@/lib/shared/constants';
-import { DECISION_VARIANTS } from '@/components/decision-badge';
+import {
+  DECISION_VARIANTS,
+  getDecisionLabel,
+  type DecisionVocabulary,
+} from '@/components/decision-badge';
 import { InfoBubble } from '@/components/info-bubble';
 import type { EXPL } from '@/lib/client/explanations';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
@@ -40,6 +44,9 @@ interface EntityFlagProps {
   extraPopoverContent?: ReactNode;
   /** Notified with the new flag_notes after a successful mutation. */
   onChange?: (notes: FlagNote[]) => void;
+  /** Beschriftungs-Vokabular der Entscheidungs-Zustände (Default =
+   *  Publikationen). Events sagen „Markiert" statt „Pitch". */
+  vocabulary?: DecisionVocabulary;
   /** EXPL key for the InfoBubble in the popover header. Each entity passes
    *  its own copy ('publication_flag' / 'event_flag') so the tooltip + the
    *  "Mehr im Hilfe-Center"-link match the entity the user is looking at. */
@@ -59,6 +66,7 @@ export function EntityFlag({
   size = 'md',
   extraPopoverContent,
   onChange,
+  vocabulary,
   infoBubbleId,
 }: EntityFlagProps) {
   const [reviewerName, setReviewerName] = useState(() =>
@@ -129,7 +137,7 @@ export function EntityFlag({
 
   const iconSize = size === 'sm' ? 'h-3.5 w-3.5' : 'h-4 w-4';
   const buttonSize = size === 'sm' ? 'h-6 w-6' : 'h-7 w-7';
-  const visuals = decisionVisuals(decision, iAmFlagging);
+  const visuals = decisionVisuals(decision, iAmFlagging, vocabulary);
   const StateIcon = visuals.Icon;
 
   return (
@@ -271,6 +279,7 @@ function formatRelative(iso: string): string {
 function decisionVisuals(
   decision: Decision | null | undefined,
   iAmFlagging: boolean,
+  vocabulary?: DecisionVocabulary,
 ) {
   if (decision && decision !== 'undecided') {
     const v = DECISION_VARIANTS[decision];
@@ -278,7 +287,7 @@ function decisionVisuals(
       Icon: v.Icon,
       iconWeight: 'regular' as const,
       buttonClass: v.iconButton,
-      tooltip: `Entschieden: ${v.label}`,
+      tooltip: `Entschieden: ${getDecisionLabel(decision, vocabulary)}`,
     };
   }
   return {

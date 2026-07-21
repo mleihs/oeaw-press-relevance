@@ -60,7 +60,7 @@ export function EventDetail({ event }: { event: Event }) {
               {lang}
             </Badge>
           ))}
-          <DecisionBadge decision={event.decision} />
+          <DecisionBadge decision={event.decision} vocabulary="events" />
         </div>
         <h1 className="text-2xl font-bold leading-tight">{event.title}</h1>
         {event.teaser && (

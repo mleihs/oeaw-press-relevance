@@ -43,7 +43,7 @@ const DATE_BLOCK: Record<ScoreBand, string> = {
  * Veranstaltungs-Liste gemäß Toolkit-Redesign-Comp (Z. 269–304): Karten-Liste
  * statt HTML-Tabelle, konsistent mit /publications. Pro Zeile: farbiger
  * Datum-Block (nach Score-Band) · Titel + Meta-Chips · Score-Badge · inline
- * Pitchen/Verwerfen. Der Flag-Pin (Notizen + voller Entscheidungs-Popover inkl.
+ * Relevant/Verwerfen. Der Flag-Pin (Notizen + voller Entscheidungs-Popover inkl.
  * „Warten") bleibt als sekundäre Affordanz erhalten.
  */
 export function EventsTable({

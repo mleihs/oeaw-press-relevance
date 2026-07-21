@@ -64,33 +64,89 @@ export const DECISION_VARIANTS = {
   },
 } as const;
 
-/** Human-readable label for any decision (incl. undecided → "Offen"). */
-export function getDecisionLabel(d: Decision): string {
-  return d === 'undecided' ? 'Offen' : DECISION_VARIANTS[d].label;
+/**
+ * Wortwahl je Entität. Publikationen PITCHT das Team an Redaktionen;
+ * Veranstaltungen MARKIERT es als relevant, damit sie in den zentralen
+ * Kalender wandern. Dieselben drei Zustände, andere Sprache.
+ *
+ * Bis 2026-07-21 buchstabierte die Events-Oberfläche ihre Labels an sieben
+ * Stellen selbst — Zeilen-Aktionen (Desktop + Mobile), Mobile-Karte,
+ * Tab-Leiste (Desktop + Mobile), Kalender-Legende, Kalender-Chip — und das in
+ * zwei auseinandergelaufenen Fassungen: „Übernommen/Warten/Verworfen" in der
+ * Liste, „Pitch/Hold/Skip" im Kalender. Deshalb stehen die Wörter jetzt hier,
+ * neben den Farben, die schon immer hier standen. Dieselbe Begründung wie im
+ * Kopf dieser Datei: ein Zustand, eine Stelle.
+ */
+export type DecisionVocabulary = 'publications' | 'events';
+
+const DECISION_LABELS: Record<DecisionVocabulary, Record<Decision, string>> = {
+  publications: {
+    pitch: DECISION_VARIANTS.pitch.label,
+    hold: DECISION_VARIANTS.hold.label,
+    skip: DECISION_VARIANTS.skip.label,
+    undecided: 'Offen',
+  },
+  events: {
+    pitch: 'Markiert',
+    hold: 'Warten',
+    skip: 'Verworfen',
+    undecided: 'Offen',
+  },
+};
+
+/**
+ * Beschriftung eines Knopfes, der den Zustand SETZT — ein Verb bzw. eine
+ * Aufforderung, kein Statuswort. „Relevant" markiert eine Veranstaltung,
+ * „Pitchen" reicht eine Publikation weiter; angezeigt wird danach in beiden
+ * Fällen der Zustand aus DECISION_LABELS.
+ */
+const DECISION_ACTIONS: Record<DecisionVocabulary, Partial<Record<Decision, string>>> = {
+  publications: { pitch: 'Pitchen', skip: 'Verwerfen' },
+  events: { pitch: 'Relevant', skip: 'Verwerfen' },
+};
+
+/** Zustands-Beschriftung einer Entscheidung (inkl. undecided → „Offen"). */
+export function getDecisionLabel(
+  d: Decision,
+  vocabulary: DecisionVocabulary = 'publications',
+): string {
+  return DECISION_LABELS[vocabulary][d];
+}
+
+/** Aktions-Beschriftung. Fällt auf das Statuswort zurück, falls für einen
+ *  Zustand kein eigenes Verb hinterlegt ist (hold trägt keines). */
+export function getDecisionAction(
+  d: Decision,
+  vocabulary: DecisionVocabulary = 'publications',
+): string {
+  return DECISION_ACTIONS[vocabulary][d] ?? getDecisionLabel(d, vocabulary);
 }
 
 interface DecisionBadgeProps {
   decision: Decision | null | undefined;
+  /** Beschriftungs-Vokabular; Default = Publikationen. */
+  vocabulary?: DecisionVocabulary;
 }
 
 /**
  * Compact pill rendering the triage-decision state. Returns `null` for
  * `undecided` / null so callers can drop it in unconditionally.
  */
-export function DecisionBadge({ decision }: DecisionBadgeProps) {
+export function DecisionBadge({ decision, vocabulary }: DecisionBadgeProps) {
   if (!decision || decision === 'undecided') return null;
   const v = DECISION_VARIANTS[decision];
   const Icon = v.Icon;
+  const label = getDecisionLabel(decision, vocabulary);
   return (
     <span
       className={cn(
         'inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-2xs font-semibold ring-1 ring-inset',
         v.badgePill,
       )}
-      aria-label={`Entscheidung: ${v.label}`}
+      aria-label={`Entscheidung: ${label}`}
     >
       <Icon className="h-2.5 w-2.5" />
-      {v.label}
+      {label}
     </span>
   );
 }

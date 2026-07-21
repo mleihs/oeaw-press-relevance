@@ -9,7 +9,7 @@ Die Veranstaltungen-Seite listet alle zukünftigen ÖAW-Events aus dem
 TYPO3-WEBDB-Dump (`tx_news_domain_model_news` mit gesetztem
 `is_event`-Flag aus der **EXT:news_eventnews**-Extension). Ziel: eine
 Arbeitsliste, anhand derer der zentrale Eventkalender gepflegt werden
-kann. Pro Event lässt sich markieren, ob es bereits übernommen wurde.
+kann. Pro Event lässt sich markieren, ob es relevant ist.
 
 ## Was die Liste zeigt {#liste}
 
@@ -24,7 +24,7 @@ Pro Zeile:
 - **Ort** und **Veranstalter** aus den verknüpften
   `tx_eventnews_domain_model_location` / `_organizer`-Tabellen. Wenn
   im WEBDB nicht gepflegt: leer.
-- **Status-Badge** mit Pitch/Hold/Skip-Lifecycle. Details: [Decision-Workflow](/help/events/decision-workflow).
+- **Status-Badge** mit Markiert/Warten/Verworfen-Lifecycle. Details: [Decision-Workflow](/help/events/decision-workflow).
 - **Aktionen**: externer Link zur Event-Seite auf oeaw.ac.at + das
   Flag-Icon mit Status-Buttons (siehe [Event-Flag](/help/events/event-flag)).
 
@@ -35,11 +35,11 @@ Fünf URL-getriebene Tabs, alle nur auf zukünftige Events gefiltert
 
 - **Alle zukünftig** (Default): jedes upcoming Event, unabhängig vom Status.
 - **Offen**: noch nicht entschiedene Events, also die typische Arbeitsliste.
-- **Übernommen**: Events, die der Maintainer bereits in den zentralen
-  Kalender übernommen hat (Status = Pitch).
-- **Warten**: Events, bei denen noch eine Klärung aussteht (Status = Hold).
+- **Markiert**: Events, die der Maintainer als relevant markiert und in
+  den zentralen Kalender übernommen hat.
+- **Warten**: Events, bei denen noch eine Klärung aussteht.
 - **Verworfen**: Events, die für den zentralen Kalender nicht relevant
-  sind (Status = Skip).
+  sind.
 
 Der aktive Tab landet als `?tab=…` im URL, bookmark-/shareable.
 
@@ -50,13 +50,13 @@ Oben rechts steht der Zeitpunkt des letzten WEBDB-Sync und ein
 zukünftigen Events aus der lokalen WEBDB-MySQL nachgeladen.
 
 <Callout type="info">
-Der Status (Pitch/Hold/Skip) und die Flag-Notizen bleiben über Syncs
+Der Status (Markiert/Warten/Verworfen) und die Flag-Notizen bleiben über Syncs
 hinweg erhalten. Details zum Upsert-Verhalten beschreibt
 [WEBDB-Sync](/help/events/webdb-sync).
 </Callout>
 
 ## Verwandte Themen
 
-- [Decision-Workflow](/help/events/decision-workflow): Was Pitch, Hold und Skip für Events bedeuten
+- [Decision-Workflow](/help/events/decision-workflow): Was Markiert, Warten und Verworfen für Events bedeuten
 - [WEBDB-Sync](/help/events/webdb-sync): Was beim Refresh genau passiert
 - [Event-Flag](/help/events/event-flag): Das Flag-Icon + Maintainer-Notizen
