@@ -10,8 +10,8 @@ import { StatusBanner } from '@/components/status-banner';
 import { useIsMobile } from '@/lib/client/hooks/use-is-mobile';
 import { getApiHeaders } from '@/lib/client/stores/settings-store';
 import { consumeSSE } from '@/lib/client/sse';
-import { LLM_MODELS, formatModelPricing } from '@/lib/shared/constants';
-import { useModelPricing } from '@/lib/client/hooks/use-model-pricing';
+import { DEFAULT_LLM_MODEL } from '@/lib/shared/constants';
+import { ModelPicker } from '@/components/model-picker';
 import { SCORING_RECENT_DAYS } from '@/lib/shared/dashboard';
 import { cn } from '@/lib/shared/utils';
 import {
@@ -427,8 +427,6 @@ function ScoringFlow({
   const pct = counts.total > 0 ? Math.round((counts.processed / counts.total) * 100) : 0;
   const running = phase === 'running';
   const active = running || phase === 'done';
-  // Live-Preise nur holen, solange der Picker überhaupt sichtbar ist.
-  const pricing = useModelPricing(phase === 'idle');
 
   return (
     <AnimatePresence mode="wait" initial={false}>
@@ -441,48 +439,12 @@ function ScoringFlow({
       >
         {phase === 'idle' && (
           <div className="space-y-4">
-            <div className="space-y-1.5">
-              <p className="text-sm font-semibold text-foreground">Modell</p>
-              <div className="max-h-48 space-y-0.5 overflow-y-auto rounded-[11px] border border-line p-1.5">
-                {LLM_MODELS.map((m) => {
-                  const selected = model === m.value;
-                  return (
-                    <button
-                      key={m.value}
-                      type="button"
-                      onClick={() => onModel(m.value)}
-                      className={cn(
-                        'flex w-full items-center gap-2.5 rounded-[9px] px-3 py-2.5 text-left text-sm transition-colors',
-                        selected ? 'bg-foreground text-background' : 'hover:bg-muted',
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2',
-                          selected ? 'border-background' : 'border-line-strong',
-                        )}
-                        aria-hidden
-                      >
-                        {selected && <span className="h-[7px] w-[7px] rounded-full bg-background" />}
-                      </span>
-                      <span className="min-w-0 flex-1 truncate font-medium">{m.label}</span>
-                      <span
-                        title="Preis je 1 Mio. Tokens: Eingabe / Ausgabe"
-                        className={cn(
-                          'shrink-0 whitespace-nowrap font-mono text-2xs',
-                          selected ? 'text-background/70' : 'text-ink-soft',
-                        )}
-                      >
-                        {formatModelPricing(pricing[m.value] ?? m.fallbackPricing)}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-              <p className="text-2xs leading-relaxed text-ink-soft">
-                {cfg.scopeNote} In-Chat-Scoring (Opus, kostenlos) bleibt der bevorzugte Weg.
-              </p>
-            </div>
+            <ModelPicker
+              value={model}
+              onChange={onModel}
+              enabled={phase === 'idle'}
+              note={`${cfg.scopeNote} In-Chat-Scoring (Opus, kostenlos) bleibt der bevorzugte Weg.`}
+            />
 
             <label className="flex cursor-pointer items-center gap-2.5 text-sm text-ink-strong">
               <input
