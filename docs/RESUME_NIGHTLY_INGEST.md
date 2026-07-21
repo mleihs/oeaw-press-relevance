@@ -1,92 +1,86 @@
-# RESUME — Nightly-Ingest/Bewertungs-Feature → nur noch AP3 (Deploy)
+# Nightly-Ingest/Bewertungs-Feature — AP3 (Deploy) ABGESCHLOSSEN
 
-Stand 2026-07-16. **AP1 + AP2 sind fertig, committet und live verifiziert.** Offen
-ist ausschließlich **AP3 (VPS/Infra/Deploy)**. Diese Datei ist der Pickup-Punkt für
-eine frische Session.
+Stand 2026-07-16. **AP1 + AP2 + AP3 sind fertig und live verifiziert.** Diese Datei
+ist jetzt ein **Completion-Record** (kein offener Pickup mehr). Branch
+`feat/nightly-ingest-scoring` wurde nach `main` gemergt, gepusht und auf beide
+Prod-Ziele deployt.
 
-## Was fertig ist (AP1 + AP2)
+## Was live ist
 
-Branch **`feat/nightly-ingest-scoring`** (3 Commits, **nicht gepusht**):
-1. `feat(ingest)` — kanonische Scoring-Views (Migration `20260716000001`), Import-
-   Runner (Pubs-Delta/Events/Enrichment), Route `POST /api/ingest/run`, DOI nach
-   `lib/shared`, Auto-Enrichment beim Import.
-2. `feat(scoring)` — `requireUser()` + Run-Lock auf beiden Batch-Routen, Payload
-   vereinheitlicht (`scoringBatchPayloadSchema`).
-3. `feat(scoring-ui)` — gemeinsames `ScoringModal`, „Bewertung"-Kachel, Alt-Modals
-   + Enrichment-UI + Capybara + tote `/api/enrichment/batch`-Route entfernt.
+Zwei nächtliche systemd-Jobs auf dem VPS **metaspots** (Europe/Vienna):
+- **`oeaw-press-ingest.timer` 06:00** → `POST /api/ingest/run` (Bearer
+  `INGEST_CRON_SECRET`): Publications-Delta + Events + Auto-Enrichment (bis
+  `INGEST_ENRICH_LIMIT=200` Pubs/Nacht). Neue Zeilen landen als Scoring-Kandidaten.
+- **`oeaw-press-embeddings.timer` 06:30** → SPECTER2-Embeddings für neue analyzed
+  Pubs (hash-idempotent) + `refresh_embedding_pipeline` (press_similarity).
 
-**Live verifiziert:** `status.ts`-SQL gegen prod-nahe lokale DB; Route-Auth
-(401 ohne/falschem Bearer; korrekter Bearer läuft); `requireUser` (anon → 401);
-Kachel rendert Desktop+Mobile fehlerfrei. tsc + eslint + **659 Unit-Tests** grün.
+Code auf **Vercel** (`main`) und **metaspots/Coolify** (Branch
+`chore/coolify-dockerfile`, App `cbt2tdcwf10ia0prqk8r45bm`, Commit `6989d9b`).
 
-**Erster AP3-Schritt: Branch reviewen und nach `main` mergen** (davor kein Deploy).
+## Zwei Fallstricke, die der Deploy aufdeckte + behob
 
-## Wichtige Architektur-Änderungen ggü. dem Originalplan
+1. **Cloudflare-100s-Cap (HTTP 524).** Der App-Host liegt hinter Cloudflare; CF
+   kappt jede Antwort nach 100 s. Der Enrichment-Lauf dauert ~5 min (200 Pubs,
+   ~1,6 s/Pub) → 524-Cut. **Fix:** Der Cron läuft auf derselben Box → der
+   Wrapper pinnt den Request per `--resolve <host>:443:127.0.0.1 -k` auf das
+   **lokale Traefik** und umgeht Cloudflare ganz (Env `INGEST_RESOLVE`). Der
+   standalone-Next-Server erzwingt `maxDuration` NICHT, also läuft der volle
+   Request durch. `--max-time 2700` im Wrapper ist die echte Grenze.
+2. **`mail_team`-Aufruf fehlte im Fehlerzweig.** Der Alarm-Mail-Versand war
+   definiert, aber im Failure-Branch nicht aufgerufen → nur Sentry feuerte, keine
+   Mail. Deterministischer Fehlertest (404-URL) deckte es auf → Aufruf verdrahtet,
+   Zustellung bestätigt.
 
-- **Auto-Enrichment** läuft jetzt als 3. Schritt im Nacht-Import (User-Entscheidung):
-  Import → Events → Enrichment. Kein „Anreichern"-Knopf mehr. → Der Nacht-Lauf ist
-  **deutlich länger** (Enrichment ruft externe APIs, ~10 s/Pub, bis `INGEST_ENRICH_LIMIT`
-  Pubs, Default 200). **Der Cron-`curl` braucht großzügiges `--max-time` (z. B. 45 min)**
-  und die systemd-Service darf kein knappes `TimeoutStartSec` haben.
-- Neue Env-Var **`INGEST_ENRICH_LIMIT`** (Default 200) zusätzlich zu
-  `INGEST_CRON_SECRET` + `OEAW_EXPORT_ORIGIN_IP`.
-- Run-Lock nutzt einen **dedizierten Mini-Postgres-Pool** (nicht den max:1-Haupt-Pool).
+## Alerting-Architektur (Hybrid, bewusst gewählt)
 
-## AP3-Checkliste (Deploy/Infra)
+- **Sentry Cron-Monitor `oeaw-press-ingest`** (Free-Plan: genau 1 Gratis-Monitor,
+  reicht): failed ODER missed Check-in → Issue → Mail an den Projekt-Owner
+  (matthias). „Missed" fängt auch toten Timer/tote Box — das kann ein
+  In-App/On-Box-Alarm prinzipbedingt nicht. Der Wrapper sendet
+  in_progress/ok/error-Check-ins (DSN-Public-Key, kein Auth-Token nötig).
+- **prossl-SMTP-Direktmail an `websites@oeaw.ac.at`** zusätzlich im Failure-Branch
+  (mit HTTP-Status + Response-JSON). Grund: Sentry-Free kann KEINE freie
+  E-Mail-Adresse als Alert-Ziel — nur Member/Team, und Member = kostenpflichtiger
+  Seat (in der UI verifiziert). SMTP-Zustellbarkeit an `websites@` vom Team
+  bestätigt.
+- **SPECTER2** nutzt (wegen des 1-Monitor-Limits) KEINEN Sentry-Cron, sondern
+  reine **SMTP-Mail-on-Failure an matthias** (technisches Sekundärsignal).
 
-Namensgebung neutral `oeaw-press-*`. Prod-Schreibzugriff nur via `npm run db:tunnel`
-+ `PROD_DB_TUNNEL=1`. Kanonische Prod = **metaspots** (Coolify); Vercel = Hot-Standby.
+## VPS-Dateien (NICHT in git — Infra-Config wie die anderen Timer)
 
-1. **Branch mergen:** `feat/nightly-ingest-scoring` → `main` (nach Review).
-2. **Prod-DDL:** Views `publication_scoring_candidates` / `event_scoring_candidates`
-   via Tunnel auf prod anlegen (Migration `20260716000001` einspielen). Prüfen, dass
-   `20260710000001` (apply_publications_delta + ingest_runs) auf prod ist.
-3. **Coolify-Env** (oeaw-press-tool, uuid siehe unten):
-   `INGEST_CRON_SECRET` = `openssl rand -hex 32` · `OEAW_EXPORT_ORIGIN_IP` = IP von
-   `voxy.arz.oeaw.ac.at` · `INGEST_ENRICH_LIMIT` (optional) · `OPENROUTER_API_KEY`
-   vorhanden? · `DATABASE_URL` = Session-Pooler ✓.
-4. **Origin-Pin-Smoke vom VPS:** `curl --resolve www.oeaw.ac.at:443:<IP> <beide Feed-URLs>`
-   → JSON, kein `cf-mitigated`. (Bricht der Events-Feed upstream, feuert die Nachtmail
-   zu Recht — Redmine #4165.)
-5. **`oeaw-press-ingest.timer`** (`OnCalendar=*-*-* 06:00:00 Europe/Vienna`,
-   `Persistent=true`, `RandomizedDelaySec=120`) + oneshot-Service →
-   `/usr/local/bin/oeaw-press-ingest.sh`: `curl -X POST` mit Bearer auf die prod-URL
-   (`--max-time 2700`), `jq -e '.ok'`. **Bei curl-Fehler / non-200 / `ok:false`
-   Mail via `curl smtps://` (prossl-Account coolify@metaspots.net) an
-   websites@oeaw.ac.at** mit HTTP-Status + Response-JSON; bei Erfolg optional
-   Uptime-Kuma-Push. Secrets in `/etc/oeaw-press-ingest/env` (0600). Mail-Kanal liegt
-   AUSSERHALB der App → schreit auch bei toter App.
-6. **SPECTER2:** Sparse-Shallow-Clone (`scripts/embeddings`) nach
-   `/srv/oeaw-press-relevance` + venv (torch CPU, `free -h` prüfen, ~2–3 GB Peak) +
-   `/etc/oeaw-press-embeddings/env` mit `PROD_DB_URL_OVERRIDE` (on-box
-   `127.0.0.1:5432`, kein Tunnel) + `oeaw-press-embeddings.timer` **06:30**
-   Europe/Vienna + `OnFailure=`-Mail-Unit. `--scope=analyzed`, hash-idempotent,
-   refresht `press_similarity`. **Kein `--since`** (verpasst sonst pre-2026-Pubs).
-7. **Uptime-Kuma:** Push-Monitor „oeaw-press-ingest" (Heartbeat 25 h) + Mail-Notify
-   an websites@oeaw.ac.at.
-8. **Deploy:** `main` → Vercel (nur push). metaspots = `main` in Branch
-   **`chore/coolify-dockerfile`** mergen+pushen (Worktree `coolify-wt`) + Coolify-API-
-   Trigger **uuid `cbt2tdcwf10ia0prqk8r45bm`**. (Nur VPS ist kanonisch beschreibbar.)
+- `/etc/oeaw-press-ingest/env` (0600): `INGEST_URL`, `INGEST_CRON_SECRET`,
+  `INGEST_RESOLVE`, `SENTRY_*`, `SMTP_*`, `MAIL_TO=websites@oeaw.ac.at`.
+- `/usr/local/bin/oeaw-press-ingest.sh` + `oeaw-press-ingest.{service,timer}`.
+- `/etc/oeaw-press-embeddings/env` (0600): `PROD_DB_URL_OVERRIDE` (on-box
+  `127.0.0.1:5432`, `sslmode=require`), `SMTP_*`, `MAIL_TO=matthias…`.
+- `/usr/local/bin/oeaw-press-embeddings.sh` + `oeaw-press-embeddings.{service,timer}`.
+- SPECTER2-Clone: `/srv/oeaw-press-relevance` (sparse `scripts/embeddings`) +
+  venv (torch 2.12 CPU, transformers 4.57.6, adapters 1.3.0, psycopg2-binary).
 
-## Prod-Verifikation (nach Deploy)
+## Coolify-Env (App `cbt2tdcwf10ia0prqk8r45bm`)
 
-- Timer manuell feuern (`systemctl start oeaw-press-ingest.service`) → Response +
-  `ingest_runs`-Zeilen (beide Feeds) + Kachel zeigt Datum/Counts.
-- **Mail-Pfad einmal absichtlich testen**: falscher Secret in `/etc/.../env` → kommt
-  die Mail an websites@oeaw.ac.at an? Danach zurückstellen.
-- Kuma-Heartbeat grün; 06:00-Lauf am Folgetag prüfen.
+Neu gesetzt: `INGEST_CRON_SECRET` (64 hex), `OEAW_EXPORT_ORIGIN_IP=193.170.80.13`
+(voxy.arz.oeaw.ac.at), `INGEST_ENRICH_LIMIT=200`. `OPENROUTER_API_KEY` war da.
 
-## Referenzen
+## Prod-DDL
 
-- SSOT-Plan: `~/.claude/plans/virtual-prancing-coral.md` (§AP3).
-- Ops-Runbook: `docs/NIGHTLY_OPS.md` (Response-Shape, Alerting, Runbook „Mail bekommen").
-- Prod-Zugang/Branches/Deploy: Memory `[[oeaw-coolify-deploy-branch]]`,
-  `[[prod-db-tunnel-and-cloud-mirror]]`, `[[oeaw-canonical-prod-metaspots]]`.
-- Lokaler Test-`INGEST_CRON_SECRET` liegt in `.env.local` (gitignored) — nur lokal.
+Migration `20260716000001` (Views `publication_scoring_candidates` /
+`event_scoring_candidates`) via Tunnel auf prod appliziert.
+`apply_publications_delta` + `ingest_runs` waren schon da.
 
-## Gelernt in dieser Session (nicht ingest-spezifisch)
+## Verifiziert (2026-07-16)
 
-Docker-Desktop-Platte lief voll (Postgres/Docker verklemmten): Ursache waren
-**~100 GB verwaiste anonyme Docker-Volumes** (alte pgdata aus `compose down` ohne `-v`).
-`docker volume prune -f` gab 113 GB frei (Docker.raw 164 G → 50 G, autotrim). Bei
-künftigem „Platte voll ohne Grund" zuerst `docker system df -v` prüfen.
+- End-to-end-Lauf via CF-Bypass: `ok:true`, Enrichment 200 Pubs
+  (54 successful / 134 partial / 12 failed), Scoring-Kandidaten 1630 → 1799.
+- Sentry-Monitor zeigt ok/failed/ok-Check-ins korrekt; „production ✓".
+- Failure-Mail an websites@ (Test) + an matthias (echter Fehlerlauf) zugestellt.
+- Origin-Pin beide Feeds 200/JSON, kein `cf-mitigated`.
+- SPECTER2: On-Box-DB + Modell + hash-Idempotenz (0 to embed / 8091 skipped) +
+  press_similarity-Refresh (centroid_n=154); Service `OK dur=67s`.
+
+## Offene Nebenpunkte (nicht blockierend)
+
+- Enrichment-Rückstand ~25.7k `pending`; drainiert ~200/Nacht. Neue Pubs (Delta)
+  werden aber jede Nacht sofort mitgenommen. Kein Handlungsbedarf.
+- Events-Feed war zeitweise sehr klein (1 Event) — Upstream-Schwankung
+  (Redmine #4165); bricht er ganz, feuert die Nachtmail zu Recht.
