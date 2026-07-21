@@ -14,6 +14,17 @@ export interface ChangelogEntry {
 // auf das heutige Datum heben, sonst zeigt der Unread-Dot keinen neuen Stand an.
 export const changelogEntries: ChangelogEntry[] = [
   {
+    category: 'neu',
+    title: 'Einzelne Publikation oder Veranstaltung direkt bewerten',
+    body: 'Auf der Detailseite einer Publikation oder Veranstaltung steht jetzt ein Knopf „Bewerten". Bisher musste man dafür aufs Dashboard zurück und einen Sammellauf starten, der genau diesen Eintrag womöglich gar nicht erfasst. Der Dialog ist derselbe wie beim Sammellauf, samt Modellwahl. Was sich nicht bewerten lässt (archiviert, ITA oder zu wenig Text), wird als übersprungen mit Begründung gemeldet statt kommentarlos zu verschwinden.',
+    href: '/help/dashboard/dashboard-tour#bewertung-dialog',
+  },
+  {
+    category: 'verbesserung',
+    title: 'Sichtbar, was frisch hereingekommen ist',
+    body: 'Publikationen der letzten Woche tragen in Liste und Detailansicht ein Abzeichen „Neu". Die Sortierung kennt zusätzlich „Hinzugefügt", also das Eingangsdatum in unserer Datenbank statt des Erscheinungsdatums, und die Detailseiten nennen es jetzt ausdrücklich („Hinzugefügt am … · zuletzt geändert …"; bei Veranstaltungen neben dem Synchronisierungs-Datum). Von der Bewertungs-Kachel führt je ein Klick direkt in die passend gefilterte Liste. Nebenbei zeigen die Filter-Chips keine Rohwerte mehr: aus „Analyse: pending" wurde „Analyse: Ausstehend".',
+  },
+  {
     category: 'verbesserung',
     title: 'Bewerten-Knopf: klarer Umfang, ehrliche Ampel',
     body: 'Der Knopf „Bewerten" auf der Bewertungs-Kachel erfasst jetzt genau die Kandidaten, die in den letzten 60 Tagen neu hinzugekommen sind. Die Kachel nennt entsprechend zwei Zahlen: die frischen Kandidaten, die der Knopf auch wirklich erreicht, und daneben gedämpft den Altbestand, der bewusst dem kostenlosen In-Chat-Scoring der Redaktion vorbehalten bleibt. Die Ampel richtet sich nur noch nach den frischen Fällen und steht damit nicht mehr dauerhaft auf Rot.',
