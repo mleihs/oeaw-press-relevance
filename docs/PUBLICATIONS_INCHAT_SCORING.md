@@ -116,3 +116,61 @@ Dieser Import brachte **29 neue Events** (lokal gesynct, noch unbewertet). Die l
 „bewerte die upcoming events im chat"). Nicht Teil der Publikations-Batches hier.
 </content>
 </invoke>
+
+---
+
+# Stand 2026-07-21 — WICHTIG: Prod ist voraus, LOKAL NICHT MEHR KANONISCH
+
+Alles oberhalb dieser Linie beschreibt den WebDB-Re-Import vom 2026-06-17, bei dem
+die lokale DB die Wahrheit war und Prod danach nachgezogen wurde. **Für den
+laufenden Betrieb gilt das nicht mehr.** Seit dem Nightly-Ingest (06:00, seit
+2026-07-16) importiert die Pipeline **direkt auf Prod**; die lokale DB ist ein
+Schnappschuss vom letzten manuellen Import.
+
+Gemessen am 2026-07-21:
+
+| | frische Kandidaten (60-Tage-Fenster) | jüngster Eingang |
+|---|---|---|
+| lokal | 7 | 2026-07-16 |
+| **prod** | **17** | 2026-07-20 |
+
+Wer nach dem alten Ablauf lokal bewertet, scort also veraltete Zeilen und
+übersieht die neuesten. **Publikationen laufen jetzt wie Events: Kandidaten von
+Prod ziehen, bewerten, auf Prod anwenden.**
+
+## Ablauf (Publikationen, gegen Prod)
+
+```bash
+npm run db:tunnel          # eigenes Terminal, offen lassen
+```
+
+`scripts/session-pipeline.mjs` liest `PG_DATABASE_URL` (Default = lokal), also
+muss die Prod-URL gesetzt werden — der Tunnel liegt auf 127.0.0.1:5433:
+
+```bash
+export PG_DATABASE_URL="$(node -e "
+  process.env.PROD_DB_TUNNEL='1';
+  import('./scripts/lib/db.mjs').then(m => console.log(m.loadDbUrl('prod')))
+")"
+node scripts/session-pipeline.mjs candidates 50      # ohne --imported-after
+```
+
+`--imported-after` weglassen: das Flag scopte auf den 06-17-Import. Der
+Kandidaten-Pool ist heute `publication_scoring_candidates`, und der
+**Bewerten-Knopf-Scope** (frisch = `created_at >= now() - 60 Tage`) ist genau die
+Menge, um die es hier geht. Der Rest ist der Altbestand aus AP7 (2.354 Stück,
+bewusst pending, siehe `docs/RESUME_SCORING_SPLIT_CODEREVIEW.md` §5).
+
+Bewerten und anwenden dann wie oben beschrieben (Rubrik
+`lib/server/analysis/prompts.ts`, `apply` ist DRY-RUN by default).
+
+**Vorsicht:** direkt auf Prod schreiben heißt, es gibt kein lokales Netz mehr
+darunter. `apply` erst ohne `--apply` fahren und die Vorschau lesen.
+
+## Events im selben Zug
+
+`docs/EVENTS_INCHAT_SCORING.md` ist unverändert gültig (Events waren immer schon
+prod-first). Offen am 2026-07-21: **5 Kandidaten** in `event_scoring_candidates`.
+Das Anwenden-Skript `scripts/apply-event-scores.ts` wurde am 2026-07-21 gehärtet
+(Dry-run-Default, harte Validierung, `isNull(event_score)`-Guard, `--force`) und
+gegen die lokale DB in allen sechs Verhaltensweisen verifiziert.
