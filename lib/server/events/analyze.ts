@@ -40,6 +40,13 @@ export async function fetchEventsForAnalysis(
   // incl. failed-retry) — the single source shared with scripts/event-
   // candidates.mjs and the status tile. Force: all upcoming events regardless
   // of score, so a maintainer can re-score everything ahead.
+  //
+  // Bewusst KEIN created_at-Fenster (anders als bei den Publikationen, wo
+  // SCORING_RECENT_DAYS den Altbestand vom teuren OpenRouter-Pfad fernhält):
+  // `event_at >= now()` begrenzt die Menge hier schon von selbst — es gibt
+  // keinen Event-Altbestand, weil vergangene Events nie wieder Kandidaten
+  // werden. Ein zusätzliches Eingangsfenster würde nur frisch importierte,
+  // weit in der Zukunft liegende Events willkürlich ausschließen.
   const where = filters.forceReanalyze
     ? gte(eventsTable.eventAt, sql`NOW()`)
     : sql`${eventsTable.id} IN (SELECT id FROM event_scoring_candidates)`;
