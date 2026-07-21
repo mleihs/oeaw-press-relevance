@@ -371,7 +371,10 @@ merged across sources. 300 ms pacing between pubs. Truncates abstracts at
 `POST /api/analysis/batch` streams progress via SSE. Configurable `batchSize`
 (1–5 pubs per LLM call), `minWordCount`, `forceReanalyze`, `enrichedOnly`.
 Reads model from `x-llm-model` header (set by `AnalysisModal`) → falls back
-to `LLM_DEFAULT_MODEL` env → hardcoded `anthropic/claude-sonnet-4`. Computes
+to `LLM_DEFAULT_MODEL` env → `DEFAULT_LLM_MODEL` in `lib/shared/constants.ts`
+(`anthropic/claude-opus-4.8` since 2026-07-21 — the model the existing corpus
+was scored with; the calibration rationale lives next to the constant).
+Computes
 `press_score` server-side via the documented weighted formula (see
 `lib/scoring.ts:computePressScore` for the JS mirror). 1-second pacing between
 batches. Writes back per-row scoring + Pitch + Angle + Reasoning + Haiku.
@@ -533,7 +536,7 @@ SUPABASE_URL=                    # full https URL of the Supabase project
 SUPABASE_ANON_KEY=               # public anon key (RLS-protected reads)
 SUPABASE_SERVICE_ROLE_KEY=       # service-role key (mutations bypass RLS)
 OPENROUTER_API_KEY=              # default OpenRouter key (user can override per-request)
-LLM_DEFAULT_MODEL=               # optional: default model id (else 'anthropic/claude-sonnet-4')
+LLM_DEFAULT_MODEL=               # optional: default model id (else DEFAULT_LLM_MODEL, 'anthropic/claude-opus-4.8')
 
 # Auth gate
 GATE_PASSWORD=                   # plaintext password (server-only)

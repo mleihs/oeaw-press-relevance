@@ -14,6 +14,11 @@ export interface ChangelogEntry {
 // auf das heutige Datum heben, sonst zeigt der Unread-Dot keinen neuen Stand an.
 export const changelogEntries: ChangelogEntry[] = [
   {
+    category: 'verbesserung',
+    title: 'Kachel, Klick und Kostenanzeige meinen jetzt dasselbe',
+    body: 'Ein Klick auf „Publikationen" in der Bewertungs-Kachel führt jetzt in genau die Liste, die die Zahl daneben zählt. Vorher landete man in einer weit größeren Auswahl. Auch der Altbestand ist erstmals anklickbar. Und die Kosten eines Laufs werden mit den tagesaktuellen OpenRouter-Preisen und der tatsächlichen Aufteilung zwischen Ein- und Ausgabe gerechnet statt mit einem gemittelten Festpreis; bisher fielen die angezeigten Beträge dadurch systematisch zu hoch aus.',
+  },
+  {
     category: 'neu',
     title: 'Einzelne Publikation oder Veranstaltung direkt bewerten',
     body: 'Auf der Detailseite einer Publikation oder Veranstaltung steht jetzt ein Knopf „Bewerten". Bisher musste man dafür aufs Dashboard zurück und einen Sammellauf starten, der genau diesen Eintrag womöglich gar nicht erfasst. Der Dialog ist derselbe wie beim Sammellauf, samt Modellwahl. Was sich nicht bewerten lässt (archiviert, ITA oder zu wenig Text), wird als übersprungen mit Begründung gemeldet statt kommentarlos zu verschwinden.',
