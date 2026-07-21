@@ -1,6 +1,7 @@
 import 'server-only';
 import { sql } from 'drizzle-orm';
 import { db } from '@/lib/server/db';
+import { SCORING_RECENT_DAYS } from '@/lib/shared/dashboard';
 
 // Bewertungs-Status für die Dashboard-Kachel: pro Entität (Publikationen /
 // Events) „zuletzt importiert am X" + „N unbewertet, älteste seit Y Tagen".
@@ -27,8 +28,20 @@ export interface EntityScoringStatus {
   /** 'applied' | 'skipped' | 'failed' | null (kein ingest_runs-Eintrag → Fallback-Quelle). */
   lastImportStatus: string | null;
   lastImportFailed: boolean;
+  /**
+   * Unbewertete Kandidaten INNERHALB des Bewerten-Fensters (created_at jünger
+   * als SCORING_RECENT_DAYS) — also exakt die Menge, die der Knopf daneben
+   * auch erreicht. Die Zahl auf der Kachel und der Scope des Knopfes müssen
+   * dasselbe meinen, sonst verspricht die Kachel etwas, das der Klick nicht
+   * einlöst.
+   */
   unscoredCount: number;
-  /** Alter der ältesten unbewerteten Entität in Tagen, oder null bei 0 Kandidaten. */
+  /** Unbewertete Kandidaten AUSSERHALB des Fensters (Altbestand). Erreichbar
+   *  nur über das In-Chat-Scoring; bei Events immer 0. */
+  backlogCount: number;
+  /** Alter der ältesten unbewerteten Entität IM FENSTER in Tagen, oder null bei
+   *  0 frischen Kandidaten. Basis der Ampel: der Altbestand darf die Kachel
+   *  nicht dauerhaft rot färben, er ist ja bewusst nicht Aufgabe des Knopfes. */
   oldestUnscoredDays: number | null;
 }
 
@@ -39,6 +52,7 @@ export interface ScoringStatus {
 
 interface StatusRow {
   pub_unscored: number;
+  pub_backlog: number;
   pub_oldest_days: number | null;
   pub_last_import: string | null;
   pub_last_status: string | null;
@@ -65,11 +79,16 @@ function fmtDate(iso: string | null): string | null {
 
 /** Ein Roundtrip: Kandidaten-Counts + älteste + letzter Import je Entität. */
 export async function getScoringStatus(): Promise<ScoringStatus> {
+  // Grenze des Bewerten-Fensters, einmal berechnet und dreifach verwendet.
+  const cutoff = sql`now() - make_interval(days => ${SCORING_RECENT_DAYS}::int)`;
   const rows = await db.execute<StatusRow>(sql`
     SELECT
-      (SELECT count(*)::int FROM publication_scoring_candidates)                              AS pub_unscored,
+      (SELECT count(*)::int FROM publication_scoring_candidates
+         WHERE created_at >= ${cutoff})                                                       AS pub_unscored,
+      (SELECT count(*)::int FROM publication_scoring_candidates
+         WHERE created_at IS NULL OR created_at < ${cutoff})                                  AS pub_backlog,
       (SELECT floor(extract(epoch FROM now() - min(created_at)) / 86400)::int
-         FROM publication_scoring_candidates)                                                 AS pub_oldest_days,
+         FROM publication_scoring_candidates WHERE created_at >= ${cutoff})                   AS pub_oldest_days,
       COALESCE(
         (SELECT applied_at FROM ingest_runs WHERE feed = ${PUBLICATIONS_FEED}
            ORDER BY applied_at DESC LIMIT 1),
@@ -96,6 +115,7 @@ export async function getScoringStatus(): Promise<ScoringStatus> {
       lastImportStatus: r.pub_last_status,
       lastImportFailed: r.pub_last_status === 'failed',
       unscoredCount: Number(r.pub_unscored ?? 0),
+      backlogCount: Number(r.pub_backlog ?? 0),
       oldestUnscoredDays: r.pub_oldest_days == null ? null : Number(r.pub_oldest_days),
     },
     events: {
@@ -103,6 +123,9 @@ export async function getScoringStatus(): Promise<ScoringStatus> {
       lastImportStatus: r.ev_last_status,
       lastImportFailed: r.ev_last_status === 'failed',
       unscoredCount: Number(r.ev_unscored ?? 0),
+      // Events kennen keinen Altbestand: `event_at >= now()` begrenzt die
+      // Kandidatenmenge von selbst (lib/server/events/analyze.ts).
+      backlogCount: 0,
       oldestUnscoredDays: r.ev_oldest_days == null ? null : Number(r.ev_oldest_days),
     },
   };

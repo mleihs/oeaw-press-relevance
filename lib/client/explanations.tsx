@@ -11,6 +11,7 @@
 // - `note`      optional caveat / data-quality warning
 
 import type { ReactNode } from 'react';
+import { SCORING_RECENT_DAYS } from '@/lib/shared/dashboard';
 
 export interface Explanation {
   title: string;
@@ -1981,6 +1982,13 @@ export const EXPL = {
           OpenRouter und <strong>kostet Guthaben</strong> (Modellwahl im Dialog), gedacht für
           Fälle, in denen das In-Chat-Scoring nicht rechtzeitig passiert.
         </Para>
+        <Para>
+          Der Knopf erfasst dabei nur Kandidaten der letzten <Code>{SCORING_RECENT_DAYS} Tage</Code>,
+          und genau diese Zahl steht auch in der Pille daneben. Ältere unbewertete Datensätze
+          erscheinen gedämpft als <strong>Altbestand</strong>: sie laufen bewusst über das
+          kostenlose In-Chat-Scoring, damit ein Klick nicht versehentlich den halben Bestand
+          über OpenRouter abrechnet. Auch die Ampel rechnet nur mit den frischen Fällen.
+        </Para>
       </>
     ),
     note: (
@@ -2125,6 +2133,7 @@ export const EXPL_KB_MAP: Partial<Record<keyof typeof EXPL, KbAnchor>> = {
   score_distribution_chart:  { path: '/help/dashboard/dashboard-tour', hash: 'score-distribution' },
   dimensions_profile:        { path: '/help/dashboard/dashboard-tour', hash: 'dim-profil' },
   top_keywords:              { path: '/help/dashboard/dashboard-tour', hash: 'top-keywords' },
+  scoring_status:            { path: '/help/dashboard/dashboard-tour', hash: 'bewertung' },
 
   // ─── einstellungen/ ────────────────────────────────────────────────────────
   settings_reviewer_name:    { path: '/help/einstellungen/einstellungen', hash: 'reviewer-name' },

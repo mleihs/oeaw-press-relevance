@@ -4,7 +4,7 @@
 // SSE event names match the publication analysis modal so the event modal can
 // reuse the same progress UI.
 
-import { asc, eq, gte, inArray, sql } from 'drizzle-orm';
+import { and, asc, eq, gte, inArray, sql } from 'drizzle-orm';
 import { db, events as eventsTable } from '@/lib/server/db';
 import {
   chatCompletionJson,
@@ -30,6 +30,8 @@ export interface EventsAnalyzeFilters {
   batchSize: number;
   /** Re-score everything upcoming, not just analysis_status='pending'. */
   forceReanalyze?: boolean;
+  /** Einzel-/Auswahl-Bewertung: genau diese Events, sofern sie die Gates passieren. */
+  ids?: string[];
 }
 
 /** Upcoming events awaiting analysis (or all upcoming when forcing). */
@@ -40,15 +42,29 @@ export async function fetchEventsForAnalysis(
   // incl. failed-retry) — the single source shared with scripts/event-
   // candidates.mjs and the status tile. Force: all upcoming events regardless
   // of score, so a maintainer can re-score everything ahead.
-  const where = filters.forceReanalyze
+  //
+  // Bewusst KEIN created_at-Fenster (anders als bei den Publikationen, wo
+  // SCORING_RECENT_DAYS den Altbestand vom teuren OpenRouter-Pfad fernhält):
+  // `event_at >= now()` begrenzt die Menge hier schon von selbst — es gibt
+  // keinen Event-Altbestand, weil vergangene Events nie wieder Kandidaten
+  // werden. Ein zusätzliches Eingangsfenster würde nur frisch importierte,
+  // weit in der Zukunft liegende Events willkürlich ausschließen.
+  const pool = filters.forceReanalyze
     ? gte(eventsTable.eventAt, sql`NOW()`)
     : sql`${eventsTable.id} IN (SELECT id FROM event_scoring_candidates)`;
+  // Einzel-/Auswahl-Bewertung: die benannten ids, geschnitten mit dem Pool
+  // (ein vergangenes Event bleibt also auch dann außen vor, wenn man es
+  // ausdrücklich benennt). sql.param()::uuid[] wegen des Pooler-Bugs bei
+  // barem ${array} (Memory drizzle-any-array-prod-bug).
+  const where = filters.ids?.length
+    ? and(pool, sql`${eventsTable.id} = ANY(${sql.param(filters.ids)}::uuid[])`)
+    : pool;
   return db
     .select()
     .from(eventsTable)
     .where(where)
     .orderBy(asc(eventsTable.eventAt))
-    .limit(filters.limit);
+    .limit(filters.ids?.length ?? filters.limit);
 }
 
 /** One LLM call for a batch of events → parsed evaluations + cost. Throws on a
@@ -80,6 +96,8 @@ export interface EventsAnalysisRunOptions {
   batchSize: number;
   abortSignal: AbortSignal;
   emit: (type: string, data: unknown) => void;
+  /** Ausdrücklich benannte ids, die an den Gates hängengeblieben sind. */
+  skipped?: number;
 }
 
 const clamp01 = (n: unknown): number => Math.max(0, Math.min(1, Number(n) || 0));
@@ -87,7 +105,7 @@ const clamp01 = (n: unknown): number => Math.max(0, Math.min(1, Number(n) || 0))
 export async function runEventsAnalysisBatch(
   opts: EventsAnalysisRunOptions,
 ): Promise<void> {
-  const { events, apiKey, model, batchSize, abortSignal, emit } = opts;
+  const { events, apiKey, model, batchSize, abortSignal, emit, skipped } = opts;
 
   // Pre-flight: masked-key + balance 'init', and an early abort if the budget
   // can't cover a single call. Shared with the publication runner.
@@ -147,5 +165,5 @@ export async function runEventsAnalysisBatch(
     hooks: sseBatchHooks<EventRow>(emit),
   });
 
-  emitBatchComplete(emit, result);
+  emitBatchComplete(emit, result, { skipped });
 }

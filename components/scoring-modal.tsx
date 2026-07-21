@@ -10,7 +10,9 @@ import { StatusBanner } from '@/components/status-banner';
 import { useIsMobile } from '@/lib/client/hooks/use-is-mobile';
 import { getApiHeaders } from '@/lib/client/stores/settings-store';
 import { consumeSSE } from '@/lib/client/sse';
-import { LLM_MODELS } from '@/lib/shared/constants';
+import { LLM_MODELS, formatModelPricing } from '@/lib/shared/constants';
+import { useModelPricing } from '@/lib/client/hooks/use-model-pricing';
+import { SCORING_RECENT_DAYS } from '@/lib/shared/dashboard';
 import { cn } from '@/lib/shared/utils';
 import {
   Play,
@@ -47,43 +49,87 @@ interface Counts {
   failed: number;
   tokens: number;
   cost: number;
+  /** Ausdrücklich benannte Einträge, die an den Bewertbarkeits-Gates hingen. */
+  skipped: number;
 }
-const ZERO: Counts = { total: 0, processed: 0, successful: 0, failed: 0, tokens: 0, cost: 0 };
+const ZERO: Counts = {
+  total: 0, processed: 0, successful: 0, failed: 0, tokens: 0, cost: 0, skipped: 0,
+};
 
 interface EntityConfig {
   endpoint: string;
   defaultModel: string;
-  /** Batch-Obergrenze pro Lauf (Fallback-Charakter — kein Vollkorpus). */
+  /** Sicherheitsdeckel pro Lauf. Den Scope bestimmt der Server (Kandidaten-View
+   *  + Zeitfenster), nicht diese Zahl. */
   limit: number;
   unit: string;
   title: string;
   description: string;
+  /** Eine Zeile unter dem Modell-Picker: was dieser Lauf konkret erfasst. */
+  scopeNote: string;
+  /** Antwort auf „warum wurde nichts bewertet?" bei der Einzelbewertung. */
+  notEligibleMsg: string;
   Icon: typeof Newspaper;
 }
 
-// Modell-Defaults: Pubs anthropic/claude-sonnet-4 (Qualitätsnähe zum Opus-
-// kalibrierten Korpus; deepseek wäre Drift-Risiko), Events deepseek/deepseek-chat
-// (etabliert, s. events-scoring-deepseek).
+// Modell-Default beider Entitäten: anthropic/claude-opus-4.8 — dasselbe Modell,
+// mit dem das bestehende Korpus in-chat bewertet wurde. Kalibrierung ist keine
+// Geschmacksfrage: derselbe Prompt liefert bei deepseek/deepseek-chat im Schnitt
+// 0,53 statt 0,25 (gemessen an den 9 deepseek-bewerteten Prod-Events, 2026-07-21),
+// und ein gemischt kalibriertes Korpus macht jede Rangliste wertlos.
+// Warum ein Einzel-Lauf leer ausgehen kann. Die Gates sind bewusst dieselben
+// wie im Batch-Pfad (publication_rescore_pool bzw. kommende Events), sonst
+// könnte man über die Detailseite Archiviertes bewerten lassen.
+const NOT_ELIGIBLE_PUB =
+  'Diese Publikation wurde nicht bewertet. Entweder trägt sie bereits einen Score (dann „Bereits Bewertetes neu bewerten" ankreuzen), oder sie ist archiviert, dem ITA zugeordnet, oder ihr Text reicht für eine Bewertung nicht aus.';
+const NOT_ELIGIBLE_EVENT =
+  'Dieses Event wurde nicht bewertet. Entweder trägt es bereits einen Score (dann „Bereits Bewertetes neu bewerten" ankreuzen), oder es liegt in der Vergangenheit.';
+
 const ENTITY: Record<Entity, EntityConfig> = {
   publications: {
     endpoint: '/api/analysis/batch',
-    defaultModel: 'anthropic/claude-sonnet-4',
-    limit: 20,
+    defaultModel: 'anthropic/claude-opus-4.8',
+    limit: 200,
     unit: 'Publikationen',
     title: 'Publikationen bewerten',
     description:
-      'Bewertet offene Publikations-Kandidaten über OpenRouter. Bevorzugt bleibt das kostenlose In-Chat-Scoring; dieser Weg ist der Fallback, wenn es schneller gehen muss.',
+      'Bewertet neu hinzugekommene Publikations-Kandidaten über OpenRouter. Bevorzugt bleibt das kostenlose In-Chat-Scoring; dieser Weg ist der Fallback, wenn es schneller gehen muss.',
+    scopeNote: `Bewertet Publikations-Kandidaten, die in den letzten ${SCORING_RECENT_DAYS} Tagen hinzugekommen sind (höchstens 200 pro Lauf). Ältere Kandidaten laufen bewusst über das In-Chat-Scoring.`,
+    notEligibleMsg: NOT_ELIGIBLE_PUB,
     Icon: Newspaper,
   },
   events: {
     endpoint: '/api/events/analyze',
-    defaultModel: 'deepseek/deepseek-chat',
+    defaultModel: 'anthropic/claude-opus-4.8',
     limit: 50,
     unit: 'Events',
     title: 'Events bewerten',
     description:
       'Bewertet kommende, noch unbewertete Events über OpenRouter (Fallback zum bevorzugten In-Chat-Scoring).',
+    scopeNote: 'Bewertet bis zu 50 kommende Events pro Lauf.',
+    notEligibleMsg: NOT_ELIGIBLE_EVENT,
     Icon: CalendarDays,
+  },
+};
+
+// Einzelbewertung von einer Detailseite aus: gleiche Maschinerie, andere Copy.
+// Modell-Picker bleibt bewusst erhalten (Konsistenz mit dem Batch-Lauf).
+const SINGLE_ENTITY: Record<Entity, EntityConfig> = {
+  publications: {
+    ...ENTITY.publications,
+    limit: 1,
+    title: 'Diese Publikation bewerten',
+    description:
+      'Bewertet genau diese Publikation über OpenRouter. Das kostet Guthaben; das kostenlose In-Chat-Scoring bleibt der bevorzugte Weg.',
+    scopeNote: 'Bewertet nur diesen Eintrag, unabhängig vom Eingangsdatum.',
+  },
+  events: {
+    ...ENTITY.events,
+    limit: 1,
+    title: 'Dieses Event bewerten',
+    description:
+      'Bewertet genau dieses Event über OpenRouter. Das kostet Guthaben; das kostenlose In-Chat-Scoring bleibt der bevorzugte Weg.',
+    scopeNote: 'Bewertet nur diesen Eintrag.',
   },
 };
 
@@ -100,13 +146,17 @@ export function ScoringModal({
   open,
   onOpenChange,
   onComplete,
+  ids,
 }: {
   entity: Entity;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onComplete?: () => void;
+  /** Einzel-/Auswahl-Bewertung: genau diese Datensätze statt der Kandidatenmenge. */
+  ids?: string[];
 }) {
-  const cfg = ENTITY[entity];
+  const single = (ids?.length ?? 0) > 0;
+  const cfg = single ? SINGLE_ENTITY[entity] : ENTITY[entity];
   const router = useRouter();
   const isMobile = useIsMobile();
   const [phase, setPhase] = useState<Phase>('idle');
@@ -174,6 +224,7 @@ export function ScoringModal({
             failed: num(data.failed),
             tokens: num(data.tokens_used),
             cost: num(data.cost),
+            skipped: num(data.skipped),
           }));
           setPhase((p) => (p === 'error' ? 'error' : 'done'));
           router.refresh();
@@ -203,7 +254,12 @@ export function ScoringModal({
       const res = await fetch(cfg.endpoint, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ limit: cfg.limit, batchSize: 3, forceReanalyze: force }),
+        body: JSON.stringify({
+          limit: cfg.limit,
+          batchSize: 3,
+          forceReanalyze: force,
+          ...(ids?.length ? { ids } : {}),
+        }),
         signal: controller.signal,
       });
 
@@ -224,7 +280,11 @@ export function ScoringModal({
       const contentType = res.headers.get('content-type') ?? '';
       if (!contentType.includes('event-stream')) {
         await res.json().catch(() => ({}));
-        setSkippedMsg(`Keine offenen ${cfg.unit} zum Bewerten.`);
+        setSkippedMsg(
+          single
+            ? cfg.notEligibleMsg
+            : `Keine offenen ${cfg.unit} zum Bewerten.`,
+        );
         setPhase('skipped');
         return;
       }
@@ -235,7 +295,7 @@ export function ScoringModal({
       setPhase('error');
       setErrorMsg(err instanceof Error ? err.message : 'Verbindung fehlgeschlagen');
     }
-  }, [cfg, model, force, handleEvent]);
+  }, [cfg, model, force, handleEvent, ids, single]);
 
   const onDialogOpenChange = useCallback(
     (o: boolean) => {
@@ -367,6 +427,8 @@ function ScoringFlow({
   const pct = counts.total > 0 ? Math.round((counts.processed / counts.total) * 100) : 0;
   const running = phase === 'running';
   const active = running || phase === 'done';
+  // Live-Preise nur holen, solange der Picker überhaupt sichtbar ist.
+  const pricing = useModelPricing(phase === 'idle');
 
   return (
     <AnimatePresence mode="wait" initial={false}>
@@ -403,22 +465,22 @@ function ScoringFlow({
                       >
                         {selected && <span className="h-[7px] w-[7px] rounded-full bg-background" />}
                       </span>
-                      <span className="flex-1 font-medium">{m.label}</span>
+                      <span className="min-w-0 flex-1 truncate font-medium">{m.label}</span>
                       <span
+                        title="Preis je 1 Mio. Tokens: Eingabe / Ausgabe"
                         className={cn(
-                          'font-mono text-2xs',
+                          'shrink-0 whitespace-nowrap font-mono text-2xs',
                           selected ? 'text-background/70' : 'text-ink-soft',
                         )}
                       >
-                        {m.costPerMillionTokens === 0 ? 'gratis' : `$${m.costPerMillionTokens}/M`}
+                        {formatModelPricing(pricing[m.value] ?? m.fallbackPricing)}
                       </span>
                     </button>
                   );
                 })}
               </div>
               <p className="text-2xs leading-relaxed text-ink-soft">
-                Bewertet bis zu {cfg.limit} {cfg.unit} pro Lauf. In-Chat-Scoring (Opus, kostenlos)
-                bleibt der bevorzugte Weg.
+                {cfg.scopeNote} In-Chat-Scoring (Opus, kostenlos) bleibt der bevorzugte Weg.
               </p>
             </div>
 
@@ -561,7 +623,8 @@ function ScoringFlow({
                 <div className="flex items-center gap-2.5 rounded-[11px] border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-3 text-sm font-semibold text-emerald-700 dark:text-emerald-400">
                   <CheckCircle2 className="h-[18px] w-[18px] shrink-0" weight="fill" />
                   {counts.successful} {cfg.unit} bewertet
-                  {counts.failed > 0 && ` · ${counts.failed} fehlgeschlagen`}.
+                  {counts.failed > 0 && ` · ${counts.failed} fehlgeschlagen`}
+                  {counts.skipped > 0 && ` · ${counts.skipped} übersprungen`}.
                 </div>
                 <Button variant="outline" onClick={onClose} className="w-full rounded-[11px]">
                   Schließen

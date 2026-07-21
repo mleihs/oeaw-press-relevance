@@ -32,6 +32,7 @@
  */
 
 import { parseEnv } from '../../../lib/server/env';
+import { DEFAULT_LLM_MODEL } from '../../../lib/shared/constants';
 
 let passed = 0;
 let failed = 0;
@@ -61,7 +62,7 @@ const minimalValid: Record<string, string> = {
   const r = parseEnv(minimalValid);
   ok('1 happy-path returns ok=true', r.ok);
   if (r.ok) {
-    ok('1 default LLM_DEFAULT_MODEL applied', r.env.LLM_DEFAULT_MODEL === 'anthropic/claude-sonnet-4');
+    ok('1 default LLM_DEFAULT_MODEL applied', r.env.LLM_DEFAULT_MODEL === DEFAULT_LLM_MODEL);
     ok('1 default NODE_ENV applied', r.env.NODE_ENV === 'development');
   }
 }

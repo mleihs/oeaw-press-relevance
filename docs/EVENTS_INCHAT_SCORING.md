@@ -165,10 +165,17 @@ per **prod-`id`** aus dem Puller:
    "target_audience":"…","reasoning":"…" }]
 ```
 Dann anwenden (Verbindung aus Schritt 0 muss aktiv sein; reuse computeEventScore,
-Provenienz `anthropic/claude-opus-4.8 (in-chat)`, cost 0; `--yes` bestätigt den
-prod-Write):
+Provenienz aus `lib/shared/event-session-model.json`, cost 0). Das Script ist
+seit 2026-07-21 **Dry-run by default** und validiert hart: eine fehlende oder
+nicht-numerische Dimension bricht mit Item-Liste ab, statt sie still auf 0 zu
+setzen. `--apply` schreibt, `--yes` bestätigt den prod-Write, `--force`
+überschreibt bereits bewertete Events (ohne `--force` schützt
+`event_score IS NULL` im UPDATE, ein zweiter Lauf ist also idempotent):
 ```bash
-PROD_DB_TUNNEL=1 npm run apply-event-scores -- --target=prod --yes --file=/tmp/events-batch-N.json
+# 1. Trockenlauf: Validierung + Vorschau, schreibt nichts
+PROD_DB_TUNNEL=1 npm run apply-event-scores -- --target=prod --file=/tmp/events-batch-N.json
+# 2. Schreiben
+PROD_DB_TUNNEL=1 npm run apply-event-scores -- --target=prod --yes --apply --file=/tmp/events-batch-N.json
 ```
 Nach jedem Batch verifizieren (Tunnel aktiv; psql braucht `sslmode=require`):
 ```bash
@@ -181,8 +188,12 @@ Wiederholen bis 0. Fertig, wenn alle Zukunfts-Events gescort.
 
 ## Nicht vergessen
 - KEIN OpenRouter-Lauf für Events (kein `npm run analyze-events`).
-- Modell-Tag steht auf `anthropic/claude-opus-4.8 (in-chat)`
-  (`scripts/apply-event-scores.ts`).
+- Modell-Tag kommt aus `lib/shared/event-session-model.json` (analog
+  `session-model.json` auf der Publikations-Seite). NICHT im Script
+  hartkodieren: genau daher stehen auf Prod drei Tag-Varianten nebeneinander
+  (`opus-4.8 (in-chat rubric v2)`, `anthropic/claude-opus-4.8 (in-chat)`,
+  `anthropic/claude-opus-4 (in-chat)`), was jede Auswertung nach Modell
+  verfälscht. Neues Modell = JSON anpassen, nicht das Script.
 - Das Feature ist deployt (Vercel + VPS); Scores erscheinen live, sobald geschrieben.
 - Der Cloud-Standby braucht KEINEN manuellen Write (nächtlicher 03:30-Mirror).
 </content>

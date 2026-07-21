@@ -13,11 +13,14 @@ import { PressScoreBadge } from '@/components/score-bar';
 import { VenueLine } from '@/components/venue-line';
 import { FlagshipBadge } from '@/components/flagship-badge';
 import { PublicationFlag } from '@/components/publication-flag';
+import { Badge } from '@/components/ui/badge';
 import { InfoBubble } from '@/components/info-bubble';
 import {
   displayAuthor,
   displayInstitute,
   displayTitle,
+  isRecentlyAdded,
+  NEW_BADGE_DAYS,
 } from '@/lib/shared/publication-display';
 import { formatPubDate, pubDateTitle } from '@/lib/shared/format-pub-date';
 import { enrichmentReason } from '@/lib/shared/enrichment-reason';
@@ -42,6 +45,22 @@ function naReasonFor(pub: PublicationListItem): string | null {
       published_at: pub.published_at,
     },
     new Date(),
+  );
+}
+
+/** „Neu" für Zugänge der letzten Woche — beantwortet in der Liste die Frage,
+ *  die bisher nur die Sortierung beantworten konnte: was ist frisch drin?
+ *  Badge-Variante statt eigener Klassen-Strings (Design System §2.3). */
+function NewBadge({ createdAt }: { createdAt: string | null | undefined }) {
+  if (!isRecentlyAdded(createdAt)) return null;
+  return (
+    <Badge
+      variant="brand"
+      className="px-[7px] py-[2px] text-2xs font-semibold"
+      title={`In den letzten ${NEW_BADGE_DAYS} Tagen hinzugefügt`}
+    >
+      Neu
+    </Badge>
   );
 }
 
@@ -122,9 +141,12 @@ export function PublicationList({
                   <div className="text-sm font-semibold leading-[1.35] text-ink">
                     {displayTitle(pub.original_title || pub.title, pub.citation)}
                   </div>
-                  <div className="mt-1 text-xs text-ink-subtle">
-                    {displayAuthor(pub)}
-                    {institute ? ` · ${institute}` : ''}
+                  <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-ink-subtle">
+                    <span>
+                      {displayAuthor(pub)}
+                      {institute ? ` · ${institute}` : ''}
+                    </span>
+                    <NewBadge createdAt={pub.created_at} />
                   </div>
                 </div>
               </div>
@@ -234,6 +256,7 @@ export function PublicationList({
                     {displayAuthor(pub)}
                     {institute ? ` · ${institute}` : ''}
                   </span>
+                  <NewBadge createdAt={pub.created_at} />
                   <FlagshipBadge journal={pub.enriched_journal} />
                   {typeLabel && (
                     <span className="rounded-full bg-fill px-[7px] py-[2px] text-2xs font-semibold text-ink-subtle">

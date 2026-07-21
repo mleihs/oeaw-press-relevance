@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { buildUrl, FILTER_DEFAULTS } from '@/app/publications/_filters';
 import { InfoBubble } from '@/components/info-bubble';
 import { ScoringModal } from '@/components/scoring-modal';
 import { SCORING_STALE_DANGER_DAYS } from '@/lib/shared/dashboard';
@@ -16,6 +18,11 @@ const CARD =
 type Entity = 'publications' | 'events';
 type Tone = 'success' | 'warning' | 'danger';
 
+// Ampel und Zahl rechnen ausschließlich mit den FRISCHEN Kandidaten (Fenster
+// SCORING_RECENT_DAYS) — der Menge, die der Bewerten-Knopf auch erreicht. Der
+// Altbestand steht daneben, aber ohne Alarm: er ist Aufgabe des In-Chat-
+// Scorings, und eine Kachel, die deshalb dauerhaft rot leuchtet, warnt nicht,
+// sie stumpft ab.
 function toneFor(s: EntityScoringStatus): Tone {
   if (s.unscoredCount === 0) return 'success';
   if (s.oldestUnscoredDays != null && s.oldestUnscoredDays >= SCORING_STALE_DANGER_DAYS) {
@@ -23,6 +30,16 @@ function toneFor(s: EntityScoringStatus): Tone {
   }
   return 'warning';
 }
+
+// Deep-Link „unbewertete Publikationen, neueste Zugänge zuerst". Über den
+// nuqs-Serializer der Publikationsseite gebaut statt handgeschrieben, damit die
+// Query-Keys nicht an den Parsern vorbeidriften (order=desc ist Default und
+// fällt dabei bewusst weg).
+const UNSCORED_PUBS_HREF = `/publications${buildUrl(FILTER_DEFAULTS, {
+  analysis: 'pending',
+  sort: 'created_at',
+  order: 'desc',
+})}`;
 
 const TONE_PILL: Record<Tone, string> = {
   success: 'bg-success-tint text-success',
@@ -74,12 +91,14 @@ export function ScoringStatusTile({ status }: { status: ScoringStatus }) {
           label="Publikationen"
           icon={<Newspaper className="h-4 w-4" weight="duotone" />}
           status={status.publications}
+          href={UNSCORED_PUBS_HREF}
           onScore={() => setOpenEntity('publications')}
         />
         <EntityRow
           label="Events"
           icon={<CalendarDays className="h-4 w-4" weight="duotone" />}
           status={status.events}
+          href="/events?band=unscored"
           onScore={() => setOpenEntity('events')}
         />
       </div>
@@ -102,11 +121,14 @@ function EntityRow({
   label,
   icon,
   status,
+  href,
   onScore,
 }: {
   label: string;
   icon: React.ReactNode;
   status: EntityScoringStatus;
+  /** Zielliste, vorgefiltert auf „unbewertet" (Muster: Social-Kachel-Deep-Link). */
+  href: string;
   onScore: () => void;
 }) {
   const tone = toneFor(status);
@@ -121,9 +143,16 @@ function EntityRow({
         {icon}
       </span>
       <div className="min-w-0 flex-1">
-        <div className="text-sm font-semibold text-ink">{label}</div>
+        <Link
+          href={href}
+          className="text-sm font-semibold text-ink transition-colors hover:text-brand focus-visible:outline-none focus-visible:text-brand"
+          title={`${label} anzeigen, gefiltert auf unbewertet`}
+        >
+          {label}
+        </Link>
         <div className="mt-0.5 font-mono text-2xs text-ink-soft">
           {status.lastImportAt ? `zuletzt importiert ${status.lastImportAt}` : 'noch nicht importiert'}
+          {status.backlogCount > 0 && ` · + ${status.backlogCount} Altbestand (nur In-Chat)`}
         </div>
         {status.lastImportFailed && (
           <div className="mt-0.5 flex items-center gap-1 text-2xs font-medium text-destructive">
@@ -156,7 +185,13 @@ function EntityRow({
         variant="outline"
         disabled={status.unscoredCount === 0}
         onClick={onScore}
-        title={status.unscoredCount === 0 ? 'Nichts zu bewerten' : 'Über OpenRouter bewerten (Fallback)'}
+        title={
+          status.unscoredCount > 0
+            ? 'Über OpenRouter bewerten (Fallback)'
+            : status.backlogCount > 0
+              ? 'Nichts Neues zu bewerten. Der Altbestand läuft über das In-Chat-Scoring.'
+              : 'Nichts zu bewerten'
+        }
       >
         Bewerten
       </Button>

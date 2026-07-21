@@ -192,8 +192,16 @@ export function sseBatchHooks<TItem extends { title: string }>(
  * Emits the terminal 'complete' frame the analysis modal expects — but NOT on
  * abort, where the 'cancelled' frame already fired from `onCancelled`. Shared by
  * the publication and event runners.
+ *
+ * `skipped` zählt Einträge, die der Aufrufer ausdrücklich benannt hat (ids),
+ * die aber an den Bewertbarkeits-Gates hängengeblieben sind. Ohne diese Zahl
+ * stünde im Modal „0 bewertet" ohne jeden Grund.
  */
-export function emitBatchComplete(emit: SseEmit, result: LLMBatchResult): void {
+export function emitBatchComplete(
+  emit: SseEmit,
+  result: LLMBatchResult,
+  extra: { skipped?: number } = {},
+): void {
   if (!result.cancelled) {
     emit('complete', {
       processed: result.processed,
@@ -202,6 +210,7 @@ export function emitBatchComplete(emit: SseEmit, result: LLMBatchResult): void {
       failed: result.failed,
       tokens_used: result.tokensUsed,
       cost: result.cost,
+      ...(extra.skipped ? { skipped: extra.skipped } : {}),
     });
   }
 }

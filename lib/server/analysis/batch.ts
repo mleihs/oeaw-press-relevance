@@ -13,27 +13,58 @@ import type { AnalysisResult } from '@/lib/shared/types';
 import type { PublicationForPrompt } from './prompts';
 import { publicationToApi } from '../publications/to-api';
 import type { ScoringBatchPayload } from '@/lib/shared/schemas';
+import { SCORING_RECENT_DAYS } from '@/lib/shared/dashboard';
 
 // Wire shape and internal filter shape match 1:1 (camelCase throughout).
 export type AnalysisBatchFilters = ScoringBatchPayload;
 
+/**
+ * Der Scope EINES „Bewerten"-Laufs über OpenRouter. Zwei Gates, beide
+ * unverhandelbar:
+ *
+ *  1. WAS ist bewertbar — die kanonischen Views (Migration 20260721000001).
+ *     Non-force nimmt die offenen Kandidaten (`publication_scoring_candidates`),
+ *     force den ganzen Re-Score-Pool (`publication_rescore_pool`: bewertbar,
+ *     aber evtl. schon bewertet → Überschreiben). Force ignoriert also NICHT
+ *     mehr jedes Prädikat (bis 2026-07-21 war die force-Bedingung schlicht
+ *     `undefined`): archiviert / ITA / ohne Inhalt bleibt in BEIDEN Fällen außen
+ *     vor.
+ *  2. WIE ALT darf es sein — `created_at` innerhalb SCORING_RECENT_DAYS.
+ *     Dieser Weg kostet OpenRouter-Guthaben; der Altbestand gehört dem
+ *     kostenlosen In-Chat-Pfad (scripts/session-pipeline.mjs). `limit` ist damit
+ *     nur noch ein Sicherheitsdeckel, kein Scope-Instrument.
+ *
+ * Exportiert, damit lib/server/analysis/batch.test.ts das gerenderte SQL prüfen
+ * kann, ohne eine DB zu brauchen.
+ */
+export function buildAnalysisScopeWhere(filters: AnalysisBatchFilters) {
+  const pool = sql.raw(
+    filters.forceReanalyze ? 'publication_rescore_pool' : 'publication_scoring_candidates',
+  );
+  // Einzel-/Auswahl-Bewertung: genau die benannten ids, geschnitten mit dem
+  // Pool. Kein Zeitfenster — wer eine Publikation vor sich hat, will SIE
+  // bewerten, nicht „was neu ist". Das Array via sql.param()::uuid[] binden;
+  // ein bares ${array} scheitert am Supabase-Pooler (Memory
+  // drizzle-any-array-prod-bug).
+  if (filters.ids?.length) {
+    return sql`${publications.id} IN (SELECT id FROM ${pool})
+      AND ${publications.id} = ANY(${sql.param(filters.ids)}::uuid[])`;
+  }
+  return sql`${publications.id} IN (SELECT id FROM ${pool})
+    AND ${publications.createdAt} >= now() - make_interval(days => ${SCORING_RECENT_DAYS}::int)`;
+}
+
 export async function fetchPublicationsForAnalysis(
   filters: AnalysisBatchFilters,
 ): Promise<PublicationForPrompt[]> {
-  // Non-force: restrict to the canonical scoring-candidate view — the single
-  // source of the „bewertbar"-predicate, shared with the in-chat pipeline
-  // (scripts/session-pipeline.mjs) and the status tile. The view enforces
-  // content-gate / enrichment / press_score IS NULL / not-ITA. Force ignores the
-  // view and re-analyses anything (top-N by published_at), so a maintainer can
-  // deliberately re-score already-scored material (overwrites).
-  const where = filters.forceReanalyze
-    ? undefined
-    : sql`${publications.id} IN (SELECT id FROM publication_scoring_candidates)`;
-
   const rows = await db.query.publications.findMany({
-    where,
-    orderBy: descNullsLast(publications.publishedAt),
-    limit: filters.limit,
+    where: buildAnalysisScopeWhere(filters),
+    // Nach Eingangsdatum, nicht nach Erscheinungsdatum: „zuletzt hereingekommen"
+    // ist die Reihenfolge, in der die Redaktion neue Kandidaten erwartet.
+    orderBy: descNullsLast(publications.createdAt),
+    // Bei ids zählt die benannte Menge, nicht der Batch-Deckel: sonst würde
+    // eine Auswahl von 30 stillschweigend auf den Default 20 gekürzt.
+    limit: filters.ids?.length ?? filters.limit,
     with: {
       orgunitPublications: {
         columns: { orgunitId: true },
@@ -62,6 +93,8 @@ export interface AnalysisBatchRunOptions {
   batchSize: number;
   abortSignal: AbortSignal;
   emit: (type: string, data: unknown) => void;
+  /** Ausdrücklich benannte ids, die an den Gates hängengeblieben sind. */
+  skipped?: number;
 }
 
 /**
@@ -80,7 +113,7 @@ export interface AnalysisBatchRunOptions {
 export async function runAnalysisBatch(
   opts: AnalysisBatchRunOptions,
 ): Promise<void> {
-  const { pubs, apiKey, model, batchSize, abortSignal, emit } = opts;
+  const { pubs, apiKey, model, batchSize, abortSignal, emit, skipped } = opts;
 
   // Pre-flight: masked-key + balance 'init', and an early abort if the budget
   // can't cover a single call. Shared with the event runner (preflightBalance
@@ -135,5 +168,5 @@ export async function runAnalysisBatch(
     hooks: sseBatchHooks<PublicationForPrompt>(emit),
   });
 
-  emitBatchComplete(emit, result);
+  emitBatchComplete(emit, result, { skipped });
 }

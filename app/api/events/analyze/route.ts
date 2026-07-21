@@ -36,8 +36,11 @@ export const POST = withApiError(async (req: NextRequest) => {
   const filters = await validateBody(req, scoringBatchPayloadSchema);
 
   const events = await fetchEventsForAnalysis(filters);
+  // Siehe app/api/analysis/batch: benannte ids, die die Gates aussortieren,
+  // werden gezählt statt stillschweigend zu verschwinden.
+  const skipped = filters.ids ? filters.ids.length - events.length : 0;
   if (events.length === 0) {
-    return NextResponse.json({ message: 'No events to analyze' });
+    return NextResponse.json({ message: 'No events to analyze', skipped });
   }
 
   // Run-Lock VOR dem SSE-Stream: laufender Lauf → 409. Freigabe erst im .finally
@@ -58,6 +61,7 @@ export const POST = withApiError(async (req: NextRequest) => {
     batchSize: filters.batchSize,
     abortSignal: req.signal,
     emit: send,
+    skipped,
   }).finally(() => {
     close();
     void lock.release();

@@ -12,18 +12,20 @@ und ein Haiku zurück.
 
 ## Welche Modelle möglich sind {#modelle}
 
-Die Pipeline läuft über **OpenRouter** und ist modellunabhängig. Übliche
-Wahlen:
+Die Pipeline läuft über **OpenRouter**. Der Bewerten-Dialog bietet bewusst
+eine kurze, kuratierte Auswahl, weil jedes zusätzliche Modell ein eigenes
+Bewertungs-Regime in denselben Bestand trägt:
 
-- **anthropic/claude-opus-4.7:** höchste Qualität, höchster Preis
-- **anthropic/claude-sonnet-4.6:** guter Kompromiss
-- **anthropic/claude-haiku-4.5:** günstig, für Routine-Volumen
-- **openai/gpt-4o:** Alternative zum Vergleich
-- **deepseek/deepseek-r1:** sehr günstig, für große Volumen
+- **anthropic/claude-opus-4.8:** Vorauswahl. Dasselbe Modell, mit dem der
+  bestehende Bestand bewertet wurde, also vergleichbare Scores. Höchster Preis.
+- **anthropic/claude-sonnet-5:** deutlich günstiger bei guter Textqualität,
+  kleine Abweichungen zur Opus-Kalibrierung sind möglich.
+- **deepseek/deepseek-chat:** günstigste Option, bewertet aber messbar milder
+  (im Mittel rund 0,53 statt 0,25). Die Scores sind dann nicht mehr mit dem
+  übrigen Bestand vergleichbar.
 
-Modell-Wahl erfolgt pro Batch im Analyse-Dialog, kein globales Default.
-Unterschiedliche Pub-Sets profitieren von unterschiedlichen
-Preis-Qualitäts-Profilen.
+Die Preisangabe im Dialog kommt live von OpenRouter, getrennt nach Eingabe
+und Ausgabe je Million Tokens. Die Modell-Wahl gilt pro Lauf.
 
 <Callout type="info">
 **BYOK** (Bring Your Own Key): Der OpenRouter-API-Schlüssel wird in den

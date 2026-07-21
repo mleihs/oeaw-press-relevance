@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { DEFAULT_LLM_MODEL } from '@/lib/shared/constants';
 
 /**
  * Boot-time environment validation. Phase 3 left us with a 30-min debug
@@ -56,7 +57,7 @@ const Schema = z.object({
   // header as a fallback, so the env var is fully optional. Model
   // selection falls back to a built-in default after env+header.
   OPENROUTER_API_KEY: z.string().min(1).optional(),
-  LLM_DEFAULT_MODEL: z.string().min(1).default('anthropic/claude-sonnet-4'),
+  LLM_DEFAULT_MODEL: z.string().min(1).default(DEFAULT_LLM_MODEL),
 
   // MeisterTask one-way push (lib/server/meistertask/push.ts). Token +
   // section form a required pair (push has no fallback target); label

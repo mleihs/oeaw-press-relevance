@@ -15,6 +15,10 @@ export const PAGE_SIZE = 20;
 export const SORT_OPTIONS = [
   { key: 'press_score', label: 'Bewertung (Score)', defaultOrder: 'desc' },
   { key: 'published_at', label: 'Erscheinungsdatum', defaultOrder: 'desc' },
+  // „Hinzugefügt" = created_at, also der Eingang in unsere DB (nicht das
+  // Erscheinungsdatum des Papers). Beantwortet „was ist neu hereingekommen?"
+  // und ist das Ziel des Deep-Links aus der Bewertungs-Kachel.
+  { key: 'created_at', label: 'Hinzugefügt', defaultOrder: 'desc' },
   { key: 'updated_at', label: 'Zuletzt geändert', defaultOrder: 'desc' },
   { key: 'title', label: 'Titel', defaultOrder: 'asc' },
   { key: 'lead_author', label: 'Erstautor:in', defaultOrder: 'asc' },

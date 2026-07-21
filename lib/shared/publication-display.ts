@@ -10,6 +10,23 @@ export function displayAuthor(pub: Pick<Publication, 'lead_author'>): string {
   return pub.lead_author?.trim() || 'Unbekannt';
 }
 
+/**
+ * Wie lange ein Datensatz nach dem Import als „Neu" gilt. Bewusst kurz: das
+ * Abzeichen soll die Zugänge EINER Woche markieren, nicht das Fenster des
+ * Bewerten-Knopfes (SCORING_RECENT_DAYS = 60) nachbauen. Beides zu vermischen
+ * hieße, 60 Tage lang alles als neu zu markieren, und ein Abzeichen, das
+ * überall klebt, sagt nichts mehr.
+ */
+export const NEW_BADGE_DAYS = 7;
+
+/** true, wenn der Datensatz vor höchstens NEW_BADGE_DAYS Tagen hereinkam. */
+export function isRecentlyAdded(createdAt: string | null | undefined): boolean {
+  if (!createdAt) return false;
+  const ms = Date.parse(createdAt);
+  if (Number.isNaN(ms)) return false;
+  return Date.now() - ms <= NEW_BADGE_DAYS * 86_400_000;
+}
+
 /** Display the primary institute via the orgunits relation. Returns null when no orgunit is attached. */
 export function displayInstitute(pub: WithOrgunits): string | null {
   const first = pub.orgunits?.[0];
