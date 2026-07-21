@@ -1,16 +1,29 @@
 import Link from 'next/link';
 import { CalendarDays } from '@/lib/icons';
+import { EventsSortHeader } from './events-sort-header';
 import { ScoreReasonBadge } from './score-reason-badge';
 import { EventRowActions } from './event-row-actions';
 import { EventFlag } from './event-flag';
 import { eventDayFmt, eventMonFmt, eventDateLongFmt } from '../_lib/event-format';
 import { getScoreBand, type ScoreBand } from '@/lib/shared/score-utils';
+import type { EventsFilterState } from '../_lib/build-events-url';
+import type {
+  EventsSort,
+  EventsSortOrder,
+  EventsTab,
+} from '@/lib/shared/events-filter';
 import type { Event } from '@/lib/shared/types';
 
 interface Props {
   rows: Event[];
   /** eventId → Board-Karten-Deep-Link, nur für gepitchte Events (Comp Z. 292). */
   boardCardHrefs: Map<string, string>;
+  /** Aktuelle Sortierung + der URL-Zustand, den die Sortierköpfe mitnehmen. */
+  sort: EventsSort;
+  order: EventsSortOrder;
+  tab: EventsTab;
+  main: boolean;
+  filters: EventsFilterState;
 }
 
 // Kartengrund — identisch zu Dashboard/Publikationen (Design System §5).
@@ -33,7 +46,15 @@ const DATE_BLOCK: Record<ScoreBand, string> = {
  * Pitchen/Verwerfen. Der Flag-Pin (Notizen + voller Entscheidungs-Popover inkl.
  * „Warten") bleibt als sekundäre Affordanz erhalten.
  */
-export function EventsTable({ rows, boardCardHrefs }: Props) {
+export function EventsTable({
+  rows,
+  boardCardHrefs,
+  sort,
+  order,
+  tab,
+  main,
+  filters,
+}: Props) {
   if (rows.length === 0) {
     return (
       <div className={CARD}>
@@ -49,6 +70,7 @@ export function EventsTable({ rows, boardCardHrefs }: Props) {
 
   return (
     <div className={CARD}>
+      <EventsSortHeader sort={sort} order={order} tab={tab} main={main} filters={filters} />
       {rows.map((event) => (
         <EventRowView
           key={event.id}

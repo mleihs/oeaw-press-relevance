@@ -1,8 +1,9 @@
-import type {
-  EventsBand,
-  EventsSort,
-  EventsSortOrder,
-  EventsTab,
+import {
+  DEFAULT_EVENTS_SORT,
+  type EventsBand,
+  type EventsSort,
+  type EventsSortOrder,
+  type EventsTab,
 } from '@/lib/shared/events-filter';
 import type { CalendarView } from './calendar-range';
 
@@ -51,4 +52,57 @@ export function buildEventsUrl(state: EventsUrlState): string {
   }
   const qs = p.toString();
   return qs ? `/events?${qs}` : '/events';
+}
+
+/** Die intuitive Erstrichtung je Sortierfeld: das nächste Datum zuerst, der
+ *  beste Score zuerst. */
+const NATURAL_ORDER: Record<EventsSort, EventsSortOrder> = {
+  date: 'asc',
+  score: 'desc',
+};
+
+/**
+ * Ziel-URL eines Sortierkopfes der Veranstaltungs-Liste
+ * (app/events/_components/events-sort-header.tsx). Drei Regeln:
+ *
+ *  1. Klick auf das AKTIVE Feld dreht die Richtung um.
+ *  2. Klick auf das andere Feld startet mit dessen natürlicher Richtung, statt
+ *     eine fremde Richtung mitzuschleppen (nach „Datum absteigend" auf
+ *     „Relevanz" zu klicken soll die besten Events zeigen, nicht die
+ *     schlechtesten).
+ *  3. Die Vorgabe (Datum aufsteigend) fällt aus der URL, damit die Liste ihre
+ *     saubere /events-Adresse behält — dieselbe Konvention wie beim
+ *     upcoming-Tab.
+ *
+ * Suche, Band und Institut fahren über `filters` mit.
+ */
+export function buildEventsSortUrl({
+  field,
+  sort,
+  order,
+  tab,
+  main,
+  filters,
+}: {
+  field: EventsSort;
+  sort: EventsSort;
+  order: EventsSortOrder;
+  tab: EventsTab;
+  main: boolean;
+  filters: EventsFilterState;
+}): string {
+  const active = sort === field;
+  const next: EventsSortOrder = active
+    ? order === 'asc'
+      ? 'desc'
+      : 'asc'
+    : NATURAL_ORDER[field];
+  const isDefault = field === DEFAULT_EVENTS_SORT.by && next === DEFAULT_EVENTS_SORT.order;
+  return buildEventsUrl({
+    ...filters,
+    tab,
+    main,
+    sort: isDefault ? null : field,
+    order: isDefault ? null : next,
+  });
 }
