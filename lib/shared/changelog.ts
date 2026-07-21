@@ -14,6 +14,31 @@ export interface ChangelogEntry {
 // auf das heutige Datum heben, sonst zeigt der Unread-Dot keinen neuen Stand an.
 export const changelogEntries: ChangelogEntry[] = [
   {
+    category: 'verbesserung',
+    title: 'Bewerten-Knopf: klarer Umfang, ehrliche Ampel',
+    body: 'Der Knopf „Bewerten" auf der Bewertungs-Kachel erfasst jetzt genau die Kandidaten, die in den letzten 60 Tagen neu hinzugekommen sind. Die Kachel nennt entsprechend zwei Zahlen: die frischen Kandidaten, die der Knopf auch wirklich erreicht, und daneben gedämpft den Altbestand, der bewusst dem kostenlosen In-Chat-Scoring der Redaktion vorbehalten bleibt. Die Ampel richtet sich nur noch nach den frischen Fällen und steht damit nicht mehr dauerhaft auf Rot.',
+  },
+  {
+    category: 'verbesserung',
+    title: 'Neubewertung hält sich an dieselben Regeln',
+    body: 'Die Option „Bereits Bewertetes neu bewerten" im Bewerten-Dialog griff bisher auf alles zu, was in der Datenbank steht, also auch auf archivierte Publikationen, ITA-Einträge und Datensätze ohne verwertbaren Text. Sie folgt jetzt denselben Kriterien wie eine normale Bewertung und überschreibt lediglich bereits vergebene Scores.',
+  },
+  {
+    category: 'verbesserung',
+    title: 'Modellauswahl: kuratiert, mit tagesaktuellen Preisen',
+    body: 'Die Modell-Liste im Bewerten-Dialog ist aufgeräumt: Modelle, die bei OpenRouter nicht mehr existieren oder unbrauchbares JSON liefern, sind raus. Vorausgewählt ist jetzt Claude Opus 4.8, also dasselbe Modell, mit dem der bestehende Bestand bewertet wurde, damit die Scores untereinander vergleichbar bleiben. DeepSeek bleibt als günstigste Option verfügbar, jetzt aber mit dem Hinweis, dass es spürbar milder bewertet. Die Preise holt der Dialog live bei OpenRouter, getrennt nach Eingabe und Ausgabe je Million Tokens.',
+  },
+  {
+    category: 'hintergrund',
+    title: 'Nächtlicher Import meldet sich nur noch bei echten Fehlern',
+    body: 'Der nächtliche Import hat bisher auch dann eine Warnmeldung ausgelöst, wenn lediglich einzelne Datensätze übersprungen wurden. Gemeldet wird jetzt nur, was wirklich schiefgeht; leichte Abweichungen laufen still mit und stehen weiterhin im Protokoll. Damit bleibt eine Alarmmeldung wieder ein Signal statt Hintergrundrauschen.',
+  },
+  {
+    category: 'neu',
+    title: 'Nächtlicher Import und Bewertungs-Kachel',
+    body: 'Publikationen und Veranstaltungen kommen jetzt jede Nacht um 06:00 automatisch herein, Publikationen werden dabei gleich angereichert. Bewertet wird bewusst nicht automatisch. Auf dem Dashboard zeigt die Kachel „Bewertung" je Bereich, wann zuletzt importiert wurde und wie viele Datensätze noch auf eine Bewertung warten, und bietet als Notnagel einen Bewerten-Knopf an, der über OpenRouter läuft und Guthaben kostet.',
+  },
+  {
     category: 'neu',
     title: 'Veranstaltungen: Suche und Filter in der Liste',
     body: 'Die Veranstaltungsliste hat jetzt eine Filterleiste: eine Volltextsuche über Titel und Teaser, einen Filter nach Relevanz-Band (Hoch, Mittel, Niedrig oder noch unbewertet) und eine Auswahl nach Institut. Die Filter stehen in der Adresszeile, bleiben also beim Blättern und beim Umschalten zwischen Liste und Kalender erhalten und lassen sich als Lesezeichen oder Link teilen.',
@@ -153,7 +178,7 @@ export const changelogClosing =
  * Bump this whenever a new entry is added on top so that returning users
  * see the brand-colored dot until they open the panel.
  */
-export const changelogLastUpdated = '2026-07-02T12:00:00.000Z';
+export const changelogLastUpdated = '2026-07-21T12:00:00.000Z';
 
 /** Auto-derived from changelogLastUpdated: single source of truth for the
  *  panel's soft date anchor ("Stand Mai 2026"). */

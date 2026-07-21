@@ -22,6 +22,7 @@ import { PressScoreBadge } from '@/components/score-bar';
 import { MobileScreenHeader } from '@/components/mobile-screen-header';
 import { InfoBubble } from '@/components/info-bubble';
 import { CapybaraEmpty } from '@/components/capybara-logo';
+import { ChangelogPanel } from '@/components/changelog-panel';
 import { VenueLine } from '@/components/venue-line';
 import { FlagshipBadge } from '@/components/flagship-badge';
 import { Button } from '@/components/ui/button';
@@ -191,9 +192,15 @@ export function DashboardClient({ data, period, sortBy, boardCards, socialData, 
       {/* Header: Gruß. Der Zeitraum-Umschalter lebt jetzt im Kopf der
           Top-Storys-Kachel — er scoped nur diese Zeile (Row 3), nicht die
           Stat-Kacheln, und wirkte im Seitenkopf fälschlich global. */}
-      <div className="mb-1">
-        <h1 className="text-2xl font-bold tracking-tight text-ink">{greeting.line}</h1>
-        <p className="mt-1.5 text-sm text-ink-subtle">{subParts.join(' · ')}</p>
+      <div className="mb-1 flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold tracking-tight text-ink">{greeting.line}</h1>
+          <p className="mt-1.5 text-sm text-ink-subtle">{subParts.join(' · ')}</p>
+        </div>
+        {/* „Was ist neu": im Toolkit-Redesign (c532111) beim Umbau des
+            Hero-Blocks verloren gegangen. Der Auslöser gehört in den Seitenkopf,
+            weil der Unread-Punkt dort ohne Scrollen sichtbar ist. */}
+        <ChangelogPanel className="mt-0.5 shrink-0" />
       </div>
 
       {/* Row 1 — Social-Trends + Redaktionsboard (Design Toolkit-Redesign
@@ -363,6 +370,12 @@ export function DashboardClient({ data, period, sortBy, boardCards, socialData, 
         Gruß trägt der blaue App-Header oben (M2); Score-Verteilung hat der
         Mobile-Mock bewusst nicht. */}
     <div className="space-y-3.5 md:hidden">
+      {/* „Was ist neu" — mobil rechtsbündig über der ersten Kachel, weil der
+          blaue App-Header (M2) keinen Platz für einen zweiten Auslöser hat. */}
+      <div className="flex justify-end">
+        <ChangelogPanel />
+      </div>
+
       {/* Board-Kachel (wie Desktop, Karte trägt Fälliges + „Zum Board") */}
       {boardCards && <BoardTile cards={dueCards} overdueCount={overdueCount} />}
 
