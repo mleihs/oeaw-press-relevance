@@ -1,0 +1,4 @@
+{
+  "tag": "anthropic/claude-opus-4.8 (in-chat)",
+  "likePattern": "anthropic/claude-opus-% (in-chat)"
+}
