@@ -230,7 +230,15 @@ export default async function EventsPage({
             institute={institute}
             institutes={institutes}
           />
-          <EventsTable rows={list.events} boardCardHrefs={boardCardHrefs} />
+          <EventsTable
+            rows={list.events}
+            boardCardHrefs={boardCardHrefs}
+            sort={sortBy}
+            order={sortOrder}
+            tab={activeTab}
+            main={includeMainNews}
+            filters={filters}
+          />
         </div>
       )}
 
