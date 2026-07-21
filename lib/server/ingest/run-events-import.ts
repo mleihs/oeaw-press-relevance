@@ -19,8 +19,11 @@ import { parseEventNewsGrouped } from './adapters/typo3-events-json';
 // Upsert + Journal-Schreiben hier in EINER db.transaction; die Idempotenz stützt
 // sich zusätzlich auf die UNIQUE(feed, generated_at_timestamp)-Constraint.
 //
-// Broken-Feed-Guard (Redmine #4165, Feed war 2026-06-26 upstream leer): parsed===0
-// → status 'failed' (+ Journal), damit die Nachtmail zu Recht schreit.
+// Broken-Feed-Guard (Redmine #4165, Feed war 2026-06-26 upstream leer): ein Lauf
+// ohne verwertbare Events wird klassifiziert, NICHT pauschal als Defekt gewertet
+// — siehe classifyEmptyFeed(). Der Export trägt real nur 1–2 Events pro Tag, ein
+// Tag ohne Neuzugang ist Normalbetrieb und darf die Nachtmail nicht auslösen
+// (am 2026-07-20 tat er genau das: parsed===0 ⇒ 'failed' ⇒ Fehlalarm).
 
 const DEFAULT_URL =
   'https://www.oeaw.ac.at/fileadmin/exports/event_news_grouped.json';
@@ -84,12 +87,13 @@ export async function runEventsImport(
 
   // Dry-Run: nur parsen, nichts schreiben (Journal bleibt unberührt).
   if (opts.dryRun) {
+    const verdict = events.length === 0 ? classifyEmptyFeed(institutes, skipped) : null;
     return finish({
       ...base,
-      status: events.length === 0 ? 'failed' : 'applied',
+      status: verdict?.status ?? 'applied',
       imported: 0,
       updated: 0,
-      reason: events.length === 0 ? 'Feed lieferte 0 Events (dry-run)' : undefined,
+      reason: verdict ? `${verdict.reason} (dry-run)` : undefined,
     });
   }
 
@@ -120,21 +124,27 @@ export async function runEventsImport(
       }
     }
 
-    // Broken-Feed-Guard: 0 Events → 'failed' journalisieren (schreit per Mail).
+    // Kein verwertbares Event: klassifizieren statt pauschal Alarm schlagen.
     if (events.length === 0) {
+      const verdict = classifyEmptyFeed(institutes, skipped);
       await journal(tx, {
-        status: 'failed',
+        status: verdict.status,
         generatedAtTimestamp,
         generatedAt,
         sourceLabel,
-        report: { reason: 'parsed_zero', parsed: 0 },
+        report: {
+          reason: verdict.code,
+          parsed: 0,
+          dropped_no_start: skipped,
+          institutes,
+        },
       });
       return finish({
         ...base,
-        status: 'failed',
+        status: verdict.status,
         imported: 0,
         updated: 0,
-        reason: 'Feed lieferte 0 Events',
+        reason: verdict.reason,
       });
     }
 
@@ -163,6 +173,42 @@ export async function runEventsImport(
   });
 }
 
+/** Ein Lauf ohne verwertbares Event ist mehrdeutig — diese Funktion trennt den
+ *  Defekt vom Normalbetrieb, damit nur ersterer die Nachtmail auslöst:
+ *
+ *  - keine Institutsgruppe ⇒ der Export ist strukturell leer. Genau der Zustand
+ *    vom 2026-06-26 (Redmine #4165) ⇒ 'failed', echter Alarm.
+ *  - Rohdaten da, aber der Adapter hat alles verworfen (kein Startdatum) ⇒
+ *    Feed-Inhalt und Parser driften auseinander ⇒ 'failed', echter Alarm.
+ *  - Institutsgruppen da, nichts zu verwerfen, nichts Neues ⇒ Normalbetrieb ⇒
+ *    'skipped'. Wird trotzdem journalisiert, damit die Nacht nachweisbar bleibt. */
+function classifyEmptyFeed(
+  institutes: string[],
+  droppedNoStart: number,
+): { status: 'failed' | 'skipped'; code: string; reason: string } {
+  if (institutes.length === 0) {
+    return {
+      status: 'failed',
+      code: 'feed_structurally_empty',
+      reason: 'Feed enthält keine Institutsgruppe, Export vermutlich defekt',
+    };
+  }
+  if (droppedNoStart > 0) {
+    return {
+      status: 'failed',
+      code: 'all_events_dropped',
+      reason:
+        `Alle ${droppedNoStart} Roh-Events verworfen (kein verwertbares ` +
+        `Startdatum): Feed-Inhalt und Parser driften auseinander`,
+    };
+  }
+  return {
+    status: 'skipped',
+    code: 'no_new_events',
+    reason: 'Feed ist intakt, enthält aber keine Events',
+  };
+}
+
 /** Schreibt/aktualisiert die ingest_runs-Zeile für diesen Feed. `generated_at_
  *  timestamp` ist NOT NULL — fehlt er im Feed, fällt der Cursor auf 0 zurück
  *  (degradiert: kein echter High-Water-Mark, aber der letzte Lauf ist erfasst).
@@ -170,7 +216,7 @@ export async function runEventsImport(
 async function journal(
   tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
   args: {
-    status: 'applied' | 'failed';
+    status: 'applied' | 'failed' | 'skipped';
     generatedAtTimestamp: number | null;
     generatedAt: string | null;
     sourceLabel: string;

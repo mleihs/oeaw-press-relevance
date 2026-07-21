@@ -5,6 +5,7 @@ import { assertCronSecret } from '@/lib/server/ingest/cron-auth';
 import { runPublicationsDeltaImport } from '@/lib/server/ingest/run-publications-delta';
 import { runEventsImport, EVENTS_FEED } from '@/lib/server/ingest/run-events-import';
 import { runEnrichmentImport } from '@/lib/server/ingest/run-enrichment';
+import { classifyRun, type FeedOutcome } from '@/lib/server/ingest/classify-run';
 
 // Unbeaufsichtigter Nacht-Ingest: zieht beide OeAW-JSON-Exporte (Publications-
 // Delta + Events) und wendet sie an. KEIN Auto-Scoring — neue Zeilen landen als
@@ -18,16 +19,23 @@ import { runEnrichmentImport } from '@/lib/server/ingest/run-enrichment';
 // legitimen Cron abweisen.
 //
 // Ablauf: beide Feeds SEQUENZIELL, je eigenes try/catch (ein Feed-Fehler stoppt
-// den anderen NICHT). HTTP 200, sobald die Route lief; `ok` fasst zusammen, ob
-// ALLE Feeds sauber (applied/skipped, keine Warnungen) durchliefen — der
-// VPS-Wrapper alarmiert per Mail bei `ok:false`/non-200/curl-Fehler.
+// den anderen NICHT). HTTP 200, sobald die Route lief.
+//
+// ZWEI STUFEN statt einer (vorher kippte JEDE Warnung den Lauf auf ok:false —
+// am 2026-07-21 meldete das einen komplett erfolgreichen Import als Fehlschlag,
+// nur weil eine Junction auf eine im Feed fehlende Person zeigte):
+//   ok:false    — mindestens ein Feed steht auf error/failed, ODER die Drift
+//                 überschreitet DRIFT_ALARM_THRESHOLD. Echter Alarm.
+//   degraded    — alles angewandt, aber vereinzelte Drift-Signale (Orphans,
+//                 unaufgelöste Lookups). Wird journalisiert, löst KEINEN Alarm
+//                 und KEINE Mail aus: der Export liefert regelmäßig eine
+//                 Verknüpfung auf einen Personensatz, den er selbst leer
+//                 ausliefert. Ein Upstream-Defekt, den wir nicht beheben können
+//                 und für den niemand nachts geweckt werden will.
+// `summary` ist die vorformulierte Einzeilen-Diagnose: der VPS-Wrapper nimmt sie
+// als Sentry-Titel, statt den JSON-Body abzuschneiden.
 
 export const maxDuration = 300;
-
-interface FeedOutcome {
-  status: string;
-  [k: string]: unknown;
-}
 
 export const POST = withApiError(
   async (req: NextRequest) => {
@@ -45,6 +53,7 @@ export const POST = withApiError(
         status: r.status,
         report: r.report,
         warnings: r.warnings,
+        driftTotal: r.driftTotal,
         matviewRefreshed: r.matviewRefreshed,
         durationMs: r.durationMs,
       };
@@ -104,17 +113,10 @@ export const POST = withApiError(
       };
     }
 
-    const outcomes = Object.values(feeds);
-    const allClean = outcomes.every(
-      (f) => f.status === 'applied' || f.status === 'skipped',
-    );
-    const anyWarnings = outcomes.some(
-      (f) => Array.isArray(f.warnings) && f.warnings.length > 0,
-    );
-    const ok = allClean && !anyWarnings;
+    const verdict = classifyRun(feeds);
 
     return NextResponse.json({
-      ok,
+      ...verdict,
       startedAt,
       durationMs: Date.now() - t0,
       feeds,

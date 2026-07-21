@@ -136,15 +136,54 @@ describe('runEventsImport', () => {
     expect(h.journalInserts).toHaveLength(0);
   });
 
-  it('marks a broken (0-event) feed as failed and journals it, without upserting', async () => {
+  it('marks a structurally empty feed (no institute group) as failed, without upserting', async () => {
     const r = await runEventsImport({ json: exportJson([]) });
 
     expect(r.status).toBe('failed');
     expect(r.parsed).toBe(0);
-    expect(r.reason).toMatch(/0 Events/);
+    expect(r.reason).toMatch(/Institutsgruppe/);
     expect(upsertMock).not.toHaveBeenCalled();
     expect(h.journalInserts).toHaveLength(1);
     expect(h.journalInserts[0]).toMatchObject({ status: 'failed' });
+    expect(h.journalInserts[0].report).toMatchObject({
+      reason: 'feed_structurally_empty',
+    });
+  });
+
+  // Der Regressionstest zum Fehlalarm vom 2026-07-20: ein intakter Feed ohne
+  // neues Event ist Normalbetrieb (der Export trägt real nur 1-2 Events/Tag)
+  // und darf den Nachtlauf NICHT auf 'failed' kippen.
+  it('treats an intact feed with no events as skipped, not failed', async () => {
+    const json = {
+      meta: { generated_at_timestamp: GEN_TS, generated_at_readable: 'fixture' },
+      data: { GMI: { events: [] as never } },
+    } as EventNewsGroupedExport;
+
+    const r = await runEventsImport({ json });
+
+    expect(r.status).toBe('skipped');
+    expect(r.parsed).toBe(0);
+    expect(upsertMock).not.toHaveBeenCalled();
+    // Journalisiert trotzdem — die Nacht bleibt nachweisbar.
+    expect(h.journalInserts).toHaveLength(1);
+    expect(h.journalInserts[0]).toMatchObject({ status: 'skipped' });
+    expect(h.journalInserts[0].report).toMatchObject({ reason: 'no_new_events' });
+  });
+
+  it('fails when raw events existed but the adapter dropped them all', async () => {
+    // Rohdaten da, aber ohne verwertbares Startdatum → Parser/Inhalt driften.
+    const r = await runEventsImport({
+      json: exportJson([{ uid: 1, title: 'A', datetime: 0, event_end: 0 }]),
+    });
+
+    expect(r.status).toBe('failed');
+    expect(r.parsed).toBe(0);
+    expect(r.droppedNoStart).toBe(1);
+    expect(r.reason).toMatch(/verworfen/);
+    expect(upsertMock).not.toHaveBeenCalled();
+    expect(h.journalInserts[0].report).toMatchObject({
+      reason: 'all_events_dropped',
+    });
   });
 
   it('dry-run parses only: no transaction, no upsert, no journal', async () => {
@@ -157,7 +196,7 @@ describe('runEventsImport', () => {
     expect(h.journalInserts).toHaveLength(0);
   });
 
-  it('dry-run on a 0-event feed reports failed (no write)', async () => {
+  it('dry-run on a structurally empty feed reports failed (no write)', async () => {
     const r = await runEventsImport({ json: exportJson([]), dryRun: true });
     expect(r.status).toBe('failed');
     expect(h.transactionCalls).toBe(0);

@@ -50,6 +50,8 @@ export interface PublicationsDeltaResult {
   report: Record<string, unknown>;
   /** Nicht-fatale Drift-Signale (Orphans / unaufgelöste Lookups). */
   warnings: string[];
+  /** Anzahl der Drift-Signale — die Route eskaliert erst ab einer Schwelle. */
+  driftTotal: number;
   matviewRefreshed: boolean;
   durationMs: number;
   generatedAt: string | null;
@@ -101,6 +103,7 @@ export async function runPublicationsDeltaImport(
       status: String(report.status ?? 'unknown'),
       report,
       warnings: collectWarnings(report),
+      driftTotal: countDrift(report),
       matviewRefreshed: false,
       durationMs: Date.now() - t0,
       generatedAt,
@@ -123,24 +126,37 @@ export async function runPublicationsDeltaImport(
     status: String(report.status ?? 'unknown'),
     report,
     warnings: collectWarnings(report),
+    driftTotal: countDrift(report),
     matviewRefreshed,
     durationMs: Date.now() - t0,
     generatedAt,
   };
 }
 
-/** Nicht-fatale Drift-Signale: nicht auflösbare Junction-Endpunkte (unbekannte
- *  Person/Orgunit) oder fehlende Lookups → eine Voll-Reconciliation ist fällig. */
+/** Summe der nicht-fatalen Drift-Signale: nicht auflösbare Junction-Endpunkte
+ *  (unbekannte Person/Orgunit) plus fehlende Lookups. Einzelne Treffer sind
+ *  Upstream-Rauschen (der Export liefert gelegentlich eine Verknüpfung auf einen
+ *  Personensatz, den er selbst leer ausliefert — Fall vom 2026-07-21). Erst eine
+ *  große Zahl heißt, dass der Korpus wirklich auseinanderläuft. */
+export function countDrift(report: Record<string, unknown>): number {
+  if (report.status !== 'applied') return 0;
+  return (
+    Number(report.person_link_orphans ?? 0) +
+    Number(report.orgunit_link_orphans ?? 0) +
+    Number(report.unresolved_publication_type ?? 0) +
+    Number(report.unresolved_member_type ?? 0)
+  );
+}
+
 function collectWarnings(report: Record<string, unknown>): string[] {
-  if (report.status !== 'applied') return [];
+  if (countDrift(report) === 0) return [];
   const orphans =
     Number(report.person_link_orphans ?? 0) + Number(report.orgunit_link_orphans ?? 0);
   const unresolved =
     Number(report.unresolved_publication_type ?? 0) +
     Number(report.unresolved_member_type ?? 0);
-  if (orphans === 0 && unresolved === 0) return [];
   return [
-    `${orphans} orphan link(s), ${unresolved} unresolved lookup(s) — ` +
+    `${orphans} orphan link(s), ${unresolved} unresolved lookup(s): ` +
       `likely drift vs. the full corpus; schedule/verify a full reconciliation.`,
   ];
 }
