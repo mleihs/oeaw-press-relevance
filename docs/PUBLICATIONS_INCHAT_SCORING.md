@@ -116,3 +116,98 @@ Dieser Import brachte **29 neue Events** (lokal gesynct, noch unbewertet). Die l
 „bewerte die upcoming events im chat"). Nicht Teil der Publikations-Batches hier.
 </content>
 </invoke>
+
+---
+
+# Stand 2026-07-21 — WICHTIG: Prod ist voraus, LOKAL NICHT MEHR KANONISCH
+
+Alles oberhalb dieser Linie beschreibt den WebDB-Re-Import vom 2026-06-17, bei dem
+die lokale DB die Wahrheit war und Prod danach nachgezogen wurde. **Für den
+laufenden Betrieb gilt das nicht mehr.** Seit dem Nightly-Ingest (06:00, seit
+2026-07-16) importiert die Pipeline **direkt auf Prod**; die lokale DB ist ein
+Schnappschuss vom letzten manuellen Import.
+
+Gemessen am 2026-07-21:
+
+| | frische Kandidaten (60-Tage-Fenster) | jüngster Eingang |
+|---|---|---|
+| lokal | 7 | 2026-07-16 |
+| **prod** | **17** | 2026-07-20 |
+
+Wer nach dem alten Ablauf lokal bewertet, scort also veraltete Zeilen und
+übersieht die neuesten. **Publikationen laufen jetzt wie Events: Kandidaten von
+Prod ziehen, bewerten, auf Prod anwenden.**
+
+## Ablauf (Publikationen, gegen Prod)
+
+```bash
+npm run db:tunnel          # eigenes Terminal, offen lassen
+```
+
+`scripts/session-pipeline.mjs` liest `PG_DATABASE_URL` (Default = lokal), also
+muss die Prod-URL gesetzt werden — der Tunnel liegt auf 127.0.0.1:5433.
+
+**Zwei Fallen, beide am 2026-07-21 verifiziert:**
+
+1. **`sslmode` umschreiben.** `loadDbUrl('prod')` liefert `sslmode=require`.
+   Das honoriert nur `connectDb()` aus `scripts/lib/db.mjs` (setzt ein
+   verbindungsgebundenes `rejectUnauthorized:false`). `session-pipeline.mjs`
+   baut seinen `pg.Client` aber direkt aus `PG_DATABASE_URL`, und node-pg
+   behandelt `require` wie `verify-full` ⇒ `self-signed certificate`. Deshalb
+   beim Export auf `no-verify` umschreiben.
+2. **`--imported-after` ist PFLICHT.** Ohne das Flag zieht `candidates` aus dem
+   gesamten Pool `publication_scoring_candidates`, also den AP7-Altbestand
+   (~2.354 Stück, bewusst pending, siehe `docs/RESUME_SCORING_SPLIT_CODEREVIEW.md`
+   §5) — man scort dann Pubs aus 2023 statt der frischen. Der
+   **Bewerten-Knopf-Scope** (`SCORING_RECENT_DAYS` = 60 in `lib/shared/dashboard.ts`)
+   ist die gemeinte Menge, und `--imported-after` filtert auf genau dieselbe
+   Spalte (`created_at >=`). Datum also jeweils auf heute minus 60 Tage setzen.
+
+```bash
+export PG_DATABASE_URL="$(node -e "
+  process.env.PROD_DB_TUNNEL='1';
+  import('./scripts/lib/db.mjs').then(m =>
+    console.log(m.loadDbUrl('prod').replace(/sslmode=[^&]*/, 'sslmode=no-verify')))
+")"
+CUTOFF=$(node -e "const d=new Date();d.setUTCDate(d.getUTCDate()-60);console.log(d.toISOString().slice(0,10))")
+node scripts/session-pipeline.mjs candidates 50 --imported-after "$CUTOFF"
+```
+
+Bewerten und anwenden dann wie oben beschrieben (Rubrik
+`lib/server/analysis/prompts.ts`, `apply` ist DRY-RUN by default).
+
+**Vorsicht:** direkt auf Prod schreiben heißt, es gibt kein lokales Netz mehr
+darunter. `apply` erst ohne `--apply` fahren und die Vorschau lesen.
+
+## Events im selben Zug
+
+`docs/EVENTS_INCHAT_SCORING.md` ist unverändert gültig (Events waren immer schon
+prod-first). Das Anwenden-Skript `scripts/apply-event-scores.ts` wurde am
+2026-07-21 gehärtet (Dry-run-Default, harte Validierung,
+`isNull(event_score)`-Guard, `--force`) und gegen die lokale DB in allen sechs
+Verhaltensweisen verifiziert.
+
+## Lauf 2026-07-21 (erster Lauf nach prod-first-Umstellung)
+
+Beide Seiten in je einem Batch abgearbeitet, direkt auf die VPS-Prod:
+
+- **17 Publikationen** (Fenster `created_at >= 2026-05-22`), Guard sauber,
+  `Updated 17/17`. Median press_score ~0.26, Spanne 0.124–0.523. Top:
+  `718d5149` „Varieties of urban housing regimes" (Wien/Athen/Belgrad,
+  Leistbarkeit) 0.523, dann `799ddc41` Cohesin/DNA-Reparatur 0.458 und
+  `2c9966cd` egoistische Gene im Fadenwurm 0.445. Boden: die beiden
+  SSHOC-EU-Deliverables (0.124/0.125), dazwischen ein dichter
+  GMI-Chromatin/Epigenetik-Block bei 0.20–0.31.
+- **5 Events**, `applied 5 · skipped 0`. `1f0e1efd` CERN-Generaldirektor
+  Mark Thomson 0.739 (deckt sich mit der 0.727 desselben Termins aus dem
+  16.07.-Lauf, der Re-Sync hatte ihn materiell geändert zurückgeworfen);
+  `0ca1f53e` „50 Years of VID" 0.340; drei GMI-Seminare ohne angekündigten
+  Titel bei 0.098–0.104.
+- **Nachkontrolle:** beide Kandidaten-Pools auf 0, `future-unscored = 0`.
+
+**Merke für die TBA-Seminare:** Die drei GMI-Termine tragen nur den Platzhalter
+`Title to be announced`. Sie sind bewusst niedrig bewertet, fallen aber
+automatisch in den Kandidaten-Pool zurück, sobald ein echter Titel per
+`sync-events` ankommt (`upsertEvents` setzt bei materieller Änderung eines
+Zukunfts-Events `analysis_status→pending` und die Scores auf NULL). Nicht
+manuell nachhalten.

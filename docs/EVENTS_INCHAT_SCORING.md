@@ -135,8 +135,16 @@ Pro Event 4 Dimensionen (0.0–1.0). **KEIN Haiku** (anders als bei Pubs):
 - **reach** — Breite der Zielgruppe (überregional/allgemein vs. Nische).
 - **timeliness** — aktueller Anlass: Diskurs, Jahrestag, Saison, Ereignis.
 
-Gewichte (macht `computeEventScore`, du lieferst nur die 4 Dims): public_appeal .35 ·
-scientific_significance .30 · reach .20 · timeliness .15.
+Gewichte (macht `computeEventScore`, du lieferst nur die 4 Dims): **public_appeal .32 ·
+scientific_significance .32 · reach .21 · timeliness .15**.
+
+> Diese Zeile nannte bis 2026-07-21 die alten Werte .35/.30/.20/.15. Die Gewichte
+> sind seit [[events-score-weights-feature]] **in der DB konfigurierbar** und wurden
+> mit der Rubrik v2 (2026-07-01) auf .32/.32/.21/.15 geändert; `computeEventScore`
+> liest sie von dort. Am 2026-07-21 nachgerechnet: dieselben Dims ergeben nach Doku
+> 0.7375, geschrieben wurde 0.7385 = die DB-Gewichte. Die Doku war also stale.
+> **Konsequenz fürs Bewerten: keine.** Du lieferst nur die vier Dims, das Script
+> rechnet. Relevant nur, wenn du einen Score von Hand gegenrechnest.
 
 Plus Freitext (Deutsch, echte Umlaute ä/ö/ü/ß — niemals ae/oe/ue/ss; KEINE
 Gedankenstriche „—"; KEINE Anführungszeichen, die brechen das JSON):
