@@ -46,7 +46,15 @@ import { PressReferenceCard } from './press-reference-card';
 
 // Kurzformat für die Herkunfts-Zeitstempel (Eingang / letzte Änderung).
 // Bewusst numerisch: die Zeile ist Meta-Information, kein Fließtext.
+//
+// timeZone GEPINNT, nicht optional: created_at/updated_at sind timestamptz, und
+// diese Komponente rendert erst auf dem Server (dort UTC) und dann im Browser
+// (dort Europe/Vienna). Ohne Pin fällt ein Zeitstempel zwischen 00:00 und 02:00
+// MESZ server- und clientseitig auf VERSCHIEDENE Tage — falsches Datum plus
+// Hydration-Mismatch. Gleiche Wahl wie app/events/_lib/event-format.ts und
+// lib/server/ingest/status.ts.
 const stampFmt = new Intl.DateTimeFormat('de-AT', {
+  timeZone: 'Europe/Vienna',
   day: '2-digit',
   month: '2-digit',
   year: 'numeric',
