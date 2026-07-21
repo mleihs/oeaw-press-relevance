@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { buildUrl, FILTER_DEFAULTS } from '@/app/publications/_filters';
 import { InfoBubble } from '@/components/info-bubble';
 import { ScoringModal } from '@/components/scoring-modal';
 import { SCORING_STALE_DANGER_DAYS } from '@/lib/shared/dashboard';
@@ -28,6 +30,16 @@ function toneFor(s: EntityScoringStatus): Tone {
   }
   return 'warning';
 }
+
+// Deep-Link „unbewertete Publikationen, neueste Zugänge zuerst". Über den
+// nuqs-Serializer der Publikationsseite gebaut statt handgeschrieben, damit die
+// Query-Keys nicht an den Parsern vorbeidriften (order=desc ist Default und
+// fällt dabei bewusst weg).
+const UNSCORED_PUBS_HREF = `/publications${buildUrl(FILTER_DEFAULTS, {
+  analysis: 'pending',
+  sort: 'created_at',
+  order: 'desc',
+})}`;
 
 const TONE_PILL: Record<Tone, string> = {
   success: 'bg-success-tint text-success',
@@ -79,12 +91,14 @@ export function ScoringStatusTile({ status }: { status: ScoringStatus }) {
           label="Publikationen"
           icon={<Newspaper className="h-4 w-4" weight="duotone" />}
           status={status.publications}
+          href={UNSCORED_PUBS_HREF}
           onScore={() => setOpenEntity('publications')}
         />
         <EntityRow
           label="Events"
           icon={<CalendarDays className="h-4 w-4" weight="duotone" />}
           status={status.events}
+          href="/events?band=unscored"
           onScore={() => setOpenEntity('events')}
         />
       </div>
@@ -107,11 +121,14 @@ function EntityRow({
   label,
   icon,
   status,
+  href,
   onScore,
 }: {
   label: string;
   icon: React.ReactNode;
   status: EntityScoringStatus;
+  /** Zielliste, vorgefiltert auf „unbewertet" (Muster: Social-Kachel-Deep-Link). */
+  href: string;
   onScore: () => void;
 }) {
   const tone = toneFor(status);
@@ -126,7 +143,13 @@ function EntityRow({
         {icon}
       </span>
       <div className="min-w-0 flex-1">
-        <div className="text-sm font-semibold text-ink">{label}</div>
+        <Link
+          href={href}
+          className="text-sm font-semibold text-ink transition-colors hover:text-brand focus-visible:outline-none focus-visible:text-brand"
+          title={`${label} anzeigen, gefiltert auf unbewertet`}
+        >
+          {label}
+        </Link>
         <div className="mt-0.5 font-mono text-2xs text-ink-soft">
           {status.lastImportAt ? `zuletzt importiert ${status.lastImportAt}` : 'noch nicht importiert'}
           {status.backlogCount > 0 && ` · + ${status.backlogCount} Altbestand (nur In-Chat)`}

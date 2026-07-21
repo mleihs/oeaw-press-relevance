@@ -187,6 +187,10 @@ export function EventDetail({ event }: { event: Event }) {
       <div className="text-2xs text-muted-foreground/70 flex flex-wrap items-center gap-3">
         <span>WEBDB-UID: {event.webdb_uid}</span>
         <span>•</span>
+        {/* Eingangsdatum war bisher nirgends sichtbar, obwohl es das
+            Unterscheidungsmerkmal „frisch importiert" trägt (vgl. Kachel). */}
+        <span>Hinzugefügt: {eventDateFmt.format(new Date(event.created_at))}</span>
+        <span>•</span>
         <span>Synchronisiert: {eventDateFmt.format(new Date(event.synced_at))}</span>
         {event.decided_at && (
           <>

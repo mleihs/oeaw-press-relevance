@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { FILTER_DEFAULTS, type FilterValues } from '../_filters';
 import type { Lookups } from './use-lookups';
 import { SUPER_DOMAIN_LABELS } from '../_constants';
+import { STATUS_LABELS } from '@/lib/shared/constants';
 
 type Patch = Partial<FilterValues>;
 
@@ -215,17 +216,20 @@ export function ActiveFilters({ filters, setFilters, lookups }: Props) {
     });
   }
 
+  // Rohwerte („pending") gehören nicht in die UI; STATUS_LABELS ist die
+  // Beschriftungs-Wahrheit, die auch Status-Badge und Detailkopf verwenden.
+  // Fallback auf den Rohwert, falls je ein unbekannter Status hereinkommt.
   if (filters.enrich) {
     chips.push({
       key: 'enrich',
-      label: `Enrichment: ${filters.enrich}`,
+      label: `Enrichment: ${STATUS_LABELS[filters.enrich] ?? filters.enrich}`,
       remove: () => setFilters({ enrich: '', page: 1 }),
     });
   }
   if (filters.analysis) {
     chips.push({
       key: 'analysis',
-      label: `Analyse: ${filters.analysis}`,
+      label: `Analyse: ${STATUS_LABELS[filters.analysis] ?? filters.analysis}`,
       remove: () => setFilters({ analysis: '', page: 1 }),
     });
   }

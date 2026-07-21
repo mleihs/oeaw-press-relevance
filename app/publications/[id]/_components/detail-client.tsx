@@ -10,7 +10,11 @@ import {
 import type { PublicationWithRelations } from '@/lib/shared/types';
 import { cn } from '@/lib/shared/utils';
 import { decodeHtmlBlock } from '@/lib/shared/html-utils';
-import { matchAuthorByName } from '@/lib/shared/publication-display';
+import {
+  matchAuthorByName,
+  isRecentlyAdded,
+  NEW_BADGE_DAYS,
+} from '@/lib/shared/publication-display';
 import { EnrichmentSourceBadge } from '@/components/enrichment-source-badge';
 import { CitationCard } from './citation-card';
 import { doiToUrl } from '@/lib/shared/doi-utils';
@@ -38,6 +42,14 @@ import { SectionLabel } from '@/components/section-label';
 import { VenueDisplay } from '@/components/venue-display';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { PressReferenceCard } from './press-reference-card';
+
+// Kurzformat für die Herkunfts-Zeitstempel (Eingang / letzte Änderung).
+// Bewusst numerisch: die Zeile ist Meta-Information, kein Fließtext.
+const stampFmt = new Intl.DateTimeFormat('de-AT', {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+});
 
 interface Props {
   pub: PublicationWithRelations;
@@ -170,6 +182,20 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
           {hasAnalysis && (
             <Badge variant={STATUS_BADGE_VARIANTS.analyzed}>{STATUS_LABELS.analyzed}</Badge>
           )}
+          {isRecentlyAdded(pub.created_at) && (
+            <Badge variant="brand" title={`In den letzten ${NEW_BADGE_DAYS} Tagen hinzugefügt`}>
+              Neu
+            </Badge>
+          )}
+        </div>
+
+        {/* Herkunfts-Zeitstempel. „Hinzugefügt" (created_at) war bisher
+            nirgends in der UI sichtbar, obwohl es bestimmt, ob der
+            Bewerten-Knopf eine Publikation überhaupt erfasst (Fenster
+            SCORING_RECENT_DAYS). */}
+        <div className="font-mono text-2xs text-ink-soft">
+          Hinzugefügt am {stampFmt.format(new Date(pub.created_at))}
+          {pub.updated_at && ` · zuletzt geändert ${stampFmt.format(new Date(pub.updated_at))}`}
         </div>
 
         {/* Why this publication carries no score yet — an individual,
