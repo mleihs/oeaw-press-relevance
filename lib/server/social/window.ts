@@ -1,5 +1,5 @@
 // Per-channel look-back resolution. A channel's `lookback_days` overrides the
-// global default (SOCIAL_WINDOW_DAYS); null inherits it.
+// global default (social_settings.fetch_window_days); null inherits it.
 
 import { isWithinDays } from '@/lib/shared/social-filter';
 

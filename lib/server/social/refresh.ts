@@ -22,7 +22,6 @@ export interface SocialRefreshOptions {
   apiKey: string;
   model: string;
   batchSize?: number;
-  windowDays: number;
   minRefreshMinutes: number;
   apifyCostPerResult: number;
   force?: boolean;
@@ -120,7 +119,10 @@ export async function runSocialRefresh(
   }
 
   // Fetch — a failure here (no token, Apify down/out-of-credit) is fatal.
-  // Team-wide settings: theme window (snapshot horizon) + retention (prune).
+  // Alle drei Zeitfenster kommen aus den Team-Einstellungen: Abruf (was von
+  // Apify geholt wird), Auswertung (Lagebild-Horizont) und Frisch-Markierung
+  // (nur Darstellung, hier nicht gebraucht). Bis 2026-07-21 kam der
+  // Abrufzeitraum als Option von jedem Aufrufer einzeln aus env.
   const settings = await getSocialSettings();
 
   let fetched = 0;
@@ -131,8 +133,7 @@ export async function runSocialRefresh(
       apifyToken: opts.apifyToken,
       actor: opts.actor,
       resultsLimit: opts.resultsLimit,
-      windowDays: opts.windowDays,
-      retentionDays: settings.retention_days,
+      windowDays: settings.fetch_window_days,
     });
     fetched = sync.fetched;
     created = sync.created;

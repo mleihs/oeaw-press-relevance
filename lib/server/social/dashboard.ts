@@ -6,7 +6,6 @@
 
 import 'server-only';
 import { unstable_cache } from 'next/cache';
-import { getEnv } from '@/lib/server/env';
 import {
   getLatestThemeSnapshot,
   getPostsByIds,
@@ -14,6 +13,7 @@ import {
 } from './list';
 import { resolveThemePosts } from './resolve';
 import type { SocialPost } from '@/lib/shared/types';
+import { getSocialSettings } from '@/lib/server/social/settings';
 
 export interface SocialDashboardTheme {
   name: string;
@@ -97,10 +97,15 @@ export const getSocialDashboardData = unstable_cache(
 );
 
 async function computeSocialDashboardData(): Promise<SocialDashboardData | null> {
-  const env = getEnv();
   const snapshot = await getLatestThemeSnapshot();
   if (!snapshot) return null;
-  const windowDays = snapshot.window_days || env.SOCIAL_WINDOW_DAYS;
+  // Der Snapshot trägt den Auswertungszeitraum, mit dem er entstanden ist —
+  // deshalb hängt die Kachel an ihm und nicht an der aktuellen Einstellung:
+  // eine Änderung darf einen bestehenden Snapshot nicht rückwirkend
+  // umdeuten. Der Fallback greift nur für Snapshots aus der Zeit vor
+  // window_days.
+  const settings = await getSocialSettings();
+  const windowDays = snapshot.window_days || settings.theme_window_days;
   // Fenster am Snapshot verankern, nicht an now(): liegt der letzte Refresh
   // länger zurück, fielen sonst ALLE Posts in die älteste Hälfte (Momentum
   // pauschal −100 %, Sparkline nur ein Balken).

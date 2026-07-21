@@ -61,14 +61,16 @@ export interface SocialChannelWithPosts extends SocialChannel {
   posts: SocialPost[];
 }
 
-/** Global team-wide social-monitor settings (singleton). */
+/** Global team-wide social-monitor settings (singleton). Die drei Fenster
+ *  bilden eine Kette; Grenzen und Ordnung stehen in lib/shared/social-windows. */
 export interface SocialSettings {
+  /** Wie weit zurück Posts von Apify geholt werden. Obergrenze der anderen. */
+  fetch_window_days: number;
+  /** Window of posts fed to the LLM theme snapshot on refresh — und damit das
+   *  Anzeigefenster der Dashboard-Kachel (social_theme_snapshots.window_days). */
+  theme_window_days: number;
   /** Posts newer than this show by default; older sit behind a control. */
   fresh_window_days: number;
-  /** Window of posts fed to the LLM theme snapshot on refresh. */
-  theme_window_days: number;
-  /** null = keep everything; else prune posts older than this on refresh. */
-  retention_days: number | null;
   updated_at: string;
 }
 

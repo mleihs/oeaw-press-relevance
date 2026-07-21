@@ -87,5 +87,6 @@ Dann: **User pusht `main`** (ahead 3) → Vercel/Coolify deployen → Bilder dau
 - `S3_ENDPOINT` = Port-9000-Domain, nicht Console (9001).
 - Bucket bleibt **privat**; Ausliefern über die gegatete App-Route (kein Public-Bucket).
 - 5 FNA-Posts bleiben ohne `image_path` (DNS nicht auflösbar) → designter Platzhalter, kein Bug.
-- Reconcile-GC ist DB-Wahrheit: löscht verwaiste Objekte je Refresh (retention-prune,
-  Channel-Cascade, Drift).
+- Reconcile-GC ist DB-Wahrheit: löscht verwaiste Objekte je Refresh
+  (Channel-Cascade, Drift). Der Retention-Prune als dritte Quelle verwaister
+  Objekte ist am 2026-07-21 entfallen (Migration 20260721000003).

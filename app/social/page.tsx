@@ -28,11 +28,14 @@ export default async function SocialPage({
   const env = getEnv();
   const apifyConfigured = Boolean(env.APIFY_TOKEN);
 
-  const [snapshot, channels, cost, settings] = await Promise.all([
+  // Die Einstellungen zuerst: der Abrufzeitraum bestimmt, welche Posts die
+  // Kanal-Abfrage überhaupt lädt. Eine Einzeilen-Abfrage, kein spürbarer
+  // Mehraufwand gegenüber dem früheren env-Lesen.
+  const settings = await getSocialSettings();
+  const [snapshot, channels, cost] = await Promise.all([
     getLatestThemeSnapshot(),
-    listChannelsWithRecentPosts(env.SOCIAL_WINDOW_DAYS),
+    listChannelsWithRecentPosts(settings.fetch_window_days),
     getRefreshCostSummary(),
-    getSocialSettings(),
   ]);
 
   const allPosts = channels.flatMap((c) => c.posts);
@@ -100,7 +103,7 @@ export default async function SocialPage({
           initialThemeKey={initialThemeKey}
           channels={channels}
           channelById={channelById}
-          windowDays={env.SOCIAL_WINDOW_DAYS}
+          windowDays={settings.fetch_window_days}
           freshWindowDays={settings.fresh_window_days}
           briefing={snapshot?.narrative_de ? <Briefing narrative={snapshot.narrative_de} /> : null}
         />

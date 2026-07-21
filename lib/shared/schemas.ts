@@ -1,4 +1,8 @@
 import { z } from 'zod';
+import {
+  SOCIAL_WINDOW_MAX_DAYS,
+  SOCIAL_WINDOW_MIN_DAYS,
+} from '@/lib/shared/social-windows';
 import { DECISIONS } from './types';
 
 /**
@@ -118,11 +122,21 @@ export const socialChannelUpdateSchema = z.object({
 
 export type SocialChannelUpdate = z.infer<typeof socialChannelUpdateSchema>;
 
+// Nur die EINZELWERTE. Die Ordnung der Fenster (abgerufen ⊇ ausgewertet ⊇
+// frisch) lässt sich hier nicht prüfen, weil ein PATCH partiell sein darf:
+// sie gilt für den ZUSAMMENGEFÜHRTEN Zustand und wird deshalb in
+// lib/server/social/settings.ts geprüft, mit checkSocialWindowOrder aus
+// lib/shared/social-windows.ts als gemeinsamer Regel.
+const socialWindow = z.coerce
+  .number()
+  .int()
+  .min(SOCIAL_WINDOW_MIN_DAYS)
+  .max(SOCIAL_WINDOW_MAX_DAYS);
+
 export const socialSettingsUpdateSchema = z.object({
-  fresh_window_days: z.coerce.number().int().min(1).max(365).optional(),
-  theme_window_days: z.coerce.number().int().min(1).max(365).optional(),
-  // null clears retention (keep everything); a number sets the prune horizon.
-  retention_days: z.coerce.number().int().min(1).max(3650).nullable().optional(),
+  fetch_window_days: socialWindow.optional(),
+  theme_window_days: socialWindow.optional(),
+  fresh_window_days: socialWindow.optional(),
 });
 
 export type SocialSettingsUpdate = z.infer<typeof socialSettingsUpdateSchema>;
