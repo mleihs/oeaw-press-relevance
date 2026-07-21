@@ -77,10 +77,12 @@ function SortLink({
   const Icon = !active ? ArrowUpDown : order === 'asc' ? ArrowUp : ArrowDown;
   const dir = order === 'asc' ? 'aufsteigend' : 'absteigend';
 
+  // Kein aria-sort: das Attribut gehört an ein columnheader-Element, nicht an
+  // einen Link, und wäre hier schlicht wirkungslos. Den Zustand trägt der
+  // sr-only-Text im Label.
   return (
     <Link
       href={href}
-      aria-sort={active ? (order === 'asc' ? 'ascending' : 'descending') : 'none'}
       title={active ? `${field.label}: ${dir}. Klicken dreht die Richtung um.` : field.hint}
       className={cn(
         'inline-flex items-center gap-1 whitespace-nowrap rounded-[7px] px-1.5 py-0.5 font-mono text-2xs font-semibold uppercase tracking-[0.06em] transition-colors',
