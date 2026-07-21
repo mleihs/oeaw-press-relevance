@@ -56,27 +56,30 @@ const ZERO: Counts = {
   total: 0, processed: 0, successful: 0, failed: 0, tokens: 0, cost: 0, skipped: 0,
 };
 
-interface EntityConfig {
-  endpoint: string;
-  defaultModel: string;
-  /** Sicherheitsdeckel pro Lauf. Den Scope bestimmt der Server (Kandidaten-View
-   *  + Zeitfenster), nicht diese Zahl. */
-  limit: number;
-  unit: string;
+/** Die drei Copy-Zeilen, in denen sich Sammellauf und Einzelbewertung
+ *  unterscheiden. Alles andere (Endpunkt, Deckel, Icon, Begründung) hängt an
+ *  der Entität, nicht am Modus. */
+interface ModeCopy {
   title: string;
   description: string;
   /** Eine Zeile unter dem Modell-Picker: was dieser Lauf konkret erfasst. */
   scopeNote: string;
+}
+
+interface EntityConfig {
+  endpoint: string;
+  /** Sicherheitsdeckel pro Sammellauf. Den Scope bestimmt der Server
+   *  (Kandidaten-View + Zeitfenster), nicht diese Zahl. Bei einer
+   *  Einzelbewertung ignoriert der Server sie zugunsten von `ids.length`. */
+  limit: number;
+  unit: string;
   /** Antwort auf „warum wurde nichts bewertet?" bei der Einzelbewertung. */
   notEligibleMsg: string;
   Icon: typeof Newspaper;
+  batch: ModeCopy;
+  single: ModeCopy;
 }
 
-// Modell-Default beider Entitäten: anthropic/claude-opus-4.8 — dasselbe Modell,
-// mit dem das bestehende Korpus in-chat bewertet wurde. Kalibrierung ist keine
-// Geschmacksfrage: derselbe Prompt liefert bei deepseek/deepseek-chat im Schnitt
-// 0,53 statt 0,25 (gemessen an den 9 deepseek-bewerteten Prod-Events, 2026-07-21),
-// und ein gemischt kalibriertes Korpus macht jede Rangliste wertlos.
 // Warum ein Einzel-Lauf leer ausgehen kann. Die Gates sind bewusst dieselben
 // wie im Batch-Pfad (publication_rescore_pool bzw. kommende Events), sonst
 // könnte man über die Detailseite Archiviertes bewerten lassen.
@@ -85,51 +88,47 @@ const NOT_ELIGIBLE_PUB =
 const NOT_ELIGIBLE_EVENT =
   'Dieses Event wurde nicht bewertet. Entweder trägt es bereits einen Score (dann „Bereits Bewertetes neu bewerten" ankreuzen), oder es liegt in der Vergangenheit.';
 
+const PUB_LIMIT = 200;
+const EVENT_LIMIT = 50;
+
 const ENTITY: Record<Entity, EntityConfig> = {
   publications: {
     endpoint: '/api/analysis/batch',
-    defaultModel: 'anthropic/claude-opus-4.8',
-    limit: 200,
+    limit: PUB_LIMIT,
     unit: 'Publikationen',
-    title: 'Publikationen bewerten',
-    description:
-      'Bewertet neu hinzugekommene Publikations-Kandidaten über OpenRouter. Bevorzugt bleibt das kostenlose In-Chat-Scoring; dieser Weg ist der Fallback, wenn es schneller gehen muss.',
-    scopeNote: `Bewertet Publikations-Kandidaten, die in den letzten ${SCORING_RECENT_DAYS} Tagen hinzugekommen sind (höchstens 200 pro Lauf). Ältere Kandidaten laufen bewusst über das In-Chat-Scoring.`,
     notEligibleMsg: NOT_ELIGIBLE_PUB,
     Icon: Newspaper,
+    batch: {
+      title: 'Publikationen bewerten',
+      description:
+        'Bewertet neu hinzugekommene Publikations-Kandidaten über OpenRouter. Bevorzugt bleibt das kostenlose In-Chat-Scoring; dieser Weg ist der Fallback, wenn es schneller gehen muss.',
+      scopeNote: `Bewertet Publikations-Kandidaten, die in den letzten ${SCORING_RECENT_DAYS} Tagen hinzugekommen sind (höchstens ${PUB_LIMIT} pro Lauf). Ältere Kandidaten laufen bewusst über das In-Chat-Scoring.`,
+    },
+    single: {
+      title: 'Diese Publikation bewerten',
+      description:
+        'Bewertet genau diese Publikation über OpenRouter. Das kostet Guthaben; das kostenlose In-Chat-Scoring bleibt der bevorzugte Weg.',
+      scopeNote: 'Bewertet nur diesen Eintrag, unabhängig vom Eingangsdatum.',
+    },
   },
   events: {
     endpoint: '/api/events/analyze',
-    defaultModel: 'anthropic/claude-opus-4.8',
-    limit: 50,
+    limit: EVENT_LIMIT,
     unit: 'Events',
-    title: 'Events bewerten',
-    description:
-      'Bewertet kommende, noch unbewertete Events über OpenRouter (Fallback zum bevorzugten In-Chat-Scoring).',
-    scopeNote: 'Bewertet bis zu 50 kommende Events pro Lauf.',
     notEligibleMsg: NOT_ELIGIBLE_EVENT,
     Icon: CalendarDays,
-  },
-};
-
-// Einzelbewertung von einer Detailseite aus: gleiche Maschinerie, andere Copy.
-// Modell-Picker bleibt bewusst erhalten (Konsistenz mit dem Batch-Lauf).
-const SINGLE_ENTITY: Record<Entity, EntityConfig> = {
-  publications: {
-    ...ENTITY.publications,
-    limit: 1,
-    title: 'Diese Publikation bewerten',
-    description:
-      'Bewertet genau diese Publikation über OpenRouter. Das kostet Guthaben; das kostenlose In-Chat-Scoring bleibt der bevorzugte Weg.',
-    scopeNote: 'Bewertet nur diesen Eintrag, unabhängig vom Eingangsdatum.',
-  },
-  events: {
-    ...ENTITY.events,
-    limit: 1,
-    title: 'Dieses Event bewerten',
-    description:
-      'Bewertet genau dieses Event über OpenRouter. Das kostet Guthaben; das kostenlose In-Chat-Scoring bleibt der bevorzugte Weg.',
-    scopeNote: 'Bewertet nur diesen Eintrag.',
+    batch: {
+      title: 'Events bewerten',
+      description:
+        'Bewertet kommende, noch unbewertete Events über OpenRouter (Fallback zum bevorzugten In-Chat-Scoring).',
+      scopeNote: `Bewertet bis zu ${EVENT_LIMIT} kommende Events pro Lauf.`,
+    },
+    single: {
+      title: 'Dieses Event bewerten',
+      description:
+        'Bewertet genau dieses Event über OpenRouter. Das kostet Guthaben; das kostenlose In-Chat-Scoring bleibt der bevorzugte Weg.',
+      scopeNote: 'Bewertet nur diesen Eintrag.',
+    },
   },
 };
 
@@ -156,11 +155,12 @@ export function ScoringModal({
   ids?: string[];
 }) {
   const single = (ids?.length ?? 0) > 0;
-  const cfg = single ? SINGLE_ENTITY[entity] : ENTITY[entity];
+  const cfg = ENTITY[entity];
+  const copy = single ? cfg.single : cfg.batch;
   const router = useRouter();
   const isMobile = useIsMobile();
   const [phase, setPhase] = useState<Phase>('idle');
-  const [model, setModel] = useState(cfg.defaultModel);
+  const [model, setModel] = useState(DEFAULT_LLM_MODEL);
   const [force, setForce] = useState(false);
   const [step, setStep] = useState<Step>(null);
   const [counts, setCounts] = useState<Counts>(ZERO);
@@ -313,6 +313,7 @@ export function ScoringModal({
   const body = (
     <ScoringFlow
       cfg={cfg}
+      copy={copy}
       phase={phase}
       step={step}
       counts={counts}
@@ -333,7 +334,7 @@ export function ScoringModal({
     <Drawer open={open} onOpenChange={onDialogOpenChange}>
       <DrawerContent grabber={false} className="max-h-[92%]">
         <div className="overflow-y-auto pb-[max(env(safe-area-inset-bottom),1rem)]">
-          <ScoringHeader cfg={cfg} onClose={close} className="rounded-t-[22px]" TitleSlot={DrawerTitle} />
+          <ScoringHeader cfg={cfg} copy={copy} onClose={close} className="rounded-t-[22px]" TitleSlot={DrawerTitle} />
           <div className="px-4 pt-4">{body}</div>
         </div>
       </DrawerContent>
@@ -341,7 +342,7 @@ export function ScoringModal({
   ) : (
     <Dialog open={open} onOpenChange={onDialogOpenChange}>
       <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-[500px]" showCloseButton={false}>
-        <ScoringHeader cfg={cfg} onClose={close} TitleSlot={DialogTitle} />
+        <ScoringHeader cfg={cfg} copy={copy} onClose={close} TitleSlot={DialogTitle} />
         <div className="px-5 pb-5 pt-4">{body}</div>
       </DialogContent>
     </Dialog>
@@ -350,11 +351,13 @@ export function ScoringModal({
 
 function ScoringHeader({
   cfg,
+  copy,
   onClose,
   className,
   TitleSlot,
 }: {
   cfg: EntityConfig;
+  copy: ModeCopy;
   onClose: () => void;
   className?: string;
   TitleSlot: React.ComponentType<{ className?: string; children?: React.ReactNode }>;
@@ -374,8 +377,8 @@ function ScoringHeader({
         <Icon className="h-5 w-5" weight="fill" />
       </span>
       <div className="min-w-0 flex-1">
-        <TitleSlot className="text-base font-bold tracking-[-0.01em]">{cfg.title}</TitleSlot>
-        <p className="mt-0.5 text-xs leading-relaxed text-ink-subtle">{cfg.description}</p>
+        <TitleSlot className="text-base font-bold tracking-[-0.01em]">{copy.title}</TitleSlot>
+        <p className="mt-0.5 text-xs leading-relaxed text-ink-subtle">{copy.description}</p>
       </div>
       <button
         type="button"
@@ -391,6 +394,7 @@ function ScoringHeader({
 
 function ScoringFlow({
   cfg,
+  copy,
   phase,
   step,
   counts,
@@ -406,6 +410,7 @@ function ScoringFlow({
   onClose,
 }: {
   cfg: EntityConfig;
+  copy: ModeCopy;
   phase: Phase;
   step: Step;
   counts: Counts;
@@ -443,7 +448,7 @@ function ScoringFlow({
               value={model}
               onChange={onModel}
               enabled={phase === 'idle'}
-              note={`${cfg.scopeNote} In-Chat-Scoring (Opus, kostenlos) bleibt der bevorzugte Weg.`}
+              note={`${copy.scopeNote} In-Chat-Scoring (Opus, kostenlos) bleibt der bevorzugte Weg.`}
             />
 
             <label className="flex cursor-pointer items-center gap-2.5 text-sm text-ink-strong">
