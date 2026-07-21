@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { DecisionBadge } from '@/components/decision-badge';
 import { EventFlag } from '@/app/events/_components/event-flag';
 import { CreateCardButton } from '@/components/board/create-card-button';
+import { ScoreNowButton } from '@/components/score-now-button';
 import { buildOeawSearchUrl } from '@/app/events/_lib/build-search-url';
 import { eventToCardSource } from '@/app/events/_lib/event-to-card-source';
 import {
@@ -102,6 +103,7 @@ export function EventDetail({ event }: { event: Event }) {
               decision={event.decision}
             />
             <CreateCardButton source={eventToCardSource(event)} />
+            <ScoreNowButton entity="events" id={event.id} />
             {event.url ? (
               <Button asChild size="sm" variant="outline">
                 <a href={event.url} target="_blank" rel="noopener noreferrer">

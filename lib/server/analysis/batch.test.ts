@@ -40,6 +40,28 @@ describe('buildAnalysisScopeWhere — Scope des Bewerten-Knopfes', () => {
     },
   );
 
+  it('schneidet benannte ids mit dem Pool, statt sie durchzuwinken', () => {
+    const ids = ['11111111-2222-3333-4444-555555555555'];
+    const { sql, params } = render(
+      buildAnalysisScopeWhere({ limit: 200, batchSize: 3, forceReanalyze: false, ids }),
+    );
+    expect(sql).toContain('publication_scoring_candidates');
+    expect(sql).toContain('= ANY($1::uuid[])');
+    expect(params).toContain(String(ids));
+  });
+
+  it('lässt bei benannten ids das Zeitfenster weg (die Auswahl ist der Scope)', () => {
+    const { sql } = render(
+      buildAnalysisScopeWhere({
+        limit: 200,
+        batchSize: 3,
+        forceReanalyze: false,
+        ids: ['11111111-2222-3333-4444-555555555555'],
+      }),
+    );
+    expect(sql).not.toContain('make_interval');
+  });
+
   it('bindet die Tageszahl als Parameter (kein String-Splicing in die Query)', () => {
     const { sql } = render(buildAnalysisScopeWhere({ limit: 200, batchSize: 3, forceReanalyze: false }));
     expect(sql).not.toContain(`${SCORING_RECENT_DAYS} days`);

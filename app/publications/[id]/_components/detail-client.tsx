@@ -34,6 +34,7 @@ import { StatusBanner } from '@/components/status-banner';
 import { publicationCompleteness } from '@/lib/shared/completeness';
 import { MeistertaskButton } from '@/components/meistertask-button';
 import { CreateCardButton } from '@/components/board/create-card-button';
+import { ScoreNowButton } from '@/components/score-now-button';
 import { publicationToCardSource } from '../_lib/publication-to-card-source';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -89,6 +90,12 @@ export function PublicationDetailClient({ pub, titleForDisplay, abstractLooksGer
               Z. 226–229: Ins Board = blau gefüllt, Pin = umrandete Quadrat-Box. */}
           <div className="mt-0.5 shrink-0 hidden md:block">
             <CreateCardButton source={publicationToCardSource(pub, titleForDisplay)} variant="default" />
+          </div>
+          {/* Einzelbewertung direkt von hier: bis 2026-07-21 musste man dafür
+              aufs Dashboard zurück und einen Batch starten, der genau diese
+              Publikation womöglich gar nicht enthielt. */}
+          <div className="mt-0.5 shrink-0 hidden md:block">
+            <ScoreNowButton entity="publications" id={pub.id} size="default" />
           </div>
           <span className="mt-0.5 hidden h-8 w-8 shrink-0 items-center justify-center rounded-[9px] border border-line-strong bg-surface md:inline-flex">
             <PublicationFlag pubId={pub.id} flagNotes={pub.flag_notes ?? []} decision={pub.decision} />

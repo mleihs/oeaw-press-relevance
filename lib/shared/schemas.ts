@@ -66,10 +66,15 @@ export type EnrichmentBatchPayload = z.infer<typeof enrichmentBatchPayloadSchema
 // KEINE enrichment-/word-count-Filter mehr: `limit` begrenzt die Batch-Menge,
 // `forceReanalyze` re-bewertet auch bereits Bewertetes (überschreibt), sonst nur
 // offene Kandidaten aus der View.
+// `ids` (optional) schaltet auf Einzel-/Auswahl-Bewertung um: dann zählt
+// GENAU diese Menge, ohne Zeitfenster (wer eine Publikation vor sich hat, will
+// SIE bewerten, nicht „was neu ist"). Die Bewertbarkeits-Gates gelten
+// weiterhin: Aussortiertes wird im complete-Frame als übersprungen gemeldet.
 export const scoringBatchPayloadSchema = z.object({
   limit: z.coerce.number().int().min(1).max(1000).default(20),
   batchSize: z.coerce.number().int().min(1).max(5).default(3),
   forceReanalyze: z.boolean().default(false),
+  ids: z.array(z.string().regex(uuidPattern, 'ids must be UUIDs')).min(1).max(50).optional(),
 });
 export type ScoringBatchPayload = z.infer<typeof scoringBatchPayloadSchema>;
 

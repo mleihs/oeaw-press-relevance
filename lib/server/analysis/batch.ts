@@ -41,6 +41,15 @@ export function buildAnalysisScopeWhere(filters: AnalysisBatchFilters) {
   const pool = sql.raw(
     filters.forceReanalyze ? 'publication_rescore_pool' : 'publication_scoring_candidates',
   );
+  // Einzel-/Auswahl-Bewertung: genau die benannten ids, geschnitten mit dem
+  // Pool. Kein Zeitfenster — wer eine Publikation vor sich hat, will SIE
+  // bewerten, nicht „was neu ist". Das Array via sql.param()::uuid[] binden;
+  // ein bares ${array} scheitert am Supabase-Pooler (Memory
+  // drizzle-any-array-prod-bug).
+  if (filters.ids?.length) {
+    return sql`${publications.id} IN (SELECT id FROM ${pool})
+      AND ${publications.id} = ANY(${sql.param(filters.ids)}::uuid[])`;
+  }
   return sql`${publications.id} IN (SELECT id FROM ${pool})
     AND ${publications.createdAt} >= now() - make_interval(days => ${SCORING_RECENT_DAYS}::int)`;
 }
@@ -53,7 +62,9 @@ export async function fetchPublicationsForAnalysis(
     // Nach Eingangsdatum, nicht nach Erscheinungsdatum: „zuletzt hereingekommen"
     // ist die Reihenfolge, in der die Redaktion neue Kandidaten erwartet.
     orderBy: descNullsLast(publications.createdAt),
-    limit: filters.limit,
+    // Bei ids zählt die benannte Menge, nicht der Batch-Deckel: sonst würde
+    // eine Auswahl von 30 stillschweigend auf den Default 20 gekürzt.
+    limit: filters.ids?.length ?? filters.limit,
     with: {
       orgunitPublications: {
         columns: { orgunitId: true },
@@ -82,6 +93,8 @@ export interface AnalysisBatchRunOptions {
   batchSize: number;
   abortSignal: AbortSignal;
   emit: (type: string, data: unknown) => void;
+  /** Ausdrücklich benannte ids, die an den Gates hängengeblieben sind. */
+  skipped?: number;
 }
 
 /**
@@ -100,7 +113,7 @@ export interface AnalysisBatchRunOptions {
 export async function runAnalysisBatch(
   opts: AnalysisBatchRunOptions,
 ): Promise<void> {
-  const { pubs, apiKey, model, batchSize, abortSignal, emit } = opts;
+  const { pubs, apiKey, model, batchSize, abortSignal, emit, skipped } = opts;
 
   // Pre-flight: masked-key + balance 'init', and an early abort if the budget
   // can't cover a single call. Shared with the event runner (preflightBalance
@@ -155,5 +168,5 @@ export async function runAnalysisBatch(
     hooks: sseBatchHooks<PublicationForPrompt>(emit),
   });
 
-  emitBatchComplete(emit, result);
+  emitBatchComplete(emit, result, { skipped });
 }
