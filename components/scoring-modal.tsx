@@ -10,7 +10,9 @@ import { StatusBanner } from '@/components/status-banner';
 import { useIsMobile } from '@/lib/client/hooks/use-is-mobile';
 import { getApiHeaders } from '@/lib/client/stores/settings-store';
 import { consumeSSE } from '@/lib/client/sse';
-import { LLM_MODELS } from '@/lib/shared/constants';
+import { LLM_MODELS, formatModelPricing } from '@/lib/shared/constants';
+import { useModelPricing } from '@/lib/client/hooks/use-model-pricing';
+import { SCORING_RECENT_DAYS } from '@/lib/shared/dashboard';
 import { cn } from '@/lib/shared/utils';
 import {
   Play,
@@ -53,36 +55,43 @@ const ZERO: Counts = { total: 0, processed: 0, successful: 0, failed: 0, tokens:
 interface EntityConfig {
   endpoint: string;
   defaultModel: string;
-  /** Batch-Obergrenze pro Lauf (Fallback-Charakter — kein Vollkorpus). */
+  /** Sicherheitsdeckel pro Lauf. Den Scope bestimmt der Server (Kandidaten-View
+   *  + Zeitfenster), nicht diese Zahl. */
   limit: number;
   unit: string;
   title: string;
   description: string;
+  /** Eine Zeile unter dem Modell-Picker: was dieser Lauf konkret erfasst. */
+  scopeNote: string;
   Icon: typeof Newspaper;
 }
 
-// Modell-Defaults: Pubs anthropic/claude-sonnet-4 (Qualitätsnähe zum Opus-
-// kalibrierten Korpus; deepseek wäre Drift-Risiko), Events deepseek/deepseek-chat
-// (etabliert, s. events-scoring-deepseek).
+// Modell-Default beider Entitäten: anthropic/claude-opus-4.8 — dasselbe Modell,
+// mit dem das bestehende Korpus in-chat bewertet wurde. Kalibrierung ist keine
+// Geschmacksfrage: derselbe Prompt liefert bei deepseek/deepseek-chat im Schnitt
+// 0,53 statt 0,25 (gemessen an den 9 deepseek-bewerteten Prod-Events, 2026-07-21),
+// und ein gemischt kalibriertes Korpus macht jede Rangliste wertlos.
 const ENTITY: Record<Entity, EntityConfig> = {
   publications: {
     endpoint: '/api/analysis/batch',
-    defaultModel: 'anthropic/claude-sonnet-4',
-    limit: 20,
+    defaultModel: 'anthropic/claude-opus-4.8',
+    limit: 200,
     unit: 'Publikationen',
     title: 'Publikationen bewerten',
     description:
-      'Bewertet offene Publikations-Kandidaten über OpenRouter. Bevorzugt bleibt das kostenlose In-Chat-Scoring; dieser Weg ist der Fallback, wenn es schneller gehen muss.',
+      'Bewertet neu hinzugekommene Publikations-Kandidaten über OpenRouter. Bevorzugt bleibt das kostenlose In-Chat-Scoring; dieser Weg ist der Fallback, wenn es schneller gehen muss.',
+    scopeNote: `Bewertet Publikations-Kandidaten, die in den letzten ${SCORING_RECENT_DAYS} Tagen hinzugekommen sind (höchstens 200 pro Lauf). Ältere Kandidaten laufen bewusst über das In-Chat-Scoring.`,
     Icon: Newspaper,
   },
   events: {
     endpoint: '/api/events/analyze',
-    defaultModel: 'deepseek/deepseek-chat',
+    defaultModel: 'anthropic/claude-opus-4.8',
     limit: 50,
     unit: 'Events',
     title: 'Events bewerten',
     description:
       'Bewertet kommende, noch unbewertete Events über OpenRouter (Fallback zum bevorzugten In-Chat-Scoring).',
+    scopeNote: 'Bewertet bis zu 50 kommende Events pro Lauf.',
     Icon: CalendarDays,
   },
 };
@@ -367,6 +376,8 @@ function ScoringFlow({
   const pct = counts.total > 0 ? Math.round((counts.processed / counts.total) * 100) : 0;
   const running = phase === 'running';
   const active = running || phase === 'done';
+  // Live-Preise nur holen, solange der Picker überhaupt sichtbar ist.
+  const pricing = useModelPricing(phase === 'idle');
 
   return (
     <AnimatePresence mode="wait" initial={false}>
@@ -403,22 +414,22 @@ function ScoringFlow({
                       >
                         {selected && <span className="h-[7px] w-[7px] rounded-full bg-background" />}
                       </span>
-                      <span className="flex-1 font-medium">{m.label}</span>
+                      <span className="min-w-0 flex-1 truncate font-medium">{m.label}</span>
                       <span
+                        title="Preis je 1 Mio. Tokens: Eingabe / Ausgabe"
                         className={cn(
-                          'font-mono text-2xs',
+                          'shrink-0 whitespace-nowrap font-mono text-2xs',
                           selected ? 'text-background/70' : 'text-ink-soft',
                         )}
                       >
-                        {m.costPerMillionTokens === 0 ? 'gratis' : `$${m.costPerMillionTokens}/M`}
+                        {formatModelPricing(pricing[m.value] ?? m.fallbackPricing)}
                       </span>
                     </button>
                   );
                 })}
               </div>
               <p className="text-2xs leading-relaxed text-ink-soft">
-                Bewertet bis zu {cfg.limit} {cfg.unit} pro Lauf. In-Chat-Scoring (Opus, kostenlos)
-                bleibt der bevorzugte Weg.
+                {cfg.scopeNote} In-Chat-Scoring (Opus, kostenlos) bleibt der bevorzugte Weg.
               </p>
             </div>
 

@@ -143,62 +143,90 @@ export const SOURCE_DESCRIPTIONS: Record<string, string> = {
   webdb_summary: 'Vom Institut kuratierte Pressezusammenfassung (DE/EN) aus der WebDB.',
 };
 
+/** OpenRouter-Preise in US-Dollar je 1 Mio. Tokens, getrennt nach Richtung. */
+export interface ModelPricing {
+  promptUsd: number;
+  completionUsd: number;
+}
+
 export interface LLMModel {
   value: string;
   label: string;
   description: string;
   tier: 'recommended' | 'budget' | 'balanced' | 'premium' | 'free';
-  costPerMillionTokens: number;
+  /**
+   * Preisstand vom letzten Live-Check (unten datiert). NUR Fallback: die
+   * Anzeige holt die aktuellen Preise über /api/llm/models von OpenRouter
+   * (lib/server/llm-pricing.ts). Hier stehen sie, damit die App auch ohne
+   * Netz eine ehrliche Größenordnung nennt statt gar nichts.
+   */
+  fallbackPricing: ModelPricing;
 }
 
+/**
+ * Der kuratierte Modell-Picker. Bewusst KURZ: jedes zusätzliche Modell ist ein
+ * weiteres Kalibrierungs-Regime im selben Korpus, und Scores aus zwei Regimen
+ * sind nicht vergleichbar (Befund docs/RESUME_SCORING_SPLIT_REVIEW.md).
+ * Entfernt am 2026-07-21: google/gemini-2.0-flash-001 (auf OpenRouter 404),
+ * meta-llama/llama-3.2-3b-instruct:free (kaputtes JSON), openai/gpt-4o-mini,
+ * anthropic/claude-3.5-haiku, anthropic/claude-sonnet-4 (durch Sonnet 5
+ * ersetzt). Historische `llm_model`-Strings in der DB rendern weiter: der
+ * ModelBadge in components/publication-table.tsx fällt auf den Teil nach dem
+ * Slash zurück.
+ *
+ * Fallback-Preise: OpenRouter-Live-Check 2026-07-21.
+ */
 export const LLM_MODELS: LLMModel[] = [
+  {
+    value: 'anthropic/claude-opus-4.8',
+    label: 'Claude Opus 4.8',
+    description:
+      'Kalibrierungskonsistent: dasselbe Modell, mit dem das bestehende Korpus in-chat bewertet wurde. Beste Pitches, teuerste Option.',
+    tier: 'recommended',
+    fallbackPricing: { promptUsd: 5, completionUsd: 25 },
+  },
+  {
+    value: 'anthropic/claude-sonnet-5',
+    label: 'Claude Sonnet 5',
+    description:
+      'Deutlich günstiger als Opus bei guter Textqualität. Kleine Abweichungen zur Opus-Kalibrierung sind möglich.',
+    tier: 'balanced',
+    fallbackPricing: { promptUsd: 2, completionUsd: 10 },
+  },
   {
     value: 'deepseek/deepseek-chat',
     label: 'DeepSeek Chat',
-    description: 'Bestes Preis-Leistungs-Verhältnis. Starke JSON-Ausgabe, gutes Deutsch, zuverlässige Bewertungen.',
-    tier: 'recommended',
-    costPerMillionTokens: 0.60,
-  },
-  {
-    value: 'google/gemini-2.0-flash-001',
-    label: 'Gemini 2.0 Flash',
-    description: 'Extrem günstig und schnell. Ideal für große Batches. Gute strukturierte Ausgabe.',
+    description:
+      'Günstigste Option, aber Vorsicht: bewertet deutlich höher als das Opus-kalibrierte Korpus (gemessen rund 0,53 statt 0,25). Die Scores sind dann nicht mehr vergleichbar.',
     tier: 'budget',
-    costPerMillionTokens: 0.15,
-  },
-  {
-    value: 'openai/gpt-4o-mini',
-    label: 'GPT-4o Mini',
-    description: 'Solide Allround-Performance. Zuverlässiges JSON und gute Textqualität.',
-    tier: 'balanced',
-    costPerMillionTokens: 0.6,
-  },
-  {
-    value: 'anthropic/claude-3.5-haiku',
-    label: 'Claude 3.5 Haiku',
-    description: 'Schnell und günstig von Anthropic. Gute Textqualität für den Preis.',
-    tier: 'balanced',
-    costPerMillionTokens: 1.0,
-  },
-  {
-    value: 'anthropic/claude-sonnet-4',
-    label: 'Claude Sonnet 4',
-    description: 'Premium-Qualität. Beste Pitches und differenzierteste Bewertungen. Teuer.',
-    tier: 'premium',
-    costPerMillionTokens: 9.0,
-  },
-  {
-    value: 'meta-llama/llama-3.2-3b-instruct:free',
-    label: 'Llama 3.2 3B (Free)',
-    description: 'Kostenlos aber kleines Modell (3B Parameter). Deutsch-Qualität eingeschränkt, JSON manchmal fehlerhaft.',
-    tier: 'free',
-    costPerMillionTokens: 0.0,
+    fallbackPricing: { promptUsd: 0.20, completionUsd: 0.80 },
   },
 ];
 
+/** Vorbelegung des Modell-Pickers und Server-Fallback (lib/server/llm.ts). */
+export const DEFAULT_LLM_MODEL = 'anthropic/claude-opus-4.8';
+
+/**
+ * Mischpreis für die Nachkalkulation eines Laufs (lib/server/openrouter.ts
+ * estimateCost): OpenRouter liefert im Streaming-Pfad nur eine Gesamt-Token-
+ * Zahl, keine Aufteilung Input/Output. Die Mitte beider Richtungen ist die
+ * ehrlichste Ein-Zahl-Näherung und entspricht exakt den Werten, die vor der
+ * Preis-Aufspaltung hier standen (Sonnet 4: (3+15)/2 = 9).
+ */
+export function blendedCostPerMillion(p: ModelPricing): number {
+  return (p.promptUsd + p.completionUsd) / 2;
+}
+
 export const COST_PER_MILLION_TOKENS: Record<string, number> = Object.fromEntries(
-  LLM_MODELS.map(m => [m.value, m.costPerMillionTokens])
+  LLM_MODELS.map(m => [m.value, blendedCostPerMillion(m.fallbackPricing)])
 );
+
+/** „$5 / $25 je M" bzw. „gratis". Ein Format für Modal und Social-Refresh. */
+export function formatModelPricing(p: ModelPricing): string {
+  if (p.promptUsd === 0 && p.completionUsd === 0) return 'gratis';
+  const usd = (n: number) => `$${Number(n.toFixed(2))}`;
+  return `${usd(p.promptUsd)} / ${usd(p.completionUsd)} je M`;
+}
 
 /**
  * Enrichment / analysis status pipeline. Used in the detail header and the

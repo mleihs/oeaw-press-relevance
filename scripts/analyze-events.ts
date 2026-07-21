@@ -13,6 +13,7 @@
 
 import { loadDbUrl, parseScriptArgs, confirmProd, redactedDatabaseUrl } from './lib/db.mjs';
 import { initScriptSentry, captureScriptError, flushAndExit } from './lib/sentry.mjs';
+import { DEFAULT_LLM_MODEL } from '@/lib/shared/constants';
 
 const { target, flags } = parseScriptArgs();
 const isProd = target === 'prod';
@@ -33,7 +34,9 @@ async function main(): Promise<void> {
     console.error('[analyze-events] OPENROUTER_API_KEY not set.');
     process.exit(1);
   }
-  const model = process.env.LLM_DEFAULT_MODEL || 'deepseek/deepseek-chat';
+  // Default = DEFAULT_LLM_MODEL (Opus 4.8), nicht mehr deepseek: das Korpus ist
+  // Opus-kalibriert, deepseek bewertet messbar höher (lib/shared/constants.ts).
+  const model = process.env.LLM_DEFAULT_MODEL || DEFAULT_LLM_MODEL;
 
   // Dynamic import after the DATABASE_URL override (Drizzle reads it at load).
   const { fetchEventsForAnalysis, runEventsAnalysisBatch } = await import(

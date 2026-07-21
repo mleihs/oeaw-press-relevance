@@ -15,3 +15,18 @@ export const DEFAULT_SETTINGS: AppSettings = {
   batchSize: 3,
   reviewerName: '',
 };
+
+/** Ein Eintrag des Modell-Pickers, wie GET /api/llm/models ihn ausliefert:
+ *  Metadaten aus LLM_MODELS plus den zum Abrufzeitpunkt gültigen OpenRouter-
+ *  Preisen (`stale: true` = Fallback, OpenRouter war nicht erreichbar). */
+export interface ModelPickerEntry {
+  value: string;
+  label: string;
+  description: string;
+  tier: 'recommended' | 'budget' | 'balanced' | 'premium' | 'free';
+  pricing: { promptUsd: number; completionUsd: number; stale: boolean };
+}
+
+export interface ModelPickerResponse {
+  models: ModelPickerEntry[];
+}

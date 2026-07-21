@@ -1,5 +1,6 @@
 import 'server-only';
 import { NextRequest } from 'next/server';
+import { DEFAULT_LLM_MODEL } from '@/lib/shared/constants';
 
 /**
  * OpenRouter API key. Env takes priority, but a per-request header fallback
@@ -16,13 +17,14 @@ export function getOpenRouterKey(req: NextRequest): string {
 
 /**
  * Model selection. Header wins so users can override per-request from the
- * settings panel; falls back to LLM_DEFAULT_MODEL env, then a sensible
- * default.
+ * settings panel; falls back to LLM_DEFAULT_MODEL env, then DEFAULT_LLM_MODEL
+ * (Opus 4.8 — das Modell, mit dem das bestehende Korpus bewertet wurde;
+ * Kalibrierungs-Begründung in lib/shared/constants.ts).
  */
 export function getLLMModel(req: NextRequest): string {
   return (
     req.headers.get('x-llm-model') ||
     process.env.LLM_DEFAULT_MODEL ||
-    'anthropic/claude-sonnet-4'
+    DEFAULT_LLM_MODEL
   );
 }

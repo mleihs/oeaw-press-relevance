@@ -10,7 +10,8 @@ import { Button } from '@/components/ui/button';
 import { StatusBanner } from '@/components/status-banner';
 import { getApiHeaders } from '@/lib/client/stores/settings-store';
 import { consumeSSE } from '@/lib/client/sse';
-import { LLM_MODELS } from '@/lib/shared/constants';
+import { LLM_MODELS, formatModelPricing } from '@/lib/shared/constants';
+import { useModelPricing } from '@/lib/client/hooks/use-model-pricing';
 import { cn } from '@/lib/shared/utils';
 import {
   RefreshCw,
@@ -332,6 +333,8 @@ function RefreshFlow({
   const pct = counts.total > 0 ? Math.round((counts.processed / counts.total) * 100) : 0;
   const running = phase === 'running';
   const active = running || phase === 'done';
+  // Live-Preise nur holen, solange der Picker überhaupt sichtbar ist.
+  const pricing = useModelPricing(phase === 'idle');
 
   return (
     <AnimatePresence mode="wait" initial={false}>
@@ -368,14 +371,15 @@ function RefreshFlow({
                       >
                         {selected && <span className="h-[7px] w-[7px] rounded-full bg-background" />}
                       </span>
-                      <span className="flex-1 font-medium">{m.label}</span>
+                      <span className="min-w-0 flex-1 truncate font-medium">{m.label}</span>
                       <span
+                        title="Preis je 1 Mio. Tokens: Eingabe / Ausgabe"
                         className={cn(
-                          'font-mono text-2xs',
+                          'shrink-0 whitespace-nowrap font-mono text-2xs',
                           selected ? 'text-background/70' : 'text-ink-soft',
                         )}
                       >
-                        {m.costPerMillionTokens === 0 ? 'gratis' : `$${m.costPerMillionTokens}/M`}
+                        {formatModelPricing(pricing[m.value] ?? m.fallbackPricing)}
                       </span>
                     </button>
                   );
