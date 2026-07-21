@@ -8,7 +8,8 @@
 //   - the JSON-mode call + fenced-JSON fallback,
 //   - cost estimation and account-balance lookup.
 
-import { COST_PER_MILLION_TOKENS } from '@/lib/shared/constants';
+import { fallbackPricingFor, type ModelPricing } from '@/lib/shared/constants';
+import { getLiveModelPricing } from '@/lib/server/llm-pricing';
 import { parseLooseJson } from '@/lib/shared/json';
 import { log } from '@/lib/server/log';
 
@@ -20,11 +21,34 @@ const REQUEST_HEADERS = {
   'X-Title': 'Story Scout',
 };
 
-/** Estimate USD cost for a token count under a model's blended rate. Unknown
- *  models fall back to a conservative $5/M. */
-export function estimateCost(tokenCount: number, model: string): number {
-  const costPerMillion = COST_PER_MILLION_TOKENS[model] ?? 5.0;
-  return (tokenCount / 1_000_000) * costPerMillion;
+/** Tokens eines Aufrufs, nach Richtung getrennt — so rechnet OpenRouter ab. */
+export interface TokenUsage {
+  promptTokens: number;
+  completionTokens: number;
+}
+
+/** Rein: USD aus der Token-Aufteilung und den Preisen je Richtung. */
+export function costFromUsage(usage: TokenUsage, pricing: ModelPricing): number {
+  return (
+    (usage.promptTokens * pricing.promptUsd + usage.completionTokens * pricing.completionUsd) /
+    1_000_000
+  );
+}
+
+/**
+ * Was ein Aufruf gekostet hat, zu den LIVE-Preisen von OpenRouter (24-h-Cache
+ * in lib/server/llm-pricing.ts, fail-open auf die statischen Werte).
+ *
+ * Bis 2026-07-21 rechnete diese Funktion mit einem 50/50-Mischpreis aus den
+ * hartkodierten Fallback-Werten. Beides war falsch: die Preise veralten (genau
+ * die Motivation der Live-Preisliste), und beim Scoring überwiegen die
+ * Prompt-Tokens deutlich — ein Mix, der die teure Ausgaberichtung mit 50 %
+ * gewichtet, überschätzt systematisch. Der Betrag landet nicht nur im Modal,
+ * sondern in publications.analysis_cost / events.analysis_cost.
+ */
+export async function estimateCost(usage: TokenUsage, model: string): Promise<number> {
+  const live = await getLiveModelPricing();
+  return costFromUsage(usage, live[model] ?? fallbackPricingFor(model));
 }
 
 export async function checkKeyBalance(apiKey: string): Promise<{
@@ -149,8 +173,16 @@ export async function chatCompletionJson(
     const content: string | undefined = data.choices?.[0]?.message?.content;
     if (!content) throw new Error('No content in LLM response');
 
-    const tokensUsed = data.usage?.total_tokens || 0;
-    return { content, tokensUsed, cost: estimateCost(tokensUsed, opts.model) };
+    // Nicht-gestreamte Completions liefern die Aufteilung mit. Fehlt sie, wird
+    // die Gesamtzahl hälftig geteilt — das reproduziert exakt den früheren
+    // Mischpreis, statt eine Richtung stillschweigend zu verschlucken.
+    const usage = data.usage ?? {};
+    const tokensUsed: number = usage.total_tokens || 0;
+    const split: TokenUsage =
+      typeof usage.prompt_tokens === 'number' && typeof usage.completion_tokens === 'number'
+        ? { promptTokens: usage.prompt_tokens, completionTokens: usage.completion_tokens }
+        : { promptTokens: tokensUsed / 2, completionTokens: tokensUsed / 2 };
+    return { content, tokensUsed, cost: await estimateCost(split, opts.model) };
   }
 
   throw new Error(`OpenRouter API error 402 (nach 3 Versuchen): ${lastError}`);

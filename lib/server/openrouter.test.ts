@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { COST_PER_MILLION_TOKENS } from '@/lib/shared/constants';
+import { LLM_MODELS, UNKNOWN_MODEL_PRICING } from '@/lib/shared/constants';
 import {
+  costFromUsage,
   estimateCost,
   isFatalLlmError,
   parseJsonContent,
@@ -11,6 +12,21 @@ import {
 // Keep the logger quiet + decoupled from env during the back-off tests.
 vi.mock('@/lib/server/log', () => ({
   log: { warn: vi.fn(), error: vi.fn(), info: vi.fn() },
+}));
+
+// Die Preisquelle ist hier NICHT unter Test (das macht llm-pricing.test.ts) —
+// und sie würde sonst am global gestubbten fetch hängen. Ein fester Live-Preis
+// macht die Kostenerwartungen unabhängig davon, was OpenRouter gerade listet.
+const LIVE_PROMPT = 3;
+const LIVE_COMPLETION = 12;
+vi.mock('@/lib/server/llm-pricing', () => ({
+  getLiveModelPricing: vi.fn(async () => ({
+    'anthropic/claude-opus-4.8': {
+      promptUsd: LIVE_PROMPT,
+      completionUsd: LIVE_COMPLETION,
+      stale: false,
+    },
+  })),
 }));
 
 // Minimal Response-like stub for the global.fetch mock.
@@ -29,29 +45,43 @@ function mockResponse(opts: {
   } as unknown as Response;
 }
 
+describe('costFromUsage', () => {
+  const pricing = { promptUsd: 3, completionUsd: 12 };
+
+  it('rechnet beide Richtungen getrennt ab', () => {
+    // 1M Prompt + 1M Completion = 3 + 12, NICHT 2 * Mischpreis 7,5.
+    expect(costFromUsage({ promptTokens: 1_000_000, completionTokens: 1_000_000 }, pricing))
+      .toBeCloseTo(15, 10);
+  });
+
+  it('gewichtet eine prompt-lastige Aufteilung entsprechend niedriger', () => {
+    // Der reale Scoring-Fall: viel Abstract rein, wenig Pitch raus. Der alte
+    // 50/50-Mischpreis hätte hier 7,5 statt 3,9 verlangt.
+    expect(costFromUsage({ promptTokens: 900_000, completionTokens: 100_000 }, pricing))
+      .toBeCloseTo(0.9 * 3 + 0.1 * 12, 10);
+  });
+
+  it('skaliert linear und ist bei null Tokens null', () => {
+    expect(costFromUsage({ promptTokens: 0, completionTokens: 0 }, pricing)).toBe(0);
+    expect(costFromUsage({ promptTokens: 500_000, completionTokens: 0 }, pricing))
+      .toBeCloseTo(1.5, 10);
+  });
+});
+
 describe('estimateCost', () => {
-  const knownModel = Object.keys(COST_PER_MILLION_TOKENS)[0];
-
-  it('applies the model blended rate for 1M tokens', () => {
-    expect(estimateCost(1_000_000, knownModel)).toBeCloseTo(
-      COST_PER_MILLION_TOKENS[knownModel],
-      10,
-    );
+  it('nimmt den LIVE-Preis, nicht den statischen Fallback des Modells', async () => {
+    const opus = LLM_MODELS.find((m) => m.value === 'anthropic/claude-opus-4.8')!;
+    // Vorbedingung des Tests: live != statisch, sonst prüft er nichts.
+    expect(opus.fallbackPricing.promptUsd).not.toBe(LIVE_PROMPT);
+    await expect(
+      estimateCost({ promptTokens: 1_000_000, completionTokens: 0 }, opus.value),
+    ).resolves.toBeCloseTo(LIVE_PROMPT, 10);
   });
 
-  it('scales linearly with token count', () => {
-    expect(estimateCost(500_000, knownModel)).toBeCloseTo(
-      COST_PER_MILLION_TOKENS[knownModel] / 2,
-      10,
-    );
-  });
-
-  it('is zero for zero tokens', () => {
-    expect(estimateCost(0, knownModel)).toBe(0);
-  });
-
-  it('falls back to a conservative $5/M for an unknown model', () => {
-    expect(estimateCost(1_000_000, 'totally/unknown-model')).toBe(5);
+  it('fällt für ein unbekanntes Modell auf die konservative Annahme zurück', async () => {
+    await expect(
+      estimateCost({ promptTokens: 1_000_000, completionTokens: 0 }, 'totally/unknown-model'),
+    ).resolves.toBeCloseTo(UNKNOWN_MODEL_PRICING.promptUsd, 10);
   });
 });
 
@@ -98,7 +128,7 @@ describe('chatCompletionJson', () => {
     system: 'sys',
     user: 'usr',
     apiKey: 'k',
-    model: Object.keys(COST_PER_MILLION_TOKENS)[0],
+    model: 'anthropic/claude-opus-4.8',
     maxTokens: 1000,
   };
 
@@ -114,14 +144,34 @@ describe('chatCompletionJson', () => {
       'fetch',
       vi.fn().mockResolvedValue(
         mockResponse({
-          json: { choices: [{ message: { content: '{"ok":true}' } }], usage: { total_tokens: 1000 } },
+          json: {
+            choices: [{ message: { content: '{"ok":true}' } }],
+            usage: { total_tokens: 1000, prompt_tokens: 800, completion_tokens: 200 },
+          },
         }),
       ),
     );
     const res = await chatCompletionJson(baseOpts);
     expect(res.content).toBe('{"ok":true}');
     expect(res.tokensUsed).toBe(1000);
-    expect(res.cost).toBeCloseTo(estimateCost(1000, baseOpts.model), 10);
+    // Die gemeldete Aufteilung wird verwendet, nicht die Gesamtzahl.
+    expect(res.cost).toBeCloseTo(
+      (800 * LIVE_PROMPT + 200 * LIVE_COMPLETION) / 1_000_000,
+      12,
+    );
+  });
+
+  it('teilt die Gesamtzahl hälftig, wenn OpenRouter keine Aufteilung meldet', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        mockResponse({
+          json: { choices: [{ message: { content: '{}' } }], usage: { total_tokens: 1000 } },
+        }),
+      ),
+    );
+    const res = await chatCompletionJson(baseOpts);
+    expect(res.cost).toBeCloseTo((500 * LIVE_PROMPT + 500 * LIVE_COMPLETION) / 1_000_000, 12);
   });
 
   it('backs off max_tokens on a 402 "can only afford N" then succeeds', async () => {

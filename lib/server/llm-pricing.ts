@@ -1,4 +1,3 @@
-import 'server-only';
 import { LLM_MODELS, type ModelPricing } from '@/lib/shared/constants';
 import { log } from '@/lib/server/log';
 
@@ -18,6 +17,14 @@ import { log } from '@/lib/server/log';
  * Fail-open ist Pflicht: die Preisanzeige darf niemals einen Bewertungslauf
  * blockieren. Fällt der Fetch aus, liefert die Funktion die statischen
  * Fallback-Preise mit `stale: true`, und der Fehler wird nur geloggt.
+ *
+ * BEWUSST OHNE `import 'server-only'`: das Modul hält keine Geheimnisse (die
+ * OpenRouter-Preisliste ist öffentlich und liegt ohnehin hinter
+ * /api/llm/models offen) und braucht keinen API-Key. Der Marker hätte hier
+ * nichts geschützt, aber lib/server/openrouter.ts unbrauchbar gemacht, sobald
+ * es die Preise für die Kostenrechnung braucht: der zieht auch in
+ * tsx-Skripten (scripts/analyze-events.ts), wo `server-only` schlicht nicht
+ * auflösbar ist. Das Verzeichnis lib/server signalisiert die Absicht.
  */
 
 const MODELS_URL = 'https://openrouter.ai/api/v1/models';
