@@ -7,6 +7,7 @@ import { FILTER_DEFAULTS, type FilterValues } from '../_filters';
 import type { Lookups } from './use-lookups';
 import { SUPER_DOMAIN_LABELS } from '../_constants';
 import { STATUS_LABELS } from '@/lib/shared/constants';
+import { SCORING_RECENT_DAYS } from '@/lib/shared/dashboard';
 
 type Patch = Partial<FilterValues>;
 
@@ -231,6 +232,16 @@ export function ActiveFilters({ filters, setFilters, lookups }: Props) {
       key: 'analysis',
       label: `Analyse: ${STATUS_LABELS[filters.analysis] ?? filters.analysis}`,
       remove: () => setFilters({ analysis: '', page: 1 }),
+    });
+  }
+  if (filters.scoring) {
+    chips.push({
+      key: 'scoring',
+      label:
+        filters.scoring === 'fresh'
+          ? `Unbewertet: letzte ${SCORING_RECENT_DAYS} Tage`
+          : 'Unbewertet: Altbestand',
+      remove: () => setFilters({ scoring: '', page: 1 }),
     });
   }
 

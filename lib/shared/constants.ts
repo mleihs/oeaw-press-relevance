@@ -207,19 +207,18 @@ export const LLM_MODELS: LLMModel[] = [
 export const DEFAULT_LLM_MODEL = 'anthropic/claude-opus-4.8';
 
 /**
- * Mischpreis für die Nachkalkulation eines Laufs (lib/server/openrouter.ts
- * estimateCost): OpenRouter liefert im Streaming-Pfad nur eine Gesamt-Token-
- * Zahl, keine Aufteilung Input/Output. Die Mitte beider Richtungen ist die
- * ehrlichste Ein-Zahl-Näherung und entspricht exakt den Werten, die vor der
- * Preis-Aufspaltung hier standen (Sonnet 4: (3+15)/2 = 9).
+ * Preisannahme für ein Modell, das nicht im kuratierten Picker steht — etwa
+ * ein per `x-llm-model`-Header oder `LLM_DEFAULT_MODEL` gesetztes. Bewusst
+ * konservativ und in beiden Richtungen gleich: lieber zu teuer geschätzt als
+ * ein Lauf, der billiger aussieht, als er war.
  */
-export function blendedCostPerMillion(p: ModelPricing): number {
-  return (p.promptUsd + p.completionUsd) / 2;
-}
+export const UNKNOWN_MODEL_PRICING: ModelPricing = { promptUsd: 5, completionUsd: 5 };
 
-export const COST_PER_MILLION_TOKENS: Record<string, number> = Object.fromEntries(
-  LLM_MODELS.map(m => [m.value, blendedCostPerMillion(m.fallbackPricing)])
-);
+/** Statische Preise eines Modells. Nur Rückfallebene — die Nachkalkulation
+ *  nimmt die Live-Preise (lib/server/llm-pricing.ts). */
+export function fallbackPricingFor(model: string): ModelPricing {
+  return LLM_MODELS.find((m) => m.value === model)?.fallbackPricing ?? UNKNOWN_MODEL_PRICING;
+}
 
 /** „$5 / $25 je M" bzw. „gratis". Ein Format für Modal und Social-Refresh. */
 export function formatModelPricing(p: ModelPricing): string {

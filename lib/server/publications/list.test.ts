@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { SORTABLE_COLUMNS } from './list';
+import { PgDialect } from 'drizzle-orm/pg-core';
+import { SORTABLE_COLUMNS, scoringScopeClause } from './list';
+import { SCORING_RECENT_DAYS } from '@/lib/shared/dashboard';
 
 // Columns that currently have a B-tree DESC-suitable index in
 // supabase/migrations/. Keep in sync: when you add a new
@@ -82,6 +84,41 @@ describe('SORTABLE_COLUMNS guard', () => {
         sortableKeys.has(col),
         `INTENTIONALLY_UNINDEXED contains "${col}" which is not in SORTABLE_COLUMNS`,
       ).toBe(true);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Bewertungs-Scope (?scoring=fresh|backlog)
+// ---------------------------------------------------------------------------
+// Der Filter, auf den die Dashboard-Kachel verlinkt. Er MUSS dieselbe Menge
+// treffen, die die Kachel zählt und der Bewerten-Knopf erreicht — sonst
+// verspricht die Zahl etwas, das der Klick nicht einlöst (der Grund, aus dem
+// der frühere `analysis=pending`-Link ersetzt wurde).
+const dialect = new PgDialect();
+
+describe('scoringScopeClause', () => {
+  it('filtert nicht, solange kein Scope gesetzt ist', () => {
+    expect(scoringScopeClause('')).toBeNull();
+    expect(scoringScopeClause('irgendwas')).toBeNull();
+  });
+
+  it('liest beide Scopes aus der kanonischen Kandidaten-View', () => {
+    for (const scope of ['fresh', 'backlog']) {
+      const { sql } = dialect.sqlToQuery(scoringScopeClause(scope)!);
+      expect(sql).toContain('IN (SELECT id FROM publication_scoring_candidates)');
+    }
+  });
+
+  it('trennt fresh und backlog am selben Schnitt wie der Bewerten-Knopf', () => {
+    const fresh = dialect.sqlToQuery(scoringScopeClause('fresh')!);
+    const backlog = dialect.sqlToQuery(scoringScopeClause('backlog')!);
+    expect(fresh.sql).toContain('"created_at" >= now() - make_interval(days =>');
+    expect(backlog.sql).toContain('"created_at" < now() - make_interval(days =>');
+    // Dieselbe Tageszahl, als Parameter gebunden statt in die Query gespleißt.
+    for (const q of [fresh, backlog]) {
+      expect(q.sql).toContain('$1::int');
+      expect(q.params.map(String)).toContain(String(SCORING_RECENT_DAYS));
     }
   });
 });

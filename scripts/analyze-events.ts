@@ -43,7 +43,9 @@ async function main(): Promise<void> {
     '@/lib/server/events/analyze'
   );
 
-  const events = await fetchEventsForAnalysis({ limit, batchSize: 3, forceReanalyze: force });
+  // `skipped` interessiert hier nicht: das Skript benennt keine ids, also ist
+  // die Zahl konstruktionsbedingt 0.
+  const { events } = await fetchEventsForAnalysis({ limit, batchSize: 3, forceReanalyze: force });
   console.log(
     `[analyze-events] target=${target} db=${redactedDatabaseUrl()} model=${model} events=${events.length}${force ? ' (force)' : ''}`,
   );

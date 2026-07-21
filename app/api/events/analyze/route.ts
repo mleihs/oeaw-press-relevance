@@ -35,10 +35,9 @@ export const POST = withApiError(async (req: NextRequest) => {
 
   const filters = await validateBody(req, scoringBatchPayloadSchema);
 
-  const events = await fetchEventsForAnalysis(filters);
   // Siehe app/api/analysis/batch: benannte ids, die die Gates aussortieren,
-  // werden gezählt statt stillschweigend zu verschwinden.
-  const skipped = filters.ids ? filters.ids.length - events.length : 0;
+  // zählt der Fetcher, statt sie stillschweigend verschwinden zu lassen.
+  const { events, skipped } = await fetchEventsForAnalysis(filters);
   if (events.length === 0) {
     return NextResponse.json({ message: 'No events to analyze', skipped });
   }

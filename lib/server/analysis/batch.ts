@@ -54,9 +54,21 @@ export function buildAnalysisScopeWhere(filters: AnalysisBatchFilters) {
     AND ${publications.createdAt} >= now() - make_interval(days => ${SCORING_RECENT_DAYS}::int)`;
 }
 
+export interface AnalysisScope {
+  pubs: PublicationForPrompt[];
+  /**
+   * Ausdrücklich benannte ids, die an den Bewertbarkeits-Gates hängengeblieben
+   * sind. Hier und nicht in der Route gerechnet: nur der Fetcher weiß, wie aus
+   * der angefragten Menge die gefundene wird. Ohne benannte ids immer 0 — ein
+   * Sammellauf fragt keine bestimmten Einträge an, also kann er auch keine
+   * überspringen.
+   */
+  skipped: number;
+}
+
 export async function fetchPublicationsForAnalysis(
   filters: AnalysisBatchFilters,
-): Promise<PublicationForPrompt[]> {
+): Promise<AnalysisScope> {
   const rows = await db.query.publications.findMany({
     where: buildAnalysisScopeWhere(filters),
     // Nach Eingangsdatum, nicht nach Erscheinungsdatum: „zuletzt hereingekommen"
@@ -77,13 +89,15 @@ export async function fetchPublicationsForAnalysis(
     },
   });
 
-  return rows.map((row): PublicationForPrompt => {
+  const pubs = rows.map((row): PublicationForPrompt => {
     const orgunits = (row.orgunitPublications ?? [])
       .map((op) => op.orgunit)
       .filter((o): o is NonNullable<typeof o> => o !== null)
       .map((o) => ({ akronym_de: o.akronymDe, name_de: o.nameDe }));
     return { ...publicationToApi(row), orgunits };
   });
+
+  return { pubs, skipped: filters.ids ? filters.ids.length - pubs.length : 0 };
 }
 
 export interface AnalysisBatchRunOptions {

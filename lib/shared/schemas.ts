@@ -74,7 +74,15 @@ export const scoringBatchPayloadSchema = z.object({
   limit: z.coerce.number().int().min(1).max(1000).default(20),
   batchSize: z.coerce.number().int().min(1).max(5).default(3),
   forceReanalyze: z.boolean().default(false),
-  ids: z.array(z.string().regex(uuidPattern, 'ids must be UUIDs')).min(1).max(50).optional(),
+  // Dedupliziert: `skipped` rechnet mit `ids.length - gefundene`, und eine
+  // doppelt genannte id würde sonst als „übersprungen" gemeldet, obwohl sie
+  // bewertet wurde.
+  ids: z
+    .array(z.string().regex(uuidPattern, 'ids must be UUIDs'))
+    .min(1)
+    .max(50)
+    .transform((ids) => [...new Set(ids)])
+    .optional(),
 });
 export type ScoringBatchPayload = z.infer<typeof scoringBatchPayloadSchema>;
 
