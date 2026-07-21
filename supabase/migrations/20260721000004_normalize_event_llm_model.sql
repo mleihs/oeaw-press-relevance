@@ -1,0 +1,42 @@
+-- Event-Provenance: die abweichende In-Chat-Schreibweise vereinheitlichen.
+--
+-- Befund (2026-07-21): events.llm_model trug vier Schreibweisen für 218
+-- in-chat bewertete Events:
+--
+--   opus-4.8 (in-chat rubric v2)            168
+--   anthropic/claude-opus-4.8 (in-chat)      34
+--   anthropic/claude-opus-4 (in-chat)        16
+--   deepseek/deepseek-chat                    9   (echter API-Lauf, bleibt)
+--
+-- lib/shared/event-session-model.json hält den Schreib-Tag (.tag) UND ein
+-- generationsagnostisches Muster (.likePattern
+-- = 'anthropic/claude-opus-% (in-chat)'), mit dem sich In-Chat-Bewertungen
+-- über Modellgenerationen hinweg zählen lassen. Das Muster fängt aber nur
+-- 50 der 218 Zeilen: die 168 mit „rubric v2" sind für genau die Abfrage
+-- unsichtbar, für die das Muster existiert. Noch liest niemand den
+-- Event-likePattern (apply-event-scores.ts importiert nur .tag), die Drift
+-- ist also heute folgenlos — aber sie ist eine gestellte Falle für die erste
+-- Auswertung nach Modell.
+--
+-- NUR die eindeutige Umbenennung: „opus-4.8 (in-chat rubric v2)" bezeichnet
+-- unstrittig dasselbe Modell wie „anthropic/claude-opus-4.8 (in-chat)", und
+-- eine Rubrik-Version gehört ohnehin nicht ins Modellfeld (sie ist in
+-- docs/EVENTS_INCHAT_SCORING.md dokumentiert, nicht je Zeile).
+--
+-- BEWUSST NICHT angefasst: die 16 Zeilen „anthropic/claude-opus-4 (in-chat)".
+-- Ob das Opus 4 war oder eine verkürzte Schreibweise von 4.8, ist aus den
+-- Daten nicht entscheidbar. Ein ehrliches Fragezeichen ist besser als eine
+-- erfundene Vereinheitlichung — und das likePattern fängt sie ohnehin.
+--
+-- Nach dieser Migration deckt .likePattern alle 218 In-Chat-Events ab.
+--
+-- Reine Datenkorrektur, kein Schema. Idempotent (zweiter Lauf trifft nichts)
+-- und auf einer frischen Datenbank ein No-op.
+--
+-- ROLLBACK: nicht sinnvoll umkehrbar (die Zielschreibweise existierte schon
+-- vorher für 34 Zeilen, die beiden Mengen sind danach nicht mehr trennbar).
+-- Der Eingriff ändert nur ein Provenance-Etikett, keine Bewertung.
+
+UPDATE events
+   SET llm_model = 'anthropic/claude-opus-4.8 (in-chat)'
+ WHERE llm_model = 'opus-4.8 (in-chat rubric v2)';
