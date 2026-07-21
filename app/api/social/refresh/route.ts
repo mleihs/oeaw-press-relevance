@@ -45,7 +45,6 @@ export const POST = withApiError(async (req: NextRequest) => {
     resultsLimit: env.SOCIAL_RESULTS_LIMIT,
     apiKey,
     model,
-    windowDays: env.SOCIAL_WINDOW_DAYS,
     minRefreshMinutes: env.SOCIAL_MIN_REFRESH_MINUTES,
     apifyCostPerResult: env.APIFY_COST_PER_RESULT,
     force,

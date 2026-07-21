@@ -53,7 +53,6 @@ async function main(): Promise<void> {
       process.env.SOCIAL_LLM_MODEL ||
       process.env.LLM_DEFAULT_MODEL ||
       'deepseek/deepseek-chat',
-    windowDays: num(process.env.SOCIAL_WINDOW_DAYS, 14),
     minRefreshMinutes: num(process.env.SOCIAL_MIN_REFRESH_MINUTES, 30),
     apifyCostPerResult: num(process.env.APIFY_COST_PER_RESULT, 0.0027),
     force: flags.includes('--force'),

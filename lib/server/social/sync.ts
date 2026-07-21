@@ -7,7 +7,7 @@
 // analyzed_at) are preserved on re-sync, so a post is analyzed exactly once
 // and re-fetching never re-spends LLM tokens.
 
-import { and, eq, isNull, lt, or, sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { db, socialChannels, socialPosts } from '@/lib/server/db';
 import { fetchInstagramPosts, type NormalizedSocialPost } from './apify';
 import { effectiveLookbackDays, withinLookback } from './window';
@@ -20,11 +20,9 @@ export interface SocialSyncOptions {
   actor?: string;
   /** Hard cap on posts fetched per channel (bounds cost). */
   resultsLimit?: number;
-  /** Global default look-back (days) for channels with no per-channel override. */
+  /** Abrufzeitraum (Tage) für Kanäle ohne eigene Übersteuerung. Kommt aus
+   *  social_settings.fetch_window_days (lib/server/social/settings.ts). */
   windowDays: number;
-  /** If set, prune posts older than this many days after the upsert (bounds DB
-   *  growth). null/undefined = keep everything. */
-  retentionDays?: number | null;
 }
 
 export interface SocialSyncResult {
@@ -33,7 +31,6 @@ export interface SocialSyncResult {
   created: number;
   updated: number;
   unmatched: number;
-  pruned: number;
   ms: number;
 }
 
@@ -61,7 +58,7 @@ export async function syncSocialPosts(
     .where(eq(socialChannels.active, true));
 
   if (channels.length === 0) {
-    return { channels: 0, fetched: 0, created: 0, updated: 0, unmatched: 0, pruned: 0, ms: Date.now() - startedAt };
+    return { channels: 0, fetched: 0, created: 0, updated: 0, unmatched: 0, ms: Date.now() - startedAt };
   }
 
   // Resolve each channel's effective window, then group channels by it so each
@@ -127,7 +124,7 @@ export async function syncSocialPosts(
     .filter((v): v is NonNullable<typeof v> => v !== null);
 
   if (values.length === 0) {
-    return { channels: channels.length, fetched: posts.length, created: 0, updated: 0, unmatched, pruned: 0, ms: Date.now() - startedAt };
+    return { channels: channels.length, fetched: posts.length, created: 0, updated: 0, unmatched, ms: Date.now() - startedAt };
   }
 
   // Single bulk UPSERT. The SET list deliberately omits the LLM analysis
@@ -154,23 +151,12 @@ export async function syncSocialPosts(
 
   const created = upserted.reduce((n, r) => n + (r.inserted ? 1 : 0), 0);
 
-  // Retention: prune posts older than the horizon (bounds DB growth).
-  let pruned = 0;
-  if (opts.retentionDays && opts.retentionDays > 0) {
-    const cutoff = new Date(Date.now() - opts.retentionDays * 24 * 60 * 60 * 1000).toISOString();
-    // `posted_at < cutoff` skips NULLs (NULL < x is NULL), so prune undated
-    // posts by fetched_at instead — otherwise they'd accumulate forever.
-    const deleted = await db
-      .delete(socialPosts)
-      .where(
-        or(
-          lt(socialPosts.postedAt, cutoff),
-          and(isNull(socialPosts.postedAt), lt(socialPosts.fetchedAt, cutoff)),
-        ),
-      )
-      .returning({ id: socialPosts.id });
-    pruned = deleted.length;
-  }
+  // KEIN Retention-Prune mehr (Audit 2026-07-21): der Schalter war nie
+  // eingeschaltet, hätte bei 91 Posts / 792 kB nach sechs Wochen auch nichts
+  // begrenzt — der Abrufzeitraum tut das schon — und war ohne Kopplung an die
+  // anderen Fenster validiert: eine Retention unterhalb des
+  // Auswertungszeitraums hätte dem Lagebild bei jedem Refresh kommentarlos
+  // die Datenbasis gelöscht. Migration 20260721000003.
 
   return {
     channels: channels.length,
@@ -178,7 +164,6 @@ export async function syncSocialPosts(
     created,
     updated: upserted.length - created,
     unmatched,
-    pruned,
     ms: Date.now() - startedAt,
   };
 }

@@ -18,7 +18,7 @@ export const socialChannels = pgTable("social_channels", {
 	url: text().notNull(),
 	active: boolean().default(true).notNull(),
 	// Per-channel look-back override (days) for the fetch + display/aggregation
-	// window. NULL = inherit the global default (SOCIAL_WINDOW_DAYS); cadences
+	// window. NULL = inherit the global default (social_settings.fetch_window_days); cadences
 	// differ, so a specific channel can widen/narrow its own window.
 	lookbackDays: integer("lookback_days"),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
@@ -97,13 +97,15 @@ export const socialRefreshRuns = pgTable("social_refresh_runs", {
 // supabase/migrations/20260615000002_social_settings.sql.
 export const socialSettings = pgTable("social_settings", {
 	id: smallint().default(1).primaryKey().notNull(),
+	fetchWindowDays: integer("fetch_window_days").default(14).notNull(),
 	freshWindowDays: integer("fresh_window_days").default(7).notNull(),
 	themeWindowDays: integer("theme_window_days").default(14).notNull(),
-	retentionDays: integer("retention_days"),
 	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 }, () => [
 	check("social_settings_singleton", sql`id = 1`),
 	check("social_settings_fresh_check", sql`fresh_window_days >= 1 AND fresh_window_days <= 365`),
 	check("social_settings_theme_check", sql`theme_window_days >= 1 AND theme_window_days <= 365`),
-	check("social_settings_retention_check", sql`retention_days IS NULL OR (retention_days >= 1 AND retention_days <= 3650)`),
+	check("social_settings_fetch_check", sql`fetch_window_days >= 1 AND fetch_window_days <= 365`),
+	// Kette: abgerufen ⊇ ausgewertet ⊇ frisch (Migration 20260721000003).
+	check("social_settings_window_order_check", sql`fresh_window_days <= theme_window_days AND theme_window_days <= fetch_window_days`),
 ]);

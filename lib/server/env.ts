@@ -128,7 +128,6 @@ const Schema = z.object({
   // request header / LLM_DEFAULT_MODEL when unset. DeepSeek V3 is the
   // price/performance pick for this German extraction task.
   SOCIAL_LLM_MODEL: z.string().min(1).default('deepseek/deepseek-chat'),
-  SOCIAL_WINDOW_DAYS: z.coerce.number().int().positive().default(14),
   SOCIAL_RESULTS_LIMIT: z.coerce.number().int().positive().default(12),
   // Refresh throttle: skip the Apify fetch if a successful refresh ran within
   // this many minutes (unless forced). Guards against token-burning re-clicks.
