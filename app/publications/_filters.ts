@@ -36,6 +36,16 @@ export const PRESET_FIELDS = [
 export const SORT_ORDERS = ['asc', 'desc'] as const;
 export type SortOrder = (typeof SORT_ORDERS)[number];
 
+/**
+ * Bewertungs-Scope. '' = kein Filter, 'fresh' = genau die Menge, die der
+ * Bewerten-Knopf erreicht (Kandidaten-View + 60-Tage-Fenster), 'backlog' =
+ * der ältere Rückstau, der dem In-Chat-Scoring vorbehalten ist. Serverseitig
+ * in lib/server/publications/list.ts über publication_scoring_candidates
+ * aufgelöst, damit Kachel-Zahl und Listeninhalt dasselbe meinen.
+ */
+export const SCORING_SCOPES = ['', 'fresh', 'backlog'] as const;
+export type ScoringScope = (typeof SCORING_SCOPES)[number];
+
 export const filterParsers = {
   q: parseAsString.withDefault(''),
   types: parseAsArrayOf(parseAsString).withDefault([]),
@@ -60,6 +70,7 @@ export const filterParsers = {
   minScore: parseAsFloat.withDefault(0),
   enrich: parseAsString.withDefault(''),
   analysis: parseAsString.withDefault(''),
+  scoring: parseAsStringLiteral(SCORING_SCOPES).withDefault(''),
   preset: parseAsStringLiteral(PRESET_KEYS).withDefault('custom'),
   showAll: parseAsBoolean.withDefault(false),
   page: parseAsInteger.withDefault(1),
@@ -95,6 +106,7 @@ export const FILTER_DEFAULTS: FilterValues = {
   minScore: 0,
   enrich: '',
   analysis: '',
+  scoring: '',
   preset: 'custom',
   showAll: false,
   page: 1,
@@ -143,6 +155,7 @@ export function buildApiParams(filters: FilterValues): URLSearchParams {
   if (filters.q) p.set('search', filters.q);
   if (filters.enrich) p.set('enrichment_status', filters.enrich);
   if (filters.analysis) p.set('analysis_status', filters.analysis);
+  if (filters.scoring) p.set('scoring_scope', filters.scoring);
   if (filters.types.length) p.set('pub_type_ids', filters.types.join(','));
   if (filters.units.length) p.set('orgunit_ids', filters.units.join(','));
   if (filters.oestat.length) p.set('oestat6_ids', filters.oestat.join(','));

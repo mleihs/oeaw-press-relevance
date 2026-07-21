@@ -25,6 +25,34 @@ import { pressReleaseToApi } from '@/lib/server/press-releases/to-api';
 import { venueGroupSpellings } from '@/lib/shared/venue-registry';
 import type { Lang, Publication, PressRelease } from '@/lib/shared/types';
 import { publicationToApi } from './to-api';
+import { SCORING_RECENT_DAYS } from '@/lib/shared/dashboard';
+
+/**
+ * Bewertungs-Scope als Listenfilter. Beantwortet die Frage der
+ * Dashboard-Kachel — „welche Publikationen warten auf eine Bewertung?" — mit
+ * DERSELBEN Wahrheit, die die Kachel zählt und der Bewerten-Knopf erreicht:
+ * der kanonischen View publication_scoring_candidates plus dem 60-Tage-Schnitt.
+ *
+ * Vorher verlinkte die Kachel auf `?analysis=pending`, eine Annäherung, die
+ * failed-Retries wegließ, den press_score nicht prüfte, das Content-Gate nicht
+ * kannte und kein Zeitfenster hatte: die Kachel nannte 17, der Klick zeigte
+ * Tausende. Genau die Lücke „die Zahl verspricht, was der Klick nicht
+ * einlöst", die AP3 auf der Kachel selbst geschlossen hat.
+ *
+ *   fresh   = die Menge des Bewerten-Knopfes (Kandidaten im Fenster)
+ *   backlog = Kandidaten außerhalb des Fensters, also der In-Chat-Rückstau
+ *
+ * Exportiert für den SQL-Rendering-Test in list.test.ts (keine DB nötig).
+ */
+export function scoringScopeClause(scope: string): SQL | null {
+  if (scope !== 'fresh' && scope !== 'backlog') return null;
+  const cutoff = sql`now() - make_interval(days => ${SCORING_RECENT_DAYS}::int)`;
+  const window =
+    scope === 'fresh'
+      ? sql`${publications.createdAt} >= ${cutoff}`
+      : sql`${publications.createdAt} < ${cutoff}`;
+  return sql`${publications.id} IN (SELECT id FROM publication_scoring_candidates) AND ${window}`;
+}
 
 // Sortable column whitelist. The previous Supabase-JS code accepted any
 // string from `?sort=`, relying on PostgREST identifier escaping. Drizzle
@@ -187,6 +215,9 @@ export async function listPublications(
   const pressReleased = searchParams.get('press_released');
   const defaultEligible = searchParams.get('default_eligible') === 'true';
   const includeArchived = searchParams.get('include_archived') === 'true';
+  // Bewertungs-Scope: '' | 'fresh' | 'backlog'. Die kanonische Kandidaten-View
+  // statt einer Annäherung über analysis_status — siehe scoringScopeClause().
+  const scoringScope = searchParams.get('scoring_scope') || '';
   const sortByRaw = searchParams.get('sort') || 'published_at';
   const sortBy = sortByRaw in SORTABLE_COLUMNS ? sortByRaw : 'published_at';
   const sortCol = SORTABLE_COLUMNS[sortBy]!;
@@ -235,6 +266,9 @@ export async function listPublications(
     const clauses: SQL[] = [];
 
     if (!includeArchived) clauses.push(eq(publications.archived, false));
+
+    const scoping = scoringScopeClause(scoringScope);
+    if (scoping) clauses.push(scoping);
 
     if (search) {
       const pattern = `%${search}%`;

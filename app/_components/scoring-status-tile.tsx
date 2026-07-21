@@ -31,15 +31,22 @@ function toneFor(s: EntityScoringStatus): Tone {
   return 'warning';
 }
 
-// Deep-Link „unbewertete Publikationen, neueste Zugänge zuerst". Über den
+// Deep-Links „unbewertete Publikationen, neueste Zugänge zuerst". Über den
 // nuqs-Serializer der Publikationsseite gebaut statt handgeschrieben, damit die
 // Query-Keys nicht an den Parsern vorbeidriften (order=desc ist Default und
 // fällt dabei bewusst weg).
-const UNSCORED_PUBS_HREF = `/publications${buildUrl(FILTER_DEFAULTS, {
-  analysis: 'pending',
-  sort: 'created_at',
-  order: 'desc',
-})}`;
+//
+// `scoring` und nicht `analysis=pending`: der Filter löst serverseitig auf
+// publication_scoring_candidates auf, also auf dieselbe View, aus der die Zahl
+// daneben stammt. Die Annäherung über analysis_status ließ failed-Retries weg,
+// prüfte den press_score nicht und kannte kein Zeitfenster — die Kachel nannte
+// 17 und der Klick zeigte Tausende.
+const pubsHref = (scope: 'fresh' | 'backlog') =>
+  `/publications${buildUrl(FILTER_DEFAULTS, {
+    scoring: scope,
+    sort: 'created_at',
+    order: 'desc',
+  })}`;
 
 const TONE_PILL: Record<Tone, string> = {
   success: 'bg-success-tint text-success',
@@ -91,7 +98,8 @@ export function ScoringStatusTile({ status }: { status: ScoringStatus }) {
           label="Publikationen"
           icon={<Newspaper className="h-4 w-4" weight="duotone" />}
           status={status.publications}
-          href={UNSCORED_PUBS_HREF}
+          href={pubsHref('fresh')}
+          backlogHref={pubsHref('backlog')}
           onScore={() => setOpenEntity('publications')}
         />
         <EntityRow
@@ -122,13 +130,16 @@ function EntityRow({
   icon,
   status,
   href,
+  backlogHref,
   onScore,
 }: {
   label: string;
   icon: React.ReactNode;
   status: EntityScoringStatus;
-  /** Zielliste, vorgefiltert auf „unbewertet" (Muster: Social-Kachel-Deep-Link). */
+  /** Zielliste, vorgefiltert auf die GEZÄHLTE Menge (Muster: Social-Kachel-Deep-Link). */
   href: string;
+  /** Zielliste für den Altbestand. Fehlt bei Events, die keinen kennen. */
+  backlogHref?: string;
   onScore: () => void;
 }) {
   const tone = toneFor(status);
@@ -152,7 +163,22 @@ function EntityRow({
         </Link>
         <div className="mt-0.5 font-mono text-2xs text-ink-soft">
           {status.lastImportAt ? `zuletzt importiert ${status.lastImportAt}` : 'noch nicht importiert'}
-          {status.backlogCount > 0 && ` · + ${status.backlogCount} Altbestand (nur In-Chat)`}
+          {status.backlogCount > 0 &&
+            (backlogHref ? (
+              <>
+                {' · + '}
+                <Link
+                  href={backlogHref}
+                  className="underline decoration-dotted underline-offset-2 transition-colors hover:text-brand"
+                  title="Altbestand anzeigen: unbewertete Kandidaten außerhalb des Bewerten-Fensters"
+                >
+                  {status.backlogCount} Altbestand
+                </Link>
+                {' (nur In-Chat)'}
+              </>
+            ) : (
+              ` · + ${status.backlogCount} Altbestand (nur In-Chat)`
+            ))}
         </div>
         {status.lastImportFailed && (
           <div className="mt-0.5 flex items-center gap-1 text-2xs font-medium text-destructive">
