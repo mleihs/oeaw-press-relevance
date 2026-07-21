@@ -16,6 +16,11 @@ const CARD =
 type Entity = 'publications' | 'events';
 type Tone = 'success' | 'warning' | 'danger';
 
+// Ampel und Zahl rechnen ausschließlich mit den FRISCHEN Kandidaten (Fenster
+// SCORING_RECENT_DAYS) — der Menge, die der Bewerten-Knopf auch erreicht. Der
+// Altbestand steht daneben, aber ohne Alarm: er ist Aufgabe des In-Chat-
+// Scorings, und eine Kachel, die deshalb dauerhaft rot leuchtet, warnt nicht,
+// sie stumpft ab.
 function toneFor(s: EntityScoringStatus): Tone {
   if (s.unscoredCount === 0) return 'success';
   if (s.oldestUnscoredDays != null && s.oldestUnscoredDays >= SCORING_STALE_DANGER_DAYS) {
@@ -124,6 +129,7 @@ function EntityRow({
         <div className="text-sm font-semibold text-ink">{label}</div>
         <div className="mt-0.5 font-mono text-2xs text-ink-soft">
           {status.lastImportAt ? `zuletzt importiert ${status.lastImportAt}` : 'noch nicht importiert'}
+          {status.backlogCount > 0 && ` · + ${status.backlogCount} Altbestand (nur In-Chat)`}
         </div>
         {status.lastImportFailed && (
           <div className="mt-0.5 flex items-center gap-1 text-2xs font-medium text-destructive">
@@ -156,7 +162,13 @@ function EntityRow({
         variant="outline"
         disabled={status.unscoredCount === 0}
         onClick={onScore}
-        title={status.unscoredCount === 0 ? 'Nichts zu bewerten' : 'Über OpenRouter bewerten (Fallback)'}
+        title={
+          status.unscoredCount > 0
+            ? 'Über OpenRouter bewerten (Fallback)'
+            : status.backlogCount > 0
+              ? 'Nichts Neues zu bewerten. Der Altbestand läuft über das In-Chat-Scoring.'
+              : 'Nichts zu bewerten'
+        }
       >
         Bewerten
       </Button>

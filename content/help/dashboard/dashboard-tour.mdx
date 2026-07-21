@@ -134,9 +134,41 @@ zu sammeln; kleine Ausschläge daher nicht überbewerten. Das Fenster ist am
 Zeitpunkt des letzten Refreshs verankert; die Zahl ändert sich nur, wenn neue
 Daten geladen werden.
 
+## Bewertungs-Kachel {#bewertung}
+
+Zeigt je Bereich (Publikationen, Veranstaltungen), wann zuletzt importiert
+wurde und wie viele Datensätze noch auf eine Bewertung warten. Der
+nächtliche Import um 06:00 reichert Publikationen an, bewertet aber bewusst
+nicht: die Bewertung bleibt eine redaktionelle Entscheidung.
+
+### Frische Kandidaten und Altbestand {#bewertung-scope}
+
+Die Pille rechts nennt die **frischen** Kandidaten, also jene, die in den
+letzten 60 Tagen hinzugekommen sind. Genau diese Menge erfasst der Knopf
+„Bewerten" daneben. Gibt es ältere unbewertete Datensätze, stehen sie
+gedämpft als **Altbestand** in der Meta-Zeile.
+
+Der Grund für die Trennung ist Kostenschutz: Der Knopf läuft über
+OpenRouter und kostet Guthaben. Der Altbestand umfasst mehrere tausend
+Publikationen und gehört deshalb dem kostenlosen In-Chat-Scoring der
+Redaktion. Auch die Ampel (grün, gelb, ab 7 Tagen rot) rechnet nur mit den
+frischen Fällen, damit ein dauerhafter Rückstau nicht dauerhaft Alarm
+schlägt.
+
+### Der Bewerten-Dialog {#bewertung-dialog}
+
+Im Dialog wird das Modell gewählt. Vorausgewählt ist Claude Opus 4.8, weil
+der bestehende Bestand damit bewertet wurde und Scores nur innerhalb
+desselben Modells wirklich vergleichbar sind. Die Preisangabe je Modell
+kommt live von OpenRouter, getrennt nach Eingabe und Ausgabe je Million
+Tokens. Die Option „Bereits Bewertetes neu bewerten" überschreibt
+vorhandene Scores; archivierte, ITA- und inhaltsleere Datensätze bleiben
+auch dabei außen vor.
+
 ## Verwandte Themen
 
 - [Zeitfenster](/help/filter/zeitfenster): die Tab-Logik des Dashboards
+- [Analyse-Pipeline](/help/pipeline/analyse): welche Modelle zur Wahl stehen
 - [Social Media: Seiten-Tour](/help/social/seiten-tour): Themen, Kanäle und Lagebild im Detail
 - [Die fünf Dimensionen](/help/scores/dimensionen): was das Radar-Chart visualisiert
 - [Score-Bänder](/help/scores/score-baender): wo die 70-%-Linie für „Hohes Story-Potenzial" herkommt
