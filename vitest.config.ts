@@ -25,7 +25,9 @@ export default defineConfig({
       // Measurement only (no enforced threshold yet) so `npm run test:coverage`
       // surfaces the gaps the audit flagged without red-ing the build on day one.
       reporter: ['text-summary', 'html'],
-      include: ['app/**', 'components/**', 'lib/**'],
+      // Nur Quelldateien: ohne Endungsfilter versucht der v8-Provider auch
+      // README.md unter lib/ zu parsen und wirft dabei einen PARSE_ERROR.
+      include: ['{app,components,lib}/**/*.{ts,tsx,js,jsx,mjs}'],
       exclude: ['**/*.test.{ts,tsx}', '**/*.d.ts', 'lib/server/db/**'],
     },
   },
