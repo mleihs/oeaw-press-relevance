@@ -40,8 +40,13 @@ jobs:
       - name: Test (with coverage summary)
         run: npm run test:coverage
 
-      # postcss-via-next is moderate and blocked upstream (no fix available);
-      # gate fails only on high+ vulnerabilities so that local moderate-blockers
-      # don't permanently red the build. Re-evaluate when next.js bumps postcss.
-      - name: Audit (high+ only)
-        run: npm audit --audit-level=high
+      # Advisory-Gate statt `npm audit --audit-level=high`: ein globaler
+      # Severity-Schwellwert kann nur „wie schlimm" ausdrücken, nicht „gesichtet
+      # und kein Fix erreichbar", und war deshalb nach der Hochstufung der
+      # postcss-/sharp-Advisories dauerhaft rot. Die Entscheidungen stehen
+      # deklarativ in scripts/advisory-policy.json; das Gate wird rot bei einem
+      # neuen ungesichteten Advisory, bei verstrichener Sichtungsfrist und bei
+      # einer gegenstandslosen Ausnahme. Begründung im Kopf von
+      # scripts/check-advisories.mjs. Bleibt required, kein continue-on-error.
+      - name: Advisory gate
+        run: npm run check-advisories
