@@ -1,8 +1,13 @@
 # Resume: Bewerten in Batches + CI-Audit-Gate an der Wurzel fixen
 
-Stand 2026-07-30, ~14:00 UTC. Zwei unabhängige Arbeitsgänge. Teil 1 ist Routine und
-läuft immer gleich; Teil 2 ist ein einmaliger Umbau, der ansteht, weil die CI
+Stand 2026-07-30, ~15:30 UTC. Zwei unabhängige Arbeitsgänge. Teil 1 ist Routine und
+läuft immer gleich; Teil 2 war ein einmaliger Umbau, der anstand, weil die CI
 wochenlang rot war und dabei einen echten Bug verdeckt hat.
+
+**Teil 1: nichts offen** (Pools am 2026-07-30 um 15:00 UTC erneut gezählt, 0/0).
+**Teil 2: erledigt**, Record unten unter „Was tatsächlich gebaut wurde". Der
+Abschnitt darüber ist der Plan von vorher und bleibt als Begründung stehen; wo die
+Messung ihn korrigiert hat, steht das im Record.
 
 Alle Zahlen unten sind gemessen, nicht geschätzt.
 
@@ -20,7 +25,7 @@ Ohne Argumente: beides, Batchgröße 25. Der Befehl liest `docs/INCHAT_SCORING.m
 dort stehen Ablauf, Rubriken, Kalibrierungsanker und Formatregeln. Dieses Dokument
 ergänzt nur, was sich am Zuschnitt der Batches im Betrieb gezeigt hat.
 
-### Stand der Pools (2026-07-30, nach dem Lauf)
+### Stand der Pools (2026-07-30, zuletzt 15:00 UTC nachgezählt)
 
 | | offen |
 |---|---|
@@ -263,14 +268,86 @@ Zwei Entwurfsentscheidungen, die begründet gehören:
 
 ### Abnahmekriterien
 
-- [ ] `next@16.2.12` installiert, typecheck/lint/test/build grün
-- [ ] `npm run check-advisories` läuft lokal grün und nennt die Zahl der
+- [x] `next@16.2.12` installiert, typecheck/lint/test/build grün
+- [x] `npm run check-advisories` läuft lokal grün und nennt die Zahl der
       akzeptierten Ausnahmen im Erfolgsfall
-- [ ] Jeder Policy-Eintrag hat `reason` und `review_by`, kein Eintrag ohne beides
-- [ ] Alle drei Fehlerbedingungen einmal absichtlich provoziert und rot gesehen
-- [ ] `ci.yml` nutzt das Gate, der Schritt bleibt **required** (kein
+- [x] Jeder Policy-Eintrag hat `reason` und `review_by`, kein Eintrag ohne beides
+- [x] Alle drei Fehlerbedingungen einmal absichtlich provoziert und rot gesehen
+- [x] `ci.yml` nutzt das Gate, der Schritt bleibt **required** (kein
       `continue-on-error`)
 - [ ] Ein Push nach main ist grün, und zwar in allen Schritten
+
+---
+
+## Was tatsächlich gebaut wurde (2026-07-30, 15:30 UTC)
+
+Der Plan oben stimmt in der Achse und im Aufbau. Drei Dinge hat die Messung
+korrigiert, alle drei zum Besseren:
+
+**1. Vier Overrides statt einem — vier der fünf Rest-Advisories waren doch
+wegzuräumen.** Der Plan hatte nur postcss als Override-Kandidaten. Gemessen
+(`--package-lock-only`, Satz für Satz) räumen gezielte Overrides auch `fast-uri`
+(3.1.3 → 3.1.4, ein Patch) und `js-yaml` (5.2.0 → 5.2.2, scoped auf
+`fumadocs-core`/`fumadocs-mdx`) weg:
+
+| Override-Satz | high |
+|---|---|
+| keiner, nur next@16.2.12 | 6 |
+| + postcss `^8.5.25` | 5 |
+| + fast-uri `^3.1.4` | 4 |
+| + js-yaml `^5.2.2` (scoped) | 3 |
+
+Die Kaskade aus Messung 4 des Plans kam **nicht** von Overrides als Mittel,
+sondern von npms Versions-Selektor-Keys: `"brace-expansion@1"` / `"@5"` als
+Override-Key hat den Baum so umgehängt, dass `node_modules/minimatch` auf eine
+verwundbare Version gehoistet wurde und die halbe eslint-Kette mitkam (6 → 11
+high). Ohne Selektor-Keys passiert das nicht. **Merksatz: Overrides ohne
+`pkg@range`-Keys schreiben, sonst re-resolved npm den Baum.**
+
+**2. `brace-expansion` ist per Override nicht lösbar und deshalb Policy.** Ein
+globales `"brace-expansion": "^5.0.9"` bringt high auf 2, zwingt aber
+`minimatch@3.1.5` (erwartet den 1.x-Default-Export) auf 5.x. Ergebnis: `npm run
+lint` crasht mit `TypeError: expand is not a function`. Deshalb zwei
+Policy-Einträge statt eines Overrides. Nebenbefund aus derselben Runde: **ein
+inkrementelles `npm install` nach einer Override-Änderung fortschreibt das
+Lockfile in einen schlechteren Baum** — Lockfile aus dem Ausgangszustand neu
+auflösen (`npm install --package-lock-only`) und mit `npm ci` installieren, sonst
+misst man ein Artefakt.
+
+**3. `no_forward_fix` ist weggefallen.** Das Feld aus dem Plan-Entwurf hätte das
+Gate nicht auswerten können: `npm audit` meldet für brace-expansion
+`fixAvailable: true`, obwohl es keinen gibt. Ein Feld, das das Gate ignoriert,
+verrottet — die Aussage steht jetzt in der `reason`. Pflichtfelder sind
+`advisory`, `package`, `scope`, `reason`, `review_by`; fehlt eines, ist der
+Eintrag ungültig und deckt nichts mehr.
+
+### Endstand
+
+- `next` 16.2.9 → **16.2.12** (räumt die sieben Next-Advisories weg: SSRF in
+  Server Actions, Cache-Confusion, Image-Optimization-DoS, Offenlegung interner
+  Server-Function-Endpunkte). 13 high → 6.
+- `overrides` in `package.json`: postcss, fast-uri, js-yaml (scoped ×2). 6 → 3.
+- `scripts/check-advisories.mjs` + `scripts/advisory-policy.json`, `ci.yml` nutzt
+  `npm run check-advisories` als **required** Step.
+- **Drei akzeptierte Ausnahmen**, alle mit `review_by: 2026-10-31`: zwei
+  brace-expansion-Advisories (Build-/Dev-Zeit-Pfade, kein Vorwärts-Fix ohne eslint
+  zu brechen) und die sharp-libvips-CVEs. sharp ist bewusst Policy statt Override:
+  `next/image` wird im ganzen Repo **nicht** importiert und `next.config.ts` setzt
+  keine `images.remotePatterns` — der Pfad, der sharp aufrufen würde, ist nicht
+  erreichbar.
+
+### Nachweis, dass das Gate rot werden kann
+
+Alle Bedingungen provoziert und mit Exit 1 gesehen, danach wiederhergestellt und
+wieder grün:
+
+| Provokation | Ergebnis |
+|---|---|
+| sharp-Eintrag gelöscht | Bedingung 1, nennt Advisory + Pfade |
+| `review_by` auf 2026-01-31 | Bedingung 2 |
+| erfundener Eintrag | Bedingung 3 |
+| richtiges Advisory, falscher `scope` | Bedingungen 1 **und** 3 — die `scope`-Achse deckt nicht versehentlich mit |
+| `reason` gelöscht | Eintrag ungültig, deckt nichts mehr |
 
 ### Danach
 
