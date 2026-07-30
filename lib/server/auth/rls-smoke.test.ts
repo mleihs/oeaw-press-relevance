@@ -60,7 +60,12 @@ async function stackReachable(): Promise<boolean> {
 const available = await stackReachable();
 
 describe.skipIf(!available)('RLS smoke (lokaler Supabase-Stack)', () => {
-  const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
+  // skipIf überspringt die Tests, führt den Suite-Körper aber trotzdem aus.
+  // Ohne Stack ist url leer, und createClient wirft schon beim Einsammeln —
+  // deshalb den Client nur anlegen, wenn wirklich einer gebraucht wird.
+  const admin = available
+    ? createClient(url, serviceKey, { auth: { persistSession: false } })
+    : (null as unknown as ReturnType<typeof createClient>);
   const suffix = Math.random().toString(36).slice(2, 10);
   const email = `rls-smoke-${suffix}@example.com`;
   const password = `smoke-${suffix}-Aa23456789`;
