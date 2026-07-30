@@ -14,6 +14,11 @@ export interface ChangelogEntry {
 // auf das heutige Datum heben, sonst zeigt der Unread-Dot keinen neuen Stand an.
 export const changelogEntries: ChangelogEntry[] = [
   {
+    category: 'hintergrund',
+    title: 'Verschwundene Vornamen bei Autorinnen und Autoren behoben',
+    body: 'Der nächtliche Import lieferte Personensätze zeitweise stark verkürzt — nur Nachname, ohne Vorname, ORCID, Porträt oder Kurzbiografie. Weil der Import diese Lücken für gültige Werte hielt, überschrieb er damit vorhandene Angaben; betroffen waren rund 180 Personen. Der Import unterscheidet jetzt, ob ein Feld tatsächlich geleert wurde oder schlicht nicht mitgeliefert kam, und lässt im zweiten Fall den Bestand unangetastet. Die überschriebenen Angaben wurden aus der Nachtsicherung zurückgeholt.',
+  },
+  {
     category: 'verbesserung',
     title: 'Kachel, Klick und Kostenanzeige meinen jetzt dasselbe',
     body: 'Ein Klick auf „Publikationen" in der Bewertungs-Kachel führt jetzt in genau die Liste, die die Zahl daneben zählt. Vorher landete man in einer weit größeren Auswahl. Auch der Altbestand ist erstmals anklickbar. Und die Kosten eines Laufs werden mit den tagesaktuellen OpenRouter-Preisen und der tatsächlichen Aufteilung zwischen Ein- und Ausgabe gerechnet statt mit einem gemittelten Festpreis; bisher fielen die angezeigten Beträge dadurch systematisch zu hoch aus.',
@@ -194,7 +199,7 @@ export const changelogClosing =
  * Bump this whenever a new entry is added on top so that returning users
  * see the brand-colored dot until they open the panel.
  */
-export const changelogLastUpdated = '2026-07-21T12:00:00.000Z';
+export const changelogLastUpdated = '2026-07-30T08:00:00.000Z';
 
 /** Auto-derived from changelogLastUpdated: single source of truth for the
  *  panel's soft date anchor ("Stand Mai 2026"). */

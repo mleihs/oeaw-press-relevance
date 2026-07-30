@@ -152,37 +152,43 @@ export interface NormalizedDeltaPublication {
   citation: string | null;
 }
 
+/** Alle Felder außer `webdb_uid` sind OPTIONAL — und zwar tragend, nicht aus
+ *  Bequemlichkeit: ein fehlender Schlüssel bedeutet „der Export hat dazu keine
+ *  Aussage getroffen" und lässt den Bestandswert in der DB stehen, ein
+ *  gelieferter `null` bedeutet „upstream geleert" und löscht ihn. Siehe
+ *  normalizePerson und das Gegenstück `jsonb_populate_record` in
+ *  apply_publications_delta. */
 export interface NormalizedDeltaPerson {
   webdb_uid: number;
-  firstname: string;
-  lastname: string;
-  degree_before: string | null;
-  degree_after: string | null;
-  degree_non_academic_de: string | null;
-  degree_non_academic_en: string | null;
-  biography_de: string | null;
-  biography_en: string | null;
-  email: string | null;
-  email_en: string | null;
-  external_link_de: string | null;
-  external_link_en: string | null;
-  portrait: string | null;
-  copyright: string | null;
-  orcid: string | null;
-  slug: string | null;
-  oestat3_name_de: string | null;
-  oestat3_name_en: string | null;
-  research_field_no_oestat: string | null;
-  research_fields: string | null;
-  selected_publications: string | null;
-  member_type_webdb_uid: number | null;
-  external: boolean;
-  deceased: boolean;
-  date_of_death: string | null;
-  vip_de: string | null;
-  vip_en: string | null;
-  use_vip: boolean;
-  selectionyear: number | null;
+  firstname?: string | null;
+  lastname?: string | null;
+  degree_before?: string | null;
+  degree_after?: string | null;
+  degree_non_academic_de?: string | null;
+  degree_non_academic_en?: string | null;
+  biography_de?: string | null;
+  biography_en?: string | null;
+  email?: string | null;
+  email_en?: string | null;
+  external_link_de?: string | null;
+  external_link_en?: string | null;
+  portrait?: string | null;
+  copyright?: string | null;
+  orcid?: string | null;
+  slug?: string | null;
+  oestat3_name_de?: string | null;
+  oestat3_name_en?: string | null;
+  research_field_no_oestat?: string | null;
+  research_fields?: string | null;
+  selected_publications?: string | null;
+  member_type_webdb_uid?: number | null;
+  external?: boolean;
+  deceased?: boolean;
+  date_of_death?: string | null;
+  vip_de?: string | null;
+  vip_en?: string | null;
+  use_vip?: boolean;
+  selectionyear?: number | null;
 }
 
 export interface NormalizedPersonPublication {
@@ -470,38 +476,65 @@ function normalizePublication(
   };
 }
 
+/** Textfelder, die 1:1 (gleicher Name) in die `persons`-Spalten wandern. */
+const PERSON_TEXT_FIELDS = [
+  'firstname',
+  'lastname',
+  'degree_before',
+  'degree_after',
+  'degree_non_academic_de',
+  'degree_non_academic_en',
+  'biography_de',
+  'biography_en',
+  'email',
+  'email_en',
+  'external_link_de',
+  'external_link_en',
+  'portrait',
+  'copyright',
+  'orcid',
+  'slug',
+  'oestat3_name_de',
+  'oestat3_name_en',
+  'research_field_no_oestat',
+  'research_fields',
+  'selected_publications',
+  'vip_de',
+  'vip_en',
+] as const;
+
+/** Übernimmt NUR die Felder, die der Export tatsächlich mitgeliefert hat.
+ *
+ *  Hintergrund (Vorfälle 2026-07-22 und -29): der OeAW-Export liefert
+ *  Personensätze zeitweise auf `{uid, lastname}` eingedampft aus. Solange hier
+ *  fehlende Felder als `null` mitgeschickt wurden, bügelte der Upsert
+ *  vollständige Stammdaten (Vorname, ORCID, Slug, Biografie, Portrait …) mit
+ *  NULL zu — real 158 von 3170 Personen, lautlos, Nacht für Nacht.
+ *
+ *  Die Unterscheidung ist am Feed eindeutig: bei vollständigen Sätzen schickt
+ *  der Export JEDE Spalte mit (leer als `""`), ein reduzierter Satz lässt sie
+ *  ganz weg. Deshalb gilt hier Key-Presence-Semantik — fehlender Schlüssel =
+ *  keine Aussage = Bestand behalten; gelieferter leerer Wert = upstream geleert
+ *  = löschen. Umgesetzt wird das DB-seitig von `jsonb_populate_record` in
+ *  `apply_publications_delta`, das den gelieferten Satz auf die bestehende
+ *  Zeile mischt. */
 function normalizePerson(r: RawDeltaPerson, uid: number): NormalizedDeltaPerson {
-  const dateOfDeath = r.date_of_death == null ? null : Number(r.date_of_death);
-  return {
-    webdb_uid: uid,
-    firstname: nullIfEmpty(r.firstname ?? null) ?? '',
-    lastname: nullIfEmpty(r.lastname ?? null) ?? '',
-    degree_before: nullIfEmpty(r.degree_before ?? null),
-    degree_after: nullIfEmpty(r.degree_after ?? null),
-    degree_non_academic_de: nullIfEmpty(r.degree_non_academic_de ?? null),
-    degree_non_academic_en: nullIfEmpty(r.degree_non_academic_en ?? null),
-    biography_de: nullIfEmpty(r.biography_de ?? null),
-    biography_en: nullIfEmpty(r.biography_en ?? null),
-    email: nullIfEmpty(r.email ?? null),
-    email_en: nullIfEmpty(r.email_en ?? null),
-    external_link_de: nullIfEmpty(r.external_link_de ?? null),
-    external_link_en: nullIfEmpty(r.external_link_en ?? null),
-    portrait: nullIfEmpty(r.portrait ?? null),
-    copyright: nullIfEmpty(r.copyright ?? null),
-    orcid: nullIfEmpty(r.orcid ?? null),
-    slug: nullIfEmpty(r.slug ?? null),
-    oestat3_name_de: nullIfEmpty(r.oestat3_name_de ?? null),
-    oestat3_name_en: nullIfEmpty(r.oestat3_name_en ?? null),
-    research_field_no_oestat: nullIfEmpty(r.research_field_no_oestat ?? null),
-    research_fields: nullIfEmpty(r.research_fields ?? null),
-    selected_publications: nullIfEmpty(r.selected_publications ?? null),
-    member_type_webdb_uid: lookupUid(r.member_type),
-    external: truthy(r.external),
-    deceased: truthy(r.deceased),
-    date_of_death: tsDate(dateOfDeath),
-    vip_de: nullIfEmpty(r.vip_de ?? null),
-    vip_en: nullIfEmpty(r.vip_en ?? null),
-    use_vip: truthy(r.use_vip),
-    selectionyear: lookupUid(r.selectionyear),
-  };
+  const raw = r as Record<string, unknown>;
+  const has = (k: string) => Object.prototype.hasOwnProperty.call(raw, k);
+  const out: NormalizedDeltaPerson = { webdb_uid: uid };
+
+  for (const k of PERSON_TEXT_FIELDS) {
+    if (has(k)) out[k] = nullIfEmpty((raw[k] as string | null | undefined) ?? null);
+  }
+  if (has('member_type')) out.member_type_webdb_uid = lookupUid(raw.member_type);
+  if (has('external')) out.external = truthy(raw.external);
+  if (has('deceased')) out.deceased = truthy(raw.deceased);
+  if (has('use_vip')) out.use_vip = truthy(raw.use_vip);
+  if (has('selectionyear')) out.selectionyear = lookupUid(raw.selectionyear);
+  if (has('date_of_death')) {
+    out.date_of_death = tsDate(
+      raw.date_of_death == null ? null : Number(raw.date_of_death),
+    );
+  }
+  return out;
 }
