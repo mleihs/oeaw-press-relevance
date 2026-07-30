@@ -91,7 +91,7 @@ this doc gets stale, the code does not.
 | Topic | Authoritative source |
 |---|---|
 | DB schema, indices, Postgres functions | `supabase/migrations/*.sql` (chronological) |
-| Score weights | `lib/score-weights.json` (consumed by both UI and `scripts/session-pipeline.mjs`) |
+| Score weights | `lib/score-weights.json` (consumed by both UI and `scripts/session-pipeline.ts`) |
 | Score-band thresholds (0.7 high, 0.4 mid) | `lib/constants.ts` + mirrored in PG functions |
 | Metric / filter explanations shown in tooltips | `lib/explanations.tsx` (`EXPL` map) |
 | Researchers feature design | `RESEARCHERS_PLAN.md` |
@@ -381,7 +381,7 @@ batches. Writes back per-row scoring + Pitch + Angle + Reasoning + Haiku.
 
 ### Session-pipeline (interactive scoring)
 
-`scripts/session-pipeline.mjs` — runs scoring batches inside a Claude Code
+`scripts/session-pipeline.ts` — runs scoring batches inside a Claude Code
 session (no API cost; `llm_model = anthropic/claude-opus-4-7-session`).
 Imports `lib/score-weights.json` directly via `with { type: 'json' }`, so the
 formula stays in lockstep with the UI/test code.

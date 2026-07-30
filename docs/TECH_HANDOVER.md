@@ -81,7 +81,7 @@ Lokale Sites:
 
 Schnellfix: `npm run lint -- --fix`, dann manuelle Cleanups:
 - `scripts/webdb-import.mjs:401,584` — `memberTypeMap`, `normalizeDoi` ungenutzt
-- `scripts/session-pipeline.mjs:145,599` — ähnlich
+- `scripts/session-pipeline.ts:145,599` — ähnlich
 - ~6 Stellen total, ~15 min
 
 Niedrige Priorität. Macht nur `npm run lint`-Output leiser.

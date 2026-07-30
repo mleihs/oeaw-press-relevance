@@ -1,10 +1,15 @@
-# Resume: In-Chat-Bewertung aufräumen (Skript, Doku, Einstieg)
+# In-Chat-Bewertung aufräumen — ERLEDIGT 2026-07-30
+
+> **Abschlussvermerk.** AP A, B und C sind umgesetzt und verifiziert; alle acht
+> Verifikationspunkte sind durchlaufen. Der laufende Ablauf steht ab jetzt in
+> **`docs/INCHAT_SCORING.md`**, der Einstieg ist `/bewerten`. Der Slash-Befehl
+> `/resume-scoring-refactor` ist entfernt. Was unten steht, ist der ursprüngliche
+> Plan; er bleibt als Begründung stehen. Abweichungen und Nebenbefunde stehen im
+> Abschnitt „Wie es ausgegangen ist" ganz unten.
 
 Stand 2026-07-30. Arbeitsplan, geschrieben mit vollem Kontext — eine frische
 Sitzung soll die Befunde **nicht neu herleiten müssen**. Alle Zahlen unten sind
 gemessen, nicht geschätzt.
-
-Einstieg nach Context-Clear: `/resume-scoring-refactor`.
 
 ## Warum überhaupt
 
@@ -177,3 +182,36 @@ Schnappschuss vom Volldump-Import am 2026-07-30.
   fälschlich `failed` statt `skipped` (`lib/server/ingest/run-events-import.ts`,
   `classifyEmptyFeed`) und `DRIFT_ALARM_THRESHOLD = 25` ist zu eng (real bis 91
   gemessen). Eigener Arbeitsgang.
+
+## Wie es ausgegangen ist (2026-07-30)
+
+Umgesetzt in `25db4d5` (AP A) und dem Folge-Commit (AP B + C). Vier Punkte sind
+anders gelaufen als geplant:
+
+1. **`node scripts/session-pipeline.ts` funktioniert nicht**, entgegen dem
+   Kriterium in „Fertig ist es, wenn". Node 24 strippt zwar Typen nativ, löst
+   aber die tsconfig-`paths` (`@/…`) nicht auf. Kanonisch ist deshalb
+   `npx tsx scripts/session-pipeline.ts …` bzw. `npm run session-pipeline -- …`.
+   Sonst ist das Kriterium erfüllt: der Lauf braucht keine Vorbereitungszeile.
+2. **`enrich-api` und `enrich-augment` bleiben.** Befund 4 hielt sie für tot,
+   weil sie nur in `docs/HANDOVER.md` auftauchen. Sie stehen aber auch in der
+   ausgelieferten Hilfe (`content/help/scores/score-fehlt.mdx`,
+   `content/help/pipeline/enrichment.mdx`, `lib/client/explanations.tsx`) — ein
+   Löschen hätte die App-Hilfe zur Lüge gemacht.
+3. **`push-analysis-to-prod.mjs` hängt nicht an `PG_DATABASE_URL`**, es benutzt
+   längst `connectDb`. Die tatsächlichen Nutzer der Variable sind
+   `webdb-import.mjs`, `webdb-import-v2.ts`, `parity-gate.ts` und
+   `backfill-journal.ts`. Der Override bleibt trotzdem erhalten — aber ein
+   explizites `--target` schlägt ihn jetzt, damit eine in der Shell
+   hängengebliebene Variable keinen Prod-Lauf still umlenkt.
+4. **`confirmProd` zeigte die falsche Datenbank an.** `redactedDatabaseUrl()`
+   liest `process.env.DATABASE_URL`; ohne ein vorheriges Setzen stand dort der
+   Wert aus `.env.local`, also die lokale DB — die Rückfrage, die vor einem
+   Prod-Write schützen soll, hätte „lokal" behauptet. Gefixt wie im
+   Geschwisterskript.
+
+Nebenbei: ein vorbestehender Em-Dash in `lib/shared/changelog.ts` brach
+`npx eslint` auf `main`; Satz umformuliert. Die Doku-Verweise auf
+`session-pipeline.mjs` wurden repo-weit nachgezogen, **außer** in bereits
+applizierten Migrationen — dort stehen sie in Kommentaren und bleiben als
+historischer Stand unangetastet.
