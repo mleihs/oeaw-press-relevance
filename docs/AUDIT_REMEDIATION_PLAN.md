@@ -170,10 +170,26 @@ Punkt vollständig + getestet ist (keine Sammelcommits über mehrere Punkte).
 - An Deploy-Runtime angleichen (Vercel Node 22, lokal 24). `engines.node` (`>=20`) ggf. mit anheben.
 
 ### [ ] NICHT bumpen (bewusst):
-- **temporal-polyfill** 0.3.0 → 1.0.1: Schedule-X v4 hat harte exakte Peer-Dep `0.3.0`. Erst wenn Schedule-X nachzieht.
-- **eslint** 9 → 10: `eslint-config-next` gegen 9 getestet; 10 zu neu. Warten.
+- **temporal-polyfill** 0.3.0 → 1.0.2: Schedule-X v4 pinnt `0.3.0` exakt. Erst wenn Schedule-X nachzieht.
+  *Nachgemessen 2026-07-30: `@schedule-x/calendar@4.6.1` pinnt weiterhin exakt `temporal-polyfill: 0.3.0`.
+  Gilt unverändert; deshalb bleiben auch die drei `@schedule-x/*` exakt gepinnt.*
+- **eslint** 9 → 10: **gemessen 2026-07-30, bricht.** Die alte Begründung („10 zu neu") ist überholt,
+  die Peers erlauben es inzwischen (`eslint-config-next@16.2.12` → `eslint: >=9.0.0`,
+  `typescript-eslint@8.65.0` listet `^10.0.0`). Trotzdem nicht: `eslint-plugin-react@7.37.5`, das
+  `eslint-config-next` mitbringt, ruft das in eslint 10 entfernte `context.getFilename()` →
+  `TypeError: contextOrFilename.getFilename is not a function`, `npm run lint` exit 2.
+  **Und der erhoffte Sicherheitsgewinn tritt nicht ein:** `npm audit` nennt `eslint@10.8.0` als
+  `fixAvailable` für die brace-expansion-Advisories, das ist aber falsch — eslint 10 wirft nur sein
+  *eigenes* `minimatch@3` ab, `eslint-plugin-import`/`-jsx-a11y`/`-react` ziehen es weiter, das
+  Advisory zieht bloß nach `node_modules/eslint-config-next/node_modules/brace-expansion` um.
+  Wiedervorlage, wenn `eslint-config-next` seine Plugin-Kette auf eslint 10 hebt.
+- **typescript** 6 → 7: **blockiert.** `typescript-eslint@8.65.0` deklariert `typescript: >=4.8.4 <6.1.0`;
+  unsere 6.0.3 passt, 7.0.2 fällt raus. Erst wenn typescript-eslint TS 7 unterstützt.
+- **@types/node** 22 → 26: unverändert nein, s. 3.2 — Types-Floor folgt der niedrigsten
+  Deploy-Runtime (Vercel Node 22), nicht der lokalen.
 - **react-day-picker** 9 → 10: optional, breaking; nur shadcn-Calendar-Wrapper. Kein Druck.
 - Framework-Stack (next 16.2, react 19.2, tailwind 4.3, drizzle 0.45, zod 4) ist aktuell.
+  *2026-07-30: alle Nicht-Major-Pakete per `npm update` auf Stand; offen sind nur die obigen acht.*
 
 ---
 
