@@ -5,7 +5,7 @@
  * Why: em-dashes read as machine-generated and are forbidden in UI copy
  * (docs/writing-style.md + the ESLint/MDX lint gates). Those gates only see
  * SOURCE code; generated DB content slips past them. Going forward the scoring
- * ingest sanitizer (scripts/session-pipeline.mjs sanitizeText) + the prompt
+ * ingest sanitizer (scripts/session-pipeline.ts sanitizeText) + the prompt
  * rule prevent new ones; this script repairs the existing backlog.
  *
  * Scope: ONLY the generated analysis columns. Bibliographic fields
@@ -29,7 +29,7 @@ const target = targetArg ? targetArg.slice('--target='.length) : 'prod';
 
 const GENERATED_COLS = ['pitch_suggestion', 'suggested_angle', 'reasoning', 'haiku'];
 
-// Same normalization as sanitizeText in session-pipeline.mjs: em-dash → comma,
+// Same normalization as sanitizeText in session-pipeline.ts: em-dash → comma,
 // then tidy the immediate artifacts. Deliberately does NOT collapse all
 // whitespace, so existing formatting is otherwise preserved.
 function normalize(s) {

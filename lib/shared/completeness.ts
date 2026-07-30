@@ -1,7 +1,7 @@
 import type { Publication } from './types';
 
 // Minimum usable abstract/summary length to attempt a press score. Mirrors the
-// scoring ingest gate (MIN_CONTENT_LEN in scripts/session-pipeline.mjs) so the
+// scoring ingest gate (MIN_CONTENT_LEN in scripts/session-pipeline.ts) so the
 // UI explanation and the scorer agree on what counts as "has content".
 export const CONTENT_MIN_CHARS = 120;
 

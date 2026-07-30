@@ -6,7 +6,7 @@ Workflow:
   1. Diese Datei kopieren: cp scripts/eval_chunk_template.py /tmp/build_chunk_revisions.py
   2. Im Block PUBS unten die add(...)-Aufrufe pro Pub fuellen
   3. Ausfuehren: cd /tmp && python3 build_chunk_revisions.py
-  4. Bei Erfolg: node scripts/session-pipeline.mjs apply /tmp/chunk_revisions.json --apply --force
+  4. Bei Erfolg: npx tsx scripts/session-pipeline.ts apply /tmp/chunk_revisions.json --apply --force
 
 Strenge Sanity-Checks:
   * Pitch 350-650 Zeichen (Memory-Soll 350-550, mit Toleranz)

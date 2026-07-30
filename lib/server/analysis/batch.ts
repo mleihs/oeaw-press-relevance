@@ -31,7 +31,7 @@ export type AnalysisBatchFilters = ScoringBatchPayload;
  *     vor.
  *  2. WIE ALT darf es sein — `created_at` innerhalb SCORING_RECENT_DAYS.
  *     Dieser Weg kostet OpenRouter-Guthaben; der Altbestand gehört dem
- *     kostenlosen In-Chat-Pfad (scripts/session-pipeline.mjs). `limit` ist damit
+ *     kostenlosen In-Chat-Pfad (scripts/session-pipeline.ts). `limit` ist damit
  *     nur noch ein Sicherheitsdeckel, kein Scope-Instrument.
  *
  * Exportiert, damit lib/server/analysis/batch.test.ts das gerenderte SQL prüfen
