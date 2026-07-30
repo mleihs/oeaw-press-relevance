@@ -46,8 +46,12 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# claude code session state
-.claude/
+# claude code session state. Der Inhalt wird ignoriert, NICHT das Verzeichnis
+# selbst — sonst steigt git gar nicht erst hinein und die Ausnahme darunter
+# griffe nicht ("cannot re-include a file if a parent directory is excluded").
+.claude/*
+# Ausnahme: die geteilten Projekt-Befehle gehören dem Team, nicht der Sitzung.
+!.claude/commands/
 
 # local DB dumps + ad-hoc backups
 /data/
