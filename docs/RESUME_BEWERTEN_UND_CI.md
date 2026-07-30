@@ -275,7 +275,10 @@ Zwei Entwurfsentscheidungen, die begründet gehören:
 - [x] Alle drei Fehlerbedingungen einmal absichtlich provoziert und rot gesehen
 - [x] `ci.yml` nutzt das Gate, der Schritt bleibt **required** (kein
       `continue-on-error`)
-- [ ] Ein Push nach main ist grün, und zwar in allen Schritten
+- [x] Ein Push nach main ist grün, und zwar in allen Schritten
+      (`b4422b5`, Run `30542005386`: alle 13 Schritte grün, der neue Step meldet
+      „Advisory-Gate OK: 3 Advisory/Advisories ab high, alle durch 3 gesichtete
+      Ausnahme(n) gedeckt")
 
 ---
 
