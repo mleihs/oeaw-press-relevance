@@ -100,6 +100,8 @@ this doc gets stale, the code does not.
 | Mahighlight semantics | `lib/explanations.tsx:mahighlight_self` (memory: `mahighlight_semantics.md`) |
 | Auth flow | `proxy.ts` + `app/api/auth/gate/route.ts` |
 | Migration rollback strategy | `supabase/ROLLBACK.md` |
+| Accepted security advisories (which, why, until when) | `scripts/advisory-policy.json` — enforced by `scripts/check-advisories.mjs` as the required CI step „Advisory gate" (ADR 0021) |
+| Deliberately deferred dependency majors | `docs/AUDIT_REMEDIATION_PLAN.md` § „NICHT bumpen" (measured, not assumed) |
 | Test coverage (current scope) | `lib/scoring.test.ts`, `lib/html-utils.test.ts`, `app/publications/_constants.test.ts` |
 | Bayes-smoothing JS port (matches PG `weighted_avg`) | `lib/scoring.ts:bayesSmooth` |
 | Press-score formula JS port | `lib/scoring.ts:computePressScore` |

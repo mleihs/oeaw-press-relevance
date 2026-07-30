@@ -486,6 +486,23 @@ ACL — the app trusts everyone past the gate.
   adapter), ~440 MB, downloaded once on first script run, cached
   locally
 
+### npm dependency policy
+
+- **Advisories are gated on review, not on severity.** `npm audit
+  --audit-level=<x>` can only express "how bad", which forces a global
+  threshold down whenever a single advisory is blocked upstream — and
+  leaves a permanently red build once it is spent. Instead
+  `scripts/check-advisories.mjs` requires every advisory at or above
+  `floor` to be fixed or to carry a reviewed, expiring entry in
+  `scripts/advisory-policy.json`. See **ADR 0021**.
+- **Fix before accepting.** A targeted `overrides` entry is preferred over
+  a policy entry; the policy is for advisories with no forward fix (today:
+  `sharp`, pinned by `next`, on a code path this app never reaches — it
+  imports no `next/image`).
+- **Majors are deferred deliberately, and the reasons are measured**, not
+  assumed — see `docs/AUDIT_REMEDIATION_PLAN.md` § "NICHT bumpen". npm's
+  own `fixAvailable` has been wrong here and is not sufficient evidence.
+
 ## Non-Goals
 
 What StoryScout is **not**:

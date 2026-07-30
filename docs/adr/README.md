@@ -48,6 +48,7 @@ the *why* without spelunking through commit messages and memory files.
 | 0018 | [Input validation at the API edge](0018-input-validation-drizzle-zod.md) | accepted |
 | 0019 | [Events feature pattern variants](0019-events-feature-pattern-variants.md) | accepted |
 | 0020 | [LLM scoring co-locates with its domain](0020-scoring-co-locates-with-domain.md) | accepted |
+| 0021 | [CI security gate asks „gesichtet?", not „wie schlimm?"](0021-advisory-gate-reviewed-exceptions.md) | accepted |
 
 ## When to write an ADR
 

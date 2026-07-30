@@ -86,11 +86,18 @@ Schnellfix: `npm run lint -- --fix`, dann manuelle Cleanups:
 
 Niedrige Priorität. Macht nur `npm run lint`-Output leiser.
 
-### #3 4 moderate postcss vulns (`GHSA-qx2v-qp2m-jg93`)
+### #3 4 moderate postcss vulns (`GHSA-qx2v-qp2m-jg93`) — ✅ ERLEDIGT 2026-07-30
 
-Upstream blockiert — der Pin sitzt in `next` package, kein Override sicher.
-Praktische Exploit-Surface ≈ 0 (Tailwind-Build, kein User-CSS-Input).
-Auf Next.js-Update warten. Kein Action nötig.
+Damals: upstream blockiert, der Pin sitzt im `next` package, kein Override
+sicher. Inzwischen behoben — `overrides: { "postcss": "^8.5.25" }` in
+`package.json`, verifiziert mit typecheck/lint/test/build (`b4422b5`). Die
+Annahme „kein Override sicher" hat sich nicht bestätigt; unsicher ist nur die
+Variante mit npm-Versions-Selektor-Keys (`"pkg@1"`), die den Baum umhängt.
+
+Das damals gemeinte Grundproblem — ein Gate, das auf ein upstream-blockiertes
+Advisory nur mit „Schwelle global senken" antworten kann — ist seitdem an der
+Wurzel gefixt: **ADR 0021**, `scripts/check-advisories.mjs` +
+`scripts/advisory-policy.json`.
 
 (Es gibt eine Schedule-Routine `trig_01CuXa3nitX22bov7ZcV7wFy` die
 monatlich auf eslint-plugin-import 2.33+ Unblock prüft — separates Thema,
