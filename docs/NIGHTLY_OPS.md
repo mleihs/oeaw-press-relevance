@@ -91,7 +91,7 @@ es nicht mehr.
 - `event_scoring_candidates`: `event_at >= now() AND event_score IS NULL`.
 
 Konsumenten: `lib/server/analysis/batch.ts` (non-force), `lib/server/events/analyze.ts`
-(non-force), `scripts/session-pipeline.mjs` (Default), `scripts/event-candidates.mjs`,
+(non-force), `scripts/session-pipeline.ts` (Default), `scripts/event-candidates.mjs`,
 `lib/server/ingest/status.ts`. Parität zur alten In-Chat-Query lokal verifiziert
 (byte-identisch; `is_ita_subtree` == rekursiver ITA-CTE).
 

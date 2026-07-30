@@ -9,7 +9,7 @@
  */
 export const BRAND_HEX = '#0047bb';
 
-// Single source of truth for all consumers (UI + session-pipeline.mjs script).
+// Single source of truth for all consumers (UI + session-pipeline.ts script).
 // JSON file because mjs scripts can't `import` from .ts at runtime; both can
 // import the same JSON cleanly. Dimension order = display order in the radar.
 import scoreWeightsJson from './score-weights.json';

@@ -25,6 +25,7 @@
     "import-publications-delta": "tsx scripts/import-publications-delta.ts",
     "analyze-events": "tsx scripts/analyze-events.ts",
     "apply-event-scores": "tsx scripts/apply-event-scores.ts",
+    "session-pipeline": "tsx scripts/session-pipeline.ts",
     "sync-social": "tsx scripts/sync-social.ts",
     "backfill-social-images": "tsx scripts/backfill-social-images.ts",
     "webdb-import:v2": "tsx scripts/webdb-import-v2.ts",

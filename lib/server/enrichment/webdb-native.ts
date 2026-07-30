@@ -6,7 +6,7 @@
 // This module's job is to convert a Publication row's WebDB-native fields into
 // the same EnrichmentResult shape the API-cascade returns, so it can be
 // dropped in as a free Phase-0 step before any external API call. It does NOT
-// touch the DB itself; both the API route and scripts/session-pipeline.mjs
+// touch the DB itself; both the API route and scripts/session-pipeline.ts
 // call it and persist the result through their existing UPDATE paths.
 
 import type { EnrichmentResult, Publication } from '@/lib/shared/types';

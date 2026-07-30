@@ -5,7 +5,7 @@
 // each row via the same computeEventScore + column set as the LLM path, so the
 // UI renders them identically. Provenance is tagged as in-chat (cost 0).
 //
-// Auf dem Sicherheitsniveau von scripts/session-pipeline.mjs cmdApply
+// Auf dem Sicherheitsniveau von scripts/session-pipeline.ts cmdApply
 // (Härtung 2026-07-21, AP6 des Bewertungs-Splits):
 //   * DRY-RUN ist Default. Geschrieben wird erst mit --apply.
 //   * Harte Validierung statt stiller clamp01-Korrektur: eine fehlende oder

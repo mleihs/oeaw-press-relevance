@@ -327,7 +327,7 @@ oeaw-press-relevance/
 │   ├── embeddings/            # Python SPECTER2 batch
 │   ├── webdb-import.mjs       # TYPO3 MySQL → Postgres
 │   ├── enrich-orphans.ts      # External API enrichment for orphans
-│   ├── session-pipeline.mjs   # Triage-session analytics
+│   ├── session-pipeline.ts   # Triage-session analytics
 │   ├── recompute-press-scores.mjs
 │   └── lib/                   # Shared script helpers
 ├── supabase/migrations/       # All schema changes, chronological

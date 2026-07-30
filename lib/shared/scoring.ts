@@ -46,6 +46,23 @@ export function computePressScore(dimensions: Record<ScoreDimension, number>): n
 }
 
 /**
+ * Press-score in Speicher-Form: `computePressScore` plus die 4-Nachkommastellen-
+ * Rundung, mit der `publications.press_score` persistiert wird (sonst schleppen
+ * gespeicherte Werte IEEE-754-Drift mit, z. B. 0.6100000000000001).
+ *
+ * Beide Schreibpfade hängen hier dran: der Server-Einstieg
+ * `calculatePressScore` (lib/server/analysis/score.ts, OpenRouter-Batch) und
+ * `scripts/session-pipeline.ts apply` (In-Chat-Bewertung). Das Skript kann
+ * `lib/server/**` nicht importieren (`import 'server-only'` bricht den
+ * tsx-Pfad), deshalb liegt die Rundung hier im geteilten Kern statt dort.
+ */
+export function computeStoredPressScore(
+  dimensions: Record<ScoreDimension, number>,
+): number {
+  return Math.round(computePressScore(dimensions) * 10000) / 10000;
+}
+
+/**
  * Compute the event relevance score from the 4 event dimensions
  * (Veranstaltungsbetrieb-Eignung, not press potential). Weights default to the
  * static EVENT_SCORE_WEIGHTS; callers that have user-configured weights (the DB

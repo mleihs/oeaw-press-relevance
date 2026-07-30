@@ -13,7 +13,7 @@ Punkt vollständig + getestet ist (keine Sammelcommits über mehrere Punkte).
 
 ### [x] 1.1 Press-Score-Formel vereinheitlichen (Korrektheit + Drift) ⭐ ZUERST
 - **Problem:** `calculatePressScore()` in `lib/server/analysis/score.ts:24` (produktiv: batch.ts, openrouter.ts,
-  scripts/session-pipeline.mjs) ist eine handgerollte Schleife mit eigener Rundung. `computePressScore()` →
+  scripts/session-pipeline.ts) ist eine handgerollte Schleife mit eigener Rundung. `computePressScore()` →
   `weightedScore()` in `lib/shared/scoring.ts` macht dasselbe, ist getestet (`scoring.test.ts`), aber toter Code.
   Rundung differiert bereits.
 - **Vorgehen:** `calculatePressScore` an `weightedScore` delegieren:

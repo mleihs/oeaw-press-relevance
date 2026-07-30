@@ -2,11 +2,17 @@
 
 Wie Publikationen im Session-basierten Workflow `candidates → bewerten → apply` zu bewerten sind. Aus Realbetrieb destilliert (Sessions 6-20 = 7,148 Pubs analyzed; Repair-Sweep aus 872 lokal/prod-paired Pubs am 2026-04-28). Für Menschen, die diese Bewertungen reproduzieren, prüfen oder fortführen wollen — und als verbindliche Grundlage für jede automatisierte Bewertung.
 
+> **Betriebsablauf steht woanders.** Wie man im laufenden Betrieb bewertet
+> (Prod-Ziel, Tunnel, Batchgrößen, Events), beschreibt `docs/INCHAT_SCORING.md`.
+> Dieses Dokument ist die inhaltliche Rubrik: was eine Dimension bedeutet und
+> woran eine Bewertung scheitert. Der Charge-Loop unten ist der Altbestands-Modus.
+
 ## Loop pro Charge
 
 ```bash
 # 1. Candidates ziehen — Default 50 (Context-Budget pro Session)
-node scripts/session-pipeline.mjs candidates 50 > /tmp/batch.json
+#    --all öffnet den Altbestand; ohne das Flag greift das 60-Tage-Fenster
+npx tsx scripts/session-pipeline.ts candidates 50 --all > /tmp/batch.json
 
 # 2. Build-Skript für die Bewertungen (Vorlage hat alle Sanity-Checks eingebaut)
 cp scripts/eval_chunk_template.py /tmp/build_chunk_revisions.py
@@ -14,14 +20,14 @@ cp scripts/eval_chunk_template.py /tmp/build_chunk_revisions.py
 # → Bei Verstoß gegen die Schwellen: Exit 1, Korrektur, erneut
 
 # 3. Apply (--force bei Re-Eval, sonst nur --apply)
-node scripts/session-pipeline.mjs apply /tmp/chunk_revisions.json --apply
+npx tsx scripts/session-pipeline.ts apply /tmp/chunk_revisions.json --apply
 
 # 4. Sofort nächste Charge — kein Stop, kein Bericht zwischendurch
 ```
 
 **Charge-Größe:** **50 Pubs** ist die praktisch erprobte Obergrenze pro Session — bei mehr läuft der Context-Budget einer Conversation in den Engpass (50 Pubs × Content + Pitch + Reasoning + Sanity-Check-Output passt verlässlich, 100 oft nicht). Bei sehr kurzen Pubs (Editorials, Buchrezensionen) gerne 75-100, bei Content-schweren Long-Form-Studies eher 30-40.
 
-**Disziplin-Anker:** Charges sollen durchlaufen. Keine Zwischenstand-Berichte. Wenn `session-pipeline.mjs` etwas nicht kann: das offizielle Skript erweitern — keine ad-hoc Node-Einzeiler oder `/tmp/fetch_*.mjs` Helfer.
+**Disziplin-Anker:** Charges sollen durchlaufen. Keine Zwischenstand-Berichte. Wenn `session-pipeline.ts` etwas nicht kann: das offizielle Skript erweitern — keine ad-hoc Node-Einzeiler oder `/tmp/fetch_*.mjs` Helfer.
 
 ## Pro-Pub-Disziplin
 
@@ -110,7 +116,7 @@ cp scripts/eval_chunk_template.py /tmp/build_chunk_revisions.py
 # → PUBS-Block füllen, python3 ausführen
 # → Bei Verstoß: Exit 1 mit Erklärung welche Pub gegen welchen Check verstößt
 # → Bei Erfolg: schreibt /tmp/chunk_revisions.json
-node scripts/session-pipeline.mjs apply /tmp/chunk_revisions.json --apply
+npx tsx scripts/session-pipeline.ts apply /tmp/chunk_revisions.json --apply
 ```
 
 Das Skript prüft alle oben genannten Anti-Patterns plus Bindestrich-Tippfehler und Pitch/Angle/Haiku-Uniqueness im Chunk. Bei „false positive" (z.B. legitimer Gedankenstrich vor Großbuchstaben) auf eine andere Formulierung umstellen, nicht den Check entfernen.

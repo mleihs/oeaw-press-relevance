@@ -1,10 +1,10 @@
 // Press-score formula and dimension weights — shared by every scoring engine
-// (OpenRouter route, session-based scorer in scripts/session-score.mjs, future
+// (OpenRouter route, session-based scorer in scripts/session-pipeline.ts, future
 // engines). Keep this file engine-agnostic so the scoring is one canonical
 // computation regardless of which model produced the dimension values.
 
 import 'server-only';
-import { computePressScore } from '@/lib/shared/scoring';
+import { computeStoredPressScore } from '@/lib/shared/scoring';
 import sessionModel from '@/lib/shared/session-model.json';
 import type { AnalysisResult } from '@/lib/shared/types';
 
@@ -17,18 +17,19 @@ export type DimensionScores = Pick<
   | 'media_timeliness'
 >;
 
-// Persisted press_score. The weighted-sum formula lives in `computePressScore`
-// → `weightedScore` (lib/shared/scoring) — one path, shared with the PG mirror.
-// This server entry only adds the 4-decimal storage rounding so stored scores
-// don't carry IEEE-754 drift (e.g. 0.6100000000000001 → 0.61). Bit-identical to
-// the previous hand-rolled loop for all numeric/null dimension inputs.
+// Persisted press_score. Formula AND storage rounding live in
+// `computeStoredPressScore` → `computePressScore` → `weightedScore`
+// (lib/shared/scoring) — one path, shared with the PG mirror and with
+// `scripts/session-pipeline.ts apply`, which cannot import this module
+// (`server-only` breaks the tsx script path). This entry is the server-side
+// name for the same computation.
 export function calculatePressScore(dims: DimensionScores): number {
-  return Math.round(computePressScore(dims) * 10000) / 10000;
+  return computeStoredPressScore(dims);
 }
 
 // Tag written to publications.llm_model when this Claude Code session is the
 // scoring engine (distinguishes from OpenRouter runs). Single source of truth:
-// lib/shared/session-model.json — shared verbatim with scripts/session-pipeline.mjs
+// lib/shared/session-model.json — shared verbatim with scripts/session-pipeline.ts
 // so the writer tag can never drift between the two scoring entry points (the
 // drift that once mislabeled 4.8 output as 4.7). Historical scores carry the
 // 4.7-generation tag; match `anthropic/claude-opus-%-session` to detect a

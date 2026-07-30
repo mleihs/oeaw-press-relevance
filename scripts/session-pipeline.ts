@@ -1,34 +1,53 @@
-#!/usr/bin/env node
-// Session-based enrichment + scoring pipeline.
+#!/usr/bin/env tsx
+// Session-based enrichment + scoring pipeline (Publikationen).
 //
 // Sub-commands:
 //   status              Read-only DB summary (enrichment + analysis counts).
 //   enrich-free         WebDB-native enrichment (summary_de/en → enriched_abstract).
 //                       DRY-RUN by default. Pass --apply to actually UPDATE.
+//   enrich-api          API-Cascade-Loop gegen den laufenden Dev-Server.
+//   enrich-augment      Pool-A-Nachanreicherung (additiv) über dieselbe Route.
+//   doi-backfill        DOIs aus bibtex/citation in die doi-Spalte rückführen.
 //   candidates [N]      Emit a JSON batch of N pending pubs to stdout, formatted
 //                       for the in-session scoring model. Status logs go to stderr.
 //   apply <file|->      Read evaluation JSON (file path or "-" for stdin),
 //                       validate, optionally UPDATE. DRY-RUN by default.
 //
-// Default model tag written to publications.llm_model when scored via this
-// path: 'anthropic/claude-opus-4.8-session'. Cost = 0 (no external API call).
+// Ziel-DB: --target=local (Default) | --target=prod. Prod läuft über
+// scripts/lib/db.mjs → connectDb, das die Zugangsdaten liest, den SSH-Tunnel
+// (PROD_DB_TUNNEL=1) kennt und das self-signed Pooler-Zertifikat
+// verbindungsgebunden akzeptiert. Es braucht deshalb WEDER ein manuelles
+// `export PG_DATABASE_URL` NOCH ein Umschreiben von sslmode.
 //
-// Env: PG_DATABASE_URL (default postgresql://postgres:postgres@127.0.0.1:54422/postgres)
+// PG_DATABASE_URL bleibt als Override erhalten (repo-weiter Skript-Vertrag,
+// vgl. webdb-import.mjs, parity-gate.ts): ohne --target-Flag gewinnt die
+// Variable. Ein explizites --target schlägt sie bewusst, damit ein in der Shell
+// hängengebliebenes PG_DATABASE_URL einen Prod-Lauf nicht still umlenkt.
+//
+// Default model tag written to publications.llm_model when scored via this
+// path: siehe lib/shared/session-model.json. Cost = 0 (no external API call).
+//
+// Aufruf: npx tsx scripts/session-pipeline.ts <command> [options]
+//         npm run session-pipeline -- <command> [options]
 
 import pg from 'pg';
-import { readFileSync } from 'fs';
-import { extractDoiFromRow, DOI_CANDIDATE_WHERE_CLAUSE } from '../lib/shared/doi-extract.mjs';
-
-const PG_URL = process.env.PG_DATABASE_URL
-  || 'postgresql://postgres:postgres@127.0.0.1:54422/postgres';
-
+import { readFileSync } from 'node:fs';
+import {
+  extractDoiFromRow,
+  DOI_CANDIDATE_WHERE_CLAUSE,
+} from '@/lib/shared/doi-extract.mjs';
+import { connectDb, confirmProd, loadDbUrl, parseScriptArgs } from './lib/db.mjs';
+import { initScriptSentry, captureScriptError, flushAndExit } from './lib/sentry.mjs';
+import { SCORE_DIMENSIONS, type ScoreDimension } from '@/lib/shared/constants';
+import { computeStoredPressScore } from '@/lib/shared/scoring';
+import { SCORING_RECENT_DAYS } from '@/lib/shared/dashboard';
 // Single source of truth: lib/shared/score-weights.json. Both this script and
-// lib/constants.ts import it, so drift is impossible by construction.
-import SCORE_WEIGHTS from '../lib/shared/score-weights.json' with { type: 'json' };
+// lib/shared/constants.ts import it, so drift is impossible by construction.
+import SCORE_WEIGHTS from '@/lib/shared/score-weights.json';
 // Same single-source-of-truth pattern for the session model tag — shared
 // verbatim with lib/server/analysis/score.ts so the writer tag (.tag) and the
 // generation-agnostic stats detector (.likePattern) can never drift.
-import SESSION_MODEL from '../lib/shared/session-model.json' with { type: 'json' };
+import SESSION_MODEL from '@/lib/shared/session-model.json';
 
 // Tag WRITTEN to publications.llm_model for scores produced by the current
 // Claude Code session model. Historical session scores carry the 4.7 tag —
@@ -53,36 +72,44 @@ const ITA_EXCLUDE_CLAUSE = `NOT EXISTS (
     )
 )`;
 
-function itaCondition(includeIta) {
+function itaCondition(includeIta: boolean): string {
   return includeIta ? '1=1' : ITA_EXCLUDE_CLAUSE;
 }
-const REQUIRED_EVAL_FIELDS = [
-  'id', 'public_accessibility', 'societal_relevance', 'novelty_factor',
-  'storytelling_potential', 'media_timeliness',
-  'pitch_suggestion', 'target_audience', 'suggested_angle', 'reasoning',
-];
-const NUM_DIMS = [
-  'public_accessibility', 'societal_relevance', 'novelty_factor',
-  'storytelling_potential', 'media_timeliness',
-];
 
-function calculatePressScore(dims) {
-  let s = 0;
-  for (const [k, w] of Object.entries(SCORE_WEIGHTS)) {
-    if (typeof dims[k] === 'number') s += dims[k] * w;
-  }
-  return Math.round(s * 10000) / 10000;
-}
+const TEXT_EVAL_FIELDS = [
+  'pitch_suggestion',
+  'target_audience',
+  'suggested_angle',
+  'reasoning',
+] as const;
+const REQUIRED_EVAL_FIELDS: string[] = ['id', ...SCORE_DIMENSIONS, ...TEXT_EVAL_FIELDS];
 
-const log = (msg) => process.stderr.write(msg + '\n');
-const out = (msg) => process.stdout.write(msg + '\n');
+const log = (msg: string) => process.stderr.write(msg + '\n');
+const out = (msg: string) => process.stdout.write(msg + '\n');
 
-function parseArgs(argv) {
-  const args = {};
-  const positional = [];
+// ---------------------------------------------------------------------------
+// Flags
+// ---------------------------------------------------------------------------
+
+type FlagValue = string | boolean;
+type Flags = Record<string, FlagValue>;
+type Target = 'local' | 'prod';
+
+/** Sub-command flags. Accepts both `--key value` and `--key=value`; a flag
+ *  without a value is `true`. The shared parseScriptArgs() only knows the
+ *  `--target=prod` form and cannot carry values like `--imported-after DATE`,
+ *  so the richer parser stays — it reads the same argv. */
+function parseArgs(argv: string[]): { args: Flags; positional: string[] } {
+  const args: Flags = {};
+  const positional: string[] = [];
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a.startsWith('--')) {
+      const eq = a.indexOf('=');
+      if (eq > 2) {
+        args[a.slice(2, eq)] = a.slice(eq + 1);
+        continue;
+      }
       const key = a.slice(2);
       const next = argv[i + 1];
       if (next !== undefined && !next.startsWith('--')) {
@@ -98,9 +125,58 @@ function parseArgs(argv) {
   return { args, positional };
 }
 
-async function withClient(fn) {
-  const client = new pg.Client({ connectionString: PG_URL });
-  await client.connect();
+function bool(args: Flags, key: string): boolean {
+  return args[key] === true || args[key] === 'true';
+}
+
+function str(args: Flags, key: string): string | null {
+  const v = args[key];
+  return typeof v === 'string' && v.trim() ? v.trim() : null;
+}
+
+// ---------------------------------------------------------------------------
+// DB-Anbindung
+// ---------------------------------------------------------------------------
+
+let dbTarget: Target = 'local';
+let dbOverrideUrl: string | null = null;
+let rawFlags: string[] = [];
+
+function isLocalUrl(url: string): boolean {
+  try {
+    const host = new URL(url).hostname;
+    return host === '127.0.0.1' || host === 'localhost' || host === '::1';
+  } catch {
+    return false;
+  }
+}
+
+/** True wenn der Lauf gegen eine nicht-lokale DB geht — steuert confirmProd.
+ *  Ein PG_DATABASE_URL-Override auf einen fremden Host zählt mit, sonst
+ *  schriebe der Override-Pfad ungefragt auf Prod. */
+function isProdRun(): boolean {
+  if (dbOverrideUrl) return !isLocalUrl(dbOverrideUrl);
+  return dbTarget === 'prod';
+}
+
+function describeTarget(): string {
+  if (dbOverrideUrl) {
+    return `PG_DATABASE_URL (${isLocalUrl(dbOverrideUrl) ? 'lokal' : 'REMOTE'})`;
+  }
+  return dbTarget;
+}
+
+async function openClient(): Promise<pg.Client> {
+  if (dbOverrideUrl) {
+    const client = new pg.Client({ connectionString: dbOverrideUrl });
+    await client.connect();
+    return client;
+  }
+  return connectDb({ target: dbTarget });
+}
+
+async function withClient<T>(fn: (c: pg.Client) => Promise<T>): Promise<T> {
+  const client = await openClient();
   try {
     return await fn(client);
   } finally {
@@ -108,14 +184,18 @@ async function withClient(fn) {
   }
 }
 
-async function cmdStatus() {
+// ---------------------------------------------------------------------------
+// Sub-commands
+// ---------------------------------------------------------------------------
+
+async function cmdStatus(): Promise<void> {
   await withClient(async (c) => {
-    const r1 = await c.query(`
+    const r1 = await c.query<{ enrichment_status: string; count: number }>(`
       SELECT enrichment_status, count(*)::int AS count
       FROM publications WHERE archived = false
       GROUP BY enrichment_status ORDER BY count DESC
     `);
-    const r2 = await c.query(`
+    const r2 = await c.query<{ analysis_status: string; count: number }>(`
       SELECT analysis_status, count(*)::int AS count
       FROM publications WHERE archived = false
       GROUP BY analysis_status ORDER BY count DESC
@@ -138,19 +218,20 @@ async function cmdStatus() {
       FROM publications p WHERE p.archived = false
     `, [SESSION_MODEL_LIKE]);
 
+    log(`=== Ziel-DB: ${describeTarget()} ===`);
     log('=== Enrichment status ===');
-    for (const row of r1.rows) log(`  ${row.enrichment_status.padEnd(10)} ${row.count}`);
+    for (const row of r1.rows) log(`  ${String(row.enrichment_status).padEnd(10)} ${row.count}`);
     log('=== Analysis status ===');
-    for (const row of r2.rows) log(`  ${row.analysis_status.padEnd(10)} ${row.count}`);
+    for (const row of r2.rows) log(`  ${String(row.analysis_status).padEnd(10)} ${row.count}`);
     log('=== WebDB / scoring summary ===');
     log(`  Pubs mit summary_de:                       ${r3.rows[0].with_de}`);
     log(`  Pubs mit summary_en:                       ${r3.rows[0].with_en}`);
     log(`  Pubs mit press_score:                      ${r3.rows[0].with_score}`);
     log(`  Davon via Session-Modell:                  ${r3.rows[0].by_session}`);
 
-    const poolAall   = parseInt(r3.rows[0].pool_a_all, 10);
-    const poolBall   = parseInt(r3.rows[0].pool_b_all, 10);
-    const poolBdoi   = parseInt(r3.rows[0].pool_b_doi_all, 10);
+    const poolAall = parseInt(r3.rows[0].pool_a_all, 10);
+    const poolBall = parseInt(r3.rows[0].pool_b_all, 10);
+    const poolBdoi = parseInt(r3.rows[0].pool_b_doi_all, 10);
     const poolAnoIta = parseInt(r3.rows[0].pool_a_no_ita, 10);
     const poolBnoIta = parseInt(r3.rows[0].pool_b_no_ita, 10);
     const poolBdoiNoIta = parseInt(r3.rows[0].pool_b_doi_no_ita, 10);
@@ -171,17 +252,20 @@ async function cmdStatus() {
       log('=== API-Enrichment-Prognose (Pool B no ITA → Pool A no ITA) ===');
       const seconds = poolBdoiNoIta * 15;
       log(`  Geschätzte Dauer (DOI-Pubs × 15s):  ~${Math.round(seconds / 3600)}h`);
-      log(`  Anstoßen mit: node scripts/session-pipeline.mjs enrich-api --apply`);
+      log(`  Anstoßen mit: npx tsx scripts/session-pipeline.ts enrich-api --apply`);
     }
 
     log(`  Session-Modell-Tag: ${SESSION_MODEL_TAG}`);
   });
 }
 
-async function cmdEnrichFree(opts) {
-  const apply = opts.apply === true || opts.apply === 'true';
+async function cmdEnrichFree(args: Flags): Promise<void> {
+  const apply = bool(args, 'apply');
+  if (apply) {
+    await confirmProd({ isProd: isProdRun(), flags: rawFlags, label: 'session-pipeline enrich-free' });
+  }
   await withClient(async (c) => {
-    const cnt = await c.query(`
+    const cnt = await c.query<{ n: number }>(`
       SELECT count(*)::int AS n FROM publications
       WHERE archived = false
         AND enrichment_status = 'pending'
@@ -219,22 +303,41 @@ async function cmdEnrichFree(opts) {
   });
 }
 
-async function cmdCandidates(opts, positional) {
-  const limit = parseInt(opts.limit ?? positional[0] ?? '10', 10);
+interface CandidateRow {
+  id: string;
+  webdb_uid: string | null;
+  title: string | null;
+  original_title: string | null;
+  lead_author: string | null;
+  published_at: string | null;
+  peer_reviewed: boolean | null;
+  popular_science: boolean | null;
+  summary_de: string | null;
+  summary_en: string | null;
+  enriched_abstract: string | null;
+  abstract: string | null;
+  enriched_keywords: unknown;
+  is_mahighlight: boolean;
+  institute_akronyms: string[] | null;
+}
+
+async function cmdCandidates(args: Flags, positional: string[]): Promise<void> {
+  const limit = parseInt(str(args, 'limit') ?? positional[0] ?? '10', 10);
   if (!Number.isFinite(limit) || limit <= 0 || limit > 200) {
     log('limit muss zwischen 1 und 200 liegen.');
     process.exit(1);
   }
-  const onlySummaryDe = opts['only-summary-de'] === true || opts['only-summary-de'] === 'true';
-  const requireMahighlight = opts['mahighlight'] === true || opts['mahighlight'] === 'true';
-  const requirePopSci = opts['popular-science'] === true || opts['popular-science'] === 'true';
-  const includeIta = opts['include-ita'] === true || opts['include-ita'] === 'true';
-  const apiEnriched = opts['api-enriched'] === true || opts['api-enriched'] === 'true';
-  const fromDate = opts['from'] || null;
-  const toDate = opts['to'] || null;
-  const importedAfter = opts['imported-after'] || null;
+  const onlySummaryDe = bool(args, 'only-summary-de');
+  const requireMahighlight = bool(args, 'mahighlight');
+  const requirePopSci = bool(args, 'popular-science');
+  const includeIta = bool(args, 'include-ita');
+  const apiEnriched = bool(args, 'api-enriched');
+  const fromDate = str(args, 'from');
+  const toDate = str(args, 'to');
+  const importedAfter = str(args, 'imported-after');
+  const includeAll = bool(args, 'all');
 
-  // Basis-Prädikat („bewertbar") lebt jetzt in der kanonischen View
+  // Basis-Prädikat („bewertbar") lebt in der kanonischen View
   // publication_scoring_candidates (eine Wahrheit, geteilt mit dem Server-
   // Batch-Pfad lib/server/analysis/batch.ts und der Status-Kachel). Default
   // (ohne ITA) selektiert direkt aus der View. Der includeIta-Override ist ein
@@ -242,7 +345,7 @@ async function cmdCandidates(opts, positional) {
   // Prädikat dort inline nachgebaut (ohne ITA-Klausel), semantisch identisch.
   const MIN_CONTENT_LEN = 120; // Mindestlänge in Zeichen für „bewertbar".
   const baseRelation = includeIta ? 'publications p' : 'publication_scoring_candidates p';
-  const conditions = [];
+  const conditions: string[] = [];
   if (includeIta) {
     conditions.push(
       'p.archived = false',
@@ -257,7 +360,7 @@ async function cmdCandidates(opts, positional) {
       ) >= ${MIN_CONTENT_LEN}`,
     );
   }
-  const params = [];
+  const params: unknown[] = [];
   if (onlySummaryDe) {
     conditions.push('p.summary_de IS NOT NULL');
   }
@@ -272,10 +375,24 @@ async function cmdCandidates(opts, positional) {
     params.push(toDate);
     conditions.push(`p.published_at <= $${params.length}`);
   }
+
+  // Zeitfenster. Default = SCORING_RECENT_DAYS, also dieselbe Menge, die der
+  // Bewerten-Knopf im Web erfasst (lib/shared/dashboard.ts). Ohne Fenster ist
+  // die Sortierung zwar „neueste zuerst", der Pool aber der gesamte Altbestand
+  // — wer 25 Kandidaten zieht, landet dann irgendwo in 2023. --imported-after
+  // setzt ein eigenes Datum, --all öffnet den Altbestand bewusst.
+  let windowDays: number | null = SCORING_RECENT_DAYS;
   if (importedAfter) {
+    windowDays = null;
     params.push(importedAfter);
     conditions.push(`p.created_at >= $${params.length}`);
+  } else if (includeAll) {
+    windowDays = null;
+  } else {
+    params.push(SCORING_RECENT_DAYS);
+    conditions.push(`p.created_at >= now() - make_interval(days => $${params.length}::int)`);
   }
+
   if (apiEnriched) {
     // Pubs mit enriched_keywords IS NOT NULL haben den API-Cascade-Loop hinter sich
     // (CrossRef/OpenAlex haben Keywords gesetzt). Schließt enrich-free-only Pubs aus,
@@ -288,6 +405,13 @@ async function cmdCandidates(opts, positional) {
       WHERE pp.publication_id = p.id AND pp.mahighlight = true
     )`);
   }
+
+  const scopeNote = importedAfter
+    ? `created_at >= ${importedAfter}`
+    : includeAll
+      ? 'gesamter Altbestand (--all)'
+      : `letzte ${SCORING_RECENT_DAYS} Tage (SCORING_RECENT_DAYS)`;
+  log(`Ziel-DB: ${describeTarget()} · Fenster: ${scopeNote} · limit=${limit}`);
 
   await withClient(async (c) => {
     const sql = `
@@ -323,11 +447,11 @@ async function cmdCandidates(opts, positional) {
         p.webdb_uid
       LIMIT ${limit}
     `;
-    const r = await c.query(sql, params);
+    const r = await c.query<CandidateRow>(sql, params);
 
     const pubs = r.rows.map((row) => {
-      let contentSource = null;
-      let content = null;
+      let contentSource: string | null = null;
+      let content: string | null = null;
       if (row.summary_de?.trim()) { contentSource = 'summary_de'; content = row.summary_de.trim(); }
       else if (row.summary_en?.trim()) { contentSource = 'summary_en'; content = row.summary_en.trim(); }
       else if (row.enriched_abstract?.trim()) { contentSource = 'enriched_abstract'; content = row.enriched_abstract.trim(); }
@@ -357,6 +481,7 @@ async function cmdCandidates(opts, positional) {
 
     out(JSON.stringify({
       model: SESSION_MODEL_TAG,
+      target: describeTarget(),
       weights: SCORE_WEIGHTS,
       count: pubs.length,
       filters: {
@@ -368,29 +493,82 @@ async function cmdCandidates(opts, positional) {
         from: fromDate,
         to: toDate,
         imported_after: importedAfter,
+        window_days: windowDays,
+        all: includeAll,
       },
       publications: pubs,
     }, null, 2));
   });
 }
 
-async function cmdEnrichApi(opts) {
-  const apply = opts.apply === true || opts.apply === 'true';
-  const perBatch = parseInt(opts['per-batch'] || '15', 10);
-  const maxBatches = opts['max-batches'] ? parseInt(opts['max-batches'], 10) : Infinity;
-  const includeNoDoi = opts['include-no-doi'] === true || opts['include-no-doi'] === 'true';
-  const includePartial = opts['include-partial'] === true || opts['include-partial'] === 'true';
-  const importedAfter = opts['imported-after'] || null;
-  const apiUrl = opts['api-url'] || 'http://localhost:3000/api/enrichment/batch';
+interface BatchComplete {
+  processed?: number;
+  successful?: number;
+  failed?: number;
+  partial?: number;
+}
+
+/** Reads the SSE stream of /api/enrichment/batch and returns the last
+ *  `complete`-shaped payload (processed/successful/failed counters). */
+async function readBatchStream(resp: Response): Promise<BatchComplete | null> {
+  const reader = resp.body?.getReader();
+  if (!reader) return null;
+  const decoder = new TextDecoder();
+  let buf = '';
+  let lastComplete: BatchComplete | null = null;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    // Process line-by-line; SSE events arrive as `event: NAME\ndata: JSON\n\n`
+    const events = buf.split('\n\n');
+    buf = events.pop() || '';
+    for (const ev of events) {
+      const dataLine = ev.split('\n').find((l) => l.startsWith('data: '));
+      if (!dataLine) continue;
+      try {
+        const data = JSON.parse(dataLine.slice(6)) as BatchComplete;
+        if (data.processed !== undefined && data.successful !== undefined && data.failed !== undefined) {
+          lastComplete = data;
+        }
+      } catch { /* ignore non-JSON */ }
+    }
+  }
+  return lastComplete;
+}
+
+async function pingDevServer(): Promise<void> {
+  try {
+    const ping = await fetch('http://localhost:3000/', {
+      signal: AbortSignal.timeout(5000),
+      headers: process.env.GATE_COOKIE ? { Cookie: `gate=${process.env.GATE_COOKIE}` } : {},
+      redirect: 'manual',
+    });
+    if (!ping.ok) throw new Error(`Status ${ping.status}`);
+  } catch (e) {
+    log(`Server nicht erreichbar (${(e as Error).message}). Bitte 'npm run dev' starten.`);
+    process.exit(1);
+  }
+}
+
+async function cmdEnrichApi(args: Flags): Promise<void> {
+  const apply = bool(args, 'apply');
+  const perBatch = parseInt(str(args, 'per-batch') ?? '15', 10);
+  const maxBatchesFlag = str(args, 'max-batches');
+  const maxBatches = maxBatchesFlag ? parseInt(maxBatchesFlag, 10) : Infinity;
+  const includeNoDoi = bool(args, 'include-no-doi');
+  const includePartial = bool(args, 'include-partial');
+  const importedAfter = str(args, 'imported-after');
+  const apiUrl = str(args, 'api-url') ?? 'http://localhost:3000/api/enrichment/batch';
 
   // imported-after: nur Pubs, die seit DATE neu in die DB kamen, anreichern.
   // Geht NICHT über die Standard-Pool-Abfrage der API (die filtert nicht nach
   // created_at), sondern wir holen IDs vorab und schicken sie via {ids:[...]}.
-  let scopedIds = null;
+  let scopedIds: string[] | null = null;
   if (importedAfter) {
     scopedIds = await withClient(async (c) => {
       const statusList = includePartial ? ['pending', 'partial'] : ['pending'];
-      const r = await c.query(
+      const r = await c.query<{ id: string }>(
         `SELECT id::text FROM publications
          WHERE archived = false
            AND created_at >= $1
@@ -409,23 +587,15 @@ async function cmdEnrichApi(opts) {
     log(`  per-batch=${perBatch}, max-batches=${maxBatches === Infinity ? '∞ (bis Pool leer)' : maxBatches}`);
     log(`  include-no-doi=${includeNoDoi}`);
     log(`  include-partial=${includePartial}`);
-    if (importedAfter) log(`  scope: ${scopedIds.length} IDs (imported_after=${importedAfter})`);
+    if (scopedIds) log(`  scope: ${scopedIds.length} IDs (imported_after=${importedAfter})`);
     log('Mit --apply den tatsächlichen Loop starten.');
     return;
   }
 
-  try {
-    const ping = await fetch('http://localhost:3000/', {
-      signal: AbortSignal.timeout(5000),
-      headers: process.env.GATE_COOKIE ? { Cookie: `gate=${process.env.GATE_COOKIE}` } : {},
-      redirect: 'manual',
-    });
-    if (!ping.ok) throw new Error(`Status ${ping.status}`);
-  } catch (e) {
-    log(`Server nicht erreichbar (${e.message}). Bitte 'npm run dev' starten.`);
-    process.exit(1);
-  }
-  const includeIta = opts['include-ita'] === true || opts['include-ita'] === 'true';
+  await confirmProd({ isProd: isProdRun(), flags: rawFlags, label: 'session-pipeline enrich-api' });
+  await pingDevServer();
+
+  const includeIta = bool(args, 'include-ita');
   log(`Server OK. Starte Enrichment-Loop (per-batch=${perBatch}, include-no-doi=${includeNoDoi}, include-partial=${includePartial}, include-ita=${includeIta}).`);
 
   const statusInList = includePartial ? `('pending', 'partial')` : `('pending')`;
@@ -442,8 +612,8 @@ async function cmdEnrichApi(opts) {
   // — das ist sauberer als die Pool-Abfrage, die created_at nicht filtert.
   let scopedCursor = 0;
   while (batchN < maxBatches) {
-    let postBody;
-    let pendingCnt;
+    let postBody: Record<string, unknown>;
+    let pendingCnt: number;
     if (scopedIds) {
       const slice = scopedIds.slice(scopedCursor, scopedCursor + perBatch);
       if (slice.length === 0) {
@@ -455,7 +625,7 @@ async function cmdEnrichApi(opts) {
       scopedCursor += slice.length;
     } else {
       pendingCnt = await withClient(async (c) => {
-        const r = await c.query(
+        const r = await c.query<{ n: number }>(
           `SELECT count(*)::int AS n FROM publications p
            WHERE p.archived = false AND p.enrichment_status IN ${statusInList}
            ${includeNoDoi ? '' : 'AND p.doi IS NOT NULL'}
@@ -473,7 +643,7 @@ async function cmdEnrichApi(opts) {
     log(`[Batch ${batchN}] ${pendingCnt} pending; POST limit=${postBody.limit}…`);
 
     const t0 = Date.now();
-    let resp;
+    let resp: Response;
     try {
       resp = await fetch(apiUrl, {
         method: 'POST',
@@ -485,7 +655,7 @@ async function cmdEnrichApi(opts) {
         signal: AbortSignal.timeout(360_000),
       });
     } catch (e) {
-      log(`  Netzwerk-Fehler: ${e.message}. Pause 5s, dann nächster Batch.`);
+      log(`  Netzwerk-Fehler: ${(e as Error).message}. Pause 5s, dann nächster Batch.`);
       await new Promise((r) => setTimeout(r, 5000));
       continue;
     }
@@ -495,30 +665,7 @@ async function cmdEnrichApi(opts) {
       break;
     }
 
-    const reader = resp.body?.getReader();
-    let lastComplete = null;
-    if (reader) {
-      const decoder = new TextDecoder();
-      let buf = '';
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buf += decoder.decode(value, { stream: true });
-        // Process line-by-line; SSE events arrive as `event: NAME\ndata: JSON\n\n`
-        const events = buf.split('\n\n');
-        buf = events.pop() || '';
-        for (const ev of events) {
-          const dataLine = ev.split('\n').find((l) => l.startsWith('data: '));
-          if (!dataLine) continue;
-          try {
-            const data = JSON.parse(dataLine.slice(6));
-            if (data.processed !== undefined && data.successful !== undefined && data.failed !== undefined) {
-              lastComplete = data;
-            }
-          } catch { /* ignore non-JSON */ }
-        }
-      }
-    }
+    const lastComplete = await readBatchStream(resp);
     const dt = ((Date.now() - t0) / 1000).toFixed(1);
     if (lastComplete) {
       totalProcessed += lastComplete.processed || 0;
@@ -535,12 +682,13 @@ async function cmdEnrichApi(opts) {
 // Pool-A-Augmentation: Pool A enriched Pubs mit DOI nochmal durch API-Cascade
 // schicken, um Keywords/Journal/etc. additiv zu ergänzen. enriched_abstract
 // (= summary_de) bleibt durch Merge-Logic geschützt.
-async function cmdEnrichAugment(opts) {
-  const apply = opts.apply === true || opts.apply === 'true';
-  const includeIta = opts['include-ita'] === true || opts['include-ita'] === 'true';
-  const perBatch = parseInt(opts['per-batch'] || '15', 10);
-  const maxBatches = opts['max-batches'] ? parseInt(opts['max-batches'], 10) : Infinity;
-  const apiUrl = opts['api-url'] || 'http://localhost:3000/api/enrichment/batch';
+async function cmdEnrichAugment(args: Flags): Promise<void> {
+  const apply = bool(args, 'apply');
+  const includeIta = bool(args, 'include-ita');
+  const perBatch = parseInt(str(args, 'per-batch') ?? '15', 10);
+  const maxBatchesFlag = str(args, 'max-batches');
+  const maxBatches = maxBatchesFlag ? parseInt(maxBatchesFlag, 10) : Infinity;
+  const apiUrl = str(args, 'api-url') ?? 'http://localhost:3000/api/enrichment/batch';
 
   // Augment-Ziel: Pool-A-/Phase-0-Pubs mit DOI, die noch keine API-Keywords haben.
   // Status-unabhängig: 'enriched' und 'partial' sind beide gleichwertig „mit Substanz".
@@ -570,23 +718,14 @@ async function cmdEnrichAugment(opts) {
     return;
   }
 
-  try {
-    const ping = await fetch('http://localhost:3000/', {
-      signal: AbortSignal.timeout(5000),
-      headers: process.env.GATE_COOKIE ? { Cookie: `gate=${process.env.GATE_COOKIE}` } : {},
-      redirect: 'manual',
-    });
-    if (!ping.ok) throw new Error(`Status ${ping.status}`);
-  } catch (e) {
-    log(`Server nicht erreichbar (${e.message}). Bitte 'npm run dev' starten.`);
-    process.exit(1);
-  }
+  await confirmProd({ isProd: isProdRun(), flags: rawFlags, label: 'session-pipeline enrich-augment' });
+  await pingDevServer();
 
   // IDs einmal sammeln. Pubs, die im laufenden Augment Erfolg hatten, fallen aus
   // der Liste raus, weil enriched_keywords IS NULL nach Erfolg false wird — aber
   // wir holen nur einmal vor Beginn, damit Mehrfachverarbeitung ausgeschlossen ist.
   const ids = await withClient(async (c) => {
-    const r = await c.query(candidatesQuery);
+    const r = await c.query<{ id: string }>(candidatesQuery);
     return r.rows.map((row) => row.id);
   });
 
@@ -598,7 +737,6 @@ async function cmdEnrichAugment(opts) {
 
   let batchN = 0;
   let totalProcessed = 0;
-  let totalKwHits = 0;
 
   for (let offset = 0; offset < ids.length && batchN < maxBatches; offset += perBatch) {
     batchN++;
@@ -606,7 +744,7 @@ async function cmdEnrichAugment(opts) {
     log(`[Batch ${batchN}] ${ids.length - offset} verbleibend; POST ids=[${slice.length}]…`);
 
     const t0 = Date.now();
-    let resp;
+    let resp: Response;
     try {
       resp = await fetch(apiUrl, {
         method: 'POST',
@@ -615,7 +753,7 @@ async function cmdEnrichAugment(opts) {
         signal: AbortSignal.timeout(360_000),
       });
     } catch (e) {
-      log(`  Netzwerk-Fehler: ${e.message}. Pause 5s, dann nächster Batch.`);
+      log(`  Netzwerk-Fehler: ${(e as Error).message}. Pause 5s, dann nächster Batch.`);
       await new Promise((r) => setTimeout(r, 5000));
       continue;
     }
@@ -625,29 +763,7 @@ async function cmdEnrichAugment(opts) {
       break;
     }
 
-    const reader = resp.body?.getReader();
-    let lastComplete = null;
-    if (reader) {
-      const decoder = new TextDecoder();
-      let buf = '';
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buf += decoder.decode(value, { stream: true });
-        const events = buf.split('\n\n');
-        buf = events.pop() || '';
-        for (const ev of events) {
-          const dataLine = ev.split('\n').find((l) => l.startsWith('data: '));
-          if (!dataLine) continue;
-          try {
-            const data = JSON.parse(dataLine.slice(6));
-            if (data.processed !== undefined && data.successful !== undefined && data.failed !== undefined) {
-              lastComplete = data;
-            }
-          } catch { /* ignore */ }
-        }
-      }
-    }
+    const lastComplete = await readBatchStream(resp);
     const dt = ((Date.now() - t0) / 1000).toFixed(1);
     if (lastComplete) {
       totalProcessed += lastComplete.processed || 0;
@@ -659,56 +775,71 @@ async function cmdEnrichAugment(opts) {
   }
 
   // Verifizieren wieviele dieser IDs danach Keywords haben
-  await withClient(async (c) => {
-    const r = await c.query(
+  const totalKwHits = await withClient(async (c) => {
+    const r = await c.query<{ n: number }>(
       `SELECT count(*)::int AS n FROM publications WHERE id = ANY($1::uuid[]) AND enriched_keywords IS NOT NULL`,
       [ids],
     );
-    totalKwHits = r.rows[0].n;
+    return r.rows[0].n;
   });
 
   log(`Augment fertig: ${batchN} Batches, ${totalProcessed} processed, davon ${totalKwHits} mit Keywords-Hit.`);
 }
 
-async function cmdApply(opts, positional) {
-  let raw;
+type Evaluation = Record<string, unknown> & { id: string };
+
+// Sanitize textual fields: strip HTML, normalize entities that often cause JSON
+// breakage, collapse whitespace. Applied to all string-valued fields.
+const SANITIZED_FIELDS: string[] = [...TEXT_EVAL_FIELDS, 'haiku'];
+
+function sanitizeText(s: unknown): unknown {
+  if (typeof s !== 'string') return s;
+  return s
+    .replace(/<br\s*\/?>/gi, ' ')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    // Em-dashes (U+2014) read as machine-generated; the project forbids them
+    // in UI copy (docs/writing-style.md + the ESLint/MDX gates). A static
+    // linter can't reach generated DB content, so normalize on ingest here:
+    // an em-dash becomes a comma. Mirrors scripts/cleanup-emdash-prod.mjs.
+    .replace(/\s*—\s*/g, ', ')
+    .replace(/\s+/g, ' ')
+    .replace(/\s+,/g, ',')
+    .replace(/,\s*([,.;:!?])/g, '$1')
+    .trim();
+}
+
+function dimsOf(e: Evaluation): Record<ScoreDimension, number> {
+  return {
+    public_accessibility: e.public_accessibility as number,
+    societal_relevance: e.societal_relevance as number,
+    novelty_factor: e.novelty_factor as number,
+    storytelling_potential: e.storytelling_potential as number,
+    media_timeliness: e.media_timeliness as number,
+  };
+}
+
+async function cmdApply(args: Flags, positional: string[]): Promise<void> {
+  let raw: string;
   if (positional[0] && positional[0] !== '-') {
     raw = readFileSync(positional[0], 'utf8');
   } else {
     raw = readFileSync(0, 'utf8');
   }
-  const data = JSON.parse(raw);
-  const evals = Array.isArray(data) ? data : (data.evaluations || []);
+  const data = JSON.parse(raw) as unknown;
+  const evals: Evaluation[] = Array.isArray(data)
+    ? (data as Evaluation[])
+    : ((data as { evaluations?: Evaluation[] })?.evaluations ?? []);
   if (!Array.isArray(evals) || evals.length === 0) {
     log('Keine evaluations gefunden in Input.');
     process.exit(1);
   }
 
-  // Sanitize textual fields: strip HTML, normalize ASCII quotes that often cause JSON breakage,
-  // collapse whitespace. Applied to all string-valued fields in each evaluation.
-  const TEXT_FIELDS = ['pitch_suggestion', 'target_audience', 'suggested_angle', 'reasoning', 'haiku'];
-  function sanitizeText(s) {
-    if (typeof s !== 'string') return s;
-    let t = s
-      .replace(/<br\s*\/?>/gi, ' ')
-      .replace(/<[^>]+>/g, '')
-      .replace(/&nbsp;/g, ' ')
-      .replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      // Em-dashes (U+2014) read as machine-generated; the project forbids them
-      // in UI copy (docs/writing-style.md + the ESLint/MDX gates). A static
-      // linter can't reach generated DB content, so normalize on ingest here:
-      // an em-dash becomes a comma. Mirrors scripts/cleanup-emdash-prod.mjs.
-      .replace(/\s*—\s*/g, ', ')
-      .replace(/\s+/g, ' ')
-      .replace(/\s+,/g, ',')
-      .replace(/,\s*([,.;:!?])/g, '$1')
-      .trim();
-    return t;
-  }
   for (const e of evals) {
-    for (const key of TEXT_FIELDS) {
+    for (const key of SANITIZED_FIELDS) {
       if (key in e) e[key] = sanitizeText(e[key]);
     }
   }
@@ -721,7 +852,7 @@ async function cmdApply(opts, positional) {
         process.exit(1);
       }
     }
-    for (const dim of NUM_DIMS) {
+    for (const dim of SCORE_DIMENSIONS) {
       const v = e[dim];
       if (typeof v !== 'number' || !Number.isFinite(v) || v < 0 || v > 1) {
         log(`Evaluation für id=${e.id} hat ungültigen ${dim}=${v} (erwartet number 0..1)`);
@@ -737,20 +868,22 @@ async function cmdApply(opts, positional) {
     }
   }
 
-  const apply = opts.apply === true || opts.apply === 'true';
-  const force = opts.force === true || opts.force === 'true';
-  log(`${evals.length} Evaluations geparst und validiert. ${apply ? '[APPLY]' : '[DRY-RUN]'}${force ? ' [FORCE]' : ''}`);
+  const apply = bool(args, 'apply');
+  const force = bool(args, 'force');
+  log(`${evals.length} Evaluations geparst und validiert. Ziel-DB: ${describeTarget()}. ${apply ? '[APPLY]' : '[DRY-RUN]'}${force ? ' [FORCE]' : ''}`);
 
   if (!apply) {
     log('Vorschau (max 3):');
     for (const e of evals.slice(0, 3)) {
-      const score = calculatePressScore(e);
+      const score = computeStoredPressScore(dimsOf(e));
       log(`  id=${String(e.id).slice(0, 8)}…  press_score=${score}  pitch="${String(e.pitch_suggestion).slice(0, 80)}…"`);
     }
     log('Mit --apply tatsächlich in DB schreiben.');
     log('Mit --force auch bereits analyzed Pubs überschreiben (default: skip).');
     return;
   }
+
+  await confirmProd({ isProd: isProdRun(), flags: rawFlags, label: 'session-pipeline apply' });
 
   const MIN_CONTENT_LEN = 120; // mirrors candidates threshold
 
@@ -759,7 +892,7 @@ async function cmdApply(opts, positional) {
     // Pre-check 2: every pub being scored MUST have actual content substance —
     // otherwise the evaluation is by definition fabricated from the title.
     const ids = evals.map((e) => e.id);
-    const existing = await c.query(
+    const existing = await c.query<{ id: string; analysis_status: string; content_len: number }>(
       `SELECT id, analysis_status,
         GREATEST(
           length(COALESCE(summary_de,'')),
@@ -774,7 +907,7 @@ async function cmdApply(opts, positional) {
     const contentLenById = new Map(existing.rows.map((r) => [r.id, r.content_len]));
     const missing = ids.filter((id) => !statusById.has(id));
     const alreadyAnalyzed = ids.filter((id) => statusById.get(id) === 'analyzed');
-    const tooThin = ids.filter((id) => statusById.has(id) && contentLenById.get(id) < MIN_CONTENT_LEN);
+    const tooThin = ids.filter((id) => statusById.has(id) && (contentLenById.get(id) ?? 0) < MIN_CONTENT_LEN);
 
     if (missing.length > 0) {
       log(`! ${missing.length} IDs existieren nicht in DB (werden übersprungen).`);
@@ -798,7 +931,7 @@ async function cmdApply(opts, positional) {
       if (!status) { skipped++; continue; }
       if (status === 'analyzed' && !force) { skipped++; continue; }
 
-      const score = calculatePressScore(e);
+      const score = computeStoredPressScore(dimsOf(e));
       // Belt-and-suspenders: never overwrite an existing score unless --force.
       // The in-memory skip above already guards `analyzed` rows; this SQL-level
       // guard makes the protection atomic and independent of both the
@@ -839,206 +972,31 @@ async function cmdApply(opts, positional) {
         SESSION_MODEL_TAG,
         e.id,
       ]);
-      if (r.rowCount > 0) updated++;
+      if ((r.rowCount ?? 0) > 0) updated++;
       else skipped++;
     }
     log(`Updated ${updated}/${evals.length} Publikationen.${skipped ? ` (${skipped} übersprungen)` : ''}`);
   });
 }
 
-// DOI-Extraction-Helfer leben in scripts/lib/doi-extract.mjs (geteilt mit
+// DOI-Extraction-Helfer leben in lib/shared/doi-extract.mjs (geteilt mit
 // webdb-import.mjs ETL).
 
-// Haiku-Patch: gezieltes UPDATE *nur* der `haiku`-Spalte mit Concurrency-Check.
-// Vom session-pipeline `apply`-Pfad bewusst getrennt, weil dort eine vollstaendige
-// Bewertung (10+ Felder) verlangt wird; reine Haiku-Korrekturen sollen die anderen
-// Felder NICHT anfassen. Pattern folgt `doi-backfill`: Pre-Flight, Single-Field-
-// UPDATE in Transaction, automatisches updated_at = NOW() (loest die `prod_haiku_drift`-
-// Falle, in der direkte SQL-Patches kein updated_at touchten).
-//
-// Input-JSON: { phase, rationale, patches: [{ id, current_haiku, new_haiku, reason }] }
-// Idempotent: zweiter Lauf no-op (current_haiku stimmt nicht mehr mit DB ueberein,
-// die Funktion erkennt "already-at-target" und ueberspringt sauber).
-const ASCII_REPLACEMENT_WORDS = [
-  'waechst', 'traegt', 'fuer', 'prueft', 'haengt', 'zaehlt', 'faellt',
-  'fliesst', 'schliesst', 'taeuscht', 'klaert', 'gewaehlt', 'praegt',
-  'zurueck', 'Heisses', 'Mass ', 'Waerme', 'Kohaerenz', 'naehrt',
-  'Woerter', 'Schluessel', 'Gluehn', 'stoeren', 'Koerpers',
-  'Tueren', 'fluechten', 'gehoert', 'koennen', 'muessen',
-  'fuehrt', 'fuehlt', 'staerker', 'naeher', 'spueren',
-  'haelt', 'erfuellt', 'erzaehlt', 'kuerzer', 'vorueber', 'faengt',
-  'Pruefung', 'Geschaeft', 'Buehne', 'Faehigkeit', 'zerbroeselt',
-  'draengt', 'Stueck', 'oeffnet', 'loest', 'heiss ', 'duennen',
-  'laeuft', 'Koerner', 'hoert', 'Gespraech', 'taeuschend',
-];
-
-function validateNewHaiku(haiku, { allowArchaic = false } = {}) {
-  const errors = [];
-  if (typeof haiku !== 'string') {
-    errors.push('new_haiku must be string');
-    return errors;
-  }
-  if (haiku.includes('\n')) errors.push('contains newline (use " / " separator)');
-  if (/[‘’']/.test(haiku)) errors.push('contains apostrophe');
-  const parts = haiku.split(' / ').map((s) => s.trim()).filter(Boolean);
-  if (parts.length !== 3) errors.push(`has ${parts.length} parts (need 3 via " / ")`);
-  if (!allowArchaic) {
-    for (const w of ASCII_REPLACEMENT_WORDS) {
-      if (haiku.includes(w)) {
-        errors.push(`ASCII-replacement "${w.trim()}" (use real umlaut)`);
-      }
-    }
-  }
-  return errors;
+interface DoiCandidateRow {
+  id: string;
+  [key: string]: unknown;
 }
 
-async function cmdHaikuPatch(opts, positional) {
-  const apply = opts.apply === true || opts.apply === 'true';
-  const allowArchaic = opts['allow-archaic'] === true || opts['allow-archaic'] === 'true';
-
-  if (positional.length === 0) {
-    log('Usage: haiku-patch <patch-file.json> [--apply] [--allow-archaic]');
-    process.exit(1);
+async function cmdDoiBackfill(args: Flags): Promise<void> {
+  const apply = bool(args, 'apply');
+  if (apply) {
+    await confirmProd({ isProd: isProdRun(), flags: rawFlags, label: 'session-pipeline doi-backfill' });
   }
-  const patchFile = positional[0];
-  const raw = readFileSync(patchFile, 'utf8');
-  const data = JSON.parse(raw);
-  const patches = Array.isArray(data) ? data : (data.patches || []);
-  if (!Array.isArray(patches) || patches.length === 0) {
-    log('Keine patches in Input-Datei.');
-    process.exit(1);
-  }
-
-  log(`${patches.length} Patches geladen aus ${patchFile}.`);
-  log(`Phase: ${data.phase || '(none)'}`);
-  if (data.rationale) log(`Rationale: ${data.rationale}`);
-
-  for (const p of patches) {
-    for (const k of ['id', 'current_haiku', 'new_haiku']) {
-      if (!(k in p)) {
-        log(`Patch fehlt Feld "${k}" (id=${p.id || '?'})`);
-        process.exit(1);
-      }
-    }
-  }
-
-  const validationErrors = [];
-  for (const p of patches) {
-    const errs = validateNewHaiku(p.new_haiku, { allowArchaic });
-    if (errs.length > 0) validationErrors.push({ id: p.id, errors: errs });
-  }
-  if (validationErrors.length > 0) {
-    log(`! ${validationErrors.length} Patches haben Format-Validation-Fehler:`);
-    for (const v of validationErrors.slice(0, 10)) {
-      log(`    ${v.id.slice(0, 8)}: ${v.errors.join('; ')}`);
-    }
-    log('Bitte korrigieren (oder --allow-archaic falls bewusst archaische Form).');
-    process.exit(1);
-  }
-  log(`Alle ${patches.length} new_haiku-Werte passieren Format-Validation.`);
-
-  await withClient(async (c) => {
-    const ids = patches.map((p) => p.id);
-    const r = await c.query(
-      `SELECT id, haiku FROM publications WHERE id = ANY($1::uuid[])`,
-      [ids],
-    );
-    const dbHaikuById = new Map(r.rows.map((row) => [row.id, row.haiku]));
-
-    const ready = [];
-    const skipMissing = [];
-    const skipMismatch = [];
-
-    for (const p of patches) {
-      const dbHaiku = dbHaikuById.get(p.id);
-      if (dbHaiku === undefined) { skipMissing.push(p.id); continue; }
-      if (dbHaiku !== p.current_haiku) {
-        if (dbHaiku === p.new_haiku) {
-          skipMismatch.push({ id: p.id, reason: 'already-at-target' });
-        } else {
-          skipMismatch.push({ id: p.id, reason: 'current-haiku-mismatch', db_haiku: dbHaiku });
-        }
-        continue;
-      }
-      ready.push(p);
-    }
-
-    log('');
-    log('Pre-flight:');
-    log(`  → ready to apply:                       ${ready.length}`);
-    log(`  → skip (id not in DB):                  ${skipMissing.length}`);
-    log(`  → skip (already-at-target / mismatch):  ${skipMismatch.length}`);
-    for (const id of skipMissing.slice(0, 5)) log(`    missing: ${id}`);
-    for (const s of skipMismatch.slice(0, 5)) log(`    skip   : ${s.id.slice(0, 8)} — ${s.reason}`);
-
-    if (ready.length === 0) { log('Nothing to apply.'); return; }
-
-    log('');
-    log('Diff-Vorschau (max 5):');
-    for (const p of ready.slice(0, 5)) {
-      log(`  ${p.id.slice(0, 8)}  reason=${p.reason || '-'}`);
-      log(`    ALT: ${p.current_haiku.replace(/\n/g, ' | ')}`);
-      log(`    NEU: ${p.new_haiku}`);
-    }
-    if (ready.length > 5) log(`    ... (${ready.length - 5} weitere)`);
-
-    if (!apply) {
-      log('');
-      log(`[DRY-RUN] Mit --apply tatsaechlich in DB schreiben.`);
-      return;
-    }
-
-    log('');
-    log(`[APPLY] BEGIN transaction...`);
-    let written = 0;
-    await c.query('BEGIN');
-    try {
-      for (const p of ready) {
-        // WHERE haiku = current_haiku schuetzt nochmals gegen Concurrency innerhalb
-        // der Transaktion (Race zwischen Pre-Flight und UPDATE).
-        const w = await c.query(
-          `UPDATE publications
-             SET haiku = $1, updated_at = NOW()
-           WHERE id = $2 AND haiku = $3`,
-          [p.new_haiku, p.id, p.current_haiku],
-        );
-        written += w.rowCount;
-      }
-      await c.query('COMMIT');
-    } catch (e) {
-      await c.query('ROLLBACK');
-      throw e;
-    }
-    log(`OK — ${written}/${ready.length} haikus geschrieben.`);
-
-    const logEntry = {
-      run_at: new Date().toISOString(),
-      env: PG_URL.includes('127.0.0.1') ? 'local' : 'remote',
-      patch_file: patchFile,
-      phase: data.phase || null,
-      applied_ids: ready.map((p) => p.id),
-      skipped_missing: skipMissing,
-      skipped_mismatch: skipMismatch.map((s) => ({ id: s.id, reason: s.reason })),
-      written,
-    };
-    const auditPath = patchFile.replace(/\/[^/]+\.json$/, '/applied-log.jsonl');
-    try {
-      const { appendFileSync } = await import('fs');
-      appendFileSync(auditPath, JSON.stringify(logEntry) + '\n');
-      log(`Audit-log appended: ${auditPath}`);
-    } catch (e) {
-      log(`! Audit-log write failed: ${e.message}`);
-    }
-  });
-}
-
-async function cmdDoiBackfill(opts) {
-  const apply = opts.apply === true || opts.apply === 'true';
 
   await withClient(async (c) => {
     // Kandidaten-Filter aus dem geteilten doi-extract-Modul; SELECT-Liste deckt
     // alle Felder ab, die extractDoiFromRow durchsucht.
-    const r = await c.query(`
+    const r = await c.query<DoiCandidateRow>(`
       SELECT id, doi_link, bibtex,
              citation_apa, citation_de, citation_en,
              citation,
@@ -1050,14 +1008,16 @@ async function cmdDoiBackfill(opts) {
     log(`Kandidaten ohne DOI mit DOI-Spuren in irgendeinem Feld: ${r.rows.length}`);
 
     // Existierende DOIs für Duplikat-Check vorab in einem Set.
-    const existing = await c.query(`SELECT doi FROM publications WHERE doi IS NOT NULL AND doi != ''`);
+    const existing = await c.query<{ doi: string }>(
+      `SELECT doi FROM publications WHERE doi IS NOT NULL AND doi != ''`,
+    );
     const existingSet = new Set(existing.rows.map((row) => row.doi));
 
-    const updates = [];
-    const dupes = [];
-    const noMatch = [];
+    const updates: { id: string; doi: string }[] = [];
+    const dupes: { id: string; doi: string }[] = [];
+    const noMatch: string[] = [];
     for (const row of r.rows) {
-      const doi = extractDoiFromRow(row);
+      const doi = extractDoiFromRow(row) as string | null;
       if (!doi) { noMatch.push(row.id); continue; }
       if (existingSet.has(doi)) { dupes.push({ id: row.id, doi }); continue; }
       existingSet.add(doi); // gegen Doppel-Treffer im selben Lauf
@@ -1091,7 +1051,7 @@ async function cmdDoiBackfill(opts) {
            WHERE id = $2 AND (doi IS NULL OR doi = '')`,
           [u.doi, u.id],
         );
-        written += w.rowCount;
+        written += w.rowCount ?? 0;
       }
       await c.query('COMMIT');
     } catch (e) {
@@ -1102,13 +1062,18 @@ async function cmdDoiBackfill(opts) {
   });
 }
 
-async function main() {
-  const [, , cmd, ...rest] = process.argv;
-  if (!cmd || cmd === '--help' || cmd === '-h') {
-    log(`Usage: node scripts/session-pipeline.mjs <command> [options]
+// ---------------------------------------------------------------------------
+// Entry point
+// ---------------------------------------------------------------------------
+
+const HELP = `Usage: npx tsx scripts/session-pipeline.ts <command> [options]
+
+Ziel-DB: --target=local (Default) | --target=prod
+         Schreibende Prod-Läufe fragen nach; --yes überspringt die Rückfrage.
+         PG_DATABASE_URL überschreibt die Ziel-DB, solange kein --target gesetzt ist.
 
 Commands:
-  status                                Enrichment + Analysis-Status, Pool A/B/C
+  status                                Enrichment + Analysis-Status, Pool A/B
   enrich-free [--apply]                 WebDB-native Enrichment (summary_de/en → enriched)
                                         Default dry-run; --apply schreibt UPDATE.
   enrich-api [--apply] [--per-batch N]  API-Cascade-Loop (CrossRef → OpenAlex → ...)
@@ -1119,36 +1084,68 @@ Commands:
                                         gezogen, ID-basiert per {ids:[]} dispatched.
   enrich-augment [--apply]              Pool-A-mit-DOI durch API-Cascade (additiv).
                                         enriched_abstract (summary_de) bleibt geschützt.
-                                        Setzt temporär auf 'partial', loopt enrich-api.
   doi-backfill [--apply]                DOIs aus bibtex/citation_apa/_de/_en in die
-                                        doi-Spalte rückführen (Pubs ohne DOI). ETL nimmt
-                                        bislang nur doi_link; ~700-1300 Pubs haben den
-                                        DOI nur in citation/bibtex stehen.
-  candidates [N] [filters]              N Kandidaten als JSON auf stdout
-                                        Default-Filter: enrichment_status IN (enriched,partial)
-                                        Filters: --only-summary-de, --mahighlight,
+                                        doi-Spalte rückführen (Pubs ohne DOI).
+  candidates [N] [filters]              N Kandidaten als JSON auf stdout.
+                                        Default-Fenster: created_at innerhalb der
+                                        letzten ${SCORING_RECENT_DAYS} Tage (SCORING_RECENT_DAYS in
+                                        lib/shared/dashboard.ts) — dieselbe Menge,
+                                        die der Bewerten-Knopf im Web erfasst.
+                                        Filters: --all (Altbestand öffnen),
+                                                 --imported-after DATE (eigenes Datum),
+                                                 --only-summary-de, --mahighlight,
                                                  --popular-science, --from YYYY-MM-DD,
-                                                 --to YYYY-MM-DD, --imported-after DATE,
+                                                 --to YYYY-MM-DD,
                                                  --api-enriched (nur mit OpenAlex-Keywords)
   apply [<file>|-] [--apply] [--force]  Evaluation-JSON aus Datei/stdin, validieren,
                                         mit --apply schreiben. Default skip wenn
                                         analysis_status='analyzed', --force überschreibt.
-  haiku-patch <file> [--apply]          Gezieltes UPDATE *nur* der haiku-Spalte.
-              [--allow-archaic]         Input: {patches:[{id, current_haiku, new_haiku, reason}]}.
-                                        Verifiziert current_haiku vs DB (concurrency-safe,
-                                        idempotent), validiert new_haiku-Format
-                                        (3 Teile via " / ", keine \\n / Apostrophe / ASCII-
-                                        Umlaute). Setzt updated_at=NOW(). Audit nach
-                                        <patches-dir>/applied-log.jsonl.
 
 Modell-Tag bei Session-Scoring: ${SESSION_MODEL_TAG}
-Env: PG_DATABASE_URL (default ${PG_URL})
-`);
+`;
+
+/** Ziel-DB auflösen. Reihenfolge: explizites --target schlägt alles (auch ein
+ *  in der Shell hängengebliebenes PG_DATABASE_URL), danach der Override, sonst
+ *  lokal. Das explizite Flag zu bevorzugen ist der Sicherheitsteil — sonst
+ *  ginge `--target=prod` still an eine lokale URL, oder umgekehrt. */
+function resolveTarget(args: Flags, canonicalTarget: string): void {
+  const explicit = typeof args.target === 'string' ? args.target : null;
+  const override = process.env.PG_DATABASE_URL?.trim() || null;
+
+  if (explicit !== null && explicit !== 'local' && explicit !== 'prod') {
+    log(`Unbekanntes --target: ${explicit} (erwartet local|prod).`);
+    process.exit(1);
+  }
+  const chosen: Target | null = explicit ? (explicit as Target) : (canonicalTarget === 'prod' ? 'prod' : null);
+
+  if (chosen) {
+    dbTarget = chosen;
+    if (override) log(`Hinweis: PG_DATABASE_URL ist gesetzt, --target=${dbTarget} gewinnt.`);
+  } else if (override) {
+    dbOverrideUrl = override;
+  }
+
+  // confirmProd zeigt über redactedDatabaseUrl() den Inhalt von DATABASE_URL.
+  // Ohne diese Zeile stünde dort der Wert aus .env.local — also die LOKALE DB,
+  // während in Wahrheit auf Prod geschrieben wird. Genau die Rückfrage, die
+  // schützen soll, würde dann in die Irre führen. Gleiche Zeile wie in
+  // scripts/apply-event-scores.ts.
+  process.env.DATABASE_URL = dbOverrideUrl ?? loadDbUrl(dbTarget);
+}
+
+async function main(): Promise<void> {
+  const [, , cmd, ...rest] = process.argv;
+  if (!cmd || cmd === '--help' || cmd === '-h') {
+    log(HELP);
     process.exit(cmd ? 0 : 1);
   }
 
   const { args, positional } = parseArgs(rest);
+  const script = parseScriptArgs();
+  rawFlags = script.flags;
+
   try {
+    resolveTarget(args, script.target);
     switch (cmd) {
       case 'status':         await cmdStatus(); break;
       case 'enrich-free':    await cmdEnrichFree(args); break;
@@ -1157,16 +1154,24 @@ Env: PG_DATABASE_URL (default ${PG_URL})
       case 'doi-backfill':   await cmdDoiBackfill(args); break;
       case 'candidates':     await cmdCandidates(args, positional); break;
       case 'apply':          await cmdApply(args, positional); break;
-      case 'haiku-patch':    await cmdHaikuPatch(args, positional); break;
       default:
         log(`Unbekanntes Kommando: ${cmd}`);
         process.exit(1);
     }
   } catch (e) {
-    log(`Fehler: ${e?.message || e}`);
-    if (e?.stack) log(e.stack);
-    process.exit(1);
+    log(`Fehler: ${(e as Error)?.message ?? String(e)}`);
+    const stack = (e as Error)?.stack;
+    if (stack) log(stack);
+    captureScriptError(e);
+    await flushAndExit(1);
   }
 }
 
-main();
+try {
+  process.loadEnvFile('.env.local');
+} catch {
+  // .env.local ist optional — ohne SENTRY_DSN bleibt der Sentry-Bootstrap inert.
+}
+initScriptSentry('session-pipeline');
+
+void main();

@@ -310,7 +310,7 @@ oeaw-press-relevance/
 │   │   └── .venv/                # Python virtualenv (gitignored)
 │   ├── webdb-import.mjs          # Nightly TYPO3 MySQL → Postgres sync
 │   ├── enrich-orphans.ts         # External-API enrichment für orphan press_releases
-│   ├── session-pipeline.mjs      # Triage-session analytics
+│   ├── session-pipeline.ts      # Triage-session analytics
 │   ├── recompute-press-scores.mjs # Bulk press_score refit (V2 formula)
 │   └── lib/                      # Shared script helpers (doi-extract, etc.)
 ├── supabase/

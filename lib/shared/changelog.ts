@@ -16,7 +16,7 @@ export const changelogEntries: ChangelogEntry[] = [
   {
     category: 'hintergrund',
     title: 'Verschwundene Vornamen bei Autorinnen und Autoren behoben',
-    body: 'Der nächtliche Import lieferte Personensätze zeitweise stark verkürzt — nur Nachname, ohne Vorname, ORCID, Porträt oder Kurzbiografie. Weil der Import diese Lücken für gültige Werte hielt, überschrieb er damit vorhandene Angaben; betroffen waren rund 180 Personen. Der Import unterscheidet jetzt, ob ein Feld tatsächlich geleert wurde oder schlicht nicht mitgeliefert kam, und lässt im zweiten Fall den Bestand unangetastet. Die überschriebenen Angaben wurden aus der Nachtsicherung zurückgeholt.',
+    body: 'Der nächtliche Import lieferte Personensätze zeitweise stark verkürzt: nur Nachname, ohne Vorname, ORCID, Porträt oder Kurzbiografie. Weil der Import diese Lücken für gültige Werte hielt, überschrieb er damit vorhandene Angaben; betroffen waren rund 180 Personen. Der Import unterscheidet jetzt, ob ein Feld tatsächlich geleert wurde oder schlicht nicht mitgeliefert kam, und lässt im zweiten Fall den Bestand unangetastet. Die überschriebenen Angaben wurden aus der Nachtsicherung zurückgeholt.',
   },
   {
     category: 'verbesserung',

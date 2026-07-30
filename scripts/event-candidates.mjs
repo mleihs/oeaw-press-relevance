@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Pulls events that still need an in-chat relevance score: FUTURE events
 // (event_at >= now) with event_score IS NULL. Mirrors the publication
-// `session-pipeline.mjs candidates` flow, but for events. Output is JSON with
+// `session-pipeline.ts candidates` flow, but for events. Output is JSON with
 // the full content fields, so the scoring session can evaluate straight from it.
 //
 // Score each with the event rubric dims (public_appeal, scientific_significance,

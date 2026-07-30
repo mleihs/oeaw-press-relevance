@@ -115,7 +115,7 @@ Plus Analyse-Artefakte unter `/tmp/press_analysis/` (analysis.py, sanity.py, val
 
 **Fixe:**
 - `extractDoiWithFallback(row)` in `scripts/webdb-import.mjs` — Reihenfolge `doi_link → bibtex → citation_apa → citation_de → citation_en`. Künftige ETL-Läufe greifen automatisch.
-- Neuer Befehl `node scripts/session-pipeline.mjs doi-backfill [--apply]` mit Duplikat-Check (nur DOIs schreiben, die noch nicht zu anderen Pubs gehören).
+- Neuer Befehl `npx tsx scripts/session-pipeline.ts doi-backfill [--apply]` mit Duplikat-Check (nur DOIs schreiben, die noch nicht zu anderen Pubs gehören).
 
 **Apply-Ergebnis:** 611 DOIs neu geschrieben (1.107 Konflikte übersprungen — typischerweise Sammelband-Beiträge mit identischem Verlags-DOI im bibtex; 30 ohne Match). Bei den am 2026-04-30 importierten neuen Pubs wuchs DOI-fähig von 191 auf 302 (+111).
 
@@ -380,7 +380,7 @@ Aus den verbleibenden 340 sind die nächsten 50 (sortiert nach `press_score DESC
 ### Was in den Charges 1–7 der vorherigen Sessions passiert ist
 
 - Charges 1, 2, 4, 5, 6, 7 jeweils 100 Pubs einzeln aus `content`-Feld bewertet (individuelle Pitches/Reasonings/Haikus).
-- **Charge 3 hatte einen Default-Generator-Bug**: 86 von 100 Pubs bekamen einen identischen Pitch-Anfang („Spezialisierter Fachbeitrag aus dem Umfeld der …") — klarer Verstoß gegen Regel 6 (Bausch und Bogen) in `publication_evaluation_rules.md`. **Repariert mit `node scripts/session-pipeline.mjs apply /tmp/evals.json --apply --force`** nach individueller Neubewertung. Stichprobenprüfung der DB ergab anschließend: keine pitch_suggestion-Duplikate, keine haiku-Duplikate. Wiederkehrende Reasoning-Floskeln („Spezialisierte Teilchenphysik …") sind nach Regel 6 erlaubt, solange Pitch und Haiku individuell sind.
+- **Charge 3 hatte einen Default-Generator-Bug**: 86 von 100 Pubs bekamen einen identischen Pitch-Anfang („Spezialisierter Fachbeitrag aus dem Umfeld der …") — klarer Verstoß gegen Regel 6 (Bausch und Bogen) in `publication_evaluation_rules.md`. **Repariert mit `npx tsx scripts/session-pipeline.ts apply /tmp/evals.json --apply --force`** nach individueller Neubewertung. Stichprobenprüfung der DB ergab anschließend: keine pitch_suggestion-Duplikate, keine haiku-Duplikate. Wiederkehrende Reasoning-Floskeln („Spezialisierte Teilchenphysik …") sind nach Regel 6 erlaubt, solange Pitch und Haiku individuell sind.
 - **Memory-Erweiterung**: `scoring_session_workflow.md` hat einen neuen **Punkt 5** — explizites Verbot von Default-/Template-Generatoren. Jede Pub einzeln auf Basis ihres Contents bewerten.
 - **Mahighlights in dieser Session korrekt zitiert** (Person konkret namentlich, kein „Mitglied"-Schluss): Stanislav Zak (ESI), Margreth Keiler (IGF), Lea Hartl (IGF), Paola Di Giulio (VID), Fernando Ruiz Peyre (IGF) — alle ohne `member_type_id`.
 - **Quote-Falle bei großen evals.json**: ASCII-Quotes (`"`) in String-Werten brechen den JSON-Parse. Lösung: typografische Anführungszeichen `„"` durchgehend, oder byteweiser Quote-Fix per Python-Skript.
@@ -402,7 +402,7 @@ Der frühere `enrich-augment` setzte alle Pool-A-Pubs auf `partial` und rief int
 ### Fix: Option E (ID-basierte Augmentation)
 
 - `app/api/enrichment/batch/route.ts`: akzeptiert jetzt optional `body.ids: string[]`. Wenn da, werden exakt diese Pubs verarbeitet (Status-Filter wird übersprungen).
-- `scripts/session-pipeline.mjs::cmdEnrichAugment`: sammelt vorab alle Pool-A-Ziel-IDs (`enrichment_status IN ('enriched','partial')` + `analysis_status = 'pending'` + `doi IS NOT NULL` + `enriched_keywords IS NULL` + no-ITA), schickt sie batch-weise per `{ids: [...]}` an die API. Kein Status-UPDATE-Hack mehr; keine Endlos-Schleife; sauberes Beenden.
+- `scripts/session-pipeline.ts::cmdEnrichAugment`: sammelt vorab alle Pool-A-Ziel-IDs (`enrichment_status IN ('enriched','partial')` + `analysis_status = 'pending'` + `doi IS NOT NULL` + `enriched_keywords IS NULL` + no-ITA), schickt sie batch-weise per `{ids: [...]}` an die API. Kein Status-UPDATE-Hack mehr; keine Endlos-Schleife; sauberes Beenden.
 - 1.847 Pubs, die durch den alten UPDATE-Hack fälschlich auf `partial` standen (obwohl sie summary_de + enriched_abstract hatten), wurden einmalig auf `enriched` zurückgesetzt.
 
 ### Haiku-Feature (eingebaut)
@@ -465,9 +465,9 @@ Pool A no ITA scoring-ready: **1.602**.
 ## Standard-Workflow (unverändert)
 
 ```
-1. node scripts/session-pipeline.mjs status
+1. npx tsx scripts/session-pipeline.ts status
 
-2. node scripts/session-pipeline.mjs candidates 100 > /tmp/batch.json
+2. npx tsx scripts/session-pipeline.ts candidates 100 --all > /tmp/batch.json
 
 3. python3 -c "import json; d=json.load(open('/tmp/batch.json'));
    print(len(d['publications']),
@@ -481,13 +481,13 @@ Pool A no ITA scoring-ready: **1.602**.
       "suggested_angle":"...","reasoning":"...","haiku":"5-7-5"}
    ]}
 
-5. node scripts/session-pipeline.mjs apply /tmp/evals.json
+5. npx tsx scripts/session-pipeline.ts apply /tmp/evals.json
    → DRY-RUN, Vorschau
 
-6. node scripts/session-pipeline.mjs apply /tmp/evals.json --apply
+6. npx tsx scripts/session-pipeline.ts apply /tmp/evals.json --apply
    → schreibt in DB
 
-7. node scripts/session-pipeline.mjs status
+7. npx tsx scripts/session-pipeline.ts status
 ```
 
 **Wichtig**: User hat gefordert, das offizielle CLI-Skript für `candidates` zu verwenden, nicht eigene ad-hoc-Skripte. Wenn `candidates` einen Filter braucht, der nicht da ist (z.B. nur no-DOI), den Filter erst ins Skript einbauen, statt zu umgehen.
@@ -497,8 +497,8 @@ Pool A no ITA scoring-ready: **1.602**.
 ## Was die nächste Session als Erstes tun sollte
 
 1. **`HANDOVER.md` und `MEMORY.md` lesen** (insbesondere `publication_evaluation_rules.md`).
-2. **`node scripts/session-pipeline.mjs status`** → Stand verifizieren (sollte 687 analyzed zeigen).
-3. **Nächste 100er Charge ziehen**: `node scripts/session-pipeline.mjs candidates 100 > /tmp/batch.json`.
+2. **`npx tsx scripts/session-pipeline.ts status`** → Stand verifizieren (sollte 687 analyzed zeigen).
+3. **Nächste 100er Charge ziehen**: `npx tsx scripts/session-pipeline.ts candidates 100 --all > /tmp/batch.json`.
 4. **Charge inspizieren**: Mahighlight-Pubs zählen; bei mahighlight=true vor jedem Schreiben SQL-Check, ob die markierende Person Mitglied ist (`member_type_id IS NOT NULL`).
 5. **Bewerten + Haiku** für jede Pub einzeln, basierend auf `summary_de`/`enriched_abstract` (NIEMALS aus Titel allein).
 6. **Apply**: erst dry-run, dann `--apply`.
@@ -509,12 +509,12 @@ Pool A no ITA scoring-ready: **1.602**.
 ## CLI
 
 ```bash
-node scripts/session-pipeline.mjs status
-node scripts/session-pipeline.mjs enrich-free --apply       # WebDB-native (gelaufen)
-node scripts/session-pipeline.mjs enrich-api --apply        # Pool B Cascade
-node scripts/session-pipeline.mjs enrich-augment --apply    # Pool A re-cascade (NEUE ID-Logik, fertig 2026-04-28)
-node scripts/session-pipeline.mjs candidates 100 > /tmp/batch.json
-node scripts/session-pipeline.mjs apply /tmp/evals.json --apply
+npx tsx scripts/session-pipeline.ts status
+npx tsx scripts/session-pipeline.ts enrich-free --apply       # WebDB-native (gelaufen)
+npx tsx scripts/session-pipeline.ts enrich-api --apply        # Pool B Cascade
+npx tsx scripts/session-pipeline.ts enrich-augment --apply    # Pool A re-cascade (NEUE ID-Logik, fertig 2026-04-28)
+npx tsx scripts/session-pipeline.ts candidates 100 --all > /tmp/batch.json
+npx tsx scripts/session-pipeline.ts apply /tmp/evals.json --apply
 ```
 
 ---
@@ -562,12 +562,12 @@ Output liest sich wie ein Memo aus der Pressestelle, nicht wie ein DB-Dump. Vera
 >
 > **Workflow:**
 >
-> 1. `node scripts/session-pipeline.mjs status`
+> 1. `npx tsx scripts/session-pipeline.ts status`
 > 2. SQL-Query mit `LENGTH(p.reasoning) < 180` und Filter gegen `e88d7adc-...` ORDER BY press_score DESC LIMIT 50, JSON-Strip wie in Session-19-Workflow.
 > 3. 4 Lese-Chunks à 12-13 (`/tmp/c1.txt … /tmp/c4.txt`) per `python3` mit `textwrap.fill` schreiben, einzeln per Read-Tool laden.
 > 4. `cp scripts/eval_chunk_template.py /tmp/build_chunk_revisions.py` — `add(...)`-Aufrufe pro Pub füllen. Wichtig: Pubs in dieser Linie haben oft schon brauchbare Pitches und Angles (alte Sessions 7-14) — primär Reasoning auf 200-300 Zeichen heben (Median ≥220 anstreben), Pitch und Angle nur dann anfassen, wenn sie selbst defekt sind. Haikus neu für Eindeutigkeit.
 > 5. `python3 /tmp/build_chunk_revisions.py` (mit `expected_count=50` in der validate-Zeile) — bei Verletzung Exit 1, Korrektur, neu durchlaufen.
-> 6. `node scripts/session-pipeline.mjs apply /tmp/chunk_revisions.json --apply --force`
+> 6. `npx tsx scripts/session-pipeline.ts apply /tmp/chunk_revisions.json --apply --force`
 > 7. SQL-Verification der 50 IDs (still_short_180=0, still_below_strict_200=0). Globale lt_180/lt_150-Counts gegenchecken.
 > 8. Ziel: lt_180 sinkt um exakt 50 mit jeder Charge. HANDOVER mit Session-20-Block updaten.
 >
@@ -604,17 +604,17 @@ Output liest sich wie ein Memo aus der Pressestelle, nicht wie ein DB-Dump. Vera
 >
 > **Option A (empfohlen, falls Zeit für Re-Eval):** Reasoning-Substanz-Sweep. Defekt-Filter um `LENGTH(reasoning) < 180` erweitern und in 50er-Chargen abarbeiten. Etwa 1454 Pubs betroffen, 782 davon unter 150 Zeichen — historische Schwächen, die in den ursprünglichen Score-Sweeps nicht aufgefallen waren. Workflow identisch zum Session-12-bis-17-Workflow (4 Lese-Chunks à 12–13, build_chunk_revisions.py mit 50 add-Aufrufen, Sanity-Checks, --apply --force).
 >
-> **Option B (Pool-A-Reduktion):** Neue Bewertungen aus dem laufenden Pool A no ITA (1353 offen) ziehen. Workflow per `node scripts/session-pipeline.mjs candidates 100 > /tmp/batch.json`, einzeln aus Content bewerten + Haiku, dann `apply /tmp/evals.json --apply`.
+> **Option B (Pool-A-Reduktion):** Neue Bewertungen aus dem laufenden Pool A no ITA (1353 offen) ziehen. Workflow per `npx tsx scripts/session-pipeline.ts candidates 100 --all > /tmp/batch.json`, einzeln aus Content bewerten + Haiku, dann `apply /tmp/evals.json --apply`.
 >
-> **Option C (Pool-B-Enrichment):** API-Cascade auf 5456 DOI-Pubs in Pool B no ITA (~23h Laufzeit) per `nohup node scripts/session-pipeline.mjs enrich-api --apply > /tmp/enrich-api.log 2>&1 &`. Erzeugt neue Pool-A-Pubs mit summary_de.
+> **Option C (Pool-B-Enrichment):** API-Cascade auf 5456 DOI-Pubs in Pool B no ITA (~23h Laufzeit) per `nohup npx tsx scripts/session-pipeline.ts enrich-api --apply > /tmp/enrich-api.log 2>&1 &`. Erzeugt neue Pool-A-Pubs mit summary_de.
 >
 > **Workflow (Option A, Reasoning-Substanz-Sweep):**
-> 1. `node scripts/session-pipeline.mjs status`
+> 1. `npx tsx scripts/session-pipeline.ts status`
 > 2. SQL-Query für 50 Pubs mit `LENGTH(reasoning) < 180` ORDER BY press_score DESC ziehen, `/tmp/next_chunk_clean.json` schreiben
 > 3. 4 Lese-Chunks à 12–13 (`/tmp/c1.txt … /tmp/c4.txt`)
 > 4. `cp scripts/eval_chunk_template.py /tmp/build_chunk_revisions.py` — `add(...)`-Aufrufe pro Pub füllen
 > 5. `python3 /tmp/build_chunk_revisions.py` — bei Verletzung Exit 1, Korrektur, neu durchlaufen
-> 6. `node scripts/session-pipeline.mjs apply /tmp/chunk_revisions.json --apply --force`
+> 6. `npx tsx scripts/session-pipeline.ts apply /tmp/chunk_revisions.json --apply --force`
 > 7. SQL-Verification der 50 IDs (`LENGTH(reasoning) >= 180` für alle)
 > 8. Globale Reasoning-Substanz-Verteilung gegenchecken
 >
@@ -691,7 +691,7 @@ Output liest sich wie ein Memo aus der Pressestelle, nicht wie ein DB-Dump. Vera
 > **Was zu tun ist:** Charge zu 50 (oder kleiner, je nach Output-Budget) der höchstgescorten verbleibenden 340 ziehen, individuell re-evaluieren mit dem dort dokumentierten Standard (Pitch 350–550 Zeichen, Reasoning 180–280, Audience konkret, Angle mit Anker, Score-Bias bewusst nach unten korrigieren, Haiku neu), `apply --apply --force`, dann Status-Check und nächste Charge.
 >
 > **Workflow per Charge:**
-> 1. `node scripts/session-pipeline.mjs status` — kurzer Status-Check (sollte 7148+ analyzed zeigen)
+> 1. `npx tsx scripts/session-pipeline.ts status` — kurzer Status-Check (sollte 7148+ analyzed zeigen)
 > 2. Liste der noch defekten unmatched-original-IDs ziehen:
 >    ```bash
 >    docker exec -i supabase_db_oeaw-press-release psql -U postgres -d postgres -t -A << 'SQL' > /tmp/next_chunk.json
@@ -718,7 +718,7 @@ Output liest sich wie ein Memo aus der Pressestelle, nicht wie ein DB-Dump. Vera
 > 3. Pubs in 2 Lese-Chunks à 25 dumpen via `python3` mit `textwrap.wrap` und Read tool einlesen
 > 4. `build_chunk_revisions.py` schreiben mit individuellen Re-Evals (Vorlage: `/tmp/build_chunk_revisions.py` aus Session 8 — die ist das aktuelle Best-Practice mit deutschen Umlauten + ASCII-Apostroph). **Session 8 hat bestätigt:** UTF-8-Python-Strings mit echten Umlauten (`ä`, `ö`, `ü`, `ß`) funktionieren sauber, solange in den Strings konsequent ASCII-Apostroph (`'`) statt typografischer Quotes verwendet wird. Das ist lesbarer in der DB als die ASCII-Workaround-Schreibweise (`ueber`, `fuer`) der Session 7.
 > 5. `python3 build_chunk_revisions.py` → `/tmp/chunk_revisions.json`. Sanity-Check im Skript: kein „pressewertbar", keine „reine Fachpresse", keine „spezialfachpresse", keine „keine breitenwirksame", keine Wiener-Templates, keine Variablennamen, Pitch 200–700, Reasoning 120–400 Zeichen, alle Pitches/Angles/Haikus unique
-> 6. `node scripts/session-pipeline.mjs apply /tmp/chunk_revisions.json --apply --force`
+> 6. `npx tsx scripts/session-pipeline.ts apply /tmp/chunk_revisions.json --apply --force`
 > 7. SQL-Verification der 50 IDs: alle defektfrei (sollte 0/0/0/0/0 zeigen — pwert/reine_fp/spezial_fp/generic/wiener). Globale Defekt-Counts gegenchecken, Stand zusammenfassen, weiterziehen.
 >
 > **Quote-Falle (Session 7–10 erfolgreich umgangen):** Statt typografische deutsche Quotes (`„` / `"`) zu verwenden und mit ASCII `"` als String-Delimiter zu mischen — was den Python-Parser regelmäßig bricht — durchgängig auf typografische Quotes verzichten und ASCII-Apostroph (`'`) verwenden. Deutsche Umlaute sind in UTF-8-Python-Strings problemlos.
@@ -738,7 +738,7 @@ Output liest sich wie ein Memo aus der Pressestelle, nicht wie ein DB-Dump. Vera
 >
 > **Aktueller Stand: 1387 Pubs analyzed, Pool A no ITA: 1899 offen.** In der vorherigen Session 7 Charges (Charge 1–7) sauber durchgelaufen. Charge 3 hatte einen Default-Generator-Verstoß, der mit `--apply --force` durch individuelle Bewertungen ersetzt wurde — daher Punkt 5 in der Memory.
 >
-> **Workflow**: `node scripts/session-pipeline.mjs status` → `candidates 100 > /tmp/batch.json` → bei `mahighlight=true` erst per SQL-Join (`docker exec supabase_db_oeaw-press-release psql -U postgres -d postgres -c "SELECT pp.publication_id, p.firstname, p.lastname, p.member_type_id, mt.name_de FROM person_publications pp JOIN persons p ON p.id=pp.person_id LEFT JOIN member_types mt ON mt.id=p.member_type_id WHERE pp.publication_id='<uuid>' AND pp.mahighlight=true;"`) prüfen, ob die markierende Person Mitglied ist (`member_type_id IS NOT NULL`); falls nicht, **Person konkret namentlich nennen** und „Mitglied" weglassen. Pubs einzeln aus dem `content`-Feld bewerten (NIEMALS aus Titel allein) inkl. deutschem 5-7-5-Haiku → `apply /tmp/evals.json --apply`. Bei Pitch- oder Haiku-Duplikaten zwischen Preprint- und peer-reviewed-Versionen derselben Studie: Haiku leicht abwandeln.
+> **Workflow**: `npx tsx scripts/session-pipeline.ts status` → `candidates 100 --all > /tmp/batch.json` → bei `mahighlight=true` erst per SQL-Join (`docker exec supabase_db_oeaw-press-release psql -U postgres -d postgres -c "SELECT pp.publication_id, p.firstname, p.lastname, p.member_type_id, mt.name_de FROM person_publications pp JOIN persons p ON p.id=pp.person_id LEFT JOIN member_types mt ON mt.id=p.member_type_id WHERE pp.publication_id='<uuid>' AND pp.mahighlight=true;"`) prüfen, ob die markierende Person Mitglied ist (`member_type_id IS NOT NULL`); falls nicht, **Person konkret namentlich nennen** und „Mitglied" weglassen. Pubs einzeln aus dem `content`-Feld bewerten (NIEMALS aus Titel allein) inkl. deutschem 5-7-5-Haiku → `apply /tmp/evals.json --apply`. Bei Pitch- oder Haiku-Duplikaten zwischen Preprint- und peer-reviewed-Versionen derselben Studie: Haiku leicht abwandeln.
 >
 > **Reasoning-Stil**: Fließtext, OHNE relative Einordnungen, OHNE Variablen-/Spaltennamen, OHNE Institutions-Behauptungen die nicht aus DB-Flags ableitbar sind, OHNE inhaltliche Behauptungen ohne Content-Beleg. Bei sehr fachlichen Pubs sind kurze 2-Satz-Reasonings nach Regel 6 erlaubt — aber Pitch und Haiku müssen individuell sein.
 >
@@ -754,10 +754,10 @@ Output liest sich wie ein Memo aus der Pressestelle, nicht wie ein DB-Dump. Vera
 
 | Was | Wo | Effekt |
 |---|---|---|
-| ID-basierte Augmentation | `app/api/enrichment/batch/route.ts` (body.ids), `scripts/session-pipeline.mjs::cmdEnrichAugment` | Augment-Loop terminiert sauber, kein Endlos-Loop mehr durch jüngste Pool-B-Pubs |
+| ID-basierte Augmentation | `app/api/enrichment/batch/route.ts` (body.ids), `scripts/session-pipeline.ts::cmdEnrichAugment` | Augment-Loop terminiert sauber, kein Endlos-Loop mehr durch jüngste Pool-B-Pubs |
 | Reset 1.847 Hack-Partials → enriched | direkt in DB | Pool-A-Pubs sind nicht mehr fälschlich als partial markiert |
 | `publications.haiku TEXT` | DB-Migration | Haiku als drittes Output-Feld |
-| `cmdApply` schreibt haiku | `scripts/session-pipeline.mjs` | Haiku optional übernommen |
+| `cmdApply` schreibt haiku | `scripts/session-pipeline.ts` | Haiku optional übernommen |
 | Anweisung 10 + Haiku-Output-Feld | `lib/analysis/prompts.ts` | Künftige LLM-Bewertungen liefern auch Haiku |
 
 ---
@@ -767,5 +767,5 @@ Output liest sich wie ein Memo aus der Pressestelle, nicht wie ein DB-Dump. Vera
 Stand späte Session 2026-04-28: **kein aktiver Hintergrund-Loop**. Der Augment-Loop ist sauber durchgelaufen und beendet. Wenn neue Pool-A-Pubs durch Pool-B-API-Cascade entstehen, kann `enrich-augment --apply` erneut gestartet werden (wird wegen ID-Logik korrekt nur die ergänzungsbedürftigen Pubs verarbeiten).
 
 ```bash
-nohup node scripts/session-pipeline.mjs enrich-augment --apply > /tmp/enrich-augment.log 2>&1 &
+nohup npx tsx scripts/session-pipeline.ts enrich-augment --apply > /tmp/enrich-augment.log 2>&1 &
 ```

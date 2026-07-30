@@ -647,7 +647,7 @@ async function fkMap(table) {
 }
 
 // DOI-Extraction-Helfer leben in scripts/lib/doi-extract.mjs (geteilt mit
-// session-pipeline.mjs doi-backfill, damit ETL und Bestand nicht driften).
+// session-pipeline.ts doi-backfill, damit ETL und Bestand nicht driften).
 
 // ============================================================
 // Main
