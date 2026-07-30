@@ -2,27 +2,10 @@
   "floor": "high",
   "accepted": [
     {
-      "advisory": "GHSA-3jxr-9vmj-r5cp",
-      "package": "brace-expansion",
-      "scope": [
-        "node_modules/brace-expansion",
-        "node_modules/glob/node_modules/brace-expansion",
-        "node_modules/@ts-morph/common/node_modules/brace-expansion",
-        "node_modules/@typescript-eslint/typescript-estree/node_modules/brace-expansion"
-      ],
-      "reason": "DoS via exponential-time expansion. npm meldet fixAvailable:true, aber es gibt keinen erreichbaren Fix: der Advisory-Range <=5.0.7 umfasst semver-mäßig auch die gepatchte 1.x-Linie, und ein Override auf ^5.0.9 zwingt minimatch@3.1.5 (erwartet den 1.x-Default-Export) auf 5.x. Gemessen am 2026-07-30: eslint crasht dann mit 'TypeError: expand is not a function'. npm audit fix stuft stattdessen die halbe eslint-Kette hoch, 3 auf 11 high. Alle vier Pfade sind Build-/Dev-Zeit (eslint, typescript-eslint, ts-morph via shadcn-CLI, glob im Sentry-Bundler-Plugin) und sehen keine Request-Eingaben; die DoS-Wirkung träfe den eigenen CI-Lauf.",
-      "review_by": "2026-10-31"
-    },
-    {
       "advisory": "GHSA-mh99-v99m-4gvg",
       "package": "brace-expansion",
-      "scope": [
-        "node_modules/brace-expansion",
-        "node_modules/glob/node_modules/brace-expansion",
-        "node_modules/@ts-morph/common/node_modules/brace-expansion",
-        "node_modules/@typescript-eslint/typescript-estree/node_modules/brace-expansion"
-      ],
-      "reason": "OOM-Crash via unbounded expansion length, selbes Paket und selbe Pfade wie GHSA-3jxr-9vmj-r5cp, deshalb dieselbe Begründung: kein Vorwärts-Fix, ohne eslint zu brechen, und ausschließlich Build-/Dev-Zeit-Pfade. Beide Einträge zusammen löschen, sobald minimatch@3 aus dem Baum fällt (dann trägt ein Override auf brace-expansion ^5.0.9).",
+      "scope": "node_modules/brace-expansion",
+      "reason": "OOM-Crash via unbounded expansion length. Nur noch dieser eine gehoistete Pfad: der In-Range-Sweep vom 2026-07-30 hat die drei verschachtelten Instanzen (glob, ts-morph, typescript-eslint) auf 5.0.9 gehoben, womit auch GHSA-3jxr-9vmj-r5cp weg ist. Übrig bleibt brace-expansion 1.1.18, das eslint 9.39.5 über minimatch@3.1.5 zieht. 1.1.18 ist die letzte 1.x und liegt semver-mäßig weiter im Advisory-Range <=5.0.7, es gibt in dieser Linie also keinen Fix; npm nennt als fixAvailable eslint@10.8.0, einen Major, der laut docs/AUDIT_REMEDIATION_PLAN.md bewusst aufgeschoben ist. Ein Override auf ^5.0.9 ist keine Option: er zwingt minimatch@3.1.5 (erwartet den 1.x-Default-Export) auf 5.x, dann crasht npm run lint mit 'TypeError: expand is not a function' (gemessen 2026-07-30). Reiner Build-/Dev-Zeit-Pfad ohne Request-Eingaben, die DoS-Wirkung träfe den eigenen CI-Lauf. Eintrag löschen, sobald minimatch@3 aus dem Baum fällt, also beim eslint-10-Umstieg.",
       "review_by": "2026-10-31"
     },
     {
