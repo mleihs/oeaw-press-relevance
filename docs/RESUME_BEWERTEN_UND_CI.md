@@ -352,6 +352,29 @@ wieder grün:
 | richtiges Advisory, falscher `scope` | Bedingungen 1 **und** 3 — die `scope`-Achse deckt nicht versehentlich mit |
 | `reason` gelöscht | Eintrag ungültig, deckt nichts mehr |
 
+### Nachtrag: In-Range-Sweep am selben Tag, und Bedingung 3 im echten Betrieb
+
+Direkt nach dem Umbau ein `npm update` über alle 35 In-Range-Pakete (nur Lockfile,
+`package.json` unberührt). Danach sind alle Nicht-Major-Pakete aktuell; offen
+bleiben acht bewusste Entscheidungen: `eslint` 10, `typescript` 7, `@types/node`
+26, `react-day-picker` 10, `temporal-polyfill` 1.0.2 (an Schedule-X gebunden) und
+`@schedule-x/*` 4.6.1 (exakt gepinnt).
+
+**Dabei ist das Gate rot geworden, und zwar richtig.** Der Sweep hat
+`brace-expansion` an den drei verschachtelten Pfaden auf 5.0.9 gehoben; damit war
+**GHSA-3jxr-9vmj-r5cp echt behoben** und der Policy-Eintrag gegenstandslos.
+Bedingung 3 hat genau das gemeldet, mit Verweis auf den Eintrag. Das ist der erste
+Einsatz im Betrieb statt im Test, und er zeigt den Zweck: ohne diese Bedingung wäre
+die Ausnahme als Karteileiche stehen geblieben und hätte künftig ein echtes
+Advisory mitgedeckt.
+
+Endstand danach: **2 Advisories, 2 Ausnahmen.** Übrig bei brace-expansion ist nur
+der gehoistete Pfad, den `eslint 9.39.5` über `minimatch@3.1.5` zieht — 1.1.18 ist
+die letzte 1.x und liegt weiter im Range. Bemerkenswert: `npm audit` nennt jetzt
+als `fixAvailable` **`eslint@10.8.0`**. Der Vorwärts-Fix ist also der
+eslint-10-Umstieg, den `docs/AUDIT_REMEDIATION_PLAN.md` bewusst aufschiebt. Beim
+`review_by` am 2026-10-31 ist das die Frage, die zu entscheiden ist.
+
 ### Danach
 
 Die rote CI-Mail bekommt ihre Aussagekraft zurück. Bis dahin gilt: bei einer
