@@ -143,6 +143,64 @@ describe('parsePublicationsDelta — persons', () => {
     expect(p.external).toBe(false);
   });
 
+  // Key-Presence (Vorfälle 2026-07-22/-29): der Export liefert Personensätze
+  // zeitweise auf {uid, lastname} eingedampft. Nur was tatsächlich mitkam, darf
+  // in der Payload landen — sonst überschreibt der Upsert DB-seitig Stammdaten
+  // mit NULL. Gegenstück: jsonb_populate_record in apply_publications_delta.
+  it('emits ONLY delivered fields — a thin {uid,lastname} row stays thin', () => {
+    const { payload } = parsePublicationsDelta(
+      wrap({
+        records_to_add_or_update: {
+          tx_hebowebdb_domain_model_person: [
+            { _source_table: 'tx_hebowebdb_domain_model_person', uid: 2001, lastname: 'Doe' },
+          ] as never,
+        },
+      }),
+      stubDoi,
+    );
+    const p = payload.upsert.persons[0];
+    expect(Object.keys(p).sort()).toEqual(['lastname', 'webdb_uid']);
+    // Entscheidend: KEIN firstname-Schlüssel — nicht firstname: null/''.
+    expect('firstname' in p).toBe(false);
+    expect('orcid' in p).toBe(false);
+    expect('member_type_webdb_uid' in p).toBe(false);
+    expect('external' in p).toBe(false);
+  });
+
+  it('keeps a delivered empty string as an explicit clear (null), not as absent', () => {
+    const { payload } = parsePublicationsDelta(
+      wrap({
+        records_to_add_or_update: {
+          tx_hebowebdb_domain_model_person: [person({ orcid: '', slug: 'doe-jane' })],
+        },
+      }),
+      stubDoi,
+    );
+    const p = payload.upsert.persons[0];
+    expect('orcid' in p).toBe(true);
+    expect(p.orcid).toBeNull();
+    expect(p.slug).toBe('doe-jane');
+  });
+
+  it('a full row still carries every delivered field', () => {
+    const { payload } = parsePublicationsDelta(
+      wrap({
+        records_to_add_or_update: {
+          tx_hebowebdb_domain_model_person: [
+            person({ orcid: '0000-0002-1825-0097', portrait: 'p.jpg', selectionyear: '2019' }),
+          ],
+        },
+      }),
+      stubDoi,
+    );
+    const p = payload.upsert.persons[0];
+    expect(p.firstname).toBe('Jane');
+    expect(p.orcid).toBe('0000-0002-1825-0097');
+    expect(p.portrait).toBe('p.jpg');
+    expect(p.selectionyear).toBe(2019);
+    expect(p.use_vip).toBe(false);
+  });
+
   it("member_type '0' → null (TYPO3 'unset', not a false unresolved-warning)", () => {
     const { payload } = parsePublicationsDelta(
       wrap({ records_to_add_or_update: { tx_hebowebdb_domain_model_person: [person({ member_type: '0' })] } }),
