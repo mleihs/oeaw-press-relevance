@@ -4,7 +4,7 @@ Stand 2026-07-30, ~15:30 UTC. Zwei unabhängige Arbeitsgänge. Teil 1 ist Routin
 läuft immer gleich; Teil 2 war ein einmaliger Umbau, der anstand, weil die CI
 wochenlang rot war und dabei einen echten Bug verdeckt hat.
 
-**Teil 1: nichts offen** (Pools am 2026-07-30 um 15:00 UTC erneut gezählt, 0/0).
+**Teil 1: nichts offen** (zuletzt 2026-07-31: 11 frische Publikationen gescort, danach beide Pools 0).
 **Teil 2: erledigt**, Record unten unter „Was tatsächlich gebaut wurde". Der
 Abschnitt darüber ist der Plan von vorher und bleibt als Begründung stehen; wo die
 Messung ihn korrigiert hat, steht das im Record.
@@ -89,6 +89,7 @@ Zwei Folgen für den Bericht am Ende:
 |---|---|---|
 | 2026-07-21 | Median ~0.26, Spanne 0.124–0.523 | Mittel ~0.23 |
 | 2026-07-30 | Median 0.2715, Spanne 0.1705–0.6245 | Mittel 0.1387, Median 0.046 (28 Serientermine) |
+| 2026-07-31 | Median 0.265, Spanne 0.166–0.583 | Pool leer |
 
 Publikationen sind über beide Läufe stabil. Weicht ein neuer Batch beim Median um
 mehr als etwa 0.05 ab, ohne dass die Zusammensetzung das erklärt, ist das ein

@@ -221,6 +221,12 @@ ein CLI-Lauf über OpenRouter für 25–40 USD.
 
 ## Historie
 
+- **2026-07-31** — 11 Publikationen, Median 0.265, Spanne 0.166–0.583, Mittel
+  0.3011. Top: Partnerschaftsauflösungen in Österreich 2018–2023 (0.583, einziges
+  Item über 0.5), dahinter der LexAT21-Wortatlas (0.4235). Sechs GMI-Arbeiten aus
+  Pflanzenbiologie und Chromatin bilden erwartungsgemäß den Block bei 0.20–0.37.
+  Der Median liegt damit exakt im Korridor der beiden Vorläufe (~0.26 / 0.2715),
+  die Kalibrierung hält. Events: Pool war leer.
 - **2026-07-21** — erster Lauf nach der prod-first-Umstellung. 17 Publikationen
   (Median ~0.26, Spanne 0.124–0.523; Top: „Varieties of urban housing regimes"
   0.523) und 5 Events (Top: CERN-Generaldirektor Mark Thomson 0.739, praktisch
