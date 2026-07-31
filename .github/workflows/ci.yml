@@ -5,9 +5,21 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # Wöchentlich, auch ohne Push. Das Advisory-Gate ist die einzige Prüfung hier,
+  # deren Ergebnis sich ohne Code-Änderung ändert: ein neu veröffentlichtes
+  # Advisory trifft Abhängigkeiten, die längst im Lockfile stehen, und die
+  # Sichtungsfristen in scripts/advisory-policy.json laufen kalendarisch ab.
+  # Ohne diesen Trigger fiele beides erst beim nächsten Push auf — in einer
+  # ruhigen Woche also gar nicht. Montags 07:00 UTC, außerhalb der
+  # Nacht-Ingest- und Backup-Fenster (02:35 / 03:30 / 06:00 / 06:30 UTC).
+  schedule:
+    - cron: '0 7 * * 1'
 
+# github.event_name gehört in die Gruppe: sonst teilen sich der geplante Lauf
+# und ein Push auf main dieselbe Gruppe, und cancel-in-progress würde den
+# Status-Check des Pushes abbrechen.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: true
 
 jobs:

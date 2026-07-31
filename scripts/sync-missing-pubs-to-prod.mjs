@@ -18,9 +18,47 @@
  * DRY-RUN by default (rolls back). Pass --apply to COMMIT.
  *   node scripts/sync-missing-pubs-to-prod.mjs            # dry-run
  *   node scripts/sync-missing-pubs-to-prod.mjs --apply    # write
+ *
+ * ---------------------------------------------------------------------------
+ * DISABLED 2026-07-31 — the premise below is no longer true.
+ *
+ * This script diffs local against prod by `publications.id`. That was correct
+ * while local was the canonical workspace and rows were pushed downstream, so
+ * both sides shared the UUID. Since the switch to prod-first (2026-07-21) the
+ * nightly ingest writes to prod directly and both sides mint their OWN UUIDs
+ * for the same publication. The diff therefore reports *every* local row as
+ * missing, and `--apply` would insert the entire local catalogue into prod as
+ * duplicates. `ON CONFLICT DO NOTHING` does not save us: it keys on the id,
+ * which is exactly the column that no longer matches.
+ *
+ * Fixing it means matching on `webdb_uid` (the stable upstream key) instead of
+ * `id`, in the publications diff and in every relation diff below. Until that
+ * is done and verified against prod, the guard stays.
+ *
+ * Kept rather than deleted because `docs/WEBDB_IMPORT.md` documents this as a
+ * pipeline step; the runbook now carries the same warning.
+ * ---------------------------------------------------------------------------
  */
 import { connectDb } from './lib/db.mjs';
 import { setDifference } from './lib/prod-sync.mjs';
+
+if (!process.env.I_KNOW_THIS_MATCHES_ON_WEBDB_UID) {
+  console.error(`
+sync-missing-pubs-to-prod.mjs ist deaktiviert und darf so nicht laufen.
+
+Grund: es vergleicht local gegen prod über publications.id. Seit prod-first
+(2026-07-21) vergeben beide Seiten eigene UUIDs für dieselbe Publikation. Der
+Vergleich meldet deshalb JEDE lokale Zeile als fehlend, und --apply würde den
+kompletten lokalen Katalog als Dubletten nach prod schreiben.
+
+Der Fix ist der Abgleich über webdb_uid statt id, in der Publications-Diff und
+in jeder Relations-Diff. Erst danach den Guard entfernen.
+
+Wenn du das umgebaut UND gegen prod verifiziert hast, setze
+I_KNOW_THIS_MATCHES_ON_WEBDB_UID=1.
+`);
+  process.exit(1);
+}
 
 const apply = process.argv.includes('--apply');
 const CHUNK = 2000;

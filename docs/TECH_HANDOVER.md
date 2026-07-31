@@ -64,27 +64,20 @@ CI workflow `.github/workflows/ci.yml` greift ab nächstem Push/PR.
 
 ## Offene Tech-Debt (mit Empfehlung)
 
-### #1 `react-hooks/set-state-in-effect` (6 warnings) — ARCHITEKTUR-ENTSCHEIDUNG PENDING
+### #1 `react-hooks/set-state-in-effect` (6 warnings) — ✅ ERLEDIGT (nachgemessen 2026-07-31)
 
-Sieh Memory-File **`react_data_fetching_decision.md`** für die drei
-Optionen (react-query / SWR / custom). Bevor jemand das angeht, muss
-EINE Wahl getroffen werden — sonst brennt die nächste Session 30+ min auf
-derselben Recherche.
+Die damals offene Architekturentscheidung ist gefallen: **`@tanstack/react-query`**,
+inzwischen in 34 Dateien im Einsatz. Die drei genannten Stellen
+(`app/settings/page.tsx`, `app/researchers/_hooks/use-leaderboard.ts`,
+`app/researchers/_components/beeswarm-view.tsx`) existieren weiter, lösen die
+Regel aber nicht mehr aus. Die Regel steht bewusst weiter auf `warn`
+(`eslint.config.mjs`), damit ein Rückfall sichtbar wird, ohne CI zu blockieren.
 
-Lokale Sites:
-- `app/settings/page.tsx:21` — localStorage-Sync (proper: `useSyncExternalStore`)
-- `app/researchers/_hooks/use-leaderboard.ts:33,86` — fetch + loading (proper: react-query/SWR/custom)
-- `app/researchers/_components/beeswarm-view.tsx:79` — derived state (trivial fix: early return)
-- 2 weitere ähnlich
+### #2 `unused-vars` warnings (18 total, mostly in `scripts/`) — ✅ ERLEDIGT (nachgemessen 2026-07-31)
 
-### #2 `unused-vars` warnings (18 total, mostly in `scripts/`)
-
-Schnellfix: `npm run lint -- --fix`, dann manuelle Cleanups:
-- `scripts/webdb-import.mjs:401,584` — `memberTypeMap`, `normalizeDoi` ungenutzt
-- `scripts/session-pipeline.ts:145,599` — ähnlich
-- ~6 Stellen total, ~15 min
-
-Niedrige Priorität. Macht nur `npm run lint`-Output leiser.
+`npx eslint --format=json` meldet **0 warnings, 0 errors** über das ganze Repo.
+Die genannten Stellen in `scripts/webdb-import.mjs` und
+`scripts/session-pipeline.ts` sind unterwegs mit aufgeräumt worden.
 
 ### #3 4 moderate postcss vulns (`GHSA-qx2v-qp2m-jg93`) — ✅ ERLEDIGT 2026-07-30
 
