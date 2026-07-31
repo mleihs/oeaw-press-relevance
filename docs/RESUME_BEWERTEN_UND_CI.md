@@ -4,7 +4,8 @@ Stand 2026-07-31. Zwei unabhängige Arbeitsgänge. Teil 1 ist Routine und
 läuft immer gleich; Teil 2 war ein einmaliger Umbau, der anstand, weil die CI
 wochenlang rot war und dabei einen echten Bug verdeckt hat.
 
-**Teil 1: nichts offen** (zuletzt 2026-07-31: 11 frische Publikationen gescort, danach beide Pools 0).
+**Teil 1: nichts offen** (zuletzt 2026-07-31: 11 frische Publikationen gescort,
+danach beide Pools 0).
 **Teil 2: erledigt**, Record unten unter „Was tatsächlich gebaut wurde". Der
 Abschnitt darüber ist der Plan von vorher und bleibt als Begründung stehen; wo die
 Messung ihn korrigiert hat, steht das im Record.
@@ -93,8 +94,9 @@ Zwei Folgen für den Bericht am Ende:
 | 2026-07-31 | Median 0.265, Spanne 0.166–0.583 | Pool leer |
 
 Publikationen sind über alle drei Läufe stabil (Median 0.26 / 0.2715 / 0.265).
-Weicht ein neuer Batch beim Median um mehr als etwa 0.05 ab, ohne dass die Zusammensetzung das erklärt, ist das ein
-Signal zum Nachrechnen, nicht zum Weitermachen.
+Weicht ein neuer Batch beim Median um mehr als etwa 0.05 ab, ohne dass die
+Zusammensetzung das erklärt, ist das ein Signal zum Nachrechnen, nicht zum
+Weitermachen.
 
 ### Nachkontrolle
 
