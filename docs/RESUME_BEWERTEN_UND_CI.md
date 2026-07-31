@@ -1,6 +1,6 @@
 # Resume: Bewerten in Batches + CI-Audit-Gate an der Wurzel fixen
 
-Stand 2026-07-30, ~15:30 UTC. Zwei unabhängige Arbeitsgänge. Teil 1 ist Routine und
+Stand 2026-07-31.  Zwei unabhängige Arbeitsgänge. Teil 1 ist Routine und
 läuft immer gleich; Teil 2 war ein einmaliger Umbau, der anstand, weil die CI
 wochenlang rot war und dabei einen echten Bug verdeckt hat.
 
@@ -25,16 +25,17 @@ Ohne Argumente: beides, Batchgröße 25. Der Befehl liest `docs/INCHAT_SCORING.m
 dort stehen Ablauf, Rubriken, Kalibrierungsanker und Formatregeln. Dieses Dokument
 ergänzt nur, was sich am Zuschnitt der Batches im Betrieb gezeigt hat.
 
-### Stand der Pools (2026-07-30, zuletzt 15:00 UTC nachgezählt)
+### Stand der Pools (2026-07-31, nach dem Lauf)
 
 | | offen |
 |---|---|
 | Publikationen (60-Tage-Fenster) | **0** |
 | Events (Zukunft, unbewertet) | **0** |
 
-Beide Pools sind leer. Der nächste Lauf lohnt sich erst wieder, wenn der
-Nacht-Ingest neue Sätze gebracht hat, in der Praxis also nach ein paar Tagen. Ein
-Blick auf die Kandidatenzahl kostet nichts:
+Beide Pools sind leer. **Die Faustregel „nach ein paar Tagen" hat sich am
+2026-07-31 bestätigt:** einen Tag nach dem 0/0-Stand lagen 11 neue Publikationen
+im Pool, Events blieben bei 0. Ein Blick auf die Kandidatenzahl kostet nichts und
+lohnt daher schon nach einem Nacht-Ingest:
 
 ```bash
 if ! pgrep -f '5433:127.0.0.1:5432' >/dev/null; then npm run db:tunnel & sleep 3; fi
@@ -91,7 +92,7 @@ Zwei Folgen für den Bericht am Ende:
 | 2026-07-30 | Median 0.2715, Spanne 0.1705–0.6245 | Mittel 0.1387, Median 0.046 (28 Serientermine) |
 | 2026-07-31 | Median 0.265, Spanne 0.166–0.583 | Pool leer |
 
-Publikationen sind über beide Läufe stabil. Weicht ein neuer Batch beim Median um
+Publikationen sind über alle drei Läufe stabil (Median 0.26 / 0.2715 / 0.265). Weicht ein neuer Batch beim Median um
 mehr als etwa 0.05 ab, ohne dass die Zusammensetzung das erklärt, ist das ein
 Signal zum Nachrechnen, nicht zum Weitermachen.
 
