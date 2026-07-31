@@ -1,6 +1,6 @@
 # Resume: Bewerten in Batches + CI-Audit-Gate an der Wurzel fixen
 
-Stand 2026-07-31.  Zwei unabhängige Arbeitsgänge. Teil 1 ist Routine und
+Stand 2026-07-31. Zwei unabhängige Arbeitsgänge. Teil 1 ist Routine und
 läuft immer gleich; Teil 2 war ein einmaliger Umbau, der anstand, weil die CI
 wochenlang rot war und dabei einen echten Bug verdeckt hat.
 
@@ -92,8 +92,8 @@ Zwei Folgen für den Bericht am Ende:
 | 2026-07-30 | Median 0.2715, Spanne 0.1705–0.6245 | Mittel 0.1387, Median 0.046 (28 Serientermine) |
 | 2026-07-31 | Median 0.265, Spanne 0.166–0.583 | Pool leer |
 
-Publikationen sind über alle drei Läufe stabil (Median 0.26 / 0.2715 / 0.265). Weicht ein neuer Batch beim Median um
-mehr als etwa 0.05 ab, ohne dass die Zusammensetzung das erklärt, ist das ein
+Publikationen sind über alle drei Läufe stabil (Median 0.26 / 0.2715 / 0.265).
+Weicht ein neuer Batch beim Median um mehr als etwa 0.05 ab, ohne dass die Zusammensetzung das erklärt, ist das ein
 Signal zum Nachrechnen, nicht zum Weitermachen.
 
 ### Nachkontrolle
