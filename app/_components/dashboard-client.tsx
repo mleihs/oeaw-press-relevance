@@ -588,13 +588,14 @@ function DueLabel({ dueAt }: { dueAt: string | null }) {
 // ─── Social-Media-Trends (Design Toolkit-Redesign §Dashboard 2026-07-06) ───
 
 function DeltaChip({ pct, small }: { pct: number | null; small?: boolean }) {
-  // pct === null = kein Bezugswert (in der älteren Fensterhälfte lagen keine
-  // Likes) → NICHT „unverändert" (das wäre +0 %). Neutrales „neu"-Chip statt
-  // Leerstelle, damit es nicht wie ±0 aussieht; Tooltip erklärt den Grund.
+  // pct === null = kein tragfähiger Bezugswert (in der älteren Fensterhälfte
+  // lagen keine oder fast keine Likes) → NICHT „unverändert" (das wäre +0 %).
+  // Neutrales „neu"-Chip statt Leerstelle, damit es nicht wie ±0 aussieht;
+  // Tooltip erklärt den Grund. Die Schwelle steckt in momentumPct.
   if (pct === null) {
     return (
       <span
-        title="Kein Vergleichswert: in der älteren Hälfte des Zeitraums gab es noch keine Likes (frisches Thema)."
+        title="Kein belastbarer Vergleichswert: in der älteren Hälfte des Zeitraums gab es kaum Likes (frisches Thema)."
         className={`inline-flex shrink-0 items-center gap-1 rounded-full bg-fill font-mono font-medium text-ink-muted ${
           small ? 'px-[7px] py-0.5 text-2xs' : 'px-2 py-[3px] text-2xs'
         }`}
