@@ -221,6 +221,53 @@ ein CLI-Lauf über OpenRouter für 25–40 USD.
 
 ## Historie
 
+- **2026-08-19** — 12 Publikationen nach dem Vollabzug, Median 0.2370, Spanne
+  0.09–0.525, Mittel 0.2567. Der Stapel ist fast reine Gebirgsforschung: oben die
+  europaweite Thermophilisierungs-Synthese aus 6.067 wiederholt aufgenommenen
+  Vegetationsflächen (0.525, alpine Gipfel verschieben sich fünfmal stärker als
+  Wald und Grasland), dahinter Flupyradifuron und die Futtersuche von Hummeln
+  (0.442) und Nickel in Hochgebirgsquellen (0.4215). Unten zwei Textsorten ohne
+  eigenen Befund, eine Buchbesprechung (0.093) und ein Zeitschriften-Editorial
+  (0.111), dazu ein Parallelisierungs-Methodenpapier (0.09). Der Median liegt
+  rund 0.12 unter dem Vorlauf, **das ist wieder Zusammensetzung**: kein
+  sozialwissenschaftlicher VID-Block wie am 13.08., dafür Methodik, Taxonomie und
+  zwei Nicht-Artikel. **Events desselben Laufs: 15 Stück, Median 0.1981, Spanne
+  0.0819–0.676, Mittel 0.2348, Pool danach 0.** Klar oben die öffentliche Keynote
+  von Caspar Hirschi zu Wissenschaftsfreiheit im Festsaal (0.676), dahinter das
+  Symposium zur Geschichte der österreichischen Balkan-Archäologie (0.414); unten
+  drei Platzhaltertermine ohne Titel (0.0819–0.0989) und textlose Institutsseminare.
+  Zwei Sprachdubletten und eine Dreifacheintragung wurden bewusst identisch bewertet.
+  **Modell-Tag korrigiert:** `lib/shared/session-model.json` und
+  `lib/shared/event-session-model.json` sagten weiterhin 4.8, bewertet hat Opus 5 —
+  jetzt `anthropic/claude-opus-5-session` bzw. `anthropic/claude-opus-5 (in-chat)`,
+  beide passen unverändert in ihr `likePattern`.
+- **2026-08-13** — 26 Publikationen nach dem Vollabzug, Median 0.3595, Spanne
+  0.1475–0.601, Mittel 0.3574. Top: Karenzdauer österreichischer Eltern nach der
+  ersten Geburt (0.601, 416 Tage bei Müttern gegen neun bei Vätern), dahinter
+  Einsamkeitsverläufe in der Pandemie (0.4755) und die Geschlechterunterschiede
+  beim Denkvermögen im Alter (0.472). Unten Software- und Theoriearbeiten
+  (Binarisierungsbibliothek 0.1475, quarkflavorverletzende SUSY 0.184). Der
+  Median liegt rund 0.09 über den drei Vorläufen (~0.26–0.27), **das ist
+  Zusammensetzung, nicht Kalibrierungsdrift**: dieser Stapel enthält keinen
+  GMI-Block, dafür fünf sozialwissenschaftliche VID-Arbeiten zu Karenz,
+  Einsamkeit, Fertilität und Altern, die von der Rubrik her zu Recht höher
+  liegen. Die harten Physik- und Methodenarbeiten sitzen unverändert bei
+  0.15–0.31. Zwei Fragmente desselben Mondsee-Fundes wurden bewusst identisch
+  bewertet (0.345). **Events desselben Laufs: 19 Stück, Median 0.3439, Spanne
+  0.1043–0.6246, Mittel 0.3233, Pool danach 0.** Oben die zweiteilige
+  PLATO-Öffentlichkeitsarbeit vor dem Missionsstart (Grazer Abendreihe 0.6246,
+  Wiener Einzelvortrag 0.5631) und ein Konzertabend zu byzantinischem Gesang
+  (0.4794); unten zwei Platzhaltertermine ohne Titel (je 0.1043) und ein
+  GMI-Fachvortrag (0.1363). Der Mittelwert liegt über dem historischen ~0.23,
+  weil in diesem Stapel nur drei reine Fachseminare stecken. Vier
+  Sprachdubletten und eine Dreifachmeldung derselben NanoTrust-Tagung wurden
+  bewusst identisch bewertet.
+- **2026-07-31** — 11 Publikationen, Median 0.265, Spanne 0.166–0.583, Mittel
+  0.3011. Top: Partnerschaftsauflösungen in Österreich 2018–2023 (0.583, einziges
+  Item über 0.5), dahinter der LexAT21-Wortatlas (0.4235). Sechs GMI-Arbeiten aus
+  Pflanzenbiologie und Chromatin bilden erwartungsgemäß den Block bei 0.20–0.37.
+  Der Median liegt damit exakt im Korridor der beiden Vorläufe (~0.26 / 0.2715),
+  die Kalibrierung hält. Events: Pool war leer.
 - **2026-07-21** — erster Lauf nach der prod-first-Umstellung. 17 Publikationen
   (Median ~0.26, Spanne 0.124–0.523; Top: „Varieties of urban housing regimes"
   0.523) und 5 Events (Top: CERN-Generaldirektor Mark Thomson 0.739, praktisch

@@ -74,7 +74,11 @@ npm run enrich-all
 #    order: analysis first (scores onto existing rows), then the row sync
 #    (INSERTs brand-new rows, which already carry their local scores).
 node scripts/push-analysis-to-prod.mjs --apply        # fill scores on existing prod rows
-node scripts/sync-missing-pubs-to-prod.mjs --apply    # INSERT new rows + relations (auto-copies new authors)
+# ⚠️ sync-missing-pubs-to-prod.mjs ist seit 2026-07-31 DEAKTIVIERT (Guard bricht ab).
+#    Es diffte über publications.id; seit prod-first haben local und prod eigene
+#    UUIDs, also meldet es JEDE lokale Zeile als fehlend und würde den ganzen
+#    Katalog als Dubletten einfügen. Fix = Abgleich über webdb_uid. Details im
+#    Kopfkommentar des Skripts und unter „Neue Publikationen landen" weiter unten.
 npm run sync-events:prod                               # new events, if any
 
 # 8. Press-news DOI match — pull current OeAW Pressemeldungen from TYPO3 into
@@ -311,6 +315,18 @@ which need **two different pushes**:
    node scripts/sync-missing-pubs-to-prod.mjs            # dry-run (rolls back)
    node scripts/sync-missing-pubs-to-prod.mjs --apply    # write (single tx)
    ```
+
+   > **⚠️ DEAKTIVIERT seit 2026-07-31 — nicht ausführen.** Die Verifikation von
+   > 2026-06-02 galt für die Welt vor prod-first: damals war local kanonisch und
+   > beide Seiten teilten sich die `publications.id`. Seit dem 2026-07-21
+   > schreibt der Nacht-Ingest direkt auf prod, und beide Seiten vergeben eigene
+   > UUIDs für dieselbe Publikation. Der Diff unten meldet deshalb **jede**
+   > lokale Zeile als fehlend, und `--apply` würde den kompletten lokalen
+   > Katalog als Dubletten nach prod schreiben — `ON CONFLICT DO NOTHING` fängt
+   > das nicht ab, weil es genau auf der `id` greift, die nicht mehr passt.
+   > Ein Guard im Skript bricht deshalb ab. Der Fix ist der Abgleich über
+   > `webdb_uid` statt `id`, in der Publications-Diff **und** in jeder
+   > Relations-Diff; danach neu verifizieren und den Guard entfernen.
 
    In one prod transaction it:
    - computes the local `publications.id` set absent from prod;

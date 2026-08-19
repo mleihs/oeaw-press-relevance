@@ -57,7 +57,18 @@ function likesOf(posts: SocialPost[]): number {
 }
 
 /** Momentum: Likes der jüngeren Fensterhälfte gegen die ältere, in Prozent. */
-function momentumPct(posts: SocialPost[], windowStart: number, windowMs: number): number | null {
+/** Eine Prozentzahl braucht eine tragfähige Basis. Trägt die ältere
+ *  Fensterhälfte weniger als diesen Anteil der Likes des Zeitraums, ist der
+ *  Quotient Rauschen und wird als „neu" ausgewiesen statt als Zahl. Beobachtet
+ *  am 2026-08-19: „+114837 %" für ein Thema mit 84 Likes in der älteren und
+ *  96.547 in der neueren Hälfte — arithmetisch richtig, als Trend wertlos. */
+const MIN_BASE_SHARE = 0.02;
+
+export function momentumPct(
+  posts: SocialPost[],
+  windowStart: number,
+  windowMs: number,
+): number | null {
   const mid = windowStart + windowMs / 2;
   let older = 0;
   let newer = 0;
@@ -68,6 +79,10 @@ function momentumPct(posts: SocialPost[], windowStart: number, windowMs: number)
     else newer += p.like_count ?? 0;
   }
   if (older <= 0) return null;
+  // Relativ statt absolut, damit die Schwelle für kleine wie große Themen
+  // gleich sinnvoll ist: 400 gegen 500 Likes bleibt ein echter Trend (+25 %),
+  // 84 gegen 96.547 nicht.
+  if (older < (older + newer) * MIN_BASE_SHARE) return null;
   return Math.round(((newer - older) / older) * 100);
 }
 

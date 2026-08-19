@@ -135,6 +135,39 @@ npm run lint           # eslint
 
 Both must pass before PR submission.
 
+### Security advisories
+
+```bash
+npm run check-advisories
+```
+
+CI runs this as a required step. It is **not** a severity threshold: every
+advisory at or above `floor` must either be gone or carry a reviewed entry in
+`scripts/advisory-policy.json` with a `reason` and an expiry date. The reasoning
+is in ADR 0021 and in the script's header comment.
+
+If it goes red, the order matters — **try to remove the advisory first**:
+
+1. `npm update <package>`, or a targeted `overrides` entry in `package.json`
+   when an upstream package pins the vulnerable version.
+2. Only if no forward fix exists, add a policy entry with `advisory`, `package`,
+   `scope` (a path from the gate's output), `reason` and `review_by`.
+
+Two things the gate deliberately does not accept, because both recreate the
+outage it was built after: lowering the bar (`--audit-level=critical`) and
+`continue-on-error`. Note that it can also go red *because you fixed something* —
+an entry that no longer matches anything must be deleted, so the file cannot
+become a graveyard.
+
+Two measured traps when touching dependencies:
+
+- Write overrides as plain names. A version-selector key (`"pkg@1"`) makes npm
+  re-resolve and hoist differently — that is how a 3-advisory tree became an
+  11-advisory one.
+- After changing overrides, do not let `npm install` extend the existing tree.
+  Re-resolve from the committed lockfile (`npm install --package-lock-only`),
+  then `npm ci`.
+
 ## Code Conventions
 
 ### TypeScript
@@ -277,6 +310,8 @@ Motivation, link to issue if applicable.
 - [ ] Type check passes: `npm run typecheck`
 - [ ] Lint passes: `npm run lint`
 - [ ] Tests pass: `npm test`
+- [ ] Advisory gate passes: `npm run check-advisories` (if you touched
+      `package.json` or the lockfile)
 - [ ] Playwright e2e passes (if UI changes): `npx playwright test`
 - [ ] No new ESLint warnings introduced
 - [ ] Migrations are forward-compatible (don't break existing data)

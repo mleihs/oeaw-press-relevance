@@ -1,10 +1,11 @@
 # Resume: Bewerten in Batches + CI-Audit-Gate an der Wurzel fixen
 
-Stand 2026-07-30, ~15:30 UTC. Zwei unabhängige Arbeitsgänge. Teil 1 ist Routine und
+Stand 2026-07-31. Zwei unabhängige Arbeitsgänge. Teil 1 ist Routine und
 läuft immer gleich; Teil 2 war ein einmaliger Umbau, der anstand, weil die CI
 wochenlang rot war und dabei einen echten Bug verdeckt hat.
 
-**Teil 1: nichts offen** (Pools am 2026-07-30 um 15:00 UTC erneut gezählt, 0/0).
+**Teil 1: nichts offen** (zuletzt 2026-07-31: 11 frische Publikationen gescort,
+danach beide Pools 0).
 **Teil 2: erledigt**, Record unten unter „Was tatsächlich gebaut wurde". Der
 Abschnitt darüber ist der Plan von vorher und bleibt als Begründung stehen; wo die
 Messung ihn korrigiert hat, steht das im Record.
@@ -25,16 +26,17 @@ Ohne Argumente: beides, Batchgröße 25. Der Befehl liest `docs/INCHAT_SCORING.m
 dort stehen Ablauf, Rubriken, Kalibrierungsanker und Formatregeln. Dieses Dokument
 ergänzt nur, was sich am Zuschnitt der Batches im Betrieb gezeigt hat.
 
-### Stand der Pools (2026-07-30, zuletzt 15:00 UTC nachgezählt)
+### Stand der Pools (2026-07-31, nach dem Lauf)
 
 | | offen |
 |---|---|
 | Publikationen (60-Tage-Fenster) | **0** |
 | Events (Zukunft, unbewertet) | **0** |
 
-Beide Pools sind leer. Der nächste Lauf lohnt sich erst wieder, wenn der
-Nacht-Ingest neue Sätze gebracht hat, in der Praxis also nach ein paar Tagen. Ein
-Blick auf die Kandidatenzahl kostet nichts:
+Beide Pools sind leer. **Die Faustregel „nach ein paar Tagen" hat sich am
+2026-07-31 bestätigt:** einen Tag nach dem 0/0-Stand lagen 11 neue Publikationen
+im Pool, Events blieben bei 0. Ein Blick auf die Kandidatenzahl kostet nichts und
+lohnt daher schon nach einem Nacht-Ingest:
 
 ```bash
 if ! pgrep -f '5433:127.0.0.1:5432' >/dev/null; then npm run db:tunnel & sleep 3; fi
@@ -89,10 +91,12 @@ Zwei Folgen für den Bericht am Ende:
 |---|---|---|
 | 2026-07-21 | Median ~0.26, Spanne 0.124–0.523 | Mittel ~0.23 |
 | 2026-07-30 | Median 0.2715, Spanne 0.1705–0.6245 | Mittel 0.1387, Median 0.046 (28 Serientermine) |
+| 2026-07-31 | Median 0.265, Spanne 0.166–0.583 | Pool leer |
 
-Publikationen sind über beide Läufe stabil. Weicht ein neuer Batch beim Median um
-mehr als etwa 0.05 ab, ohne dass die Zusammensetzung das erklärt, ist das ein
-Signal zum Nachrechnen, nicht zum Weitermachen.
+Publikationen sind über alle drei Läufe stabil (Median 0.26 / 0.2715 / 0.265).
+Weicht ein neuer Batch beim Median um mehr als etwa 0.05 ab, ohne dass die
+Zusammensetzung das erklärt, ist das ein Signal zum Nachrechnen, nicht zum
+Weitermachen.
 
 ### Nachkontrolle
 
@@ -156,10 +160,11 @@ Alles am 2026-07-30 gegen den echten Dependency-Graph gemessen (per
 `--package-lock-only`, danach zurückgesetzt):
 
 1. **`next` 16.2.9 → 16.2.12** liegt innerhalb von `^16.2.4`, braucht also kein
-   Override, und räumt die **sieben Next-Advisories** weg (SSRF in Server Actions,
+   Override, und räumt die Next-Advisories weg (SSRF in Server Actions,
    Cache-Confusion, Image-Optimization-DoS, Offenlegung interner
-   Server-Function-Endpunkte). **Das ist echter Sicherheitsgewinn und sollte
-   unabhängig vom Gate passieren.**
+   Server-Function-Endpunkte). Sollte unabhängig vom Gate passieren.
+   *(Korrektur 2026-07-31: es waren **neun**, nicht sieben — und keines davon war
+   hier erreichbar, s. „Was der Bump wirklich gebracht hat" unten.)*
 2. **Danach bleiben `postcss` und `sharp` high**, weil `next` sie selbst pinnt:
    `postcss@8.4.31` als direkte Dependency (Fix erst ab 8.5.18) und
    `sharp@^0.34.5` als optionalDependency (Fix ab 0.35.0). npm nennt als
@@ -326,9 +331,7 @@ Eintrag ungültig und deckt nichts mehr.
 
 ### Endstand
 
-- `next` 16.2.9 → **16.2.12** (räumt die sieben Next-Advisories weg: SSRF in
-  Server Actions, Cache-Confusion, Image-Optimization-DoS, Offenlegung interner
-  Server-Function-Endpunkte). 13 high → 6.
+- `next` 16.2.9 → **16.2.12** (räumt **neun** Next-Advisories weg). 13 high → 6.
 - `overrides` in `package.json`: postcss, fast-uri, js-yaml (scoped ×2). 6 → 3.
 - `scripts/check-advisories.mjs` + `scripts/advisory-policy.json`, `ci.yml` nutzt
   `npm run check-advisories` als **required** Step.
@@ -351,6 +354,28 @@ wieder grün:
 | erfundener Eintrag | Bedingung 3 |
 | richtiges Advisory, falscher `scope` | Bedingungen 1 **und** 3 — die `scope`-Achse deckt nicht versehentlich mit |
 | `reason` gelöscht | Eintrag ungültig, deckt nichts mehr |
+
+### Was der Bump wirklich gebracht hat (nachgeprüft 2026-07-31)
+
+Auf die Frage „hat das der App etwas gebracht" ehrlich nachgemessen. Es waren
+**neun** Next-Advisories, nicht sieben (Liste im CI-Log von Run `30540112261`) —
+und **keines davon war in dieser App erreichbar**:
+
+| Advisory-Gruppe | erreichbar? |
+|---|---|
+| 5× Server Actions / Server Functions (DoS, SSRF auf custom servers, unbounded payload, Endpunkt-Offenlegung) | **nein** — `"use server"` kommt im Repo 0× vor |
+| 1× Image-Optimization-DoS via SVG | **nein** — `next/image` wird nirgends importiert |
+| 1× Middleware/Proxy-Bypass (GHSA-6gpp-xcg3-4w24) | **nein** — verlangt `config.i18n.locales` mit genau einem Eintrag; die App hat gar keine i18n-Konfiguration |
+| 2× Cache-Confusion (GHSA-68g3-v927-f742, GHSA-4633-3j49-mh5q) | **nein** — verlangt das Muster `fetch(new Request(init), anderesInit)`; kommt im Code nicht vor |
+| 1× SSRF in rewrites | **nein** — `next.config.ts` definiert keine `rewrites()` |
+
+Der Bypass wäre der ernste Fall gewesen, weil `proxy.ts` das Passwort-Gate *ist*
+und vor jeder Route läuft. Er greift hier nicht.
+
+**Fazit: der Sicherheitsgewinn war vorsorglich, nicht das Schließen eines offenen
+Lochs.** Der eigentliche Ertrag der Sitzung ist die wieder aussagekräftige CI. Das
+ist kein Argument gegen den Bump — nur gegen die Formulierung „echter
+Sicherheitsgewinn" weiter oben, die ungeprüft war.
 
 ### Nachtrag: In-Range-Sweep am selben Tag, und Bedingung 3 im echten Betrieb
 
