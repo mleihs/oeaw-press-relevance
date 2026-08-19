@@ -1,4 +1,4 @@
 {
-  "tag": "anthropic/claude-opus-4.8-session",
+  "tag": "anthropic/claude-opus-5-session",
   "likePattern": "anthropic/claude-opus-%-session"
 }
