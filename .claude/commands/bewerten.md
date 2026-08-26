@@ -11,8 +11,10 @@ Umfang: `$1` (`pubs`, `events` oder `beides`; ohne Angabe **beides**).
 Batchgröße: `$2` (ohne Angabe **25**).
 
 **Ablauf, Befehle und Kalibrierungsanker stehen in `docs/INCHAT_SCORING.md`.**
-Lies das Dokument, bevor du anfängst, und arbeite es durch. Hier steht nur, was
-weder in den Code noch in dieses Dokument gehört:
+Lies das Dokument, bevor du anfängst, und arbeite es durch. Es beginnt mit dem
+Tunnel, dann **Anreichern** (Schritt 0.5, die Vorstufe: ohne sie ist der Pool
+künstlich leer), dann die Bewertung je Entität. Hier steht nur, was weder in den
+Code noch in dieses Dokument gehört:
 
 - **Rubriktreue ist die Aufgabe.** `lib/server/analysis/prompts.ts` für
   Publikationen, `lib/server/events/prompts.ts` für Events. Wenn deine Bewertung
@@ -27,3 +29,8 @@ weder in den Code noch in dieses Dokument gehört:
   nicht nur „fertig". Daran erkennt der User, ob die Kalibrierung gehalten hat.
 - **Nichts erfinden, wenn es eng wird.** Wenn das Output-Budget knapp wird, sag
   das, statt auf Textbausteine zurückzufallen.
+- **Erst anreichern, dann Kandidaten ziehen.** Sonst bewertest du einen Pool, dem
+  die Publikationen der letzten Nacht fehlen. Auf Prod geht das nur über die
+  Ingest-Route, nicht über `npm run enrich-all` (das trifft die lokale DB).
+- **Am Ende beide Pools nennen.** Publikationen im 60-Tage-Fenster, Events, und
+  ob der Altbestand sich bewegt hat. Sonst ist unklar, ob der Lauf vollständig war.

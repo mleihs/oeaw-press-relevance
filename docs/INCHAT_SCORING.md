@@ -44,6 +44,40 @@ Danach jedem Prod-Befehl `PROD_DB_TUNNEL=1` voranstellen. **Kein**
 node-pg-Verbindung ein verbindungsgebundenes `rejectUnauthorized:false`. Jede
 andere TLS im Prozess (Sentry, OpenRouter) bleibt voll verifiziert.
 
+## Schritt 0.5 — Anreichern (Vorstufe, gehört dazu)
+
+Bewertbar ist eine Publikation erst, wenn sie angereichert ist: die
+Kandidaten-View verlangt `enrichment_status IN ('enriched','partial','failed')`
+plus 120 Zeichen Inhalt. Ohne diesen Schritt ist der Pool künstlich leer.
+
+**Auf Prod läuft Anreicherung ausschließlich über die Ingest-Route.**
+`npm run enrich-all` liest `DATABASE_URL` direkt aus `.env.local` und kennt kein
+`--target`; es trifft also die lokale DB, niemals Prod. Der Nacht-Ingest (06:30
+Wien) erledigt es automatisch. Wer nicht bis zur nächsten Nacht warten will,
+stößt denselben Lauf von Hand an:
+
+```bash
+ssh metaspots 'systemctl start oeaw-press-ingest.service; sleep 5; \
+  journalctl -u oeaw-press-ingest.service --since "-3 min" --no-pager | tail -5'
+```
+
+Das ist idempotent: beide Feeds sind über `(feed, generated_at_timestamp)`
+gesichert, ein zweiter Lauf am selben Tag endet in `skipped`. Danach ist der
+Kandidatenpool aktuell.
+
+**Rückstau prüfen, bevor man sich wundert:**
+
+```sql
+SELECT count(*) FROM publications
+WHERE archived = false AND enrichment_status = 'pending'
+  AND doi IS NOT NULL AND doi <> '';
+```
+
+Steht da 0, ist nichts offen. Ein hoher `pending`-Gesamtwert ist **kein**
+Rückstau: die Anreicherung nimmt per `include_no_doi: false` nur Publikationen
+mit DOI. Korpusweit bleiben dadurch rund 17.700 Sätze dauerhaft `pending`, von
+denen aber nur etwa 13 überhaupt genug Text für eine Bewertung hätten.
+
 ## Publikationen
 
 ### Kandidaten holen
