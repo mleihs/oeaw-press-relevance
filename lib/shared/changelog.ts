@@ -14,6 +14,11 @@ export interface ChangelogEntry {
 // auf das heutige Datum heben, sonst zeigt der Unread-Dot keinen neuen Stand an.
 export const changelogEntries: ChangelogEntry[] = [
   {
+    category: 'hintergrund',
+    title: 'Social Media aktualisieren funktioniert wieder',
+    body: 'Der Knopf „Social Media aktualisieren" brach eine Woche lang nach rund zehn Sekunden mit einem Verbindungsfehler ab und lieferte null Beiträge. Ursache war weder die App noch der Instagram-Dienst, sondern die Netzverbindung unseres Servers zum Anbieter: seit einem ungeplanten Neustart kamen große Datenpakete auf diesem einen Weg nicht mehr durch, und der Server erfuhr davon nichts. Die Verbindung wird jetzt auf eine passende Paketgröße begrenzt, damit sie wieder trägt. Beim Anbieter ist die eigentliche Ursache gemeldet.',
+  },
+  {
     category: 'verbesserung',
     title: 'Nächtlicher Import schweigt an ruhigen Tagen',
     body: 'Der Veranstaltungs-Export der ÖAW liefert nur, was neu dazugekommen ist. An Tagen ohne Neuzugang ist er leer, und das war bisher nicht von einem defekten Export zu unterscheiden: der Nachtlauf meldete beides als Fehlschlag. Betroffen war jeder dritte Tag und ausnahmslos jeder Montag, weil der Montags-Export das Wochenende abdeckt. Die Kachel „Bewertung" zeigte an diesen Tagen „Letzter Import fehlgeschlagen", obwohl nichts fehlgeschlagen war. Jetzt entscheidet nicht mehr ein einzelner Tag: Alarm gibt es, wenn der Export gar nicht mehr erzeugt wird oder mehrere Tage am Stück nichts liefert.',
