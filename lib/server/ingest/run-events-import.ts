@@ -1,7 +1,7 @@
 // Kein `import 'server-only'`: dieser Runner wird auch vom CLI-Wrapper
 // scripts/import-events-json.ts (tsx) importiert; das server-only-Guard würde
 // dort werfen. Server-only ist über boundaries-Lint + DB-Zugriff gesichert.
-import { and, eq, sql } from 'drizzle-orm';
+import { and, desc, eq, lt, sql } from 'drizzle-orm';
 import { db, ingestRuns } from '@/lib/server/db';
 import { upsertEvents } from '@/lib/server/events/sync';
 import { fetchJsonExport } from './fetch-export';
@@ -24,6 +24,17 @@ import { parseEventNewsGrouped } from './adapters/typo3-events-json';
 // — siehe classifyEmptyFeed(). Der Export trägt real nur 1–2 Events pro Tag, ein
 // Tag ohne Neuzugang ist Normalbetrieb und darf die Nachtmail nicht auslösen
 // (am 2026-07-20 tat er genau das: parsed===0 ⇒ 'failed' ⇒ Fehlalarm).
+//
+// NACHTRAG 2026-08-26: der 07-20-Fix hat den Fehlalarm NICHT beseitigt, er hat
+// nur das Kriterium getauscht (parsed===0 ⇒ institutes.length===0). Für DIESEN
+// Feed ist das dasselbe Kriterium: TYPO3 legt eine Institutsgruppe nur an, wenn
+// sie mindestens ein Event trägt, ein Tag ohne Neuzugang liefert deshalb
+// `"data": []` — strukturell nicht unterscheidbar von einem kaputten Export.
+// Beleg aus 41 journalisierten Läufen: „institutes gefüllt UND parsed=0" kam
+// NULL mal vor, der 'skipped'-Zweig war toter Code. 14 von 41 Nächten (34 %)
+// alarmierten, montags 6 von 6 — der Montags-Export deckt das Wochenende ab, an
+// dem niemand Events einpflegt. Die Unterscheidung kann nicht aus EINER Nacht
+// kommen; sie kommt jetzt aus der Serie und aus dem Zeitstempel.
 
 const DEFAULT_URL =
   'https://www.oeaw.ac.at/fileadmin/exports/event_news_grouped.json';
@@ -85,9 +96,20 @@ export async function runEventsImport(
     r: Omit<EventsImportResult, 'durationMs'>,
   ): EventsImportResult => ({ ...r, durationMs: Date.now() - t0 });
 
-  // Dry-Run: nur parsen, nichts schreiben (Journal bleibt unberührt).
+  // Dry-Run: nur parsen, nichts schreiben (Journal bleibt unberührt). Die
+  // Serie ist von hier aus unbekannt (kein DB-Lesen), deshalb emptyStreak 0 —
+  // der Stale-Test greift trotzdem, er ist reine Zeitstempel-Arithmetik und
+  // fängt damit genau den Ausfall vom 2026-06-26 auch im Dry-Run.
   if (opts.dryRun) {
-    const verdict = events.length === 0 ? classifyEmptyFeed(institutes, skipped) : null;
+    const verdict =
+      events.length === 0
+        ? classifyEmptyFeed({
+            droppedNoStart: skipped,
+            generatedAtTimestamp,
+            emptyStreak: 0,
+            now: new Date(),
+          })
+        : null;
     return finish({
       ...base,
       status: verdict?.status ?? 'applied',
@@ -126,7 +148,13 @@ export async function runEventsImport(
 
     // Kein verwertbares Event: klassifizieren statt pauschal Alarm schlagen.
     if (events.length === 0) {
-      const verdict = classifyEmptyFeed(institutes, skipped);
+      const emptyStreak = await countEmptyStreak(tx, generatedAtTimestamp);
+      const verdict = classifyEmptyFeed({
+        droppedNoStart: skipped,
+        generatedAtTimestamp,
+        emptyStreak,
+        now: new Date(),
+      });
       await journal(tx, {
         status: verdict.status,
         generatedAtTimestamp,
@@ -137,6 +165,9 @@ export async function runEventsImport(
           parsed: 0,
           dropped_no_start: skipped,
           institutes,
+          // Die gezählte Serie mitschreiben: sie ist die Begründung des
+          // Urteils und ohne sie im Nachhinein nicht rekonstruierbar.
+          empty_streak: emptyStreak + 1,
         },
       });
       return finish({
@@ -173,26 +204,52 @@ export async function runEventsImport(
   });
 }
 
+/** Ab so vielen Leernächten AM STÜCK ist „nichts Neues" kein Zufall mehr.
+ *  Kalibriert an 41 Läufen seit 2026-07-16: 34 % aller Nächte sind leer, die
+ *  längsten echten Leer-Serien waren 3 Tage (26.–28.07., 01.–03.08., 15.–17.08.),
+ *  jeweils über ein Wochenende. 5 lässt darüber Luft und schlägt trotzdem an,
+ *  bevor ein echter Ausfall eine ganze Woche unbemerkt bleibt. */
+export const EMPTY_FEED_ALARM_STREAK = 5;
+
+/** Der Export wird täglich gegen 03:00 neu erzeugt. Rührt sich sein Zeitstempel
+ *  so lange nicht, liefert TYPO3 gar nicht mehr — der Zustand vom 2026-06-26
+ *  (Redmine #4165). Das ist der einzige Weg, einen echten Ausfall schon in EINER
+ *  Nacht zu erkennen: ein leerer und ein defekter Export sind inhaltlich
+ *  identisch (`"data": []`), ihre Zeitstempel sind es nicht. 36 h deckt einen
+ *  ausgefallenen Export-Lauf ab, ohne bei verschobener Erzeugung zu zucken. */
+export const FEED_STALE_HOURS = 36;
+
+export interface EmptyFeedVerdict {
+  status: 'failed' | 'skipped';
+  code: string;
+  reason: string;
+}
+
 /** Ein Lauf ohne verwertbares Event ist mehrdeutig — diese Funktion trennt den
- *  Defekt vom Normalbetrieb, damit nur ersterer die Nachtmail auslöst:
+ *  Defekt vom Normalbetrieb, damit nur ersterer die Nachtmail auslöst.
  *
- *  - keine Institutsgruppe ⇒ der Export ist strukturell leer. Genau der Zustand
- *    vom 2026-06-26 (Redmine #4165) ⇒ 'failed', echter Alarm.
+ *  Bewusst NICHT mehr an `institutes.length` (siehe Kopfkommentar): eine leere
+ *  Gruppenliste ist der Normalfall an jedem Tag ohne Neuzugang, sie trennt
+ *  nichts. Die drei Signale, die wirklich trennen:
+ *
  *  - Rohdaten da, aber der Adapter hat alles verworfen (kein Startdatum) ⇒
  *    Feed-Inhalt und Parser driften auseinander ⇒ 'failed', echter Alarm.
- *  - Institutsgruppen da, nichts zu verwerfen, nichts Neues ⇒ Normalbetrieb ⇒
- *    'skipped'. Wird trotzdem journalisiert, damit die Nacht nachweisbar bleibt. */
-function classifyEmptyFeed(
-  institutes: string[],
-  droppedNoStart: number,
-): { status: 'failed' | 'skipped'; code: string; reason: string } {
-  if (institutes.length === 0) {
-    return {
-      status: 'failed',
-      code: 'feed_structurally_empty',
-      reason: 'Feed enthält keine Institutsgruppe, Export vermutlich defekt',
-    };
-  }
+ *  - Zeitstempel steht (> FEED_STALE_HOURS alt) ⇒ der Export wird gar nicht
+ *    mehr erzeugt ⇒ 'failed', echter Alarm. Greift schon in der ersten Nacht.
+ *  - Leer, aber frisch erzeugt ⇒ Normalbetrieb ⇒ 'skipped' … bis die Serie
+ *    EMPTY_FEED_ALARM_STREAK erreicht; dann liefert der Export zwar noch, aber
+ *    unplausibel lange nichts ⇒ 'failed'.
+ *
+ *  Alle Fälle werden journalisiert, damit die Nacht nachweisbar bleibt. */
+export function classifyEmptyFeed(args: {
+  droppedNoStart: number;
+  generatedAtTimestamp: number | null;
+  /** Leere Läufe unmittelbar VOR diesem, aus dem Journal gezählt. */
+  emptyStreak: number;
+  now: Date;
+}): EmptyFeedVerdict {
+  const { droppedNoStart, generatedAtTimestamp, emptyStreak, now } = args;
+
   if (droppedNoStart > 0) {
     return {
       status: 'failed',
@@ -202,11 +259,69 @@ function classifyEmptyFeed(
         `Startdatum): Feed-Inhalt und Parser driften auseinander`,
     };
   }
+
+  const ageHours =
+    generatedAtTimestamp == null
+      ? null
+      : (now.getTime() - generatedAtTimestamp * 1000) / 3_600_000;
+  if (ageHours != null && ageHours > FEED_STALE_HOURS) {
+    return {
+      status: 'failed',
+      code: 'feed_stale',
+      reason:
+        `Export seit ${Math.floor(ageHours)} h nicht neu erzeugt ` +
+        `(Schwelle ${FEED_STALE_HOURS} h): TYPO3 liefert nicht mehr`,
+    };
+  }
+
+  const streak = emptyStreak + 1;
+  if (streak >= EMPTY_FEED_ALARM_STREAK) {
+    return {
+      status: 'failed',
+      code: 'feed_empty_streak',
+      reason:
+        `${streak} Nächte in Folge ohne neues Event (Schwelle ` +
+        `${EMPTY_FEED_ALARM_STREAK}): Export läuft, liefert aber nichts mehr`,
+    };
+  }
+
   return {
     status: 'skipped',
     code: 'no_new_events',
-    reason: 'Feed ist intakt, enthält aber keine Events',
+    reason:
+      `Feed ist frisch erzeugt, enthält aber kein neues Event ` +
+      `(${streak}. Nacht in Folge) — Normalbetrieb`,
   };
+}
+
+/** Zählt die Leer-Läufe unmittelbar vor `generatedAtTimestamp`. Kriterium ist
+ *  `report.parsed = 0` statt des Reason-Codes: so zählen auch die Alt-Zeilen
+ *  mit, die noch 'feed_structurally_empty' tragen. Mehr als die Schwelle muss
+ *  nie gelesen werden — bei der ersten nicht-leeren Zeile bricht die Serie. */
+async function countEmptyStreak(
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  generatedAtTimestamp: number | null,
+): Promise<number> {
+  const rows = await tx
+    .select({ parsed: sql<string | null>`${ingestRuns.report}->>'parsed'` })
+    .from(ingestRuns)
+    .where(
+      generatedAtTimestamp == null
+        ? eq(ingestRuns.feed, EVENTS_FEED)
+        : and(
+            eq(ingestRuns.feed, EVENTS_FEED),
+            lt(ingestRuns.generatedAtTimestamp, generatedAtTimestamp),
+          ),
+    )
+    .orderBy(desc(ingestRuns.generatedAtTimestamp), desc(ingestRuns.appliedAt))
+    .limit(EMPTY_FEED_ALARM_STREAK);
+
+  let n = 0;
+  for (const r of rows) {
+    if (r.parsed !== '0') break;
+    n++;
+  }
+  return n;
 }
 
 /** Schreibt/aktualisiert die ingest_runs-Zeile für diesen Feed. `generated_at_

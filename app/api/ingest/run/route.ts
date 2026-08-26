@@ -6,6 +6,7 @@ import { runPublicationsDeltaImport } from '@/lib/server/ingest/run-publications
 import { runEventsImport, EVENTS_FEED } from '@/lib/server/ingest/run-events-import';
 import { runEnrichmentImport } from '@/lib/server/ingest/run-enrichment';
 import { classifyRun, type FeedOutcome } from '@/lib/server/ingest/classify-run';
+import { describeError } from '@/lib/server/ingest/describe-error';
 
 // Unbeaufsichtigter Nacht-Ingest: zieht beide OeAW-JSON-Exporte (Publications-
 // Delta + Events) und wendet sie an. KEIN Auto-Scoring — neue Zeilen landen als
@@ -34,6 +35,14 @@ import { classifyRun, type FeedOutcome } from '@/lib/server/ingest/classify-run'
 //                 und für den niemand nachts geweckt werden will.
 // `summary` ist die vorformulierte Einzeilen-Diagnose: der VPS-Wrapper nimmt sie
 // als Sentry-Titel, statt den JSON-Body abzuschneiden.
+//
+// Die Feed-Fehler laufen durch describeError() statt durch `err.message`. Grund
+// (Nacht auf den 2026-08-22): bei einem Drizzle-Query-Fehler IST `err.message`
+// das komplette Query-Payload. Der Response-Body wuchs damit auf 4,7 MB, der
+// Wrapper konnte daraus kein Sentry-Event mehr bauen, und die eigentliche
+// Postgres-Meldung — der Einzeiler des Volldump-Guards — war nie enthalten:
+// sie steckt in `err.cause`. Sentry.captureException bekommt weiter den ganzen
+// Fehler samt Kette; gekürzt wird nur, was in Body und Alarm-Titel wandert.
 
 export const maxDuration = 300;
 
@@ -63,7 +72,7 @@ export const POST = withApiError(
       });
       feeds.publications_incremental_change_2 = {
         status: 'error',
-        error: err instanceof Error ? err.message : String(err),
+        error: describeError(err),
       };
     }
 
@@ -84,7 +93,7 @@ export const POST = withApiError(
       });
       feeds[EVENTS_FEED] = {
         status: 'error',
-        error: err instanceof Error ? err.message : String(err),
+        error: describeError(err),
       };
     }
 
@@ -109,7 +118,7 @@ export const POST = withApiError(
       });
       feeds.enrichment = {
         status: 'error',
-        error: err instanceof Error ? err.message : String(err),
+        error: describeError(err),
       };
     }
 
