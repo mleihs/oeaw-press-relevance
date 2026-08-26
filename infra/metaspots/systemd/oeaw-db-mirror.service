@@ -1,0 +1,11 @@
+[Unit]
+Description=Nightly mirror of the OEAW Supabase DB to the cloud standby
+Documentation=https://github.com/mleihs/metaspots-infra
+Wants=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/mirror-oeaw-db-to-cloud.sh
+Nice=10
+IOSchedulingClass=idle

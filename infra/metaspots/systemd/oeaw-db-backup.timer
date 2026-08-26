@@ -1,0 +1,12 @@
+[Unit]
+Description=Daily OEAW Supabase-DB backup (02:35 UTC)
+Documentation=https://github.com/mleihs/metaspots-infra
+
+[Timer]
+# 02:35 UTC - after coolify-db 02:30, clear of lego-renew 02:40, mainwp 02:50,
+# and before offbox-sync 03:10 so the fresh dump goes off-box the same night.
+OnCalendar=*-*-* 02:35:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

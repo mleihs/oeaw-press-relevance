@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily OeAW ingest at 06:30 Europe/Vienna (30 min clear of the 04:00 UTC unattended-upgrades reboot)
+Documentation=https://github.com/mleihs/oeaw-press-relevance
+
+[Timer]
+OnCalendar=*-*-* 06:30:00 Europe/Vienna
+Persistent=true
+RandomizedDelaySec=120
+
+[Install]
+WantedBy=timers.target

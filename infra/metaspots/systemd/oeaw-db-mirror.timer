@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily OEAW DB mirror to cloud standby (03:30 UTC)
+Documentation=https://github.com/mleihs/metaspots-infra
+
+[Timer]
+# 03:30 UTC - after oeaw-db-backup 02:35 and offbox-sync 03:10.
+OnCalendar=*-*-* 03:30:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
