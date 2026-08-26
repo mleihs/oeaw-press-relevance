@@ -57,8 +57,26 @@ es nicht mehr.
 ```
 
 `status` je Feed: `applied` | `skipped` (Idempotenz / nichts anzuwenden) | `failed`
-(z. B. Events-Feed lieferte 0 Zeilen, Redmine #4165) | `error` (Exception). `ok` ist
-`false`, sobald ein Feed nicht in {applied, skipped} liegt oder Warnungen trägt.
+(echter Defekt, s. u.) | `error` (Exception). `ok` ist `false`, sobald ein Feed
+nicht in {applied, skipped} liegt oder die Drift die Schwelle reißt.
+
+**Events-Leerfeed (korrigiert 2026-08-26).** Ein leerer Events-Export ist der
+NORMALFALL, nicht der Defekt: der Feed ist ein Delta (uids streng aufsteigend,
+nie wiederholt), und TYPO3 legt eine Institutsgruppe nur an, wenn sie mindestens
+ein Event trägt. „Nichts Neues" und „Export kaputt" sehen deshalb identisch aus
+(`"data": []`). Beleg aus 41 Läufen: 14 leere Nächte (34 %), montags 6 von 6, weil
+der Montags-Export das Wochenende abdeckt. Bis zum 26.08. alarmierte jede dieser
+Nächte. Jetzt entscheidet nicht mehr eine einzelne Nacht, sondern:
+
+| Signal | Konstante | Verdikt |
+|--------|-----------|---------|
+| Rohdaten da, alle verworfen | – | `failed` (`all_events_dropped`) |
+| Zeitstempel bewegt sich nicht | `FEED_STALE_HOURS` = 36 | `failed` (`feed_stale`) |
+| n-te Leernacht in Folge | `EMPTY_FEED_ALARM_STREAK` = 5 | `failed` (`feed_empty_streak`) |
+| leer, frisch erzeugt | – | `skipped` (`no_new_events`) |
+
+Die gezählte Serie steht als `report.empty_streak` im Journal. Längste real
+beobachtete Leerserie: 3 Nächte.
 
 ## Alerting (mehrschichtig)
 
@@ -98,13 +116,34 @@ Konsumenten: `lib/server/analysis/batch.ts` (non-force), `lib/server/events/anal
 ## Runbook „Nachtmail bekommen — was nun?"
 
 1. Response-JSON in der Mail lesen: welcher `feed` ist `failed`/`error`?
-2. **Events `failed` / `parsed:0`**: Feed upstream leer/kaputt (Redmine #4165) → Florian.
-   Kein App-Bug; die Mail ist gewolltes Schreien.
+2. **Events `failed`**: den `reason`-Code lesen. `feed_stale` → der Export wird nicht
+   mehr erzeugt, `feed_empty_streak` → er läuft, liefert aber seit 5 Nächten nichts:
+   beides upstream (Redmine #4165) → Florian. `all_events_dropped` → Feed-Inhalt und
+   Parser driften auseinander, das ist unser Bug. Ein `skipped` mit `no_new_events`
+   ist Normalbetrieb und alarmiert nicht mehr.
 3. **Publications `error` mit Cloudflare-Meldung**: Origin-Pin prüfen
    (`OEAW_EXPORT_ORIGIN_IP` = aktuelle IP von voxy.arz.oeaw.ac.at). Smoke:
    `curl --resolve www.oeaw.ac.at:443:<IP> <Feed-URL>`.
 4. **Enrichment `error`**: externe API down / Rate-Limit → i. d. R. selbstheilend
-   im Folgelauf. Bei Dauerfehler `INGEST_ENRICH_LIMIT` senken.
+   im Folgelauf. Bei Dauerfehler `INGEST_ENRICH_LIMIT` senken. Kein Alarmgrund ist
+   ein wachsender `pending`-Bestand: das Enrichment nimmt nur Pubs MIT DOI
+   (`include_no_doi: false`). Korpusweit bleiben dadurch ~17.700 Sätze dauerhaft
+   `pending`, von denen aber nur ~13 überhaupt genug Text zum Bewerten hätten.
+
+5. **Publications `error` mit `exceeds max_delta_pubs`**: der „incremental"-Export ist
+   zum Volldump geworden und der fail-closed-Guard hat korrekt abgewiesen (Nacht auf
+   den 2026-08-22: 2474 Pubs gegen ein Limit von 2000). Das Delta ist damit KOMPLETT
+   verworfen, auch die paar echten Neuzugänge darin. Nachziehen aus dem Rohexport-
+   Archiv (`/data/coolify/backups/oeaw-exports/`, 90 Tage) mit `--force`:
+
+   ```
+   PROD_DB_TUNNEL=1 npx tsx scripts/import-publications-delta.ts \
+     --target=prod --force --yes --file=<archiv>.json
+   ```
+
+   Vorher IMMER `--dry-run` (wendet an, rollt zurück) und prüfen, ob sich die uids
+   des Archivs mit denen der seither angewandten Deltas überschneiden — sonst
+   überschreibt der Replay Neueres mit Älterem.
 5. **401/403 in der Mail**: `INGEST_CRON_SECRET` in `/etc/oeaw-press-ingest/env`
    ≠ Coolify-Env. Angleichen.
 
@@ -115,6 +154,9 @@ Konsumenten: `lib/server/analysis/batch.ts` (non-force), `lib/server/events/anal
 | `INGEST_CRON_SECRET` | Bearer fürs Cron (min 32; `openssl rand -hex 32`). Unset → Route 503. |
 | `OEAW_EXPORT_ORIGIN_IP` | Cloudflare-Origin-Pin (VPS). Leer → normaler DNS (lokal CF-geblockt). |
 | `INGEST_ENRICH_LIMIT` | Enrichment-Obergrenze je Nacht-Lauf (Default 200). |
+
+**Achtung:** der VPS-Wrapper `/usr/local/bin/oeaw-press-ingest.sh` ist NICHT im Repo
+versioniert, er lebt nur auf metaspots (Backups daneben als `.bak-<datum>`).
 
 ## Offen (AP3 — Deploy/Infra, separat)
 
