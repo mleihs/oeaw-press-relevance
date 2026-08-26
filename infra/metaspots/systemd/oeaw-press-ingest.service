@@ -1,0 +1,14 @@
+[Unit]
+Description=Nightly OeAW ingest (publications delta + events + auto-enrichment) trigger
+Documentation=https://github.com/mleihs/oeaw-press-relevance
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+SyslogIdentifier=oeaw-press-ingest
+ExecStart=/usr/local/bin/oeaw-press-ingest.sh
+# Enrichment calls external APIs (~10s/pub up to INGEST_ENRICH_LIMIT) -> long run.
+# curl inside caps at 2700s; give the unit headroom above that.
+TimeoutStartSec=3000
+Nice=10

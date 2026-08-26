@@ -11,6 +11,7 @@ import {
   type PublicationDashboardStats,
 } from '@/lib/server/publications/dashboard-stats';
 import { countOrphans } from '@/lib/server/press-releases/list';
+import { getLastImportDrift, type ImportDrift } from '@/lib/server/ingest/drift';
 import {
   DIMENSION_SORT_MAP,
   SIMILARITY_RANGE_MAX,
@@ -221,6 +222,8 @@ export interface DashboardData {
   /** Most recent publications.synced_at, formatted (Europe/Vienna) — the
    *  date the loaded WebDB snapshot reflects. null when nothing is synced. */
   webdbAsOf: string | null;
+  /** Drift-Belege des letzten Nacht-Imports; null, wenn der Lauf sauber war. */
+  importDrift: ImportDrift | null;
 }
 
 // The global, slow-changing aggregates are full-table scans / heavy
@@ -242,6 +245,11 @@ const getPeriodCountsCached = unstable_cache(getPeriodCounts, ['dashboard-period
 const getWebdbAsOfCached = unstable_cache(getWebdbAsOf, ['dashboard-webdb-asof'], {
   revalidate: 60,
 });
+// Aendert sich hoechstens einmal pro Nacht -- derselbe 60-s-Deckel wie die
+// uebrigen langsamen Aggregate reicht voellig.
+const getLastImportDriftCached = unstable_cache(getLastImportDrift, ['dashboard-import-drift'], {
+  revalidate: 60,
+});
 
 // Parallel-fetches all dashboard data sources in one server-side roundtrip
 // (single Promise.all) embedded in the initial HTML.
@@ -259,6 +267,7 @@ export async function getDashboardData(
     scoreSimilarityPoints,
     periodCounts,
     webdbAsOf,
+    importDrift,
   ] = await Promise.all([
     getStatsCached(true),
     getTopPubs(period, topPubsLimit, sortBy),
@@ -268,6 +277,7 @@ export async function getDashboardData(
     getScoreSimilarityPointsCached(),
     getPeriodCountsCached(),
     getWebdbAsOfCached(),
+    getLastImportDriftCached(),
   ]);
   return {
     stats,
@@ -280,5 +290,6 @@ export async function getDashboardData(
     orphansCount,
     scoreSimilarityPoints,
     webdbAsOf,
+    importDrift,
   };
 }

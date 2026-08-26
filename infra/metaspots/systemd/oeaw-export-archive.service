@@ -1,0 +1,12 @@
+[Unit]
+Description=Archive the raw OeAW JSON exports (gzip) before the nightly ingest applies them
+Documentation=https://github.com/mleihs/oeaw-press-relevance
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+SyslogIdentifier=oeaw-export-archive
+ExecStart=/usr/local/sbin/archive-oeaw-exports.sh
+TimeoutStartSec=600
+Nice=10

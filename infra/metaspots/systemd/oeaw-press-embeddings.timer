@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily SPECTER2 embeddings at 07:00 Europe/Vienna (after the 06:30 ingest)
+Documentation=https://github.com/mleihs/oeaw-press-relevance
+
+[Timer]
+OnCalendar=*-*-* 07:00:00 Europe/Vienna
+Persistent=true
+RandomizedDelaySec=120
+
+[Install]
+WantedBy=timers.target

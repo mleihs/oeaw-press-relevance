@@ -1,0 +1,11 @@
+[Unit]
+Description=Archive raw OeAW exports at 06:15 Europe/Vienna (before the 06:30 ingest)
+Documentation=https://github.com/mleihs/oeaw-press-relevance
+
+[Timer]
+OnCalendar=*-*-* 06:15:00 Europe/Vienna
+Persistent=false
+RandomizedDelaySec=60
+
+[Install]
+WantedBy=timers.target

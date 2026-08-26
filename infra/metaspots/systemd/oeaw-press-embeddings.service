@@ -1,0 +1,13 @@
+[Unit]
+Description=Nightly SPECTER2 similarity embeddings refresh (press_similarity)
+Documentation=https://github.com/mleihs/oeaw-press-relevance
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/oeaw-press-embeddings.sh
+# torch-CPU inference is CPU/RAM heavy; keep it out of the way of the app.
+TimeoutStartSec=3600
+Nice=15
+IOSchedulingClass=idle
