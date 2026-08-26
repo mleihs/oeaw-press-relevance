@@ -14,6 +14,21 @@ export interface ChangelogEntry {
 // auf das heutige Datum heben, sonst zeigt der Unread-Dot keinen neuen Stand an.
 export const changelogEntries: ChangelogEntry[] = [
   {
+    category: 'verbesserung',
+    title: 'Nächtlicher Import schweigt an ruhigen Tagen',
+    body: 'Der Veranstaltungs-Export der ÖAW liefert nur, was neu dazugekommen ist. An Tagen ohne Neuzugang ist er leer, und das war bisher nicht von einem defekten Export zu unterscheiden: der Nachtlauf meldete beides als Fehlschlag. Betroffen war jeder dritte Tag und ausnahmslos jeder Montag, weil der Montags-Export das Wochenende abdeckt. Die Kachel „Bewertung" zeigte an diesen Tagen „Letzter Import fehlgeschlagen", obwohl nichts fehlgeschlagen war. Jetzt entscheidet nicht mehr ein einzelner Tag: Alarm gibt es, wenn der Export gar nicht mehr erzeugt wird oder mehrere Tage am Stück nichts liefert.',
+  },
+  {
+    category: 'hintergrund',
+    title: 'Fehlermeldungen des Nachtlaufs kommen wieder an',
+    body: 'Schlug im Nachtlauf eine Datenbank-Abfrage fehl, hängte die Meldung den gesamten übergebenen Datensatz an sich an und wurde dadurch mehrere Megabyte groß. Die Alarmkette konnte damit nichts mehr anfangen und verstummte, ausgerechnet im einzigen Fall mit einem echten Problem. Gemeldet wird jetzt die eigentliche Ursache in einem Satz, in der Länge begrenzt.',
+  },
+  {
+    category: 'verbesserung',
+    title: 'Social Media: Trendzahlen brauchen eine tragfähige Basis',
+    body: 'Eine Themenzeile im Dashboard zeigte „+114837 %". Rechnerisch stimmte das, als Aussage über einen Trend war es Rauschen: in der älteren Hälfte des Zeitraums lag ein einzelner Beitrag mit 84 Likes, in der neueren vier mit zusammen 96.547. Eine Trendangabe erscheint jetzt nur noch, wenn die ältere Hälfte des Zeitraums mindestens zwei Prozent der Likes trägt; darunter steht das neutrale Abzeichen „neu". Die Schwelle ist relativ, damit sie für kleine und große Themen gleich sinnvoll greift.',
+  },
+  {
     category: 'hintergrund',
     title: 'Verschwundene Vornamen bei Autorinnen und Autoren behoben',
     body: 'Der nächtliche Import lieferte Personensätze zeitweise stark verkürzt: nur Nachname, ohne Vorname, ORCID, Porträt oder Kurzbiografie. Weil der Import diese Lücken für gültige Werte hielt, überschrieb er damit vorhandene Angaben; betroffen waren rund 180 Personen. Der Import unterscheidet jetzt, ob ein Feld tatsächlich geleert wurde oder schlicht nicht mitgeliefert kam, und lässt im zweiten Fall den Bestand unangetastet. Die überschriebenen Angaben wurden aus der Nachtsicherung zurückgeholt.',
@@ -199,7 +214,7 @@ export const changelogClosing =
  * Bump this whenever a new entry is added on top so that returning users
  * see the brand-colored dot until they open the panel.
  */
-export const changelogLastUpdated = '2026-07-30T08:00:00.000Z';
+export const changelogLastUpdated = '2026-08-26T08:00:00.000Z';
 
 /** Auto-derived from changelogLastUpdated: single source of truth for the
  *  panel's soft date anchor ("Stand Mai 2026"). */
