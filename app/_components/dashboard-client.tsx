@@ -17,6 +17,7 @@ import {
   TrendingUp,
 } from '@/lib/icons';
 import { socialAccent } from '@/app/social/_components/social-accents';
+import { ImportDriftBubble } from './import-drift-bubble';
 import type { SocialDashboardData, SocialDashboardTheme } from '@/lib/server/social/dashboard';
 import { PressScoreBadge } from '@/components/score-bar';
 import { MobileScreenHeader } from '@/components/mobile-screen-header';
@@ -120,6 +121,7 @@ export function DashboardClient({ data, period, sortBy, boardCards, socialData, 
     topPubsLimit,
     flaggedCount,
     webdbAsOf,
+    importDrift,
   } = data;
   const { user } = useCurrentUser();
   const firstName = user?.displayName?.trim().split(/\s+/)[0] ?? null;
@@ -128,9 +130,17 @@ export function DashboardClient({ data, period, sortBy, boardCards, socialData, 
   const dueCards = [...(boardCards?.overdue ?? []), ...(boardCards?.due_soon ?? [])];
   const overdueCount = boardCards?.overdue.length ?? 0;
 
-  const subParts = [
+  // Knoten statt Strings: an „WebDB-Stand" haengt eine Info-Blase, sobald der
+  // letzte Import unvollstaendige Verknuepfungen mitgebracht hat. Die Zahl lag
+  // bis 2026-08-26 nur im ingest_runs-Journal und war nirgends sichtbar.
+  const subParts: ReactNode[] = [
     greeting.date,
-    webdbAsOf ? `WebDB-Stand ${webdbAsOf}` : null,
+    webdbAsOf ? (
+      <span key="webdb" className="inline-flex items-center gap-1">
+        WebDB-Stand {webdbAsOf}
+        {importDrift ? <ImportDriftBubble drift={importDrift} /> : null}
+      </span>
+    ) : null,
     boardCards ? `${dueCards.length} Karten fällig` : null,
     `${flaggedCount} Publikationen geflaggt`,
   ].filter(Boolean);
@@ -195,7 +205,14 @@ export function DashboardClient({ data, period, sortBy, boardCards, socialData, 
       <div className="mb-1 flex items-start justify-between gap-4">
         <div className="min-w-0">
           <h1 className="text-2xl font-bold tracking-tight text-ink">{greeting.line}</h1>
-          <p className="mt-1.5 text-sm text-ink-subtle">{subParts.join(' · ')}</p>
+          <p className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-sm text-ink-subtle">
+            {subParts.map((part, i) => (
+              <span key={i} className="inline-flex items-center gap-1.5">
+                {i > 0 ? <span aria-hidden="true">·</span> : null}
+                {part}
+              </span>
+            ))}
+          </p>
         </div>
         {/* „Was ist neu": im Toolkit-Redesign (c532111) beim Umbau des
             Hero-Blocks verloren gegangen. Der Auslöser gehört in den Seitenkopf,
