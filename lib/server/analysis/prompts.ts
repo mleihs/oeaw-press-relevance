@@ -75,9 +75,9 @@ Inhalt: ${content?.text ?? '(kein Abstract, keine Zusammenfassung — Bewertung 
 
   return `Bewerte die folgenden ${publications.length} wissenschaftlichen Publikationen der Österreichischen Akademie der Wissenschaften (OeAW) hinsichtlich ihres Interesses für österreichische Medien und die breite Öffentlichkeit.
 
-Bewerte ausschließlich aus dem Inhalt heraus. Die Source-Signals sind reiner Kontext und dürfen weder die Scores beeinflussen noch im Output erwähnt werden:
+Die SCORES bildest du ausschließlich aus dem Inhalt. Das betrifft die Bewertung, nicht die Formulierung: die Kopfzeilen Autor:innen, Institut und Erschienen sind belegtes Material und gehören in den Pitch (siehe Punkt 6). Nur die Source-Signals sind reiner Kontext und dürfen weder die Scores beeinflussen noch im Output erwähnt werden:
 - popular_science=true → institutsinterne Selbstmarkierung, uneinheitlich gesetzt. Ignorieren. Nicht im reasoning, nicht in pitch_suggestion, nicht in suggested_angle erwähnen — das Flag wird in der UI ohnehin direkt aus der DB angezeigt.
-- peer_reviewed=true → ebenfalls nicht im Output erwähnen; sagt nichts über Pressetauglichkeit.
+- peer_reviewed=true → ebenfalls nicht im Output erwähnen; sagt nichts über Pressetauglichkeit. Gemeint ist der Status, nicht das Publikationsorgan: geht aus dem Material hervor, wo die Arbeit erschienen ist, darfst du das Journal benennen. „Erschienen in Nature Genetics" ist ein Aufhänger, „peer-reviewed" ist eine Qualitätsbehauptung.
 - Die Inhaltsquelle „WebDB-Pressezusammenfassung (DE)" ist eine vom Institut kuratierte, nicht-technische Beschreibung — sie liefert besseres Material zur Beurteilung als ein roher Abstract, ist aber selbst kein Qualitätsbeleg (Institute schreiben sie z.T. werblich).
 
 Liefere für JEDE Publikation:
@@ -88,6 +88,16 @@ Liefere für JEDE Publikation:
 5. media_timeliness (0.0-1.0): Anschlussfähig an aktuellen öffentlichen Diskurs, jüngste Ereignisse, Trends, saisonale Themen?
 
 6. pitch_suggestion: Schreibe einen 4-6-sätzigen deutschen Pitch, den ein:e Pressereferent:in beim Anpitchen an Journalist:innen verwenden kann. Inkludiere einen Aufhänger, das Hauptergebnis, warum es für die Öffentlichkeit relevant ist, und was es einzigartig oder zeitgemäß macht. Sprache zugänglich, lebendig, fachfremd.
+
+   VERANKERUNG. Das ist der Unterschied zwischen einem Pitch und einer Inhaltsangabe. Eine Redakteurin greift zum Hörer, weil im Text etwas Konkretes steht, das sie zitieren oder nachrecherchieren kann. Nenne deshalb, was das Material hergibt, beim Namen statt in Umschreibungen:
+   - Die Einrichtung: „das Gregor Mendel Institut der ÖAW", nicht „ein Forschungsteam". Institut und Autor:innen stehen oben im Datensatz.
+   - Die Forschenden, wenn eine Person als lead_author geführt wird: „Forschende um Armin Djamei".
+   - Das Publikationsorgan, sofern es aus dem Material hervorgeht.
+   - Fachbegriffe nennen und sofort erklären, statt sie wegzuabstrahieren: „ein Schlüsselprotein (Cce1) des Maisbeulenbrand-Pilzes" trägt, „ein Paar von Molekülen" trägt nicht. Dasselbe gilt für Arten, Orte, Verfahren und Zeitstellungen.
+   - Größenordnungen aus der Quelle übernehmen: Fallzahl, Zeitraum, Anteil, Alter. Ziffern oder ausgeschrieben, beides ist recht.
+   Was das Material nicht hergibt, erfindest du nicht. Fehlt ein Anker, lass ihn weg und schreibe KÜRZER. Vier magere Sätze sind besser als sechs, von denen zwei nur Länge erzeugen.
+
+   NICHT in den Pitch gehören Aussagen darüber, wofür sich der Beitrag eignet: „dankbar für Bildstrecken", „ein wertvoller Baustein", „macht den Standort sichtbar", „eignet sich für ein Feature". Das steht bereits in target_audience und suggested_angle und verdrängt hier die Substanz. Der letzte Satz gehört der Sache oder ihrer Konsequenz, nicht ihrer Verwertbarkeit.
 
 7. target_audience: Konkrete österreichische Medienhäuser oder Journalist:innen-Typen (z.B. „Wissenschaftsredaktion ORF", „Der Standard Wissen", „APA Science", „Die Presse Gesundheit"). 2-4 Vorschläge, kommagetrennt.
 
