@@ -847,11 +847,16 @@ function dimsOf(e: Evaluation): Record<ScoreDimension, number> {
 interface RepitchRow extends CandidateRow {
   press_score: number | null;
   pitch_suggestion: string | null;
+  pitch_revision: number;
 }
 
 async function cmdRepitchCandidates(args: Flags, positional: string[]): Promise<void> {
   const limit = Math.min(Number(positional[0] || 25) || 25, 200);
   const model = str(args, 'model');
+  // Default: nur was noch nicht nachgezogen wurde. Das ist der Teil, der einen
+  // Context-Clear ueberlebt -- der Pool schrumpft mit jedem geschriebenen
+  // Batch, ein erneuter Aufruf liefert automatisch den Rest.
+  const allRevisions = bool(args, 'all-revisions');
   const params: unknown[] = [];
   const conditions = [
     "p.analysis_status = 'analyzed'",
@@ -870,8 +875,10 @@ async function cmdRepitchCandidates(args: Flags, positional: string[]): Promise<
     params.push(model);
     conditions.push(`p.llm_model = $${params.length}`);
   }
+  if (!allRevisions) conditions.push('p.pitch_revision = 0');
 
-  log(`Ziel-DB: ${describeTarget()} · Modell-Filter: ${model ?? '(alle)'} · limit=${limit}`);
+  log(`Ziel-DB: ${describeTarget()} · Modell-Filter: ${model ?? '(alle)'} · ` +
+      `${allRevisions ? 'ALLE Revisionen' : 'nur pitch_revision=0'} · limit=${limit}`);
 
   await withClient(async (c) => {
     const r = await c.query<RepitchRow>(`
@@ -881,7 +888,7 @@ async function cmdRepitchCandidates(args: Flags, positional: string[]): Promise<
         p.peer_reviewed, p.popular_science,
         p.summary_de, p.summary_en, p.enriched_abstract, p.abstract,
         p.enriched_keywords,
-        p.press_score, p.pitch_suggestion,
+        p.press_score, p.pitch_suggestion, p.pitch_revision,
         false AS is_mahighlight,
         ARRAY(
           SELECT DISTINCT ou.akronym_de
@@ -1210,13 +1217,24 @@ async function cmdRepitchApply(args: Flags, positional: string[]): Promise<void>
       // haben, greift der Update nicht.
       const r = await c.query(
         `UPDATE publications
-            SET pitch_suggestion = $1, updated_at = NOW()
+            SET pitch_suggestion = $1, pitch_revision = pitch_revision + 1, updated_at = NOW()
           WHERE id = $2 AND analysis_status = 'analyzed' AND press_score IS NOT NULL`,
         [it.pitch_suggestion, it.id],
       );
       updated += r.rowCount ?? 0;
     }
     log(`Fertig: ${updated} Pitches ersetzt, ${items.length - updated} übersprungen. Scores unverändert.`);
+
+    // Restbestand direkt melden. Nach einem Context-Clear ist das die einzige
+    // Zahl, die man braucht, um zu wissen, ob noch etwas offen ist.
+    const rest = await c.query<{ offen: string; modell: string | null }>(
+      `SELECT count(*)::text AS offen, llm_model AS modell
+         FROM publications
+        WHERE analysis_status = 'analyzed' AND press_score IS NOT NULL
+          AND archived = false AND pitch_revision = 0
+        GROUP BY llm_model ORDER BY count(*) DESC LIMIT 5`,
+    );
+    for (const row of rest.rows) log(`  offen: ${row.offen}  (${row.modell ?? 'ohne Modell-Tag'})`);
   });
 }
 
@@ -1335,15 +1353,18 @@ Commands:
                                         analysis_status='analyzed', --force überschreibt.
 
   repitch-candidates [N] [--model=TAG]  Bereits BEWERTETE Pubs zum Neuschreiben des
-                                        Pitch-Texts ziehen. Gleiche Nutzlast wie
+                     [--all-revisions]  Pitch-Texts ziehen. Gleiche Nutzlast wie
                                         candidates, dazu current_pitch und
                                         press_score. --model filtert auf eine
-                                        Bewertungs-Kohorte (llm_model).
+                                        Bewertungs-Kohorte (llm_model). Default nur
+                                        pitch_revision=0, also noch nicht
+                                        nachgezogene; --all-revisions hebt das auf.
   repitch-apply [<file>|-] [--apply]    Schreibt AUSSCHLIESSLICH pitch_suggestion.
                                         Scores, Dimensionen, reasoning, llm_model und
                                         analysis_status bleiben unberuehrt. Lehnt
                                         Pitches ausserhalb 110-1200 Zeichen ab und
-                                        solche mit Verwertbarkeits-Floskeln.
+                                        solche mit Verwertbarkeits-Floskeln. Zaehlt
+                                        pitch_revision hoch und meldet den Rest.
 
 Modell-Tag bei Session-Scoring: ${SESSION_MODEL_TAG}
 `;
