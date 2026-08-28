@@ -822,6 +822,120 @@ function dimsOf(e: Evaluation): Record<ScoreDimension, number> {
   };
 }
 
+// ---------------------------------------------------------------------------
+// Re-Pitch: NUR den Pitch-Text neu schreiben, Scores unberührt lassen.
+//
+// ANLASS (2026-08-28). Ein Kohortenvergleich über 7137 bewertete Publikationen
+// zeigte, dass die Pitches der Kohorte `opus-4.8-session` in 0 % der Fälle das
+// Institut, das Journal oder die Forschenden benennen, gegen 28 / 4 / 4 % in der
+// älteren Kohorte. Nicht weniger, sondern null. Ursache war die Rubrik, die das
+// Benennen nirgends verlangte und an drei Stellen dagegen zog; behoben in
+// `lib/server/analysis/prompts.ts` (Punkt 6, VERANKERUNG).
+//
+// Die SCORES dieser Läufe sind in Ordnung, nur die Texte sind dünn. Ein voller
+// Neulauf würde die Bewertungen anfassen und damit die Kalibrierung gegen den
+// Bestand ohne Not bewegen. Deshalb dieser schmale Pfad: er liest dieselben
+// Kandidatendaten wie `candidates`, damit die In-Chat-Arbeit identisch abläuft,
+// und schreibt am Ende AUSSCHLIESSLICH `pitch_suggestion`.
+//
+// Bewusst NICHT mit angefasst: `reasoning` begründet den Score und darf sich
+// nicht unabhängig von ihm bewegen; `target_audience` und `suggested_angle`
+// sind nicht betroffen (die neue Rubrik verschiebt Verwertbarkeits-Aussagen
+// sogar dorthin); `haiku` verlangt ohnehin keine Eigennamen; `llm_model` bleibt
+// der Marker des Bewertungslaufs, nicht des Textlaufs.
+
+interface RepitchRow extends CandidateRow {
+  press_score: number | null;
+  pitch_suggestion: string | null;
+}
+
+async function cmdRepitchCandidates(args: Flags, positional: string[]): Promise<void> {
+  const limit = Math.min(Number(positional[0] || 25) || 25, 200);
+  const model = str(args, 'model');
+  const params: unknown[] = [];
+  const conditions = [
+    "p.analysis_status = 'analyzed'",
+    'p.press_score IS NOT NULL',
+    'p.archived = false',
+    // Ohne Substanz kein Pitch. Dieselbe Schwelle wie `candidates` und `apply`:
+    // einen Text ohne Inhaltsgrundlage neu zu schreiben wäre Fabrikation.
+    `GREATEST(
+      length(COALESCE(p.summary_de,'')),
+      length(COALESCE(p.summary_en,'')),
+      length(COALESCE(p.enriched_abstract,'')),
+      length(COALESCE(p.abstract,''))
+    ) >= 120`,
+  ];
+  if (model) {
+    params.push(model);
+    conditions.push(`p.llm_model = $${params.length}`);
+  }
+
+  log(`Ziel-DB: ${describeTarget()} · Modell-Filter: ${model ?? '(alle)'} · limit=${limit}`);
+
+  await withClient(async (c) => {
+    const r = await c.query<RepitchRow>(`
+      SELECT
+        p.id, p.webdb_uid, p.title, p.original_title, p.lead_author,
+        p.published_at::text AS published_at,
+        p.peer_reviewed, p.popular_science,
+        p.summary_de, p.summary_en, p.enriched_abstract, p.abstract,
+        p.enriched_keywords,
+        p.press_score, p.pitch_suggestion,
+        false AS is_mahighlight,
+        ARRAY(
+          SELECT DISTINCT ou.akronym_de
+          FROM orgunit_publications op
+          JOIN orgunits ou ON ou.id = op.orgunit_id
+          WHERE op.publication_id = p.id AND ou.akronym_de IS NOT NULL
+        ) AS institute_akronyms
+      FROM publications p
+      WHERE ${conditions.join(' AND ')}
+      ORDER BY p.published_at DESC NULLS LAST, p.webdb_uid
+      LIMIT ${limit}
+    `, params);
+
+    const pubs = r.rows.map((row) => {
+      let contentSource: string | null = null;
+      let content: string | null = null;
+      if (row.summary_de?.trim()) { contentSource = 'summary_de'; content = row.summary_de.trim(); }
+      else if (row.summary_en?.trim()) { contentSource = 'summary_en'; content = row.summary_en.trim(); }
+      else if (row.enriched_abstract?.trim()) { contentSource = 'enriched_abstract'; content = row.enriched_abstract.trim(); }
+      else if (row.abstract?.trim()) { contentSource = 'abstract'; content = row.abstract.trim(); }
+      if (content) {
+        const words = content.split(/\s+/);
+        if (words.length > 500) content = words.slice(0, 500).join(' ') + '…';
+      }
+      return {
+        id: row.id,
+        webdb_uid: row.webdb_uid,
+        title: row.title,
+        original_title: row.original_title && row.original_title !== row.title ? row.original_title : null,
+        lead_author: row.lead_author,
+        institute_akronyms: row.institute_akronyms || [],
+        published_at: row.published_at,
+        peer_reviewed: row.peer_reviewed,
+        popular_science: row.popular_science,
+        enriched_keywords: row.enriched_keywords,
+        content_source: contentSource,
+        content,
+        // Zum Vergleich mitgeliefert, NICHT als Vorlage: der alte Text ist das,
+        // was ersetzt werden soll. Wer ihn umformuliert, reproduziert die Lücke.
+        current_pitch: row.pitch_suggestion,
+        press_score: row.press_score,
+      };
+    });
+
+    out(JSON.stringify({
+      mode: 'repitch',
+      target: describeTarget(),
+      model_filter: model,
+      count: pubs.length,
+      publications: pubs,
+    }, null, 2));
+  });
+}
+
 async function cmdApply(args: Flags, positional: string[]): Promise<void> {
   let raw: string;
   if (positional[0] && positional[0] !== '-') {
@@ -987,6 +1101,125 @@ interface DoiCandidateRow {
   [key: string]: unknown;
 }
 
+/** Untergrenze für einen brauchbaren Pitch. Der kürzeste Pitch im Bestand hat
+ *  114 Zeichen; alles darunter ist mit Sicherheit ein Fragment. */
+const MIN_PITCH_LEN = 110;
+/** Obergrenze gegen Ausreißer. Der längste im Bestand liegt bei knapp 900. */
+const MAX_PITCH_LEN = 1200;
+
+interface RepitchInput {
+  id: string;
+  pitch_suggestion: string;
+}
+
+async function cmdRepitchApply(args: Flags, positional: string[]): Promise<void> {
+  const raw = positional[0] && positional[0] !== '-'
+    ? readFileSync(positional[0], 'utf8')
+    : readFileSync(0, 'utf8');
+  const data = JSON.parse(raw) as unknown;
+  const items: RepitchInput[] = Array.isArray(data)
+    ? (data as RepitchInput[])
+    : ((data as { publications?: RepitchInput[] })?.publications ?? []);
+
+  if (!Array.isArray(items) || items.length === 0) {
+    log('Keine Einträge gefunden in Input.');
+    process.exit(1);
+  }
+
+  for (const it of items) {
+    it.pitch_suggestion = sanitizeText(it.pitch_suggestion) as string;
+  }
+
+  // Validierung VOR jedem DB-Kontakt: ein halb geschriebener Batch ist
+  // schlimmer als ein abgelehnter.
+  for (const it of items) {
+    if (!it.id || typeof it.id !== 'string') {
+      log(`Eintrag ohne gültige id: ${JSON.stringify(it).slice(0, 120)}`);
+      process.exit(1);
+    }
+    const pitch = String(it.pitch_suggestion || '').trim();
+    if (pitch.length < MIN_PITCH_LEN || pitch.length > MAX_PITCH_LEN) {
+      log(`id=${it.id}: Pitch hat ${pitch.length} Zeichen (erlaubt ${MIN_PITCH_LEN}-${MAX_PITCH_LEN}).`);
+      process.exit(1);
+    }
+    // Genau die Floskeln, die die Rubrik jetzt verbietet. Der Guard hängt am
+    // VOKABULAR der Verwertbarkeit, nicht an einer Satzform: „eignet sich für"
+    // allein wäre zu eng (die erste Fassung übersah „eignet sich das Thema")
+    // und zugleich zu breit, weil „das Verfahren eignet sich zur Diagnostik"
+    // legitime Substanz ist. Medienbegriffe und Standort-Rhetorik trennen das
+    // sauber. Umlaut-tolerant, falls ein Text in ue/ae-Schreibweise ankommt.
+    const filler = /(dankbar(es)?\s|wertvoll(er|es)\s+(Baustein|Beitrag)|macht\s+den\s+Standort|Standort\s+sichtbar|Bildstrecke|Magazingeschichte|Aufmacher|Schlagzeile|(f(ü|ue)r\s+ein(e)?\s+(Feature|Reportage|Berichterstattung)))/i.exec(pitch);
+    if (filler) {
+      log(`id=${it.id}: Verwertbarkeits-Floskel im Pitch: "${filler[0]}". Gehört in target_audience/suggested_angle.`);
+      process.exit(1);
+    }
+  }
+
+  const apply = bool(args, 'apply');
+  log(`${items.length} Pitches geparst und validiert. Ziel-DB: ${describeTarget()}. ${apply ? '[APPLY]' : '[DRY-RUN]'}`);
+
+  await withClient(async (c) => {
+    const ids = items.map((i) => i.id);
+    const existing = await c.query<{
+      id: string; analysis_status: string; press_score: number | null; content_len: number; alt: string | null;
+    }>(
+      `SELECT id, analysis_status, press_score,
+        GREATEST(
+          length(COALESCE(summary_de,'')), length(COALESCE(summary_en,'')),
+          length(COALESCE(enriched_abstract,'')), length(COALESCE(abstract,''))
+        ) AS content_len,
+        pitch_suggestion AS alt
+       FROM publications WHERE id = ANY($1::uuid[])`,
+      [ids],
+    );
+    const byId = new Map(existing.rows.map((r) => [r.id, r]));
+
+    // Drei Wachen. Jede verhindert, dass ein Text an einem Satz landet, für den
+    // er nicht geschrieben wurde.
+    const missing = ids.filter((id) => !byId.has(id));
+    const notScored = ids.filter((id) => byId.has(id)
+      && (byId.get(id)!.analysis_status !== 'analyzed' || byId.get(id)!.press_score == null));
+    const tooThin = ids.filter((id) => byId.has(id) && byId.get(id)!.content_len < 120);
+
+    for (const [label, list] of [['existieren nicht', missing], ['sind nicht bewertet', notScored], ['haben zu wenig Inhalt', tooThin]] as const) {
+      if (list.length > 0) {
+        log(`! ${list.length} IDs ${label} — Abbruch, es wird nichts geschrieben.`);
+        for (const id of list.slice(0, 5)) log(`    ${id}`);
+        process.exit(2);
+      }
+    }
+
+    if (!apply) {
+      log('Vorschau (max 3), alt gegen neu:');
+      for (const it of items.slice(0, 3)) {
+        log(`  id=${it.id.slice(0, 8)}…`);
+        log(`    alt: ${String(byId.get(it.id)?.alt ?? '').slice(0, 110)}…`);
+        log(`    neu: ${it.pitch_suggestion.slice(0, 110)}…`);
+      }
+      log('Mit --apply tatsächlich in DB schreiben. Scores bleiben in jedem Fall unberührt.');
+      return;
+    }
+
+    await confirmProd({ isProd: isProdRun(), flags: rawFlags, label: 'session-pipeline repitch-apply' });
+
+    let updated = 0;
+    for (const it of items) {
+      // NUR pitch_suggestion. Kein analysis_status, keine Dimension, kein
+      // llm_model, kein press_score. Der WHERE-Zusatz ist die letzte Wache:
+      // sollte zwischen Vorprüfung und Schreiben jemand den Score entfernt
+      // haben, greift der Update nicht.
+      const r = await c.query(
+        `UPDATE publications
+            SET pitch_suggestion = $1, updated_at = NOW()
+          WHERE id = $2 AND analysis_status = 'analyzed' AND press_score IS NOT NULL`,
+        [it.pitch_suggestion, it.id],
+      );
+      updated += r.rowCount ?? 0;
+    }
+    log(`Fertig: ${updated} Pitches ersetzt, ${items.length - updated} übersprungen. Scores unverändert.`);
+  });
+}
+
 async function cmdDoiBackfill(args: Flags): Promise<void> {
   const apply = bool(args, 'apply');
   if (apply) {
@@ -1101,6 +1334,17 @@ Commands:
                                         mit --apply schreiben. Default skip wenn
                                         analysis_status='analyzed', --force überschreibt.
 
+  repitch-candidates [N] [--model=TAG]  Bereits BEWERTETE Pubs zum Neuschreiben des
+                                        Pitch-Texts ziehen. Gleiche Nutzlast wie
+                                        candidates, dazu current_pitch und
+                                        press_score. --model filtert auf eine
+                                        Bewertungs-Kohorte (llm_model).
+  repitch-apply [<file>|-] [--apply]    Schreibt AUSSCHLIESSLICH pitch_suggestion.
+                                        Scores, Dimensionen, reasoning, llm_model und
+                                        analysis_status bleiben unberuehrt. Lehnt
+                                        Pitches ausserhalb 110-1200 Zeichen ab und
+                                        solche mit Verwertbarkeits-Floskeln.
+
 Modell-Tag bei Session-Scoring: ${SESSION_MODEL_TAG}
 `;
 
@@ -1154,6 +1398,8 @@ async function main(): Promise<void> {
       case 'doi-backfill':   await cmdDoiBackfill(args); break;
       case 'candidates':     await cmdCandidates(args, positional); break;
       case 'apply':          await cmdApply(args, positional); break;
+      case 'repitch-candidates': await cmdRepitchCandidates(args, positional); break;
+      case 'repitch-apply':      await cmdRepitchApply(args, positional); break;
       default:
         log(`Unbekanntes Kommando: ${cmd}`);
         process.exit(1);

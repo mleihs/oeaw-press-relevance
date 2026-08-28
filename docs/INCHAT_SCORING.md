@@ -157,6 +157,60 @@ Der Modell-Tag kommt aus `lib/shared/session-model.json`, Kosten 0. Ohne
 idempotent. Publikationen mit weniger als 120 Zeichen Inhalt bricht `apply`
 ab — eine Bewertung ohne Substanz wäre Fabrikation.
 
+## Pitch nachziehen, ohne neu zu bewerten
+
+Für den Fall, dass die Scores stimmen, die Pitch-Texte aber hinter der Rubrik
+zurückbleiben. Anlass war der Befund vom 2026-08-28: die Kohorte
+`opus-4.8-session` benennt in **0 %** der Fälle Institut, Journal oder
+Forschende, gegen 28 / 4 / 4 % in der älteren Kohorte. Ein voller Neulauf würde
+die Bewertungen anfassen und die Kalibrierung ohne Not bewegen.
+
+```bash
+# 1. Kandidaten einer Bewertungs-Kohorte ziehen (gleiche Nutzlast wie candidates,
+#    dazu current_pitch und press_score)
+PROD_DB_TUNNEL=1 npx tsx scripts/session-pipeline.ts repitch-candidates 25 \
+  --target=prod --model=anthropic/claude-opus-4.8-session > /tmp/repitch-N.json
+
+# 2. Pitches neu schreiben, Ergebnis als [{id, pitch_suggestion}] ablegen
+
+# 3. Trockenlauf: zeigt alt gegen neu, schreibt nichts
+PROD_DB_TUNNEL=1 npx tsx scripts/session-pipeline.ts repitch-apply /tmp/neu-N.json --target=prod
+
+# 4. Schreiben
+PROD_DB_TUNNEL=1 npx tsx scripts/session-pipeline.ts repitch-apply /tmp/neu-N.json --target=prod --yes --apply
+```
+
+**Was `repitch-apply` anfasst:** ausschließlich `pitch_suggestion` und
+`updated_at`. Nicht `press_score`, keine der fünf Dimensionen, nicht
+`analysis_status`, nicht `llm_model` und nicht `reasoning`. Letzteres bewusst:
+das Reasoning begründet den Score und darf sich nicht unabhängig von ihm
+bewegen. `target_audience` und `suggested_angle` bleiben ebenfalls stehen, die
+neue Rubrik verschiebt Verwertbarkeits-Aussagen sogar dorthin.
+
+**Was es ablehnt**, jeweils vor dem ersten DB-Kontakt und für den ganzen Batch:
+
+| Prüfung | Grund |
+|---|---|
+| Pitch außerhalb 110 bis 1200 Zeichen | Der kürzeste Pitch im Bestand hat 114 Zeichen, alles darunter ist ein Fragment |
+| Verwertbarkeits-Vokabular (`Bildstrecke`, `dankbar`, `wertvoller Baustein`, `macht den Standort`) | Genau der Rückfall, den die Aktion beheben soll |
+| ID unbekannt, nicht `analyzed`, oder ohne `press_score` | Ein Pitch an einem unbewerteten Satz wäre erfunden |
+| Weniger als 120 Zeichen Inhalt | Dieselbe Fabrikations-Schwelle wie `candidates` und `apply` |
+
+Der Guard hängt am Vokabular der Verwertbarkeit, nicht an einer Satzform. „Das
+Verfahren eignet sich zur Diagnostik" ist Substanz und passiert; „eignet sich
+für ein Feature" ist es nicht.
+
+**Erfolgskontrolle** nach einem Durchgang, dieselbe Abfrage, die den Befund
+erzeugt hat:
+
+```sql
+SELECT round(100.0*count(*) FILTER (WHERE pitch_suggestion ~ '(ÖAW|OeAW|Akademie der Wissenschaften)')/count(*)) AS nennt_oeaw
+FROM publications
+WHERE llm_model = 'anthropic/claude-opus-4.8-session' AND pitch_suggestion IS NOT NULL;
+```
+
+Vorher 0. Greift die neue Rubrik, sollte der Wert in Richtung 28 gehen.
+
 ## Veranstaltungen
 
 ### Kandidaten holen
