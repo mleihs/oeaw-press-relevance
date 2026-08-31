@@ -42,10 +42,10 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@phosphor-icons/react": "^2.1.10",
     "@preact/signals": "^2.9.2",
-    "@schedule-x/calendar": "4.6.0",
-    "@schedule-x/events-service": "4.6.0",
+    "@schedule-x/calendar": "4.7.0",
+    "@schedule-x/events-service": "4.7.0",
     "@schedule-x/react": "4.1.0",
-    "@schedule-x/theme-default": "4.6.0",
+    "@schedule-x/theme-default": "4.7.0",
     "@sentry/nextjs": "^10.65.0",
     "@sentry/node": "^10.65.0",
     "@supabase/ssr": "^0.12.0",
@@ -100,7 +100,7 @@
     "@tailwindcss/postcss": "^4.2.4",
     "@tanstack/react-query-devtools": "^5.100.9",
     "@types/canvas-confetti": "^1.9.0",
-    "@types/node": "^22",
+    "@types/node": "^24",
     "@types/pg": "^8.20.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
@@ -120,7 +120,7 @@
   },
   "overrides": {
     "postcss": "^8.5.25",
-    "fast-uri": "^3.1.4",
+    "fast-uri": "^3.1.5",
     "fumadocs-core": {
       "js-yaml": "^5.2.2"
     },
