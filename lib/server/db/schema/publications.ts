@@ -1,7 +1,7 @@
 // Publikations-Kern: publications-Tabelle (Scoring + Triage), Embeddings,
 // Press-Cluster-Centroid, Review-Sessions, Publikations-Junctions und die
 // materialisierte ÖSTAT-Zuordnung.
-import { pgTable, index, uniqueIndex, unique, check, uuid, text, timestamp, foreignKey, integer, boolean, date, doublePrecision, jsonb, vector, primaryKey, pgPolicy, pgMaterializedView } from "drizzle-orm/pg-core"
+import { pgTable, index, uniqueIndex, unique, check, uuid, text, timestamp, foreignKey, integer, smallint, boolean, date, doublePrecision, jsonb, vector, primaryKey, pgPolicy, pgMaterializedView } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 import { publicationTypes, orgunits, persons, projects } from "./webdb"
 
@@ -67,6 +67,9 @@ export const publications = pgTable("publications", {
 	storytellingPotential: doublePrecision("storytelling_potential"),
 	mediaTimeliness: doublePrecision("media_timeliness"),
 	pitchSuggestion: text("pitch_suggestion"),
+	/** Generation des Pitch-Texts: 0 = aus dem Bewertungslauf, >=1 nachgezogen.
+	 *  Ledger fuer `session-pipeline repitch-apply` ueber mehrere Sitzungen. */
+	pitchRevision: smallint("pitch_revision").default(0).notNull(),
 	targetAudience: text("target_audience"),
 	suggestedAngle: text("suggested_angle"),
 	reasoning: text(),
