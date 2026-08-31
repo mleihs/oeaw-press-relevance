@@ -1,12 +1,15 @@
 # Nächtlicher Ingest + Bewertungs-Fallback — Ops-Runbook
 
-Stand 2026-07-16. SSOT für den automatischen Nacht-Import, das Auto-Enrichment,
-die Bewertungs-Status-Kachel und den „Bewerten"-Fallback.
+Stand 2026-08-31 (zuerst 2026-07-16). SSOT für den automatischen Nacht-Import,
+das Auto-Enrichment, die Bewertungs-Status-Kachel und den „Bewerten"-Fallback.
+Die Ops-Dateien der Box sind seit 2026-08-26 in `infra/metaspots/` versioniert
+(Abgleich: `bash infra/metaspots/sync-check.sh`).
 
 ## Überblick / Datenfluss
 
 ```
-06:00 Wien (systemd-Timer, VPS)
+06:15 Wien: archive-oeaw-exports (Rohexport-Belege, VOR dem Anwenden)
+06:30 Wien (systemd-Timer, VPS)
    └─ curl POST https://oeaw-press-tool.metaspots.net/api/ingest/run
         Authorization: Bearer $INGEST_CRON_SECRET
         │
@@ -17,8 +20,8 @@ die Bewertungs-Status-Kachel und den „Bewerten"-Fallback.
    → KEIN Auto-Scoring. Bewertet wird bevorzugt In-Chat (Opus, €0);
      der „Bewerten"-Button ist der OpenRouter-Fallback.
 
-06:30 Wien (separater Timer)
-   └─ SPECTER2-Embeddings für gescorte Pubs (AP3, on-box)
+07:00 Wien (separater Timer)
+   └─ SPECTER2-Embeddings für gescorte Pubs (on-box)
 ```
 
 **Warum kein Scoring im Cron:** Das In-Chat-Scoring (Redaktion, Opus, kostenlos)
@@ -45,7 +48,9 @@ es nicht mehr.
 
 ```jsonc
 {
-  "ok": true,                       // alle feeds ∈ {applied, skipped} && keine warnings
+  "ok": true,                       // alle feeds ∈ {applied, skipped} && Drift unter der Schwelle
+  "degraded": false,                // angewandt, aber mit Drift-Warnungen (kein Alarm)
+  "summary": "alle Feeds sauber",   // Einzeiler — wird Sentry-Titel/Mail-Betreff
   "startedAt": "2026-07-16T04:00:00.000Z",
   "durationMs": 812345,
   "feeds": {
@@ -59,6 +64,15 @@ es nicht mehr.
 `status` je Feed: `applied` | `skipped` (Idempotenz / nichts anzuwenden) | `failed`
 (echter Defekt, s. u.) | `error` (Exception). `ok` ist `false`, sobald ein Feed
 nicht in {applied, skipped} liegt oder die Drift die Schwelle reißt.
+
+**Drift-Metrik (korrigiert 2026-08-31).** Personen-Waisen (`person_link_orphans`)
+zählen nicht mehr gegen `DRIFT_ALARM_THRESHOLD`: sie sind die Personenlücke der
+WebDB selbst (43,5 % der Autorenverknüpfungen zeigen schon in der Quelle ins
+Leere, `docs/WEBDB_PERSON_GAP.md` §8), skalieren mit der Größe der Nacht und
+lösten am 2026-08-08 mit 80 Fällen einen Fehlalarm aus. Alarm-relevant bleiben
+Orgunit-Waisen + unaufgelöste Typangaben (real 0 pro Nacht). Personen-Waisen
+erscheinen weiter als Warnung (Lauf ⇒ `degraded`), im Journal und in der
+Dashboard-Blase.
 
 **Events-Leerfeed (korrigiert 2026-08-26).** Ein leerer Events-Export ist der
 NORMALFALL, nicht der Defekt: der Feed ist ein Delta (uids streng aufsteigend,
@@ -144,8 +158,9 @@ Konsumenten: `lib/server/analysis/batch.ts` (non-force), `lib/server/events/anal
    Vorher IMMER `--dry-run` (wendet an, rollt zurück) und prüfen, ob sich die uids
    des Archivs mit denen der seither angewandten Deltas überschneiden — sonst
    überschreibt der Replay Neueres mit Älterem.
-5. **401/403 in der Mail**: `INGEST_CRON_SECRET` in `/etc/oeaw-press-ingest/env`
-   ≠ Coolify-Env. Angleichen.
+6. **401/403 in der Mail**: `INGEST_CRON_SECRET` in `/etc/oeaw-press-ingest/env`
+   ≠ Coolify-Env. Angleichen. Ein 429 kann seit dem Auth-Reorder vom 2026-08-31
+   nicht mehr den legitimen Cron treffen (korrektes Secret gewinnt immer).
 
 ## Env
 
@@ -155,11 +170,12 @@ Konsumenten: `lib/server/analysis/batch.ts` (non-force), `lib/server/events/anal
 | `OEAW_EXPORT_ORIGIN_IP` | Cloudflare-Origin-Pin (VPS). Leer → normaler DNS (lokal CF-geblockt). |
 | `INGEST_ENRICH_LIMIT` | Enrichment-Obergrenze je Nacht-Lauf (Default 200). |
 
-**Achtung:** der VPS-Wrapper `/usr/local/bin/oeaw-press-ingest.sh` ist NICHT im Repo
-versioniert, er lebt nur auf metaspots (Backups daneben als `.bak-<datum>`).
+Der VPS-Wrapper `/usr/local/bin/oeaw-press-ingest.sh` und alle übrigen
+Ops-Dateien der Box sind seit 2026-08-26 in `infra/metaspots/` versioniert;
+Abgleich und Ausroll-Rezept stehen in `infra/metaspots/README.md`.
 
-## Offen (AP3 — Deploy/Infra, separat)
+## AP3 (Deploy/Infra) — erledigt
 
-Prod-DDL der Views via Tunnel · Coolify-Env setzen · systemd `oeaw-press-ingest.timer`
-06:00 + Mail-Wrapper · SPECTER2-Clone/venv + `oeaw-press-embeddings.timer` 06:30 ·
-Uptime-Kuma. Details im Plan `~/.claude/plans/virtual-prancing-coral.md` §AP3.
+Seit 2026-07-16 komplett live: Views auf prod, Coolify-Env, `oeaw-press-ingest.timer`
+(inzwischen 06:30, s. o.) + Mail-Wrapper, SPECTER2 + `oeaw-press-embeddings.timer`
+(inzwischen 07:00). Die Unit-/Skript-Wahrheit liegt in `infra/metaspots/`.

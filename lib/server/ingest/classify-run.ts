@@ -11,9 +11,16 @@
 // den wir nicht beheben können; er darf das Team nicht nachts anpiepen.
 
 /** Ab so vielen Drift-Signalen in EINEM Lauf ist es kein Upstream-Rauschen mehr,
- *  sondern ein auseinanderlaufender Korpus (z. B. der Export hört auf, Personen
- *  mitzuliefern) — dann soll der Nachtlauf sehr wohl schreien. Real liegt die
- *  Nacht-Drift bei 0–1; die Schwelle lässt Luft, ohne blind zu werden. */
+ *  sondern ein auseinanderlaufender Korpus — dann soll der Nachtlauf sehr wohl
+ *  schreien.
+ *
+ *  Seit 2026-08-31 zählt `countDrift` (run-publications-delta.ts) die
+ *  Personen-Waisen NICHT mehr in diese Summe: sie sind die WebDB-Personenlücke
+ *  (docs/WEBDB_PERSON_GAP.md — 43,5 % der Autorenverknüpfungen zeigen schon in
+ *  der QUELLE ins Leere), skalieren mit der Größe der Nacht und rissen die
+ *  Schwelle am 2026-08-08 mit 80 Fällen als Fehlalarm. Was hier ankommt, sind
+ *  nur noch Orgunit-Waisen + unaufgelöste Typangaben — real 0 pro Nacht; die
+ *  Schwelle lässt Luft, ohne blind zu werden. */
 export const DRIFT_ALARM_THRESHOLD = 25;
 
 export interface FeedOutcome {

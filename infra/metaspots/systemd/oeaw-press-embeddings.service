@@ -6,6 +6,7 @@ After=network-online.target
 
 [Service]
 Type=oneshot
+SyslogIdentifier=oeaw-press-embeddings
 ExecStart=/usr/local/bin/oeaw-press-embeddings.sh
 # torch-CPU inference is CPU/RAM heavy; keep it out of the way of the app.
 TimeoutStartSec=3600

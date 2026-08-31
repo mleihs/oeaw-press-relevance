@@ -12,6 +12,13 @@ export PROD_DB_URL_OVERRIDE
 REPO=/srv/oeaw-press-relevance
 PY="$REPO/scripts/embeddings/.venv/bin/python"
 
+# stdout statt `logger`: systemd faengt stdout unter dieser Unit ein, damit die
+# Zeile in `journalctl -u oeaw-press-embeddings` erscheint. `logger`-Zeilen tun
+# das NICHT (sie laufen unter dem logger-Prozess) — exakt der Defekt, der beim
+# Ingest-Wrapper im 07-21-Post-mortem "alert mail sent" ohne Ursache zeigte.
+# Die Unit setzt SyslogIdentifier, `journalctl -t` findet die Zeilen weiterhin.
+say() { printf '%s\n' "$1"; }
+
 LOG=$(mktemp)
 T0=$SECONDS
 "$PY" -u "$REPO/scripts/embeddings/compute-embeddings.py" --scope=analyzed --target=prod >"$LOG" 2>&1
@@ -20,18 +27,18 @@ DUR=$(( SECONDS - T0 ))
 TAIL=$(tail -c 1500 "$LOG"); rm -f "$LOG"
 
 if [ "$RC" -eq 0 ]; then
-  logger -t oeaw-press-embeddings "OK dur=${DUR}s"
+  say "OK dur=${DUR}s"
   exit 0
 fi
 
-logger -t oeaw-press-embeddings "FAILED rc=$RC dur=${DUR}s"
+say "FAILED rc=$RC dur=${DUR}s :: $(printf '%s' "$TAIL" | tail -1)"
 if [ -n "${SMTP_URL:-}" ]; then
   printf 'From: %s\r\nTo: %s\r\nSubject: %s\r\nContent-Type: text/plain; charset=utf-8\r\n\r\nSPECTER2 nightly embeddings FAILED (rc=%s, dur=%ss). Log tail:\r\n\r\n%s\r\n' \
       "$MAIL_FROM" "$MAIL_TO" "[OeAW Embeddings] Nightly SPECTER2 fehlgeschlagen ($(date -u +%F))" "$RC" "$DUR" "$TAIL" \
     | curl -s -m 30 --url "$SMTP_URL" --ssl-reqd \
         --mail-from "$MAIL_FROM" --mail-rcpt "$MAIL_TO" \
         --user "$SMTP_USER:$SMTP_PASS" --upload-file - \
-    && logger -t oeaw-press-embeddings "alert mail sent to $MAIL_TO" \
-    || logger -t oeaw-press-embeddings "alert mail to $MAIL_TO FAILED"
+    && say "alert mail sent to $MAIL_TO" \
+    || say "alert mail to $MAIL_TO FAILED"
 fi
 exit "$RC"

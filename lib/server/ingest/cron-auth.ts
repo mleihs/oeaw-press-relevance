@@ -32,22 +32,29 @@ export function assertCronSecret(req: Request): Response | null {
     return apiError('Ingest cron is not configured (INGEST_CRON_SECRET unset).', 503);
   }
 
-  const ip = getClientIp(req);
-  if (limiter.isBlocked(ip)) {
-    return apiError('Too many attempts. Try again later.', 429);
-  }
-
   const header = req.headers.get('authorization') ?? '';
   const presented = /^Bearer\s+(.+)$/i.exec(header.trim())?.[1]?.trim() ?? '';
 
   // sha256 gibt beidseitig 32 Byte → timingSafeEqual wirft nie an der Länge.
   const ok = presented.length > 0 && timingSafeEqual(sha256(presented), sha256(secret));
-  if (!ok) {
-    limiter.recordFailure(ip);
-    return apiError('Unauthorized.', 401);
+
+  // Secret ZUERST prüfen, Limiter erst danach: getClientIp liest den ersten
+  // X-Forwarded-For-Eintrag, und den bestimmt der CLIENT (Proxies hängen nur
+  // an). Stünde der Limiter vor der Prüfung, könnte ein Außenstehender mit
+  // 5 Fehlversuchen unter gefälschtem XFF der Cron-IP den echten Nacht-Cron
+  // aussperren (429 trotz korrektem Secret → Fehlalarm + ausgefallener
+  // Import). Wer das Secret hat, kommt deshalb IMMER durch; der Limiter
+  // bremst nur wiederholte Fehlversuche.
+  const ip = getClientIp(req);
+  if (ok) {
+    limiter.reset(ip);
+    return null;
   }
-  limiter.reset(ip);
-  return null;
+  if (limiter.isBlocked(ip)) {
+    return apiError('Too many attempts. Try again later.', 429);
+  }
+  limiter.recordFailure(ip);
+  return apiError('Unauthorized.', 401);
 }
 
 /** Test-Hook: Limiter-State zwischen Vitest-Fällen leeren. */
