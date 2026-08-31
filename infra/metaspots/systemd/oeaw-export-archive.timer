@@ -4,7 +4,13 @@ Documentation=https://github.com/mleihs/oeaw-press-relevance
 
 [Timer]
 OnCalendar=*-*-* 06:15:00 Europe/Vienna
-Persistent=false
+# Persistent wie beim Ingest-Timer: war die Box um 06:15 down, laeuft das
+# Archiv beim Boot nach. Ohne Catch-up fehlt fuer genau diese Nacht der
+# Rohexport-Beleg — die Exporte werden um ~03:00 ueberschrieben, und der
+# Ingest (Persistent=true) wuerde ein UNarchiviertes Delta anwenden. Ein
+# Nachlauf spaeter am Tag holt dieselbe Datei; doppelt schreiben ist harmlos
+# (Datei traegt den Tagesstempel und wird ueberschrieben).
+Persistent=true
 RandomizedDelaySec=60
 
 [Install]

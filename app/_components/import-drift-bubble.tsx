@@ -65,7 +65,7 @@ export function ImportDriftBubble({ drift }: { drift: ImportDrift }) {
         ) : undefined,
         note: drift.alarming
           ? `Diese Nacht lag über der Alarmschwelle von ${drift.threshold} Fällen. Ein vollständiger Abgleich mit der WebDB ist fällig.`
-          : `Vereinzelt ist das Normalbetrieb. Alarm gibt es ab ${drift.threshold} Fällen in einer Nacht.`,
+          : `Fehlende Autorenschaften sind die Personenlücke der WebDB selbst und zählen nicht als Alarm. Für den Rest gilt: Alarm ab ${drift.threshold} Fällen in einer Nacht.`,
       }}
     />
   );

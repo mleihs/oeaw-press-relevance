@@ -38,7 +38,9 @@ export interface ImportDrift {
   personLinkOrphans: number;
   orgunitLinkOrphans: number;
   unresolvedLookups: number;
-  /** Summe -- dieselbe Zahl, an der DRIFT_ALARM_THRESHOLD entscheidet. */
+  /** Summe aller Belege (inkl. Personen-Waisen) -- das ist die ANGEZEIGTE Zahl.
+   *  Das Alarmurteil rechnet seit 2026-08-31 OHNE die Personen-Waisen (siehe
+   *  countDrift in run-publications-delta.ts + docs/WEBDB_PERSON_GAP.md §8). */
   total: number;
   threshold: number;
   samples: DriftSample[];
@@ -109,7 +111,9 @@ export async function getLastImportDrift(): Promise<ImportDrift | null> {
     // schon bei 50, ein Lauf mit 343 Orphans darf hier nicht „und 44 weitere"
     // behaupten.
     more: Math.max(0, total - Math.min(samples.length, UI_SAMPLE_LIMIT)),
-    alarming: total >= DRIFT_ALARM_THRESHOLD,
+    // Dieselbe Regel wie countDrift: Personen-Waisen sind die dauerhafte
+    // WebDB-Personenlücke und zählen nicht gegen die Alarmschwelle.
+    alarming: orgunitLinkOrphans + unresolvedLookups >= DRIFT_ALARM_THRESHOLD,
   };
 }
 

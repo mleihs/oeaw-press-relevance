@@ -58,8 +58,17 @@ describe('assertCronSecret', () => {
     for (let i = 0; i < 5; i++) {
       expect(assertCronSecret(req('Bearer wrong', ip))?.status).toBe(401);
     }
-    // 6. Versuch (auch mit korrektem Secret) ist geblockt.
-    expect(assertCronSecret(req(`Bearer ${SECRET}`, ip))?.status).toBe(429);
+    // 6. FEHLversuch ist geblockt.
+    expect(assertCronSecret(req('Bearer wrong', ip))?.status).toBe(429);
+  });
+
+  it('never blocks the correct secret — spoofed-XFF failures must not lock out the cron', () => {
+    // XFF ist client-kontrolliert (erster Eintrag): ein Außenstehender kann
+    // Fehlversuche unter der IP des Nacht-Crons verbuchen. Das darf den
+    // legitimen Lauf mit korrektem Secret nicht aussperren.
+    const cronIp = '198.51.100.1';
+    for (let i = 0; i < 10; i++) assertCronSecret(req('Bearer wrong', cronIp));
+    expect(assertCronSecret(req(`Bearer ${SECRET}`, cronIp))).toBeNull();
   });
 
   it('does not rate-limit a different IP', () => {

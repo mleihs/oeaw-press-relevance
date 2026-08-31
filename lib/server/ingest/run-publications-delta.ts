@@ -133,15 +133,19 @@ export async function runPublicationsDeltaImport(
   };
 }
 
-/** Summe der nicht-fatalen Drift-Signale: nicht auflösbare Junction-Endpunkte
- *  (unbekannte Person/Orgunit) plus fehlende Lookups. Einzelne Treffer sind
- *  Upstream-Rauschen (der Export liefert gelegentlich eine Verknüpfung auf einen
- *  Personensatz, den er selbst leer ausliefert — Fall vom 2026-07-21). Erst eine
- *  große Zahl heißt, dass der Korpus wirklich auseinanderläuft. */
+/** Alarm-relevante Drift-Signale: Orgunit-Waisen plus fehlende Lookups.
+ *
+ *  Personen-Waisen (`person_link_orphans`) zählen seit 2026-08-31 bewusst
+ *  NICHT mehr mit (Analyse docs/WEBDB_PERSON_GAP.md §8): 43,5 % aller
+ *  Autorenverknüpfungen in der WebDB zeigen auf Personensätze, die die Quelle
+ *  selbst nicht mehr führt — der Anteil ist ein Dauerzustand, skaliert mit der
+ *  Größe der Nacht (08.08.: 80 Fälle bei 28 % Quote → Fehlalarm; 20.08.: 16
+ *  Fälle bei 30 % Quote → still) und ein Vollabgleich kann nichts reparieren,
+ *  weil bei uns nichts fehlt. Sie bleiben als Warnung/Journal-Zahl sichtbar,
+ *  lösen aber keinen Alarm mehr aus. Übrig bleibt, was wirklich anomal wäre. */
 export function countDrift(report: Record<string, unknown>): number {
   if (report.status !== 'applied') return 0;
   return (
-    Number(report.person_link_orphans ?? 0) +
     Number(report.orgunit_link_orphans ?? 0) +
     Number(report.unresolved_publication_type ?? 0) +
     Number(report.unresolved_member_type ?? 0)
@@ -149,14 +153,24 @@ export function countDrift(report: Record<string, unknown>): number {
 }
 
 function collectWarnings(report: Record<string, unknown>): string[] {
-  if (countDrift(report) === 0) return [];
-  const orphans =
-    Number(report.person_link_orphans ?? 0) + Number(report.orgunit_link_orphans ?? 0);
+  if (report.status !== 'applied') return [];
+  const warnings: string[] = [];
+  const personOrphans = Number(report.person_link_orphans ?? 0);
+  if (personOrphans > 0) {
+    warnings.push(
+      `${personOrphans} Autoren-Verknüpfung(en) auf nie gelieferte Personensätze ` +
+        `(WebDB-Personenlücke, docs/WEBDB_PERSON_GAP.md) — kein Handlungsbedarf.`,
+    );
+  }
+  const orgunitOrphans = Number(report.orgunit_link_orphans ?? 0);
   const unresolved =
     Number(report.unresolved_publication_type ?? 0) +
     Number(report.unresolved_member_type ?? 0);
-  return [
-    `${orphans} orphan link(s), ${unresolved} unresolved lookup(s): ` +
-      `likely drift vs. the full corpus; schedule/verify a full reconciliation.`,
-  ];
+  if (orgunitOrphans + unresolved > 0) {
+    warnings.push(
+      `${orgunitOrphans} orgunit orphan link(s), ${unresolved} unresolved lookup(s): ` +
+        `likely drift vs. the full corpus; schedule/verify a full reconciliation.`,
+    );
+  }
+  return warnings;
 }

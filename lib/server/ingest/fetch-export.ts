@@ -28,6 +28,13 @@ const BROWSERISH_HEADERS: Record<string, string> = {
 /** Host, für den der Origin-Pin gilt (die Export-URLs liegen alle hier). */
 const PINNED_HOST = 'www.oeaw.ac.at';
 
+/** Harte Obergrenze für einen Export-Abruf. Ohne sie war dies der EINZIGE
+ *  externe Call der Nacht ohne Timeout (Enrichment: AbortSignal 10–15 s,
+ *  Archiv-Skript: --max-time 300, Wrapper-curl: -m 2700) — ein hängender
+ *  Origin hätte die Route bis zum Plattform-Timeout blockiert. 300 s wie im
+ *  Archiv-Skript: die Feeds sind bis ~30 MB und der Origin gemächlich. */
+const FETCH_TIMEOUT_MS = 300_000;
+
 /** undici-Agent, der `PINNED_HOST` auf `OEAW_EXPORT_ORIGIN_IP` auflöst, SNI/Host
  *  aber unverändert lässt (Zert. validiert weiter gegen www.oeaw.ac.at). Andere
  *  Hosts laufen über normalen DNS. `null`, wenn kein Origin-Pin konfiguriert. */
@@ -71,6 +78,7 @@ export async function fetchJsonExport(url: string): Promise<unknown> {
     res = await fetch(url, {
       headers: BROWSERISH_HEADERS,
       redirect: 'follow',
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
       // undici-spezifisch, aber vom Node-fetch akzeptiert; kein Effekt ohne Pin.
       ...(dispatcher ? { dispatcher } : {}),
     } as RequestInit);

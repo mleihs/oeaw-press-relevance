@@ -64,6 +64,24 @@ describe('getLastImportDrift', () => {
     const d = await getLastImportDrift();
     expect(d!.total).toBe(343);
     expect(d!.samples).toEqual([]);
+    // Personen-Waisen sind die WebDB-Personenluecke (WEBDB_PERSON_GAP §8):
+    // auch 343 davon sind KEIN Alarm — der 22.08.-Volldump-Lauf darf die
+    // Blase nicht rot faerben.
+    expect(d!.alarming).toBe(false);
+  });
+
+  it('alarms on orgunit orphans + unresolved lookups, not on person orphans', async () => {
+    h.set([{
+      applied_at: APPLIED,
+      report: {
+        person_link_orphans: 3,
+        orgunit_link_orphans: 20,
+        unresolved_publication_type: 5,
+      },
+    }]);
+
+    const d = await getLastImportDrift();
+    expect(d!.total).toBe(28);
     expect(d!.alarming).toBe(true);
   });
 
