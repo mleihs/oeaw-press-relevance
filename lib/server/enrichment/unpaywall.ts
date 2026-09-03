@@ -1,23 +1,19 @@
 import { EnrichmentResult } from '@/lib/shared/types';
 import { cleanDoi } from '@/lib/shared/doi-utils';
+import { apiContactEmail, fetchJson } from '@/lib/server/http-client';
 
 export async function enrichFromUnpaywall(rawDoi: string): Promise<EnrichmentResult | null> {
   const doi = cleanDoi(rawDoi);
   if (!doi) return null;
 
-  // Unpaywall's polite pool requires a contact mail on every request. Override
-  // via API_CONTACT_EMAIL (shared with the Crossref/OpenAlex scripts); the
-  // fallback keeps local dev working without extra config.
-  const email = process.env.API_CONTACT_EMAIL || 'admin@oeaw.ac.at';
-  const url = `https://api.unpaywall.org/v2/${encodeURIComponent(doi)}?email=${email}`;
+  // Unpaywall's polite pool requires a contact mail on every request — hier
+  // per `?email=`-Query-Param, nicht als UA-Header (deshalb bewusst kein
+  // userAgent an fetchJson). apiContactEmail() teilt sich Env-Override +
+  // Fallback mit dem polite-UA der anderen Clients.
+  const url = `https://api.unpaywall.org/v2/${encodeURIComponent(doi)}?email=${apiContactEmail()}`;
 
-  const response = await fetch(url, {
-    signal: AbortSignal.timeout(10000),
-  });
-
-  if (!response.ok) return null;
-
-  const data = await response.json();
+  const data = await fetchJson(url);
+  if (data === null) return null;
 
   const journal = data.journal_name || undefined;
   const pdfUrl = data.best_oa_location?.url_for_pdf || data.best_oa_location?.url || null;

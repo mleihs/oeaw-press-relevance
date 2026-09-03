@@ -1,5 +1,6 @@
 import { EnrichmentResult } from '@/lib/shared/types';
 import { cleanDoi } from '@/lib/shared/doi-utils';
+import { fetchJson, politeUserAgent } from '@/lib/server/http-client';
 
 /**
  * Reconstructs a plain-text abstract from OpenAlex's inverted index format.
@@ -28,17 +29,11 @@ export async function enrichFromOpenAlex(rawDoi: string): Promise<EnrichmentResu
 
   const url = `https://api.openalex.org/works/doi:${encodeURIComponent(doi)}`;
 
-  const response = await fetch(url, {
-    headers: {
-      'User-Agent': 'OeAW-Press-Relevance/1.0 (mailto:admin@oeaw.ac.at)',
-      'Accept': 'application/json',
-    },
-    signal: AbortSignal.timeout(10000),
+  const data = await fetchJson(url, {
+    userAgent: politeUserAgent(),
+    headers: { Accept: 'application/json' },
   });
-
-  if (!response.ok) return null;
-
-  const data = await response.json();
+  if (data === null) return null;
 
   // Reconstruct abstract from inverted index
   let abstract: string | undefined;

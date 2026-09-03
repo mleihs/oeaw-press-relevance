@@ -1,7 +1,12 @@
 # Resume: Deep Dive „Bewertungs-Split" (Web/OpenRouter vs. In-Chat)
 
-**Trigger nach `/clear`:** „lies docs/RESUME_SCORING_SPLIT_REVIEW.md und mach den
-Deep Dive". Gedacht zur Ausführung mit **Fable**.
+> **ERLEDIGT am 2026-07-21 — historisches Dokument, NICHT erneut ausführen.**
+> Der Deep Dive ist gelaufen, der daraus abgeleitete Umsetzungsplan
+> (`docs/RESUME_SCORING_SPLIT_IMPLEMENTATION.md`) ist ebenfalls umgesetzt und
+> deployt. Der frühere Trigger-Header ist bewusst entfernt.
+
+~~**Trigger nach `/clear`:** „lies docs/RESUME_SCORING_SPLIT_REVIEW.md und mach den
+Deep Dive".~~ (historisch) Gedacht zur Ausführung mit **Fable**.
 
 **Auftrag:** Der Bewertungsprozess ist über zwei Pfade gewachsen (Web-UI +
 OpenRouter-API einerseits, In-Chat-Scoring andererseits). Das ist nie als Ganzes

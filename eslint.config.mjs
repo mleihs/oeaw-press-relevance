@@ -3,6 +3,21 @@ import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 import boundaries from "eslint-plugin-boundaries";
 
+// Als Const herausgezogen, weil Flat-Config Rule-Einträge ÜBERSCHREIBT statt
+// mergt: der server-only-Leak-Guard weiter unten konfiguriert
+// no-restricted-syntax für app/** erneut und muss den Em-Dash-Eintrag
+// mitführen, sonst wäre das Em-Dash-Gate für app/** still deaktiviert.
+const EM_DASH_RESTRICTION = {
+  // Ein :matches()-Selector statt drei nahezu identischer Einträge.
+  // Die AST-Knoten-Info (Literal/JSXText/TemplateElement) ist für den
+  // Entwickler aus Zeile + Kontext sichtbar; eine gemeinsame Message
+  // reicht und reduziert Duplikation.
+  selector:
+    ":matches(Literal[value=/\\u2014/], JSXText[value=/\\u2014/], TemplateElement[value.raw=/\\u2014/])",
+  message:
+    "Em-Dash (—, U+2014) in UI-Text. Satz umformulieren, nicht mechanisch durch Komma ersetzen. Beispiele: docs/writing-style.md.",
+};
+
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
@@ -77,19 +92,7 @@ const eslintConfig = defineConfig([
     // englisch, und englische Texte dürfen em-dashes haben.
     ignores: ["**/*.test.{ts,tsx}", "**/*.spec.{ts,tsx}"],
     rules: {
-      "no-restricted-syntax": [
-        "error",
-        {
-          // Ein :matches()-Selector statt drei nahezu identischer Einträge.
-          // Die AST-Knoten-Info (Literal/JSXText/TemplateElement) ist für den
-          // Entwickler aus Zeile + Kontext sichtbar; eine gemeinsame Message
-          // reicht und reduziert Duplikation.
-          selector:
-            ":matches(Literal[value=/\\u2014/], JSXText[value=/\\u2014/], TemplateElement[value.raw=/\\u2014/])",
-          message:
-            "Em-Dash (—, U+2014) in UI-Text. Satz umformulieren, nicht mechanisch durch Komma ersetzen. Beispiele: docs/writing-style.md.",
-        },
-      ],
+      "no-restricted-syntax": ["error", EM_DASH_RESTRICTION],
     },
   },
   // Phase-2 architecture-boundaries hardening (Plan §6.3 + §6.6 step 5).
@@ -156,8 +159,10 @@ const eslintConfig = defineConfig([
             // for first-paint data. Bundle leaks into client code are still
             // caught at build time by Next.js's `'use client'` boundary +
             // Webpack server-only resolution for `postgres`, `crypto`, etc.;
-            // a 'use client' page MUST NOT import @/lib/server/* (reviewer
-            // discipline + build break are the guards).
+            // a 'use client' page MUST NOT import @/lib/server/* — machinell
+            // erzwungen durch den no-restricted-syntax-Guard weiter unten
+            // (boundaries kann Dateien nur nach Pfad, nicht nach Directive
+            // klassifizieren, deshalb steht die Regel separat).
             {
               from: { element: { type: "app-pages" } },
               allow: {
@@ -189,6 +194,47 @@ const eslintConfig = defineConfig([
               },
             },
           ],
+        },
+      ],
+    },
+  },
+  // server-only-Leak-Guard (Architektur-Audit #9): boundaries erlaubt
+  // app→lib/server für RSC-First-Paint-Daten (ADR 0009), kann aber nicht
+  // zwischen Server- und Client-Komponenten unterscheiden (Elemente sind
+  // rein pfadbasiert; die 'use client'-Directive steht IM Dateiinhalt).
+  // Dieser Guard schließt die Lücke ohne Custom-Rule: esquery erkennt die
+  // Directive über das ESTree-Feld `directive` auf dem top-level
+  // ExpressionStatement und verbietet dann jeden statischen Import von
+  // lib/server (Alias `@/…` und relative Pfade).
+  // esquery-Eigenheiten (beide getestet, s. Bericht 2026-08-31):
+  //   - `:has(> …)` (führender Child-Kombinator) wird nicht unterstützt und
+  //     matcht still gar nichts — deshalb `:has(Program > …)`, was dieselbe
+  //     "direktes Kind von Program"-Bedingung ausdrückt (und Directives in
+  //     verschachtelten Funktionskörpern korrekt NICHT matcht).
+  //   - `/` in Regex-Literalen als `/` schreiben; escapte Slashes
+  //     parst der Selector-Parser nicht.
+  // Scope: app/** — components/** und lib/client/** sind via boundaries
+  // ohnehin komplett von lib/server abgeschnitten (directive-unabhängig).
+  // Dieser Block ÜBERSCHREIBT no-restricted-syntax des Em-Dash-Blocks für
+  // app/** (Flat-Config mergt Rule-Optionen nicht) und führt dessen Eintrag
+  // deshalb mit — inklusive gleicher Test-Ignores, damit Test-Dateien wie
+  // bisher em-dash-frei bleiben dürfen.
+  {
+    files: ["app/**/*.{ts,tsx}"],
+    ignores: ["**/*.test.{ts,tsx}", "**/*.spec.{ts,tsx}"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        EM_DASH_RESTRICTION,
+        {
+          // [importKind="value"]: `import type { … }` ist erlaubt — wird vom
+          // Compiler wegradiert und landet nie im Bundle. Client-Komponenten
+          // typisieren ihre Props legitim mit den Rückgabetypen der
+          // Server-Fetcher (z.B. DashboardData aus lib/server/dashboard).
+          selector:
+            'Program:has(Program > ExpressionStatement[directive="use client"]) > ImportDeclaration[importKind="value"][source.value=/^(?:@\\u002F|(?:\\.\\.?\\u002F)+)lib\\u002Fserver(?:\\u002F|$)/]',
+          message:
+            "'use client'-Datei importiert lib/server — das zieht Server-Code (DB-Client, Secrets) in das Client-Bundle. Daten per RSC-Parent laden und als Props reichen, oder eine API-Route aufrufen.",
         },
       ],
     },

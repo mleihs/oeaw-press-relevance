@@ -220,7 +220,9 @@ export async function listPublications(
   const scoringScope = searchParams.get('scoring_scope') || '';
   const sortByRaw = searchParams.get('sort') || 'published_at';
   const sortBy = sortByRaw in SORTABLE_COLUMNS ? sortByRaw : 'published_at';
-  const sortCol = SORTABLE_COLUMNS[sortBy]!;
+  // Der `in`-Check oben garantiert den Treffer; der Fallback ersetzt nur die
+  // Non-Null-Assertion (identische Spalte wie der sortBy-Default).
+  const sortCol = SORTABLE_COLUMNS[sortBy] ?? publications.publishedAt;
   const sortAsc = searchParams.get('order') === 'asc';
 
   // ---------- pre-fetches (parallel) ----------

@@ -18,12 +18,15 @@ import { InfoBubble } from '@/components/info-bubble';
 import {
   displayAuthor,
   displayInstitute,
-  displayTitle,
   isRecentlyAdded,
   NEW_BADGE_DAYS,
 } from '@/lib/shared/publication-display';
 import { formatPubDate, pubDateTitle } from '@/lib/shared/format-pub-date';
-import { enrichmentReason } from '@/lib/shared/enrichment-reason';
+import {
+  pubDisplayTitle,
+  pubNaReason,
+  pubTypeLabel,
+} from '@/components/publication-cells';
 import { canonicalName } from '@/lib/shared/venue-registry';
 import { journalTier } from '@/lib/shared/journal-tier';
 import type { PublicationListItem } from '@/lib/server/publications/list';
@@ -32,21 +35,6 @@ import type { PublicationListItem } from '@/lib/server/publications/list';
 // die Panels toolkit-weit als ein System lesen. Tokens statt Hex (docs/DESIGN_SYSTEM.md §2).
 const CARD =
   'rounded-[14px] border border-line bg-surface shadow-[0_1px_2px_rgba(16,32,46,.05)] overflow-hidden';
-
-// Per-row „warum kein Score" Grund (aus DOI/Typ/Datum abgeleitet) — führt die
-// N/A-Bubble am Score-Badge an, exakt wie in der alten Tabelle.
-function naReasonFor(pub: PublicationListItem): string | null {
-  return enrichmentReason(
-    {
-      enrichment_status: pub.enrichment_status,
-      doi: pub.doi,
-      publication_type:
-        pub.publication_type || pub.publication_type_lookup?.name_de || null,
-      published_at: pub.published_at,
-    },
-    new Date(),
-  );
-}
 
 /** „Neu" für Zugänge der letzten Woche — beantwortet in der Liste die Frage,
  *  die bisher nur die Sortierung beantworten konnte: was ist frisch drin?
@@ -116,10 +104,9 @@ export function PublicationList({
         </div>
       ) : (
         publications.map((pub) => {
-          const naReason = naReasonFor(pub);
+          const naReason = pubNaReason(pub);
           const institute = displayInstitute(pub);
-          const typeLabel =
-            pub.publication_type || pub.publication_type_lookup?.name_de;
+          const typeLabel = pubTypeLabel(pub);
           const venueRaw = pub.enriched_journal?.trim();
           const venue = venueRaw ? canonicalName(venueRaw) : null;
           const isFlagship = venue ? journalTier(venue) === 'top' : false;
@@ -139,7 +126,7 @@ export function PublicationList({
                 />
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-semibold leading-[1.35] text-ink">
-                    {displayTitle(pub.original_title || pub.title, pub.citation)}
+                    {pubDisplayTitle(pub)}
                   </div>
                   <div className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-ink-subtle">
                     <span>
@@ -230,10 +217,9 @@ export function PublicationList({
         </div>
       ) : (
         publications.map((pub) => {
-          const naReason = naReasonFor(pub);
+          const naReason = pubNaReason(pub);
           const institute = displayInstitute(pub);
-          const typeLabel =
-            pub.publication_type || pub.publication_type_lookup?.name_de;
+          const typeLabel = pubTypeLabel(pub);
           return (
             <Link
               key={pub.id}
@@ -249,7 +235,7 @@ export function PublicationList({
 
               <div className="min-w-0 flex-1">
                 <div className="text-[14px] font-semibold leading-[1.35] text-ink">
-                  {displayTitle(pub.original_title || pub.title, pub.citation)}
+                  {pubDisplayTitle(pub)}
                 </div>
                 <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
                   <span className="text-xs text-ink-subtle">

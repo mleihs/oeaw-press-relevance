@@ -21,13 +21,13 @@
 //   npm run import-events-json -- --target=prod --yes   # → prod (unattended)
 
 import { readFileSync } from 'node:fs';
-import { loadDbUrl, parseScriptArgs, confirmProd, redactedDatabaseUrl } from './lib/db.mjs';
+// Gemeinsame Präambel: Flags → .env.local → Sentry → DATABASE_URL-Override.
+// (Sentry ist neu ggü. der alten Kopie — ohne SENTRY_DSN inert.)
+import {
+  bootstrapScript, redactedDatabaseUrl, captureScriptError, flushAndExit,
+} from './lib/bootstrap';
 
-const { target, flags } = parseScriptArgs();
-const isProd = target === 'prod';
-
-process.loadEnvFile('.env.local');
-process.env.DATABASE_URL = loadDbUrl(target);
+const { target, flags, confirmProd } = bootstrapScript('import-events-json');
 
 const DEFAULT_URL =
   'https://www.oeaw.ac.at/fileadmin/exports/event_news_grouped.json';
@@ -39,7 +39,7 @@ const urlArg = flagValue('--url');
 const sourceLabel = fileArg ? `file:${fileArg}` : (urlArg ?? DEFAULT_URL);
 
 async function main(): Promise<void> {
-  if (!dryRun) await confirmProd({ isProd, flags, label: 'import-events-json' });
+  if (!dryRun) await confirmProd('import-events-json');
 
   console.log(
     `[import-events-json] target=${target} db=${redactedDatabaseUrl()} source=${sourceLabel}`,
@@ -71,8 +71,9 @@ async function main(): Promise<void> {
 }
 
 main()
-  .then(() => process.exit(0))
+  .then(() => flushAndExit(0))
   .catch((err: unknown) => {
     console.error('[import-events-json] failed:', err);
-    process.exit(1);
+    captureScriptError(err);
+    void flushAndExit(1);
   });

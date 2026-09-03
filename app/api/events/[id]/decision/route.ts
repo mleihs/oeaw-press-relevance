@@ -5,6 +5,7 @@ import {
   validateParams,
   withApiError,
 } from '@/lib/server/http';
+import { requireUser } from '@/lib/server/auth/require';
 import { idParamSchema } from '@/lib/server/schemas';
 import {
   applyEventDecision,
@@ -16,6 +17,9 @@ export const PATCH = withApiError(async (
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) => {
+  // Mutierende Route → angemeldete Identität Pflicht (Security-Audit M1).
+  await requireUser();
+
   const { id } = validateParams(await params, idParamSchema);
   const data = await validateBody(req, eventDecisionPayloadSchema);
   try {

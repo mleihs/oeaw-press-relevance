@@ -88,7 +88,18 @@ export async function fetchJsonExport(url: string): Promise<unknown> {
 
   const cfMitigated = res.headers.get('cf-mitigated');
   const contentType = res.headers.get('content-type') ?? '';
-  const body = await res.text();
+  // Auch den Body-Read wrappen: das AbortSignal tickt nach den Headern weiter,
+  // ein Mid-Body-Timeout (oder Verbindungsabriss) würde sonst als nackte
+  // DOMException entkommen — ohne URL und ohne ExportFetchError-Klassifikation.
+  let body: string;
+  try {
+    body = await res.text();
+  } catch (err) {
+    throw new ExportFetchError(
+      `network error reading body from ${url}: ${(err as Error).message}`,
+      { url, status: res.status },
+    );
+  }
   const bodyHead = body.slice(0, 200);
 
   if (cfMitigated) {

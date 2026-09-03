@@ -5,6 +5,7 @@
 
 import 'server-only';
 
+import * as Sentry from '@sentry/nextjs';
 import { eq, sql } from 'drizzle-orm';
 import { db, cards, externalObjects } from '@/lib/server/db';
 import { getObject, putObject, deleteObjects } from '@/lib/server/storage/s3';
@@ -273,6 +274,14 @@ export function isAllowedThumbnailUrl(raw: string): boolean {
   try {
     u = new URL(raw);
   } catch {
+    // Unparsebare URL = per Definition nicht erlaubt — der Validator antwortet
+    // mit false statt zu werfen. Breadcrumb, damit ein systematisch kaputter
+    // Snapshot (z. B. Provider-Formatwechsel) im Fehlerfall Spuren hat.
+    Sentry.addBreadcrumb({
+      category: 'board.thumbnail',
+      level: 'debug',
+      message: 'Unparsebare Thumbnail-URL abgelehnt',
+    });
     return false;
   }
   return u.protocol === 'https:' && ALLOWED_THUMB_HOST.test(u.hostname);
@@ -342,7 +351,19 @@ export async function getObjectThumbnail(objectId: string): Promise<ObjectThumbn
     const contentType = res.headers.get('content-type') || 'image/jpeg';
     if (!contentType.startsWith('image/')) return null;
     return { bytes: await res.arrayBuffer(), contentType };
-  } catch {
+  } catch (err) {
+    // Live-Fetch-Fehler (Timeout/Netz/CDN) bewusst non-fatal: die Route
+    // antwortet dann 404 und die UI zeigt den Platzhalter. Breadcrumb statt
+    // Alarm — hängt sich an ein etwaiges späteres Sentry-Event dran.
+    Sentry.addBreadcrumb({
+      category: 'board.thumbnail',
+      level: 'warning',
+      message: 'Live-Thumbnail-Fetch fehlgeschlagen',
+      data: {
+        object_id: objectId,
+        message: err instanceof Error ? err.message : String(err),
+      },
+    });
     return null;
   }
 }

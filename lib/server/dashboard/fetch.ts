@@ -10,15 +10,10 @@ import {
   fetchPublicationDashboardStats,
   type PublicationDashboardStats,
 } from '@/lib/server/publications/dashboard-stats';
-import { countOrphans } from '@/lib/server/press-releases/list';
 import { getLastImportDrift, type ImportDrift } from '@/lib/server/ingest/drift';
 import {
   DIMENSION_SORT_MAP,
-  SIMILARITY_RANGE_MAX,
-  SIMILARITY_RANGE_MIN,
   type DashboardPeriod,
-  type PeriodCounts,
-  type ScoreSimilarityPoint,
   type SortBy,
 } from '@/lib/shared/dashboard';
 
@@ -35,77 +30,10 @@ function publishedAfter(period: DashboardPeriod): string | null {
 }
 
 // The base stats (fetch + defaulting) are shared with /api/publications/stats;
-// the dashboard adds the press-similarity histogram on top.
-export type DashboardStats = PublicationDashboardStats & {
-  /** Histogram of `press_similarity` in 10 buckets across the meaningful
-   *  SPECTER2 band [SIMILARITY_RANGE_MIN, SIMILARITY_RANGE_MAX]. Feeds the
-   *  mirror histogram, which lives alongside the joint scatter (the
-   *  histogram shows each metric's marginal shape; the scatter shows how
-   *  they relate). */
-  similarity_distribution: number[];
-};
-
-// Press-similarity histogram. 10 equal-width buckets across the meaningful
-// SPECTER2-cosine band [SIMILARITY_RANGE_MIN, SIMILARITY_RANGE_MAX]; a full
-// [0..1] axis would clump all data against the right edge (live values sit
-// in ~0.80-0.95). Any pub with the metric set, no archive/eligibility filter.
-async function getSimilarityDistribution(): Promise<number[]> {
-  // `width_bucket(value, lo, hi, n)` returns 1..n for in-range, 0 / n+1 for
-  // under/overflow. Clamp both edges with GREATEST/LEAST so a future outlier
-  // outside the [MIN, MAX] band still lands inside the 10-cell histogram
-  // rather than vanishing.
-  const rows = await db.execute<{ bucket: number; count: number }>(sql`
-    SELECT
-      GREATEST(LEAST(width_bucket(press_similarity, ${SIMILARITY_RANGE_MIN}::float8, ${SIMILARITY_RANGE_MAX}::float8, 10), 10), 1) AS bucket,
-      count(*)::int AS count
-    FROM publications
-    WHERE press_similarity IS NOT NULL
-    GROUP BY bucket
-    ORDER BY bucket
-  `);
-  const buckets = new Array(10).fill(0) as number[];
-  for (const r of rows) {
-    const idx = Math.max(0, Math.min(9, r.bucket - 1));
-    buckets[idx] += r.count;
-  }
-  return buckets;
-}
-
-/**
- * 2D density bins [press_score, press_similarity, count] over analyzed pubs
- * that have both metrics. Feeds the joint scatter that complements the
- * marginal histograms: the marginals can't show that a low Story Score can
- * coincide with a high Press-Similarity (the LLM-blind-spot cross-check);
- * only the joint view does.
- *
- * Binned server-side rather than shipping every raw point: the scatter is a
- * distribution view, so a fixed grid of populated cells (each carrying a
- * count) conveys the same shape at a fraction of the pooler egress. This
- * query used to return up to 4000 raw rows on EVERY (uncached) dashboard
- * render — under continuous healthcheck/monitor polling that was the single
- * largest egress driver. Bin edges are chosen so the diagnostic-quadrant
- * thresholds (score 40 %, similarity 85 %) land exactly on a cell boundary,
- * so the top-left count the chart reports stays exact.
- */
-async function getScoreSimilarityPoints(): Promise<ScoreSimilarityPoint[]> {
-  // Score binned at 0.02 (2 %), similarity at 0.01 (1 %). Cell centre =
-  // bucket floor + half a bin. At most ~50×30 populated cells (score 0..1 ×
-  // similarity ~0.7..1.0) regardless of corpus size, vs. thousands of raw
-  // points before.
-  const rows = await db.execute<{ s: number; p: number; c: number }>(sql`
-    SELECT
-      LEAST(floor(press_score / 0.02) * 0.02 + 0.01, 1)::float8 AS s,
-      LEAST(floor(press_similarity / 0.01) * 0.01 + 0.005, 1)::float8 AS p,
-      count(*)::int AS c
-    FROM publications
-    WHERE analysis_status = 'analyzed'
-      AND press_score IS NOT NULL
-      AND press_similarity IS NOT NULL
-      AND archived = false
-    GROUP BY 1, 2
-  `);
-  return rows.map((r) => [r.s, r.p, r.c]);
-}
+// the dashboard only overrides `analyzed` (see getStats). Die frühere
+// similarity_distribution (width_bucket-Full-Scan) wurde 2026-08-31 entfernt:
+// weder DashboardClient noch ein anderer Konsument hat sie je gerendert.
+export type DashboardStats = PublicationDashboardStats;
 
 // Most recent publications.synced_at — webdb-import stamps every upserted
 // row with NOW(), so the latest value is the date the loaded data reflects
@@ -130,9 +58,8 @@ async function getWebdbAsOf(): Promise<string | null> {
 }
 
 async function getStats(defaultEligible: boolean): Promise<DashboardStats> {
-  const [base, similarityBuckets, eligibleRows] = await Promise.all([
+  const [base, eligibleRows] = await Promise.all([
     fetchPublicationDashboardStats(defaultEligible),
-    getSimilarityDistribution(),
     // „analysiert"-Kachel auf die KANONISCHE press_eligible_publications-Sicht
     // angleichen — dieselbe Zahl wie der Titelscreen und Publikationen. Der rohe
     // `analyzed` aus publication_dashboard_stats zählt ITA-Subtree + Pop-Science
@@ -141,33 +68,7 @@ async function getStats(defaultEligible: boolean): Promise<DashboardStats> {
     db.execute<{ n: number }>(sql`SELECT count(*)::int AS n FROM press_eligible_publications`),
   ]);
   const analyzed = eligibleRows[0]?.n ?? base.analyzed;
-  return { ...base, analyzed, similarity_distribution: similarityBuckets };
-}
-
-// Eligible-pub counts for all four dashboard periods in ONE conditional-
-// aggregation roundtrip over the canonical `press_eligible_publications`
-// view (migration 20260516000002). Period-independent: the SQL function
-// always returns all four, so the result is the same regardless of which
-// period the page requested. Feeds the „Mehr laden" cross-period hint. The
-// cutoffs come from the SAME `publishedAfter()` the list path uses, so
-// „month" keeps its deliberate two-month window without re-encoding the
-// interval math in SQL. week/month/year never resolve to null (only 'all'
-// would, and the 'all' bucket needs no cutoff).
-async function getPeriodCounts(): Promise<PeriodCounts> {
-  const rows = await db.execute<{ counts: Partial<PeriodCounts> | null }>(
-    sql`SELECT publication_period_counts(
-      ${publishedAfter('week')}::date,
-      ${publishedAfter('month')}::date,
-      ${publishedAfter('year')}::date
-    ) AS counts`,
-  );
-  const c = rows[0]?.counts ?? {};
-  return {
-    week: c.week ?? 0,
-    month: c.month ?? 0,
-    year: c.year ?? 0,
-    all: c.all ?? 0,
-  };
+  return { ...base, analyzed };
 }
 
 async function getTopPubs(
@@ -210,15 +111,7 @@ export interface DashboardData {
   /** The effective page-size that the caller resolved (default 20). Round-
    *  trips back to the client so the "Mehr laden" link knows what to add. */
   topPubsLimit: number;
-  /** Eligible-pub counts per period (week/month/year/all). Drives the
-   *  „Mehr laden" terminal-state hint: when the current period is
-   *  exhausted, the InfoBubble shows how many more a wider period adds. */
-  periodCounts: PeriodCounts;
   flaggedCount: number;
-  pressReleasedCount: number;
-  orphansCount: number;
-  /** (press_score, press_similarity, count) density bins for the joint scatter. */
-  scoreSimilarityPoints: ScoreSimilarityPoint[];
   /** Most recent publications.synced_at, formatted (Europe/Vienna) — the
    *  date the loaded WebDB snapshot reflects. null when nothing is synced. */
   webdbAsOf: string | null;
@@ -234,14 +127,6 @@ export interface DashboardData {
 // data (top pubs for the selected period, the live flag/orphan counts) stays
 // uncached so it reflects the latest decisions immediately.
 const getStatsCached = unstable_cache(getStats, ['dashboard-stats'], { revalidate: 60 });
-const getScoreSimilarityPointsCached = unstable_cache(
-  getScoreSimilarityPoints,
-  ['dashboard-scatter'],
-  { revalidate: 60 },
-);
-const getPeriodCountsCached = unstable_cache(getPeriodCounts, ['dashboard-period-counts'], {
-  revalidate: 60,
-});
 const getWebdbAsOfCached = unstable_cache(getWebdbAsOf, ['dashboard-webdb-asof'], {
   revalidate: 60,
 });
@@ -258,37 +143,24 @@ export async function getDashboardData(
   topPubsLimit: number,
   sortBy: SortBy = 'score',
 ): Promise<DashboardData> {
-  const [
-    stats,
-    topPubsResult,
-    flaggedCount,
-    pressReleasedCount,
-    orphansCount,
-    scoreSimilarityPoints,
-    periodCounts,
-    webdbAsOf,
-    importDrift,
-  ] = await Promise.all([
-    getStatsCached(true),
-    getTopPubs(period, topPubsLimit, sortBy),
-    publicationsRepo.countWithFlags(),
-    publicationsRepo.countPressReleased(),
-    countOrphans(),
-    getScoreSimilarityPointsCached(),
-    getPeriodCountsCached(),
-    getWebdbAsOfCached(),
-    getLastImportDriftCached(),
-  ]);
+  // 2026-08-31 gestrichen: scoreSimilarityPoints, periodCounts, similarity_
+  // distribution, orphansCount und pressReleasedCount wurden von keinem
+  // Konsumenten mehr gelesen (DashboardClient destrukturiert nur die Felder
+  // unten) — ihre Full-Table-Scans liefen trotzdem bei jedem Cache-Miss mit.
+  const [stats, topPubsResult, flaggedCount, webdbAsOf, importDrift] =
+    await Promise.all([
+      getStatsCached(true),
+      getTopPubs(period, topPubsLimit, sortBy),
+      publicationsRepo.countWithFlags(),
+      getWebdbAsOfCached(),
+      getLastImportDriftCached(),
+    ]);
   return {
     stats,
     topPubs: topPubsResult.pubs,
     topPubsTotal: topPubsResult.total,
     topPubsLimit,
-    periodCounts,
     flaggedCount,
-    pressReleasedCount,
-    orphansCount,
-    scoreSimilarityPoints,
     webdbAsOf,
     importDrift,
   };

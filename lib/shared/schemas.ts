@@ -324,10 +324,24 @@ export type SimilarPressedQuery = z.infer<typeof similarPressedQuerySchema>;
  * everything else passes through (`.loose()`) untouched so no valid filter
  * combination can regress to a surprise 400.
  */
+/** Obergrenze für `?pageSize`. Größter legitimer Nutzer ist das Dashboard-
+ *  „Mehr laden" (TOP_PUBS_MAX = 200, lib/shared/dashboard.ts — geht zwar
+ *  serverseitig direkt an listPublications, 200 hält beide Pfade deckungs-
+ *  gleich); die Listen-UI (PAGE_SIZE), Settings und die Smoke-Skripte fragen
+ *  höchstens 20 an. Ohne Cap lieferte `?pageSize=100000` den Gesamtbestand
+ *  inklusive aller Joins in einer Antwort. Bewusst NUR pageSize gedeckelt —
+ *  die übrigen intParam-Nutzer (page, limit) haben eigene Klemmen bzw. kein
+ *  Amplifikationspotenzial pro Einheit. */
+export const PAGE_SIZE_MAX = 200;
+
 export const publicationsListQuerySchema = z
   .object({
     page: intParam(1),
-    pageSize: intParam(20),
+    pageSize: intParam(20).pipe(
+      z
+        .number()
+        .max(PAGE_SIZE_MAX, `pageSize must be <= ${PAGE_SIZE_MAX}`),
+    ),
   })
   .loose();
 

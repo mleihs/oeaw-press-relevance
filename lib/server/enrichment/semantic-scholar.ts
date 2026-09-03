@@ -1,5 +1,6 @@
 import { EnrichmentResult } from '@/lib/shared/types';
 import { cleanDoi } from '@/lib/shared/doi-utils';
+import { BARE_USER_AGENT, fetchJson } from '@/lib/server/http-client';
 
 export async function enrichFromSemanticScholar(rawDoi: string): Promise<EnrichmentResult | null> {
   const doi = cleanDoi(rawDoi);
@@ -8,16 +9,11 @@ export async function enrichFromSemanticScholar(rawDoi: string): Promise<Enrichm
   const fields = 'title,abstract,authors,year,publicationDate,openAccessPdf,citationCount,venue,tldr';
   const url = `https://api.semanticscholar.org/graph/v1/paper/DOI:${encodeURIComponent(doi)}?fields=${fields}`;
 
-  const response = await fetch(url, {
-    headers: {
-      'User-Agent': 'OeAW-Press-Relevance/1.0',
-    },
-    signal: AbortSignal.timeout(10000),
-  });
-
-  if (!response.ok) return null;
-
-  const data = await response.json();
+  // BARE_USER_AGENT (ohne mailto): Semantic Scholar kennt keine polite-pool-
+  // Konvention über den UA — der Client hat die Adresse hier nie mitgeschickt,
+  // das bleibt bewusst so (s. Kommentar in lib/server/http-client.ts).
+  const data = await fetchJson(url, { userAgent: BARE_USER_AGENT });
+  if (data === null) return null;
 
   const abstract = data.abstract || undefined;
   const tldr = data.tldr?.text || '';

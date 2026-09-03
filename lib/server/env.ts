@@ -28,6 +28,12 @@ const Schema = z.object({
   // the upstream normalize step (see parseEnv).
   DATABASE_URL: z.string().min(1),
 
+  // Poolgröße des Drizzle-postgres-js-Clients (lib/server/db/drizzle.ts).
+  // Optional: unset → 1 (Vercel-per-Lambda-Empfehlung, bisheriges Verhalten).
+  // Auf dem langlebigen Coolify-Container (kanonische Prod) hochsetzen, damit
+  // parallele Requests nicht auf einer Connection serialisiert werden.
+  DB_POOL_MAX: z.coerce.number().int().positive().optional(),
+
   // Supabase URL + anon key. Two pairs because `lib/server/db/supabase.ts`
   // accepts NEXT_PUBLIC_* as a legacy fallback to avoid breaking older
   // deployments. The "at least one of each pair" check runs in

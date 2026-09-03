@@ -45,20 +45,63 @@ export function hasPreview(a: CardAttachment): boolean {
   return kindOf(a) !== 'none';
 }
 
-/** mammoth-HTML defensiv säubern: nur harmlose Struktur-Tags, keine
- *  Event-Handler, keine javascript:-Links. mammoth generiert das Markup zwar
- *  selbst (escaped Text), aber Hyperlink-Ziele stammen aus der Datei. */
+/** mammoth-HTML defensiv säubern — Allowlist statt Blocklist. mammoth
+ *  generiert das Markup zwar selbst (escaped Text), aber Hyperlink-Ziele
+ *  stammen aus der Datei, und eine Blocklist übersieht Vektoren wie
+ *  <svg>/<math> (Namespace-Elemente mit eigenen Script-Trägern) oder
+ *  style-Attribute. Erlaubt ist nur, was mammoth-Output wirklich braucht:
+ *  Struktur-Tags + eine kleine Attribut-Allowlist je Tag. Alles andere wird
+ *  entfernt (aktive Inhalte samt Subtree, unbekannte harmlose Wrapper nur
+ *  ausgepackt, damit ihr Text erhalten bleibt). */
+
+// Tags, die mammoth erzeugt (p/hN/Listen/Tabellen/Inline-Formate/Anker/Bilder).
+const DOCX_ALLOWED_TAGS = new Set([
+  'p', 'br', 'hr', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+  'ul', 'ol', 'li', 'blockquote', 'pre', 'code',
+  'table', 'thead', 'tbody', 'tfoot', 'tr', 'td', 'th', 'caption',
+  'strong', 'em', 'b', 'i', 'u', 's', 'sub', 'sup', 'span',
+  'a', 'img',
+]);
+
+// Aktive/namespacete Elemente: mitsamt Inhalt entfernen, nicht auspacken.
+const DOCX_DROP_SUBTREE = new Set([
+  'script', 'style', 'iframe', 'object', 'embed', 'link', 'meta', 'form',
+  'svg', 'math', 'foreignobject', 'template', 'base', 'noscript',
+]);
+
+// Attribut-Allowlist je Tag. Bewusst OHNE style/class/on* — nicht in der
+// Liste = wird gestrippt. `id`/`name` auf <a>: mammoth-Bookmark-Anker,
+// Ziel der internen `#`-Links (Fußnoten/Verweise).
+const DOCX_ALLOWED_ATTRS: Record<string, Set<string>> = {
+  a: new Set(['href', 'id', 'name']),
+  img: new Set(['src', 'alt']),
+  td: new Set(['colspan', 'rowspan']),
+  th: new Set(['colspan', 'rowspan']),
+};
+
 function sanitizeDocxHtml(html: string): string {
   const doc = new DOMParser().parseFromString(html, 'text/html');
-  const drop = new Set(['SCRIPT', 'STYLE', 'IFRAME', 'OBJECT', 'EMBED', 'LINK', 'META', 'FORM']);
   for (const el of [...doc.body.querySelectorAll('*')]) {
-    if (drop.has(el.tagName)) {
+    const tag = el.tagName.toLowerCase();
+    if (DOCX_DROP_SUBTREE.has(tag)) {
       el.remove();
       continue;
     }
+    if (!DOCX_ALLOWED_TAGS.has(tag)) {
+      // Unbekannt, aber nicht aktiv gefährlich: auspacken, Kinder behalten
+      // (die stehen mit im Snapshot und werden selbst noch geprüft).
+      el.replaceWith(...el.childNodes);
+      continue;
+    }
+    const allowed = DOCX_ALLOWED_ATTRS[tag];
     for (const attr of [...el.attributes]) {
       const name = attr.name.toLowerCase();
-      if (name.startsWith('on')) el.removeAttribute(attr.name);
+      if (!allowed?.has(name)) {
+        el.removeAttribute(attr.name);
+        continue;
+      }
+      // Ziel-Protokolle für Links/Bilder: http(s), eingebettete Rasterbilder
+      // (mammoth liefert data:image-URIs), interne Anker.
       if ((name === 'href' || name === 'src') && !/^(https?:|data:image\/|#)/i.test(attr.value)) {
         el.removeAttribute(attr.name);
       }

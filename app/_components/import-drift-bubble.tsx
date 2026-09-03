@@ -65,7 +65,11 @@ export function ImportDriftBubble({ drift }: { drift: ImportDrift }) {
         ) : undefined,
         note: drift.alarming
           ? `Diese Nacht lag über der Alarmschwelle von ${drift.threshold} Fällen. Ein vollständiger Abgleich mit der WebDB ist fällig.`
-          : `Fehlende Autorenschaften sind die Personenlücke der WebDB selbst und zählen nicht als Alarm. Für den Rest gilt: Alarm ab ${drift.threshold} Fällen in einer Nacht.`,
+          : // Den Personen-Satz nur zeigen, wenn es auch Personen-Waisen gibt —
+            // besteht die Drift nur aus Orgunit-/Typ-Fällen, erklärte er nichts.
+            drift.personLinkOrphans > 0
+            ? `Fehlende Autorenschaften sind die Personenlücke der WebDB selbst und zählen nicht als Alarm. Für den Rest gilt: Alarm ab ${drift.threshold} Fällen in einer Nacht.`
+            : `Alarm ab ${drift.threshold} Fällen in einer Nacht.`,
       }}
     />
   );

@@ -1,7 +1,13 @@
 # Resume: Umsetzung Bewertungs-Split (Befund → Code)
 
-**Trigger nach `/clear`:** „lies docs/RESUME_SCORING_SPLIT_IMPLEMENTATION.md und
-setz es um". Gedacht zur Ausführung mit **Claude Opus (high)**.
+> **ERLEDIGT am 2026-07-21 — historisches Dokument, NICHT erneut ausführen.**
+> AP1–AP6 sind umgesetzt, reviewt und deployt (Ergebnisprotokoll:
+> `docs/RESUME_SCORING_SPLIT_CODEREVIEW.md`); offen blieb nur AP7 (Altbestand,
+> s. Memory `scoring-split-review-pending`). Der frühere Trigger-Header
+> („lies … und setz es um") ist bewusst entfernt.
+
+~~**Trigger nach `/clear`:** „lies docs/RESUME_SCORING_SPLIT_IMPLEMENTATION.md und
+setz es um".~~ (historisch) Gedacht zur Ausführung mit **Claude Opus (high)**.
 
 **Kontext:** Der Deep Dive `docs/RESUME_SCORING_SPLIT_REVIEW.md` ist erledigt
 (Befund 2026-07-21, Fable-Session). Dieses Dokument ist der daraus abgeleitete,

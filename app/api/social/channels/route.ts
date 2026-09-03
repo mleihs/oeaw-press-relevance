@@ -4,6 +4,7 @@ import {
   validateBody,
   withApiError,
 } from '@/lib/server/http';
+import { requireUser } from '@/lib/server/auth/require';
 import { listChannels } from '@/lib/server/social/list';
 import { createChannel } from '@/lib/server/social/channels';
 import {
@@ -23,6 +24,9 @@ export const GET = withApiError(async () => {
 });
 
 export const POST = withApiError(async (req: NextRequest) => {
+  // Mutierend → angemeldete Identität Pflicht (Security-Audit M1).
+  await requireUser();
+
   const body = await validateBody(req, socialChannelCreateSchema);
   try {
     const channel = await createChannel(body);

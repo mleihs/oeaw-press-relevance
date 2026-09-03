@@ -28,7 +28,7 @@ UA='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, l
 FEEDS=(event_news_grouped.json publications_incremental_change_2.json)
 
 mkdir -p "$ARCHIVE_DIR"
-stamp=$(date -u +%F)
+run_stamp=$(date -u +%F)
 rc=0
 
 # Origin-IP frisch auflösen: sie hat schon gewechselt, ein fest verdrahteter
@@ -40,7 +40,6 @@ if [ -z "$ip" ]; then
 fi
 
 for feed in "${FEEDS[@]}"; do
-  out="$ARCHIVE_DIR/${feed%.json}-$stamp.json.gz"
   tmp=$(mktemp)
 
   http=$(curl -sS --max-time 300 --resolve "$EXPORT_HOST:443:$ip" \
@@ -56,6 +55,29 @@ for feed in "${FEEDS[@]}"; do
   if ! head -c 1 "$tmp" | grep -qE '[[{]'; then
     echo "archive-oeaw-exports: $feed is not JSON (challenge/HTML?), skipping" >&2
     rm -f "$tmp"; rc=1; continue
+  fi
+
+  # Tagesstempel aus dem Feed selbst (meta.generated_at_timestamp, Unix-Epoch),
+  # NICHT aus dem Laufdatum: seit Persistent=true kann ein Boot-Nachhol-Lauf
+  # sonst Nacht-N-Inhalt unter Nacht-N+1-Namen ablegen. Die Exporte entstehen
+  # ~03:00-03:25 Wien; in UTC konvertiert bleibt das derselbe Kalendertag.
+  # Fallback aufs Laufdatum, wenn das Feld fehlt oder kaputt ist.
+  ts=$(jq -r '.meta.generated_at_timestamp // empty' "$tmp" 2>/dev/null)
+  if echo "$ts" | grep -qE '^[0-9]+$' && stamp=$(date -u -d "@$ts" +%F 2>/dev/null); then
+    :
+  else
+    stamp=$run_stamp
+    echo "archive-oeaw-exports: $feed has no usable meta.generated_at_timestamp, falling back to run date $stamp" >&2
+  fi
+  out="$ARCHIVE_DIR/${feed%.json}-$stamp.json.gz"
+
+  # Exists-Guard: eine vorhandene Stempel-Datei ist ein bereits gesicherter
+  # Beleg und wird NIE überschrieben. Ohne den Guard trunkiert der reguläre
+  # 06:15-Lauf nach einem Boot-Nachhol-Lauf genau die Datei, die den einzigen
+  # Roh-Beleg eines bereits angewandten Deltas enthält.
+  if [ -e "$out" ]; then
+    echo "archive-oeaw-exports: $out already exists, keeping existing archive (skip)"
+    rm -f "$tmp"; continue
   fi
 
   gzip -c "$tmp" > "$out"

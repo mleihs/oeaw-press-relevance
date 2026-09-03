@@ -16,6 +16,11 @@ const DOI_SCHEME_RE = /^doi:/i;
 /**
  * Strips URL and scheme prefixes from a DOI string and validates it.
  * Returns the bare DOI (e.g. "10.1093/em/caaf012") or null if invalid.
+ *
+ * Abgrenzung: lib/shared/doi-extract.mjs hat `stripDoiNoise` (bis 2026-08-31
+ * ebenfalls `cleanDoi` genannt) mit anderer Semantik — dort wird Extraktions-
+ * Rauschen (Trailing-Interpunktion, Query-Strings) HINTER einem frisch aus
+ * Freitext gematchten DOI entfernt, ohne Validierung und nie null.
  */
 export function cleanDoi(raw: string | null | undefined): string | null {
   if (!raw) return null;

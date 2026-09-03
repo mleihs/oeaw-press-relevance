@@ -15,6 +15,12 @@ import { publicationToApi } from '../publications/to-api';
 
 const FRESH_SCORE_THRESHOLD = 0.7;
 
+// Die decided-Tabs (interested/skipped/…) listen in der UI alles ohne
+// Pagination — großzügige 500 (weit über jeder realen Bucket-Größe) statt
+// unbegrenzt, damit ein über Jahre gewachsener Tab nicht den ganzen Bestand
+// zieht. Sortiert wird decided_at DESC, gekappt also nur der älteste Rand.
+const DECIDED_TAB_LIMIT = 500;
+
 // Same mini relation projections as publications/list.ts (chip-sized
 // payloads). Co-located here because the queue carries no press_release —
 // reusing PublicationListItem would force `press_release: null` into the
@@ -81,8 +87,10 @@ function combineRanks<
 
   return [...rows]
     .map((r, i) => {
-      const psR = rPS.get(i)!;
-      const simR = rSIM.get(i)!;
+      // rankBy() setzt für JEDEN Index einen Rank; der Fallback n+1 (= Rank
+      // für fehlende Werte) ersetzt nur die Non-Null-Assertion.
+      const psR = rPS.get(i) ?? n + 1;
+      const simR = rSIM.get(i) ?? n + 1;
       const fused = r.press_similarity == null ? psR : (psR + simR) / 2;
       return { row: r, fused };
     })
@@ -100,8 +108,19 @@ function flattenRow(row: PublicationQueueRow): ReviewQueueItem {
       akronym_de: o.akronymDe,
       name_de: o.nameDe,
     }));
+  // Die Queue-Projektion lässt die Citation-Blobs aus (LIST_COLUMN_EXCLUDE in
+  // repos/publications.ts) — hier wie in publications/list.ts mit null
+  // auffüllen, damit der Publication-DTO-Shape auf dem Wire unverändert bleibt.
+  const rowFull = {
+    ...row,
+    ris: null,
+    bibtex: null,
+    endnote: null,
+    citationApa: null,
+    fullTextSnippet: null,
+  };
   return {
-    ...publicationToApi(row),
+    ...publicationToApi(rowFull),
     publication_type_lookup: row.publicationTypeRef
       ? {
           name_de: row.publicationTypeRef.nameDe,
@@ -145,6 +164,7 @@ export async function buildReviewQueue(
         eq(publications.decision, decisionParam),
       ),
       orderBy: descNullsLast(publications.decidedAt),
+      limit: DECIDED_TAB_LIMIT,
     });
     const flattened = rows.map(flattenRow);
     const decision_counts = await decisionCountsP;

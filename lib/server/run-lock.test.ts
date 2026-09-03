@@ -33,6 +33,10 @@ vi.mock('postgres', () => ({
 
 import { acquireRunLock, withRunLock, RunLockBusyError } from './run-lock';
 
+// Der lazy Lock-Pool wirft ohne DATABASE_URL bewusst sofort (Fail-fast bei
+// Fehlkonfiguration); postgres selbst ist gemockt, die URL nur Formsache.
+process.env.DATABASE_URL ??= 'postgresql://test:test@127.0.0.1:5432/test';
+
 beforeEach(() => {
   h.reserve.mockClear();
   h.release.mockClear();

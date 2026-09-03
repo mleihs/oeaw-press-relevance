@@ -5,13 +5,13 @@ import Link from 'next/link';
 import { Publication } from '@/lib/shared/types';
 import { doiToUrl } from '@/lib/shared/doi-utils';
 import { decodeHtmlBlock } from '@/lib/shared/html-utils';
-import { displayAuthor, displayTitle } from '@/lib/shared/publication-display';
+import { displayAuthor } from '@/lib/shared/publication-display';
+import { pubDisplayTitle, pubNaReason, pubTypeLabel } from '@/components/publication-cells';
 import { buildTaskUrl } from '@/lib/shared/meistertask-urls';
 import { cn } from '@/lib/shared/utils';
 import { PressScoreBadge, ScoreBar } from './score-bar';
 import { InfoBubble } from './info-bubble';
 import { EXPL, leadWithReason } from '@/lib/client/explanations';
-import { enrichmentReason } from '@/lib/shared/enrichment-reason';
 import { HaikuBlock } from './haiku-block';
 import { VenueLine } from './venue-line';
 import { MeistertaskButton } from '@/components/meistertask-button';
@@ -54,24 +54,6 @@ type PublicationRow = Publication & {
   orgunits?: Array<{ id: string; akronym_de: string | null; name_de: string }>;
   publication_type_lookup?: { name_de: string; name_en: string } | null;
 };
-
-// The per-row "why is there no score / why did enrichment fail" reason, woven
-// from the row's own DOI, type and date (see lib/shared/enrichment-reason).
-// Computed once per row and handed to BOTH the always-visible score badge and
-// the (optional) enrichment StatusBadge, so the two never tell different
-// stories. The `publication_type` string is empty on every failed row, so the
-// type lookup's label stands in.
-function rowEnrichmentReason(pub: PublicationRow): string | null {
-  return enrichmentReason(
-    {
-      enrichment_status: pub.enrichment_status,
-      doi: pub.doi,
-      publication_type: pub.publication_type || pub.publication_type_lookup?.name_de || null,
-      published_at: pub.published_at,
-    },
-    new Date(),
-  );
-}
 
 interface PublicationTableProps {
   publications: PublicationRow[];
@@ -281,7 +263,7 @@ function MobilePublicationCard({
   onDecided?: (pubId: string) => void;
 }) {
   const [sheetOpen, setSheetOpen] = useState(false);
-  const naReason = rowEnrichmentReason(pub);
+  const naReason = pubNaReason(pub);
   return (
     <>
     <Link
@@ -307,7 +289,7 @@ function MobilePublicationCard({
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-medium text-sm leading-snug line-clamp-2">
-            {displayTitle(pub.original_title || pub.title, pub.citation)}
+            {pubDisplayTitle(pub)}
             {pub.meistertask_task_token && (
               <button
                 type="button"
@@ -411,7 +393,7 @@ function MobilePublicationCard({
         <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto">
           <SheetHeader className="pb-2">
             <SheetTitle className="text-left text-base leading-snug line-clamp-3 pr-8">
-              {displayTitle(pub.original_title || pub.title, pub.citation)}
+              {pubDisplayTitle(pub)}
             </SheetTitle>
             <SheetDescription className="text-left">
               {displayAuthor(pub)}
@@ -483,7 +465,7 @@ function PublicationRow({
   const colCount = 6 + (showEnrichment ? 1 : 0) + (showScores ? 1 : 0);
 
   const accentClass = decisionAccentClass(pub.decision);
-  const naReason = rowEnrichmentReason(pub);
+  const naReason = pubNaReason(pub);
   return (
     <>
       <tr
@@ -526,7 +508,7 @@ function PublicationRow({
               className="hover:text-brand hover:underline truncate"
               onClick={(e) => e.stopPropagation()}
             >
-              {displayTitle(pub.original_title || pub.title, pub.citation)}
+              {pubDisplayTitle(pub)}
             </Link>
             {pub.peer_reviewed && (
               <Tooltip><TooltipTrigger asChild>
@@ -588,7 +570,7 @@ function PublicationRow({
         <td className="p-3 max-w-[140px] truncate">{pub.lead_author?.trim() || '-'}</td>
         <td className="p-3 whitespace-nowrap">
           <Badge variant="outline" className="text-xs">
-            {pub.publication_type || pub.publication_type_lookup?.name_de || 'Unbekannt'}
+            {pubTypeLabel(pub) || 'Unbekannt'}
           </Badge>
         </td>
         <td className="p-3 whitespace-nowrap">{pub.published_at?.slice(0, 4) || '-'}</td>

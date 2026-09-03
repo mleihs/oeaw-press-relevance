@@ -4,10 +4,12 @@ import { GATE_COOKIE_NAME } from './gate';
 /**
  * Isomorphic Sentry helpers shared by every runtime init
  * (`sentry.server.config.ts`, `sentry.edge.config.ts`,
- * `instrumentation-client.ts`) and by the script bootstrap
- * (`scripts/lib/sentry.mjs`). Keeping the scrubber and base options in one
+ * `instrumentation-client.ts`). Keeping the scrubber and base options in one
  * place means there is a single, testable definition of "what we send" — no
- * per-runtime `beforeSend` drift.
+ * per-runtime `beforeSend` drift. Ausnahme: das Script-Bootstrap
+ * `scripts/lib/sentry.mjs` kann dieses TS-Modul zur Laufzeit nicht
+ * importieren und hält deshalb einen minimalen ZWILLING des Scrubbers —
+ * Änderungen an `scrubSentryEvent` dort nachziehen.
  *
  * This module must stay framework- and runtime-agnostic: no `server-only`,
  * no Node APIs, no `next/*` imports. It is pulled into the browser bundle via
@@ -65,6 +67,10 @@ function scrubHeaderBag(bag: Record<string, string>): Record<string, string> {
  * `sendDefaultPii` is already `false`, so IP/user data is not attached in the
  * first place — this is the second line that keeps our own app secrets out of
  * a third-party store.
+ *
+ * ZWILLING: `scripts/lib/sentry.mjs` (`scrubScriptSentryEvent`) repliziert
+ * diesen Hook, weil .mjs das TS-Modul nicht importieren kann — Änderungen
+ * hier dort nachziehen.
  */
 export function scrubSentryEvent(event: ErrorEvent, _hint?: EventHint): ErrorEvent {
   const req = event.request;

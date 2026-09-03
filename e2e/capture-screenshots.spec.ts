@@ -6,8 +6,9 @@ import path from 'path';
 // is enough for the landing page. Five money-shots covering the
 // triage workflow + browse surfaces + a detail view.
 //
-// Run with:
-//   npx playwright test e2e/capture-screenshots.spec.ts
+// Kein Testwert — läuft deshalb NICHT im Default-Lauf (eigenes, env-gegatetes
+// Playwright-Projekt, s. playwright.config.ts). Run with:
+//   PW_SCREENSHOTS=1 npx playwright test --project=screenshots
 //
 // `reuseExistingServer: true` in playwright.config.ts means this
 // reuses an already-running `npm run dev` if available, otherwise

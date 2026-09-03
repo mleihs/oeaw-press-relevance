@@ -79,7 +79,9 @@ export const LIST_TRIMMED_COLUMNS = [
   'citationApa',
   'fullTextSnippet',
 ] as const;
-const LIST_COLUMN_EXCLUDE = {
+// Exportiert, weil auch der JSON-Export (lib/server/publications/export.ts)
+// und die Review-Queue dieselben Blob-Spalten auslassen.
+export const LIST_COLUMN_EXCLUDE = {
   ris: false,
   bibtex: false,
   endnote: false,
@@ -138,10 +140,19 @@ export const publicationsRepo = {
   async findManyForQueue(opts: {
     where: SQL | undefined;
     orderBy: SQL | SQL[];
+    /** Obergrenze für die decided-Tabs (die undecided-Menge ist schon über
+     *  die ID-Union begrenzt). Ohne Wert: kein LIMIT. */
+    limit?: number;
   }) {
     return db.query.publications.findMany({
       where: opts.where,
       orderBy: opts.orderBy,
+      limit: opts.limit,
+      // Wie findManyForList: die Citation-Blobs (ris/bibtex/endnote/
+      // citationApa/fullTextSnippet) fliegen aus der Projektion — die Queue
+      // rendert sie nie, `review/queue.ts` füllt sie am publicationToApi-
+      // Übergang mit null auf, der Wire-Shape bleibt unverändert.
+      columns: LIST_COLUMN_EXCLUDE,
       with: QUEUE_WITH,
     });
   },
@@ -156,27 +167,17 @@ export const publicationsRepo = {
     return rows[0]?.c ?? 0;
   },
 
-  // Dashboard top-row counts. These two replaced a listPublications-with-
-  // pageSize-1 detour that wasted one row + a pre-fetch on every call.
-  // Single count query each, semantics match the old path (archived=false).
+  // Dashboard top-row count. Replaced a listPublications-with-pageSize-1
+  // detour that wasted one row + a pre-fetch on every call. Single count
+  // query, semantics match the old path (archived=false).
+  // (countPressReleased wurde 2026-08-31 entfernt — der einzige Konsument,
+  // das Dashboard, hat den Wert nie gerendert.)
 
   async countWithFlags(): Promise<number> {
     // pub_ids_with_flags() already filters archived=false internally.
     const rows = await db.execute<{ c: number }>(
       sql`SELECT count(*)::int AS c FROM pub_ids_with_flags()`,
     );
-    return rows[0]?.c ?? 0;
-  },
-
-  async countPressReleased(): Promise<number> {
-    const rows = await db
-      .select({ c: count(sql`DISTINCT ${publications.id}`) })
-      .from(publications)
-      .innerJoin(
-        pressReleasesTable,
-        eq(pressReleasesTable.publicationId, publications.id),
-      )
-      .where(eq(publications.archived, false));
     return rows[0]?.c ?? 0;
   },
 

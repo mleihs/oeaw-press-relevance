@@ -94,6 +94,10 @@ export interface RawWebdb {
 export type ExtractDoiFromRow = (row: RawPublication) => string | null;
 
 // --- helpers: byte-identical to the .mjs ----------------------------------
+// ZWILLING: tsDate/tsTimestamp/nullIfEmpty existieren byte-identisch in
+// scripts/webdb-import.mjs (Legacy-Importer). Bewusst KEIN Import zwischen
+// .mjs und .ts — Änderungen immer an BEIDEN Stellen nachziehen, sonst driftet
+// die Parität von legacy- und v2-Importer.
 // Exported so other TYPO3 ingest adapters (e.g. typo3-events) can share the
 // exact same unix-epoch / null-empty semantics instead of re-implementing
 // them and drifting.

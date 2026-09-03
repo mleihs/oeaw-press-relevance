@@ -3,6 +3,12 @@ Description=Archive the raw OeAW JSON exports (gzip) before the nightly ingest a
 Documentation=https://github.com/mleihs/oeaw-press-relevance
 Wants=network-online.target
 After=network-online.target
+# Beim Boot-Catch-up (beide Timer Persistent=true) landen Archiv- und
+# Ingest-Start in derselben systemd-Transaktion; ohne Ordering entscheidet
+# dann der Zufall (RandomizedDelaySec 60 vs. 120), obwohl die Invariante
+# "Beleg VOR dem Anwenden" heisst. Before= ordnet genau diesen Fall; im
+# Normalbetrieb (06:15 vs. 06:30, getrennte Transaktionen) aendert es nichts.
+Before=oeaw-press-ingest.service
 
 [Service]
 Type=oneshot

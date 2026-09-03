@@ -1,5 +1,11 @@
 # Resume: Refactor deployen, dann Publikationen + Events bewerten
 
+> **ERLEDIGT am 2026-07-31 — historisches Dokument, NICHT erneut ausführen.**
+> Teil 1 (Deploy) lief am 2026-07-30, Teil 2 (Bewerten) am 2026-07-31
+> (11 Pubs, danach beide Pools 0; s. `docs/RESUME_BEWERTEN_UND_CI.md`). Auch
+> die beiden Punkte unter „Randnotiz" sind inzwischen behoben
+> (Leerfeed-Klassifikation + Drift-Schwelle, 2026-08-26/31).
+
 Stand 2026-07-30, ~11:45 UTC. Zwei getrennte Arbeitsgänge in dieser Reihenfolge:
 **erst deployen** (der Refactor liegt nur lokal), **dann bewerten**.
 

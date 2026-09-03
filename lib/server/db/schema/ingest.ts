@@ -2,7 +2,7 @@
 // supabase/migrations/20260710000001_publications_delta_ingest.sql — Quelle der
 // Wahrheit bleibt die Migration. UNIQUE(feed, generated_at_timestamp) macht die
 // Delta-Anwendung idempotent (Skip-if-applied in apply_publications_delta()).
-import { pgTable, index, unique, check, uuid, text, timestamp, bigint, jsonb, pgPolicy } from "drizzle-orm/pg-core"
+import { pgTable, index, unique, check, uuid, text, timestamp, bigint, jsonb } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 
 export const ingestRuns = pgTable("ingest_runs", {
@@ -18,5 +18,4 @@ export const ingestRuns = pgTable("ingest_runs", {
 	index("idx_ingest_runs_feed_ts").using("btree", table.feed.asc().nullsLast().op("text_ops"), table.generatedAtTimestamp.desc().nullsFirst().op("int8_ops")),
 	unique("ingest_runs_feed_gen_unique").on(table.feed, table.generatedAtTimestamp),
 	check("ingest_runs_status_check", sql`status = ANY (ARRAY['applied'::text, 'skipped'::text, 'failed'::text])`),
-	pgPolicy("anon_select", { as: "permissive", for: "select", to: ["anon"], using: sql`true` }),
 ]);

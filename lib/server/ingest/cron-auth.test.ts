@@ -78,14 +78,15 @@ describe('assertCronSecret', () => {
     expect(assertCronSecret(req(`Bearer ${SECRET}`, '203.0.113.9'))).toBeNull();
   });
 
-  it('resets the failure counter after a success', () => {
+  it('a success neither consults nor resets the limiter — failures keep counting', () => {
+    // Erfolg kehrt VOR jeder Limiter-Berührung zurück (XFF ist client-
+    // kontrolliert, ein Reset auf gefälschter IP wäre wirkungslos-irreführend).
     const ip = '203.0.113.10';
     for (let i = 0; i < 4; i++) assertCronSecret(req('Bearer wrong', ip));
-    // Erfolg setzt zurück …
     expect(assertCronSecret(req(`Bearer ${SECRET}`, ip))).toBeNull();
-    // … also sind wieder volle 5 Fehlversuche möglich, ohne 429.
-    for (let i = 0; i < 5; i++) {
-      expect(assertCronSecret(req('Bearer wrong', ip))?.status).toBe(401);
-    }
+    // 5. Fehlversuch füllt das Fenster (der Erfolg hat nichts zurückgesetzt) …
+    expect(assertCronSecret(req('Bearer wrong', ip))?.status).toBe(401);
+    // … der 6. ist geblockt.
+    expect(assertCronSecret(req('Bearer wrong', ip))?.status).toBe(429);
   });
 });

@@ -193,7 +193,10 @@ anders gelaufen als geplant:
    aber die tsconfig-`paths` (`@/…`) nicht auf. Kanonisch ist deshalb
    `npx tsx scripts/session-pipeline.ts …` bzw. `npm run session-pipeline -- …`.
    Sonst ist das Kriterium erfüllt: der Lauf braucht keine Vorbereitungszeile.
-2. **`enrich-api` und `enrich-augment` bleiben.** Befund 4 hielt sie für tot,
+2. **`enrich-api` und `enrich-augment` bleiben.** *(Update 2026-08-31: inzwischen
+   doch ausgebaut — seit `7630070` läuft Enrichment automatisch beim Import, und
+   gegen die heutige Default-URL `/api/analysis/batch` scheiterten beide mit 401.
+   Die unten genannten Hilfe-Texte müssen nachgezogen werden.)* Befund 4 hielt sie für tot,
    weil sie nur in `docs/HANDOVER.md` auftauchen. Sie stehen aber auch in der
    ausgelieferten Hilfe (`content/help/scores/score-fehlt.mdx`,
    `content/help/pipeline/enrichment.mdx`, `lib/client/explanations.tsx`) — ein

@@ -13,6 +13,7 @@
 
 import 'server-only';
 
+import * as Sentry from '@sentry/nextjs';
 import { getEnv } from '@/lib/server/env';
 import { log } from '@/lib/server/log';
 import type { YoutubePickerVideo, YoutubeSnapshot } from '@/lib/shared/board';
@@ -43,6 +44,14 @@ export function parseYoutubeVideoId(input: string): string | null {
   try {
     u = new URL(raw);
   } catch {
+    // Erwartbarer Nutzereingabe-Fall (weder Video-ID noch URL): der Parser
+    // antwortet mit null, der Aufrufer macht daraus eine Validierungsmeldung.
+    // Breadcrumb reicht — kein Fehler, aber eine Spur für den Fall der Fälle.
+    Sentry.addBreadcrumb({
+      category: 'youtube',
+      level: 'debug',
+      message: 'Eingabe weder Video-ID noch parsebare URL',
+    });
     return null;
   }
   if (u.protocol !== 'https:' && u.protocol !== 'http:') return null;
@@ -104,7 +113,17 @@ async function fetchJson(url: string): Promise<unknown | null> {
   }
   try {
     return await res.json();
-  } catch {
+  } catch (err) {
+    // Kaputtes/fehlendes JSON trotz 2xx (YouTube-Anomalie oder abgebrochener
+    // Body): bewusst non-fatal — Aufrufer behandeln null als „nicht
+    // auffindbar". Breadcrumb, damit gehäufte Fälle im Sentry-Kontext sichtbar
+    // würden.
+    Sentry.addBreadcrumb({
+      category: 'youtube',
+      level: 'warning',
+      message: 'YouTube-Antwort ohne parsebares JSON',
+      data: { message: err instanceof Error ? err.message : String(err) },
+    });
     return null;
   }
 }

@@ -1,7 +1,9 @@
 # OSS Readiness Plan — „Weg C"
 
-**Stand:** 2026-05-11
-**Status:** Plan, Phase 1 noch nicht begonnen
+**Stand:** 2026-05-11 (Status aktualisiert 2026-08-31)
+**Status:** abgeschlossen, historisch — alle 4 Phasen sind umgesetzt
+(Boundaries-Lint, Schema-Split, Vitest + CI existieren); Nachfolger:
+`ARCHITECTURE_PLAN.md`. NICHT erneut ausführen.
 **Autor:** Session-Outcome zwischen mleihs + Claude Opus 4.7 (1M context)
 
 Dieser Plan ist die vollständige Roadmap, das aktuelle Tool für

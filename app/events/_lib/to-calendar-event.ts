@@ -32,8 +32,10 @@ export interface CalendarChipData {
 export interface SxCalendarEvent extends CalendarChipData {
   start: Temporal.ZonedDateTime;
   end: Temporal.ZonedDateTime;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  [key: string]: any;
+  // Schedule-X' CalendarEventExternal trägt eine offene Index-Signatur;
+  // `unknown` statt `any`, damit unbekannte Zusatzfelder beim Lesen ein
+  // explizites Narrowing verlangen (siehe readChipData).
+  [key: string]: unknown;
 }
 
 function toViennaZdt(iso: string): Temporal.ZonedDateTime {

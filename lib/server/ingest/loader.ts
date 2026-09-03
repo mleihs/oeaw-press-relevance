@@ -308,14 +308,22 @@ async function importPublications(
   // webdb_uid but the same DOI. The old local row would block the new
   // INSERT via the DOI unique constraint — archive it + null its DOI first
   // so the dump's authoritative row can take the DOI.
+  //
+  // Bind-Parameter-Falle (Fix 2026-08-31): Drizzles sql-Template expandiert
+  // ein bloßes `${arr}` in eine IN-Klausel-Parameterliste `($1, $2, …)`, die
+  // Postgres nicht als Array-Literal casten kann — und die auf dem ~37k-Zeilen-
+  // Dump zusätzlich das Wire-Limit von 65.534 Parametern sprengt. `sql.param()`
+  // bindet das ganze Array als EINEN Parameter, den postgres-js korrekt als
+  // int[]/text[] serialisiert. Vgl. docs/TESTING.md §5.1 und dasselbe Muster
+  // in lib/server/repos/publications.ts + lib/server/analysis/batch.ts.
   if (dumpDois.length > 0) {
     const n = await execCountingUpdate(
       db,
       sql`UPDATE publications
             SET archived = true, doi = NULL, synced_at = NOW()
           WHERE archived = false
-            AND webdb_uid <> ALL(${dumpUids}::int[])
-            AND doi = ANY(${dumpDois}::text[])
+            AND webdb_uid <> ALL(${sql.param(dumpUids)}::int[])
+            AND doi = ANY(${sql.param(dumpDois)}::text[])
           RETURNING 1`,
     );
     log(`  pre-cleaned ${n} stale rows whose DOIs collide with the dump`);
@@ -360,11 +368,12 @@ async function importPublications(
   // Archive remaining publications absent from the new dump (TYPO3
   // soft-delete or visibility change). archived=true preserves analysis +
   // downstream FKs.
+  // sql.param: ein Bind-Parameter für das ganze Array (s. Kommentar oben).
   const arch = await execCountingUpdate(
     db,
     sql`UPDATE publications SET archived = true, synced_at = NOW()
         WHERE archived = false
-          AND webdb_uid <> ALL(${dumpUids}::int[])
+          AND webdb_uid <> ALL(${sql.param(dumpUids)}::int[])
         RETURNING 1`,
   );
   log(`  archived ${arch} publications absent from dump`);

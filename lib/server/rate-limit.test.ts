@@ -51,6 +51,57 @@ describe('createRateLimiter', () => {
     expect(limiter.isBlocked('1.2.3.4')).toBe(false);
     expect(limiter.isBlocked('9.9.9.9')).toBe(false);
   });
+
+  it('caps client-controlled keys at 128 chars (same bucket beyond the cap)', () => {
+    const limiter = createRateLimiter({ maxAttempts: 2, windowMs: 60_000 });
+    const base = 'x'.repeat(128);
+    // Zwei „verschiedene" überlange Keys mit gleichem 128er-Präfix teilen
+    // sich den Bucket — der Angreifer kann per Key-Länge keinen Speicher
+    // allozieren und per Suffix-Variation den Limiter nicht umgehen.
+    limiter.recordFailure(base + 'AAAA');
+    limiter.recordFailure(base + 'BBBB');
+    expect(limiter.isBlocked(base + 'CCCC')).toBe(true);
+    expect(limiter.isBlocked(base)).toBe(true);
+  });
+
+  it('evicts the oldest entry once maxEntries is reached', () => {
+    const limiter = createRateLimiter({ maxAttempts: 1, windowMs: 60_000, maxEntries: 3 });
+    limiter.recordFailure('ip-1');
+    limiter.recordFailure('ip-2');
+    limiter.recordFailure('ip-3');
+    expect(limiter.isBlocked('ip-1')).toBe(true);
+    // Vierter Key am Deckel: ältester (ip-1) fliegt, Rest bleibt blockiert.
+    limiter.recordFailure('ip-4');
+    expect(limiter.isBlocked('ip-1')).toBe(false);
+    expect(limiter.isBlocked('ip-2')).toBe(true);
+    expect(limiter.isBlocked('ip-3')).toBe(true);
+    expect(limiter.isBlocked('ip-4')).toBe(true);
+  });
+
+  it('sweeps expired entries at the cap before evicting live ones', () => {
+    const limiter = createRateLimiter({ maxAttempts: 1, windowMs: 60_000, maxEntries: 2 });
+    limiter.recordFailure('expired-ip');
+    vi.advanceTimersByTime(60_001);
+    limiter.recordFailure('live-ip');
+    // Am Deckel: der abgelaufene Eintrag wird weggeräumt, der lebendige
+    // (live-ip) bleibt blockiert statt als „ältester" geopfert zu werden.
+    limiter.recordFailure('new-ip');
+    expect(limiter.isBlocked('live-ip')).toBe(true);
+    expect(limiter.isBlocked('new-ip')).toBe(true);
+  });
+
+  it('isBlocked deletes an expired entry instead of just ignoring it', () => {
+    const limiter = createRateLimiter({ maxAttempts: 1, windowMs: 60_000, maxEntries: 2 });
+    limiter.recordFailure('a');
+    vi.advanceTimersByTime(60_001);
+    // Der Read räumt den abgelaufenen Eintrag auf …
+    expect(limiter.isBlocked('a')).toBe(false);
+    // … sodass am Deckel kein lebendiger Eintrag für ihn weichen muss.
+    limiter.recordFailure('b');
+    limiter.recordFailure('c');
+    expect(limiter.isBlocked('b')).toBe(true);
+    expect(limiter.isBlocked('c')).toBe(true);
+  });
 });
 
 describe('getClientIp', () => {

@@ -10,7 +10,9 @@ import { dirname } from 'path';
 
 const STATE_PATH = 'e2e/.auth/state.json';
 
-function readEnvVar(file: string, key: string): string | null {
+// Exportiert, weil e2e/gate.spec.ts denselben Fallback braucht (lokaler
+// Lauf gegen den Production-Build liest GATE_PASSWORD aus .env.local).
+export function readEnvVar(file: string, key: string): string | null {
   try {
     const content = readFileSync(file, 'utf-8');
     const match = content.match(new RegExp(`^${key}=(.*)$`, 'm'));

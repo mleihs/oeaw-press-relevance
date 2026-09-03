@@ -44,7 +44,7 @@
  */
 import mysql from 'mysql2/promise';
 import { connectDb } from './lib/db.mjs';
-import { cleanDoi, extractDoiFromText } from '../lib/shared/doi-extract.mjs';
+import { stripDoiNoise, extractDoiFromText } from '../lib/shared/doi-extract.mjs';
 
 // .env.local carries WEBDB_MYSQL_* (shell vars still win — process.loadEnvFile
 // does not overwrite already-set keys), matching the rest of the importers.
@@ -108,7 +108,7 @@ function extractPressNewsDoi(html) {
     .replace(/&amp;/gi, '&')
     .replace(/<[^>]+>/g, ' ');
   const labeled = text.match(/doi:?\s*(10\.\d{4,9}\/[^\s"'<>]+)/i);
-  if (labeled) return cleanDoi(labeled[1]);
+  if (labeled) return stripDoiNoise(labeled[1]);
   return extractDoiFromText(text);
 }
 

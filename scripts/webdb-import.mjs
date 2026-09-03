@@ -4,8 +4,10 @@
 // Usage (defaults match the local stacks we already have running):
 //   node scripts/webdb-import.mjs
 //
-// Override via env: MYSQL_HOST, MYSQL_PORT, MYSQL_USER, MYSQL_PASSWORD,
-// MYSQL_DATABASE, PG_DATABASE_URL, BATCH_SIZE. Flags: --force.
+// Override via env: WEBDB_MYSQL_HOST, WEBDB_MYSQL_PORT, WEBDB_MYSQL_USER,
+// WEBDB_MYSQL_PASSWORD, WEBDB_MYSQL_DATABASE (kanonische Namen, wie in
+// .env.example + lib/server/env.ts; die alten MYSQL_*-Namen bleiben als
+// Fallback lesbar), PG_DATABASE_URL, BATCH_SIZE. Flags: --force.
 //
 // Upsert by webdb_uid; analysis/enrichment columns are never written, so
 // ON CONFLICT DO UPDATE leaves them intact. Publications absent from the
@@ -22,12 +24,15 @@ import mysql from 'mysql2/promise';
 import pg from 'pg';
 import { extractDoiFromRow } from '../lib/shared/doi-extract.mjs';
 
+// Kanonische Env-Namen sind WEBDB_MYSQL_* (SSOT: lib/server/env.ts +
+// .env.example); die unpräfixten MYSQL_*-Namen bleiben abwärtskompatibel
+// als Fallback, damit bestehende Umgebungen weiterlaufen.
 const MYSQL = {
-  host: process.env.MYSQL_HOST || '127.0.0.1',
-  port: Number(process.env.MYSQL_PORT || 54499),
-  user: process.env.MYSQL_USER || 'root',
-  password: process.env.MYSQL_PASSWORD || 'root',
-  database: process.env.MYSQL_DATABASE || 'webdb',
+  host: process.env.WEBDB_MYSQL_HOST || process.env.MYSQL_HOST || '127.0.0.1',
+  port: Number(process.env.WEBDB_MYSQL_PORT || process.env.MYSQL_PORT || 54499),
+  user: process.env.WEBDB_MYSQL_USER || process.env.MYSQL_USER || 'root',
+  password: process.env.WEBDB_MYSQL_PASSWORD || process.env.MYSQL_PASSWORD || 'root',
+  database: process.env.WEBDB_MYSQL_DATABASE || process.env.MYSQL_DATABASE || 'webdb',
   charset: 'utf8mb4',
 };
 const PG_URL = process.env.PG_DATABASE_URL
@@ -47,6 +52,10 @@ await pgClient.connect();
 const log = (...args) => console.log(new Date().toISOString().slice(11, 19), ...args);
 
 // Convert TYPO3 unix timestamp to ISO date or null. 0 = unset.
+// ZWILLING: tsDate/tsTimestamp/nullIfEmpty existieren byte-identisch in
+// lib/server/ingest/adapters/webdb-normalize.ts (v2-Pfad, ADR 0017). Bewusst
+// KEIN Import zwischen .mjs und .ts — Änderungen immer an BEIDEN Stellen
+// nachziehen, sonst driftet die Parität von legacy- und v2-Importer.
 const tsDate = (n) => (n && n > 0 ? new Date(n * 1000).toISOString().slice(0, 10) : null);
 const tsTimestamp = (n) => (n && n > 0 ? new Date(n * 1000).toISOString() : null);
 const nullIfEmpty = (s) => (s === '' || s == null ? null : s);

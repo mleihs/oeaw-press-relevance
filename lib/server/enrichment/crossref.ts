@@ -1,5 +1,6 @@
 import { EnrichmentResult } from '@/lib/shared/types';
 import { cleanDoi } from '@/lib/shared/doi-utils';
+import { fetchJson, politeUserAgent } from '@/lib/server/http-client';
 
 /**
  * Extracts an ISO date (YYYY-MM-DD) from CrossRef's date-parts format.
@@ -21,16 +22,9 @@ export async function enrichFromCrossRef(rawDoi: string): Promise<EnrichmentResu
 
   const url = `https://api.crossref.org/works/${encodeURIComponent(doi)}`;
 
-  const response = await fetch(url, {
-    headers: {
-      'User-Agent': 'OeAW-Press-Relevance/1.0 (mailto:admin@oeaw.ac.at)',
-    },
-    signal: AbortSignal.timeout(10000),
-  });
+  const data = await fetchJson(url, { userAgent: politeUserAgent() });
+  if (data === null) return null;
 
-  if (!response.ok) return null;
-
-  const data = await response.json();
   const work = data.message;
   if (!work) return null;
 

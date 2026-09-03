@@ -81,14 +81,17 @@ function fmtDate(iso: string | null): string | null {
 export async function getScoringStatus(): Promise<ScoringStatus> {
   // Grenze des Bewerten-Fensters, einmal berechnet und dreifach verwendet.
   const cutoff = sql`now() - make_interval(days => ${SCORING_RECENT_DAYS}::int)`;
+  // Die Kandidaten-Views sind Detoast-lastig — deshalb genau EIN Scan pro
+  // View: `count(*)/min(created_at) FILTER (...)` liefert unscored, backlog
+  // und ältestes Fenster-Datum aus demselben Durchlauf, statt (wie bis
+  // 2026-08-31) drei Subselects über publication_scoring_candidates pro
+  // Dashboard-Render laufen zu lassen. Semantik und Ergebnis-Shape sind
+  // unverändert (min über 0 Zeilen → NULL → oldest_days NULL, wie zuvor).
   const rows = await db.execute<StatusRow>(sql`
     SELECT
-      (SELECT count(*)::int FROM publication_scoring_candidates
-         WHERE created_at >= ${cutoff})                                                       AS pub_unscored,
-      (SELECT count(*)::int FROM publication_scoring_candidates
-         WHERE created_at IS NULL OR created_at < ${cutoff})                                  AS pub_backlog,
-      (SELECT floor(extract(epoch FROM now() - min(created_at)) / 86400)::int
-         FROM publication_scoring_candidates WHERE created_at >= ${cutoff})                   AS pub_oldest_days,
+      p.pub_unscored,
+      p.pub_backlog,
+      p.pub_oldest_days,
       COALESCE(
         (SELECT applied_at FROM ingest_runs WHERE feed = ${PUBLICATIONS_FEED}
            ORDER BY applied_at DESC LIMIT 1),
@@ -96,9 +99,8 @@ export async function getScoringStatus(): Promise<ScoringStatus> {
       )                                                                                        AS pub_last_import,
       (SELECT status FROM ingest_runs WHERE feed = ${PUBLICATIONS_FEED}
          ORDER BY applied_at DESC LIMIT 1)                                                     AS pub_last_status,
-      (SELECT count(*)::int FROM event_scoring_candidates)                                     AS ev_unscored,
-      (SELECT floor(extract(epoch FROM now() - min(created_at)) / 86400)::int
-         FROM event_scoring_candidates)                                                        AS ev_oldest_days,
+      e.ev_unscored,
+      e.ev_oldest_days,
       COALESCE(
         (SELECT applied_at FROM ingest_runs WHERE feed = ${EVENTS_FEED}
            ORDER BY applied_at DESC LIMIT 1),
@@ -106,6 +108,20 @@ export async function getScoringStatus(): Promise<ScoringStatus> {
       )                                                                                        AS ev_last_import,
       (SELECT status FROM ingest_runs WHERE feed = ${EVENTS_FEED}
          ORDER BY applied_at DESC LIMIT 1)                                                     AS ev_last_status
+    FROM (
+      SELECT
+        count(*) FILTER (WHERE created_at >= ${cutoff})::int                                   AS pub_unscored,
+        count(*) FILTER (WHERE created_at IS NULL OR created_at < ${cutoff})::int              AS pub_backlog,
+        floor(extract(epoch FROM now()
+          - min(created_at) FILTER (WHERE created_at >= ${cutoff})) / 86400)::int              AS pub_oldest_days
+      FROM publication_scoring_candidates
+    ) AS p
+    CROSS JOIN (
+      SELECT
+        count(*)::int                                                                          AS ev_unscored,
+        floor(extract(epoch FROM now() - min(created_at)) / 86400)::int                        AS ev_oldest_days
+      FROM event_scoring_candidates
+    ) AS e
   `);
 
   const r = rows[0];

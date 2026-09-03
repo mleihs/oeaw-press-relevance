@@ -67,7 +67,20 @@ export function SSEProgress({ title, description, endpoint, requestBody, onCompl
       }
 
       // SSE stream
-      await consumeSSE(response, (eventType, data) => {
+      await consumeSSE(response, (eventType, raw) => {
+        // SSE-Payload ist `unknown` (lib/client/sse.ts). Die progress/complete/
+        // error-Frames der Batch-Routen tragen diese (teils optionalen) Felder —
+        // der Cast macht die bisher implizite Annahme explizit.
+        const data = (typeof raw === 'object' && raw !== null ? raw : {}) as {
+          processed?: number;
+          total?: number;
+          successful?: number;
+          failed?: number;
+          current_title?: string;
+          tokens_used?: number;
+          cost?: number;
+          message?: string;
+        };
         if (eventType === 'progress') {
           setState(s => ({
             ...s,
@@ -81,8 +94,8 @@ export function SSEProgress({ title, description, endpoint, requestBody, onCompl
         } else if (eventType === 'complete') {
           setState({
             status: 'complete',
-            processed: data.processed ?? data.total,
-            total: data.total,
+            processed: data.processed ?? data.total ?? 0,
+            total: data.total ?? 0,
             successful: data.successful,
             failed: data.failed,
             tokensUsed: data.tokens_used,

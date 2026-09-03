@@ -11,23 +11,20 @@
 //   npm run analyze-events -- --target=prod --yes       # → prod, unattended
 //   npm run analyze-events -- --target=prod --yes --limit=200 --force
 
-import { loadDbUrl, parseScriptArgs, confirmProd, redactedDatabaseUrl } from './lib/db.mjs';
-import { initScriptSentry, captureScriptError, flushAndExit } from './lib/sentry.mjs';
+// Gemeinsame Präambel: Flags → .env.local → Sentry → DATABASE_URL-Override.
+import {
+  bootstrapScript, redactedDatabaseUrl, captureScriptError, flushAndExit,
+} from './lib/bootstrap';
 import { DEFAULT_LLM_MODEL } from '@/lib/shared/constants';
 
-const { target, flags } = parseScriptArgs();
-const isProd = target === 'prod';
-
-process.loadEnvFile('.env.local');
-initScriptSentry('analyze-events');
-process.env.DATABASE_URL = loadDbUrl(target);
+const { target, flags, confirmProd } = bootstrapScript('analyze-events');
 
 const limitFlag = flags.find((f) => /^--limit=\d+$/.test(f));
 const limit = limitFlag ? parseInt(limitFlag.split('=')[1], 10) : 50;
 const force = flags.includes('--force');
 
 async function main(): Promise<void> {
-  await confirmProd({ isProd, flags, label: 'analyze-events' });
+  await confirmProd('analyze-events');
 
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {

@@ -8,8 +8,9 @@ OnCalendar=*-*-* 06:15:00 Europe/Vienna
 # Archiv beim Boot nach. Ohne Catch-up fehlt fuer genau diese Nacht der
 # Rohexport-Beleg — die Exporte werden um ~03:00 ueberschrieben, und der
 # Ingest (Persistent=true) wuerde ein UNarchiviertes Delta anwenden. Ein
-# Nachlauf spaeter am Tag holt dieselbe Datei; doppelt schreiben ist harmlos
-# (Datei traegt den Tagesstempel und wird ueberschrieben).
+# Nachlauf spaeter am Tag holt dieselbe Datei; doppelt laufen ist harmlos
+# (Stempel kommt aus meta.generated_at des Feeds, und eine bereits
+# existierende Stempel-Datei wird nie ueberschrieben).
 Persistent=true
 RandomizedDelaySec=60
 
