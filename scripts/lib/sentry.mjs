@@ -19,6 +19,54 @@ import * as Sentry from '@sentry/node';
 
 let initialized = false;
 
+// ---------------------------------------------------------------------------
+// Secret-Scrubber — FORMEL-ZWILLING von lib/shared/sentry.ts (scrubSentryEvent).
+// Ein .mjs kann das TS-Modul zur Laufzeit nicht importieren, deshalb ist der
+// Hook hier minimal repliziert. Änderungen IMMER in beiden Dateien nachziehen.
+// Scripts tragen i.d.R. keinen Request-Kontext, aber der Hook kostet nichts
+// und hält Header/Cookies/Query-String sicher aus Events heraus, falls doch
+// einer mitkommt (z.B. via captureScriptError-Extra).
+// ---------------------------------------------------------------------------
+const REDACTED = '[redacted]';
+const SENSITIVE_HEADERS = new Set([
+  'authorization',
+  'proxy-authorization',
+  'cookie',
+  'set-cookie',
+  'x-openrouter-key',
+  'x-api-key',
+  'x-supabase-auth',
+]);
+// 'gate' = GATE_COOKIE_NAME (lib/shared/gate.ts); 'sb-*' = Supabase-Session.
+const SENSITIVE_COOKIE_EXACT = new Set(['gate']);
+const SENSITIVE_COOKIE_PREFIXES = ['sb-'];
+
+function isSensitiveCookie(name) {
+  const lower = name.toLowerCase();
+  if (SENSITIVE_COOKIE_EXACT.has(name)) return true;
+  return SENSITIVE_COOKIE_PREFIXES.some((p) => lower.startsWith(p));
+}
+
+/** beforeSend-Hook: Zwilling von scrubSentryEvent in lib/shared/sentry.ts. */
+export function scrubScriptSentryEvent(event) {
+  const req = event.request;
+  if (!req) return event;
+  if (req.headers) {
+    const out = {};
+    for (const [k, v] of Object.entries(req.headers)) {
+      out[k] = SENSITIVE_HEADERS.has(k.toLowerCase()) ? REDACTED : v;
+    }
+    req.headers = out;
+  }
+  if (req.cookies) {
+    for (const name of Object.keys(req.cookies)) {
+      if (isSensitiveCookie(name)) req.cookies[name] = REDACTED;
+    }
+  }
+  if (req.query_string) req.query_string = REDACTED;
+  return event;
+}
+
 /**
  * Initialise Sentry for a script and install process-level crash handlers.
  * Idempotent and safe to call when SENTRY_DSN is unset (returns false).
@@ -33,10 +81,11 @@ export function initScriptSentry(scriptName) {
     dsn,
     environment: process.env.SENTRY_ENVIRONMENT ?? process.env.NODE_ENV ?? 'production',
     release: process.env.SENTRY_RELEASE ?? process.env.VERCEL_GIT_COMMIT_SHA,
-    // Error monitoring only — no tracing. Scripts carry no request context, so
-    // the request scrubber used by the web app is unnecessary here.
+    // Error monitoring only — no tracing. Scrubber = Zwilling des Web-App-
+    // Hooks (s.o., lib/shared/sentry.ts).
     tracesSampleRate: 0,
     sendDefaultPii: false,
+    beforeSend: scrubScriptSentryEvent,
   });
   Sentry.setTags({ runner: 'script', script: scriptName });
 

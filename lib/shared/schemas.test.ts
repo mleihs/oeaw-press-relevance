@@ -167,6 +167,17 @@ describe('publicationsListQuerySchema (permissive)', () => {
       false,
     );
   });
+  it('deckelt pageSize auf PAGE_SIZE_MAX (Dump-Vektor ?pageSize=100000)', () => {
+    expect(
+      publicationsListQuerySchema.parse({ pageSize: '200' }).pageSize,
+    ).toBe(200);
+    expect(
+      publicationsListQuerySchema.safeParse({ pageSize: '201' }).success,
+    ).toBe(false);
+    expect(
+      publicationsListQuerySchema.safeParse({ pageSize: '100000' }).success,
+    ).toBe(false);
+  });
   it('passes arbitrary filter params through (.loose, no surprise 400)', () => {
     const r = publicationsListQuerySchema.safeParse({
       search: 'x',

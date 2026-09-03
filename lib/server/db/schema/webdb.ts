@@ -2,7 +2,7 @@
 // Vorträge, Typ-Lookups (inkl. ÖSTAT-6) + deren Junctions untereinander.
 // Junctions mit Publikationsbezug liegen in ./publications (Import-Richtung
 // webdb → publications wäre sonst zyklisch).
-import { pgTable, index, unique, uuid, text, timestamp, foreignKey, integer, boolean, date, primaryKey, pgPolicy } from "drizzle-orm/pg-core"
+import { pgTable, index, unique, uuid, text, timestamp, foreignKey, integer, boolean, date, primaryKey } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 
 export const publicationTypes = pgTable("publication_types", {
@@ -12,7 +12,6 @@ export const publicationTypes = pgTable("publication_types", {
 	nameEn: text("name_en").notNull(),
 }, (table) => [
 	unique("publication_types_webdb_uid_key").on(table.webdbUid),
-	pgPolicy("anon_select", { as: "permissive", for: "select", to: ["anon"], using: sql`true` }),
 ]);
 
 export const lectureTypes = pgTable("lecture_types", {
@@ -22,7 +21,6 @@ export const lectureTypes = pgTable("lecture_types", {
 	nameEn: text("name_en").notNull(),
 }, (table) => [
 	unique("lecture_types_webdb_uid_key").on(table.webdbUid),
-	pgPolicy("anon_select", { as: "permissive", for: "select", to: ["anon"], using: sql`true` }),
 ]);
 
 export const orgunitTypes = pgTable("orgunit_types", {
@@ -32,7 +30,6 @@ export const orgunitTypes = pgTable("orgunit_types", {
 	nameEn: text("name_en").notNull(),
 }, (table) => [
 	unique("orgunit_types_webdb_uid_key").on(table.webdbUid),
-	pgPolicy("anon_select", { as: "permissive", for: "select", to: ["anon"], using: sql`true` }),
 ]);
 
 export const memberTypes = pgTable("member_types", {
@@ -42,7 +39,6 @@ export const memberTypes = pgTable("member_types", {
 	nameEn: text("name_en").notNull(),
 }, (table) => [
 	unique("member_types_webdb_uid_key").on(table.webdbUid),
-	pgPolicy("anon_select", { as: "permissive", for: "select", to: ["anon"], using: sql`true` }),
 ]);
 
 export const oestat6Categories = pgTable("oestat6_categories", {
@@ -54,7 +50,6 @@ export const oestat6Categories = pgTable("oestat6_categories", {
 }, (table) => [
 	index("idx_oestat6_oestat3").using("btree", table.oestat3.asc().nullsLast().op("int4_ops")),
 	unique("oestat6_categories_webdb_uid_key").on(table.webdbUid),
-	pgPolicy("anon_select", { as: "permissive", for: "select", to: ["anon"], using: sql`true` }),
 ]);
 
 export const orgunits = pgTable("orgunits", {
@@ -85,7 +80,6 @@ export const orgunits = pgTable("orgunits", {
 			name: "orgunits_parent_id_fkey"
 		}).onDelete("set null"),
 	unique("orgunits_webdb_uid_key").on(table.webdbUid),
-	pgPolicy("anon_select", { as: "permissive", for: "select", to: ["anon"], using: sql`true` }),
 ]);
 
 export const extunits = pgTable("extunits", {
@@ -97,7 +91,6 @@ export const extunits = pgTable("extunits", {
 	syncedAt: timestamp("synced_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 }, (table) => [
 	unique("extunits_webdb_uid_key").on(table.webdbUid),
-	pgPolicy("anon_select", { as: "permissive", for: "select", to: ["anon"], using: sql`true` }),
 ]);
 
 export const persons = pgTable("persons", {
@@ -146,7 +139,6 @@ export const persons = pgTable("persons", {
 			name: "persons_member_type_id_fkey"
 		}).onDelete("set null"),
 	unique("persons_webdb_uid_key").on(table.webdbUid),
-	pgPolicy("anon_select", { as: "permissive", for: "select", to: ["anon"], using: sql`true` }),
 ]);
 
 export const projects = pgTable("projects", {
@@ -179,7 +171,6 @@ export const projects = pgTable("projects", {
 			name: "projects_parent_id_fkey"
 		}).onDelete("set null"),
 	unique("projects_webdb_uid_key").on(table.webdbUid),
-	pgPolicy("anon_select", { as: "permissive", for: "select", to: ["anon"], using: sql`true` }),
 ]);
 
 export const lectures = pgTable("lectures", {
@@ -207,7 +198,6 @@ export const lectures = pgTable("lectures", {
 			name: "lectures_type_id_fkey"
 		}).onDelete("set null"),
 	unique("lectures_webdb_uid_key").on(table.webdbUid),
-	pgPolicy("anon_select", { as: "permissive", for: "select", to: ["anon"], using: sql`true` }),
 ]);
 
 export const personOestat6 = pgTable("person_oestat6", {
@@ -226,7 +216,6 @@ export const personOestat6 = pgTable("person_oestat6", {
 			name: "person_oestat6_oestat6_id_fkey"
 		}).onDelete("cascade"),
 	primaryKey({ columns: [table.personId, table.oestat6Id], name: "person_oestat6_pkey"}),
-	pgPolicy("anon_select", { as: "permissive", for: "select", to: ["anon"], using: sql`true` }),
 ]);
 
 export const lecturePersons = pgTable("lecture_persons", {
@@ -246,7 +235,6 @@ export const lecturePersons = pgTable("lecture_persons", {
 			name: "lecture_persons_person_id_fkey"
 		}).onDelete("cascade"),
 	primaryKey({ columns: [table.lectureId, table.personId], name: "lecture_persons_pkey"}),
-	pgPolicy("anon_select", { as: "permissive", for: "select", to: ["anon"], using: sql`true` }),
 ]);
 
 export const lectureOrgunits = pgTable("lecture_orgunits", {
@@ -266,7 +254,6 @@ export const lectureOrgunits = pgTable("lecture_orgunits", {
 			name: "lecture_orgunits_orgunit_id_fkey"
 		}).onDelete("cascade"),
 	primaryKey({ columns: [table.lectureId, table.orgunitId], name: "lecture_orgunits_pkey"}),
-	pgPolicy("anon_select", { as: "permissive", for: "select", to: ["anon"], using: sql`true` }),
 ]);
 
 export const projectLectures = pgTable("project_lectures", {
@@ -286,7 +273,6 @@ export const projectLectures = pgTable("project_lectures", {
 			name: "project_lectures_lecture_id_fkey"
 		}).onDelete("cascade"),
 	primaryKey({ columns: [table.projectId, table.lectureId], name: "project_lectures_pkey"}),
-	pgPolicy("anon_select", { as: "permissive", for: "select", to: ["anon"], using: sql`true` }),
 ]);
 
 export const extunitPersons = pgTable("extunit_persons", {
@@ -306,7 +292,6 @@ export const extunitPersons = pgTable("extunit_persons", {
 			name: "extunit_persons_person_id_fkey"
 		}).onDelete("cascade"),
 	primaryKey({ columns: [table.extunitId, table.personId], name: "extunit_persons_pkey"}),
-	pgPolicy("anon_select", { as: "permissive", for: "select", to: ["anon"], using: sql`true` }),
 ]);
 
 export const orgunitPersons = pgTable("orgunit_persons", {
@@ -329,5 +314,4 @@ export const orgunitPersons = pgTable("orgunit_persons", {
 			name: "orgunit_persons_person_id_fkey"
 		}).onDelete("cascade"),
 	primaryKey({ columns: [table.orgunitId, table.personId], name: "orgunit_persons_pkey"}),
-	pgPolicy("anon_select", { as: "permissive", for: "select", to: ["anon"], using: sql`true` }),
 ]);

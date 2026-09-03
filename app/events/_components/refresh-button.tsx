@@ -6,6 +6,7 @@ import { Loader2, RefreshCw } from '@/lib/icons';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { getApiHeaders } from '@/lib/client/stores/settings-store';
+import { consumeSSE } from '@/lib/client/sse';
 
 interface SyncResponse {
   imported: number;
@@ -17,11 +18,13 @@ interface SyncResponse {
   ms: number;
 }
 
-/** Triggers POST /api/events/sync. Shows a single-line success toast and
- *  refreshes the RSC tree so the freshly-imported rows + the new
- *  `last_synced` timestamp render without a hard reload. The 503 from
- *  EventsSyncConfigError surfaces as a destructive toast with the German
- *  message the route handed back. */
+/** Triggers POST /api/events/sync (SSE-Stream, s. Route). Der Stream liefert
+ *  started/locations/synced als Zwischenstände; das UI bleibt bewusst schlicht
+ *  (Spinner via isPending) und wertet nur das `done`-Frame (Ergebnis-Toast)
+ *  bzw. `error` aus. Refreshes the RSC tree so the freshly-imported rows +
+ *  the new `last_synced` timestamp render without a hard reload. Pre-Stream-
+ *  Fehler (401/403, 503 bei fehlendem WEBDB_MYSQL_HOST) kommen weiterhin als
+ *  Plain-JSON und landen im destructive Toast. */
 export function RefreshButton({ lastSync }: { lastSync: string | null }) {
   const router = useRouter();
   const sync = useMutation({
@@ -30,9 +33,30 @@ export function RefreshButton({ lastSync }: { lastSync: string | null }) {
         method: 'POST',
         headers: getApiHeaders(),
       });
-      const body = await r.json();
-      if (!r.ok) throw new Error(body.error ?? `HTTP ${r.status}`);
-      return body as SyncResponse;
+      const contentType = r.headers.get('content-type') ?? '';
+      if (!r.ok || !contentType.includes('text/event-stream')) {
+        // Auth/CSRF/Config-Fehler antworten vor dem Stream als JSON.
+        const body = (await r.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+        throw new Error(body?.error ?? `HTTP ${r.status}`);
+      }
+
+      let result: SyncResponse | null = null;
+      let errorMessage: string | null = null;
+      await consumeSSE(r, (event, data) => {
+        if (event === 'done') {
+          result = data as SyncResponse;
+        } else if (event === 'error') {
+          const d = data as { error?: string };
+          errorMessage = d.error ?? 'Unbekannter Fehler';
+        }
+      });
+      if (errorMessage) throw new Error(errorMessage);
+      if (!result) {
+        throw new Error('Verbindung abgebrochen, bevor der Sync fertig war');
+      }
+      return result;
     },
     onSuccess: (data) => {
       const parts = [

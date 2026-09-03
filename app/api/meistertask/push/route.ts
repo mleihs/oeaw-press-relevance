@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { apiError, assertAllowedOrigin, withApiError } from '@/lib/server/http';
+import { requireUser } from '@/lib/server/auth/require';
 import { requestLogger } from '@/lib/server/log';
 import { meistertaskPushPayloadSchema } from '@/lib/shared/schemas';
 import { pushPublicationToMeistertask } from '@/lib/server/meistertask/push';
 import type { MeistertaskPushResult } from '@/lib/shared/meistertask-types';
 
 export const POST = withApiError(async (req: NextRequest) => {
+  // Mutierend (legt Tasks im externen MeisterTask an) → angemeldete
+  // Identität Pflicht (Security-Audit M1).
+  await requireUser();
+
   let raw: unknown;
   try {
     raw = await req.json();

@@ -40,7 +40,21 @@ export interface SyncOptions {
   /** EVENTS_LLM_FALLBACK_ENABLED. When true, sync calls the LLM cascade
    *  for events with no extracted location (~12% of rows). */
   llmFallbackEnabled: boolean;
+  /** Optionaler Fortschritts-Emitter für die SSE-Route (/api/events/sync):
+   *  meldet 'locations' nach dem LLM-Fallback und 'synced' nach Upsert+Prune,
+   *  damit der Stream während langer Läufe echte Progress-Frames trägt.
+   *  Der CLI-Pfad (scripts/sync-events.ts) lässt ihn einfach weg. */
+  onProgress?: (
+    event: 'locations' | 'synced',
+    data: Record<string, number>,
+  ) => void;
 }
+
+/** Wortlaut-SSOT für den deaktivierten Sync: die SSE-Route pre-checkt den
+ *  Host VOR dem Stream-Start und braucht denselben Text als Plain-JSON-503;
+ *  hier zentral, damit Route und EventsSyncConfigError nicht driften. */
+export const EVENTS_SYNC_DISABLED_MESSAGE =
+  'WEBDB_MYSQL_HOST ist nicht gesetzt — der MySQL-Sync ist deaktiviert. Setze die Variable in .env.local, um Events aus der WEBDB zu ziehen.';
 
 /** Thrown when mysqlHost is missing. The API route maps this to a 503
  *  with a friendly message; any other MySQL error (connection refused,
@@ -152,9 +166,7 @@ export async function syncUpcomingEvents(
   // because /events stays bedienbar without sync); enforce here at the
   // boundary instead so the read path doesn't carry this dependency.
   if (!options.mysqlHost) {
-    throw new EventsSyncConfigError(
-      'WEBDB_MYSQL_HOST ist nicht gesetzt — der MySQL-Sync ist deaktiviert. Setze die Variable in .env.local, um Events aus der WEBDB zu ziehen.',
-    );
+    throw new EventsSyncConfigError(EVENTS_SYNC_DISABLED_MESSAGE);
   }
 
   const rawRows = await fetchTypo3Events();
@@ -186,6 +198,7 @@ export async function syncUpcomingEvents(
   const llmLocationsFilled = options.llmFallbackEnabled
     ? await fillMissingLocationsViaLlm(normalized)
     : 0;
+  options.onProgress?.('locations', { llm_locations_filled: llmLocationsFilled });
 
   // Single-source the UPSERT (and its maintainer/scoring-column omissions) in
   // upsertEvents so this MySQL path and the JSON-export importer can't drift.
@@ -207,6 +220,12 @@ export async function syncUpcomingEvents(
       ),
     )
     .returning({ id: eventsTable.id });
+
+  options.onProgress?.('synced', {
+    imported,
+    updated,
+    pruned: prunedRows.length,
+  });
 
   return {
     imported,

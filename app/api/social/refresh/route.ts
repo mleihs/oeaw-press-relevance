@@ -7,7 +7,8 @@ import {
   validateBody,
   withApiError,
 } from '@/lib/server/http';
-import { getOpenRouterKey } from '@/lib/server/llm';
+import { requireUser } from '@/lib/server/auth/require';
+import { getOpenRouterKey, getRequestedModel } from '@/lib/server/llm';
 import { getEnv } from '@/lib/server/env';
 import { runSocialRefresh } from '@/lib/server/social/refresh';
 import { socialRefreshPayloadSchema } from '@/lib/shared/schemas';
@@ -17,6 +18,12 @@ import { socialRefreshPayloadSchema } from '@/lib/shared/schemas';
 export const maxDuration = 300;
 
 export const POST = withApiError(async (req: NextRequest) => {
+  // Diese Route gibt Apify- und OpenRouter-Guthaben aus → angemeldete
+  // Identität Pflicht (vorher nur Gate-Cookie; `force:true` umging zudem den
+  // Cooldown). requireUser wirft ApiAuthError → 401/403 — dasselbe Muster wie
+  // /api/analysis/batch.
+  await requireUser();
+
   let apiKey: string;
   try {
     apiKey = getOpenRouterKey(req);
@@ -34,8 +41,9 @@ export const POST = withApiError(async (req: NextRequest) => {
 
   const { force } = await validateBody(req, socialRefreshPayloadSchema);
   // The refresh dialog's model picker sends x-llm-model; otherwise use the
-  // feature default (SOCIAL_LLM_MODEL).
-  const model = req.headers.get('x-llm-model') || env.SOCIAL_LLM_MODEL;
+  // feature default (SOCIAL_LLM_MODEL). getRequestedModel validiert den
+  // Header gegen die kuratierte Modell-Allowlist (lib/server/llm.ts).
+  const model = getRequestedModel(req) ?? env.SOCIAL_LLM_MODEL;
 
   const { stream, send, close } = createSSEStream();
 

@@ -5,6 +5,7 @@ import {
   publications as publicationsTable,
   descNullsLast,
 } from '@/lib/server/db';
+import { LIST_COLUMN_EXCLUDE } from '@/lib/server/repos/publications';
 
 /**
  * Projects only the columns the CSV export uses, ordered by press_score with
@@ -43,4 +44,23 @@ export function fetchAnalyzedExportRows(onlyAnalyzed: boolean) {
         : undefined,
     )
     .orderBy(descNullsLast(publicationsTable.pressScore));
+}
+
+/**
+ * Zeilen für den JSON-Export (`/api/export/json`): der volle Publication-
+ * Wire-Shape MINUS der schweren Citation-Blobs (LIST_COLUMN_EXCLUDE: ris,
+ * bibtex, endnote, citationApa, fullTextSnippet). Vorher zog ein nacktes
+ * `db.select()` diese Blobs für bis zu ~39k Zeilen in den RAM — OOM-Risiko
+ * auf der VPS und ein sicherer Cloudflare-100s-Abriss. Die Route füllt die
+ * fehlenden Spalten mit null auf, damit `publicationToApi` denselben
+ * DTO-Shape liefert wie bisher (Keys bleiben, Inhalte der Blobs entfallen).
+ */
+export function fetchJsonExportRows(onlyAnalyzed: boolean) {
+  return db.query.publications.findMany({
+    columns: LIST_COLUMN_EXCLUDE,
+    where: onlyAnalyzed
+      ? eq(publicationsTable.analysisStatus, 'analyzed')
+      : undefined,
+    orderBy: descNullsLast(publicationsTable.pressScore),
+  });
 }

@@ -12,7 +12,8 @@ import { createRateLimiter, getClientIp } from '@/lib/server/rate-limit';
 // 32-Byte-Länge) und mit timingSafeEqual verglichen, damit weder Länge noch
 // Inhalt des Secrets über die Antwortzeit durchsickern.
 
-// 5 Fehlversuche / 15 min pro IP → 429. Bremst Brute-Force gegen das Secret.
+// 5 Fehlversuche / 15 min pro IP → 429. Bremst wiederholte FEHLversuche gegen
+// das Secret; der Erfolgspfad konsultiert den Limiter nie (Reihenfolge unten).
 const limiter = createRateLimiter({ maxAttempts: 5, windowMs: 15 * 60_000 });
 
 function sha256(s: string): Buffer {
@@ -22,9 +23,10 @@ function sha256(s: string): Buffer {
 /**
  * Prüft das Bearer-Token gegen INGEST_CRON_SECRET.
  * Rückgabe: eine Fehler-`Response` bei Ablehnung, sonst `null` (weiter).
- *   - env unset          → 503 (Feature nicht konfiguriert, klar unterscheidbar)
- *   - IP rate-limited    → 429
- *   - fehlend/falsch     → 401
+ *   - env unset             → 503 (Feature nicht konfiguriert, klar unterscheidbar)
+ *   - korrektes Secret      → null (immer, auch bei geblockter IP)
+ *   - Fehlversuch, IP-Limit → 429
+ *   - fehlend/falsch        → 401
  */
 export function assertCronSecret(req: Request): Response | null {
   const secret = process.env.INGEST_CRON_SECRET?.trim();
@@ -44,12 +46,10 @@ export function assertCronSecret(req: Request): Response | null {
   // 5 Fehlversuchen unter gefälschtem XFF der Cron-IP den echten Nacht-Cron
   // aussperren (429 trotz korrektem Secret → Fehlalarm + ausgefallener
   // Import). Wer das Secret hat, kommt deshalb IMMER durch; der Limiter
-  // bremst nur wiederholte Fehlversuche.
+  // bremst nur wiederholte Fehlversuche und wird vom Erfolg nie berührt.
+  if (ok) return null;
+
   const ip = getClientIp(req);
-  if (ok) {
-    limiter.reset(ip);
-    return null;
-  }
   if (limiter.isBlocked(ip)) {
     return apiError('Too many attempts. Try again later.', 429);
   }

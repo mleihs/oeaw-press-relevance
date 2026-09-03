@@ -6,6 +6,7 @@ import {
   validateParams,
   withApiError,
 } from '@/lib/server/http';
+import { requireUser } from '@/lib/server/auth/require';
 import { decisionPayloadSchema } from '@/lib/shared/schemas';
 import { idParamSchema } from '@/lib/server/schemas';
 import { applyDecision } from '@/lib/server/publications/decisions';
@@ -15,6 +16,10 @@ export const PATCH = withApiError(async (
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) => {
+  // Mutierende Route → angemeldete Identität Pflicht (Security-Audit M1).
+  // requireUser wirft ApiAuthError → 401/403 via withApiError.
+  await requireUser();
+
   const { id } = validateParams(await params, idParamSchema);
 
   // Used downstream as the base URL embedded in MeisterTask task notes.

@@ -13,6 +13,7 @@ import {
   type FlagDeletePayload,
 } from '@/lib/shared/schemas';
 import { idParamSchema } from '@/lib/server/schemas';
+import { requireUser } from '@/lib/server/auth/require';
 import type { FlagNote } from '@/lib/shared/types';
 
 /**
@@ -35,6 +36,9 @@ type FlagRouteCtx = { params: Promise<{ id: string }> };
 export function createFlagRoute(deps: FlagRouteDeps) {
   const POST = withApiError(
     async (req: NextRequest, { params }: FlagRouteCtx) => {
+      // Mutierend → angemeldete Identität Pflicht (Security-Audit M1);
+      // gilt via Factory für beide Flag-Routen (Events + Publikationen).
+      await requireUser();
       const { id } = validateParams(await params, idParamSchema);
       const data = await validateBody(req, flagSetPayloadSchema);
       try {
@@ -49,6 +53,8 @@ export function createFlagRoute(deps: FlagRouteDeps) {
 
   const DELETE = withApiError(
     async (req: NextRequest, { params }: FlagRouteCtx) => {
+      // Mutierend → angemeldete Identität Pflicht (Security-Audit M1).
+      await requireUser();
       const { id } = validateParams(await params, idParamSchema);
       const data = await validateBody(req, flagDeletePayloadSchema);
       try {

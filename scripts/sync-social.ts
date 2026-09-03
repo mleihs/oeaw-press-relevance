@@ -12,13 +12,13 @@
 //   npm run sync-social -- --force               # bypass the refresh throttle
 //   npm run sync-social -- --target=prod --yes   # CI / unattended → prod
 
-import { loadDbUrl, parseScriptArgs, confirmProd, redactedDatabaseUrl } from './lib/db.mjs';
+// Gemeinsame Präambel: Flags → .env.local → Sentry → DATABASE_URL-Override.
+// (Sentry ist neu ggü. der alten Kopie — ohne SENTRY_DSN inert.)
+import {
+  bootstrapScript, redactedDatabaseUrl, captureScriptError, flushAndExit,
+} from './lib/bootstrap';
 
-const { target, flags } = parseScriptArgs();
-const isProd = target === 'prod';
-
-process.loadEnvFile('.env.local');
-process.env.DATABASE_URL = loadDbUrl(target);
+const { target, flags, confirmProd } = bootstrapScript('sync-social');
 
 function num(v: string | undefined, fallback: number): number {
   const n = Number(v);
@@ -26,7 +26,7 @@ function num(v: string | undefined, fallback: number): number {
 }
 
 async function main(): Promise<void> {
-  await confirmProd({ isProd, flags, label: 'sync-social' });
+  await confirmProd('sync-social');
 
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
@@ -66,5 +66,6 @@ async function main(): Promise<void> {
 
 main().catch((err: unknown) => {
   console.error('[sync-social] failed:', err);
-  process.exit(1);
+  captureScriptError(err);
+  void flushAndExit(1);
 });

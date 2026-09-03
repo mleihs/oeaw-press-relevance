@@ -70,6 +70,16 @@ describe('getLastImportDrift', () => {
     expect(d!.alarming).toBe(false);
   });
 
+  it('alarms on a person-orphan collapse (above the collapse threshold)', async () => {
+    // Kollaps-Guard: ab PERSON_ORPHAN_COLLAPSE_THRESHOLD (classify-run.ts)
+    // zählen Personen-Waisen doch — die Blase muss dann rot werden.
+    h.set([{ applied_at: APPLIED, report: { person_link_orphans: 4000 } }]);
+
+    const d = await getLastImportDrift();
+    expect(d!.total).toBe(4000);
+    expect(d!.alarming).toBe(true);
+  });
+
   it('alarms on orgunit orphans + unresolved lookups, not on person orphans', async () => {
     h.set([{
       applied_at: APPLIED,

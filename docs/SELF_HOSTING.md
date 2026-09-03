@@ -152,7 +152,7 @@ sudo nginx -t && sudo systemctl reload nginx
 ```
 
 The `proxy_buffering off` plus `proxy_read_timeout 300s` is required
-for the SSE endpoints (`/api/enrichment/batch`, `/api/analysis/batch`)
+for the SSE endpoints (`/api/analysis/batch`, `/api/social/refresh`)
 — without them nginx will buffer the stream until the request ends,
 defeating the streaming UX.
 

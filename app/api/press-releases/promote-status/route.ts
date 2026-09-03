@@ -2,12 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { desc } from 'drizzle-orm';
 import { db, pressReleasePromoteLog } from '@/lib/server/db';
 import { withApiError } from '@/lib/server/http';
+import { requireUser } from '@/lib/server/auth/require';
 
 /**
  * Returns the most-recent run of promote_press_release_orphans_logged().
  * Used by the dashboard to flag drift when promote hasn't run for a while.
  */
 export const GET = withApiError(async (_req: NextRequest) => {
+  // Interner Betriebszustand (Drift-Anzeige) → nur für Angemeldete
+  // (Security-Audit M1; Route ist read-only, aber nicht öffentlich).
+  await requireUser();
+
   const rows = await db
     .select({
       ranAt: pressReleasePromoteLog.ranAt,

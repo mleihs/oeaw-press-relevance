@@ -25,15 +25,13 @@
 //   … --force                                                             # überschreibt bestehende Scores
 
 import { readFileSync } from 'node:fs';
-import { loadDbUrl, parseScriptArgs, confirmProd } from './lib/db.mjs';
-import { initScriptSentry, captureScriptError, flushAndExit } from './lib/sentry.mjs';
+// Gemeinsame Präambel: Flags → .env.local → Sentry → DATABASE_URL-Override.
+import {
+  bootstrapScript, captureScriptError, flushAndExit,
+} from './lib/bootstrap';
 import sessionModel from '@/lib/shared/event-session-model.json';
 
-const { target, flags } = parseScriptArgs();
-const isProd = target === 'prod';
-process.loadEnvFile('.env.local');
-initScriptSentry('apply-event-scores');
-process.env.DATABASE_URL = loadDbUrl(target);
+const { target, flags, confirmProd } = bootstrapScript('apply-event-scores');
 
 const fileFlag = flags.find((f) => f.startsWith('--file='));
 const file = fileFlag ? fileFlag.split('=')[1] : '';
@@ -95,7 +93,7 @@ function validate(rows: unknown): ScoredEvent[] {
 
 async function main(): Promise<void> {
   const rows = validate(JSON.parse(readFileSync(file, 'utf8')));
-  if (apply) await confirmProd({ isProd, flags, label: 'apply-event-scores' });
+  if (apply) await confirmProd('apply-event-scores');
 
   const { db, events } = await import('@/lib/server/db');
   const { and, eq, isNull, sql } = await import('drizzle-orm');

@@ -22,6 +22,25 @@ import { GATE_COOKIE_NAME, isPublicGatePath } from '@/lib/shared/gate';
  * /favicon.ico, /_next/static/*, /capybara*.png (gate background images).
  */
 
+/**
+ * Konstantzeit-nahe Cookie-Prüfung für die Edge-Runtime: dort gibt es kein
+ * `crypto.timingSafeEqual`, also werden beide Seiten per SHA-256 gehasht und
+ * die Hex-Digests verglichen (Standard-Mitigation — der `===`-Vergleich läuft
+ * dann über zwei gleich lange, vom Angreifer nicht steuerbare Digests, sodass
+ * ein Timing-Leck nichts über den Token-Inhalt verrät).
+ */
+async function sha256Hex(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+async function timingSafeTokenMatch(a: string, b: string): Promise<boolean> {
+  const [ha, hb] = await Promise.all([sha256Hex(a), sha256Hex(b)]);
+  return ha === hb;
+}
+
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   if (isPublicGatePath(pathname)) return NextResponse.next();
@@ -38,16 +57,22 @@ export async function proxy(req: NextRequest) {
   const cookie = req.cookies.get(GATE_COOKIE_NAME)?.value;
   const expected = process.env.GATE_TOKEN;
 
-  // Defensive pass-through if GATE_TOKEN is somehow unset in the Edge
-  // runtime. The Node-runtime env validator (instrumentation.ts +
-  // lib/server/env.ts) requires it and exits otherwise, so in practice
-  // this branch is unreachable once the server has booted at all. Kept
-  // because Edge runtime loads env independently of Node — a Vercel
-  // misconfig that sets the var for Node but not Edge would otherwise
-  // crash every request here.
-  if (!expected) return NextResponse.next();
+  // Fail-CLOSED if GATE_TOKEN is somehow unset in the Edge runtime. The
+  // Node-runtime env validator (instrumentation.ts + lib/server/env.ts)
+  // requires it and exits otherwise, so in practice this branch is
+  // unreachable once the server has booted at all. But the Edge runtime
+  // loads env independently of Node — a Vercel misconfig that sets the var
+  // for Node but not Edge landed here. Früher: stiller Pass-through
+  // (Availability vor Dichtheit); bewusst umgedreht, damit eine solche
+  // Env-Drift sofort laut als 503 auffällt, statt die App lautlos komplett
+  // zu öffnen.
+  if (!expected) {
+    return new NextResponse('Gate misconfigured', { status: 503 });
+  }
 
-  if (cookie === expected) return NextResponse.next();
+  if (cookie && (await timingSafeTokenMatch(cookie, expected))) {
+    return NextResponse.next();
+  }
 
   // API requests: respond 401 JSON, no redirect.
   if (pathname.startsWith('/api/')) {

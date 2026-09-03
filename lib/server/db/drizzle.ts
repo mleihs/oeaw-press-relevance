@@ -25,13 +25,21 @@ import * as relations from './relations';
  * Both URLs work with the same client below because:
  *   - `prepare: false` is *required* by Supavisor transaction mode (no
  *     prepared statements across pooled connections) and harmless locally.
- *   - `max: 1` matches Vercel's per-Lambda recommendation (Supavisor
- *     multiplexes across Lambdas; one in-flight query per invocation is
- *     enough for our workload). Local dev pays a small cost — serialised
- *     queries within one Node process — which is invisible for our usage.
+ *   - Pool size (`max`) defaults to 1 and is tunable via DB_POOL_MAX.
+ *     Topologie: die KANONISCHE Prod ist der langlebige Coolify-Container
+ *     auf metaspots — dort serialisiert max:1 alle parallelen Requests auf
+ *     eine einzige Connection, ein höheres DB_POOL_MAX lohnt sich. Vercel
+ *     ist nur Hot-Standby: dort gilt weiter die per-Lambda-Empfehlung
+ *     max:1 (Supavisor multiplext über die Lambdas) — DB_POOL_MAX dort
+ *     einfach ungesetzt lassen. Local dev: Default reicht.
  */
+
+// DB_POOL_MAX (optional, siehe lib/server/env.ts): unset/leer/unbrauchbar → 1,
+// damit sich ohne gesetzte Var NICHTS am bisherigen Verhalten ändert.
+const poolMax = Math.max(1, Math.floor(Number(process.env.DB_POOL_MAX)) || 1);
+
 const client = postgres(process.env.DATABASE_URL ?? '', {
-  max: 1,
+  max: poolMax,
   idle_timeout: 20,
   connect_timeout: 10,
   prepare: false,

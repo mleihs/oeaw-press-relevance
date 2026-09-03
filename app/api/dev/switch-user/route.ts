@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { eq } from 'drizzle-orm';
-import { apiError, withApiError } from '@/lib/server/http';
+import { z } from 'zod';
+import * as Sentry from '@sentry/nextjs';
+import { apiError, validateBody, withApiError } from '@/lib/server/http';
 import { db, users, getSupabaseAdmin } from '@/lib/server/db';
 import { getSupabaseAuthClient } from '@/lib/server/auth/client';
 import {
@@ -44,14 +46,23 @@ export const GET = withApiError(async () => {
   });
 });
 
+// POST-Body-Schema. UUID-Prüfung als pg-Semantik-Regex (8-4-4-4-12 Hex) statt
+// z.uuid() — dieselbe Begründung wie idParamSchema in lib/server/schemas.ts:
+// MT-importierte Ids sind gültige Postgres-uuids ohne RFC-Versions-Bits. Ohne
+// Prüfung würde ein Nicht-UUID-Wert erst in Postgres scheitern (500 +
+// Sentry-Rauschen statt sauberem 400).
+const switchUserPayloadSchema = z.object({
+  userId: z
+    .string()
+    .regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, 'userId muss eine UUID sein.'),
+});
+
 // POST { userId }: Session für diesen Nutzer setzen.
 export const POST = withApiError(async (req: NextRequest) => {
   const auth = await authorizeUserSwitch();
   if (!auth.ok) return apiError('Nur für Admins.', 403);
 
-  const body = (await req.json().catch(() => ({}))) as { userId?: string };
-  const userId = body.userId;
-  if (!userId) return apiError('userId fehlt.', 400);
+  const { userId } = await validateBody(req, switchUserPayloadSchema);
 
   const [row] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
   if (!row) return apiError('Unbekannter Nutzer.', 404);
@@ -92,8 +103,16 @@ export const POST = withApiError(async (req: NextRequest) => {
       path: '/',
     });
   }
-  // Audit-Spur (Coolify/Vercel-Logs): wer agiert als wer.
+  // Audit-Spur (Coolify/Vercel-Logs): wer agiert als wer. Zusätzlich als
+  // Sentry-Breadcrumb, damit die Impersonation an späteren Fehler-Events
+  // hängt (kein DB-Audit-Table — bewusst klein gehalten).
   console.log(`[user-switcher] admin ${auth.originAdminId} -> acting as ${row.id} <${row.email}>`);
+  Sentry.addBreadcrumb({
+    category: 'auth.impersonation',
+    message: `admin ${auth.originAdminId} -> acting as ${row.id}`,
+    level: 'info',
+    data: { originAdminId: auth.originAdminId, targetUserId: row.id },
+  });
 
   return NextResponse.json({
     ok: true,

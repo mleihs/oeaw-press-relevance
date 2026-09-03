@@ -28,7 +28,10 @@ async function jsonOrThrow<T>(res: Response): Promise<T> {
       const body = (await res.json()) as { error?: string };
       if (body.error) message = body.error;
     } catch {
-      /* nicht-JSON Fehlerseite */
+      // Nicht-JSON-Fehlerseite (z. B. Proxy-/Gateway-HTML bei 502): erwartbar,
+      // die generische Status-Meldung unten reicht dem Nutzer — aber eine
+      // Debug-Spur in den DevTools lassen, falls sich Fälle häufen.
+      console.debug('[board-api] Fehlerantwort ohne JSON-Body', res.status, res.url);
     }
     throw new Error(message);
   }

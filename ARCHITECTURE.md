@@ -142,9 +142,10 @@ Step 1 — WebDB Import (manual or nightly cron)
       • ~1 min for 37k publications + junctions
       └─► publications + persons + orgunits + projects + lectures + oestat6
 
-Step 2 — Enrichment (manual via UI or batch endpoint)
+Step 2 — Enrichment (automatic during nightly ingest)
   WHERE enrichment_status = 'pending'
-  └─► /api/enrichment/batch (SSE)
+  └─► lib/server/ingest/run-enrichment.ts (via POST /api/ingest/run;
+      the former /api/enrichment/batch route was removed)
       ↓
       CrossRef → enriched_abstract, journal, peer_reviewed, citations
       OpenAlex → open_access_status, oa_type, keywords
@@ -276,6 +277,11 @@ oeaw-press-relevance/
 │   ├── researchers/           # Leaderboard + Beeswarm
 │   ├── review/                # Triage queue
 │   ├── press-releases/        # Orphan + matched tracking
+│   ├── events/                # Event triage + calendar (list/week/month)
+│   ├── board/                 # Kanban board (output channels × stories)
+│   ├── social/                # Instagram monitoring
+│   ├── help/                  # MDX knowledge base
+│   ├── login/                 # Auth screen (gate + personal login)
 │   ├── settings/, upload/
 │   ├── globals.css            # Theme tokens
 │   ├── layout.tsx, page.tsx
@@ -291,7 +297,7 @@ oeaw-press-relevance/
 │   ├── tint-badge.tsx, section-label.tsx
 │   ├── status-banner.tsx, api-error-card.tsx
 │   ├── analysis-modal.tsx, enrichment-modal.tsx
-│   ├── capybara-modal-avatar.tsx, capybara-logo.tsx
+│   ├── capybara-logo.tsx
 │   ├── info-bubble.tsx
 │   ├── score-bar.tsx, similarity-indicator.tsx
 │   ├── empty-state.tsx, loading-state.tsx, skeletons.tsx
@@ -303,6 +309,10 @@ oeaw-press-relevance/
 │   │   ├── analysis/, enrichment/, ingest/  # LLM + ETL pipelines
 │   │   ├── publications/, press-releases/, events/, dashboard/, orgunits/
 │   │   ├── meistertask/       # MeisterTask one-way push
+│   │   ├── auth/              # requireUser/requireAdmin, sessions, user switcher
+│   │   ├── board/             # Board domain (cards, columns, activity, …)
+│   │   ├── review/            # Triage queue (rank fusion)
+│   │   ├── users/             # User profile helpers (avatar upload)
 │   │   ├── repos/             # Repository pattern (only where ≥2 call sites)
 │   │   ├── openrouter.ts      # Shared OpenRouter HTTP client
 │   │   ├── http.ts            # withApiError, validateBody, assertSameOrigin
@@ -444,13 +454,23 @@ statement.
 | `promote_press_release_orphans()` | VOLATILE | Links orphan press_releases to newly imported pubs |
 | `publication_with_relations(pub_id)` | STABLE | Eager-fetch with joins |
 
-### Password Gate (`/api/auth/gate`, `proxy.ts`)
+### Auth: Password Gate + Role-Based Login (`app/api/auth/*`, `proxy.ts`)
 
-`GATE_PASSWORD` (plaintext, env-only) + `GATE_TOKEN` (sha256 of the
-same, env-only) are compared on submit. On success the server sets an
-httpOnly cookie; the client stores a sessionStorage marker so the
-gate UI doesn't flash on subsequent loads. This is anti-bot, not an
-ACL — the app trusts everyone past the gate.
+Two layers:
+
+1. **Password gate** (outer shell, `/api/auth/gate`): `GATE_PASSWORD`
+   (plaintext, env-only) + `GATE_TOKEN` (sha256 of the same, env-only)
+   are compared on submit. On success the server sets an httpOnly
+   cookie; the client stores a sessionStorage marker so the gate UI
+   doesn't flash on subsequent loads. The gate alone is anti-bot, not
+   an ACL.
+2. **Role-based login** (per-person ACL): a real user model lives in
+   `lib/server/db/schema/auth.ts` (users, sessions, roles); routes
+   guard themselves via `requireUser()` / `requireAdmin()` from
+   `lib/server/auth/require.ts` (~48 importing modules). Login/logout/
+   session endpoints are under `app/api/auth/*`. Personal roles gate
+   the board, admin functions, and every route that spends money
+   (OpenRouter batch scoring).
 
 ## External Dependencies
 
@@ -485,6 +505,20 @@ ACL — the app trusts everyone past the gate.
 - **SPECTER2** (`allenai/specter2_base` + `allenai/specter2` proximity
   adapter), ~440 MB, downloaded once on first script run, cached
   locally
+
+### Deployment Targets
+
+- **Canonical prod is the self-hosted Coolify container** on the
+  metaspots VPS: `oeaw-press-tool.metaspots.net`. It deploys from the
+  branch `chore/coolify-dockerfile` (merge `main` into it, push, then
+  trigger the Coolify deploy) — a push to `main` alone does NOT deploy
+  it.
+- **Vercel is a hot standby only** (`oeaw-press-relevance.vercel.app`),
+  auto-deployed from `main`. Keep it deployable, but do not treat it
+  as the primary.
+- **Database**: self-hosted Supabase on the same VPS (pooler
+  `db-oeaw.metaspots.net`); the Supabase cloud project is a nightly
+  warm-standby mirror, never written directly.
 
 ### npm dependency policy
 

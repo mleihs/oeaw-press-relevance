@@ -12,7 +12,7 @@ Be excellent to each other.
 
 ### Prerequisites
 
-- **Node.js ≥ 20** (LTS recommended) — check with `node -v`
+- **Node.js ≥ 24** (LTS recommended) — check with `node -v`
 - **Supabase CLI** — `brew install supabase/tap/supabase` or
   `npm install -g supabase`
 - **Docker** — required by the local Supabase stack
@@ -175,8 +175,8 @@ Two measured traps when touching dependencies:
 - **Strict mode is on** — see `tsconfig.json`
 - Use `type` for simple data shapes, `interface` only when extending
 - Prefer **discriminated unions** for variant types — see
-  `SimilarPressed` in `components/press-reference-card.tsx` for the
-  pattern
+  `SimilarPressed` in `app/publications/[id]/_components/press-reference-card.tsx`
+  for the pattern
 - **No `any`** — use `unknown` with type narrowing, or proper types
 - Import via the `@/` alias (e.g. `@/lib/types`)
 
@@ -243,12 +243,10 @@ primitives:
 - `<StatusBanner variant="...">` for inline alert / success / warning
   banners
 - `<ApiErrorCard title=... message=... hint=...>` for error displays
-- `<CapybaraModalAvatar variant="analyst | enricher">` for modal
-  capybaras
 
 **shadcn/ui primitives in `components/ui/`** — do not edit directly.
 Override via `className` on the consuming side; `twMerge` (via
-`cn()` in `lib/utils.ts`) handles conflict resolution.
+`cn()` in `lib/shared/utils.ts`) handles conflict resolution.
 
 ### Commits
 

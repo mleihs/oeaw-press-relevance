@@ -31,6 +31,18 @@ export interface EventsFilterOptions {
   institute?: string;
 }
 
+/** Drizzles and()/or() sind `SQL | undefined` typisiert (leere bzw. rein
+ *  undefined Argumentliste). Die Aufrufer hier übergeben immer mindestens eine
+ *  definierte Bedingung; statt das per Non-Null-Assertion zu verstecken, machen
+ *  die neutralen Fallbacks (AND→TRUE, OR→FALSE) den Unreachable-Fall korrekt. */
+function allOf(...conds: (SQL | undefined)[]): SQL {
+  return and(...conds) ?? sql`true`;
+}
+
+function anyOf(...conds: (SQL | undefined)[]): SQL {
+  return or(...conds) ?? sql`false`;
+}
+
 /** Baseline: only upcoming events. Every tab and every stat counter is
  *  scoped through this so a row with `event_at` in the past is invisible
  *  everywhere (and won't show up in the badge total). */
@@ -57,7 +69,7 @@ function searchFilter(raw: string): SQL | null {
   if (!q) return null;
   const pattern = `%${likeEscape(q)}%`;
   // teaser is nullable; ILIKE on NULL is NULL, so the OR falls back to title.
-  return or(ilike(eventsTable.title, pattern), ilike(eventsTable.teaser, pattern))!;
+  return anyOf(ilike(eventsTable.title, pattern), ilike(eventsTable.teaser, pattern));
 }
 
 /** Score-band predicate. high/mid/low gate on `analysis_status = 'analyzed'`
@@ -100,7 +112,7 @@ export function filtersForEventsTab(
   tab: EventsTab,
   opts: EventsFilterOptions = {},
 ): SQL {
-  return and(upcomingFilter(), ...commonEventFilters(tab, opts))!;
+  return allOf(upcomingFilter(), ...commonEventFilters(tab, opts));
 }
 
 /** Absolute half-open instant bounds [from, to) for a calendar view's visible
@@ -131,10 +143,10 @@ export function filtersForEventsCalendar(
   tab: EventsTab,
   opts: EventsFilterOptions = {},
 ): SQL {
-  return and(
+  return allOf(
     eventsInRangeFilter(window.fromInstant, window.toInstant),
     ...commonEventFilters(tab, opts),
-  )!;
+  );
 }
 
 export interface EventsStats {

@@ -23,15 +23,12 @@
 //   Flags: --force (Delta→Volldump-Guard aushebeln), --keep-scored-on-delete
 
 import { readFileSync } from 'node:fs';
-import { loadDbUrl, parseScriptArgs, confirmProd, redactedDatabaseUrl } from './lib/db.mjs';
-import { initScriptSentry, captureScriptError, flushAndExit } from './lib/sentry.mjs';
+// Gemeinsame Präambel: Flags → .env.local → Sentry → DATABASE_URL-Override.
+import {
+  bootstrapScript, redactedDatabaseUrl, captureScriptError, flushAndExit,
+} from './lib/bootstrap';
 
-const { target, flags } = parseScriptArgs();
-const isProd = target === 'prod';
-
-process.loadEnvFile('.env.local');
-process.env.DATABASE_URL = loadDbUrl(target);
-initScriptSentry('import-publications-delta');
+const { target, flags, confirmProd } = bootstrapScript('import-publications-delta');
 
 const DEFAULT_URL =
   'https://www.oeaw.ac.at/fileadmin/exports/publications_incremental_change_2.json';
@@ -49,7 +46,7 @@ const sourceLabel = fileArg ? `file:${fileArg}` : (urlArg ?? DEFAULT_URL);
 const feed = flagValue('--feed') ?? 'publications_incremental_change_2';
 
 async function main(): Promise<void> {
-  if (!dryRun) await confirmProd({ isProd, flags, label: 'import-publications-delta' });
+  if (!dryRun) await confirmProd('import-publications-delta');
 
   console.log(
     `[import-publications-delta] target=${target} db=${redactedDatabaseUrl()} source=${sourceLabel} feed=${feed}`,

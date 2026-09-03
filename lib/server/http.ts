@@ -102,18 +102,54 @@ export function assertAllowedOrigin(origin: string): Response | null {
  * escape as an unhandledRejection and, accumulated over many batches,
  * killed the dev server (2026-05-01 incident, ~88 enrichment batches in).
  */
+// Cloudflare (und mancher Proxy) kappt Verbindungen nach ~100 s ohne Bytes.
+// Zwischen zwei echten SSE-Events können aber Minuten liegen (z. B. der
+// Apify-Scrape im Social-Refresh) — deshalb schiebt jeder Stream alle 25 s
+// einen SSE-Kommentar-Frame (`: ping`) nach. Kommentarzeilen sind Teil der
+// SSE-Spezifikation; EventSource und unser eigener Parser (lib/client/sse.ts
+// dispatcht nur `event:`/`data:`-Zeilen) ignorieren sie.
+const SSE_HEARTBEAT_MS = 25_000;
+
 export function createSSEStream() {
   const encoder = new TextEncoder();
   let controller: ReadableStreamDefaultController | null = null;
   let closed = false;
+  // Muss auf JEDEM Ende-Pfad (close, cancel, Enqueue-Fehler) geräumt werden,
+  // sonst hält das Interval den Prozess-Handle eines längst toten Streams —
+  // im Langläufer-Betrieb ein Leak pro abgebrochenem Batch.
+  let heartbeat: ReturnType<typeof setInterval> | null = null;
+
+  function stopHeartbeat() {
+    if (heartbeat !== null) {
+      clearInterval(heartbeat);
+      heartbeat = null;
+    }
+  }
+
+  function markClosed() {
+    closed = true;
+    controller = null;
+    stopHeartbeat();
+  }
 
   const stream = new ReadableStream({
     start(c) {
       controller = c;
+      heartbeat = setInterval(() => {
+        if (closed || !controller) {
+          stopHeartbeat();
+          return;
+        }
+        try {
+          controller.enqueue(encoder.encode(': ping\n\n'));
+        } catch {
+          // Konsument hat abgebrochen — wie in send() als geschlossen werten.
+          markClosed();
+        }
+      }, SSE_HEARTBEAT_MS);
     },
     cancel() {
-      closed = true;
-      controller = null;
+      markClosed();
     },
   });
 
@@ -125,8 +161,7 @@ export function createSSEStream() {
       );
     } catch {
       // Race between cancel() and a pending enqueue — treat as closed.
-      closed = true;
-      controller = null;
+      markClosed();
     }
   }
 
@@ -137,8 +172,7 @@ export function createSSEStream() {
     } catch {
       // Already closed by the consumer side.
     }
-    closed = true;
-    controller = null;
+    markClosed();
   }
 
   return { stream, send, close };

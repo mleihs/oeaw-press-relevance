@@ -35,7 +35,11 @@ async function fetchRealtimeToken(): Promise<{ token: string; expiresAt: number 
     const res = await fetch('/api/auth/realtime-token', { cache: 'no-store' });
     if (!res.ok) return null;
     return (await res.json()) as { token: string; expiresAt: number | null };
-  } catch {
+  } catch (err) {
+    // Netz-/Parse-Fehler bewusst geschluckt: das Board degradiert dann still
+    // auf staleTime-Refetches (siehe Doku oben), Realtime ist nur Komfort.
+    // Debug-Spur, damit ein dauerhaft scheiternder Token-Fetch auffindbar ist.
+    console.debug('[board-realtime] Token-Fetch fehlgeschlagen', err);
     return null;
   }
 }

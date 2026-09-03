@@ -25,26 +25,19 @@
 // recompute-press-scores). The file is gitignored by virtue of being
 // outside the repo.
 
-import { loadDbUrl, parseScriptArgs, confirmProd, redactedDatabaseUrl } from './lib/db.mjs';
-import { initScriptSentry, captureScriptError, flushAndExit } from './lib/sentry.mjs';
+// Gemeinsame Präambel (scripts/lib/bootstrap.ts): Flags parsen, .env.local
+// laden (WEBDB_MYSQL_*, OPENROUTER_API_KEY …; shell vars win), Sentry
+// initialisieren, DATABASE_URL hart auf das Ziel setzen (beats any
+// shell-level shadow — ohne den Override würde ein DATABASE_URL=localhost
+// aus der Shell `--target=prod` still auf local schreiben lassen).
+import {
+  bootstrapScript, redactedDatabaseUrl, captureScriptError, flushAndExit,
+} from './lib/bootstrap';
 
-const { target, flags } = parseScriptArgs();
-const isProd = target === 'prod';
-
-// 1) Dev-machine baseline: WEBDB_MYSQL_*, OPENROUTER_API_KEY etc. live in
-//    .env.local. process.loadEnvFile preserves any value already set in
-//    process.env (shell vars win) — that matches the rest of the project.
-process.loadEnvFile('.env.local');
-initScriptSentry('sync-events');
-
-// 2) Target switch: for prod we hard-override DATABASE_URL with the value
-//    from the prod-credentials file, beating any shell-level shadow.
-//    Without this override, a developer's shell DATABASE_URL=localhost
-//    would silently make `--target=prod` write to local — a foot-gun.
-process.env.DATABASE_URL = loadDbUrl(target);
+const { target, confirmProd } = bootstrapScript('sync-events');
 
 async function main(): Promise<void> {
-  await confirmProd({ isProd, flags, label: 'sync-events' });
+  await confirmProd('sync-events');
 
   // Dynamic import: lib/server/db (Drizzle) reads DATABASE_URL at module
   // load, so it must be loaded AFTER the override above.

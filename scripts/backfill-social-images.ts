@@ -15,11 +15,11 @@
 // Requires S3_ENDPOINT / S3_ACCESS_KEY_ID / S3_SECRET_ACCESS_KEY / S3_BUCKET in
 // .env.local (the shared MinIO).
 
-import { loadDbUrl, parseScriptArgs } from './lib/db.mjs';
+// Gemeinsame Präambel: Flags → .env.local → Sentry → DATABASE_URL-Override.
+// (Sentry ist neu ggü. der alten Kopie — ohne SENTRY_DSN inert.)
+import { bootstrapScript } from './lib/bootstrap';
 
-const { target } = parseScriptArgs();
-process.loadEnvFile('.env.local');
-process.env.DATABASE_URL = loadDbUrl(target);
+const { target } = bootstrapScript('backfill-social-images');
 
 if (!process.env.S3_ENDPOINT) {
   console.error(

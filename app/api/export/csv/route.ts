@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { validateQuery, withApiError } from '@/lib/server/http';
+import { requireUser } from '@/lib/server/auth/require';
 import { analyzedExportQuerySchema } from '@/lib/shared/schemas';
 import { fetchAnalyzedExportRows } from '@/lib/server/publications/export';
 
@@ -15,14 +16,23 @@ const COLUMNS = [
 
 function escapeCsv(val: unknown): string {
   if (val === null || val === undefined) return '';
-  const str = typeof val === 'string' ? val : String(val);
-  if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+  let str = typeof val === 'string' ? val : String(val);
+  // CSV-Formel-Injection: title/pitch/reasoning sind fremdbestimmt
+  // (TYPO3/LLM). Excel & Co. interpretieren führende =, +, -, @ (und
+  // Tab/CR-Vorspann) als Formelstart — ein führendes ' neutralisiert das
+  // (OWASP-Standard-Mitigation, wird beim Rendern nicht angezeigt).
+  if (/^[=+\-@\t\r]/.test(str)) str = `'${str}`;
+  if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
     return `"${str.replace(/"/g, '""')}"`;
   }
   return str;
 }
 
 export const GET = withApiError(async (req: NextRequest) => {
+  // Vollexport des Datenbestands → angemeldete Identität Pflicht
+  // (Security-Audit M1; read-only, aber nicht öffentlich).
+  await requireUser();
+
   const { searchParams } = new URL(req.url);
   const { analyzed: onlyAnalyzed } = validateQuery(
     searchParams,

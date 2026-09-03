@@ -62,3 +62,125 @@ jobs:
       # scripts/check-advisories.mjs. Bleibt required, kein continue-on-error.
       - name: Advisory gate
         run: npm run check-advisories
+
+  # Integration + Production-Build + Gate-E2E — bewusst EIN Job: der lokale
+  # Supabase-Stack lässt sich nicht über Job-Grenzen teilen (eigene Runner),
+  # und ihn dreimal zu starten kostete mehr als die verlorene Parallelität.
+  # Reihenfolge: Stack → Build → Integrations-Suiten → Gate-E2E.
+  #
+  # Hintergrund (Test-Audit 2026-08-31):
+  #  - rls-smoke/board-smoke skippen sich ohne erreichbaren lokalen Stack
+  #    selbst — die CI war dort grün, weil die Tests NIE liefen. Hier laufen
+  #    sie echt (Stack via supabase/setup-cli), und der Skip-Wächter unten
+  #    macht ein stilles Zurückfallen ins Skippen zum Fehler.
+  #  - `next build` lief in CI bisher gar nicht; hier läuft er mit dem
+  #    Stack-Env, sodass auch etwaige Build-Zeit-DB-Zugriffe nicht flaken.
+  #  - Playwright lief nur lokal gegen `npm run dev`, wo proxy.ts alles
+  #    durchwinkt — das Gate wurde nie ausgeübt. e2e/gate.spec.ts läuft
+  #    gegen `next start` (NODE_ENV=production) mit gesetztem GATE_TOKEN
+  #    (fail-closed: ohne ihn antwortet der Proxy 503).
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # Wegwerf-Passwort nur für diesen Lauf; GATE_TOKEN (= sha256-Hex davon)
+      # wird im Env-Export-Step berechnet.
+      GATE_PASSWORD: playwright-ci-gate
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      # Nur die Dienste, die die Suiten brauchen (db, kong, gotrue, postgrest):
+      # Studio/Storage/Realtime/Mail/Analytics kosten nur Image-Pulls.
+      # `supabase start` appliziert auf dem frischen Runner alle Migrationen.
+      - name: Start local Supabase stack
+        run: supabase start -x studio,imgproxy,mailpit,edge-runtime,logflare,vector,realtime,storage-api
+
+      - name: Export stack env
+        run: |
+          supabase status -o env | grep -E '^[A-Za-z_]+=' > stack.env
+          # shellcheck disable=SC1091
+          source stack.env
+          if [ -z "${API_URL:-}" ] || [ -z "${SERVICE_ROLE_KEY:-}" ] || [ -z "${DB_URL:-}" ]; then
+            echo "::error::supabase status lieferte kein API_URL/SERVICE_ROLE_KEY/DB_URL — Output-Format geprüft?"
+            cat stack.env
+            exit 1
+          fi
+          {
+            echo "SUPABASE_URL=${API_URL}"
+            echo "SUPABASE_ANON_KEY=${ANON_KEY}"
+            echo "SUPABASE_SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY}"
+            echo "DATABASE_URL=${DB_URL}"
+            echo "GATE_TOKEN=$(node -e 'console.log(require("crypto").createHash("sha256").update(process.env.GATE_PASSWORD, "utf8").digest("hex"))')"
+          } >> "$GITHUB_ENV"
+
+      # board-smoke verlangt mindestens eine Zeile in public.users; der
+      # Admin-API-Weg nimmt den on_auth_user_created-Trigger gleich mit.
+      - name: Seed CI user
+        run: |
+          curl -sf -X POST "$SUPABASE_URL/auth/v1/admin/users" \
+            -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{"email":"ci-board-smoke@example.com","password":"Ci-board-smoke-Aa23456789","email_confirm":true}' \
+            > /dev/null
+
+      # Production-Build als CI-Check (fehlte komplett). Läuft VOR den
+      # Suiten, damit ein kaputter Build nicht hinter Testausgaben verschwindet.
+      # instrumentation.ts validiert env erst bei `next start`, aber das
+      # Stack-Env liegt ohnehin schon an.
+      - name: Build (next build)
+        run: npm run build
+
+      - name: Integration tests (RLS + Board, echter Stack)
+        run: npx vitest run lib/server/auth/rls-smoke.test.ts lib/server/board/board-smoke.test.ts --reporter=default --reporter=json --outputFile.json=vitest-integration.json
+
+      # Die Suiten skippen sich selbst, wenn der Stack nicht erreichbar ist —
+      # genau der Zustand, der diese Tests jahrelang grün "bestehen" ließ.
+      # Deshalb: pro Testdatei muss mindestens ein Test ECHT bestanden haben.
+      # (rls-smoke trägt einen dauerhaft geskippten Marker-Test; ein reines
+      # "keine Skips"-Kriterium wäre daher falsch.)
+      - name: Skip-Wächter (Suiten liefen wirklich)
+        run: |
+          node -e '
+            const r = require("./vitest-integration.json");
+            const bad = r.testResults
+              .filter((f) => !f.assertionResults.some((a) => a.status === "passed"))
+              .map((f) => f.name);
+            if (r.testResults.length < 2 || bad.length > 0) {
+              console.error("Integration-Suiten geskippt statt gelaufen:", bad.join(", ") || "(zu wenige Testdateien)");
+              process.exit(1);
+            }
+            console.log("ok —", r.numPassedTests, "Integrationstests echt gelaufen");
+          '
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      # Gegen den Production-Build: PW_PROD_SERVER=1 schaltet in
+      # playwright.config.ts das gate-Projekt frei und lässt den webServer
+      # `npm run start` (statt dev) fahren; gebaut wurde oben.
+      - name: Gate-E2E (Playwright gegen next start)
+        env:
+          PW_PROD_SERVER: '1'
+        run: npx playwright test --project=gate
+
+      - name: Upload Playwright artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-gate-results
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 7

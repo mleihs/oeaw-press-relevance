@@ -1,7 +1,7 @@
 // Publikations-Kern: publications-Tabelle (Scoring + Triage), Embeddings,
 // Press-Cluster-Centroid, Review-Sessions, Publikations-Junctions und die
 // materialisierte ÖSTAT-Zuordnung.
-import { pgTable, index, uniqueIndex, unique, check, uuid, text, timestamp, foreignKey, integer, smallint, boolean, date, doublePrecision, jsonb, vector, primaryKey, pgPolicy, pgMaterializedView } from "drizzle-orm/pg-core"
+import { pgTable, index, uniqueIndex, unique, check, uuid, text, timestamp, foreignKey, integer, smallint, boolean, date, doublePrecision, jsonb, vector, primaryKey, pgMaterializedView } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 import { publicationTypes, orgunits, persons, projects } from "./webdb"
 
@@ -148,7 +148,6 @@ export const publications = pgTable("publications", {
 			name: "publications_decided_in_session_fkey"
 		}).onDelete("set null"),
 	unique("publications_csv_uid_unique").on(table.csvUid),
-	pgPolicy("anon_select", { as: "permissive", for: "select", to: ["anon"], using: sql`true` }),
 	check("publications_decision_check", sql`decision = ANY (ARRAY['undecided'::text, 'pitch'::text, 'hold'::text, 'skip'::text])`),
 	check("publications_enrichment_status_check", sql`(enrichment_status IS NULL) OR (enrichment_status = ANY (ARRAY['pending'::text, 'enriched'::text, 'partial'::text, 'failed'::text]))`),
 	check("publications_analysis_status_check", sql`(analysis_status IS NULL) OR (analysis_status = ANY (ARRAY['pending'::text, 'analyzed'::text, 'failed'::text]))`),
@@ -173,7 +172,6 @@ export const publicationProjects = pgTable("publication_projects", {
 			name: "publication_projects_project_id_fkey"
 		}).onDelete("cascade"),
 	primaryKey({ columns: [table.publicationId, table.projectId], name: "publication_projects_pkey"}),
-	pgPolicy("anon_select", { as: "permissive", for: "select", to: ["anon"], using: sql`true` }),
 ]);
 
 export const orgunitPublications = pgTable("orgunit_publications", {
@@ -194,7 +192,6 @@ export const orgunitPublications = pgTable("orgunit_publications", {
 			name: "orgunit_publications_publication_id_fkey"
 		}).onDelete("cascade"),
 	primaryKey({ columns: [table.orgunitId, table.publicationId], name: "orgunit_publications_pkey"}),
-	pgPolicy("anon_select", { as: "permissive", for: "select", to: ["anon"], using: sql`true` }),
 ]);
 
 export const personPublications = pgTable("person_publications", {
@@ -218,7 +215,6 @@ export const personPublications = pgTable("person_publications", {
 			name: "person_publications_publication_id_fkey"
 		}).onDelete("cascade"),
 	primaryKey({ columns: [table.personId, table.publicationId], name: "person_publications_pkey"}),
-	pgPolicy("anon_select", { as: "permissive", for: "select", to: ["anon"], using: sql`true` }),
 ]);
 
 export const publicationOestat6 = pgMaterializedView("publication_oestat6", {	publicationId: uuid("publication_id"),

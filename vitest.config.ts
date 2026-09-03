@@ -19,6 +19,8 @@ export default defineConfig({
     include: [
       '{app,components,lib}/**/*.test.{ts,tsx}',
       'scripts/**/*.test.mjs',
+      // proxy.ts (Edge-Gate) liegt im Root, nicht unter {app,components,lib}.
+      'proxy.test.ts',
     ],
     coverage: {
       provider: 'v8',
@@ -27,7 +29,7 @@ export default defineConfig({
       reporter: ['text-summary', 'html'],
       // Nur Quelldateien: ohne Endungsfilter versucht der v8-Provider auch
       // README.md unter lib/ zu parsen und wirft dabei einen PARSE_ERROR.
-      include: ['{app,components,lib}/**/*.{ts,tsx,js,jsx,mjs}'],
+      include: ['{app,components,lib}/**/*.{ts,tsx,js,jsx,mjs}', 'proxy.ts'],
       exclude: ['**/*.test.{ts,tsx}', '**/*.d.ts', 'lib/server/db/**'],
     },
   },

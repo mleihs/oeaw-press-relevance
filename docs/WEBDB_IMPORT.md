@@ -78,8 +78,9 @@ node scripts/push-analysis-to-prod.mjs --apply        # fill scores on existing 
 #    Es diffte über publications.id; seit prod-first haben local und prod eigene
 #    UUIDs, also meldet es JEDE lokale Zeile als fehlend und würde den ganzen
 #    Katalog als Dubletten einfügen. Fix = Abgleich über webdb_uid. Details im
-#    Kopfkommentar des Skripts und unter „Neue Publikationen landen" weiter unten.
-npm run sync-events:prod                               # new events, if any
+#    Kopfkommentar des Skripts (jetzt scripts/archive/) und unter „Neue
+#    Publikationen landen" weiter unten.
+npm run sync-events -- --target=prod                   # new events, if any
 
 # 8. Press-news DOI match — pull current OeAW Pressemeldungen from TYPO3 into
 #    press_releases (orphans) + promote DOI matches to publications ("schon
@@ -107,9 +108,20 @@ docker stop oeaw-webdb-mysql && docker rm oeaw-webdb-mysql
 ```
 
 > ⚠️ **Use `node scripts/webdb-import.mjs`, not `npm run webdb-import:v2`.**
-> The `webdb-import-v2.ts` variant has an unfixed bind-parameter bug on the
-> ~37k-row publication batch and will fail. The `.mjs` is the hardened,
-> maintained importer.
+> The `.mjs` is the hardened, maintained importer; v2 is code-complete but
+> **parity-unproven**.
+>
+> Status of the v2 bind-parameter bug: **fixed 2026-08-31.** The archival /
+> DOI-pre-clean statements in `lib/server/ingest/loader.ts` interpolated the
+> ~37k-element `webdb_uid`/`doi` arrays bare into Drizzle's `sql` template,
+> which expands a JS array into a per-element parameter list `($1, $2, …)` —
+> not castable to `int[]`/`text[]` and far past the 65,534-parameter wire
+> limit on a full dump (see `docs/TESTING.md` §5.1). Now bound via
+> `sql.param(arr)::int[]` (one parameter per array); verified against the
+> local DB with a 37k-element array. The **parity gate has still not been
+> run** (`scripts/parity-gate.ts` needs the throwaway MySQL dump container
+> on :54499, which was not available on 2026-08-31), so the legacy `.mjs`
+> stays canonical until a full `gate baseline old new` passes.
 
 Connection overrides (defaults shown) are read from env:
 `MYSQL_HOST=127.0.0.1`, `MYSQL_PORT=54499`, `MYSQL_USER=root`,
@@ -210,7 +222,7 @@ DOIs can live in 14 different TYPO3 fields, not just a dedicated
 - URL fields (where the DOI is embedded in the path)
 - A few legacy text fields where editors typed DOIs by hand
 
-The extraction lives in `scripts/lib/doi-extract.mjs` — both the ETL
+The extraction lives in `lib/shared/doi-extract.mjs` — both the ETL
 script and the orphan-backfill scripts share this code. The
 URL-slug heuristic catches DOIs in TYPO3 URL fields where editors
 saved a doi.org link.
@@ -309,11 +321,13 @@ which need **two different pushes**:
    need a full row INSERT plus their relation rows. `push-analysis-to-prod.mjs`
    deliberately leaves these alone (it only UPDATEs) and lists what it skipped.
    Land them with the reusable, idempotent, transactional sync (**verified
-   2026-06-02**):
+   2026-06-02** — historisch, s. Warnung unten; das Skript liegt inzwischen
+   stillgelegt unter `scripts/archive/`):
 
    ```bash
-   node scripts/sync-missing-pubs-to-prod.mjs            # dry-run (rolls back)
-   node scripts/sync-missing-pubs-to-prod.mjs --apply    # write (single tx)
+   # HISTORISCH — Skript ist deaktiviert und nach scripts/archive/ verschoben:
+   node scripts/archive/sync-missing-pubs-to-prod.mjs            # dry-run (rolls back)
+   node scripts/archive/sync-missing-pubs-to-prod.mjs --apply    # write (single tx)
    ```
 
    > **⚠️ DEAKTIVIERT seit 2026-07-31 — nicht ausführen.** Die Verifikation von
@@ -345,8 +359,8 @@ which need **two different pushes**:
 already exist in prod), then the row sync (brings in the new rows, which already
 carry their freshly-computed local scores). After both, prod == local.
 
-**Events** lag the same way: `npm run sync-events:prod` (canonical; wraps
-`scripts/sync-events.ts` against the prod target) lands them.
+**Events** lag the same way: `npm run sync-events -- --target=prod` (canonical;
+runs `scripts/sync-events.ts` against the prod target) lands them.
 
 ### Verifying prod is live (do this after every push)
 
@@ -400,7 +414,7 @@ node scripts/import-press-news.mjs --target=prod --apply
 - **DOI** lives in the `event_information` editor block ("Auf einen Blick" —
   citation + `DOI: 10...`), NOT in `bodytext` (8 rows) or `teaser` (0). HTML
   entities (esp. `&nbsp;`) wrap the DOI and are decoded before extraction
-  (reuses `scripts/lib/doi-extract.mjs`), else the pattern captures `...&nbsp`
+  (reuses `lib/shared/doi-extract.mjs`), else the pattern captures `...&nbsp`
   onto the DOI. EN rows without their own DOI inherit the parent DE row's DOI.
 - **URL** `/news/<path_segment>` (de) | `/en/news/<path_segment>` (en);
   `released_at` = `DATE(FROM_UNIXTIME(datetime))`.
@@ -455,7 +469,7 @@ To adapt for a different source CMS (DSpace, Pure, OJS, custom DB,
 2. Map your source fields to the Postgres column names
 3. Preserve the UPSERT-on-natural-key pattern — pick a stable
    field from your source as the natural key
-4. Keep the DOI-fallback extraction (`scripts/lib/doi-extract.mjs`)
+4. Keep the DOI-fallback extraction (`lib/shared/doi-extract.mjs`)
    — it's CMS-agnostic and saves a lot of enrichment misses
 
 The downstream pipeline (enrichment, LLM analysis, embedding) reads

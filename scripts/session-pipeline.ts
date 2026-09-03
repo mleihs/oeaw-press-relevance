@@ -5,8 +5,6 @@
 //   status              Read-only DB summary (enrichment + analysis counts).
 //   enrich-free         WebDB-native enrichment (summary_de/en → enriched_abstract).
 //                       DRY-RUN by default. Pass --apply to actually UPDATE.
-//   enrich-api          API-Cascade-Loop gegen den laufenden Dev-Server.
-//   enrich-augment      Pool-A-Nachanreicherung (additiv) über dieselbe Route.
 //   doi-backfill        DOIs aus bibtex/citation in die doi-Spalte rückführen.
 //   candidates [N]      Emit a JSON batch of N pending pubs to stdout, formatted
 //                       for the in-session scoring model. Status logs go to stderr.
@@ -71,10 +69,6 @@ const ITA_EXCLUDE_CLAUSE = `NOT EXISTS (
       SELECT id FROM ita_tree
     )
 )`;
-
-function itaCondition(includeIta: boolean): string {
-  return includeIta ? '1=1' : ITA_EXCLUDE_CLAUSE;
-}
 
 const TEXT_EVAL_FIELDS = [
   'pitch_suggestion',
@@ -249,10 +243,11 @@ async function cmdStatus(): Promise<void> {
       log(`  Bei 100 Pubs/Session: ~${Math.ceil(poolAnoIta / 100)} Sessions`);
     }
     if (poolBnoIta > 0) {
-      log('=== API-Enrichment-Prognose (Pool B no ITA → Pool A no ITA) ===');
-      const seconds = poolBdoiNoIta * 15;
-      log(`  Geschätzte Dauer (DOI-Pubs × 15s):  ~${Math.round(seconds / 3600)}h`);
-      log(`  Anstoßen mit: npx tsx scripts/session-pipeline.ts enrich-api --apply`);
+      // Kein CLI-Anstoß mehr: Enrichment läuft seit 7630070 automatisch beim
+      // Import (Nacht-Ingest 06:30; manuell: docs/INCHAT_SCORING.md Schritt 0.5).
+      log('=== Pool B (enrichment-pending) ===');
+      log(`  Anreicherung läuft automatisch beim Import (Nacht-Ingest).`);
+      log(`  Manuell anstoßen: docs/INCHAT_SCORING.md, Schritt 0.5.`);
     }
 
     log(`  Session-Modell-Tag: ${SESSION_MODEL_TAG}`);
@@ -501,291 +496,6 @@ async function cmdCandidates(args: Flags, positional: string[]): Promise<void> {
   });
 }
 
-interface BatchComplete {
-  processed?: number;
-  successful?: number;
-  failed?: number;
-  partial?: number;
-}
-
-/** Reads the SSE stream of /api/enrichment/batch and returns the last
- *  `complete`-shaped payload (processed/successful/failed counters). */
-async function readBatchStream(resp: Response): Promise<BatchComplete | null> {
-  const reader = resp.body?.getReader();
-  if (!reader) return null;
-  const decoder = new TextDecoder();
-  let buf = '';
-  let lastComplete: BatchComplete | null = null;
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buf += decoder.decode(value, { stream: true });
-    // Process line-by-line; SSE events arrive as `event: NAME\ndata: JSON\n\n`
-    const events = buf.split('\n\n');
-    buf = events.pop() || '';
-    for (const ev of events) {
-      const dataLine = ev.split('\n').find((l) => l.startsWith('data: '));
-      if (!dataLine) continue;
-      try {
-        const data = JSON.parse(dataLine.slice(6)) as BatchComplete;
-        if (data.processed !== undefined && data.successful !== undefined && data.failed !== undefined) {
-          lastComplete = data;
-        }
-      } catch { /* ignore non-JSON */ }
-    }
-  }
-  return lastComplete;
-}
-
-async function pingDevServer(): Promise<void> {
-  try {
-    const ping = await fetch('http://localhost:3000/', {
-      signal: AbortSignal.timeout(5000),
-      headers: process.env.GATE_COOKIE ? { Cookie: `gate=${process.env.GATE_COOKIE}` } : {},
-      redirect: 'manual',
-    });
-    if (!ping.ok) throw new Error(`Status ${ping.status}`);
-  } catch (e) {
-    log(`Server nicht erreichbar (${(e as Error).message}). Bitte 'npm run dev' starten.`);
-    process.exit(1);
-  }
-}
-
-async function cmdEnrichApi(args: Flags): Promise<void> {
-  const apply = bool(args, 'apply');
-  const perBatch = parseInt(str(args, 'per-batch') ?? '15', 10);
-  const maxBatchesFlag = str(args, 'max-batches');
-  const maxBatches = maxBatchesFlag ? parseInt(maxBatchesFlag, 10) : Infinity;
-  const includeNoDoi = bool(args, 'include-no-doi');
-  const includePartial = bool(args, 'include-partial');
-  const importedAfter = str(args, 'imported-after');
-  const apiUrl = str(args, 'api-url') ?? 'http://localhost:3000/api/enrichment/batch';
-
-  // imported-after: nur Pubs, die seit DATE neu in die DB kamen, anreichern.
-  // Geht NICHT über die Standard-Pool-Abfrage der API (die filtert nicht nach
-  // created_at), sondern wir holen IDs vorab und schicken sie via {ids:[...]}.
-  let scopedIds: string[] | null = null;
-  if (importedAfter) {
-    scopedIds = await withClient(async (c) => {
-      const statusList = includePartial ? ['pending', 'partial'] : ['pending'];
-      const r = await c.query<{ id: string }>(
-        `SELECT id::text FROM publications
-         WHERE archived = false
-           AND created_at >= $1
-           AND enrichment_status = ANY($2)
-           ${includeNoDoi ? '' : "AND doi IS NOT NULL AND doi != ''"}
-         ORDER BY published_at DESC NULLS LAST`,
-        [importedAfter, statusList],
-      );
-      return r.rows.map((row) => row.id);
-    });
-    log(`imported-after=${importedAfter}: ${scopedIds.length} Pubs zu anreichern.`);
-  }
-
-  if (!apply) {
-    log(`[DRY-RUN] enrich-api würde gegen ${apiUrl} loopen:`);
-    log(`  per-batch=${perBatch}, max-batches=${maxBatches === Infinity ? '∞ (bis Pool leer)' : maxBatches}`);
-    log(`  include-no-doi=${includeNoDoi}`);
-    log(`  include-partial=${includePartial}`);
-    if (scopedIds) log(`  scope: ${scopedIds.length} IDs (imported_after=${importedAfter})`);
-    log('Mit --apply den tatsächlichen Loop starten.');
-    return;
-  }
-
-  await confirmProd({ isProd: isProdRun(), flags: rawFlags, label: 'session-pipeline enrich-api' });
-  await pingDevServer();
-
-  const includeIta = bool(args, 'include-ita');
-  log(`Server OK. Starte Enrichment-Loop (per-batch=${perBatch}, include-no-doi=${includeNoDoi}, include-partial=${includePartial}, include-ita=${includeIta}).`);
-
-  const statusInList = includePartial ? `('pending', 'partial')` : `('pending')`;
-  // ITA-Filter wird im pendingCnt vorab gefiltert. Die API-Route selbst kennt
-  // ITA nicht — wenn includeIta=false, müsste theoretisch die Route auch filtern.
-  // Pragmatisch: API-Route nimmt einfach die nächsten N pending Pubs (egal ob ITA),
-  // unsere ITA-Pubs würden auch enriched. Das ist verschwendete API-Zeit aber kein
-  // Schaden. Echtes Filtern wäre eine Route-Änderung; für jetzt nur die pendingCnt
-  // ohne ITA, sodass die Loop-Beendigung sauber ist.
-  let batchN = 0;
-  let totalProcessed = 0;
-  let totalSuccessful = 0;
-  // Bei imported-after iterieren wir über die vorab geholte ID-Liste in Slices
-  // — das ist sauberer als die Pool-Abfrage, die created_at nicht filtert.
-  let scopedCursor = 0;
-  while (batchN < maxBatches) {
-    let postBody: Record<string, unknown>;
-    let pendingCnt: number;
-    if (scopedIds) {
-      const slice = scopedIds.slice(scopedCursor, scopedCursor + perBatch);
-      if (slice.length === 0) {
-        log(`Scoped queue leer (imported-after=${importedAfter}) — fertig nach ${batchN} Batches. Total: ${totalProcessed} processed, ${totalSuccessful} successful.`);
-        break;
-      }
-      pendingCnt = scopedIds.length - scopedCursor;
-      postBody = { ids: slice, limit: slice.length, include_partial: includePartial };
-      scopedCursor += slice.length;
-    } else {
-      pendingCnt = await withClient(async (c) => {
-        const r = await c.query<{ n: number }>(
-          `SELECT count(*)::int AS n FROM publications p
-           WHERE p.archived = false AND p.enrichment_status IN ${statusInList}
-           ${includeNoDoi ? '' : 'AND p.doi IS NOT NULL'}
-           AND ${itaCondition(includeIta)}`,
-        );
-        return r.rows[0].n;
-      });
-      if (pendingCnt === 0) {
-        log(`Queue leer (${includeNoDoi ? 'inkl. ohne DOI' : 'nur DOI-Pubs'}, status=${statusInList}) — fertig nach ${batchN} Batches. Total: ${totalProcessed} processed, ${totalSuccessful} successful.`);
-        break;
-      }
-      postBody = { limit: perBatch, include_no_doi: includeNoDoi, include_partial: includePartial };
-    }
-    batchN++;
-    log(`[Batch ${batchN}] ${pendingCnt} pending; POST limit=${postBody.limit}…`);
-
-    const t0 = Date.now();
-    let resp: Response;
-    try {
-      resp = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(process.env.GATE_COOKIE ? { Cookie: `gate=${process.env.GATE_COOKIE}` } : {}),
-        },
-        body: JSON.stringify(postBody),
-        signal: AbortSignal.timeout(360_000),
-      });
-    } catch (e) {
-      log(`  Netzwerk-Fehler: ${(e as Error).message}. Pause 5s, dann nächster Batch.`);
-      await new Promise((r) => setTimeout(r, 5000));
-      continue;
-    }
-    if (!resp.ok) {
-      const body = await resp.text();
-      log(`  API-Fehler ${resp.status}: ${body.slice(0, 200)}. Abbruch.`);
-      break;
-    }
-
-    const lastComplete = await readBatchStream(resp);
-    const dt = ((Date.now() - t0) / 1000).toFixed(1);
-    if (lastComplete) {
-      totalProcessed += lastComplete.processed || 0;
-      totalSuccessful += lastComplete.successful || 0;
-      log(`  ✓ ${lastComplete.processed} processed, ${lastComplete.successful} successful, ${lastComplete.failed} failed, ${lastComplete.partial || 0} partial (${dt}s)`);
-    } else {
-      log(`  ✓ batch done (${dt}s, kein complete-event empfangen)`);
-    }
-    // small pause to be friendly to external APIs
-    await new Promise((r) => setTimeout(r, 500));
-  }
-}
-
-// Pool-A-Augmentation: Pool A enriched Pubs mit DOI nochmal durch API-Cascade
-// schicken, um Keywords/Journal/etc. additiv zu ergänzen. enriched_abstract
-// (= summary_de) bleibt durch Merge-Logic geschützt.
-async function cmdEnrichAugment(args: Flags): Promise<void> {
-  const apply = bool(args, 'apply');
-  const includeIta = bool(args, 'include-ita');
-  const perBatch = parseInt(str(args, 'per-batch') ?? '15', 10);
-  const maxBatchesFlag = str(args, 'max-batches');
-  const maxBatches = maxBatchesFlag ? parseInt(maxBatchesFlag, 10) : Infinity;
-  const apiUrl = str(args, 'api-url') ?? 'http://localhost:3000/api/enrichment/batch';
-
-  // Augment-Ziel: Pool-A-/Phase-0-Pubs mit DOI, die noch keine API-Keywords haben.
-  // Status-unabhängig: 'enriched' und 'partial' sind beide gleichwertig „mit Substanz".
-  // Der frühere Hack (UPDATE auf partial + include_partial-Loop) ist ersetzt durch
-  // gezielte ID-basierte Verarbeitung — keine Re-Run-Schleife auf jüngste Pubs.
-  const candidatesQuery = `
-    SELECT id::text FROM publications p
-    WHERE p.archived = false
-      AND p.enrichment_status IN ('enriched', 'partial')
-      AND p.analysis_status = 'pending'
-      AND p.doi IS NOT NULL
-      AND p.enriched_keywords IS NULL
-      AND ${itaCondition(includeIta)}
-    ORDER BY p.published_at DESC NULLS LAST
-  `;
-
-  if (!apply) {
-    await withClient(async (c) => {
-      const r = await c.query(candidatesQuery);
-      log(`[DRY-RUN] enrich-augment würde:`);
-      log(`  - ${r.rows.length} Pool-A-Pubs (mit DOI, ohne API-Keywords) per ID an die Cascade schicken`);
-      log(`  - per-batch=${perBatch}, max-batches=${maxBatches === Infinity ? '∞' : maxBatches}`);
-      log(`  - enriched_abstract (= summary_de) wird durch Merge-Logic geschützt`);
-      log(`  - finalStatus wird automatisch von der Cascade gesetzt (enriched/partial/failed)`);
-      log(`Mit --apply ausführen.`);
-    });
-    return;
-  }
-
-  await confirmProd({ isProd: isProdRun(), flags: rawFlags, label: 'session-pipeline enrich-augment' });
-  await pingDevServer();
-
-  // IDs einmal sammeln. Pubs, die im laufenden Augment Erfolg hatten, fallen aus
-  // der Liste raus, weil enriched_keywords IS NULL nach Erfolg false wird — aber
-  // wir holen nur einmal vor Beginn, damit Mehrfachverarbeitung ausgeschlossen ist.
-  const ids = await withClient(async (c) => {
-    const r = await c.query<{ id: string }>(candidatesQuery);
-    return r.rows.map((row) => row.id);
-  });
-
-  if (ids.length === 0) {
-    log(`Augment: keine Kandidaten — fertig.`);
-    return;
-  }
-  log(`Augment: ${ids.length} Pool-A-Pubs identifiziert. Starte ID-basierten Loop.`);
-
-  let batchN = 0;
-  let totalProcessed = 0;
-
-  for (let offset = 0; offset < ids.length && batchN < maxBatches; offset += perBatch) {
-    batchN++;
-    const slice = ids.slice(offset, offset + perBatch);
-    log(`[Batch ${batchN}] ${ids.length - offset} verbleibend; POST ids=[${slice.length}]…`);
-
-    const t0 = Date.now();
-    let resp: Response;
-    try {
-      resp = await fetch(apiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids: slice, limit: slice.length }),
-        signal: AbortSignal.timeout(360_000),
-      });
-    } catch (e) {
-      log(`  Netzwerk-Fehler: ${(e as Error).message}. Pause 5s, dann nächster Batch.`);
-      await new Promise((r) => setTimeout(r, 5000));
-      continue;
-    }
-    if (!resp.ok) {
-      const t = await resp.text();
-      log(`  API-Fehler ${resp.status}: ${t.slice(0, 200)}. Abbruch.`);
-      break;
-    }
-
-    const lastComplete = await readBatchStream(resp);
-    const dt = ((Date.now() - t0) / 1000).toFixed(1);
-    if (lastComplete) {
-      totalProcessed += lastComplete.processed || 0;
-      log(`  ✓ ${lastComplete.processed} processed, ${lastComplete.successful} mit-Abstract-Treffer, ${lastComplete.partial || 0} partial, ${lastComplete.failed || 0} failed (${dt}s)`);
-    } else {
-      log(`  ✓ batch done (${dt}s, kein complete-event)`);
-    }
-    await new Promise((r) => setTimeout(r, 500));
-  }
-
-  // Verifizieren wieviele dieser IDs danach Keywords haben
-  const totalKwHits = await withClient(async (c) => {
-    const r = await c.query<{ n: number }>(
-      `SELECT count(*)::int AS n FROM publications WHERE id = ANY($1::uuid[]) AND enriched_keywords IS NOT NULL`,
-      [ids],
-    );
-    return r.rows[0].n;
-  });
-
-  log(`Augment fertig: ${batchN} Batches, ${totalProcessed} processed, davon ${totalKwHits} mit Keywords-Hit.`);
-}
-
 type Evaluation = Record<string, unknown> & { id: string };
 
 // Sanitize textual fields: strip HTML, normalize entities that often cause JSON
@@ -848,6 +558,8 @@ interface RepitchRow extends CandidateRow {
   press_score: number | null;
   pitch_suggestion: string | null;
   pitch_revision: number;
+  enrichment_status: string | null;
+  enriched_journal: string | null;
 }
 
 async function cmdRepitchCandidates(args: Flags, positional: string[]): Promise<void> {
@@ -888,6 +600,7 @@ async function cmdRepitchCandidates(args: Flags, positional: string[]): Promise<
         p.peer_reviewed, p.popular_science,
         p.summary_de, p.summary_en, p.enriched_abstract, p.abstract,
         p.enriched_keywords,
+        p.enrichment_status, p.enriched_journal,
         p.press_score, p.pitch_suggestion, p.pitch_revision,
         false AS is_mahighlight,
         ARRAY(
@@ -924,6 +637,13 @@ async function cmdRepitchCandidates(args: Flags, positional: string[]): Promise<
         peer_reviewed: row.peer_reviewed,
         popular_science: row.popular_science,
         enriched_keywords: row.enriched_keywords,
+        // Aus der Anreicherung, nicht aus dem WebDB-Satz. Das Publikationsorgan
+        // verlangt die Rubrik ausdrücklich (Punkt 6, VERANKERUNG); ohne dieses
+        // Feld steht es nirgends im Material und kann folglich nicht genannt
+        // werden. `enrichment_status` macht sichtbar, worauf der Text fußt:
+        // bei 'failed' gibt es nur den WebDB-Text, kein Journal, keine Keywords.
+        enrichment_status: row.enrichment_status,
+        enriched_journal: row.enriched_journal,
         content_source: contentSource,
         content,
         // Zum Vergleich mitgeliefert, NICHT als Vorlage: der alte Text ist das,
@@ -1040,7 +760,8 @@ async function cmdApply(args: Flags, positional: string[]): Promise<void> {
     }
     if (tooThin.length > 0) {
       log(`! ${tooThin.length} Pubs haben weniger als ${MIN_CONTENT_LEN} Zeichen Inhalt — werden NICHT bewertet.`);
-      log(`  Eine Bewertung ohne Substanz ist Fabrikation. Diese Pubs erst durch enrich-augment laufen lassen.`);
+      log(`  Eine Bewertung ohne Substanz ist Fabrikation. Diese Pubs müssen erst angereichert werden`);
+      log(`  (läuft automatisch beim Import — Nacht-Ingest; manuell: docs/INCHAT_SCORING.md Schritt 0.5).`);
       for (const id of tooThin.slice(0, 5)) log(`    skip (no content): ${id}`);
       process.exit(2);
     }
@@ -1327,14 +1048,6 @@ Commands:
   status                                Enrichment + Analysis-Status, Pool A/B
   enrich-free [--apply]                 WebDB-native Enrichment (summary_de/en → enriched)
                                         Default dry-run; --apply schreibt UPDATE.
-  enrich-api [--apply] [--per-batch N]  API-Cascade-Loop (CrossRef → OpenAlex → ...)
-             [--max-batches N]          via POST gegen laufende /api/enrichment/batch.
-             [--include-no-doi]         Default per-batch=15. Server muss laufen.
-             [--include-partial]        Auch 'partial' Pubs durchschicken.
-             [--imported-after DATE]    Nur Pubs mit created_at >= DATE; IDs vorab
-                                        gezogen, ID-basiert per {ids:[]} dispatched.
-  enrich-augment [--apply]              Pool-A-mit-DOI durch API-Cascade (additiv).
-                                        enriched_abstract (summary_de) bleibt geschützt.
   doi-backfill [--apply]                DOIs aus bibtex/citation_apa/_de/_en in die
                                         doi-Spalte rückführen (Pubs ohne DOI).
   candidates [N] [filters]              N Kandidaten als JSON auf stdout.
@@ -1414,8 +1127,6 @@ async function main(): Promise<void> {
     switch (cmd) {
       case 'status':         await cmdStatus(); break;
       case 'enrich-free':    await cmdEnrichFree(args); break;
-      case 'enrich-api':     await cmdEnrichApi(args); break;
-      case 'enrich-augment': await cmdEnrichAugment(args); break;
       case 'doi-backfill':   await cmdDoiBackfill(args); break;
       case 'candidates':     await cmdCandidates(args, positional); break;
       case 'apply':          await cmdApply(args, positional); break;

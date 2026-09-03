@@ -1,6 +1,12 @@
 # Resume: /social nach Claude-Design neu bauen (mobil + desktop + neues Aktualisierungsmodell)
 
-**Stand:** offen (2026-07-06). Diese Datei = Resume nach Context-Clear.
+> **ERLEDIGT am 2026-07-06 — historisches Dokument, NICHT erneut ausführen.**
+> Das /social-Redesign ist shipped und verifiziert (Memory
+> `social-redesign-shipped`); der Settings-Audit folgte am 2026-07-21
+> (Memory `social-feature-landed`).
+
+**Stand:** erledigt (shipped 2026-07-06). Diese Datei war das Resume nach
+Context-Clear und bleibt nur als Protokoll.
 
 ## Aufgabe
 Die Social-Media-Seite `/social` gemäß Claude-Design neu bauen: **Mobile + Desktop**

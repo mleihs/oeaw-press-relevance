@@ -18,12 +18,29 @@ import postgres from 'postgres';
 //
 // Ausblick: eine Lease-Tabelle (row-lock/expiry) wäre ein interner Swap hinter
 // derselben API, falls die Advisory-Lock-Semantik am Pooler je bricht.
-const lockPool = postgres(process.env.DATABASE_URL ?? '', {
-  max: 4,
-  idle_timeout: 20,
-  connect_timeout: 10,
-  prepare: false,
-});
+let lockPool: ReturnType<typeof postgres> | null = null;
+
+/** Lazy + memoisiert: der Pool entsteht erst beim ersten Acquire. Fehlt
+ *  DATABASE_URL, fliegt hier sofort eine klare Meldung — statt eines
+ *  kryptischen Connect-Fehlers beim ersten Lock-Query gegen einen mit
+ *  Leerstring-URL gebauten Modul-Level-Pool. */
+function getLockPool(): ReturnType<typeof postgres> {
+  if (!lockPool) {
+    const url = process.env.DATABASE_URL;
+    if (!url) {
+      throw new Error(
+        'DATABASE_URL fehlt — run-lock benötigt die Postgres-Verbindung für pg_advisory_lock.',
+      );
+    }
+    lockPool = postgres(url, {
+      max: 4,
+      idle_timeout: 20,
+      connect_timeout: 10,
+      prepare: false,
+    });
+  }
+  return lockPool;
+}
 
 // In-Memory-Gurt: blockt einen zweiten Lauf DESSELBEN Keys innerhalb einer
 // Instanz sofort — BEVOR eine Lock-Connection reserviert wird. Nebeneffekt: er
@@ -60,7 +77,7 @@ export interface RunLockHandle {
 export async function acquireRunLock(key: string): Promise<RunLockHandle> {
   if (held.has(key)) throw new RunLockBusyError();
 
-  const conn = await lockPool.reserve();
+  const conn = await getLockPool().reserve();
   let acquired = false;
   try {
     const rows = await conn<{ locked: boolean }[]>`

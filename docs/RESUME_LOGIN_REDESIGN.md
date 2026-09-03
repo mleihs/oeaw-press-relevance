@@ -1,6 +1,11 @@
 # Resume: Login-/Gate-Redesign + Umbenennung „ÖAW Presse" + Board-Folgearbeiten
 
-**Stand:** 2026-07-06, nach dem /social-Redesign-Deploy. Diese Datei = Einstieg nach Context-Clear.
+> **ERLEDIGT am 2026-07-06 — historisches Dokument, NICHT erneut ausführen.**
+> Aufgaben 1 + 2 waren am 2026-07-06 deployed (s. UPDATE unten); Aufgabe 3
+> (Board-Rakete + Zuweisen) folgte noch am selben Tag (Memory
+> `board-celebration-dashboard-shipped`). Nichts mehr offen.
+
+**Stand:** erledigt (2026-07-06). Diese Datei war der Einstieg nach Context-Clear und bleibt nur als Protokoll.
 
 > **UPDATE (später am 2026-07-06):** Aufgaben 1 + 2 sind ERLEDIGT und deployed.
 > Design-Quelle liegt unter `docs/design/claude-design/Login.dc.html`. Umsetzung:

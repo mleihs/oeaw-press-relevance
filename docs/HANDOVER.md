@@ -511,8 +511,8 @@ Pool A no ITA scoring-ready: **1.602**.
 ```bash
 npx tsx scripts/session-pipeline.ts status
 npx tsx scripts/session-pipeline.ts enrich-free --apply       # WebDB-native (gelaufen)
-npx tsx scripts/session-pipeline.ts enrich-api --apply        # Pool B Cascade
-npx tsx scripts/session-pipeline.ts enrich-augment --apply    # Pool A re-cascade (NEUE ID-Logik, fertig 2026-04-28)
+# enrich-api / enrich-augment: 2026-08-31 AUSGEBAUT — Enrichment läuft seit dem
+# Nacht-Ingest automatisch beim Import (docs/INCHAT_SCORING.md, Schritt 0.5).
 npx tsx scripts/session-pipeline.ts candidates 100 --all > /tmp/batch.json
 npx tsx scripts/session-pipeline.ts apply /tmp/evals.json --apply
 ```
@@ -534,7 +534,7 @@ Output liest sich wie ein Memo aus der Pressestelle, nicht wie ein DB-Dump. Vera
 ## Hard Rules — Allgemein (unverändert)
 
 - **Prod-DB nur read-only.** Memory `production_db_safety.md`. SELECT via MCP ist OK; nie INSERT/UPDATE/DELETE auf Prod.
-- **ITA wird per Default ausgeschlossen** in candidates, enrich-api, enrich-augment.
+- **ITA wird per Default ausgeschlossen** in candidates (galt ebenso für die 2026-08-31 ausgebauten enrich-api/enrich-augment).
 - **`enriched_abstract` mit summary_de nicht überschreiben** — geschützt durch Merge-Logic.
 - **UUIDs aus JSON via Python/jq, niemals aus Console abtippen**.
 - **Apply-Skript default skip wenn schon analyzed** — `--force` zum Überschreiben.
@@ -764,8 +764,9 @@ Output liest sich wie ein Memo aus der Pressestelle, nicht wie ein DB-Dump. Vera
 
 ## Hintergrund-Loops
 
-Stand späte Session 2026-04-28: **kein aktiver Hintergrund-Loop**. Der Augment-Loop ist sauber durchgelaufen und beendet. Wenn neue Pool-A-Pubs durch Pool-B-API-Cascade entstehen, kann `enrich-augment --apply` erneut gestartet werden (wird wegen ID-Logik korrekt nur die ergänzungsbedürftigen Pubs verarbeiten).
+Stand späte Session 2026-04-28: **kein aktiver Hintergrund-Loop**. Der Augment-Loop ist sauber durchgelaufen und beendet.
 
-```bash
-nohup npx tsx scripts/session-pipeline.ts enrich-augment --apply > /tmp/enrich-augment.log 2>&1 &
-```
+> **Hinweis 2026-08-31:** `enrich-augment` (wie `enrich-api`) wurde aus
+> `session-pipeline.ts` ausgebaut — Enrichment läuft seit dem Nacht-Ingest
+> automatisch beim Import (docs/INCHAT_SCORING.md, Schritt 0.5). Der frühere
+> `nohup … enrich-augment --apply`-Loop existiert nicht mehr.

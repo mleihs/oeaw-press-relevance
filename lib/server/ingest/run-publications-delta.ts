@@ -4,6 +4,7 @@
 // (client darf server nicht importieren) + den DB-Zugriff ohnehin gesichert.
 import { sql } from 'drizzle-orm';
 import { db } from '@/lib/server/db';
+import { alarmRelevantDrift, PERSON_ORPHAN_COLLAPSE_THRESHOLD } from './classify-run';
 import { fetchJsonExport } from './fetch-export';
 import { parsePublicationsDelta } from './adapters/typo3-publications-delta';
 import { extractDoiFromRow } from '@/lib/shared/doi-extract.mjs';
@@ -133,43 +134,50 @@ export async function runPublicationsDeltaImport(
   };
 }
 
+/** Report-Werte defensiv lesen (gleiches Idiom wie `num()` in drift.ts): ein
+ *  nicht-numerischer Report-Wert ergäbe sonst NaN, und `NaN >= Schwelle` ist
+ *  false — die Alarm-Kette wäre fail-open. */
+const num = (v: unknown): number => (typeof v === 'number' ? v : Number(v ?? 0) || 0);
+
 /** Alarm-relevante Drift-Signale: Orgunit-Waisen plus fehlende Lookups.
  *
- *  Personen-Waisen (`person_link_orphans`) zählen seit 2026-08-31 bewusst
- *  NICHT mehr mit (Analyse docs/WEBDB_PERSON_GAP.md §8): 43,5 % aller
- *  Autorenverknüpfungen in der WebDB zeigen auf Personensätze, die die Quelle
- *  selbst nicht mehr führt — der Anteil ist ein Dauerzustand, skaliert mit der
- *  Größe der Nacht (08.08.: 80 Fälle bei 28 % Quote → Fehlalarm; 20.08.: 16
- *  Fälle bei 30 % Quote → still) und ein Vollabgleich kann nichts reparieren,
- *  weil bei uns nichts fehlt. Sie bleiben als Warnung/Journal-Zahl sichtbar,
- *  lösen aber keinen Alarm mehr aus. Übrig bleibt, was wirklich anomal wäre. */
+ *  Personen-Waisen zählen nicht mit — AUSSER ab der Kollaps-Schwelle. Die
+ *  Regel samt Begründung lebt single-sourced in `alarmRelevantDrift`
+ *  (classify-run.ts); hier kommt nur das status-Gate dazu. */
 export function countDrift(report: Record<string, unknown>): number {
   if (report.status !== 'applied') return 0;
-  return (
-    Number(report.orgunit_link_orphans ?? 0) +
-    Number(report.unresolved_publication_type ?? 0) +
-    Number(report.unresolved_member_type ?? 0)
-  );
+  return alarmRelevantDrift(report);
 }
 
 function collectWarnings(report: Record<string, unknown>): string[] {
   if (report.status !== 'applied') return [];
   const warnings: string[] = [];
-  const personOrphans = Number(report.person_link_orphans ?? 0);
-  if (personOrphans > 0) {
-    warnings.push(
-      `${personOrphans} Autoren-Verknüpfung(en) auf nie gelieferte Personensätze ` +
-        `(WebDB-Personenlücke, docs/WEBDB_PERSON_GAP.md) — kein Handlungsbedarf.`,
-    );
-  }
-  const orgunitOrphans = Number(report.orgunit_link_orphans ?? 0);
+  // Handlungsrelevante Warnungen ZUERST: buildSummary (classify-run.ts) hebt
+  // nur warnings[0] in Betreffzeile/Journal — die harmlose Personen-Notiz
+  // („kein Handlungsbedarf") darf die eigentliche Diagnose nicht verdrängen.
+  const orgunitOrphans = num(report.orgunit_link_orphans);
   const unresolved =
-    Number(report.unresolved_publication_type ?? 0) +
-    Number(report.unresolved_member_type ?? 0);
+    num(report.unresolved_publication_type) + num(report.unresolved_member_type);
   if (orgunitOrphans + unresolved > 0) {
     warnings.push(
       `${orgunitOrphans} orgunit orphan link(s), ${unresolved} unresolved lookup(s): ` +
         `likely drift vs. the full corpus; schedule/verify a full reconciliation.`,
+    );
+  }
+  const personOrphans = num(report.person_link_orphans);
+  if (personOrphans >= PERSON_ORPHAN_COLLAPSE_THRESHOLD) {
+    // Kollaps-Guard (alarmRelevantDrift zählt diese Fälle auch zur Drift):
+    // das ist kein WebDB-Rauschen mehr, sondern verschwindende Autorenschaften.
+    warnings.push(
+      `${personOrphans} Autoren-Verknüpfung(en) ohne Personensatz — weit über dem ` +
+        `WebDB-Normalrauschen (Kollaps-Schwelle ${PERSON_ORPHAN_COLLAPSE_THRESHOLD}): ` +
+        `mutmaßlich kollabierter Personen-Korpus im Export; Rohexport prüfen und ` +
+        `per \`--force\` aus dem Archiv nachziehen.`,
+    );
+  } else if (personOrphans > 0) {
+    warnings.push(
+      `${personOrphans} Autoren-Verknüpfung(en) auf nie gelieferte Personensätze ` +
+        `(WebDB-Personenlücke, docs/WEBDB_PERSON_GAP.md) — kein Handlungsbedarf.`,
     );
   }
   return warnings;

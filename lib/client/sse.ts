@@ -10,10 +10,10 @@
 // `eventType` persists across reads (a frame can split across chunks), and a
 // frame whose JSON fails to parse is skipped rather than throwing.
 
-// data is the JSON-parsed payload of one frame; `any` mirrors JSON.parse and
-// lets each handler read its own fields without per-call casting.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type SSEHandler = (event: string, data: any) => void;
+// data is the JSON-parsed payload of one frame. `unknown` statt `any`: der
+// Draht garantiert keine Form, also muss jeder Handler selbst eingrenzen
+// (typischerweise ein Narrow auf Record<string, unknown> am Handler-Kopf).
+export type SSEHandler = (event: string, data: unknown) => void;
 
 export async function consumeSSE(
   response: Response,

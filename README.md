@@ -67,7 +67,7 @@ for what is fundamentally a content-prioritization tool.
 
 ### Prerequisites
 
-- **Node.js ≥ 20** (LTS)
+- **Node.js ≥ 24** (LTS)
 - **Supabase CLI** — `brew install supabase/tap/supabase` or
   `npm install -g supabase`
 - **Docker** — for the local Supabase stack
@@ -156,6 +156,11 @@ firewall): see [docs/SELF_HOSTING.md](docs/SELF_HOSTING.md) — Postgres
 | `/researchers` | Leaderboard — Spotlight Top-3 + ranked table + beeswarm distribution |
 | `/persons/[id]` | Person profile — stats, activity chart, co-authors, publications |
 | `/press-releases` | Press-release tracking — matched + orphan tabs |
+| `/events` | Event triage — list, week + month calendar, scoring cockpit |
+| `/board` | Kanban board — output channels as columns, stories as cards |
+| `/social` | Instagram monitoring — themes, freshness, release section |
+| `/help` | Knowledge base — MDX articles |
+| `/login` | Auth screen — gate + personal login |
 | `/settings` | API keys, reviewer name, model selection |
 | `/upload` | WebDB import instructions |
 
@@ -171,7 +176,7 @@ firewall): see [docs/SELF_HOSTING.md](docs/SELF_HOSTING.md) — Postgres
 | Embedding | SPECTER2 (`allenai/specter2_base` + proximity adapter) | Scientific-trained, free, runs offline |
 | LLM | OpenRouter (Claude, GPT, DeepSeek, Llama, …) | BYOK, model-agnostic |
 | Offline ML | Python + `transformers` + `adapters` + `psycopg2` | Standard SPECTER2 inference stack |
-| Tests | Playwright (e2e + visual) + Vitest (unit, WIP) | 26 visual snapshots + 4 smoke tests |
+| Tests | Vitest (unit) + Playwright (e2e + visual) | current coverage: see `test/` + `e2e/` |
 
 Architecture rationale (why this stack, not Phoenix / FastAPI / Django
 / Rails / Go): [ARCHITECTURE.md § Tech-Stack Rationale](ARCHITECTURE.md#tech-stack-rationale).

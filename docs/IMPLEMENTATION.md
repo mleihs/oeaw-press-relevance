@@ -205,7 +205,7 @@ header overrides — closed by audit B2 + H1).
 | Route | Purpose |
 |---|---|
 | `POST /api/publications/import` | Bulk insert from CSV (chunks of 100) |
-| `POST /api/enrichment/batch` | SSE-streaming enrichment (CrossRef → OpenAlex → Unpaywall → Semantic Scholar → PDF → WebDB-native) |
+| `POST /api/ingest/run` | Nightly ingest — import + events + auto-enrichment (CrossRef → OpenAlex → Unpaywall → Semantic Scholar → PDF → WebDB-native); the former `/api/enrichment/batch` route was removed |
 | `POST /api/analysis/batch` | SSE-streaming LLM evaluation via OpenRouter |
 
 ### Auth
@@ -287,7 +287,8 @@ Content-Type + optional `x-openrouter-key` only).
 **`lib/enrichment/`** — 6 source-specific fetchers (`crossref`, `openalex`,
 `unpaywall`, `semantic-scholar`, `pdf-extract`, `webdb-native`). Each returns
 `EnrichmentResult | null`. Pipeline orchestration in
-`app/api/enrichment/batch/route.ts`.
+`lib/server/enrichment/batch.ts` (invoked by the nightly ingest,
+`lib/server/ingest/run-enrichment.ts`).
 
 **`lib/analysis/openrouter.ts`** + **`lib/analysis/prompts.ts`** — LLM call
 coordination + system/evaluation prompt templates.
@@ -362,7 +363,9 @@ timestamp shown on `/upload`.
 
 ### Enrichment pipeline
 
-`POST /api/enrichment/batch` streams progress via SSE while iterating:
+Enrichment runs automatically during import (nightly ingest,
+`lib/server/ingest/run-enrichment.ts` → `lib/server/enrichment/batch.ts`;
+the former `/api/enrichment/batch` route was removed), iterating:
 **CrossRef → OpenAlex → Unpaywall → Semantic Scholar → PDF extraction →
 WebDB-native** (each pub tries sources in order until success). Best fields
 merged across sources. 300 ms pacing between pubs. Truncates abstracts at
@@ -535,7 +538,7 @@ no-match-unchanged cases.
 ```
 # Server-side credentials (NEVER committed, NEVER exposed to browser)
 SUPABASE_URL=                    # full https URL of the Supabase project
-SUPABASE_ANON_KEY=               # public anon key (RLS-protected reads)
+SUPABASE_ANON_KEY=               # public anon key (nur noch Supabase-Auth/Realtime; DB-Lesezugriff seit 20260831000001_drop_anon_select entzogen)
 SUPABASE_SERVICE_ROLE_KEY=       # service-role key (mutations bypass RLS)
 OPENROUTER_API_KEY=              # default OpenRouter key (user can override per-request)
 LLM_DEFAULT_MODEL=               # optional: default model id (else DEFAULT_LLM_MODEL, 'anthropic/claude-opus-4.8')

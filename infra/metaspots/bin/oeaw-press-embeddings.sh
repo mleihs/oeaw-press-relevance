@@ -12,12 +12,14 @@ export PROD_DB_URL_OVERRIDE
 REPO=/srv/oeaw-press-relevance
 PY="$REPO/scripts/embeddings/.venv/bin/python"
 
-# stdout statt `logger`: systemd faengt stdout unter dieser Unit ein, damit die
-# Zeile in `journalctl -u oeaw-press-embeddings` erscheint. `logger`-Zeilen tun
-# das NICHT (sie laufen unter dem logger-Prozess) — exakt der Defekt, der beim
-# Ingest-Wrapper im 07-21-Post-mortem "alert mail sent" ohne Ursache zeigte.
-# Die Unit setzt SyslogIdentifier, `journalctl -t` findet die Zeilen weiterhin.
-say() { printf '%s\n' "$1"; }
+# stdout PLUS best-effort `logger`: systemd faengt stdout unter dieser Unit ein,
+# damit die Zeile in `journalctl -u oeaw-press-embeddings` erscheint — reine
+# `logger`-Zeilen tun das NICHT (sie laufen unter dem logger-Prozess), exakt der
+# Defekt, der beim Ingest-Wrapper im 07-21-Post-mortem "alert mail sent" ohne
+# Ursache zeigte. Der zusaetzliche logger-Aufruf sorgt dafuer, dass auch ein
+# MANUELLER SSH-Lauf (ohne systemd) eine Journal-Spur hinterlaesst
+# (`journalctl -t oeaw-press-embeddings`); scheitert er, ist das egal.
+say() { printf '%s\n' "$1"; logger -t oeaw-press-embeddings "$1" 2>/dev/null || true; }
 
 LOG=$(mktemp)
 T0=$SECONDS
@@ -32,7 +34,12 @@ if [ "$RC" -eq 0 ]; then
 fi
 
 say "FAILED rc=$RC dur=${DUR}s :: $(printf '%s' "$TAIL" | tail -1)"
-if [ -n "${SMTP_URL:-}" ]; then
+# ALLE Mail-Vars guarden, nicht nur SMTP_URL: unter `set -u` (oben) wuerde eine
+# fehlende Var das Skript mitten im Alarmversand mit "unbound variable" toeten —
+# keine Mail, und der echte RC des Python-Laufs waere maskiert.
+if [ -n "${SMTP_URL:-}" ] && { [ -z "${MAIL_FROM:-}" ] || [ -z "${MAIL_TO:-}" ] || [ -z "${SMTP_USER:-}" ] || [ -z "${SMTP_PASS:-}" ]; }; then
+  say "alert mail skipped: SMTP_URL gesetzt, aber MAIL_FROM/MAIL_TO/SMTP_USER/SMTP_PASS unvollstaendig"
+elif [ -n "${SMTP_URL:-}" ]; then
   printf 'From: %s\r\nTo: %s\r\nSubject: %s\r\nContent-Type: text/plain; charset=utf-8\r\n\r\nSPECTER2 nightly embeddings FAILED (rc=%s, dur=%ss). Log tail:\r\n\r\n%s\r\n' \
       "$MAIL_FROM" "$MAIL_TO" "[OeAW Embeddings] Nightly SPECTER2 fehlgeschlagen ($(date -u +%F))" "$RC" "$DUR" "$TAIL" \
     | curl -s -m 30 --url "$SMTP_URL" --ssl-reqd \
