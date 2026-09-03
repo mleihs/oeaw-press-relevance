@@ -171,6 +171,9 @@ function EventDetailSheet({
   const venue = event.location_title || event.organizer_title;
   const chips = [
     event.institute,
+    // Gleiches Merkmal wie in der Desktop-Tabelle: kam nur ueber einen
+    // WebDB-Dump, nicht ueber den naechtlichen Export.
+    event.discovered_via === 'webdb_dump' ? 'nur im Dump' : null,
     ...event.available_langs.map((l) => l.toUpperCase()),
   ].filter(Boolean) as string[];
 

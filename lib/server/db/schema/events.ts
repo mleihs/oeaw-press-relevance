@@ -44,6 +44,12 @@ export const events = pgTable("events", {
 	analyzedAt: timestamp("analyzed_at", { withTimezone: true, mode: 'string' }),
 	syncedAt: timestamp("synced_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	// 'feed' = ueber den naechtlichen JSON-Export gekommen; 'webdb_dump' = nur
+	// ueber einen WebDB-Dump gefunden, weil der Export den News-Ordner nicht
+	// einsammelt (Migration 20260903000001). Nicht im UPSERT-SET-List: ein
+	// spaeterer Feed-Lauf soll den Marker NICHT stillschweigend auf 'feed'
+	// drehen — sonst verschwindet genau die Information, die ihn wertvoll macht.
+	discoveredVia: text("discovered_via").default('feed').notNull(),
 }, (table) => [
 	index("idx_events_decision").using("btree", table.decision.asc().nullsLast().op("text_ops")),
 	index("idx_events_event_at").using("btree", table.eventAt.asc().nullsLast().op("timestamptz_ops")),
@@ -54,6 +60,8 @@ export const events = pgTable("events", {
 	check("events_decision_check", sql`decision = ANY (ARRAY['undecided'::text, 'pitch'::text, 'hold'::text, 'skip'::text])`),
 	check("events_lang_check", sql`(lang IS NULL) OR (lang = ANY (ARRAY['de'::text, 'en'::text, 'mul'::text]))`),
 	check("events_analysis_status_check", sql`analysis_status IS NULL OR analysis_status = ANY (ARRAY['pending'::text, 'analyzed'::text, 'failed'::text])`),
+	check("events_discovered_via_check", sql`discovered_via = ANY (ARRAY['feed'::text, 'webdb_dump'::text])`),
+	index("idx_events_discovered_via_dump").using("btree", table.eventAt.asc().nullsLast().op("timestamptz_ops")).where(sql`discovered_via = 'webdb_dump'`),
 ]);
 
 // Append-only history of event-score weightings. Current = latest row; saving

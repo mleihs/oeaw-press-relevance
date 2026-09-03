@@ -89,6 +89,11 @@ const CONTENT_SET_COLUMNS = [
   'lang',
   'availableLangs',
   'syncedAt',
+  // Herkunft (Migration 20260903000001). Steht bewusst IN der SET-Liste, aber
+  // asymmetrisch: der Feed schreibt 'feed' und heilt damit eine frueher nur
+  // per Dump gefundene Zeile; ein Dump-Import laesst den Wert stehen. Siehe
+  // den eigenen Test weiter unten.
+  'discoveredVia',
 ];
 
 // LLM-analysis columns present in the SET list but ONLY as a guarded reset:
@@ -173,6 +178,37 @@ describe('upsertEvents — maintainer/score-column protection', () => {
     await upsertEvents([makeEvent()]);
 
     expect(Object.keys(h.captured.set ?? {}).sort()).toEqual(EXPECTED_SET_COLUMNS);
+  });
+
+  // Die Asymmetrie ist die ganze Aussage des Markers: sonst wuerde entweder
+  // ein Feed-Lauf die Luecke nie als geschlossen melden, oder ein Dump-Import
+  // eine regulaer eingelaufene Zeile faelschlich zu einem Fundstueck erklaeren.
+  it('laesst nur den Feed die Herkunft heilen, nie den Dump-Import', async () => {
+    // Die Chunks eines SQL-Fragments sind entweder String-Literale (.value)
+    // oder Column-Objekte (.name) — beide Formen zaehlen hier, denn genau der
+    // Unterschied zwischen ihnen ist das, was geprueft wird.
+    const chunks = (v: unknown): string => {
+      const q = v as { queryChunks?: unknown[] };
+      return (q.queryChunks ?? [])
+        .map((c) => {
+          const cv = (c as { value?: unknown }).value;
+          if (Array.isArray(cv)) return cv.join('');
+          if (typeof cv === 'string') return cv;
+          return (c as { name?: string }).name ?? '';
+        })
+        .join(' ');
+    };
+
+    h.setReturning([{ inserted: true }]);
+    await upsertEvents([makeEvent()], undefined, 'feed');
+    expect(chunks(h.captured.set?.discoveredVia)).toContain("'feed'");
+
+    h.setReturning([{ inserted: true }]);
+    await upsertEvents([makeEvent()], undefined, 'webdb_dump');
+    // Der Dump-Zweig schreibt die SPALTE auf sich selbst zurueck, laesst also
+    // einen bestehenden 'feed'-Wert unangetastet.
+    expect(chunks(h.captured.set?.discoveredVia)).toContain('discovered_via');
+    expect(chunks(h.captured.set?.discoveredVia)).not.toContain("'feed'");
   });
 
   it('resolves the conflict on the webdb_uid unique key', async () => {

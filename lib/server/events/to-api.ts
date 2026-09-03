@@ -70,6 +70,7 @@ export function eventRowToApi(row: EventRow): Event {
     analyzed_at: row.analyzedAt,
     synced_at: row.syncedAt,
     created_at: row.createdAt,
+    discovered_via: row.discoveredVia === 'webdb_dump' ? 'webdb_dump' : 'feed',
   };
 }
 
