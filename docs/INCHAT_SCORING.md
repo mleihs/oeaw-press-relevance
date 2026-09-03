@@ -118,7 +118,12 @@ Dazu Freitext auf Deutsch:
 - **reasoning** — 2–3 Sätze, **nur aus dem Inhalt**. Nie `peer_reviewed`,
   `popular_science` oder `mahighlight` benennen; `apply` bricht darauf mit
   Exit 1 ab.
-- **haiku** — optional, Deutsch 5-7-5, Trenner `" / "`.
+- **haiku** — **Pflicht**, Deutsch 5-7-5, Trenner `" / "` (zwei davon).
+  Silben wirklich zählen, kein Skript prüft es (`Sa-tel-li-ten-blick` = 5,
+  `Na-tur-park` = 3). Keine Anführungszeichen, keine Gedankenstriche, echte
+  Umlaute. Es fasst den **Inhalt**, nicht die Verwertbarkeit, und benennt
+  weder Institut noch Journal. `apply` erzwingt das Feld nicht, die
+  Nutzeranweisung schon: es muss immer generiert werden.
 
 **Kalibrierung:** typische Fachpublikationen 0.28–0.43, nischig-technisch
 0.15–0.25, echt pressewürdig 0.5–0.7. Ein dichter Fachblock (GMI-Pflanzenbiologie,
