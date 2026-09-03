@@ -9,7 +9,7 @@ import type { EventNewsGroupedExport } from './adapters/typo3-events-json';
 
 const h = vi.hoisted(() => {
   let existingRows: Array<{ id: string }> = [];
-  let streakRows: Array<{ parsed: string | null }> = [];
+  let streakRows: Array<{ parsed: string | null; ts?: number }> = [];
   const journalInserts: Array<Record<string, unknown>> = [];
   let transactionCalls = 0;
 
@@ -51,9 +51,14 @@ const h = vi.hoisted(() => {
     setExisting(rows: Array<{ id: string }>) {
       existingRows = rows;
     },
-    /** Journal-Zeilen VOR dem aktuellen Lauf, juengste zuerst. */
-    setStreak(parsedValues: Array<string | null>) {
-      streakRows = parsedValues.map((parsed) => ({ parsed }));
+    /** Journal-Zeilen VOR dem aktuellen Lauf, juengste zuerst. Ein blosser
+     *  String ist die parsed-Spalte ohne Zeitstempel (zaehlt konservativ mit);
+     *  das Tupel [parsed, ts] setzt zusaetzlich generated_at_timestamp, damit
+     *  die Wochenend-Regel pruefbar wird. */
+    setStreak(rows: Array<string | null | [string | null, number]>) {
+      streakRows = rows.map((r) =>
+        Array.isArray(r) ? { parsed: r[0], ts: r[1] } : { parsed: r },
+      );
     },
     reset() {
       existingRows = [];
@@ -88,10 +93,20 @@ vi.mock('@/lib/server/events/sync', () => ({
 import {
   runEventsImport,
   classifyEmptyFeed,
+  coversWorkday,
   EVENTS_FEED,
   EMPTY_FEED_ALARM_STREAK,
   FEED_STALE_HOURS,
 } from './run-events-import';
+
+/** Unix-Sekunden des Exports, der am angegebenen Wiener KALENDERTAG um 01:07
+ *  erzeugt wurde — die reale Erzeugungszeit des Feeds. Im Sommer (UTC+2) liegt
+ *  dieser Moment in UTC noch im VORTAG; genau daran scheitert jede Rechnung,
+ *  die den Wochentag aus UTC nimmt. */
+function genAtVienna(viennaDay: string): number {
+  const utcPrevDay = new Date(`${viennaDay}T01:07:00+02:00`);
+  return Math.floor(utcPrevDay.getTime() / 1000);
+}
 
 // Die Klassifikation rechnet gegen `now`, also muss die Uhr stehen. NOW ist eine
 // echte Nacht (26.08.), GEN_TS der zugehoerige Export von 03:00 — genau der
@@ -209,6 +224,54 @@ describe('runEventsImport', () => {
     });
   });
 
+  it('does not alarm on the Fri-to-Tue lull that fired on 2026-09-01', async () => {
+    // Der reale Fehlalarm: Fr 28.08. bis Di 01.09. ohne Neuzugang, Export jede
+    // Nacht frisch. Nach Kalendernaechten waren das 5 und damit die Schwelle;
+    // nach Arbeitsnaechten sind es 3 (So + Mo decken das Wochenende ab).
+    vi.setSystemTime(new Date('2026-09-01T04:30:00Z'));
+    h.setStreak([
+      ['0', genAtVienna('2026-08-31')], // Mo-Export deckt Sonntag ab
+      ['0', genAtVienna('2026-08-30')], // So-Export deckt Samstag ab
+      ['0', genAtVienna('2026-08-29')], // Sa-Export deckt Freitag ab
+      ['0', genAtVienna('2026-08-28')], // Fr-Export deckt Donnerstag ab
+    ]);
+
+    const r = await runEventsImport({
+      json: exportJson([], { generated_at_timestamp: genAtVienna('2026-09-01') }),
+    });
+
+    expect(r.status).toBe('skipped');
+    expect(h.journalInserts[0].report).toMatchObject({
+      reason: 'no_new_events',
+      empty_streak: 3,
+    });
+  });
+
+  it('still alarms after five empty WORKDAY nights across a weekend', async () => {
+    // Gegenprobe zum Test darueber: dieselbe Wochenend-Logik darf einen echten
+    // Ausfall nicht verschlucken, er dauert nur laenger bis zur Meldung.
+    vi.setSystemTime(new Date('2026-09-03T04:30:00Z'));
+    h.setStreak([
+      ['0', genAtVienna('2026-09-02')],
+      ['0', genAtVienna('2026-09-01')],
+      ['0', genAtVienna('2026-08-31')], // Wochenend-Abdeckung, zaehlt nicht
+      ['0', genAtVienna('2026-08-30')], // Wochenend-Abdeckung, zaehlt nicht
+      ['0', genAtVienna('2026-08-29')],
+      ['0', genAtVienna('2026-08-28')],
+    ]);
+
+    const r = await runEventsImport({
+      json: exportJson([], { generated_at_timestamp: genAtVienna('2026-09-03') }),
+    });
+
+    expect(r.status).toBe('failed');
+    expect(r.reason).toMatch(/Arbeitsnächte in Folge/);
+    expect(h.journalInserts[0].report).toMatchObject({
+      reason: 'feed_empty_streak',
+      empty_streak: EMPTY_FEED_ALARM_STREAK,
+    });
+  });
+
   it('breaks the streak at the first non-empty predecessor', async () => {
     // Genug Leernaechte fuer den Alarm, aber die juengste trug Events.
     h.setStreak(['2', '0', '0', '0', '0']);
@@ -305,6 +368,20 @@ describe('classifyEmptyFeed', () => {
     expect(stale.code).toBe('feed_stale');
   });
 
+  it('does not let a weekend night advance the streak', () => {
+    // Vier leere Arbeitsnaechte liegen an; die aktuelle deckt einen Sonntag ab
+    // und darf die Serie nicht auf die Schwelle heben.
+    const sunday = genAtVienna('2026-08-31');
+    const v = classifyEmptyFeed({
+      droppedNoStart: 0,
+      generatedAtTimestamp: sunday,
+      emptyStreak: EMPTY_FEED_ALARM_STREAK - 1,
+      now: new Date(sunday * 1000 + 3600_000),
+    });
+    expect(v.status).toBe('skipped');
+    expect(v.streak).toBe(EMPTY_FEED_ALARM_STREAK - 1);
+  });
+
   it('does not alarm on a missing timestamp alone', () => {
     // Ohne Zeitstempel ist die Staleness unbekannt — das allein ist kein
     // Defekt, sonst faellt der Feed bei einem Meta-Ausfall in den Dauer-Alarm.
@@ -313,3 +390,23 @@ describe('classifyEmptyFeed', () => {
   });
 });
 
+// Die Wochentagsregel isoliert: sie entscheidet, welche Naechte ueberhaupt in
+// die Serie eingehen, und ist die einzige Stelle mit Zeitzonen-Semantik.
+describe('coversWorkday', () => {
+  it('excludes exactly the two nights that cover a weekend day', () => {
+    // Der Export von 01:07 traegt die Aenderungen des VORTAGS.
+    expect(coversWorkday(genAtVienna('2026-08-28'))).toBe(true); // Fr → Do
+    expect(coversWorkday(genAtVienna('2026-08-29'))).toBe(true); // Sa → Fr
+    expect(coversWorkday(genAtVienna('2026-08-30'))).toBe(false); // So → Sa
+    expect(coversWorkday(genAtVienna('2026-08-31'))).toBe(false); // Mo → So
+    expect(coversWorkday(genAtVienna('2026-09-01'))).toBe(true); // Di → Mo
+  });
+
+  it('counts conservatively when the timestamp is missing', () => {
+    // Ohne Zeitstempel darf die Nacht nicht stillschweigend aus der Serie
+    // fallen — sonst koennte ein Meta-Ausfall den Alarm dauerhaft aushebeln.
+    expect(coversWorkday(null)).toBe(true);
+    expect(coversWorkday(0)).toBe(true);
+    expect(coversWorkday(undefined)).toBe(true);
+  });
+});
