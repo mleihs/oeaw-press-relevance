@@ -166,8 +166,10 @@ export async function runEventsImport(
           dropped_no_start: skipped,
           institutes,
           // Die gezählte Serie mitschreiben: sie ist die Begründung des
-          // Urteils und ohne sie im Nachhinein nicht rekonstruierbar.
-          empty_streak: emptyStreak + 1,
+          // Urteils und ohne sie im Nachhinein nicht rekonstruierbar. Seit
+          // 2026-09-02 sind es ARBEITSNÄCHTE, sie kann also hinter der Zahl
+          // der Kalendernächte zurückbleiben.
+          empty_streak: verdict.streak,
         },
       });
       return finish({
@@ -204,12 +206,52 @@ export async function runEventsImport(
   });
 }
 
-/** Ab so vielen Leernächten AM STÜCK ist „nichts Neues" kein Zufall mehr.
- *  Kalibriert an 41 Läufen seit 2026-07-16: 34 % aller Nächte sind leer, die
- *  längsten echten Leer-Serien waren 3 Tage (26.–28.07., 01.–03.08., 15.–17.08.),
- *  jeweils über ein Wochenende. 5 lässt darüber Luft und schlägt trotzdem an,
- *  bevor ein echter Ausfall eine ganze Woche unbemerkt bleibt. */
+/** Ab so vielen leeren ARBEITSNÄCHTEN AM STÜCK ist „nichts Neues" kein Zufall
+ *  mehr. Kalibriert an 41 Läufen seit 2026-07-16: 34 % aller Nächte sind leer,
+ *  die längsten echten Leer-Serien waren 3 Tage (26.–28.07., 01.–03.08.,
+ *  15.–17.08.), jeweils über ein Wochenende.
+ *
+ *  NACHTRAG 2026-09-02: die Schwelle blieb bei 5, gezählt werden aber nur noch
+ *  Nächte, die einen Arbeitstag abdecken (siehe coversWorkday). Vorher zählten
+ *  Kalendernächte, und ein Wochenende verbrauchte zwei davon gratis — effektiv
+ *  waren es drei ruhige Arbeitstage bis zur Mail. Genau daran ist der Alarm vom
+ *  01.09. entstanden: Fr 28.08. bis Di 01.09. ohne Neuzugang, Export durchgehend
+ *  frisch (01:05–01:11), am 02.09. kamen wieder 4 Events. Nichts war defekt.
+ *  Mit der Arbeitsnacht-Zählung bedeutet 5 jetzt „eine volle stille
+ *  Arbeitswoche", was ein Wochenende strukturell nicht mehr erreichen kann. */
 export const EMPTY_FEED_ALARM_STREAK = 5;
+
+/** Wie viele Journal-Zeilen die Serien-Abfrage höchstens liest. Wochenend-
+ *  Zeilen zählen nicht mit, verbrauchen aber einen Slot, also braucht der Scan
+ *  Luft über der Schwelle: 5 Arbeitsnächte liegen im schlimmsten Fall hinter
+ *  zwei Wochenenden (4 Zeilen). */
+const STREAK_SCAN_LIMIT = EMPTY_FEED_ALARM_STREAK * 2 + 2;
+
+/** Wochentag eines Unix-Zeitstempels in WIENER Zeit (0 = So … 6 = Sa).
+ *  Zwingend in Wiener Zeit: der Export entsteht gegen 01:05 lokal, in UTC ist
+ *  das im Sommer 23:05 des Vortags — eine UTC-Rechnung verschöbe jeden
+ *  Wochentag um einen Tag und drehte die Regel genau ins Gegenteil. */
+function viennaWeekday(unixSeconds: number): number {
+  const name = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Europe/Vienna',
+    weekday: 'short',
+  }).format(new Date(unixSeconds * 1000));
+  return { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 }[name] ?? 2;
+}
+
+/** Deckt dieser Export einen Tag ab, an dem überhaupt jemand Events einpflegt?
+ *
+ *  Der Export wird gegen 01:05 erzeugt und trägt die Änderungen des VORTAGS —
+ *  dieselbe Lesart, aus der schon der Befund „montags 6 von 6 Fehlalarm" im
+ *  Kopfkommentar stammt: der Montags-Export deckt den Sonntag ab. Leer ist
+ *  damit strukturell erwartbar für den Sonntags-Export (Samstag) und den
+ *  Montags-Export (Sonntag). Solche Nächte dürfen die Serie weder verlängern
+ *  noch brechen; ohne Zeitstempel wird konservativ mitgezählt. */
+export function coversWorkday(unixSeconds: number | null | undefined): boolean {
+  if (unixSeconds == null || unixSeconds === 0) return true;
+  const wd = viennaWeekday(unixSeconds);
+  return wd !== 0 && wd !== 1;
+}
 
 /** Der Export wird täglich gegen 03:00 neu erzeugt. Rührt sich sein Zeitstempel
  *  so lange nicht, liefert TYPO3 gar nicht mehr — der Zustand vom 2026-06-26
@@ -223,6 +265,10 @@ export interface EmptyFeedVerdict {
   status: 'failed' | 'skipped';
   code: string;
   reason: string;
+  /** Die gezaehlte Arbeitsnacht-Serie INKLUSIVE dieses Laufs. Einzige Quelle
+   *  fuer report.empty_streak — vorher rechnete das Journal `emptyStreak + 1`
+   *  selbst nach und haette die Wochenend-Regel ein zweites Mal gebraucht. */
+  streak: number;
 }
 
 /** Ein Lauf ohne verwertbares Event ist mehrdeutig — diese Funktion trennt den
@@ -250,10 +296,15 @@ export function classifyEmptyFeed(args: {
 }): EmptyFeedVerdict {
   const { droppedNoStart, generatedAtTimestamp, emptyStreak, now } = args;
 
+  // Deckt DIESE Nacht ein Wochenende ab, ist sie strukturell leer und darf die
+  // Serie nicht um eins weiterdrehen. Alarmieren kann sie dadurch nie allein.
+  const streak = emptyStreak + (coversWorkday(generatedAtTimestamp) ? 1 : 0);
+
   if (droppedNoStart > 0) {
     return {
       status: 'failed',
       code: 'all_events_dropped',
+      streak,
       reason:
         `Alle ${droppedNoStart} Roh-Events verworfen (kein verwertbares ` +
         `Startdatum): Feed-Inhalt und Parser driften auseinander`,
@@ -268,29 +319,32 @@ export function classifyEmptyFeed(args: {
     return {
       status: 'failed',
       code: 'feed_stale',
+      streak,
       reason:
         `Export seit ${Math.floor(ageHours)} h nicht neu erzeugt ` +
         `(Schwelle ${FEED_STALE_HOURS} h): TYPO3 liefert nicht mehr`,
     };
   }
 
-  const streak = emptyStreak + 1;
   if (streak >= EMPTY_FEED_ALARM_STREAK) {
     return {
       status: 'failed',
       code: 'feed_empty_streak',
+      streak,
       reason:
-        `${streak} Nächte in Folge ohne neues Event (Schwelle ` +
-        `${EMPTY_FEED_ALARM_STREAK}): Export läuft, liefert aber nichts mehr`,
+        `${streak} Arbeitsnächte in Folge ohne neues Event (Schwelle ` +
+        `${EMPTY_FEED_ALARM_STREAK}, Wochenenden zählen nicht): Export läuft, ` +
+        `liefert aber nichts mehr`,
     };
   }
 
   return {
     status: 'skipped',
     code: 'no_new_events',
+    streak,
     reason:
       `Feed ist frisch erzeugt, enthält aber kein neues Event ` +
-      `(${streak}. Nacht in Folge) — Normalbetrieb`,
+      `(${streak}. Arbeitsnacht in Folge) — Normalbetrieb`,
   };
 }
 
@@ -303,7 +357,10 @@ async function countEmptyStreak(
   generatedAtTimestamp: number | null,
 ): Promise<number> {
   const rows = await tx
-    .select({ parsed: sql<string | null>`${ingestRuns.report}->>'parsed'` })
+    .select({
+      parsed: sql<string | null>`${ingestRuns.report}->>'parsed'`,
+      ts: ingestRuns.generatedAtTimestamp,
+    })
     .from(ingestRuns)
     .where(
       generatedAtTimestamp == null
@@ -314,12 +371,17 @@ async function countEmptyStreak(
           ),
     )
     .orderBy(desc(ingestRuns.generatedAtTimestamp), desc(ingestRuns.appliedAt))
-    .limit(EMPTY_FEED_ALARM_STREAK);
+    .limit(STREAK_SCAN_LIMIT);
 
   let n = 0;
   for (const r of rows) {
+    // Reihenfolge ist die Aussage: eine echte Lieferung bricht die Serie an
+    // JEDEM Wochentag — auch samstags kann ein Event nachgetragen werden.
+    // Erst danach wird gefiltert, was gar nicht haette gefuellt werden koennen.
     if (r.parsed !== '0') break;
+    if (!coversWorkday(r.ts)) continue;
     n++;
+    if (n >= EMPTY_FEED_ALARM_STREAK) break;
   }
   return n;
 }
