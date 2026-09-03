@@ -14,6 +14,16 @@
 // die einzige über beide Systeme stabile Identität. UUIDs sind es NICHT
 // (local und prod haben seit prod-first verschiedene).
 //
+// ZWEITER BEFUND vom selben Tag, deshalb `--drift`: der Export liefert nur bei
+// der ANLAGE aus, nie bei einer Änderung. Von 74 Auslieferungen in 35
+// archivierten Tagen wurden 74 am Tag des `crdate` geliefert und keine einzige
+// wegen eines neuen `tstamp`. Eine Veranstaltung, die nach dem Anlegen
+// bearbeitet wird, erreicht uns also nie wieder — und 81 % aller künftigen
+// Events werden nachbearbeitet, im Mittel 133 Tage später. Ein reiner
+// Existenz-Abgleich sieht diese Lücke nicht: die Zeile IST da, sie ist nur
+// veraltet. `--drift` vergleicht deshalb zusätzlich die Felder, die der
+// nächtliche Upsert ohnehin pflegen würde.
+//
 // Voraussetzung: der Dump liegt im lokalen MySQL-Container (Port 54499,
 // db `webdb`) — Aufbau siehe docs/WEBDB_IMPORT.md Schritt 2. Es genügt, die
 // Tabellen `tx_news_domain_model_news`, `pages` und die beiden
@@ -34,6 +44,8 @@
 //   npx tsx scripts/audit-events-vs-dump.ts --title=Schrödinger
 //   npx tsx scripts/audit-events-vs-dump.ts --json > fehlende.json
 //   npx tsx scripts/audit-events-vs-dump.ts --limit=20
+//   npx tsx scripts/audit-events-vs-dump.ts --drift        # zusätzlich veraltete Felder
+//   npx tsx scripts/audit-events-vs-dump.ts --drift-only    # NUR veraltete Felder
 
 import mysql from 'mysql2/promise';
 import {
@@ -140,6 +152,59 @@ const DUMP_EVENTS_SQL = `
 const iso = (unix: number | null): string =>
   unix && unix > 0 ? new Date(unix * 1000).toISOString().slice(0, 16).replace('T', ' ') : '—';
 
+interface ProdEvent {
+  webdb_uid: number;
+  title: string;
+  event_at: string | Date;
+  event_end_at: string | Date | null;
+  location_title: string | null;
+  organizer_title: string | null;
+  institute: string | null;
+}
+
+interface Abweichung {
+  feld: string;
+  beiUns: string;
+  inTypo3: string;
+}
+
+const norm = (v: string | null | undefined): string => (v ?? '').trim();
+
+/** Sekundengenauer Vergleich: TYPO3 hält den Start als Unix-Sekunde, Postgres
+ *  als timestamptz. Ein Vergleich der Textform verglich sonst Formatierungen. */
+const gleicheZeit = (unix: number | null, ts: string | Date | null): boolean => {
+  if (!unix || unix <= 0) return ts == null;
+  if (ts == null) return false;
+  return Math.floor(new Date(ts).getTime() / 1000) === Math.floor(unix);
+};
+
+/** Nur Felder, die TYPO3 auch wirklich führt. Ein leeres TYPO3-Feld gegen einen
+ *  gefüllten Prod-Wert ist KEINE Drift: Ort und Organisator zieht der Adapter
+ *  teils aus dem Sidebar-HTML, das der Dump so nicht kennt. */
+function drift(t: DumpEvent, p: ProdEvent): Abweichung[] {
+  const out: Abweichung[] = [];
+  if (norm(t.title) !== norm(p.title)) {
+    out.push({ feld: 'Titel', beiUns: norm(p.title), inTypo3: norm(t.title) });
+  }
+  if (!gleicheZeit(t.datetime, p.event_at)) {
+    out.push({
+      feld: 'Termin',
+      beiUns: p.event_at ? new Date(p.event_at).toISOString().slice(0, 16).replace('T', ' ') : '—',
+      inTypo3: iso(t.datetime),
+    });
+  }
+  if (norm(t.location_title) && norm(t.location_title) !== norm(p.location_title)) {
+    out.push({ feld: 'Ort', beiUns: norm(p.location_title) || '—', inTypo3: norm(t.location_title) });
+  }
+  if (norm(t.organizer_title) && norm(t.organizer_title) !== norm(p.organizer_title)) {
+    out.push({ feld: 'Organisator', beiUns: norm(p.organizer_title) || '—', inTypo3: norm(t.organizer_title) });
+  }
+  if (norm(t.institute) && norm(t.institute) !== norm(p.institute)) {
+    out.push({ feld: 'Institut', beiUns: norm(p.institute) || '—', inTypo3: norm(t.institute) });
+  }
+  return out;
+}
+
 async function main(): Promise<void> {
   const from = boundary('from', Math.floor(Date.now() / 1000))!;
   const to = boundary('to', null) ?? 0;
@@ -147,6 +212,8 @@ async function main(): Promise<void> {
   const titleFilter = flagValue('title')?.toLowerCase();
   const limit = Number(flagValue('limit') ?? 0);
   const asJson = hasFlag('json');
+  const nurDrift = hasFlag('drift-only');
+  const mitDrift = nurDrift || hasFlag('drift');
 
   const conn = await mysql.createConnection({
     host: process.env.WEBDB_MYSQL_HOST || process.env.MYSQL_HOST || '127.0.0.1',
@@ -165,15 +232,22 @@ async function main(): Promise<void> {
   }
 
   const pg = await connectDb({ target });
-  let knownUids: Set<number>;
+  let bekannt: Map<number, ProdEvent>;
   try {
-    const known = await pg.query('SELECT webdb_uid FROM events');
-    knownUids = new Set(
-      (known.rows as { webdb_uid: number }[]).map((r) => r.webdb_uid),
+    // Die Felder, die der nächtliche Upsert pflegen WÜRDE, wenn der Export sie
+    // nachliefern würde. Genau daran misst sich, was uns entgeht.
+    const known = await pg.query(
+      `SELECT webdb_uid, title, event_at, event_end_at, location_title,
+              organizer_title, institute
+         FROM events`,
+    );
+    bekannt = new Map(
+      (known.rows as ProdEvent[]).map((r) => [r.webdb_uid, r]),
     );
   } finally {
     await pg.end();
   }
+  const knownUids = new Set(bekannt.keys());
 
   let missing = dump.filter((e) => !knownUids.has(e.uid));
   if (instituteFilter) {
@@ -183,6 +257,21 @@ async function main(): Promise<void> {
     missing = missing.filter((e) => e.title.toLowerCase().includes(titleFilter));
   }
   const shown = limit > 0 ? missing.slice(0, limit) : missing;
+
+  // Veraltete Zeilen: vorhanden, aber inhaltlich hinter TYPO3 zurück. Dieselben
+  // Filter wie oben, damit --institute/--title beide Listen gleich einschränken.
+  let veraltet: Array<{ t: DumpEvent; p: ProdEvent; abw: Abweichung[] }> = [];
+  if (mitDrift) {
+    for (const t of dump) {
+      const pe = bekannt.get(t.uid);
+      if (!pe) continue;
+      if (instituteFilter && !(t.institute ?? '').toLowerCase().includes(instituteFilter)) continue;
+      if (titleFilter && !t.title.toLowerCase().includes(titleFilter)) continue;
+      const abw = drift(t, pe);
+      if (abw.length) veraltet.push({ t, p: pe, abw });
+    }
+    if (limit > 0) veraltet = veraltet.slice(0, limit);
+  }
 
   if (asJson) {
     console.log(JSON.stringify(
@@ -199,6 +288,17 @@ async function main(): Promise<void> {
       })),
       null, 2,
     ));
+    if (mitDrift) {
+      console.log(JSON.stringify(
+        veraltet.map((v) => ({
+          webdb_uid: v.t.uid,
+          title: v.t.title,
+          changed_at: v.t.tstamp ? new Date(v.t.tstamp * 1000).toISOString() : null,
+          abweichungen: v.abw,
+        })),
+        null, 2,
+      ));
+    }
     return;
   }
 
@@ -207,11 +307,38 @@ async function main(): Promise<void> {
     `Fenster ab ${iso(from)}${to ? ` bis ${iso(to)}` : ''} — ` +
     `Dump: ${dump.length} Events · DB kennt ${knownUids.size} uids · ` +
     `NUR IM DUMP: ${missing.length}` +
-    (shown.length !== missing.length ? ` (gezeigt: ${shown.length})` : ''),
+    (shown.length !== missing.length ? ` (gezeigt: ${shown.length})` : '') +
+    (mitDrift ? ` · VERALTET: ${veraltet.length}` : ''),
   );
-  if (!missing.length) return;
 
-  console.log('');
+  if (mitDrift) {
+    if (!veraltet.length) {
+      console.log('\nKeine veralteten Felder.');
+    } else {
+      console.log('\n=== VERALTET (bei uns vorhanden, aber hinter TYPO3 zurück) ===');
+      for (const v of veraltet) {
+        console.log(`uid ${String(v.t.uid).padEnd(7)} ${iso(v.t.datetime)}  ${v.p.title}`);
+        console.log(`${' '.repeat(12)}zuletzt in TYPO3 geändert: ${iso(v.t.tstamp)}`);
+        for (const a of v.abw) {
+          console.log(`${' '.repeat(12)}${a.feld.padEnd(12)} bei uns: ${a.beiUns}`);
+          console.log(`${' '.repeat(12)}${' '.repeat(12)} TYPO3  : ${a.inTypo3}`);
+        }
+      }
+      const proFeld = new Map<string, number>();
+      for (const v of veraltet) for (const a of v.abw) proFeld.set(a.feld, (proFeld.get(a.feld) ?? 0) + 1);
+      console.log('\nAbweichungen nach Feld:');
+      for (const [f, n] of [...proFeld].sort((a, b) => b[1] - a[1])) {
+        console.log(`  ${String(n).padStart(4)}  ${f}`);
+      }
+    }
+  }
+  if (nurDrift) return;
+  if (!missing.length) {
+    console.log('\nNichts fehlt.');
+    return;
+  }
+
+  console.log('\n=== NUR IM DUMP (nie über den Feed gekommen) ===');
   for (const e of shown) {
     console.log(
       `uid ${String(e.uid).padEnd(7)} ${iso(e.datetime)}  ${e.title}`,

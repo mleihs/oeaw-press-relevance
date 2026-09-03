@@ -263,8 +263,34 @@ Viele Kandidaten sind Seminare und Fachvorträge, erwarte also eine linksschiefe
 Verteilung mit mehreren Near-Zero-Items. Ehrlich aus dem Content bewerten.
 
 Events mit Platzhalter-Titel (`Title to be announced`) bewusst niedrig
-bewerten — sie fallen automatisch in den Pool zurück, sobald ein echter Titel
-per `sync-events` ankommt. Nicht manuell nachhalten.
+bewerten. Der Wiedervorlage-Mechanismus greift, sobald der echte Titel bei uns
+ankommt: `upsertEvents` setzt bei materieller Inhaltsänderung eines
+Zukunfts-Events `analysis_status → pending` und die Scores auf `NULL`.
+
+**Aber er greift nur über `sync-events` aus der WebDB, nicht über den
+nächtlichen Feed.** Gemessen am 2026-09-03: von 74 Auslieferungen des Exports
+in 35 Tagen wurden 74 am Tag der ANLAGE geliefert und keine einzige wegen einer
+Änderung. Der Export ist ein Anlage-Delta (`crdate`), kein Änderungs-Delta
+(`tstamp`). Eine Veranstaltung, die nach dem Anlegen bearbeitet wird — Titel
+nachgetragen, Termin verschoben, Ort ergänzt — erreicht uns nie wieder, und
+unsere Kopie friert auf dem Stand der Anlagenacht ein. Das betrifft nicht die
+Ausnahme: 191 von 235 künftigen Events (81 %) wurden nach der Anlage noch
+einmal geändert, im Mittel 133 Tage später.
+
+Die Folge fürs Bewerten: **die Platzhalter halten sich selbst nicht nach.** Am
+2026-09-03 trugen 3 von 40 Platzhaltern in TYPO3 längst einen echten Titel
+(u. a. „The regulatory switches that made us human"), bei uns standen sie
+weiter als `Title to be announced` mit einem Score um 0.10. Wer eine Serie
+niedrig bewertet, sollte den Bestand daher gelegentlich gegen einen WebDB-Dump
+prüfen:
+
+```bash
+npx tsx scripts/audit-events-vs-dump.ts --target=prod --drift
+```
+
+Solange das ÖAW-seitige Delta-Kriterium auf `crdate` steht, ist dieser Abgleich
+die einzige Kontrolle. `sync-events --target=prod` ist KEIN Ersatz: es prunt
+künftige Events, die seine Quelle nicht kennt (siehe `docs/WEBDB_IMPORT.md`).
 
 ### Schreiben
 
