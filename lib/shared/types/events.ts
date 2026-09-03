@@ -40,6 +40,11 @@ export interface Event {
   analyzed_at: string | null;
   synced_at: string;
   created_at: string;
+  /** 'feed' = ueber den naechtlichen JSON-Export gekommen (Normalfall);
+   *  'webdb_dump' = nur ueber einen WebDB-Dump gefunden, weil der Export den
+   *  News-Ordner dieses Events nicht einsammelt. Liefert der Export es
+   *  spaeter doch, faellt der Wert automatisch auf 'feed' zurueck. */
+  discovered_via: 'feed' | 'webdb_dump';
 }
 
 // Event-score weighting (Settings → Bewertungs-Gewichtung). The four weights

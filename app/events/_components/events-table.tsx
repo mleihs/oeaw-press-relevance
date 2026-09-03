@@ -129,6 +129,19 @@ function EventRowView({
               {event.institute}
             </span>
           )}
+          {event.discovered_via === 'webdb_dump' && (
+            // Sichtbares Merkmal fuer die Luecke im Export: dieses Event kam
+            // NICHT ueber den naechtlichen Feed, sondern nur ueber einen
+            // WebDB-Dump. Liefert der Export es spaeter doch, faellt der
+            // Marker automatisch weg (siehe EventSource in events/sync.ts) —
+            // das Chip verschwindet dann von selbst.
+            <span
+              className="rounded-full bg-warning-tint px-2 py-[2px] text-2xs font-semibold text-warning-ink"
+              title="Nur im WebDB-Dump gefunden. Der nächtliche Export liefert den News-Ordner dieses Events nicht."
+            >
+              nur im Dump
+            </span>
+          )}
           {event.available_langs.map((lang) => (
             <span
               key={lang}

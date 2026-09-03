@@ -37,6 +37,7 @@ function makeEvent(overrides: Partial<Event> = {}): Event {
     analyzed_at: null,
     synced_at: '2026-06-01T00:00:00Z',
     created_at: '2026-06-01T00:00:00Z',
+    discovered_via: 'feed',
     ...overrides,
   };
 }

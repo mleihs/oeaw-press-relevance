@@ -74,6 +74,17 @@ export interface EventsUpsertResult {
 /** Drizzle-Executor: entweder der Pool-`db` oder eine laufende Transaktion.
  *  Lässt Aufrufer den Upsert in eine größere atomare Einheit ziehen (z. B. der
  *  JSON-Import-Runner, der Upsert + ingest_runs-Journal gemeinsam committet). */
+/** Woher die Zeile stammt (Spalte `discovered_via`, Migration 20260903000001).
+ *
+ *  'feed' HEILT: liefert der nächtliche Export ein Event, das wir bisher nur
+ *  aus einem Dump kannten, fällt der Marker zurück auf 'feed' — die Lücke ist
+ *  dann ja geschlossen. Umgekehrt stuft ein Dump-Import eine bekannte Zeile
+ *  NIE herab; 'webdb_dump' wird nur beim INSERT gesetzt. Dadurch heißt der
+ *  Marker dauerhaft genau das, was er behauptet: „der Export hat dieses Event
+ *  noch nie geliefert" — und die Events, die bloß auf ihren nächsten
+ *  Delta-Lauf warten, räumen sich von selbst wieder ab. */
+export type EventSource = 'feed' | 'webdb_dump';
+
 export type EventsDbExecutor =
   | typeof db
   | Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -104,6 +115,7 @@ export type EventsDbExecutor =
 export async function upsertEvents(
   normalized: NormalizedEvent[],
   executor: EventsDbExecutor = db,
+  source: EventSource = 'feed',
 ): Promise<EventsUpsertResult> {
   if (normalized.length === 0) return { imported: 0, updated: 0 };
   // TRUE when this re-sync changes scoring-relevant content of an upcoming event
@@ -119,7 +131,7 @@ export async function upsertEvents(
   )`;
   const upserted = await executor
     .insert(eventsTable)
-    .values(normalized)
+    .values(normalized.map((e) => ({ ...e, discoveredVia: source })))
     .onConflictDoUpdate({
       target: eventsTable.webdbUid,
       set: {
@@ -135,6 +147,10 @@ export async function upsertEvents(
         url: sql`excluded.url`,
         lang: sql`excluded.lang`,
         availableLangs: sql`excluded.available_langs`,
+        // Siehe EventSource: nur der Feed schreibt hier, ein Dump-Import lässt
+        // den bestehenden Marker unangetastet.
+        discoveredVia:
+          source === 'feed' ? sql`'feed'` : sql`${eventsTable.discoveredVia}`,
         syncedAt: sql`NOW()`,
         // Re-score triggers: reset cached analysis iff content materially changed.
         analysisStatus: sql`CASE WHEN ${rescore} THEN 'pending' ELSE ${eventsTable.analysisStatus} END`,
