@@ -142,6 +142,15 @@ export async function chatCompletionJson(
         temperature: opts.temperature ?? 0.4,
         max_tokens: maxTokens,
         response_format: { type: 'json_object' },
+        // Kein Reasoning. Jeder Aufrufer hier will ein JSON-Objekt, niemand
+        // liest den Denkweg. Ohne das Flag verbrennt ein Reasoning-Modell das
+        // gesamte max_tokens-Budget im `reasoning`-Feld und liefert
+        // `content: null` bei `finish_reason: "length"` — gemessen am
+        // 2026-09-04 mit deepseek/deepseek-v4-flash, drei von drei Aufrufen
+        // bei max_tokens=200, quer ueber drei Provider. Das sieht wie ein
+        // Parsing-Fehler aus, ist aber eine leere Antwort, fuer die wir
+        // trotzdem zahlen. Fuer Modelle ohne Reasoning ist das Feld ein No-op.
+        reasoning: { enabled: false },
       }),
       signal: AbortSignal.timeout(60000),
     });
