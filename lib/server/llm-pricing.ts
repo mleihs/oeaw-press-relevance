@@ -1,4 +1,4 @@
-import { LLM_MODELS, type ModelPricing } from '@/lib/shared/constants';
+import { LLM_MODELS, EXTRA_PRICED_MODELS, type ModelPricing } from '@/lib/shared/constants';
 import { log } from '@/lib/server/log';
 
 /**
@@ -52,9 +52,10 @@ let cache: CacheEntry | null = null;
 let inflight: Promise<ModelPricingMap> | null = null;
 
 function fallbackMap(): ModelPricingMap {
-  return Object.fromEntries(
-    LLM_MODELS.map((m) => [m.value, { ...m.fallbackPricing, stale: true }]),
-  );
+  return Object.fromEntries([
+    ...LLM_MODELS.map((m) => [m.value, { ...m.fallbackPricing, stale: true }]),
+    ...Object.entries(EXTRA_PRICED_MODELS).map(([id, p]) => [id, { ...p, stale: true }]),
+  ]);
 }
 
 /** OpenRouter gibt Preise als $/Token in Stringform aus („0.000005"). */
@@ -75,7 +76,9 @@ async function fetchPricing(): Promise<ModelPricingMap> {
   if (!res.ok) throw new Error(`OpenRouter models HTTP ${res.status}`);
 
   const body = (await res.json()) as { data?: OpenRouterModel[] };
-  const wanted = new Set(LLM_MODELS.map((m) => m.value));
+  // Auch die Modelle, die wir ausserhalb des Pickers einsetzen — sonst bekaemen
+  // sie nie einen Live-Preis und fielen auf UNKNOWN_MODEL_PRICING zurueck.
+  const wanted = new Set([...LLM_MODELS.map((m) => m.value), ...Object.keys(EXTRA_PRICED_MODELS)]);
   for (const m of body.data ?? []) {
     if (typeof m.id !== 'string' || !wanted.has(m.id)) continue;
     const promptUsd = perMillion(m.pricing?.prompt);

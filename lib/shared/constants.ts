@@ -214,10 +214,31 @@ export const DEFAULT_LLM_MODEL = 'anthropic/claude-opus-4.8';
  */
 export const UNKNOWN_MODEL_PRICING: ModelPricing = { promptUsd: 5, completionUsd: 5 };
 
+/**
+ * Modelle, die wir BENUTZEN, ohne sie im Bewertungs-Picker anzubieten — derzeit
+ * nur der Default des Social-Moduls (`SOCIAL_LLM_MODEL`). Sie gehören nicht in
+ * `LLM_MODELS`: dort steht die kuratierte Auswahl fürs Scoring, und jedes
+ * zusätzliche Modell dort lädt dazu ein, die Opus-Kalibrierung zu verlassen.
+ *
+ * Preise brauchen sie trotzdem, und zwar an zwei Stellen: `fallbackPricingFor`
+ * unten und die Live-Preisliste (lib/server/llm-pricing.ts holt nur, was hier
+ * oder in LLM_MODELS steht). Fehlt ein Modell in beiden, greift
+ * UNKNOWN_MODEL_PRICING mit 5 USD je Million in BEIDE Richtungen — bei
+ * deepseek/deepseek-v4-flash wäre das der Faktor 13 gegenüber dem wahren Preis,
+ * und der Betrag landet in analysis_cost, nicht nur im Modal.
+ */
+export const EXTRA_PRICED_MODELS: Record<string, ModelPricing> = {
+  'deepseek/deepseek-v4-flash': { promptUsd: 0.088, completionUsd: 0.176 },
+};
+
 /** Statische Preise eines Modells. Nur Rückfallebene — die Nachkalkulation
  *  nimmt die Live-Preise (lib/server/llm-pricing.ts). */
 export function fallbackPricingFor(model: string): ModelPricing {
-  return LLM_MODELS.find((m) => m.value === model)?.fallbackPricing ?? UNKNOWN_MODEL_PRICING;
+  return (
+    LLM_MODELS.find((m) => m.value === model)?.fallbackPricing ??
+    EXTRA_PRICED_MODELS[model] ??
+    UNKNOWN_MODEL_PRICING
+  );
 }
 
 /** „$5 / $25 je M" bzw. „gratis". Ein Format für Modal und Social-Refresh. */
