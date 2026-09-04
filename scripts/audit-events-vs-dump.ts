@@ -46,6 +46,7 @@
 //   npx tsx scripts/audit-events-vs-dump.ts --limit=20
 //   npx tsx scripts/audit-events-vs-dump.ts --drift        # zusätzlich veraltete Felder
 //   npx tsx scripts/audit-events-vs-dump.ts --drift-only    # NUR veraltete Felder
+//   npx tsx scripts/audit-events-vs-dump.ts --phantoms      # Zeilen ohne Gegenstueck in TYPO3
 
 import mysql from 'mysql2/promise';
 import {
@@ -162,6 +163,31 @@ interface ProdEvent {
   institute: string | null;
 }
 
+/** Rohstatus einer TYPO3-News-Zeile, ungefiltert. */
+interface Typo3Status {
+  uid: number;
+  deleted: number;
+  hidden: number;
+  l10n_parent: number;
+}
+
+interface KuenftigeZeile {
+  webdb_uid: number;
+  title: string;
+  event_at: string | Date;
+  event_score: string | number | null;
+  decision: string | null;
+}
+
+/** Warum eine Zeile bei uns kein sichtbares Gegenstueck in TYPO3 hat.
+ *
+ *  `neuer_als_dump` ist ausdruecklich KEIN Befund: der Dump ist ein Standbild,
+ *  und alles, was danach ueber den Feed kam, fehlt dort zwangslaeufig. Die
+ *  Kategorie steht nur da, damit sie nicht faelschlich unter den Karteileichen
+ *  landet — genau dieser Fehlschluss hat die urspruengliche Zaehlung verdorben.
+ */
+type PhantomGrund = 'geloescht' | 'versteckt' | 'uebersetzung' | 'neuer_als_dump';
+
 interface Abweichung {
   feld: string;
   beiUns: string;
@@ -214,6 +240,7 @@ async function main(): Promise<void> {
   const asJson = hasFlag('json');
   const nurDrift = hasFlag('drift-only');
   const mitDrift = nurDrift || hasFlag('drift');
+  const mitPhantomen = hasFlag('phantoms');
 
   const conn = await mysql.createConnection({
     host: process.env.WEBDB_MYSQL_HOST || process.env.MYSQL_HOST || '127.0.0.1',
@@ -224,15 +251,26 @@ async function main(): Promise<void> {
     charset: 'utf8mb4',
   });
   let dump: DumpEvent[];
+  let status = new Map<number, Typo3Status>();
   try {
     const [rows] = await conn.query(DUMP_EVENTS_SQL, [from, to, to]);
     dump = rows as DumpEvent[];
+    if (mitPhantomen) {
+      // Der Dump-Filter oben nimmt nur sichtbare Originale (deleted=0,
+      // hidden=0, l10n_parent=0). Fuer die Gegenprobe braucht es die ROHE
+      // Statusspalte, gerade von den Zeilen, die dieser Filter aussortiert.
+      const [raw] = await conn.query(
+        'SELECT uid, deleted, hidden, l10n_parent FROM tx_news_domain_model_news',
+      );
+      status = new Map((raw as Typo3Status[]).map((r) => [r.uid, r]));
+    }
   } finally {
     await conn.end();
   }
 
   const pg = await connectDb({ target });
   let bekannt: Map<number, ProdEvent>;
+  let unsereKuenftigen: KuenftigeZeile[] = [];
   try {
     // Die Felder, die der nächtliche Upsert pflegen WÜRDE, wenn der Export sie
     // nachliefern würde. Genau daran misst sich, was uns entgeht.
@@ -244,6 +282,13 @@ async function main(): Promise<void> {
     bekannt = new Map(
       (known.rows as ProdEvent[]).map((r) => [r.webdb_uid, r]),
     );
+    if (mitPhantomen) {
+      const kuenftig = await pg.query(
+        `SELECT webdb_uid, title, event_at, event_score, decision
+           FROM events WHERE event_at >= NOW() ORDER BY event_at`,
+      );
+      unsereKuenftigen = kuenftig.rows as KuenftigeZeile[];
+    }
   } finally {
     await pg.end();
   }
@@ -332,6 +377,46 @@ async function main(): Promise<void> {
       }
     }
   }
+  if (mitPhantomen) {
+    const maxDumpUid = Math.max(0, ...status.keys());
+    const gruende = new Map<PhantomGrund, KuenftigeZeile[]>();
+    for (const z of unsereKuenftigen) {
+      const st = status.get(z.webdb_uid);
+      let grund: PhantomGrund | null = null;
+      if (!st) grund = z.webdb_uid > maxDumpUid ? 'neuer_als_dump' : 'geloescht';
+      else if (st.deleted === 1) grund = 'geloescht';
+      else if (st.hidden === 1) grund = 'versteckt';
+      else if (st.l10n_parent > 0) grund = 'uebersetzung';
+      if (!grund) continue;
+      if (!gruende.has(grund)) gruende.set(grund, []);
+      gruende.get(grund)!.push(z);
+    }
+    const beschriftung: Record<PhantomGrund, string> = {
+      geloescht: 'in TYPO3 gelöscht',
+      versteckt: 'in TYPO3 versteckt',
+      uebersetzung: 'Übersetzung eines Events, das wir schon haben',
+      neuer_als_dump: 'neuer als der Dump (KEIN Befund)',
+    };
+    console.log(`\n=== OHNE SICHTBARES GEGENSTÜCK IN TYPO3 (${unsereKuenftigen.length} künftige Zeilen geprüft) ===`);
+    for (const grund of ['geloescht', 'versteckt', 'uebersetzung', 'neuer_als_dump'] as PhantomGrund[]) {
+      const liste = gruende.get(grund) ?? [];
+      console.log(`\n${beschriftung[grund]}: ${liste.length}`);
+      for (const z of liste) {
+        const wann = new Date(z.event_at).toISOString().slice(0, 16).replace('T', ' ');
+        console.log(
+          `  uid ${String(z.webdb_uid).padEnd(7)} ${wann}  ` +
+          `Score ${z.event_score ?? '—'} · ${z.decision}\n      ${String(z.title).slice(0, 70)}`,
+        );
+      }
+    }
+    console.log(
+      '\nDie Übersetzungen sind DE/EN-Dubletten. Ein Löschen wirkt nur einmal: ' +
+      'der JSON-Export führt kein sys_language_uid (siehe typo3-events-json.ts), ' +
+      'der Feed KANN eine Übersetzung also nicht erkennen. Der dauerhafte Fix ' +
+      'gehört in den Export.',
+    );
+  }
+
   if (nurDrift) return;
   if (!missing.length) {
     console.log('\nNichts fehlt.');
