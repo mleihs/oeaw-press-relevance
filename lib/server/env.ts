@@ -133,7 +133,14 @@ const Schema = z.object({
   // LLM model for post topic-extraction + theme overview. Falls back to the
   // request header / LLM_DEFAULT_MODEL when unset. DeepSeek V3 is the
   // price/performance pick for this German extraction task.
-  SOCIAL_LLM_MODEL: z.string().min(1).default('deepseek/deepseek-chat'),
+  // deepseek-chat lief am 2026-09-04 wiederholt in `429 temporarily
+  // rate-limited upstream` (Provider StreamLake) und liess 24 Posts als
+  // `failed` zurueck. v4-flash ist billiger (~0,09 statt 0,32 USD je Mio.
+  // Eingabe-Token), hat 1M Kontext und antwortete in allen Tests zuegig.
+  // Es ist ein Reasoning-Modell und braucht deshalb `reasoning:
+  // {enabled:false}` aus lib/server/openrouter.ts, sonst kommt `content:
+  // null` zurueck.
+  SOCIAL_LLM_MODEL: z.string().min(1).default('deepseek/deepseek-v4-flash'),
   SOCIAL_RESULTS_LIMIT: z.coerce.number().int().positive().default(12),
   // Refresh throttle: skip the Apify fetch if a successful refresh ran within
   // this many minutes (unless forced). Guards against token-burning re-clicks.
