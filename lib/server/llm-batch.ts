@@ -200,7 +200,7 @@ export function sseBatchHooks<TItem extends { title: string }>(
 export function emitBatchComplete(
   emit: SseEmit,
   result: LLMBatchResult,
-  extra: { skipped?: number } = {},
+  extra: { skipped?: number; haikuRejected?: number } = {},
 ): void {
   if (!result.cancelled) {
     emit('complete', {
@@ -211,6 +211,9 @@ export function emitBatchComplete(
       tokens_used: result.tokensUsed,
       cost: result.cost,
       ...(extra.skipped ? { skipped: extra.skipped } : {}),
+      // Vom Haiku-Gate verworfene Zeilen (lib/server/analysis/batch.ts). Nur
+      // gesetzt, wenn es welche gab — sonst bliebe im Modal eine stumme Null.
+      ...(extra.haikuRejected ? { haiku_rejected: extra.haikuRejected } : {}),
     });
   }
 }

@@ -118,7 +118,18 @@ Dazu Freitext auf Deutsch:
 - **reasoning** — 2–3 Sätze, **nur aus dem Inhalt**. Nie `peer_reviewed`,
   `popular_science` oder `mahighlight` benennen; `apply` bricht darauf mit
   Exit 1 ab.
-- **haiku** — optional, Deutsch 5-7-5, Trenner `" / "`.
+- **haiku** — **Pflicht**, Deutsch 5-7-5, Trenner `" / "` (zwei davon).
+  Silben wirklich zählen (`Sa-tel-li-ten-blick` = 5, `Na-tur-park` = 3). Keine
+  Anführungszeichen, keine Gedankenstriche, keine Ziffern, echte Umlaute. Es
+  fasst den **Inhalt**, nicht die Verwertbarkeit, und benennt weder Institut
+  noch Journal.
+
+  `apply` prüft das seit 2026-09-03 hart und bricht mit Exit 1 ab: Struktur
+  und 5-7-5, letzteres über drei unabhängige Zähler mit Mehrheitsentscheid.
+  Wo keine Mehrheit zustande kommt, bricht es ebenfalls ab, und das Wort
+  gehört mit Duden-Beleg in `scripts/lib/haiku-lexicon.json`. Aufbau und
+  Messungen: `docs/HAIKU_GATE.md`. Bestand prüfen:
+  `npm run haiku-audit -- --target=prod`.
 
 **Kalibrierung:** typische Fachpublikationen 0.28–0.43, nischig-technisch
 0.15–0.25, echt pressewürdig 0.5–0.7. Ein dichter Fachblock (GMI-Pflanzenbiologie,
@@ -286,11 +297,39 @@ prüfen:
 
 ```bash
 npx tsx scripts/audit-events-vs-dump.ts --target=prod --drift
+npx tsx scripts/audit-events-vs-dump.ts --target=prod --drift-only --phantoms
 ```
 
 Solange das ÖAW-seitige Delta-Kriterium auf `crdate` steht, ist dieser Abgleich
 die einzige Kontrolle. `sync-events --target=prod` ist KEIN Ersatz: es prunt
 künftige Events, die seine Quelle nicht kennt (siehe `docs/WEBDB_IMPORT.md`).
+
+**Reparieren** (2026-09-04 auf prod gelaufen, Drift danach 0):
+
+```bash
+npx tsx scripts/import-events-from-dump.ts --target=prod --refresh            # Trockenlauf
+npx tsx scripts/import-events-from-dump.ts --target=prod --refresh --apply    # korrigiert
+npx tsx scripts/import-events-from-dump.ts --target=prod --refresh --backfill --apply
+```
+
+`--refresh` korrigiert Felder, in denen TYPO3 etwas anderes stehen hat als wir.
+Ändert sich dabei Titel, Teaser, Text oder Termin, setzt der Upsert die
+Bewertung zurück auf `pending` — richtig so, ein Score zu einem alten Titel ist
+falsch, nicht bloß alt. Am 2026-09-04 kostete das 44 Bewertungen (alle
+`undecided`, es ging also keine redaktionelle Entscheidung verloren).
+
+`--backfill` ist etwas anderes und darf nicht damit vermengt werden: es füllt
+Felder, die bei UNS leer sind. Das ist keine Drift, sondern eine Lücke des
+Feed-Pfads — der JSON-Export liefert `bodytext`, `url` und `lang` für viele
+Zeilen gar nicht erst. Ohne Wertangabe füllt es nur Felder, die keinen Score
+kosten; `--backfill=all` nimmt auch Titel, Teaser, Text und Termin und wirft
+damit über hundert Bewertungen weg.
+
+`--phantoms` zeigt die Gegenrichtung: Zeilen bei uns ohne sichtbares
+Gegenstück in TYPO3. Stand 2026-09-04: 5 gelöscht, 3 versteckt, 11
+Übersetzungen (DE/EN-Dubletten). Die Übersetzungen zu löschen wirkt nur
+einmal, weil der JSON-Export kein `sys_language_uid` führt und der Feed sie
+deshalb nicht erkennen kann; der dauerhafte Fix gehört in den Export.
 
 ### Schreiben
 

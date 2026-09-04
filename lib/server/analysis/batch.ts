@@ -14,6 +14,7 @@ import type { PublicationForPrompt } from './prompts';
 import { publicationToApi } from '../publications/to-api';
 import type { ScoringBatchPayload } from '@/lib/shared/schemas';
 import { SCORING_RECENT_DAYS } from '@/lib/shared/dashboard';
+import { isStructurallyValidHaiku } from '@/lib/shared/haiku';
 
 // Wire shape and internal filter shape match 1:1 (camelCase throughout).
 export type AnalysisBatchFilters = ScoringBatchPayload;
@@ -138,6 +139,10 @@ export async function runAnalysisBatch(
 
   // The batch loop, abort/fatal/delay/tally machinery lives in runLLMBatch; the
   // hooks below reproduce the exact SSE payloads the analysis modal expects.
+  // Vom Haiku-Gate verworfene Zeilen; wandert in das 'complete'-Frame, damit ein
+  // stiller Qualitaetsverlust im Modal sichtbar wird statt nur in der Datenbank.
+  let haikuRejected = 0;
+
   const result = await runLLMBatch<PublicationForPrompt, AnalysisResult>({
     items: pubs,
     apiKey,
@@ -149,6 +154,14 @@ export async function runAnalysisBatch(
       let ok = 0;
       for (let j = 0; j < results.length && j < batch.length; j++) {
         const r = results[j];
+        // Structural haiku gate. The model is asked for 5-7-5 (prompts.ts) but
+        // was measured ignoring it, so a malformed haiku is dropped rather than
+        // stored: a wrong one is worse than none, because nothing downstream can
+        // tell it apart from a correct one. The syllable half of the gate needs
+        // the counting libraries and stays in the CLI (scripts/lib/haiku-syllables.mjs,
+        // `npm run haiku-audit`); this is the half that costs nothing here.
+        const haiku = isStructurallyValidHaiku(r.haiku) ? r.haiku : null;
+        if (r.haiku && !haiku) haikuRejected++;
         await db
           .update(publications)
           .set({
@@ -163,7 +176,7 @@ export async function runAnalysisBatch(
             targetAudience: r.target_audience,
             suggestedAngle: r.suggested_angle,
             reasoning: r.reasoning,
-            haiku: r.haiku ?? null,
+            haiku,
             llmModel: ctx.model,
             analysisCost: ctx.cost / results.length,
             // updated_at is set by the publications_set_updated_at trigger.
@@ -182,5 +195,5 @@ export async function runAnalysisBatch(
     hooks: sseBatchHooks<PublicationForPrompt>(emit),
   });
 
-  emitBatchComplete(emit, result, { skipped });
+  emitBatchComplete(emit, result, { skipped, haikuRejected });
 }

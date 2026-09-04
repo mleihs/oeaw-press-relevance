@@ -35,6 +35,7 @@ import {
   DOI_CANDIDATE_WHERE_CLAUSE,
 } from '@/lib/shared/doi-extract.mjs';
 import { connectDb, confirmProd, loadDbUrl, parseScriptArgs } from './lib/db.mjs';
+import { checkHaikus } from './lib/haiku-syllables.mjs';
 import { initScriptSentry, captureScriptError, flushAndExit } from './lib/sentry.mjs';
 import { SCORE_DIMENSIONS, type ScoreDimension } from '@/lib/shared/constants';
 import { computeStoredPressScore } from '@/lib/shared/scoring';
@@ -76,7 +77,10 @@ const TEXT_EVAL_FIELDS = [
   'suggested_angle',
   'reasoning',
 ] as const;
-const REQUIRED_EVAL_FIELDS: string[] = ['id', ...SCORE_DIMENSIONS, ...TEXT_EVAL_FIELDS];
+// `haiku` steht bewusst in der Pflichtliste: es war bis 2026-09-03 optional, und
+// genau deshalb fehlte es im gesamten 49er-Batch dieses Tages. Die Form pruefen
+// dann die Gates unten (Struktur + 5-7-5).
+const REQUIRED_EVAL_FIELDS: string[] = ['id', ...SCORE_DIMENSIONS, ...TEXT_EVAL_FIELDS, 'haiku'];
 
 const log = (msg: string) => process.stderr.write(msg + '\n');
 const out = (msg: string) => process.stdout.write(msg + '\n');
@@ -707,6 +711,25 @@ async function cmdApply(args: Flags, positional: string[]): Promise<void> {
       log(`! Evaluation für id=${e.id} enthält Variablennamen im Reasoning: "${leaks[0]}"`);
       process.exit(1);
     }
+  }
+
+  // Haiku-Gate. Die letzte Instanz vor der DB: kein Consumer kann eine vierte
+  // Silbe von einer fuenften unterscheiden, und geschrieben hat die Zeile ein
+  // Modell. Der Lauf bricht ab, statt ein halbes Haiku zu speichern. Wo die
+  // Silbenzahl eines Wortes nicht sicher bestimmbar ist, bricht er auch ab — das
+  // Wort gehoert dann mit Duden-Beleg in scripts/lib/haiku-lexicon.json.
+  const haikuChecks = await checkHaikus(evals.map((e) => e.haiku));
+  const haikuFails = haikuChecks
+    .map((res, i) => ({ res, id: evals[i].id }))
+    .filter(({ res }) => !res.ok);
+  if (haikuFails.length > 0) {
+    log(`! ${haikuFails.length} von ${evals.length} Haikus halten die Form nicht:`);
+    for (const { res, id } of haikuFails) {
+      log(`  id=${String(id).slice(0, 8)}…  ${res.text}`);
+      for (const issue of res.issues) log(`      ${issue.message}`);
+    }
+    log('  Regeln: docs/INCHAT_SCORING.md. Unklare Woerter: scripts/lib/haiku-lexicon.json.');
+    process.exit(1);
   }
 
   const apply = bool(args, 'apply');

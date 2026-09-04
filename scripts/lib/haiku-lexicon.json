@@ -1,0 +1,23 @@
+{
+  "_konvention": [
+    "Silbenzahl nach Duden-Worttrennung (Me|di|en = 3, Li|nie = 2, Mo|sa|ik = 3).",
+    "Dieses Lexikon schlaegt alle drei Zaehler und ist die Notbremse des Gates:",
+    "steht ein Wort hier, wird nicht mehr abgestimmt. Eintraege nur, wenn die",
+    "Mehrheit nachweislich irrt oder gar keine zustande kommt, Schluessel immer",
+    "kleingeschrieben. Wer eintraegt, prueft die Trennung im Duden nach und",
+    "vermerkt den Anlass in _herkunft."
+  ],
+  "_herkunft": {
+    "lehnwort_hiatus": "ai/ui im Lehnwort ist ein Hiat, einheimisch ein Diphthong. Die Regel kann das nicht trennen, siehe DIPHTHONGS in haiku-syllables.mjs.",
+    "diphthong_ausnahme": "pfui ist das einzige gaengige deutsche Wort mit echtem ui-Diphthong."
+  },
+  "words": {
+    "mosaik": 3,
+    "mosaike": 4,
+    "mosaiken": 4,
+    "kokain": 3,
+    "archaisch": 3,
+    "etui": 2,
+    "pfui": 1
+  }
+}
