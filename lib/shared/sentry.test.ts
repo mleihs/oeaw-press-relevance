@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { ErrorEvent } from '@sentry/nextjs';
-import { scrubSentryEvent } from './sentry';
+import { scrubSentryEvent, sentryBaseOptions, sentryDataCollection } from './sentry';
 
 /**
  * The scrubber is the backstop that keeps our own app secrets (gate token,
@@ -53,5 +53,32 @@ describe('scrubSentryEvent', () => {
   it('is a no-op when there is no request context', () => {
     const event = { message: 'boom' } as ErrorEvent;
     expect(scrubSentryEvent(event)).toBe(event);
+  });
+});
+
+/**
+ * Sentry 11 collects user IP, cookies, HTTP bodies and DB query data unless
+ * `dataCollection` says otherwise, and silently ignores the old
+ * `sendDefaultPii`. These tests pin the restrictive v10 level.
+ */
+describe('sentryBaseOptions', () => {
+  it('pins data collection to the restrictive v10 level', () => {
+    expect(sentryBaseOptions.dataCollection).toBe(sentryDataCollection);
+    expect(sentryDataCollection).toMatchObject({
+      userInfo: false,
+      cookies: false,
+      httpBodies: [],
+      databaseQueryData: false,
+      queues: false,
+      genAI: { inputs: false, outputs: false },
+      graphQL: { document: false, variables: false },
+    });
+    expect(sentryDataCollection.urlQueryParams.deny).toContain('-ip');
+    expect(sentryDataCollection.httpHeaders.request.deny).toContain('forwarded');
+  });
+
+  it('carries no dropped v10 option and no tracing', () => {
+    expect(sentryBaseOptions).not.toHaveProperty('sendDefaultPii');
+    expect(sentryBaseOptions.tracesSampleRate).toBe(0);
   });
 });
