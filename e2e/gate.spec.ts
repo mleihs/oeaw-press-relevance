@@ -61,10 +61,12 @@ test.describe('Gate (Production-Build)', () => {
   test('falsches Passwort → Fehlermeldung, weiterhin kein Zugang', async ({ page }) => {
     await page.goto('/');
     await submitGatePassword(page, 'definitiv-nicht-das-passwort');
-    await expect(page.getByRole('alert')).toContainText(
-      'Das gemeinsame Passwort ist nicht korrekt.',
-      { timeout: UI_TIMEOUT },
-    );
+    // Nach Text filtern: Next.js rendert zusätzlich einen leeren
+    // `#__next-route-announcer__` mit role="alert", ein nacktes
+    // getByRole('alert') trifft deshalb zwei Elemente (Strict-Mode-Fehler).
+    await expect(
+      page.getByRole('alert').filter({ hasText: 'Das gemeinsame Passwort ist nicht korrekt.' }),
+    ).toBeVisible({ timeout: UI_TIMEOUT });
     // Cookie wurde keines gesetzt: API bleibt zu.
     const res = await page.request.get('/api/publications');
     expect(res.status()).toBe(401);
