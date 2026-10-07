@@ -1,4 +1,12 @@
 {
   "floor": "high",
-  "accepted": []
+  "accepted": [
+    {
+      "advisory": "GHSA-vfj7-8cjw-p6xm",
+      "package": "braces",
+      "scope": "node_modules/braces",
+      "reason": "Stack-Erschöpfung (DoS) durch tief verschachtelte Glob-Muster. Betroffen ist braces <=3.0.3, also jede Version: das Advisory vom 2026-09-18 nennt keine gepatchte Version, 3.0.3 ist die neueste. Nur Dev-Pfade, nachgemessen am 2026-10-07: micromatch aus eslint-plugin-boundaries (direkt und über @boundaries/elements), fast-glob aus @next/eslint-plugin-next (eslint-config-next) sowie aus der shadcn-CLI (shadcn, @shadcn/registry, ts-morph). Nichts davon liegt im Laufzeitpfad der App, die Muster stammen aus unserer eigenen Lint-Konfiguration bzw. CLI-Aufrufen; die DoS-Wirkung träfe den eigenen CI- oder Entwicklerlauf. npm nennt als fixAvailable eslint-plugin-boundaries@1.1.1, shadcn@1.0.0 und eslint-config-next@14.2.35, das sind Major-Downgrades und keine Fixes. Eintrag löschen, sobald braces eine gepatchte Version hat und sie per npm update im Baum ist; dann meldet das Gate ihn als gegenstandslos.",
+      "review_by": "2026-11-30"
+    }
+  ]
 }
