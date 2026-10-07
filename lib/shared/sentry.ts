@@ -1,4 +1,4 @@
-import type { ErrorEvent, EventHint } from '@sentry/nextjs';
+import type { ErrorEvent, EventHint, init } from '@sentry/nextjs';
 import { GATE_COOKIE_NAME } from './gate';
 
 /**
@@ -94,15 +94,41 @@ export function scrubSentryEvent(event: ErrorEvent, _hint?: EventHint): ErrorEve
   return event;
 }
 
+/** Header/query-param fragments Sentry treats as identifying (v10 PII filter). */
+const PII_DENY = ['forwarded', '-ip', 'remote-', 'via', '-user'];
+
+/**
+ * What the SDK may collect, pinned to the v10 `sendDefaultPii: false` level.
+ * Sentry 11 replaced `sendDefaultPii` with `dataCollection` and collects much
+ * more when it is left unset (user IP, cookies, HTTP bodies, DB query data).
+ * A leftover `sendDefaultPii: false` is silently ignored, so the restrictive
+ * baseline has to be spelled out. Values from Sentry's v10→v11 migration guide
+ * ("keep the v10 default behavior"). Twin in `scripts/lib/sentry.mjs`.
+ */
+export const sentryDataCollection = {
+  userInfo: false,
+  cookies: false,
+  httpHeaders: { request: { deny: PII_DENY }, response: { deny: PII_DENY } },
+  httpBodies: [],
+  urlQueryParams: { deny: PII_DENY },
+  genAI: { inputs: false, outputs: false },
+  databaseQueryData: false,
+  queues: false,
+  graphQL: { document: false, variables: false },
+};
+
 /**
  * Runtime-agnostic base options every `Sentry.init` spreads. Error-monitoring
  * only, per the integration decision: no performance tracing, no session
  * replay. Each runtime adds its own `dsn`, `environment`, and `release`.
+ * `satisfies` keeps excess-property checks on: an option the SDK dropped
+ * (as v11 did with `sendDefaultPii`) fails the typecheck instead of being
+ * ignored at runtime, which a plain spread into `Sentry.init` would allow.
  */
 export const sentryBaseOptions = {
   // Error monitoring only — no tracing, no replay.
   tracesSampleRate: 0,
   // Never attach IP / cookies / user by default; the scrubber is the backstop.
-  sendDefaultPii: false,
+  dataCollection: sentryDataCollection,
   beforeSend: scrubSentryEvent,
-} as const;
+} satisfies Partial<Parameters<typeof init>[0]>;

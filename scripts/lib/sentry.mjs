@@ -40,6 +40,8 @@ const SENSITIVE_HEADERS = new Set([
 // 'gate' = GATE_COOKIE_NAME (lib/shared/gate.ts); 'sb-*' = Supabase-Session.
 const SENSITIVE_COOKIE_EXACT = new Set(['gate']);
 const SENSITIVE_COOKIE_PREFIXES = ['sb-'];
+// Header-/Query-Fragmente, die Sentry als identifizierend wertet (v10-PII-Filter).
+const PII_DENY = ['forwarded', '-ip', 'remote-', 'via', '-user'];
 
 function isSensitiveCookie(name) {
   const lower = name.toLowerCase();
@@ -84,7 +86,20 @@ export function initScriptSentry(scriptName) {
     // Error monitoring only — no tracing. Scrubber = Zwilling des Web-App-
     // Hooks (s.o., lib/shared/sentry.ts).
     tracesSampleRate: 0,
-    sendDefaultPii: false,
+    // Zwilling von sentryDataCollection in lib/shared/sentry.ts: Sentry 11
+    // ignoriert sendDefaultPii und sammelt ohne diese Angabe IP, Cookies,
+    // HTTP-Bodies und DB-Query-Daten. Hier explizit auf v10-Niveau.
+    dataCollection: {
+      userInfo: false,
+      cookies: false,
+      httpHeaders: { request: { deny: PII_DENY }, response: { deny: PII_DENY } },
+      httpBodies: [],
+      urlQueryParams: { deny: PII_DENY },
+      genAI: { inputs: false, outputs: false },
+      databaseQueryData: false,
+      queues: false,
+      graphQL: { document: false, variables: false },
+    },
     beforeSend: scrubScriptSentryEvent,
   });
   Sentry.setTags({ runner: 'script', script: scriptName });
