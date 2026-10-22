@@ -83,7 +83,9 @@ vi.mock('@/lib/server/db', async () => {
   };
 });
 
+import { PgDialect } from 'drizzle-orm/pg-core';
 import {
+  enrichmentCandidateWhere,
   enrichmentPayloadToFilters,
   fetchPublicationsForEnrichment,
   runEnrichmentBatch,
@@ -269,42 +271,48 @@ describe('fetchPublicationsForEnrichment', () => {
     expect(rows).toEqual([{ id: 'doi-row' }]);
   });
 
-  it('skips the no-DOI query when includeNoDoi is false', async () => {
-    h.selectQueue.push([{ id: 'd1' }, { id: 'd2' }]);
-    const rows = await fetchPublicationsForEnrichment({
-      limit: 10,
-      includePartial: false,
-      includeNoDoi: false,
-      explicitIds: null,
-    });
-    expect(selectSpy).toHaveBeenCalledTimes(1);
-    expect(rows).toHaveLength(2);
+  it('status path is a single select, with or without includeNoDoi', async () => {
+    for (const includeNoDoi of [false, true]) {
+      selectSpy.mockClear();
+      h.selectQueue.push([{ id: 'd1' }, { id: 's1' }]);
+      const rows = await fetchPublicationsForEnrichment({
+        limit: 10,
+        includePartial: false,
+        includeNoDoi,
+        explicitIds: null,
+      });
+      expect(selectSpy).toHaveBeenCalledTimes(1);
+      expect(rows).toEqual([{ id: 'd1' }, { id: 's1' }]);
+    }
+  });
+});
+
+describe('enrichmentCandidateWhere', () => {
+  // Rendered to SQL text, because the select mock above ignores its arguments:
+  // this is where the actual row semantics get pinned.
+  const render = (includeNoDoi: boolean, includePartial = false) =>
+    new PgDialect().sqlToQuery(
+      enrichmentCandidateWhere({ limit: 10, includePartial, includeNoDoi, explicitIds: null })!,
+    );
+
+  it('always takes DOI rows and DOI-less rows with a WebDB summary', () => {
+    const { sql } = render(false);
+    expect(sql).toContain('"publications"."doi" is not null');
+    expect(sql).toContain('"publications"."summary_de" <>');
+    expect(sql).toContain('"publications"."summary_en" <>');
+    expect(sql).toContain('"publications"."archived" =');
   });
 
-  it('skips the no-DOI query when DOI rows already fill the limit', async () => {
-    h.selectQueue.push([{ id: 'd1' }, { id: 'd2' }]);
-    const rows = await fetchPublicationsForEnrichment({
-      limit: 2,
-      includePartial: false,
-      includeNoDoi: true,
-      explicitIds: null,
-    });
-    // remaining = limit - doiRows.length = 0, so the guard skips select #2.
-    expect(selectSpy).toHaveBeenCalledTimes(1);
-    expect(rows).toHaveLength(2);
+  it('adds PDF-link and CSV-abstract rows only on request', () => {
+    expect(render(false).sql).not.toContain('"publications"."url" like');
+    const { sql } = render(true);
+    expect(sql).toContain('"publications"."url" like');
+    expect(sql).toContain('"publications"."abstract" is not null');
   });
 
-  it('issues the no-DOI query and concatenates when slots remain', async () => {
-    h.selectQueue.push([{ id: 'd1' }]);
-    h.selectQueue.push([{ id: 'n1' }, { id: 'n2' }]);
-    const rows = await fetchPublicationsForEnrichment({
-      limit: 5,
-      includePartial: false,
-      includeNoDoi: true,
-      explicitIds: null,
-    });
-    expect(selectSpy).toHaveBeenCalledTimes(2);
-    expect(rows).toEqual([{ id: 'd1' }, { id: 'n1' }, { id: 'n2' }]);
+  it('widens the status filter to partial on request', () => {
+    expect(render(false).params).not.toContain('partial');
+    expect(render(false, true).params).toEqual(expect.arrayContaining(['pending', 'partial']));
   });
 });
 

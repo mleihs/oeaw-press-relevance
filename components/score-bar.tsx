@@ -4,6 +4,7 @@ import { SCORE_COLORS, SCORE_LABELS } from '@/lib/shared/constants';
 import { getScoreBandClass, type ScoreBandVariant } from '@/lib/shared/score-utils';
 import { InfoBubble } from '@/components/info-bubble';
 import { EXPL, leadWithReason } from '@/lib/client/explanations';
+import { resolveScoreNa } from '@/lib/client/explanations/score-na';
 
 interface ScoreBarProps {
   dimension: string;
@@ -90,31 +91,22 @@ interface PressScoreBadgeProps {
    *  score_na_* copy. Optional, so events / dashboard / press-releases callers
    *  stay unaffected. See lib/shared/enrichment-reason.ts. */
   naReason?: string | null;
+  /** Row lies in the ITA subtree, which is excluded from scoring; see
+   *  resolveScoreNa for what that changes in the bubble. */
+  isIta?: boolean;
 }
 
-function pickScoreNaExpl(
-  analysisStatus?: string | null,
-  enrichmentStatus?: string | null,
-): keyof typeof EXPL {
-  if (analysisStatus === 'failed') return 'score_na_analysis_failed';
-  if (enrichmentStatus === 'failed') return 'score_na_pending_failed';
-  if (enrichmentStatus === 'partial') return 'score_na_pending_partial';
-  if (enrichmentStatus === 'pending') return 'score_na_pending_pending';
-  if (enrichmentStatus === 'enriched') return 'score_na_pending_enriched';
-  return 'score_na';
-}
-
-export function PressScoreBadge({ score, variant = 'badge', analysisStatus, enrichmentStatus, naReason, ariaLabel = 'Story Score' }: PressScoreBadgeProps) {
+export function PressScoreBadge({ score, variant = 'badge', analysisStatus, enrichmentStatus, naReason, isIta, ariaLabel = 'Story Score' }: PressScoreBadgeProps) {
   if (score === null) {
     // The always-visible "N/A" bubble. Lead with the per-row reason (when the
     // caller derived one), then the generic score_na_* body as context. Passing
     // the resolved `id` keeps the Hilfe-Center deep-link; `content` overrides
     // only the body (undefined → plain generic entry).
-    const explId = pickScoreNaExpl(analysisStatus, enrichmentStatus);
+    const { explId, reason } = resolveScoreNa({ analysisStatus, enrichmentStatus, naReason, isIta });
     return (
       <span className="inline-flex items-center gap-1">
         <span className="text-muted-foreground/70 text-sm">N/A</span>
-        <InfoBubble id={explId} content={leadWithReason(EXPL[explId], naReason)} />
+        <InfoBubble id={explId} content={leadWithReason(EXPL[explId], reason)} />
       </span>
     );
   }

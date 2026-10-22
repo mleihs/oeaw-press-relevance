@@ -145,6 +145,9 @@ export type PublicationListItem = Publication & {
     source: 'attributed' | 'author_affiliation';
   }>;
   press_release: PressRelease | null;
+  /** Row lies in the ITA subtree, which is excluded from scoring; drives the
+   *  N/A explanation in the list. */
+  is_ita_subtree: boolean;
 };
 
 export interface PublicationsListResult {
@@ -471,6 +474,7 @@ export async function listPublications(
         : null,
       orgunits: orgunitsMini,
       press_release,
+      is_ita_subtree: row.isItaSubtree,
     };
   });
 

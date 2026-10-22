@@ -59,6 +59,7 @@ export const EXPL_KB_MAP: Partial<Record<keyof typeof EXPL, KbAnchor>> = {
   score_na_pending_enriched: { path: '/help/scores/score-fehlt', hash: 'pending-enriched' },
   score_na_pending_failed:   { path: '/help/scores/score-fehlt', hash: 'pending-failed' },
   score_na_analysis_failed:  { path: '/help/scores/score-fehlt', hash: 'analysis-failed' },
+  score_na_ita:              { path: '/help/scores/score-fehlt', hash: 'ita' },
   pitch_suggestion:          { path: '/help/scores/pitch-felder', hash: 'pitch-suggestion' },
   suggested_angle:           { path: '/help/scores/pitch-felder', hash: 'suggested-angle' },
   target_audience:           { path: '/help/scores/pitch-felder', hash: 'target-audience' },

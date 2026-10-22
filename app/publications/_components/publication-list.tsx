@@ -123,6 +123,7 @@ export function PublicationList({
                   analysisStatus={pub.analysis_status}
                   enrichmentStatus={pub.enrichment_status}
                   naReason={naReason}
+                  isIta={pub.is_ita_subtree}
                 />
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-semibold leading-[1.35] text-ink">
@@ -231,6 +232,7 @@ export function PublicationList({
                 analysisStatus={pub.analysis_status}
                 enrichmentStatus={pub.enrichment_status}
                 naReason={naReason}
+                isIta={pub.is_ita_subtree}
               />
 
               <div className="min-w-0 flex-1">

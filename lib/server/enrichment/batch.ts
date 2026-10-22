@@ -3,9 +3,11 @@ import {
   eq,
   inArray,
   isNotNull,
-  isNull,
   like,
+  ne,
   or,
+  sql,
+  type SQL,
 } from 'drizzle-orm';
 import { db, publications, descNullsLast } from '@/lib/server/db';
 import type { EnrichmentResult, Publication } from '@/lib/shared/types';
@@ -104,45 +106,44 @@ export async function fetchPublicationsForEnrichment(
     return rows.map(publicationToApi);
   }
 
-  const statusFilter = filters.includePartial
-    ? ['pending', 'partial']
-    : ['pending'];
-
-  const doiRows = await db
+  const rows = await db
     .select()
     .from(publications)
-    .where(
-      and(
-        isNotNull(publications.doi),
-        inArray(publications.enrichmentStatus, statusFilter),
-      ),
-    )
-    .orderBy(descNullsLast(publications.publishedAt))
+    .where(enrichmentCandidateWhere(filters))
+    // DOI rows first (the API cascade), then the DOI-less ones, newest first.
+    .orderBy(sql`${publications.doi} IS NULL`, descNullsLast(publications.publishedAt))
     .limit(filters.limit);
+  return rows.map(publicationToApi);
+}
 
-  let noDoiRows: typeof doiRows = [];
-  if (filters.includeNoDoi) {
-    const remaining = filters.limit - doiRows.length;
-    if (remaining > 0) {
-      noDoiRows = await db
-        .select()
-        .from(publications)
-        .where(
-          and(
-            isNull(publications.doi),
-            or(
-              like(publications.url, '%.pdf'),
-              isNotNull(publications.abstract),
-            ),
-            inArray(publications.enrichmentStatus, statusFilter),
-          ),
-        )
-        .orderBy(descNullsLast(publications.publishedAt))
-        .limit(remaining);
-    }
-  }
-
-  return [...doiRows, ...noDoiRows].map(publicationToApi);
+/**
+ * Which rows the status path enriches. Every row with a DOI; a DOI-less row
+ * only when something local can fill it:
+ *  - a WebDB press summary, always. seedFromLocalSources turns it into the
+ *    abstract without asking any DOI API (a direct PDF link, if present, is
+ *    still fetched). Without this branch such rows stayed 'pending' forever and
+ *    never reached the scoring pool, which requires a finished enrichment
+ *    (2026-10-22: 37 rows with a summary_de, never offered for scoring);
+ *  - a PDF link or CSV abstract, only when the caller opts in (includeNoDoi).
+ * The DOI-less branches need no `doi IS NULL`: every DOI row already matches
+ * the first one. Exported so the predicate can be rendered and asserted.
+ */
+export function enrichmentCandidateWhere(filters: EnrichmentBatchFilters): SQL | undefined {
+  const statusFilter = filters.includePartial ? ['pending', 'partial'] : ['pending'];
+  return and(
+    inArray(publications.enrichmentStatus, statusFilter),
+    or(
+      isNotNull(publications.doi),
+      and(
+        eq(publications.archived, false),
+        // `<> ''` is false for NULL too, so this also means "present".
+        or(ne(publications.summaryDe, ''), ne(publications.summaryEn, '')),
+      ),
+      filters.includeNoDoi
+        ? or(like(publications.url, '%.pdf'), isNotNull(publications.abstract))
+        : undefined,
+    ),
+  );
 }
 
 export interface EnrichmentBatchRunOptions {

@@ -40,6 +40,7 @@ import { initScriptSentry, captureScriptError, flushAndExit } from './lib/sentry
 import { SCORE_DIMENSIONS, type ScoreDimension } from '@/lib/shared/constants';
 import { computeStoredPressScore } from '@/lib/shared/scoring';
 import { SCORING_RECENT_DAYS } from '@/lib/shared/dashboard';
+import { uuidPattern } from '@/lib/shared/schemas';
 // Single source of truth: lib/shared/score-weights.json. Both this script and
 // lib/shared/constants.ts import it, so drift is impossible by construction.
 import SCORE_WEIGHTS from '@/lib/shared/score-weights.json';
@@ -335,6 +336,17 @@ async function cmdCandidates(args: Flags, positional: string[]): Promise<void> {
   const toDate = str(args, 'to');
   const importedAfter = str(args, 'imported-after');
   const includeAll = bool(args, 'all');
+  // Gezielte Auswahl, unabhängig vom Zeitfenster: Zwillinge, Nachzügler, die
+  // außerhalb der 60 Tage bewertbar wurden. Die View-Bedingungen gelten weiter.
+  const ids = (str(args, 'ids') ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+  if ('ids' in args) {
+    // Ohne gültige Liste nicht still aufs 60-Tage-Fenster zurückfallen.
+    const badIds = ids.filter((id) => !uuidPattern.test(id));
+    if (ids.length === 0 || badIds.length > 0) {
+      log(`--ids erwartet volle UUIDs, kommagetrennt.${badIds.length ? ` Ungültig: ${badIds.join(', ')}` : ''}`);
+      process.exit(1);
+    }
+  }
 
   // Basis-Prädikat („bewertbar") lebt in der kanonischen View
   // publication_scoring_candidates (eine Wahrheit, geteilt mit dem Server-
@@ -381,7 +393,11 @@ async function cmdCandidates(args: Flags, positional: string[]): Promise<void> {
   // — wer 25 Kandidaten zieht, landet dann irgendwo in 2023. --imported-after
   // setzt ein eigenes Datum, --all öffnet den Altbestand bewusst.
   let windowDays: number | null = SCORING_RECENT_DAYS;
-  if (importedAfter) {
+  if (ids.length > 0) {
+    windowDays = null;
+    params.push(ids);
+    conditions.push(`p.id = ANY($${params.length}::uuid[])`);
+  } else if (importedAfter) {
     windowDays = null;
     params.push(importedAfter);
     conditions.push(`p.created_at >= $${params.length}`);
@@ -494,6 +510,7 @@ async function cmdCandidates(args: Flags, positional: string[]): Promise<void> {
         imported_after: importedAfter,
         window_days: windowDays,
         all: includeAll,
+        ids: ids.length > 0 ? ids : null,
       },
       publications: pubs,
     }, null, 2));
@@ -1080,6 +1097,7 @@ Commands:
                                         die der Bewerten-Knopf im Web erfasst.
                                         Filters: --all (Altbestand öffnen),
                                                  --imported-after DATE (eigenes Datum),
+                                                 --ids UUID,UUID (gezielt, ohne Fenster),
                                                  --only-summary-de, --mahighlight,
                                                  --popular-science, --from YYYY-MM-DD,
                                                  --to YYYY-MM-DD,

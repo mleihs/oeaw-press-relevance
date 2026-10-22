@@ -75,8 +75,22 @@ WHERE archived = false AND enrichment_status = 'pending'
 
 Steht da 0, ist nichts offen. Ein hoher `pending`-Gesamtwert ist **kein**
 Rückstau: die Anreicherung nimmt per `include_no_doi: false` nur Publikationen
-mit DOI. Korpusweit bleiben dadurch rund 17.700 Sätze dauerhaft `pending`, von
-denen aber nur etwa 13 überhaupt genug Text für eine Bewertung hätten.
+mit DOI, dazu solche ohne DOI, die eine WebDB-Zusammenfassung mitbringen (die
+übernimmt Phase 0, ohne einen DOI-Dienst zu fragen). Der Rest ohne DOI, rund
+17.000 Sätze, bleibt
+dauerhaft `pending`, weil es für ihn keine Quelle und keinen Text gibt.
+
+Bis 2026-10-22 fehlte die Ausnahme für Zusammenfassungen: 37 Publikationen mit
+`summary_de` blieben `pending` und kamen nie in den Bewertungspool. Sie wurden
+an dem Tag einmalig per `session-pipeline enrich-free --target=prod --apply`
+nachgezogen. Prüfen, ob wieder welche hängen (muss 0 sein):
+
+```sql
+SELECT count(*) FROM publications
+WHERE archived = false AND enrichment_status = 'pending'
+  AND (doi IS NULL OR doi = '')
+  AND (summary_de <> '' OR summary_en <> '');
+```
 
 ## Publikationen
 
@@ -374,6 +388,72 @@ ein CLI-Lauf über OpenRouter für 25–40 USD.
 
 ## Historie
 
+- **2026-10-22** — 26 Publikationen in zwei Batches (24/2), Median 0.2863, Spanne
+  0.1925–0.52, Mittel 0.3146; `haiku-audit` über die ganze Kohorte
+  `opus-5.5-session` 144/144 sauber. **Batch 1 wurde komplett neu bewertet:**
+  geschrieben hatte ihn zuerst eine Sitzung mit niedrigem Reasoning-Effort. Die
+  Neubewertung mit Effort max entstand, ohne dass die alten Texte vorher gelesen
+  wurden, und ging per `apply --force` auf Prod. Sie wich im Mittel um 0.039 ab,
+  überwiegend nach unten (Batch-Median 0.3138 → 0.2863); seither wird in-chat nur
+  mit Effort max bewertet. Oben die Homeoffice-Lücke nach Geschlecht und
+  Elternschaft (VID, 0.52), der Umbau des Gehirns nach einer Verletzung der
+  Sehrinde (IMBA, 0.5125, Preprint), gleichgeschlechtliche Familien in Österreich
+  (VID, 0.451), die Schuttbedeckung der Gletscher in den Zentralanden seit 1985
+  (IGF, 0.4405) und Balzgesänge männlicher Mäuse, die Weibchen nicht immer
+  anlocken (ISF, 0.425). Zehn Arbeiten tragen keine ÖAW-Orgunit, fast alle zum
+  Neolithikum und meist von Lasse van den Dikkenberg (0.22–0.3735); das Institut
+  fehlt in diesen Pitches deshalb mit Absicht, und `fcfc67f9` hatte nur den
+  Klappentext der Buchausgabe als Inhalt. Batch 2 bestand aus dem letzten
+  Dikkenberg-Aufsatz, Vlaardingen-Kultur oder Stein-Gruppe (0.2515, Dimensionen
+  am Block ausgerichtet), und einem ÖAI-Kapitel zur Klosterwirtschaft am Berg
+  Nebo (0.343). `857a7814` bleibt aus dem Grund vom 07.10. offen. Pools danach
+  1/44, die Events waren nicht Teil dieses Laufs. Altbestand 4.708, im Lauf
+  unverändert (07.10.: 4.707).
+- **2026-10-07** — erster Lauf mit Opus 5.5, Modell-Tags dafür gehoben auf
+  `anthropic/claude-opus-5.5-session` bzw. `anthropic/claude-opus-5.5 (in-chat)`.
+  118 Publikationen in fünf Batches (25/25/25/25/18), Median 0.23, Spanne
+  0.0625–0.6425, Mittel 0.2532, 118/118 Haikus laut `haiku-audit` sauber. Oben
+  das neue österreichische Gletscherinventar (0.6425), die weltweiten Kosten von
+  Depression bis 2050 (0.5545), Gesten von Elefanten in Konflikten (0.55),
+  koloniale Altlasten in Hotspots biokultureller Vielfalt (0.5475) und das
+  beschleunigte Pflanzensterben auf europäischen Gipfeln (0.5375). Die
+  Batch-Mediane fallen von 0.3425 auf 0.165 in Batch 4, **das ist
+  Zusammensetzung**: dort kamen 20 von 25 Einträgen aus dem ACDH, darunter
+  sieben Handbuchkapitel (0.09–0.19). Bewusst am Boden, weil ohne Substanz: zwei
+  GitHub-Changelogs (0.0625) und zwei ÖAI-Fundberichte, deren Band-DOI nur den
+  Klappentext des ganzen Bandes liefert (0.0665). **`857a7814` „Water in
+  Mountainscapes" bleibt unbewertet:** die WebDB-DOI ist der Platzhalter
+  `10.1000/182`, OpenAlex hat dazu einen fremden Abstract geliefert; er bleibt
+  im Pool, bis die Daten repariert sind. Zwölf Reasonings aus den ersten
+  Batches wurden per `apply --force` neu geschrieben, weil „Für ein breites
+  Publikum …" als zweiter Satz zur Schablone geworden war; Scores und übrige
+  Texte blieben unverändert. **Events: 67 in drei Batches (25/25/17), Median
+  0.2945, Spanne 0.066–0.573, Mittel 0.3104.** Oben die 18. Eric Wolf Lecture
+  mit Alpa Shah zur radikalen Rechten (zwei Anlagen, je 0.573), die
+  Gesamtsitzung zur Krise der Forschungsförderung (0.559) und der Dark Matter
+  Day im WUK (0.55); unten GMI-Platzhalter ohne Titel (0.066). Im letzten Batch
+  war die Hälfte der Einträge ohne jeden Text (vier GMI-Seminare, eine
+  Lateinamerika-Konferenz in zwei Anlagen, drei `(copy n)`-Anlagen eines
+  Kick-off-Workshops in Kairo); bewertet nur aus Titel und Metadaten, die Texte
+  sagen das offen. Mehrfachanlagen desselben Vortrags, auch über Batchgrenzen
+  hinweg, bekamen die Dimensionen des schon bewerteten Zwillings. Pools danach
+  1/0 (nur `857a7814`), Altbestand unverändert 4.707.
+- **2026-09-10** — 13 Publikationen, Median 0.2575, Spanne 0.1155–0.52, Mittel
+  0.2738, 13/13 Haikus durchs Gate (einen Silben-Zählfehler hat das Gate im
+  Trockenlauf abgefangen). Oben die Giraffenstudie des ISF, Löwenrufe gegen
+  Madenhacker-Warnrufe (0.52), dahinter die Verschränkungsvertauschung über 143 km
+  zwischen La Palma und Teneriffa (0.4225), Schnitzlers autobiografische Listen
+  (0.4075) und die IQOQI-Klarstellung, warum auch klassische Gravitation
+  verschränken kann (0.365). Unten eine Replik von 2003 ohne eigenen Befund
+  (0.1155) und eine Optik-Kurzarbeit von 2014 (0.164). Vier nachgemeldete
+  IQOQI-Altarbeiten (2003–2014) stecken im Stapel; ihre Aktualität ist bewusst
+  niedrig bewertet. **Events: 18, Median 0.5385, Spanne 0.066–0.584.** Der Median
+  ist verzerrt durch sechs Mehrfachanlagen von EPSC 2029 (je 0.584, zwei davon
+  mit Ort und Datum der EANA 2024); ohne sie 12 Events mit Median 0.325. Oben
+  EPSC, die MBI-Station bei der Langen Nacht der Museen (0.5745), die
+  Buchpräsentation zum Entsatz von Wien 1683 (DE/EN je 0.539) und die Tagung zum
+  Jubiläumsjahr 1526 (0.538); unten eine Doktoratsverteidigung (0.066). Pools
+  danach 0/0, Altbestand 4.716 → 4.703.
 - **2026-08-19** — 12 Publikationen nach dem Vollabzug, Median 0.2370, Spanne
   0.09–0.525, Mittel 0.2567. Der Stapel ist fast reine Gebirgsforschung: oben die
   europaweite Thermophilisierungs-Synthese aus 6.067 wiederholt aufgenommenen

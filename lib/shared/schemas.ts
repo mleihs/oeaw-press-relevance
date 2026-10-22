@@ -52,7 +52,7 @@ export const flagDeletePayloadSchema = z.object({
 
 export type FlagDeletePayload = z.infer<typeof flagDeletePayloadSchema>;
 
-const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export const enrichmentBatchPayloadSchema = z.object({
   limit: z.coerce.number().int().min(1).max(500).default(20),

@@ -11,30 +11,36 @@ und Keywords) und **Analyse** (ein Sprachmodell bewertet den Inhalt). Wenn an
 einer Stelle etwas hängt, zeigt die Pub „kein Score", aber mit unterschiedlichen
 Sub-Zuständen, die genau verraten, woran es liegt.
 
-## Die sechs Sub-Zustände {#sub-zustaende}
+## Die sieben Sub-Zustände {#sub-zustaende}
 
 | Zustand | Wo es hängt | Nächster Schritt |
 |---|---|---|
 | Allgemein „kein Score" | Pub noch nicht bewertet | Analyse-Pipeline starten |
-| Pending · Pending | Keine Anreicherung versucht | `enrich-api` laufen lassen |
+| Pending · Pending | Keine Anreicherung möglich oder noch offen | Mit DOI: nächster Nachtlauf; ohne DOI: nur mit WebDB-Zusammenfassung bewertbar |
 | Pending · Partial | Anreicherung lückenhaft (z. B. kein Abstract) | `enrich-augment` für weitere Quellen |
 | Pending · Enriched | Anreicherung durch, Scoring fehlt | Analyse-Lauf triggern |
 | Pending · Failed | Anreicherung gescheitert | Manuell prüfen oder akzeptieren |
 | Analysis · Failed | Scoring versucht, ungültiges Resultat | Re-Run mit anderem Modell |
+| ITA | Institut von der Bewertung ausgenommen | keiner, das ist gewollt |
 
 Die Punkt-Trennung liest sich als „Analyse-Status · Anreicherungs-Status". Mit
 etwas Übung wird auf einen Blick sichtbar, wo Eingriffsbedarf besteht.
 
-## Keine Anreicherung versucht {#pending-pending}
+## Keine Anreicherung möglich oder noch offen {#pending-pending}
 
-Der häufigste Frischeingangs-Zustand. WebDB liefert oft nur Titel und
-Autor:innen. Ohne externe Quellen-Lookup gibt es keinen Abstract, keinen
-Keyword-Vektor, keine inhaltliche Basis für die Bewertung.
+Der häufigste Zustand in der Liste. WebDB liefert oft nur Titel und
+Autor:innen. Ohne Abstract oder Zusammenfassung gibt es keine inhaltliche Basis
+für die Bewertung.
 
-**Auflösung:** `enrich-free --apply` oder `enrich-api` über die Pipeline-Seite
-triggern. Beide gehen die freien Quellen (CrossRef, OpenAlex, Unpaywall,
-Semantic Scholar) automatisch durch und schreiben das Ergebnis zurück in die
-Pub.
+**Mit DOI** fragt die nächtliche Anreicherung die freien Quellen (CrossRef,
+OpenAlex, Unpaywall, Semantic Scholar) von selbst ab, der Zustand löst sich also
+mit dem nächsten Nachtlauf.
+
+**Ohne DOI** gibt es keine Quelle, die sich abfragen ließe. Bewertbar wird ein
+solcher Eintrag nur, wenn die WebDB eine Zusammenfassung mitliefert; die
+übernimmt der Nachtlauf ebenfalls. Fehlt beides, bleibt die Pub dauerhaft ohne
+Score. Das betrifft vor allem Bücher, Kapitel, Berichte und Gutachten, die in
+CrossRef und OpenAlex gar nicht geführt werden.
 
 ## Anreicherung teilweise {#pending-partial}
 
@@ -72,10 +78,17 @@ geliefert. Häufige Ursache: Content zu kurz unter dem Min-Words-Threshold
 Re-Run mit anderem Modell (etwa Wechsel von DeepSeek auf Opus) oder mit
 angepasstem Min-Words-Wert in den Settings hilft meistens.
 
+## ITA wird nicht bewertet {#ita}
+
+Publikationen aus dem Institut für Technikfolgen-Abschätzung und seinen
+Untereinheiten sind von der laufenden Bewertung bewusst ausgenommen. Sie stehen
+in der Liste, bekommen aber unabhängig vom Anreicherungsstand keinen neuen
+Score. Ein Teil der älteren Einträge trägt noch einen Score aus früheren Läufen.
+
 ## Warum die Granularität wichtig ist {#granularitaet}
 
 Ein einzelnes „kein Score" wäre unbrauchbar. Das Team könnte nicht zwischen
-„kommt gleich" und „hoffnungslos" unterscheiden. Die sechs Sub-Zustände
+„kommt gleich" und „hoffnungslos" unterscheiden. Die sieben Sub-Zustände
 erlauben gezielte Aktion pro Pub, ohne dass jedes Mal manuell in die
 Pipeline-Logs geschaut werden müsste.
 
