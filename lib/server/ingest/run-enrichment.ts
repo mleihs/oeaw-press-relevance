@@ -3,6 +3,11 @@
 // (CrossRef → OpenAlex → Unpaywall → Semantic Scholar → PDF) an, damit sie das
 // Content-Gate der Kandidaten-View erfüllen und danach bewertbar sind.
 //
+// Ohne DOI läuft eine Publikation nur mit, wenn die WebDB eine Zusammenfassung
+// mitbringt: die übernimmt Phase 0 ohne API-Call (fetchPublicationsForEnrichment).
+// Alle anderen DOI-losen bleiben per include_no_doi: false bewusst draußen, für
+// sie gibt es keine Quelle.
+//
 // Motivation (User-Entscheidung 2026-07-16): „nur enrichen ohne zu bewerten"
 // ergibt keinen Sinn, und Enrichment ist die reine Vorstufe zum Scoring — also
 // läuft es automatisch beim Import statt über einen separaten Knopf/Modal. Der

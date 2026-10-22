@@ -75,8 +75,22 @@ WHERE archived = false AND enrichment_status = 'pending'
 
 Steht da 0, ist nichts offen. Ein hoher `pending`-Gesamtwert ist **kein**
 Rückstau: die Anreicherung nimmt per `include_no_doi: false` nur Publikationen
-mit DOI. Korpusweit bleiben dadurch rund 17.700 Sätze dauerhaft `pending`, von
-denen aber nur etwa 13 überhaupt genug Text für eine Bewertung hätten.
+mit DOI, dazu solche ohne DOI, die eine WebDB-Zusammenfassung mitbringen (die
+übernimmt Phase 0, ohne einen DOI-Dienst zu fragen). Der Rest ohne DOI, rund
+17.000 Sätze, bleibt
+dauerhaft `pending`, weil es für ihn keine Quelle und keinen Text gibt.
+
+Bis 2026-10-22 fehlte die Ausnahme für Zusammenfassungen: 37 Publikationen mit
+`summary_de` blieben `pending` und kamen nie in den Bewertungspool. Sie wurden
+an dem Tag einmalig per `session-pipeline enrich-free --target=prod --apply`
+nachgezogen. Prüfen, ob wieder welche hängen (muss 0 sein):
+
+```sql
+SELECT count(*) FROM publications
+WHERE archived = false AND enrichment_status = 'pending'
+  AND (doi IS NULL OR doi = '')
+  AND (summary_de <> '' OR summary_en <> '');
+```
 
 ## Publikationen
 
