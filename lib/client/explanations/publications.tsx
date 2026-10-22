@@ -252,18 +252,19 @@ export const PUBLICATIONS_EXPL = {
     ),
   },
   score_na_pending_pending: {
-    title: 'Kein Score: keine Anreicherung versucht',
+    title: 'Kein Score: keine Anreicherung möglich oder noch offen',
     body: (
       <>
         <Para>
-          Diese Publikation hat noch keine externen Daten: kein DOI-Lookup gegen CrossRef,
-          OpenAlex, Unpaywall oder SemanticScholar wurde gefahren. WebDB liefert oft nur
-          Titel und Autor:innen.
+          Diese Publikation hat noch keine externen Daten. WebDB liefert oft nur Titel und
+          Autor:innen, für eine Bewertung braucht es aber einen Abstract oder eine
+          Zusammenfassung.
         </Para>
         <Para>
-          Nächster Schritt: <Code>enrich-api</Code> in der Pipeline laufen lassen, um
-          Abstract und Keywords zu holen. Erst danach ist eine seriöse inhaltliche Bewertung
-          möglich.
+          Mit DOI holt die nächtliche Anreicherung Abstract und Keywords von selbst. Ohne
+          DOI lässt sich keine externe Quelle abfragen: Bewertbar wird der Eintrag dann nur,
+          wenn die WebDB eine Zusammenfassung mitbringt, und die übernimmt ebenfalls der
+          Nachtlauf. Fehlt beides, bleibt die Publikation ohne Score.
         </Para>
       </>
     ),
@@ -314,6 +315,17 @@ export const PUBLICATIONS_EXPL = {
         liefern. Häufige Ursache: Content zu kurz unter dem Min-Length-Threshold, oder das
         Modell hat ungültige Werte zurückgegeben. Re-Run mit anderem Modell oder besserem
         Content.
+      </Para>
+    ),
+  },
+  score_na_ita: {
+    title: 'Kein Score: ITA wird nicht bewertet',
+    body: (
+      <Para>
+        Publikationen aus dem Institut für Technikfolgen-Abschätzung (ITA) und seinen
+        Untereinheiten sind von der laufenden Bewertung bewusst ausgenommen, unabhängig
+        vom Anreicherungsstand. Ein Teil der älteren Einträge trägt noch einen Score aus
+        früheren Läufen, neue Bewertungen kommen nicht hinzu.
       </Para>
     ),
   },
