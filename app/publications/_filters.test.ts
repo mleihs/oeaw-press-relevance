@@ -4,14 +4,16 @@ import {
   buildApiParams,
   buildUrl,
   hasAnyActiveFilter,
+  hidesUnscored,
   loadFilters,
   type FilterValues,
 } from './_filters';
 
 // `_filters.ts` is the bridge between the nuqs URL surface (UI shape) and
 // `listPublications`' API surface. These translations diverge intentionally
-// (TriState ↔ Bool, showAll ↔ inverted default_eligible, minScore 0-100 ↔
-// 0-1.0). Pure-function tests so any drift surfaces here, not in production.
+// (TriState ↔ Bool, showAll ↔ inverted default_eligible, showNa ↔ inverted
+// has_score via hidesUnscored, minScore 0-100 ↔ 0-1.0). Pure-function tests so
+// any drift surfaces here, not in production.
 
 function withDefaults(patch: Partial<FilterValues>): FilterValues {
   return { ...FILTER_DEFAULTS, ...patch };
@@ -30,6 +32,21 @@ describe('buildApiParams', () => {
   test('showAll=true → default_eligible omitted', () => {
     const p = buildApiParams(withDefaults({ showAll: true }));
     expect(p.get('default_eligible')).toBeNull();
+  });
+
+  test('N/A rows hidden by default: has_score=true unless showNa', () => {
+    expect(buildApiParams(FILTER_DEFAULTS).get('has_score')).toBe('true');
+    expect(buildApiParams(withDefaults({ showNa: true })).get('has_score')).toBeNull();
+    // Independent of the eligibility toggle.
+    expect(buildApiParams(withDefaults({ showAll: true })).get('has_score')).toBe('true');
+  });
+
+  test('filters that ask for unscored rows drop has_score (else the list is empty)', () => {
+    expect(buildApiParams(withDefaults({ scoring: 'fresh' })).get('has_score')).toBeNull();
+    expect(buildApiParams(withDefaults({ scoring: 'backlog' })).get('has_score')).toBeNull();
+    expect(buildApiParams(withDefaults({ analysis: 'pending' })).get('has_score')).toBeNull();
+    expect(buildApiParams(withDefaults({ analysis: 'failed' })).get('has_score')).toBeNull();
+    expect(buildApiParams(withDefaults({ analysis: 'analyzed' })).get('has_score')).toBe('true');
   });
 
   test('peer tri-state encodes to peer_reviewed bool', () => {
@@ -100,6 +117,28 @@ describe('hasAnyActiveFilter', () => {
     expect(hasAnyActiveFilter(withDefaults({ types: ['a'] }))).toBe(true);
     expect(hasAnyActiveFilter(withDefaults({ journal: 'Nature' }))).toBe(true);
     expect(hasAnyActiveFilter(withDefaults({ showAll: true }))).toBe(true);
+    expect(hasAnyActiveFilter(withDefaults({ showNa: true }))).toBe(true);
+  });
+});
+
+describe('hidesUnscored', () => {
+  test('on by default, off with showNa', () => {
+    expect(hidesUnscored(FILTER_DEFAULTS)).toBe(true);
+    expect(hidesUnscored(withDefaults({ showNa: true }))).toBe(false);
+  });
+
+  test('scoring scope and unscored analysis states override the default', () => {
+    expect(hidesUnscored(withDefaults({ scoring: 'fresh' }))).toBe(false);
+    expect(hidesUnscored(withDefaults({ analysis: 'pending' }))).toBe(false);
+    expect(hidesUnscored(withDefaults({ analysis: 'analyzed' }))).toBe(true);
+  });
+
+  test('the default stays out of the URL, the opt-in round-trips', async () => {
+    expect(buildUrl(FILTER_DEFAULTS)).toBe('');
+    expect(buildUrl(FILTER_DEFAULTS, { showNa: true })).toBe('?showNa=true');
+    const f = await loadFilters(Promise.resolve({ showNa: 'true' }));
+    expect(f.showNa).toBe(true);
+    expect(hidesUnscored(f)).toBe(false);
   });
 });
 

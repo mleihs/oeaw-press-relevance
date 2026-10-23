@@ -19,6 +19,7 @@ import { useFilters } from '../use-filters';
 import {
   FILTER_DEFAULTS,
   PRESET_FIELDS,
+  hidesUnscored,
   setField,
   type FilterValues,
   type PresetKey,
@@ -29,11 +30,14 @@ import { FilterSheet } from './filter-sheet';
 import { PresetBar } from './preset-bar';
 import { ShowAllToggle } from './show-all-toggle';
 import { SortDropdown } from './sort-dropdown';
+import { UnscoredFilterPill, unscoredPillVisible } from './unscored-filter-pill';
 import { useLookups } from './use-lookups';
 
 interface Props {
   total: number;
   hidden: number;
+  /** N/A rows hidden by the default score filter (total_hidden_unscored). */
+  hiddenUnscored: number;
 }
 
 // Mobile-Schnellfilter (Mock Board-Mobile.dc.html Z. 378–384): Ein-Feld-Filter
@@ -52,12 +56,23 @@ const QUICK_CHIPS: Array<{ key: QuickKey; label: string; Icon: LucideIcon }> = [
 
 // Single client island wrapping the filter UI: nuqs state + search debounce +
 // preset state machine + keyboard shortcuts + the existing sub-components
-// (PresetBar, ShowAllToggle, FilterSheet, ActiveFilters). The page (RSC)
+// (PresetBar, ShowAllToggle, FilterSheet, ActiveFilters, UnscoredFilterPill). The page (RSC)
 // renders this between header and pipeline-actions; data fetching happens
 // server-side based on the URL the user manipulates here.
-export function FiltersBar({ total, hidden }: Props) {
+export function FiltersBar({ total, hidden, hiddenUnscored }: Props) {
   const [filters, setFilters] = useFilters();
   const lookups = useLookups();
+
+  const hidingUnscored = hidesUnscored(filters);
+  const pillVisible = unscoredPillVisible({
+    hiding: hidingUnscored,
+    showNa: filters.showNa,
+    hiddenCount: hiddenUnscored,
+  });
+  const setShowNa = useCallback(
+    (showNa: boolean) => setFilters({ showNa, page: 1 }),
+    [setFilters],
+  );
 
   const [searchInput, setSearchInput] = useState(filters.q);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -89,15 +104,18 @@ export function FiltersBar({ total, hidden }: Props) {
   // Returns only the fields the preset CARES about. The applyPreset machinery
   // resets all other preset-territory fields to defaults; modifier fields
   // (search, oestat, units, dates, etc.) are never touched.
+  // showNa: true where most of the set has no score, so the default N/A filter
+  // would gut the view (prod 2026-10-23: 81 of 135 Eigen-Highlights, 992 of
+  // 1.244 Popular-Science-Pubs ohne Score).
   const getPresetSpec = useCallback(
     (key: Exclude<PresetKey, 'custom'>): Partial<FilterValues> => {
       switch (key) {
         case 'pitch':
           return { peer: 'yes', hasSumDe: true, minScore: 70, showAll: false };
         case 'mahighlights':
-          return { maHl: true, showAll: true };
+          return { maHl: true, showAll: true, showNa: true };
         case 'popsci':
-          return { popsci: 'yes' };
+          return { popsci: 'yes', showNa: true };
         case 'peer':
           return { peer: 'yes' };
         case 'wiss': {
@@ -197,12 +215,18 @@ export function FiltersBar({ total, hidden }: Props) {
       for (const f of PRESET_FIELDS) setField(patch, f, FILTER_DEFAULTS[f]);
       if (key === 'high') patch.minScore = 70;
       if (key === 'mahl') {
-        // Wie das Desktop-Preset „Eigen-Highlights": ohne showAll wären viele
-        // kuratierte Highlights (nicht default-eligible) unsichtbar.
+        // Wie das Desktop-Preset „Eigen-Highlights": ohne showAll und showNa
+        // wären viele kuratierte Highlights (nicht default-eligible oder ohne
+        // Score) unsichtbar.
         patch.maHl = true;
         patch.showAll = true;
+        patch.showNa = true;
       }
-      if (key === 'pm') patch.pressReleased = 'yes';
+      if (key === 'pm') {
+        // Die PM-Liste soll vollständig sein, auch wo noch kein Score existiert.
+        patch.pressReleased = 'yes';
+        patch.showNa = true;
+      }
       if (key === 'flagged') patch.flagged = true;
       setFilters(patch);
     },
@@ -258,6 +282,17 @@ export function FiltersBar({ total, hidden }: Props) {
             ))}
           </div>
         </div>
+        {/* Der N/A-Filter wirkt auch mobil per Default, also muss er auch hier
+            sichtbar sein. Volle Breite, weil der Text auf schmalen Screens
+            umbricht und eine zweizeilige Pillenform schief aussähe. */}
+        {pillVisible && (
+          <UnscoredFilterPill
+            hiding={hidingUnscored}
+            hiddenCount={hiddenUnscored}
+            onChange={setShowNa}
+            className="flex w-full rounded-[10px] py-1.5"
+          />
+        )}
       </div>
 
       {/* ── Desktop-Layer (≥ md) — unverändert ── */}
@@ -305,7 +340,20 @@ export function FiltersBar({ total, hidden }: Props) {
         </div>
 
       <div className="hidden md:block">
-        <ActiveFilters filters={filters} setFilters={setFilters} lookups={lookups} />
+        <ActiveFilters
+          filters={filters}
+          setFilters={setFilters}
+          lookups={lookups}
+          leading={
+            pillVisible ? (
+              <UnscoredFilterPill
+                hiding={hidingUnscored}
+                hiddenCount={hiddenUnscored}
+                onChange={setShowNa}
+              />
+            ) : null
+          }
+        />
       </div>
     </div>
   );

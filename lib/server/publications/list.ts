@@ -154,6 +154,9 @@ export interface PublicationsListResult {
   publications: PublicationListItem[];
   total: number;
   total_hidden: number;
+  /** Rows the `has_score` filter hides: N/A rows that match every other
+   *  filter. 0 when the filter is off. */
+  total_hidden_unscored: number;
   page: number;
   pageSize: number;
 }
@@ -167,6 +170,8 @@ export interface PublicationsListResult {
  *   added in WebDB are picked up automatically.
  * - `total_hidden` counts pubs that would match all filters EXCEPT the
  *   eligibility filter (UI shows "X hidden by eligibility").
+ * - `total_hidden_unscored` does the same for `has_score`: the N/A rows the
+ *   list hides by default (UI shows "X ohne Score ausgeblendet").
  * - press-released, oestat6, highlight, flagged, orgunit filters all pass
  *   through a pre-fetch → ID-set → `inArray` pipeline. This unifies the
  *   "filter parent by related rows" pattern (instead of mixing PostgREST's
@@ -212,6 +217,9 @@ export async function listPublications(
   const hasSummaryEn = searchParams.get('has_summary_en') === 'true';
   const hasPdf = searchParams.get('has_pdf') === 'true';
   const hasDoi = searchParams.get('has_doi') === 'true';
+  // Nur Zeilen mit Story Score, also ohne die N/A-Zeilen der Liste. Der
+  // Client setzt das per Default (hidesUnscored in app/publications/_filters.ts).
+  const hasScore = searchParams.get('has_score') === 'true';
   const mahighlight = searchParams.get('mahighlight') === 'true';
   const highlight = searchParams.get('highlight') === 'true';
   const flagged = searchParams.get('flagged') === 'true';
@@ -267,7 +275,9 @@ export async function listPublications(
       : null;
 
   // ---------- build WHERE clauses ----------
-  function buildWhere(applyEligibility: boolean): SQL | undefined {
+  // Both flags exist so the hidden counts can drop exactly one filter each:
+  // eligibility for `total_hidden`, the score filter for `total_hidden_unscored`.
+  function buildWhere(applyEligibility: boolean, applyHasScore = true): SQL | undefined {
     const clauses: SQL[] = [];
 
     if (!includeArchived) clauses.push(eq(publications.archived, false));
@@ -348,6 +358,7 @@ export async function listPublications(
     if (hasSummaryEn) clauses.push(isNotNull(publications.summaryEn));
     if (hasPdf) clauses.push(isNotNull(publications.downloadLink));
     if (hasDoi) clauses.push(isNotNull(publications.doi));
+    if (applyHasScore && hasScore) clauses.push(isNotNull(publications.pressScore));
 
     if (pressReleasedIdSet) {
       const arr = [...pressReleasedIdSet];
@@ -399,6 +410,7 @@ export async function listPublications(
 
   const whereMain = buildWhere(true);
   const whereNoElig = defaultEligible ? buildWhere(false) : undefined;
+  const whereAnyScore = hasScore ? buildWhere(true, false) : undefined;
 
   // ---------- main + count queries (parallel) ----------
   // NULLS LAST: pubs ohne Wert (z.B. published_at NULL bei ~600 Pubs aus
@@ -418,7 +430,7 @@ export async function listPublications(
       ? inArray(orgunitPublicationsTable.orgunitId, orgunitFilterIds)
       : undefined;
 
-  const [mainRows, total, totalNoElig] = await Promise.all([
+  const [mainRows, total, totalNoElig, totalAnyScore] = await Promise.all([
     publicationsRepo.findManyForList({
       where: whereMain,
       orderBy: orderClause,
@@ -429,6 +441,9 @@ export async function listPublications(
     publicationsRepo.countWhere(whereMain),
     defaultEligible
       ? publicationsRepo.countWhere(whereNoElig)
+      : Promise.resolve(0),
+    hasScore
+      ? publicationsRepo.countWhere(whereAnyScore)
       : Promise.resolve(0),
   ]);
 
@@ -479,11 +494,13 @@ export async function listPublications(
   });
 
   const totalHidden = defaultEligible ? Math.max(0, totalNoElig - total) : 0;
+  const totalHiddenUnscored = hasScore ? Math.max(0, totalAnyScore - total) : 0;
 
   return {
     publications: flattened,
     total,
     total_hidden: totalHidden,
+    total_hidden_unscored: totalHiddenUnscored,
     page,
     pageSize,
   };

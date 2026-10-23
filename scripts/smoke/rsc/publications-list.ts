@@ -6,8 +6,9 @@
  * Read-only. Exercises the wrapper call shapes the RSC page makes (built as
  * raw URLSearchParams to keep this script in the lib-only boundary —
  * `buildApiParams` is covered by `app/publications/_filters.test.ts`):
- *   1. defaults (page1 + default_eligible)
+ *   1. defaults (page1 + default_eligible + has_score)
  *   2. showAll (no default_eligible)            — eligibility invariant holds
+ *   2b. showNa (no has_score)                   — N/A invariant holds
  *   3. search — substring                       — subset of universe
  *   4. search — impossible                      — total = 0
  *   5. peer_reviewed=true                       — all rows peer_reviewed=true
@@ -30,7 +31,8 @@ function assert(cond: unknown, msg: string): asserts cond {
 
 // Build URLSearchParams the way `app/publications/_filters.ts::buildApiParams`
 // would for the corresponding FilterValues. The base mirrors `FILTER_DEFAULTS`
-// fed through buildApiParams — page/pageSize/sort/order + default_eligible.
+// fed through buildApiParams — page/pageSize/sort/order + default_eligible +
+// has_score (the list hides N/A rows by default, see hidesUnscored).
 function params(overrides: Record<string, string> = {}): URLSearchParams {
   return new URLSearchParams({
     page: '1',
@@ -38,6 +40,7 @@ function params(overrides: Record<string, string> = {}): URLSearchParams {
     sort: 'published_at',
     order: 'desc',
     default_eligible: 'true',
+    has_score: 'true',
     ...overrides,
   });
 }
@@ -61,13 +64,19 @@ async function main() {
     `  ok: defaults total=${defaults.total} hidden=${defaults.total_hidden} rows=${defaults.publications.length}`,
   );
 
+  for (const pub of defaults.publications) {
+    assert(pub.press_score !== null, `default row ${pub.id} has no press_score (N/A filter not applied?)`);
+  }
+
   // 2. showAll → drop default_eligible → eligibility invariant must hold:
   //    defaults.total + defaults.total_hidden === all.total
+  //    (has_score stays: buildApiParams keeps it for showAll)
   const allParams = new URLSearchParams({
     page: '1',
     pageSize: '20',
     sort: 'published_at',
     order: 'desc',
+    has_score: 'true',
   });
   const all = await listPublications(allParams);
   assert(all.total_hidden === 0, `showAll expected total_hidden=0, got ${all.total_hidden}`);
@@ -80,6 +89,23 @@ async function main() {
     `eligibility invariant broken: ${defaults.total} + ${defaults.total_hidden} !== ${all.total}`,
   );
   console.log(`  ok: showAll total=${all.total} (eligibility invariant holds)`);
+
+  // 2b. showNa → drop has_score → N/A invariant must hold:
+  //     defaults.total + defaults.total_hidden_unscored === withNa.total
+  const withNaParams = params();
+  withNaParams.delete('has_score');
+  const withNa = await listPublications(withNaParams);
+  assert(
+    withNa.total_hidden_unscored === 0,
+    `showNa expected total_hidden_unscored=0, got ${withNa.total_hidden_unscored}`,
+  );
+  assert(
+    defaults.total + defaults.total_hidden_unscored === withNa.total,
+    `N/A invariant broken: ${defaults.total} + ${defaults.total_hidden_unscored} !== ${withNa.total}`,
+  );
+  console.log(
+    `  ok: showNa total=${withNa.total} (N/A invariant holds, ${defaults.total_hidden_unscored} hidden by default)`,
+  );
 
   // 3. Search returns a subset (count is data-dependent)
   const search = await listPublications(params({ search: 'physics' }));

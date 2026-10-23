@@ -14,6 +14,12 @@ export interface ChangelogEntry {
 // auf das heutige Datum heben, sonst zeigt der Unread-Dot keinen neuen Stand an.
 export const changelogEntries: ChangelogEntry[] = [
   {
+    category: 'verbesserung',
+    title: 'Publikationsliste zeigt zuerst Bewertetes',
+    body: 'Die Publikationsliste blendet Einträge ohne Story Score jetzt standardmäßig aus. Das betrifft rund drei Viertel der Liste, meist Publikationen ohne Text, aus dem sich ein Score ableiten ließe. Ein blauer Hinweis über der Liste zeigt, dass dieser Filter wirkt und wie viele Einträge er verbirgt; „Einblenden" holt sie mit einem Klick zurück. Wo ein Filter gezielt Unbewertetes sucht, etwa über die Bewertungs-Kachel, bleiben sie sichtbar, ebenso bei den Eigen-Highlights, bei Popular Science und beim mobilen Chip „Mit PM". Findet eine Suche nur Einträge ohne Score, sagt die leere Liste das und bietet sie an.',
+    href: '/help/scores/score-fehlt#ausgeblendet',
+  },
+  {
     category: 'hintergrund',
     title: 'Social Media aktualisieren funktioniert wieder',
     body: 'Der Knopf „Social Media aktualisieren" brach eine Woche lang nach rund zehn Sekunden mit einem Verbindungsfehler ab und lieferte null Beiträge. Ursache war weder die App noch der Instagram-Dienst, sondern die Netzverbindung unseres Servers zum Anbieter: seit einem ungeplanten Neustart kamen große Datenpakete auf diesem einen Weg nicht mehr durch, und der Server erfuhr davon nichts. Die Verbindung wird jetzt auf eine passende Paketgröße begrenzt, damit sie wieder trägt. Beim Anbieter ist die eigentliche Ursache gemeldet.',
@@ -219,7 +225,7 @@ export const changelogClosing =
  * Bump this whenever a new entry is added on top so that returning users
  * see the brand-colored dot until they open the panel.
  */
-export const changelogLastUpdated = '2026-08-26T08:00:00.000Z';
+export const changelogLastUpdated = '2026-10-23T11:30:00.000Z';
 
 /** Auto-derived from changelogLastUpdated: single source of truth for the
  *  panel's soft date anchor ("Stand Mai 2026"). */

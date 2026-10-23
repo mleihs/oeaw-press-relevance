@@ -94,6 +94,7 @@ export const EXPL_KB_MAP: Partial<Record<keyof typeof EXPL, KbAnchor>> = {
   filter_deceased:           { path: '/help/filter/filter-deceased' },
   filter_publikationstyp:    { path: '/help/filter/filter-publikationstyp' },
   pub_filter_eligibility:    { path: '/help/filter/filter-publikationstyp', hash: 'press-eligibility' },
+  pub_filter_unscored:       { path: '/help/scores/score-fehlt', hash: 'ausgeblendet' },
   filter_institut:           { path: '/help/filter/filter-institut' },
   filter_oestat6:            { path: '/help/filter/filter-oestat6' },
   filter_min_score:          { path: '/help/filter/filter-min-score' },

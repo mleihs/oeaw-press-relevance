@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { X } from '@/lib/icons';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,9 @@ type Props = {
   filters: FilterValues;
   setFilters: (patch: Patch) => void;
   lookups: Lookups | null;
+  /** Rendered before the chips and keeps the row alive without them: the
+   *  status pill of the default N/A filter (UnscoredFilterPill). */
+  leading?: ReactNode;
 };
 
 function Chip({ label, onRemove }: { label: string; onRemove: () => void }) {
@@ -42,7 +46,7 @@ function fmtDate(iso: string) {
   }
 }
 
-export function ActiveFilters({ filters, setFilters, lookups }: Props) {
+export function ActiveFilters({ filters, setFilters, lookups, leading }: Props) {
   const chips: Array<{ key: string; label: string; remove: () => void }> = [];
 
   if (filters.q) {
@@ -245,29 +249,35 @@ export function ActiveFilters({ filters, setFilters, lookups }: Props) {
     });
   }
 
-  if (chips.length === 0) return null;
+  if (chips.length === 0 && !leading) return null;
 
+  // showAll and showNa are view modes with their own controls, not chips, so
+  // the reset keeps them like sort order.
   const reset = () =>
     setFilters({
       ...FILTER_DEFAULTS,
       sort: filters.sort,
       order: filters.order,
       showAll: filters.showAll,
+      showNa: filters.showNa,
     });
 
   return (
     <div className="flex flex-wrap items-center gap-1.5">
+      {leading}
       {chips.map((c) => (
         <Chip key={c.key} label={c.label} onRemove={c.remove} />
       ))}
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={reset}
-        className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
-      >
-        Alle Filter zurücksetzen
-      </Button>
+      {chips.length > 0 && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={reset}
+          className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+        >
+          Alle Filter zurücksetzen
+        </Button>
+      )}
     </div>
   );
 }
