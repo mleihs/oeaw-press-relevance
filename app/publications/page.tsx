@@ -2,6 +2,7 @@ import {
   buildApiParams,
   buildUrl,
   hasAnyActiveFilter,
+  hidesUnscored,
   loadFilters,
 } from './_filters';
 import {
@@ -39,6 +40,16 @@ export default async function PublicationsPage({ searchParams }: PageProps) {
       ? buildUrl(filters, { page: filters.page + 1 })
       : '';
 
+  // Was die zwei Standardfilter gerade ausblenden. Beide Zahlen zählen nur
+  // Zeilen, die alle übrigen Filter erfüllen, also genau das, was der
+  // jeweilige Schalter zurückholen würde.
+  const hiddenUnscored = hidesUnscored(filters) ? data.total_hidden_unscored : 0;
+  const hiddenByType = filters.showAll ? 0 : data.total_hidden;
+  const hiddenParts = [
+    hiddenUnscored > 0 && `${hiddenUnscored.toLocaleString('de-AT')} ohne Score`,
+    hiddenByType > 0 && `${hiddenByType.toLocaleString('de-AT')} nach Typ`,
+  ].filter(Boolean);
+
   return (
     <>
     {/* Blauer App-Header (M2) — bewusst außerhalb des space-y-Containers,
@@ -64,9 +75,9 @@ export default async function PublicationsPage({ searchParams }: PageProps) {
             aria-live="polite"
           >
             {data.total.toLocaleString('de-AT')} Publikationen
-            {!filters.showAll && data.total_hidden > 0 && (
+            {hiddenParts.length > 0 && (
               <span className="ml-1.5 text-ink-muted">
-                ({data.total_hidden.toLocaleString('de-AT')} ausgeblendet)
+                (ausgeblendet: {hiddenParts.join(', ')})
               </span>
             )}
           </p>
@@ -80,7 +91,11 @@ export default async function PublicationsPage({ searchParams }: PageProps) {
         </div>
       </div>
 
-      <FiltersBar total={data.total} hidden={data.total_hidden} />
+      <FiltersBar
+        total={data.total}
+        hidden={data.total_hidden}
+        hiddenUnscored={hiddenUnscored}
+      />
 
       <PublicationList
         publications={data.publications}
@@ -92,6 +107,8 @@ export default async function PublicationsPage({ searchParams }: PageProps) {
         prevHref={prevHref}
         nextHref={nextHref}
         hasFilters={hasFilters}
+        hiddenUnscored={hiddenUnscored}
+        showUnscoredHref={buildUrl(filters, { showNa: true, page: 1 })}
       />
     </div>
     </>

@@ -36,7 +36,7 @@ import {
 } from '@/components/ui/virtualized-multi-select';
 import { cn } from '@/lib/shared/utils';
 
-import type { FilterValues, TriState } from '../_filters';
+import { hidesUnscored, type FilterValues, type TriState } from '../_filters';
 import { SUPER_DOMAIN_LABELS, SUPER_DOMAINS } from '../_constants';
 import type { Lookups } from './use-lookups';
 
@@ -92,6 +92,8 @@ export function FilterSheet({ filters, setFilters, lookups }: Props) {
           <Separator />
           <ScoreFacet filters={filters} setFilters={setFilters} />
           <Separator />
+          <UnscoredFacet filters={filters} setFilters={setFilters} />
+          <Separator />
           <PipelineStatusFacet filters={filters} setFilters={setFilters} />
         </div>
       </SheetContent>
@@ -114,6 +116,7 @@ function countDimensionalFilters(f: FilterValues): number {
   if (f.pressReleased !== 'any') n++;
   if (f.from || f.to) n++;
   if (f.minScore > 0) n++;
+  if (f.showNa) n++;
   if (f.enrich || f.analysis) n++;
   return n;
 }
@@ -632,6 +635,47 @@ function ScoreFacet({
           {filters.minScore}
         </span>
       </div>
+    </FacetSection>
+  );
+}
+
+function UnscoredFacet({
+  filters,
+  setFilters,
+}: {
+  filters: FilterValues;
+  setFilters: (p: Patch) => void;
+}) {
+  // A filter that asks for unscored rows (Bewertungs-Scope, Analyse-Status)
+  // shows them on its own, and a minimum score excludes them regardless.
+  // Either way the switch would change nothing, so it shows the effective
+  // state and stays disabled.
+  const forcedOn = !filters.showNa && !hidesUnscored(filters);
+  const moot = filters.minScore > 0;
+  return (
+    <FacetSection
+      title="Publikationen ohne Score"
+      explId="pub_filter_unscored"
+      hint="Standardmäßig ausgeblendet. Die Presets Eigen-Highlights und Popular Science blenden sie ein."
+    >
+      <div className="flex items-center justify-between gap-3">
+        <label htmlFor="filter-show-na" className="text-xs text-foreground">
+          Ohne Score (N/A) einblenden
+        </label>
+        <Switch
+          id="filter-show-na"
+          checked={filters.showNa || forcedOn}
+          disabled={forcedOn || moot}
+          onCheckedChange={(showNa) => setFilters({ showNa, page: 1 })}
+        />
+      </div>
+      {(forcedOn || moot) && (
+        <p className="text-xs text-muted-foreground">
+          {forcedOn
+            ? 'Eingeblendet, weil ein aktiver Filter gezielt unbewertete Publikationen sucht.'
+            : 'Ohne Wirkung, solange ein Mindest-Score gesetzt ist.'}
+        </p>
+      )}
     </FacetSection>
   );
 }

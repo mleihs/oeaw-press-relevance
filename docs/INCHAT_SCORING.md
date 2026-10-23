@@ -408,7 +408,26 @@ ein CLI-Lauf über OpenRouter für 25–40 USD.
   am Block ausgerichtet), und einem ÖAI-Kapitel zur Klosterwirtschaft am Berg
   Nebo (0.343). `857a7814` bleibt aus dem Grund vom 07.10. offen. Pools danach
   1/44, die Events waren nicht Teil dieses Laufs. Altbestand 4.708, im Lauf
-  unverändert (07.10.: 4.707).
+  unverändert (07.10.: 4.707). Am selben Tag kamen 37 Publikationen ohne DOI
+  hinzu, deren Inhalt die Pressezusammenfassung des Instituts ist; `enrich-free`
+  hatte sie aus dem Dauer-`pending` geholt (Schritt 0.5). 26 lagen im
+  60-Tage-Fenster, 11 waren nur über `candidates --ids` erreichbar. Bewertet in
+  zwei Batches (25/12), Median 0.2665, Mittel 0.2653, Spanne 0.0625–0.5105,
+  `haiku-audit` danach 181/181. Oben die Verbuschung europäischer Berggipfel
+  (IGF, 0.5105, 576 Dauerflächen über zwei Jahrzehnte), das Wiener Salonblatt
+  und das Aufkommen des Lächelns (ACDH, 0.4325), der Forschungsbericht zu
+  Jugendlichen am Reumannplatz (ISR, 0.4195) und zwei Standard-Blogs des IMAFO
+  (0.413 und 0.4115). Unten zwei GitHub-Skripte (0.0625 und 0.0895), ein
+  Nicäa-Aufsatz, von dem nur die Zitation vorlag (0.0955), und ein vierseitiges
+  Wasserzeichen-Gutachten für eine Tagung (0.112). Die Vermittlungsformate des
+  IMAFO (Blogs, zwei Podcasts, ein Magazinartikel) liegen bewusst bei 0.33 bis
+  0.42 und damit unter den Werten der 4.7-Kohorte um 0.6, weil die Neuheit nur
+  aus dem Inhalt kommt. Das RICAM-Papier zur photoakustischen Tomografie
+  übernahm die Dimensionen seines schon bewerteten Workingpaper-Zwillings
+  `4cd5c320` (0.219, Kohorte 4.7), die zwei Anlagen der Documenta Byzantina
+  Imperialia sind identisch bewertet (0.132). Tag gesamt 63 Publikationen,
+  Median 0.2735, Mittel 0.2856. Pools danach 1/19 (die Events liefen getrennt),
+  Altbestand wieder 4.708 (zwischenzeitlich 4.719 mit den 11).
 - **2026-10-07** — erster Lauf mit Opus 5.5, Modell-Tags dafür gehoben auf
   `anthropic/claude-opus-5.5-session` bzw. `anthropic/claude-opus-5.5 (in-chat)`.
   118 Publikationen in fünf Batches (25/25/25/25/18), Median 0.23, Spanne

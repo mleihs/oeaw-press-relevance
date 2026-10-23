@@ -30,7 +30,7 @@ export type PresetKey = (typeof PRESET_KEYS)[number];
  * modifiers stack on top of the active view.
  */
 export const PRESET_FIELDS = [
-  'peer', 'popsci', 'hasSumDe', 'minScore', 'showAll', 'maHl', 'types',
+  'peer', 'popsci', 'hasSumDe', 'minScore', 'showAll', 'showNa', 'maHl', 'types',
 ] as const satisfies ReadonlyArray<keyof typeof filterParsers>;
 
 export const SORT_ORDERS = ['asc', 'desc'] as const;
@@ -73,6 +73,9 @@ export const filterParsers = {
   scoring: parseAsStringLiteral(SCORING_SCOPES).withDefault(''),
   preset: parseAsStringLiteral(PRESET_KEYS).withDefault('custom'),
   showAll: parseAsBoolean.withDefault(false),
+  // N/A-Zeilen (ohne Story Score) einblenden. Default aus: die Liste zeigt
+  // nur Bewertetes, siehe hidesUnscored() für die Ausnahmen.
+  showNa: parseAsBoolean.withDefault(false),
   page: parseAsInteger.withDefault(1),
   sort: parseAsString.withDefault('published_at'),
   order: parseAsStringLiteral(SORT_ORDERS).withDefault('desc'),
@@ -109,6 +112,7 @@ export const FILTER_DEFAULTS: FilterValues = {
   scoring: '',
   preset: 'custom',
   showAll: false,
+  showNa: false,
   page: 1,
   sort: 'published_at',
   order: 'desc',
@@ -137,6 +141,24 @@ export function buildUrl(
   patch: Partial<FilterValues> = {},
 ): string {
   return serializeRaw({ ...filters, ...patch });
+}
+
+// Analysis states that never carry a score; a filter on them targets the N/A
+// rows themselves.
+const UNSCORED_ANALYSIS = new Set(['pending', 'failed']);
+
+/**
+ * Whether the list hides N/A rows (no Story Score). On by default, off once the
+ * user opts in via `showNa`. Two filters switch it off implicitly because they
+ * ask for exactly those rows: the scoring scope (the Bewertungs-Kachel links
+ * to `?scoring=fresh|backlog`) and an analysis status that has no score yet.
+ * Hiding N/A there would empty the list. Single source for the API param, the
+ * page header and the filter pill.
+ */
+export function hidesUnscored(filters: FilterValues): boolean {
+  if (filters.showNa) return false;
+  if (filters.scoring) return false;
+  return !UNSCORED_ANALYSIS.has(filters.analysis);
 }
 
 // Translate FilterValues (UI/URL shape) → listPublications' API shape. The
@@ -183,6 +205,7 @@ export function buildApiParams(filters: FilterValues): URLSearchParams {
   if (filters.pressReleased === 'yes') p.set('press_released', 'true');
   if (filters.pressReleased === 'no') p.set('press_released', 'false');
   if (!filters.showAll) p.set('default_eligible', 'true');
+  if (hidesUnscored(filters)) p.set('has_score', 'true');
   return p;
 }
 

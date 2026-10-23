@@ -20,7 +20,11 @@ import {
 function publishedAfter(period: DashboardPeriod): string | null {
   if (period === 'all') return null;
   const d = new Date();
-  if (period === 'week') d.setDate(d.getDate() - 7);
+  // The 'week' bucket covers the trailing two weeks. Publications usually
+  // reach the WebDB, and get scored, days to weeks after their publication
+  // date, so a single week was regularly empty (prod on 2026-10-23: 0 analyzed
+  // pubs published in the last 7 days, 3 in the last 14).
+  if (period === 'week') d.setDate(d.getDate() - 14);
   // The 'month' bucket is the default dashboard period and intentionally
   // covers the trailing two months — the analyzed pool in a single calendar
   // month is typically too thin (single digits) to fill the Top-N panel.

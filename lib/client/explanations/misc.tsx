@@ -373,7 +373,7 @@ export const MISC_EXPL = {
         Filtert die Top-Publikationen-Liste (Default 20 Pubs, per
         „Mehr laden" in 20er-Schritten erweiterbar bis 200), die
         Score-Verteilung und das Dimensions-Profil auf ein Zeitfenster:
-        Woche, 2 Monate, Jahr oder Gesamt. Default ist 2 Monate, wide genug,
+        2 Wochen, 2 Monate, Jahr oder Gesamt. Default ist 2 Monate, wide genug,
         damit die Top-N-Liste verlässlich gefüllt ist. Der gewählte Tab wird
         in der URL gespeichert, Bookmarks und geteilte Links behalten die
         Ansicht.

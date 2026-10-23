@@ -357,6 +357,31 @@ export const PUBLICATIONS_EXPL = {
       </Para>
     ),
   },
+  pub_filter_unscored: {
+    title: 'Publikationen ohne Score',
+    body: (
+      <>
+        <Para>
+          Die Liste zeigt standardmäßig nur Publikationen mit Story Score. Einträge mit
+          „N/A" sind ausgeblendet; die Zahl daneben nennt, wie viele es bei den übrigen
+          Filtern wären. „Einblenden" holt sie zurück.
+        </Para>
+        <Para>
+          Meist fehlt solchen Einträgen der Text, aus dem sich ein Score ableiten ließe:
+          kein DOI, keine Zusammenfassung in der WebDB, kein Abstract. ITA-Publikationen
+          werden bewusst nicht bewertet.
+        </Para>
+      </>
+    ),
+    note: (
+      <Para>
+        Wo ein Filter gezielt Unbewertetes sucht (die Links der Bewertungs-Kachel, der
+        Analyse-Status „Ausstehend"), sind die Einträge ohne Score automatisch sichtbar.
+        Die Presets Eigen-Highlights und Popular Science und der mobile Chip „Mit PM"
+        blenden sie ebenfalls ein, weil dort viele Einträge noch keinen Score haben.
+      </Para>
+    ),
+  },
 
   // ─── Triage-Entscheidungen ───────────────────────────────────────────────
   decision_pitch: {

@@ -62,6 +62,24 @@ interface PublicationListProps {
   prevHref: string;
   nextHref: string;
   hasFilters: boolean;
+  /** Matches hidden by the default N/A filter; the empty state offers them. */
+  hiddenUnscored: number;
+  showUnscoredHref: string;
+}
+
+/** Empty-state follow-up: a search that only hits N/A rows must not read as
+ *  „gibt es nicht". Names the hidden matches and links to them. */
+function HiddenUnscoredHint({ count, href }: { count: number; href: string }) {
+  if (count === 0) return null;
+  return (
+    <div className="mt-1.5 text-xs text-ink-muted">
+      {count.toLocaleString('de-AT')}{' '}
+      {count === 1 ? 'Treffer ohne Score ist' : 'Treffer ohne Score sind'} ausgeblendet.{' '}
+      <Link href={href} className="font-semibold text-brand hover:underline">
+        Einblenden
+      </Link>
+    </div>
+  );
 }
 
 /**
@@ -84,6 +102,8 @@ export function PublicationList({
   prevHref,
   nextHref,
   hasFilters,
+  hiddenUnscored,
+  showUnscoredHref,
 }: PublicationListProps) {
   const emptyLabel = hasFilters
     ? 'Keine Publikationen für diese Filter'
@@ -101,6 +121,7 @@ export function PublicationList({
         <div className="rounded-[14px] border-[1.5px] border-dashed border-line-strong px-4 py-[34px] text-center">
           <Search aria-hidden className="mx-auto h-7 w-7 text-line-strong" />
           <div className="mt-2.5 text-sm text-ink-subtle">{emptyLabel}</div>
+          <HiddenUnscoredHint count={hiddenUnscored} href={showUnscoredHref} />
         </div>
       ) : (
         publications.map((pub) => {
@@ -215,6 +236,7 @@ export function PublicationList({
         <div className="px-4 py-11 text-center">
           <Search aria-hidden className="mx-auto h-7 w-7 text-line-strong" />
           <div className="mt-2.5 text-sm text-ink-subtle">{emptyLabel}</div>
+          <HiddenUnscoredHint count={hiddenUnscored} href={showUnscoredHref} />
         </div>
       ) : (
         publications.map((pub) => {

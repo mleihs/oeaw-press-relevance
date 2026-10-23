@@ -42,8 +42,8 @@ describe('buildPeriodHint', () => {
       buildPeriodHint({ period: 'week', currentTotal: 0, counts: COUNTS, capped: false }),
     ).toEqual({
       buttonLabel: 'Nichts zu laden',
-      title: 'Keine Publikationen im Zeitraum „Woche"',
-      lead: 'Im Zeitraum „Woche" gibt es keine analysierten Publikationen. Ein größerer Zeitraum zeigt mehr:',
+      title: 'Keine Publikationen im Zeitraum „2 Wochen"',
+      lead: 'Im Zeitraum „2 Wochen" gibt es keine analysierten Publikationen. Ein größerer Zeitraum zeigt mehr:',
       ladder: [
         `„2 Monate": ${f(31)} (+${f(31)} mehr)`,
         `„Jahr": ${f(879)} (+${f(879)} mehr)`,

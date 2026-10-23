@@ -505,8 +505,16 @@ are *views* that reset preset-territory fields on switch; modifier fields
 overlays.
 
 Defined by the `PRESET_FIELDS` constant in `_filters.ts` — currently
-`['peer', 'popsci', 'hasSumDe', 'minScore', 'showAll', 'maHl', 'types']`.
+`['peer', 'popsci', 'hasSumDe', 'minScore', 'showAll', 'showNa', 'maHl', 'types']`.
 Anything outside is a modifier.
+
+Two of these are default filters with their own controls rather than chips:
+`showAll` (ineligible publication types) and `showNa` (rows without Story
+Score, hidden by default since 2026-10-23). `hidesUnscored()` in `_filters.ts`
+decides whether the N/A filter applies: it steps aside for filters that ask
+for unscored rows (`scoring`, `analysis=pending|failed`). The list reports
+what each default hides (`total_hidden`, `total_hidden_unscored`), and the
+`UnscoredFilterPill` keeps the N/A filter visible while it works.
 
 `presetModified` derived state shows a "Preset modifiziert · zurücksetzen"-pill
 when the user has hand-tweaked a preset-territory field. Empty-state has
