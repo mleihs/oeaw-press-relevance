@@ -14,7 +14,7 @@
 // gerendert; das Voll-Breite-Layout der Board-Kachel greift dann automatisch.
 export const DASHBOARD_SOCIAL_ENABLED = true;
 
-// Breadth order is load-bearing: week (7d) ⊂ month (2 Mon) ⊂ year (1 J) ⊂
+// Breadth order is load-bearing: week (14 T) ⊂ month (2 Mon) ⊂ year (1 J) ⊂
 // all. `buildPeriodHint` slices this array to find the periods *wider* than
 // the current one, so the order must stay smallest-to-largest.
 export const DASHBOARD_PERIODS = ['week', 'month', 'year', 'all'] as const;
@@ -22,8 +22,11 @@ export type DashboardPeriod = (typeof DASHBOARD_PERIODS)[number];
 
 // Short German tab labels. Single source for the period <nav> tabs and the
 // „Mehr laden" cross-period hint, so a relabel can't drift between the two.
+// The keys stay URL-stable (`?period=week`), the labels name the real window:
+// 'week' spans two weeks just as 'month' spans two months (see publishedAfter
+// in lib/server/dashboard/fetch.ts).
 export const PERIOD_LABELS: Record<DashboardPeriod, string> = {
-  week: 'Woche',
+  week: '2 Wochen',
   month: '2 Monate',
   year: 'Jahr',
   all: 'Gesamt',
