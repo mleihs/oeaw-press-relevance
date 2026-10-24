@@ -2,6 +2,7 @@ import 'server-only';
 import { NextRequest } from 'next/server';
 import { DEFAULT_LLM_MODEL, LLM_MODELS } from '@/lib/shared/constants';
 import { log } from '@/lib/server/log';
+import { envKeyFor, providerFor } from '@/lib/server/llm-client';
 
 /**
  * OpenRouter API key. Env takes priority, but a per-request header fallback
@@ -14,6 +15,15 @@ export function getOpenRouterKey(req: NextRequest): string {
     throw new Error('OpenRouter API key not configured');
   }
   return key;
+}
+
+/**
+ * Key für einen Aufruf mit `model`, passend zum Anbieter, den providerFor
+ * wählt: ANTHROPIC_API_KEY für `anthropic/*` (gesetzt, sonst wäre der
+ * Anbieter OpenRouter), sonst der OpenRouter-Key samt Header-Fallback.
+ */
+export function getLLMKey(req: NextRequest, model: string): string {
+  return providerFor(model) === 'anthropic' ? (envKeyFor(model) as string) : getOpenRouterKey(req);
 }
 
 /**
@@ -42,7 +52,7 @@ export function getRequestedModel(req: NextRequest): string | null {
  * Model selection. Header wins so users can override per-request from the
  * settings panel (nur Allowlist-Werte, s. getRequestedModel); falls back to
  * LLM_DEFAULT_MODEL env, then DEFAULT_LLM_MODEL
- * (Opus 4.8 — das Modell, mit dem das bestehende Korpus bewertet wurde;
+ * (Opus 5.5 — dasselbe Modell wie die In-Chat-Bewertung;
  * Kalibrierungs-Begründung in lib/shared/constants.ts).
  */
 export function getLLMModel(req: NextRequest): string {

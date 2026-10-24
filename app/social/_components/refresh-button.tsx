@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { getApiHeaders } from '@/lib/client/stores/settings-store';
 import { consumeSSE } from '@/lib/client/sse';
 import { ModelPicker } from '@/components/model-picker';
+import { DEFAULT_LLM_MODEL } from '@/lib/shared/constants';
 import {
   ProgressDialogShell,
   PhaseTransition,
@@ -41,7 +42,7 @@ interface Counts {
 }
 
 const ZERO: Counts = { fetched: 0, added: 0, analyzed: 0, total: 0, processed: 0, themes: 0, tokens: 0, cost: 0 };
-const DEFAULT_MODEL = 'deepseek/deepseek-chat';
+const DEFAULT_MODEL = DEFAULT_LLM_MODEL;
 
 const STEPS: ProgressStepDef[] = [
   { key: 'fetch', label: 'Posts laden', icon: Download },

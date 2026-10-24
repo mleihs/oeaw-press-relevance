@@ -1,5 +1,5 @@
 // Generic LLM batch runner — the shared loop behind every "analyze N rows via
-// OpenRouter in batches" pipeline (publication scoring, social topic extraction,
+// an LLM in batches" pipeline (publication scoring, social topic extraction,
 // event scoring). It owns ONLY the mechanics that were duplicated verbatim:
 // batch iteration, abort handling, the per-batch try/catch with the
 // isFatalLlmError stop-to-save-credits break, token/cost accumulation, the
@@ -16,7 +16,7 @@
 // helper, because the publication + event runners emit a byte-identical
 // 'init'/'error'/'complete' gate. Social opts out (no per-run budget gate).
 
-import { checkKeyBalance, isFatalLlmError } from '@/lib/server/openrouter';
+import { getKeyBalance, isFatalLlmError } from '@/lib/server/llm-client';
 import { log } from '@/lib/server/log';
 
 export interface LLMBatchProgress<TItem> {
@@ -227,9 +227,10 @@ export interface PreflightBalanceArgs {
 }
 
 /**
- * Shared OpenRouter budget pre-flight for the publication + event analysis
- * runners. Emits the 'init' frame (masked key + live key balance); on an
- * exhausted budget (<$0.01 effective) emits a fatal 'error' plus a zero
+ * Shared budget pre-flight for the publication + event analysis runners.
+ * Emits the 'init' frame (masked key + key balance; on Anthropic the balance
+ * stays unknown, see getKeyBalance). On an exhausted budget (<$0.01
+ * effective) emits a fatal 'error' plus a zero
  * 'complete' and returns false so the caller aborts before spending anything.
  * Returns true to proceed. The error message appends whatever of the key-limit
  * / account-balance figures are known (empty parenthetical when neither is).
@@ -240,7 +241,7 @@ export async function preflightBalance(
   const { apiKey, total, model, emit } = args;
 
   const maskedKey = apiKey.length > 8 ? '...' + apiKey.slice(-8) : '***';
-  const keyInfo = await checkKeyBalance(apiKey);
+  const keyInfo = await getKeyBalance(apiKey, model);
 
   emit('init', {
     total,

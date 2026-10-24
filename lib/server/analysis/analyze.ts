@@ -1,9 +1,9 @@
 import 'server-only';
 import type { AnalysisResult, LLMResponse } from '@/lib/shared/types';
 import { SYSTEM_PROMPT, buildEvaluationPrompt, type PublicationForPrompt } from './prompts';
-import { chatCompletionJson, parseJsonContent } from '@/lib/server/openrouter';
+import { completeJson, parseJsonContent } from '@/lib/server/llm-client';
 
-// Publications relevance analysis via the shared OpenRouter client — the
+// Publications relevance analysis via the provider-neutral LLM client — the
 // publications counterpart to lib/server/events/analyze.ts. Builds the
 // evaluation prompt, asks the model for JSON, and returns parsed
 // AnalysisResults + token/cost. Used by runAnalysisBatch (batch.ts) as the
@@ -16,8 +16,8 @@ export async function analyzePublications(
   const prompt = buildEvaluationPrompt(publications);
 
   // Real output is ~300-400 tokens per publication. Use 500/pub for headroom —
-  // the shared client's 402 back-off lowers it if the budget can't cover it.
-  const { content, tokensUsed, cost } = await chatCompletionJson({
+  // OpenRouter's 402 back-off lowers it if the budget can't cover it.
+  const { content, tokensUsed, cost } = await completeJson({
     system: SYSTEM_PROMPT,
     user: prompt,
     apiKey,

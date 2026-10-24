@@ -8,7 +8,7 @@ import {
   withApiError,
 } from '@/lib/server/http';
 import { requireUser } from '@/lib/server/auth/require';
-import { getOpenRouterKey, getRequestedModel } from '@/lib/server/llm';
+import { getLLMKey, getRequestedModel } from '@/lib/server/llm';
 import { getEnv } from '@/lib/server/env';
 import { runSocialRefresh } from '@/lib/server/social/refresh';
 import { socialRefreshPayloadSchema } from '@/lib/shared/schemas';
@@ -24,14 +24,20 @@ export const POST = withApiError(async (req: NextRequest) => {
   // /api/analysis/batch.
   await requireUser();
 
+  const env = getEnv();
+  // The refresh dialog's model picker sends x-llm-model; otherwise use the
+  // feature default (SOCIAL_LLM_MODEL). getRequestedModel validiert den
+  // Header gegen die kuratierte Modell-Allowlist (lib/server/llm.ts). Das
+  // Modell steht vor dem Key fest: `anthropic/*` geht direkt an Anthropic.
+  const model = getRequestedModel(req) ?? env.SOCIAL_LLM_MODEL;
+
   let apiKey: string;
   try {
-    apiKey = getOpenRouterKey(req);
+    apiKey = getLLMKey(req, model);
   } catch (err) {
     return errorToApiResponse(err, 400, 'Configuration error');
   }
 
-  const env = getEnv();
   if (!env.APIFY_TOKEN) {
     return apiError(
       'APIFY_TOKEN ist nicht gesetzt. Der Social-Media-Refresh ist deaktiviert. Bitte die Variable in den Server-Env-Variablen konfigurieren.',
@@ -40,10 +46,6 @@ export const POST = withApiError(async (req: NextRequest) => {
   }
 
   const { force } = await validateBody(req, socialRefreshPayloadSchema);
-  // The refresh dialog's model picker sends x-llm-model; otherwise use the
-  // feature default (SOCIAL_LLM_MODEL). getRequestedModel validiert den
-  // Header gegen die kuratierte Modell-Allowlist (lib/server/llm.ts).
-  const model = getRequestedModel(req) ?? env.SOCIAL_LLM_MODEL;
 
   const { stream, send, close } = createSSEStream();
 

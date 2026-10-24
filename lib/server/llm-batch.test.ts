@@ -4,18 +4,18 @@ import {
   preflightBalance,
   type RunLLMBatchOptions,
 } from './llm-batch';
-import { checkKeyBalance } from '@/lib/server/openrouter';
+import { getKeyBalance } from '@/lib/server/llm-client';
 
 vi.mock('@/lib/server/log', () => ({ log: { error: vi.fn(), warn: vi.fn(), info: vi.fn() } }));
 
 // Keep the REAL isFatalLlmError (the runLLMBatch error-classification tests
-// depend on it); stub only the network-touching checkKeyBalance.
-vi.mock('@/lib/server/openrouter', async (orig) => ({
-  ...(await orig<typeof import('@/lib/server/openrouter')>()),
-  checkKeyBalance: vi.fn(),
+// depend on it); stub only the network-touching getKeyBalance.
+vi.mock('@/lib/server/llm-client', async (orig) => ({
+  ...(await orig<typeof import('@/lib/server/llm-client')>()),
+  getKeyBalance: vi.fn(),
 }));
 
-const mockBalance = vi.mocked(checkKeyBalance);
+const mockBalance = vi.mocked(getKeyBalance);
 
 interface Item { id: string }
 interface Res { ok: boolean }
@@ -253,7 +253,7 @@ describe('preflightBalance', () => {
   });
 
   it('proceeds (returns true) when the budget is unknown (all null)', async () => {
-    // checkKeyBalance's fallback: no budget data at all. We can't prove
+    // getKeyBalance's unknown state: no budget data at all. We can't prove
     // exhaustion, so the run is allowed to start (only 'init' fires).
     mockBalance.mockResolvedValue({
       limitRemaining: null,

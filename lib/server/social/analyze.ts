@@ -1,6 +1,6 @@
 // LLM step of the social monitor: extract topic/keywords/summary per post
 // (once — only analysis_status='pending' rows), then regenerate the aggregated
-// theme snapshot. Uses the shared OpenRouter client (lib/server/openrouter.ts)
+// theme snapshot. Uses the shared LLM client (lib/server/llm-client.ts)
 // and hardened JSON parsing, so this file is just prompt-building + DB writes.
 
 import { eq, inArray, sql } from 'drizzle-orm';
@@ -10,7 +10,7 @@ import {
   socialThemeSnapshots,
   descNullsLast,
 } from '@/lib/server/db';
-import { chatCompletionJson, parseJsonContent } from '@/lib/server/openrouter';
+import { completeJson, parseJsonContent } from '@/lib/server/llm-client';
 import { runLLMBatch } from '@/lib/server/llm-batch';
 import {
   SYSTEM_PROMPT,
@@ -106,13 +106,14 @@ export async function analyzeSocialPosts(
       }));
       // Posts (esp. history channels) can yield long summaries; budget
       // generously. Truncation is still recovered by parseLooseJson.
-      const { content, tokensUsed, cost } = await chatCompletionJson({
+      const { content, tokensUsed, cost } = await completeJson({
         system: SYSTEM_PROMPT,
         user: buildPostPrompt(promptPosts),
         apiKey,
         model,
         maxTokens: 240 * batch.length + 200,
         temperature: 0.3,
+        effort: 'low',
       });
       const parsed = parseJsonContent<{ results?: PostResult[] }>(content);
       return { results: Array.isArray(parsed.results) ? parsed.results : [], tokensUsed, cost };
@@ -216,13 +217,14 @@ export async function regenerateThemeSnapshot(
     return Number.isInteger(n) && n >= 1 && n <= usable.length ? usable[n - 1].id : null;
   };
 
-  const { content, tokensUsed, cost } = await chatCompletionJson({
+  const { content, tokensUsed, cost } = await completeJson({
     system: SYSTEM_PROMPT,
     user: buildOverviewPrompt(overviewPosts, opts.themeWindowDays),
     apiKey: opts.apiKey,
     model: opts.model,
     maxTokens: 1800,
     temperature: 0.4,
+    effort: 'low',
   });
 
   const parsed = parseJsonContent<{ themes?: unknown[]; narrative_de?: string }>(content);
