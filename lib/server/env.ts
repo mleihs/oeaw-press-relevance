@@ -65,6 +65,13 @@ const Schema = z.object({
   OPENROUTER_API_KEY: z.string().min(1).optional(),
   LLM_DEFAULT_MODEL: z.string().min(1).default(DEFAULT_LLM_MODEL),
 
+  // Anthropic direkt (lib/server/anthropic.ts). Gesetzt → jedes
+  // `anthropic/*`-Modell geht an die Anthropic-API statt an OpenRouter, also
+  // die ganze Bewertung im Default. Leer → alles wie bisher über OpenRouter.
+  // ANTHROPIC_EFFORT steuert die Denktiefe; Default max wie beim In-Chat-Bewerten.
+  ANTHROPIC_API_KEY: z.string().min(1).optional(),
+  ANTHROPIC_EFFORT: z.enum(['low', 'medium', 'high', 'xhigh', 'max']).default('max'),
+
   // MeisterTask one-way push (lib/server/meistertask/push.ts). Token +
   // section form a required pair (push has no fallback target); label
   // IDs are a both-or-none pair per the .env.example contract. Both
@@ -113,14 +120,14 @@ const Schema = z.object({
 
   // Phase-2 LLM fallback for the events location extractor. Default off;
   // when enabled, the events sync sends the ~12% events the cheerio
-  // walker can't parse to an LLM via OpenRouter (model defaults to
-  // deepseek/deepseek-chat for cost; override via EVENTS_LLM_FALLBACK_MODEL).
-  // Requires OPENROUTER_API_KEY.
+  // walker can't parse to an LLM (model defaults to DEFAULT_LLM_MODEL, override
+  // via EVENTS_LLM_FALLBACK_MODEL). Needs the key of the provider the model
+  // maps to (lib/server/llm-client.ts): ANTHROPIC_API_KEY or OPENROUTER_API_KEY.
   EVENTS_LLM_FALLBACK_ENABLED: z
     .union([z.literal('true'), z.literal('false'), z.literal('')])
     .default('false')
     .transform((v) => v === 'true'),
-  EVENTS_LLM_FALLBACK_MODEL: z.string().min(1).optional(),
+  EVENTS_LLM_FALLBACK_MODEL: z.string().min(1).default(DEFAULT_LLM_MODEL),
 
   // Social-media monitor (/social). All optional with defaults: the page and
   // settings stay usable without a token; only the refresh action needs
@@ -130,9 +137,9 @@ const Schema = z.object({
   // Apify "Instagram Scraper" is pay-per-event (~$0.0027/result, FREE tier).
   // Used to estimate per-refresh Apify cost for the in-app cost display.
   APIFY_COST_PER_RESULT: z.coerce.number().nonnegative().default(0.0027),
-  // LLM model for post topic-extraction + theme overview. Falls back to the
-  // request header / LLM_DEFAULT_MODEL when unset. DeepSeek V3 is the
-  // price/performance pick for this German extraction task.
+  // LLM model for post topic-extraction + theme overview, unless the refresh
+  // dialog's picker sends another one. Seit 2026-10-24 Opus 5.5 (DEFAULT_LLM_MODEL)
+  // direkt über Anthropic, Effort low (lib/server/social/analyze.ts). Vorgeschichte:
   // deepseek-chat lief am 2026-09-04 wiederholt in `429 temporarily
   // rate-limited upstream` (Provider StreamLake) und liess 24 Posts als
   // `failed` zurueck. v4-flash ist billiger (~0,09 statt 0,32 USD je Mio.
@@ -140,7 +147,7 @@ const Schema = z.object({
   // Es ist ein Reasoning-Modell und braucht deshalb `reasoning:
   // {enabled:false}` aus lib/server/openrouter.ts, sonst kommt `content:
   // null` zurueck.
-  SOCIAL_LLM_MODEL: z.string().min(1).default('deepseek/deepseek-v4-flash'),
+  SOCIAL_LLM_MODEL: z.string().min(1).default(DEFAULT_LLM_MODEL),
   SOCIAL_RESULTS_LIMIT: z.coerce.number().int().positive().default(12),
   // Refresh throttle: skip the Apify fetch if a successful refresh ran within
   // this many minutes (unless forced). Guards against token-burning re-clicks.

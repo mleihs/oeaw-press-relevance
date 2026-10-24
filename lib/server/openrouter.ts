@@ -1,16 +1,13 @@
-// Shared OpenRouter client — the single place that talks HTTP to OpenRouter.
+// OpenRouter-Transport: der einzige Ort, der HTTP mit OpenRouter spricht.
 //
-// Feature layers (publication scoring in lib/server/analysis/, social-media
-// topic extraction in lib/server/social/) build their own prompts and parse
-// their own response shapes, but the request/retry/cost/balance machinery
-// lives here so there is exactly one implementation of the fragile bits:
-//   - the 402 "can only afford N" max_tokens back-off,
-//   - the JSON-mode call + fenced-JSON fallback,
-//   - cost estimation and account-balance lookup.
+// Aufrufer gehen nicht hierher, sondern an lib/server/llm-client.ts. Dort
+// fällt die Wahl des Anbieters, dort werden Kosten gerechnet und Fehler
+// klassifiziert. Hier liegt nur, was OpenRouter-spezifisch und fragil ist:
+//   - der 402-„can only afford N"-Back-off auf max_tokens,
+//   - der JSON-Mode-Aufruf (response_format) samt Reasoning-Abschaltung,
+//   - die Abfrage von Key-Limit und Account-Guthaben.
 
-import { fallbackPricingFor, type ModelPricing } from '@/lib/shared/constants';
-import { getLiveModelPricing } from '@/lib/server/llm-pricing';
-import { parseLooseJson } from '@/lib/shared/json';
+import { UNKNOWN_BALANCE, type JsonCompletion, type KeyBalance, type TokenUsage } from '@/lib/server/llm-types';
 import { log } from '@/lib/server/log';
 
 const COMPLETIONS_URL = 'https://openrouter.ai/api/v1/chat/completions';
@@ -21,44 +18,8 @@ const REQUEST_HEADERS = {
   'X-Title': 'Story Scout',
 };
 
-/** Tokens eines Aufrufs, nach Richtung getrennt — so rechnet OpenRouter ab. */
-export interface TokenUsage {
-  promptTokens: number;
-  completionTokens: number;
-}
-
-/** Rein: USD aus der Token-Aufteilung und den Preisen je Richtung. */
-export function costFromUsage(usage: TokenUsage, pricing: ModelPricing): number {
-  return (
-    (usage.promptTokens * pricing.promptUsd + usage.completionTokens * pricing.completionUsd) /
-    1_000_000
-  );
-}
-
-/**
- * Was ein Aufruf gekostet hat, zu den LIVE-Preisen von OpenRouter (24-h-Cache
- * in lib/server/llm-pricing.ts, fail-open auf die statischen Werte).
- *
- * Bis 2026-07-21 rechnete diese Funktion mit einem 50/50-Mischpreis aus den
- * hartkodierten Fallback-Werten. Beides war falsch: die Preise veralten (genau
- * die Motivation der Live-Preisliste), und beim Scoring überwiegen die
- * Prompt-Tokens deutlich — ein Mix, der die teure Ausgaberichtung mit 50 %
- * gewichtet, überschätzt systematisch. Der Betrag landet nicht nur im Modal,
- * sondern in publications.analysis_cost / events.analysis_cost.
- */
-export async function estimateCost(usage: TokenUsage, model: string): Promise<number> {
-  const live = await getLiveModelPricing();
-  return costFromUsage(usage, live[model] ?? fallbackPricingFor(model));
-}
-
-export async function checkKeyBalance(apiKey: string): Promise<{
-  limitRemaining: number | null;
-  usage: number;
-  limit: number | null;
-  accountBalance: number | null;
-  effectiveBudget: number | null;
-}> {
-  const fallback = { limitRemaining: null, usage: 0, limit: null, accountBalance: null, effectiveBudget: null };
+export async function checkKeyBalance(apiKey: string): Promise<KeyBalance> {
+  const fallback = UNKNOWN_BALANCE;
   try {
     const headers = { Authorization: `Bearer ${apiKey}` };
     const opts = { headers, signal: AbortSignal.timeout(10000) };
@@ -110,13 +71,6 @@ export interface ChatCompletionJsonOptions {
   temperature?: number;
 }
 
-export interface ChatCompletionJsonResult {
-  /** Raw assistant message content (a JSON string — parse with parseJsonContent). */
-  content: string;
-  tokensUsed: number;
-  cost: number;
-}
-
 /**
  * Single JSON-mode chat completion with the OpenRouter 402 "can only afford N"
  * back-off (retry at a lower max_tokens up to 3 times). Returns raw content so
@@ -125,7 +79,7 @@ export interface ChatCompletionJsonResult {
  */
 export async function chatCompletionJson(
   opts: ChatCompletionJsonOptions,
-): Promise<ChatCompletionJsonResult> {
+): Promise<JsonCompletion> {
   let maxTokens = opts.maxTokens;
   let lastError = '';
 
@@ -186,38 +140,13 @@ export async function chatCompletionJson(
     // die Gesamtzahl hälftig geteilt — das reproduziert exakt den früheren
     // Mischpreis, statt eine Richtung stillschweigend zu verschlucken.
     const usage = data.usage ?? {};
-    const tokensUsed: number = usage.total_tokens || 0;
+    const total: number = usage.total_tokens || 0;
     const split: TokenUsage =
       typeof usage.prompt_tokens === 'number' && typeof usage.completion_tokens === 'number'
         ? { promptTokens: usage.prompt_tokens, completionTokens: usage.completion_tokens }
-        : { promptTokens: tokensUsed / 2, completionTokens: tokensUsed / 2 };
-    return { content, tokensUsed, cost: await estimateCost(split, opts.model) };
+        : { promptTokens: total / 2, completionTokens: total / 2 };
+    return { content, usage: split };
   }
 
   throw new Error(`OpenRouter API error 402 (nach 3 Versuchen): ${lastError}`);
-}
-
-/** Classify an OpenRouter error message: fatal (stop the batch to save credits)
- *  vs. transient (skip the item, keep going). Shared by the publication-scoring
- *  and social-analysis pipelines so the rule lives in one place. */
-export function isFatalLlmError(message: string): boolean {
-  return (
-    (/\b402\b/.test(message) && /credits|afford|max_tokens|Budget|Guthaben/i.test(message)) ||
-    (/\b401\b/.test(message) && /unauthorized|invalid/i.test(message))
-  );
-}
-
-/** Parse a JSON object out of an assistant message via the hardened shared
- *  parser (fences, surrounding prose, trailing commas, truncation). Logs +
- *  rethrows a generic error so the batch loop surfaces it like any other. */
-export function parseJsonContent<T>(content: string): T {
-  try {
-    return parseLooseJson<T>(content);
-  } catch {
-    log.error('openrouter_json_parse_failed', {
-      responseLength: content.length,
-      head: content.slice(0, 200),
-    });
-    throw new Error('Failed to parse LLM response as JSON');
-  }
 }

@@ -4,14 +4,15 @@
 // event title to a small/cheap model and asks for a single JSON-shaped
 // answer: `{ "location": "..." | null }`.
 //
-// Default model is `deepseek/deepseek-chat` (DeepSeek-V3 via OpenRouter):
-// ~$0.27/MTok input vs $1/MTok for Claude Haiku, and for "extract one
-// string from messy HTML" the quality is more than enough. Override via
-// EVENTS_LLM_FALLBACK_MODEL.
+// Default model is DEFAULT_LLM_MODEL (Opus 5.5 seit 2026-10-24, vorher DeepSeek
+// V3 über OpenRouter), at effort low: one short string per event, so the cost
+// stays small. Override via EVENTS_LLM_FALLBACK_MODEL; the provider follows the
+// model (lib/server/llm-client.ts).
 
 import { z } from 'zod';
 import { log } from '@/lib/server/log';
 import { getEnv } from '@/lib/server/env';
+import { completeJson, envKeyFor, parseJsonContent } from '@/lib/server/llm-client';
 import { decodeHtmlBlock } from '@/lib/shared/html-utils';
 
 const ResponseSchema = z.object({
@@ -40,7 +41,7 @@ export interface LlmLocationExtractor {
   (input: { title: string; eventInformation: string }): Promise<string | null>;
 }
 
-/** Single-call DeepSeek extraction via OpenRouter. Returns null on any
+/** Single-call extraction via the shared LLM client. Returns null on any
  *  error path (network, malformed JSON, schema mismatch, model decline) —
  *  the caller falls back to "no location" which is identical to having
  *  no fallback at all, so this never breaks the sync. Errors are logged
@@ -50,52 +51,26 @@ export const extractLocationViaLlm: LlmLocationExtractor = async ({
   title,
   eventInformation,
 }) => {
-  const env = getEnv();
-  const apiKey = env.OPENROUTER_API_KEY;
+  const model = getEnv().EVENTS_LLM_FALLBACK_MODEL;
+  const apiKey = envKeyFor(model);
   if (!apiKey) {
-    log.warn('events_llm_no_api_key');
+    log.warn('events_llm_no_api_key', { model });
     return null;
   }
-  const model = env.EVENTS_LLM_FALLBACK_MODEL ?? 'deepseek/deepseek-chat';
   const text = decodeHtmlBlock(eventInformation);
   if (text.length < 10) return null;
 
   try {
-    const response = await fetch(
-      'https://openrouter.ai/api/v1/chat/completions',
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model,
-          messages: [
-            { role: 'system', content: SYSTEM_PROMPT },
-            { role: 'user', content: buildUserPrompt(title, text) },
-          ],
-          response_format: { type: 'json_object' },
-          max_tokens: 200,
-          temperature: 0.1,
-        }),
-        signal: AbortSignal.timeout(20_000),
-      },
-    );
-    if (!response.ok) {
-      log.warn('events_llm_http_error', {
-        status: response.status,
-        model,
-      });
-      return null;
-    }
-    const data = await response.json();
-    const content: unknown = data?.choices?.[0]?.message?.content;
-    if (typeof content !== 'string') {
-      log.warn('events_llm_missing_content', { model });
-      return null;
-    }
-    const parsed = ResponseSchema.safeParse(JSON.parse(content));
+    const { content } = await completeJson({
+      system: SYSTEM_PROMPT,
+      user: buildUserPrompt(title, text),
+      apiKey,
+      model,
+      maxTokens: 200,
+      temperature: 0.1,
+      effort: 'low',
+    });
+    const parsed = ResponseSchema.safeParse(parseJsonContent(content));
     if (!parsed.success) {
       log.warn('events_llm_schema_mismatch', {
         model,

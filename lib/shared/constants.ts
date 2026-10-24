@@ -170,20 +170,21 @@ export interface LLMModel {
  * Entfernt am 2026-07-21: google/gemini-2.0-flash-001 (auf OpenRouter 404),
  * meta-llama/llama-3.2-3b-instruct:free (kaputtes JSON), openai/gpt-4o-mini,
  * anthropic/claude-3.5-haiku, anthropic/claude-sonnet-4 (durch Sonnet 5
- * ersetzt). Historische `llm_model`-Strings in der DB rendern weiter: der
+ * ersetzt); am 2026-10-24 anthropic/claude-opus-4.8 (durch Opus 5.5 ersetzt,
+ * seitdem auch das Modell der In-Chat-Bewertung). Historische `llm_model`-Strings in der DB rendern weiter: der
  * ModelBadge in components/publication-table.tsx fällt auf den Teil nach dem
  * Slash zurück.
  *
- * Fallback-Preise: OpenRouter-Live-Check 2026-07-21.
+ * Fallback-Preise: OpenRouter-Live-Check 2026-07-21 (Opus 5.5: 2026-10-24).
  */
 export const LLM_MODELS: LLMModel[] = [
   {
-    value: 'anthropic/claude-opus-4.8',
-    label: 'Claude Opus 4.8',
+    value: 'anthropic/claude-opus-5.5',
+    label: 'Claude Opus 5.5',
     description:
-      'Kalibrierungskonsistent: dasselbe Modell, mit dem das bestehende Korpus in-chat bewertet wurde. Beste Pitches, teuerste Option.',
+      'Kalibrierungskonsistent: dasselbe Modell, mit dem das Korpus derzeit in-chat bewertet wird. Läuft direkt über die Anthropic-API mit Effort max. Beste Pitches, teuerste Option.',
     tier: 'recommended',
-    fallbackPricing: { promptUsd: 5, completionUsd: 25 },
+    fallbackPricing: { promptUsd: 4, completionUsd: 20 },
   },
   {
     value: 'anthropic/claude-sonnet-5',
@@ -204,7 +205,8 @@ export const LLM_MODELS: LLMModel[] = [
 ];
 
 /** Vorbelegung des Modell-Pickers und Server-Fallback (lib/server/llm.ts). */
-export const DEFAULT_LLM_MODEL = 'anthropic/claude-opus-4.8';
+export const DEFAULT_LLM_MODEL = 'anthropic/claude-opus-5.5';
+
 
 /**
  * Preisannahme für ein Modell, das nicht im kuratierten Picker steht — etwa
@@ -216,7 +218,7 @@ export const UNKNOWN_MODEL_PRICING: ModelPricing = { promptUsd: 5, completionUsd
 
 /**
  * Modelle, die wir BENUTZEN, ohne sie im Bewertungs-Picker anzubieten — derzeit
- * nur der Default des Social-Moduls (`SOCIAL_LLM_MODEL`). Sie gehören nicht in
+ * nur DeepSeek V4 Flash (bis 2026-10-24 Default des Social-Moduls). Sie gehören nicht in
  * `LLM_MODELS`: dort steht die kuratierte Auswahl fürs Scoring, und jedes
  * zusätzliche Modell dort lädt dazu ein, die Opus-Kalibrierung zu verlassen.
  *
@@ -228,6 +230,7 @@ export const UNKNOWN_MODEL_PRICING: ModelPricing = { promptUsd: 5, completionUsd
  * und der Betrag landet in analysis_cost, nicht nur im Modal.
  */
 export const EXTRA_PRICED_MODELS: Record<string, ModelPricing> = {
+  // Bis 2026-10-24 Social-Default; bleibt bepreist für SOCIAL_LLM_MODEL-Overrides.
   'deepseek/deepseek-v4-flash': { promptUsd: 0.088, completionUsd: 0.176 },
 };
 

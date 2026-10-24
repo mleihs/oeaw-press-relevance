@@ -9,7 +9,7 @@ import {
 } from '@/lib/server/http';
 import { requireUser } from '@/lib/server/auth/require';
 import { acquireRunLock, RunLockBusyError, RUN_LOCK_KEYS } from '@/lib/server/run-lock';
-import { getLLMModel, getOpenRouterKey } from '@/lib/server/llm';
+import { getLLMKey, getLLMModel } from '@/lib/server/llm';
 import {
   fetchEventsForAnalysis,
   runEventsAnalysisBatch,
@@ -27,8 +27,8 @@ export const POST = withApiError(async (req: NextRequest) => {
 
   let apiKey, model;
   try {
-    apiKey = getOpenRouterKey(req);
     model = getLLMModel(req);
+    apiKey = getLLMKey(req, model);
   } catch (err) {
     return errorToApiResponse(err, 400, 'Configuration error');
   }

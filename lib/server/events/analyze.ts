@@ -1,15 +1,12 @@
 // Event relevance scoring pipeline. Mirrors lib/server/analysis/batch.ts:
 // pre-flight (key-balance 'init' + budget guard) → the shared runLLMBatch loop
-// → 'complete'. Reuses the OpenRouter client + the generic batch runner; the
+// → 'complete'. Reuses the LLM client + the generic batch runner; the
 // SSE event names match the publication analysis modal so the event modal can
 // reuse the same progress UI.
 
 import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 import { db, events as eventsTable } from '@/lib/server/db';
-import {
-  chatCompletionJson,
-  parseJsonContent,
-} from '@/lib/server/openrouter';
+import { completeJson, parseJsonContent } from '@/lib/server/llm-client';
 import {
   runLLMBatch,
   preflightBalance,
@@ -99,7 +96,7 @@ export async function analyzeEvents(
   apiKey: string,
   model: string,
 ): Promise<{ results: EventAnalysisResult[]; tokensUsed: number; cost: number }> {
-  const { content, tokensUsed, cost } = await chatCompletionJson({
+  const { content, tokensUsed, cost } = await completeJson({
     system: SYSTEM_PROMPT,
     user: buildEventEvaluationPrompt(events),
     apiKey,

@@ -6,7 +6,7 @@ vi.mock('@/lib/server/log', () => ({
   log: { warn: vi.fn(), error: vi.fn(), info: vi.fn() },
 }));
 
-const OPUS = 'anthropic/claude-opus-4.8';
+const OPUS = 'anthropic/claude-opus-5.5';
 
 function modelsResponse(models: unknown[]): Response {
   return {
@@ -56,7 +56,7 @@ describe('getLiveModelPricing', () => {
 
     const pricing = await getLiveModelPricing();
     expect(pricing[OPUS].stale).toBe(true);
-    expect(pricing[OPUS].completionUsd).toBe(25);
+    expect(pricing[OPUS].completionUsd).toBe(20);
   });
 
   it('ist fail-open: ein Netzfehler liefert die Fallback-Preise, keinen Throw', async () => {
