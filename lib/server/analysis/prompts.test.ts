@@ -65,10 +65,19 @@ describe('Bewertungs-Prompt der Publikationen', () => {
       4. storytelling_potential (0.0-1.0): Können Journalist:innen daraus eine fesselnde Erzählung bauen? Gibt es Human-Interest-Aspekte, visuelle Elemente, lebensnahe Szenarien?
       5. media_timeliness (0.0-1.0): Anschlussfähig an aktuellen öffentlichen Diskurs, jüngste Ereignisse, Trends, saisonale Themen?
 
+      KALIBRIERUNG AM BESTAND. Die Scores müssen mit rund achttausend bereits bewerteten Publikationen vergleichbar bleiben. Die meisten Publikationen sind Fachbeiträge für ein Fachpublikum, und die Skala bildet das ab: Im Bestand liegt der Gesamtscore im Median bei 0.26, die Hälfte zwischen 0.19 und 0.35, nur jede zehnte über 0.43; ab 0.55 stehen nur echte Pressethemen. Typische Werte je Bereich, in der Reihenfolge public_accessibility / societal_relevance / novelty_factor / storytelling_potential / media_timeliness:
+      - um 0.11, hochspezialisierte Detailstudie ohne Bezug außerhalb des Fachs: 0.10 / 0.05 / 0.16 / 0.08 / 0.05
+      - um 0.19, solide Facharbeit mit einem greifbaren Detail: 0.16 / 0.09 / 0.26 / 0.16 / 0.09
+      - um 0.26, typischer Fachbeitrag mit vermittelbarem Kern: 0.24 / 0.12 / 0.31 / 0.27 / 0.13
+      - um 0.35, gut erzählbares Thema mit mittelbarem Alltagsbezug: 0.39 / 0.22 / 0.34 / 0.39 / 0.22
+      - um 0.43, starkes Thema mit klarer Relevanz und einer Erzählfigur: 0.51 / 0.30 / 0.41 / 0.49 / 0.29
+      - ab 0.55, echtes Pressethema, das viele Menschen direkt betrifft, überrascht und starke Bilder liefert: 0.63 / 0.54 / 0.50 / 0.61 / 0.49
+      Ordne jede Publikation zuerst einem dieser Bereiche zu und weiche nur ab, wo das Material es begründet. Leite jede Dimension aus der Arbeit selbst ab: Ein allgemeines Dauerthema (Klimawandel, Energiewende, künstliche Intelligenz, Weltraumwetter, Polarlichter, Gesundheit) hebt societal_relevance und media_timeliness nur, wenn die Arbeit selbst diesen Bezug herstellt; ein Bezug, den erst du knüpfst, zählt nicht. media_timeliness über 0.3 braucht einen konkreten Anlass: ein Ereignis, einen Jahrestag, eine laufende Debatte oder eine Saison, die das Material nennt oder die unmittelbar zum Thema gehört.
+
       6. pitch_suggestion: Schreibe einen 4-6-sätzigen deutschen Pitch, den ein:e Pressereferent:in beim Anpitchen an Journalist:innen verwenden kann. Inkludiere einen Aufhänger, das Hauptergebnis, warum es für die Öffentlichkeit relevant ist, und was es einzigartig oder zeitgemäß macht. Sprache zugänglich, lebendig, fachfremd.
 
          VERANKERUNG. Das ist der Unterschied zwischen einem Pitch und einer Inhaltsangabe. Eine Redakteurin greift zum Hörer, weil im Text etwas Konkretes steht, das sie zitieren oder nachrecherchieren kann. Nenne deshalb, was das Material hergibt, beim Namen statt in Umschreibungen:
-         - Die Einrichtung: „das Gregor Mendel Institut der ÖAW", nicht „ein Forschungsteam". Institut und Autor:innen stehen oben im Datensatz.
+         - Die Einrichtung: „das Gregor Mendel Institut der ÖAW", nicht „ein Forschungsteam". Institut und Autor:innen stehen oben im Datensatz. Steht beim Institut N/A, nennst du keine Einrichtung, auch keine allgemeine Formel wie „mit ÖAW-Beteiligung".
          - Die Forschenden, wenn eine Person als lead_author geführt wird: „Forschende um Armin Djamei".
          - Das Publikationsorgan, sofern es aus dem Material hervorgeht.
          - Fachbegriffe nennen und sofort erklären, statt sie wegzuabstrahieren: „ein Schlüsselprotein (Cce1) des Maisbeulenbrand-Pilzes" trägt, „ein Paar von Molekülen" trägt nicht. Dasselbe gilt für Arten, Orte, Verfahren und Zeitstellungen.

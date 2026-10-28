@@ -51,11 +51,13 @@ describe('Bewertungs-Prompt der Veranstaltungen', () => {
       3. reach (0.0-1.0): tatsächliche Breitenwirkung und Öffnung, das FORMAT-Maß. Hoch bei öffentlich zugänglichen, auf ein großes oder überregionales Publikum angelegten Veranstaltungen (offener Eintritt, Ausstellung, Publikumsprogramm, Medienanschluss, großes Teilnehmerfeld); niedrig bei geschlossenem oder kleinem Fachkreis (Anmeldung, Teilnehmerbegrenzung, CfP). Fällt oft von public_appeal ab: ein breit interessantes Thema im geschlossenen Workshop hat niedrige reach, ein Fachthema als großes öffentliches Festival hohe.
       4. timeliness (0.0-1.0): aktueller Anlass. Hoch bei Bezug zu laufendem öffentlichem Diskurs, aktuellen Ereignissen und Konflikten, Jahrestagen und Jubiläen, Saison; niedrig ohne aktuellen Aufhänger.
 
-      Kalibrierung (Archetypen zur Orientierung, nicht wörtlich übernehmen):
-      - Internationaler Flaggschiff-Kongress mit öffentlichem Begleitprogramm (Ausstellungen, Stadt-Kooperation, großes Teilnehmerfeld): public_appeal ~0.7, scientific_significance ~0.9, reach ~0.8, timeliness ~0.4.
-      - Öffentliche Buchpräsentation oder Abendvortrag zu einem gesellschaftlich-historischen Thema an prominentem Ort, offene Einladung: public_appeal ~0.7, scientific_significance ~0.5, reach ~0.6, timeliness ~0.4.
-      - Veranstaltung zu einem tagesaktuellen gesellschaftlichen Thema (aktueller Konflikt, großes Jubiläum) mit öffentlichem Zugang: timeliness ~0.85, public_appeal ~0.7, reach ~0.6.
-      - Geschlossene Graduate School, interner Workshop oder Fachseminar mit Anmeldung und kleinem Teilnehmerkreis: public_appeal ~0.2, scientific_significance ~0.4, reach ~0.15, timeliness ~0.2.
+      Kalibrierung am Bestand. Die Scores müssen mit den rund 470 bereits bewerteten Veranstaltungen vergleichbar bleiben: Median 0.26, ein Viertel unter 0.13, nur jede zehnte über 0.55. Typische Werte je Bereich, in der Reihenfolge public_appeal / scientific_significance / reach / timeliness:
+      - um 0.09, interne oder technische Seminare, Group Meetings, Fachvorträge im engen Kreis: 0.05 / 0.17 / 0.05 / 0.05
+      - um 0.19, Fachworkshops, Summer Schools und Symposien für ein Fachpublikum, auch mit Anmeldung: 0.12 / 0.35 / 0.12 / 0.10
+      - um 0.32, Kolloquien, Preisverleihungen und öffentliche Vorträge zu einem engeren Thema: 0.32 / 0.42 / 0.24 / 0.23
+      - um 0.46, öffentliche Konferenzen, Abendvorträge und Podien zu breit anschlussfähigen Themen: 0.52 / 0.46 / 0.40 / 0.44
+      - ab 0.6, Flaggschiffe: große internationale Kongresse mit Publikumsprogramm, Publikumsabende wie die Lange Nacht der Museen, Podien zu tagesaktuellen Konflikten oder großen Jubiläen: 0.66 / 0.61 / 0.61 / 0.57
+      Ordne jede Veranstaltung zuerst einem dieser Bereiche zu und weiche nur ab, wo die Ankündigung es begründet; einzelne Flaggschiffe dürfen deutlich darüber liegen. timeliness über 0.3 braucht einen Anlass, den die Ankündigung nennt oder der unmittelbar zum Thema gehört (Jahrestag, laufender Konflikt, Saison); ein allgemein wichtiges Thema ohne Anlass hebt sie nicht.
 
       5. pitch_suggestion: Ein 2-4 Sätze langer deutscher Teaser, wie er auf der Veranstaltungsseite stehen könnte. Lebendig, zugänglich, fachfremd. Aufhänger, worum es geht, warum es einen Besuch lohnt.
       6. suggested_angle: Ein Satz auf Deutsch, der den Aufhänger / die Bewerbungs-Stoßrichtung beschreibt.
