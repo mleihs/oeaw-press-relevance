@@ -14,8 +14,9 @@
 //   Am Ende: Status nach run-classify, Journal schließen, Lock freigeben,
 //   Sentry nur bei `failed`.
 //
-// Effort ist für jeden Modellaufruf `max` und kommt aus gate.ts, nicht aus der
-// Env (ScoringCall trägt ihn als Literal-Typ).
+// Effort ist für Bewertung und Haiku-Nachforderung `max` und kommt aus gate.ts,
+// nicht aus der Env (ScoringCall trägt ihn als Literal-Typ). Das Lektorat läuft
+// mit LEKTORAT_EFFORT (config.ts, high): es ändert nur Texte, nie Scores.
 //
 // ABLEHNUNGEN. Lehnt das Modell einen Batch ab (stop_reason refusal), liegt das
 // fast immer an EINEM Eintrag. Der Batch wird deshalb einzeln nachgereicht: der

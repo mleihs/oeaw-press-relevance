@@ -31,6 +31,18 @@ export const REFUSAL_LIMIT = 2;
 export const MAX_TOKENS_LIMIT = 2;
 
 /**
+ * Denktiefe des Lektorats. Bewertung und Haiku-Nachforderung laufen mit max
+ * (gate.ts), das Lektorat bewusst mit high (Nutzerentscheid 2026-10-28): es
+ * ändert nur Texte, nie Scores, und kostete mit max rund das Zehnfache
+ * (gemessen am 28.10.: 1,05 gegen 0,11 USD für denselben Chunk). Für die
+ * Bewertung selbst ist high keine Option: dort lagen dieselben drei
+ * Publikationen im Schnitt 0,08 über max. Ob die Sprache mit high hält, prüft
+ * die Sprachprobe des Vergleichslaufs (scripts/scoring-compare.ts); hält sie
+ * nicht, gehört hier wieder max hin.
+ */
+export const LEKTORAT_EFFORT = 'high' as const;
+
+/**
  * Über die Batch-API wartet ein Lauf höchstens so lange auf Anthropic, gezählt
  * ab seinem Start. Danach wird storniert, was noch läuft; die Einträge bleiben
  * für die nächste Nacht offen. Anthropic sagt 24 Stunden zu, meist ist ein

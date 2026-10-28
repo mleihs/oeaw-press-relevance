@@ -28,7 +28,8 @@ export type ScoringTransport = 'direct' | 'batch';
 /**
  * Was der Kern an JEDEN Modellaufruf durchreicht (Bewertung, Haiku-Nachforderung,
  * Lektorat). `effort` ist als Literal getippt: einen anderen Wert als `max`
- * kann man hier nicht einmal hineinschreiben (gate.ts). `batch` ist gesetzt,
+ * kann man hier nicht einmal hineinschreiben (gate.ts); nur das Lektorat nimmt
+ * statt dessen LEKTORAT_EFFORT (config.ts), weil es keine Scores berührt. `batch` ist gesetzt,
  * wenn der Lauf über die Batch-API geht; die Aufrufer reichen es an
  * completeJson weiter.
  */

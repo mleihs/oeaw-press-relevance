@@ -162,10 +162,24 @@ describe('runScoring', () => {
     const ctx = a.write.mock.calls[0][1] as WriteContext;
     expect(ctx.modelTag).toBe('anthropic/claude-opus-5.5-auto');
     expect(a.analyze.mock.calls[0][1]).toEqual({ apiKey: 'sk-ant-test', model: 'anthropic/claude-opus-5.5', effort: 'max' });
-    expect(h.completeJson).toHaveBeenCalledWith(expect.objectContaining({ effort: 'max' }));
+    // Das Lektorat mit high (ändert nur Texte), die Bewertung oben mit max.
+    expect(lektoratCalls().map(([o]) => (o as { effort: string }).effort)).toEqual(['high']);
     expect(h.startRun).toHaveBeenCalledWith(expect.objectContaining({ entity: 'publications', trigger: 'cli', effort: 'max' }));
     expect(h.finishRun).toHaveBeenCalledWith('run-1', expect.objectContaining({ status: 'ok', medianScore: 0.4 }));
     expect(h.release).toHaveBeenCalledTimes(1);
+  });
+
+  it('fordert Haikus mit Effort max nach, auch wenn das Lektorat mit high läuft', async () => {
+    const a = adapter({
+      analyze: vi.fn(async (batch: TItem[]) => ({
+        results: batch.map((item, i) => result(item, i + 1, BAD_HAIKU)),
+        tokensUsed: 100,
+        cost: 0.05,
+      })),
+    }, 2);
+    await runScoring(base(), [a]);
+    expect(haikuCalls().map(([o]) => (o as { effort: string }).effort)).toEqual(['max', 'max']);
+    expect(lektoratCalls().map(([o]) => (o as { effort: string }).effort)).toEqual(['high']);
   });
 
   it('(b) kaputtes Haiku: zwei Nachforderungen, der dritte Versuch wird gespeichert', async () => {

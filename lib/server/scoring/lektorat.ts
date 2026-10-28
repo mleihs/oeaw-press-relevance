@@ -21,6 +21,7 @@ import {
   type AuditFinding,
   type TextField,
 } from '@/lib/shared/scoring/text-audit';
+import { LEKTORAT_EFFORT } from './config';
 import { buildLektoratSystemPrompt, buildLektoratUserPrompt } from './lektorat-prompt';
 import type { ScoringCall } from './types';
 
@@ -126,7 +127,7 @@ export function readLektoratChanges(
 }
 
 /**
- * Ein Lektorat-Aufruf für einen Chunk, mit Effort max. Liefert nur die
+ * Ein Lektorat-Aufruf für einen Chunk, mit LEKTORAT_EFFORT (config.ts). Liefert nur die
  * übernommenen Änderungen; Scores und Haiku kann die Antwort gar nicht berühren.
  */
 export async function lektorat(args: {
@@ -152,7 +153,7 @@ export async function lektorat(args: {
     user,
     apiKey: call.apiKey,
     model: call.model,
-    effort: call.effort,
+    effort: LEKTORAT_EFFORT,
     batch: call.batch,
     // Nur für OpenRouter von Belang; der Anthropic-Transport rechnet mit eigener
     // Obergrenze (Thinking zählt mit). gate.ts lässt ohnehin nur Anthropic durch.
