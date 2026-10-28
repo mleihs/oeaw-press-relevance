@@ -33,87 +33,42 @@
 set -uo pipefail
 source /etc/oeaw-press-ingest/env
 
-# Was von einem Response-Body hoechstens in Sentry-extra und Mail landet. Reicht
-# fuer jeden echten Report; alles darueber ist Payload-Echo.
-MAX_BODY_BYTES=20000
+# Alarm-Bausteine (checkin, sentry_event, mail_team, say, MAX_BODY_BYTES) teilt
+# sich dieser Wrapper seit 2026-10-28 mit oeaw-press-score.sh. Quelle, Seam und
+# Client-Name bleiben die bisherigen, die Sentry-Events also unveraendert.
+ALERT_SOURCE=oeaw-press-ingest
+ALERT_SEAM=ingest_cron
+ALERT_CLIENT=oeaw-ingest/1.0
+source /usr/local/bin/oeaw-press-alerting.sh
 
-now_iso() { date -u +%Y-%m-%dT%H:%M:%SZ; }
-hex()     { openssl rand -hex 16; }
-
-# Sentry cron check-in (in_progress|ok|error). Best-effort: never fail the job
-# on a Sentry hiccup. Uses the DSN public key — no auth token needed.
-checkin() { # $1=status  $2=check_in_id  $3=duration(optional)
-  local status="$1" cid="$2" dur="${3:-}" eid payload
-  eid=$(hex)
-  payload="{\"check_in_id\":\"$cid\",\"monitor_slug\":\"$SENTRY_MONITOR_SLUG\",\"status\":\"$status\""
-  [ -n "$dur" ] && payload="$payload,\"duration\":$dur"
-  payload="$payload}"
-  printf '{"event_id":"%s","sent_at":"%s"}\n{"type":"check_in"}\n%s\n' \
-      "$eid" "$(now_iso)" "$payload" \
-    | curl -s -m 20 -X POST "$SENTRY_INGEST/api/$SENTRY_PROJECT_ID/envelope/" \
-        -H "Content-Type: application/x-sentry-envelope" \
-        -H "X-Sentry-Auth: Sentry sentry_version=7, sentry_key=$SENTRY_KEY, sentry_client=oeaw-ingest/1.0" \
-        --data-binary @- >/dev/null 2>&1 || true
-}
-
-# Actionable detail alongside the check-in. `title` is the human one-liner that
-# lands in the issue list and the alert mail subject; `body` is the full response
-# JSON, parked in extra.response so it stays readable and never truncates the
-# title; `fp` is the stable grouping key (failure class, no volatile numbers).
-sentry_event() { # $1=level  $2=fingerprint-key  $3=title  $4=body-FILE
-  local level="$1" fp="$2" title="$3" body_file="$4" eid ev
-  eid=$(hex)
-  # --rawfile statt --arg: der Body kommt aus einer Datei und beruehrt argv nie.
-  ev=$(jq -cn \
-    --arg eid "$eid" --arg ts "$(now_iso)" --arg lvl "$level" \
-    --arg fp "$fp" --arg t "$title" --rawfile b "$body_file" --arg host "$(hostname)" \
-    '{event_id:$eid, timestamp:$ts, level:$lvl, logger:"oeaw-press-ingest",
-      message:{formatted:$t},
-      fingerprint:[$fp],
-      tags:{seam:"ingest_cron", failure_class:$fp, server_name:$host},
-      extra:{response:$b}}')
-  # Nicht mehr still scheitern: ohne Envelope gibt es kein Event, und genau das
-  # blieb am 2026-08-22 unbemerkt.
-  if [ -z "$ev" ]; then
-    say "sentry: envelope build FAILED ($(wc -c < "$body_file") bytes body) - kein Event gesendet"
-    return 1
+# Uebergabe an die Nachtbewertung (oeaw-press-score.sh, ab 2026-10-28): Check-in-id
+# und Startzeit der Kette nach /run/oeaw-press/checkin-id, dann die Unit starten,
+# ohne auf sie zu warten. Die Bewertung schliesst denselben Check-in, wenn sie
+# fertig ist; so ueberwacht der eine Sentry-Monitor (Free-Plan) die ganze Kette.
+# Liefert 1, wenn der Start nicht klappt: dann schliesst der Ingest selbst und
+# meldet das als Warnung, denn ein Nachtlauf ohne Bewertung soll auffallen.
+handoff_to_scoring() { # $1=check_in_id  $2=start_epoch
+  if mkdir -p /run/oeaw-press \
+     && printf '%s %s\n' "$1" "$2" > /run/oeaw-press/checkin-id \
+     && systemctl start --no-block oeaw-press-score.service; then
+    say "scoring: oeaw-press-score.service gestartet, Check-in uebergeben"
+    return 0
   fi
-  printf '{"event_id":"%s","sent_at":"%s"}\n{"type":"event"}\n%s\n' \
-      "$eid" "$(now_iso)" "$ev" \
-    | curl -s -m 20 -X POST "$SENTRY_INGEST/api/$SENTRY_PROJECT_ID/envelope/" \
-        -H "Content-Type: application/x-sentry-envelope" \
-        -H "X-Sentry-Auth: Sentry sentry_version=7, sentry_key=$SENTRY_KEY, sentry_client=oeaw-ingest/1.0" \
-        --data-binary @- >/dev/null 2>&1 || true
+  rm -f /run/oeaw-press/checkin-id
+  local note
+  note=$(mktemp)
+  printf 'systemctl start --no-block oeaw-press-score.service ist fehlgeschlagen.\n' > "$note"
+  sentry_event warning "scoring:trigger_failed" "OeAW nightly scoring: Start nach dem Ingest fehlgeschlagen" "$note"
+  rm -f "$note"
+  say "scoring: Start fehlgeschlagen, der Ingest schliesst den Check-in selbst"
+  return 1
 }
-
-# Direct mail to the OeAW team inbox (prossl SMTP), belt-and-suspenders alongside
-# the Sentry check-in: the tailored failure detail reaches websites@ even though a
-# free-plan Sentry seat can't be granted to that address. Optional: skipped if
-# SMTP is unconfigured. Best-effort — never fails the job on a mail hiccup.
-# Only HARD failures mail here — a degraded run is not the team's problem.
-mail_team() { # $1=subject  $2=body
-  local subj="$1" body="$2"
-  [ -z "${SMTP_URL:-}" ] && return 0
-  printf 'From: %s\r\nTo: %s\r\nSubject: %s\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n%s\r\n' \
-      "$MAIL_FROM" "$MAIL_TO" "$subj" "$body" \
-    | curl -s -m 30 --url "$SMTP_URL" --ssl-reqd \
-        --mail-from "$MAIL_FROM" --mail-rcpt "$MAIL_TO" \
-        --user "$SMTP_USER:$SMTP_PASS" --upload-file - \
-    && say "alert mail sent to $MAIL_TO" \
-    || say "alert mail to $MAIL_TO FAILED"
-}
-
-# Write to stdout, NOT via `logger`: systemd captures stdout under this unit, so
-# the line shows up in `journalctl -u` — where the old logger-only calls did not,
-# which is why the 07-21 post-mortem saw "alert mail sent" without any reason.
-# The unit sets SyslogIdentifier=oeaw-press-ingest, so `journalctl -t` still
-# finds it too. (Using both would log every line twice.)
-say() { printf '%s\n' "$1"; }
 
 CID=$(hex)
 checkin in_progress "$CID"
 
 T0=$SECONDS
+T_START=$(date +%s)
 BODY_FILE=$(mktemp)
 # INGEST_RESOLVE (e.g. host:443:127.0.0.1) pins the request to the LOCAL Traefik
 # so it never leaves the box for Cloudflare — CF's fixed 100s proxy timeout would
@@ -149,7 +104,9 @@ SUMMARY=$(printf '%s' "$SUMMARY" | tr '\n\r' '  ' | cut -c1-300)
 
 # --- Success ---------------------------------------------------------------
 if [ "$RC" -eq 0 ] && [ "$HTTP" = "200" ] && [ "$OK" = "true" ]; then
-  checkin ok "$CID" "$DUR"
+  # Erfolg (auch degraded): die Bewertung uebernimmt den Check-in. Nur wenn sie
+  # nicht startet, schliesst der Ingest ihn hier.
+  handoff_to_scoring "$CID" "$T_START" || checkin ok "$CID" "$DUR"
 
   # Applied, but with drift warnings (e.g. a junction pointing at a person the
   # OeAW export itself never delivered — the 2026-07-21 case). The import
