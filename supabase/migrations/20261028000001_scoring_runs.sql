@@ -12,7 +12,8 @@
 -- Status: ok | partial | failed | skipped (Regeln in
 -- lib/shared/scoring/run-classify.ts). Ein Lauf, der als `running` stehen
 -- bleibt (Prozess beendet), wird nicht umgeschrieben; die Leseseite meldet ihn
--- nach 120 Minuten als abgebrochen (STALE_RUNNING_MINUTES in journal.ts).
+-- als abgebrochen, beim Knopf nach 120 Minuten, bei Nacht und CLI (Batch-API)
+-- nach 330 (STALE_RUNNING_MINUTES in journal.ts).
 
 CREATE TABLE IF NOT EXISTS scoring_runs (
   id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
