@@ -55,12 +55,13 @@ export const TOP_PUBS_MAX = 200;
 // das Scoring bei Bedarf — eine Woche Rückstau ist die Schwelle zum „dranbleiben".
 export const SCORING_STALE_DANGER_DAYS = 7;
 
-// Scope-Fenster des „Bewerten"-Knopfes (OpenRouter-Fallback): er bewertet NUR
-// Kandidaten, die in den letzten N Tagen in die DB gekommen sind (created_at).
-// Grund: der Altbestand (Stand 2026-07-21 rund 2.400 Publikations-Kandidaten)
-// gehört bewusst dem kostenlosen In-Chat-Pfad — ein versehentlicher Klick darf
-// nicht das halbe Korpus über OpenRouter abrechnen. Isomorph, weil sowohl der
-// Fetcher (lib/server/analysis/batch.ts) als auch die Kachel-Zählung
+// Scope-Fenster des Bewertungskerns (Nacht und „Bewerten"-Knopf): er bewertet
+// NUR Kandidaten, die in den letzten N Tagen in die DB gekommen sind
+// (created_at). Grund: der Altbestand (Stand 2026-07-21 rund 2.400
+// Publikations-Kandidaten) gehört bewusst dem kostenlosen In-Chat-Pfad; ein
+// versehentlicher Klick darf nicht das halbe Korpus über die API abrechnen.
+// Isomorph, weil sowohl der Fetcher (lib/server/analysis/scoring-adapter.ts)
+// als auch die Kachel-Zählung
 // (lib/server/ingest/status.ts) und die Modal-Copy (components/scoring-modal.tsx)
 // exakt dieselbe Zahl nennen müssen.
 export const SCORING_RECENT_DAYS = 60;

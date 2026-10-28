@@ -3,6 +3,7 @@ import {
   SOCIAL_WINDOW_MAX_DAYS,
   SOCIAL_WINDOW_MIN_DAYS,
 } from '@/lib/shared/social-windows';
+import { SCORING_ENTITIES } from './scoring/entity';
 import { DECISIONS } from './types';
 
 /**
@@ -63,20 +64,20 @@ export const enrichmentBatchPayloadSchema = z.object({
 
 export type EnrichmentBatchPayload = z.infer<typeof enrichmentBatchPayloadSchema>;
 
-// Vereinheitlichtes Payload fürs Relevanz-Scoring — für Publikationen UND
-// Events (der „Bewerten"-Fallback nutzt für beide dasselbe Modal + Endpunkt-
-// Kontrakt). Die Kandidaten kommen aus den kanonischen Views
+// Vereinheitlichtes Payload des Bewerten-Knopfes, für Publikationen UND Events
+// (dasselbe Modal, derselbe Endpunkt-Kontrakt, lib/server/scoring-route.ts).
+// Die Kandidaten kommen aus den kanonischen Views
 // (publication_scoring_candidates / event_scoring_candidates), daher gibt es
-// KEINE enrichment-/word-count-Filter mehr: `limit` begrenzt die Batch-Menge,
+// KEINE enrichment-/word-count-Filter mehr: `limit` begrenzt die Menge,
 // `forceReanalyze` re-bewertet auch bereits Bewertetes (überschreibt), sonst nur
-// offene Kandidaten aus der View.
+// offene Kandidaten aus der View. Batchgröße und Parallelität legt der Server
+// fest (SCORING_BATCH_SIZE, SCORING_CONCURRENCY), nicht der Client.
 // `ids` (optional) schaltet auf Einzel-/Auswahl-Bewertung um: dann zählt
 // GENAU diese Menge, ohne Zeitfenster (wer eine Publikation vor sich hat, will
 // SIE bewerten, nicht „was neu ist"). Die Bewertbarkeits-Gates gelten
 // weiterhin: Aussortiertes wird im complete-Frame als übersprungen gemeldet.
 export const scoringBatchPayloadSchema = z.object({
   limit: z.coerce.number().int().min(1).max(1000).default(20),
-  batchSize: z.coerce.number().int().min(1).max(5).default(3),
   forceReanalyze: z.boolean().default(false),
   // Dedupliziert: `skipped` rechnet mit `ids.length - gefundene`, und eine
   // doppelt genannte id würde sonst als „übersprungen" gemeldet, obwohl sie
@@ -89,6 +90,21 @@ export const scoringBatchPayloadSchema = z.object({
     .optional(),
 });
 export type ScoringBatchPayload = z.infer<typeof scoringBatchPayloadSchema>;
+
+// Nacht-Route POST /api/scoring/run (Bearer INGEST_CRON_SECRET). Ohne Body
+// bewertet sie beide Entitäten mit den Limits aus der Env. `limit` überschreibt
+// das Limit beider Entitäten (Handlauf mit wenigen Einträgen); `dryRun` prüft
+// nur Gate und Konfiguration und zählt die Kandidaten, ohne ein Modell zu rufen.
+export const scoringRunPayloadSchema = z.object({
+  entities: z
+    .array(z.enum(SCORING_ENTITIES))
+    .min(1)
+    .default([...SCORING_ENTITIES])
+    .transform((list) => [...new Set(list)]),
+  limit: z.coerce.number().int().min(1).max(500).optional(),
+  dryRun: z.boolean().default(false),
+});
+export type ScoringRunPayload = z.infer<typeof scoringRunPayloadSchema>;
 
 // ---------------------------------------------------------------------------
 // Social-media monitoring (/social).

@@ -1,5 +1,8 @@
-import 'server-only';
 import postgres from 'postgres';
+
+// Ohne `import 'server-only'`: der Bewertungskern (lib/server/scoring/run.ts)
+// nimmt den Lock auch aus dem CLI (tsx), wo der Marker nicht auflösbar ist.
+// Client-Schutz über die eslint-boundaries.
 
 // Cross-Instanz-Mutex fürs Relevanz-Scoring über Postgres-Session-Advisory-Locks.
 // Zweck: verhindert zwei GLEICHZEITIGE Bewertungsläufe (doppelte OpenRouter-

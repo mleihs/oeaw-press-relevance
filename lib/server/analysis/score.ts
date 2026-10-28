@@ -2,8 +2,11 @@
 // (OpenRouter route, session-based scorer in scripts/session-pipeline.ts, future
 // engines). Keep this file engine-agnostic so the scoring is one canonical
 // computation regardless of which model produced the dimension values.
+//
+// Ohne `import 'server-only'`: der Bewertungskern (lib/server/scoring/persist.ts)
+// läuft auch im CLI unter tsx, wo der Marker nicht auflösbar ist. Client-Schutz
+// über die eslint-boundaries.
 
-import 'server-only';
 import { computeStoredPressScore } from '@/lib/shared/scoring';
 import sessionModel from '@/lib/shared/session-model.json';
 import type { AnalysisResult } from '@/lib/shared/types';
@@ -20,9 +23,8 @@ export type DimensionScores = Pick<
 // Persisted press_score. Formula AND storage rounding live in
 // `computeStoredPressScore` → `computePressScore` → `weightedScore`
 // (lib/shared/scoring) — one path, shared with the PG mirror and with
-// `scripts/session-pipeline.ts apply`, which cannot import this module
-// (`server-only` breaks the tsx script path). This entry is the server-side
-// name for the same computation.
+// `scripts/session-pipeline.ts apply`. This entry is the server-side name for
+// the same computation.
 export function calculatePressScore(dims: DimensionScores): number {
   return computeStoredPressScore(dims);
 }

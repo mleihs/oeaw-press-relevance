@@ -41,6 +41,8 @@ import { SCORE_DIMENSIONS, type ScoreDimension } from '@/lib/shared/constants';
 import { computeStoredPressScore } from '@/lib/shared/scoring';
 import { SCORING_RECENT_DAYS } from '@/lib/shared/dashboard';
 import { uuidPattern } from '@/lib/shared/schemas';
+import { sanitizeText, replaceEmDashesFallback } from '@/lib/shared/scoring/text-sanitize';
+import { auditItem, PITCH_LENGTH, TEXT_FIELDS, type AuditFinding, type TextField } from '@/lib/shared/scoring/text-audit';
 // Single source of truth: lib/shared/score-weights.json. Both this script and
 // lib/shared/constants.ts import it, so drift is impossible by construction.
 import SCORE_WEIGHTS from '@/lib/shared/score-weights.json';
@@ -72,12 +74,8 @@ const ITA_EXCLUDE_CLAUSE = `NOT EXISTS (
     )
 )`;
 
-const TEXT_EVAL_FIELDS = [
-  'pitch_suggestion',
-  'target_audience',
-  'suggested_angle',
-  'reasoning',
-] as const;
+// Die vier Textfelder einer Bewertung; dieselbe Liste prüft das Text-Audit.
+const TEXT_EVAL_FIELDS = TEXT_FIELDS;
 // `haiku` steht bewusst in der Pflichtliste: es war bis 2026-09-03 optional, und
 // genau deshalb fehlte es im gesamten 49er-Batch dieses Tages. Die Form pruefen
 // dann die Gates unten (Struktur + 5-7-5).
@@ -349,8 +347,9 @@ async function cmdCandidates(args: Flags, positional: string[]): Promise<void> {
   }
 
   // Basis-Prädikat („bewertbar") lebt in der kanonischen View
-  // publication_scoring_candidates (eine Wahrheit, geteilt mit dem Server-
-  // Batch-Pfad lib/server/analysis/batch.ts und der Status-Kachel). Default
+  // publication_scoring_candidates (eine Wahrheit, geteilt mit dem
+  // Bewertungskern, lib/server/analysis/scoring-adapter.ts, und der
+  // Status-Kachel). Default
   // (ohne ITA) selektiert direkt aus der View. Der includeIta-Override ist ein
   // seltener Debug-Escape-Hatch — die View schließt ITA fest aus, also wird das
   // Prädikat dort inline nachgebaut (ohne ITA-Klausel), semantisch identisch.
@@ -519,28 +518,38 @@ async function cmdCandidates(args: Flags, positional: string[]): Promise<void> {
 
 type Evaluation = Record<string, unknown> & { id: string };
 
-// Sanitize textual fields: strip HTML, normalize entities that often cause JSON
-// breakage, collapse whitespace. Applied to all string-valued fields.
+// Textfelder bereinigen (lib/shared/scoring/text-sanitize.ts, dieselbe Funktion
+// wie im Bewertungskern). Den Gedankenstrich ersetzt hier noch der Fallback, damit
+// das In-Chat-Apply wie bisher durchläuft; jeder Treffer wird aber gemeldet, weil
+// er ein übergangener Befund ist (die Rubrik verbietet Gedankenstriche).
 const SANITIZED_FIELDS: string[] = [...TEXT_EVAL_FIELDS, 'haiku'];
 
-function sanitizeText(s: unknown): unknown {
-  if (typeof s !== 'string') return s;
-  return s
-    .replace(/<br\s*\/?>/gi, ' ')
-    .replace(/<[^>]+>/g, '')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    // Em-dashes (U+2014) read as machine-generated; the project forbids them
-    // in UI copy (docs/writing-style.md + the ESLint/MDX gates). A static
-    // linter can't reach generated DB content, so normalize on ingest here:
-    // an em-dash becomes a comma. Mirrors scripts/cleanup-emdash-prod.mjs.
-    .replace(/\s*—\s*/g, ', ')
-    .replace(/\s+/g, ' ')
-    .replace(/\s+,/g, ',')
-    .replace(/,\s*([,.;:!?])/g, '$1')
-    .trim();
+function cleanText(id: string, field: string, value: unknown): unknown {
+  if (typeof value !== 'string') return value;
+  const sanitized = sanitizeText(value);
+  const cleaned = replaceEmDashesFallback(sanitized);
+  if (cleaned !== sanitized) {
+    log(`  Warnung id=${id.slice(0, 8)}… ${field}: Gedankenstrich durch Komma ersetzt.`);
+  }
+  return cleaned;
+}
+
+/** Befunde je Datensatz ausgeben; liefert die blockierenden (Codes in `blocking`). */
+function reportFindings(findings: AuditFinding[], blocking: ReadonlySet<string>): AuditFinding[] {
+  const blocked = findings.filter((f) => blocking.has(f.code));
+  for (const f of findings) {
+    const prefix = blocking.has(f.code) ? '!' : '  Warnung';
+    log(`${prefix} id=${f.id.slice(0, 8)}… ${f.field} [${f.code}]: ${f.detail}`);
+  }
+  return blocked;
+}
+
+const APPLY_BLOCKING: ReadonlySet<string> = new Set(['leak']);
+
+function textsOf(e: Record<string, unknown>): Partial<Record<TextField, string>> {
+  return Object.fromEntries(
+    TEXT_EVAL_FIELDS.flatMap((f) => (typeof e[f] === 'string' ? [[f, e[f] as string]] : [])),
+  );
 }
 
 function dimsOf(e: Evaluation): Record<ScoreDimension, number> {
@@ -702,7 +711,7 @@ async function cmdApply(args: Flags, positional: string[]): Promise<void> {
 
   for (const e of evals) {
     for (const key of SANITIZED_FIELDS) {
-      if (key in e) e[key] = sanitizeText(e[key]);
+      if (key in e) e[key] = cleanText(String(e.id ?? '?'), key, e[key]);
     }
   }
 
@@ -721,20 +730,21 @@ async function cmdApply(args: Flags, positional: string[]): Promise<void> {
         process.exit(1);
       }
     }
-    // Reasoning style guard: forbid variable-name leaks
-    const reasoning = String(e.reasoning || '');
-    const leaks = /(popular_science|peer_reviewed|mahighlight)\s*=/.exec(reasoning);
-    if (leaks) {
-      log(`! Evaluation für id=${e.id} enthält Variablennamen im Reasoning: "${leaks[0]}"`);
-      process.exit(1);
-    }
   }
+
+  // Text-Audit (lib/shared/scoring/text-audit.ts). Ein Leak (Variablenname oder
+  // Eingabe-Flag im Text) bricht ab: die Begründung stammt dann aus den
+  // Metadaten statt aus dem Inhalt. Alles andere ist ein Hinweis fürs Lektorat.
+  const findings = evals.flatMap((e) =>
+    auditItem({ id: String(e.id), texts: textsOf(e) }, { entity: 'publications' }),
+  );
+  if (reportFindings(findings, APPLY_BLOCKING).length > 0) process.exit(1);
 
   // Haiku-Gate. Die letzte Instanz vor der DB: kein Consumer kann eine vierte
   // Silbe von einer fuenften unterscheiden, und geschrieben hat die Zeile ein
   // Modell. Der Lauf bricht ab, statt ein halbes Haiku zu speichern. Wo die
   // Silbenzahl eines Wortes nicht sicher bestimmbar ist, bricht er auch ab — das
-  // Wort gehoert dann mit Duden-Beleg in scripts/lib/haiku-lexicon.json.
+  // Wort gehoert dann mit Duden-Beleg in lib/shared/scoring/haiku-lexicon.json.
   const haikuChecks = await checkHaikus(evals.map((e) => e.haiku));
   const haikuFails = haikuChecks
     .map((res, i) => ({ res, id: evals[i].id }))
@@ -745,7 +755,7 @@ async function cmdApply(args: Flags, positional: string[]): Promise<void> {
       log(`  id=${String(id).slice(0, 8)}…  ${res.text}`);
       for (const issue of res.issues) log(`      ${issue.message}`);
     }
-    log('  Regeln: docs/INCHAT_SCORING.md. Unklare Woerter: scripts/lib/haiku-lexicon.json.');
+    log('  Regeln: docs/INCHAT_SCORING.md. Unklare Woerter: lib/shared/scoring/haiku-lexicon.json.');
     process.exit(1);
   }
 
@@ -806,57 +816,38 @@ async function cmdApply(args: Flags, positional: string[]): Promise<void> {
       process.exit(2);
     }
 
-    let updated = 0;
-    let skipped = 0;
-    for (const e of evals) {
+    // Geschrieben wird über den Schreibpfad des Bewertungskerns
+    // (lib/server/scoring/persist.ts): dieselbe Spaltenliste, derselbe
+    // Überschreibschutz im WHERE (`press_score IS NULL` ohne --force), der auch
+    // ein Rennen zwischen Vorprüfung und Schreiben abfängt. pitch_revision
+    // steht danach auf 0: eine neue Bewertung bringt einen neuen Pitch.
+    // Dynamisch geladen, weil lib/server/db DATABASE_URL beim Import liest
+    // (gesetzt in resolveTarget).
+    const toWrite = evals.filter((e) => {
       const status = statusById.get(e.id);
-      if (!status) { skipped++; continue; }
-      if (status === 'analyzed' && !force) { skipped++; continue; }
-
-      const score = computeStoredPressScore(dimsOf(e));
-      // Belt-and-suspenders: never overwrite an existing score unless --force.
-      // The in-memory skip above already guards `analyzed` rows; this SQL-level
-      // guard makes the protection atomic and independent of both the
-      // analysis_status<->press_score invariant and any race between the
-      // pre-check SELECT and this UPDATE. A guarded UPDATE that matches nothing
-      // returns rowCount 0 and is counted as skipped.
-      const scoreGuard = force ? '' : ' AND press_score IS NULL';
-      const r = await c.query(`
-        UPDATE publications SET
-          analysis_status = 'analyzed',
-          press_score = $1,
-          public_accessibility = $2,
-          societal_relevance = $3,
-          novelty_factor = $4,
-          storytelling_potential = $5,
-          media_timeliness = $6,
-          pitch_suggestion = $7,
-          target_audience = $8,
-          suggested_angle = $9,
-          reasoning = $10,
-          haiku = $11,
-          llm_model = $12,
-          analysis_cost = 0,
-          updated_at = NOW()
-        WHERE id = $13${scoreGuard}
-      `, [
-        score,
-        e.public_accessibility,
-        e.societal_relevance,
-        e.novelty_factor,
-        e.storytelling_potential,
-        e.media_timeliness,
-        String(e.pitch_suggestion),
-        String(e.target_audience),
-        String(e.suggested_angle),
-        String(e.reasoning),
-        e.haiku ? String(e.haiku) : null,
-        SESSION_MODEL_TAG,
-        e.id,
-      ]);
-      if ((r.rowCount ?? 0) > 0) updated++;
-      else skipped++;
-    }
+      return status !== undefined && (status !== 'analyzed' || force);
+    });
+    const { writePublicationEvaluations } = await import('@/lib/server/scoring/persist');
+    const written = await writePublicationEvaluations(
+      toWrite.map((e) => ({
+        id: e.id,
+        result: {
+          ...dimsOf(e),
+          pitch_suggestion: String(e.pitch_suggestion),
+          target_audience: String(e.target_audience),
+          suggested_angle: String(e.suggested_angle),
+          reasoning: String(e.reasoning),
+        },
+        haiku: e.haiku ? String(e.haiku) : null,
+        cost: 0,
+      })),
+      { modelTag: SESSION_MODEL_TAG, force, pitchRevised: new Set() },
+    );
+    const updated = written.length;
+    const skipped = evals.length - updated;
+    // Den Drizzle-Pool schließen, sonst hält er den Prozess bis zum Idle-Timeout offen.
+    const { db } = await import('@/lib/server/db');
+    await db.$client.end({ timeout: 5 });
     log(`Updated ${updated}/${evals.length} Publikationen.${skipped ? ` (${skipped} übersprungen)` : ''}`);
   });
 }
@@ -869,11 +860,8 @@ interface DoiCandidateRow {
   [key: string]: unknown;
 }
 
-/** Untergrenze für einen brauchbaren Pitch. Der kürzeste Pitch im Bestand hat
- *  114 Zeichen; alles darunter ist mit Sicherheit ein Fragment. */
-const MIN_PITCH_LEN = 110;
-/** Obergrenze gegen Ausreißer. Der längste im Bestand liegt bei knapp 900. */
-const MAX_PITCH_LEN = 1200;
+
+const REPITCH_BLOCKING: ReadonlySet<string> = new Set(['leak', 'pitch_length', 'filler']);
 
 interface RepitchInput {
   id: string;
@@ -895,7 +883,7 @@ async function cmdRepitchApply(args: Flags, positional: string[]): Promise<void>
   }
 
   for (const it of items) {
-    it.pitch_suggestion = sanitizeText(it.pitch_suggestion) as string;
+    it.pitch_suggestion = cleanText(String(it.id ?? '?'), 'pitch_suggestion', it.pitch_suggestion) as string;
   }
 
   // Validierung VOR jedem DB-Kontakt: ein halb geschriebener Batch ist
@@ -905,20 +893,13 @@ async function cmdRepitchApply(args: Flags, positional: string[]): Promise<void>
       log(`Eintrag ohne gültige id: ${JSON.stringify(it).slice(0, 120)}`);
       process.exit(1);
     }
+    // Länge und Verwertbarkeits-Floskeln prüft das Text-Audit (Grenzen in
+    // PITCH_LENGTH, Floskel-Vokabular in FILLER, beide text-audit.ts).
     const pitch = String(it.pitch_suggestion || '').trim();
-    if (pitch.length < MIN_PITCH_LEN || pitch.length > MAX_PITCH_LEN) {
-      log(`id=${it.id}: Pitch hat ${pitch.length} Zeichen (erlaubt ${MIN_PITCH_LEN}-${MAX_PITCH_LEN}).`);
-      process.exit(1);
-    }
-    // Genau die Floskeln, die die Rubrik jetzt verbietet. Der Guard hängt am
-    // VOKABULAR der Verwertbarkeit, nicht an einer Satzform: „eignet sich für"
-    // allein wäre zu eng (die erste Fassung übersah „eignet sich das Thema")
-    // und zugleich zu breit, weil „das Verfahren eignet sich zur Diagnostik"
-    // legitime Substanz ist. Medienbegriffe und Standort-Rhetorik trennen das
-    // sauber. Umlaut-tolerant, falls ein Text in ue/ae-Schreibweise ankommt.
-    const filler = /(dankbar(es)?\s|wertvoll(er|es)\s+(Baustein|Beitrag)|macht\s+den\s+Standort|Standort\s+sichtbar|Bildstrecke|Magazingeschichte|Aufmacher|Schlagzeile|(f(ü|ue)r\s+ein(e)?\s+(Feature|Reportage|Berichterstattung)))/i.exec(pitch);
-    if (filler) {
-      log(`id=${it.id}: Verwertbarkeits-Floskel im Pitch: "${filler[0]}". Gehört in target_audience/suggested_angle.`);
+    const findings = auditItem({ id: it.id, texts: { pitch_suggestion: pitch } }, { entity: 'publications' });
+    if (reportFindings(findings, REPITCH_BLOCKING).length > 0) {
+      const { min, max } = PITCH_LENGTH.publications;
+      log(`  Pitch ${min}-${max} Zeichen; Verwertbarkeit gehört in target_audience/suggested_angle.`);
       process.exit(1);
     }
   }

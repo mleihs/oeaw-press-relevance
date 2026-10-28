@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ScoringModal } from '@/components/scoring-modal';
 import { Brain } from '@/lib/icons';
+import type { ScoringEntity } from '@/lib/shared/scoring/entity';
 
 /**
  * „Bewerten"-Knopf für eine EINZELNE Publikation bzw. ein einzelnes Event auf
@@ -24,7 +25,7 @@ export function ScoreNowButton({
   size = 'sm',
   className,
 }: {
-  entity: 'publications' | 'events';
+  entity: ScoringEntity;
   id: string;
   label?: string;
   variant?: 'default' | 'outline';
@@ -39,7 +40,7 @@ export function ScoreNowButton({
         size={size}
         className={className}
         onClick={() => setOpen(true)}
-        title="Über OpenRouter bewerten (kostet Guthaben)"
+        title="Jetzt bewerten (Anthropic, Effort max; kostet API-Guthaben)"
       >
         <Brain className="h-4 w-4" weight="duotone" />
         {label}

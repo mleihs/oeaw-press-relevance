@@ -315,7 +315,7 @@ async function importPublications(
   // Dump zusätzlich das Wire-Limit von 65.534 Parametern sprengt. `sql.param()`
   // bindet das ganze Array als EINEN Parameter, den postgres-js korrekt als
   // int[]/text[] serialisiert. Vgl. docs/TESTING.md §5.1 und dasselbe Muster
-  // in lib/server/repos/publications.ts + lib/server/analysis/batch.ts.
+  // in lib/server/repos/publications.ts + lib/server/analysis/scoring-adapter.ts.
   if (dumpDois.length > 0) {
     const n = await execCountingUpdate(
       db,

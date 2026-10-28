@@ -1,9 +1,12 @@
 #!/usr/bin/env node
 // Prüft die gespeicherten Haikus einer Datenbank gegen das Gate.
 //
-//   node scripts/haiku-audit.mjs --target=prod
-//   node scripts/haiku-audit.mjs --target=prod --model=anthropic/claude-opus-5-session
-//   node scripts/haiku-audit.mjs --target=local --strict     # Exit 1 bei Verstoessen
+//   npm run haiku-audit -- --target=prod
+//   npm run haiku-audit -- --target=prod --model=anthropic/claude-opus-5-session
+//   npm run haiku-audit -- --target=local --strict     # Exit 1 bei Verstoessen
+//
+// Laeuft unter tsx, weil die Zaehler in lib/shared/scoring/ (TypeScript, JSON-
+// Import, Pfade ohne Endung) liegen; plain node kann das nicht laden.
 //
 // Der Nachtlauf und das In-Chat-Apply lassen nichts Kaputtes mehr herein; dieses
 // Skript ist fuer den Altbestand da, der vor dem Gate entstanden ist, und als

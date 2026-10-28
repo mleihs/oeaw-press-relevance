@@ -46,6 +46,16 @@ describe('isPublicGatePath', () => {
     expect(isPublicGatePath('/capybara-bg.png')).toBe(true);
   });
 
+  it('lässt die Cron-Routen der Nachtbewertung durch (sie prüfen den Bearer selbst)', () => {
+    expect(isPublicGatePath('/api/scoring/run')).toBe(true);
+    expect(isPublicGatePath('/api/scoring/runs')).toBe(true);
+    expect(isPublicGatePath('/api/scoring/runs/11111111-2222-3333-4444-555555555555')).toBe(true);
+    // Der Bewerten-Knopf bleibt hinter Gate und Anmeldung.
+    expect(isPublicGatePath('/api/analysis/batch')).toBe(false);
+    expect(isPublicGatePath('/api/events/analyze')).toBe(false);
+    expect(isPublicGatePath('/api/scoring/run/extra')).toBe(false);
+  });
+
   it('gates everything else', () => {
     expect(isPublicGatePath('/')).toBe(false);
     expect(isPublicGatePath('/publications')).toBe(false);

@@ -4,10 +4,10 @@
  * This module deliberately knows nothing about syllables. It answers the cheap,
  * always-decidable half of "is this a haiku": three lines, the exact separator,
  * and a character inventory a syllable counter can actually pronounce. It has no
- * dependencies, so both the app (lib/server/analysis/batch.ts, the nightly
- * OpenRouter run) and the CLI gate can use it. The expensive half — 5-7-5 — lives
- * in scripts/lib/haiku-syllables.mjs, which needs the counting libraries and
- * therefore stays out of the app bundle.
+ * dependencies, so both the app (the scoring core, lib/server/scoring/run.ts) and the CLI gate
+ * can use it. The other half, 5-7-5, lives in lib/shared/scoring/haiku-syllables.ts
+ * (rule counter + lexicon, app-safe); scripts/lib/haiku-syllables.mjs adds the two
+ * heavy voters (espeak-ng, hypher) for the CLI and stays out of the app bundle.
  *
  * WHY A GATE AT ALL. The haiku is the one field no downstream code can sanity
  * check: a wrong press_score shows up against the calibration band, a leaked
@@ -23,9 +23,9 @@
  * syllable counter can pronounce them (is "1975" four syllables or eight?), and a
  * haiku that cannot be counted cannot be gated. Quotes are rejected because they
  * break the evaluation JSON the in-chat pipeline parses. Dashes are rejected
- * because the project forbids them in copy (docs/writing-style.md) and
- * sanitizeText() in scripts/session-pipeline.ts silently rewrites em-dashes to
- * commas, which would change a line after it was counted.
+ * because the project forbids them in copy (docs/writing-style.md) and the
+ * em-dash fallback (replaceEmDashesFallback in lib/shared/scoring/text-sanitize.ts)
+ * rewrites them to commas, which would change a line after it was counted.
  */
 
 /** The classical form. Exported so the syllable gate and its tests share one source. */
@@ -51,8 +51,9 @@ export interface HaikuIssue {
 
 /**
  * Characters a line may contain: German letters, single spaces and the four
- * sentence marks that survive sanitizeText(). Everything else (digits, quotes,
- * dashes, brackets, HTML leftovers) is a violation, not a warning.
+ * sentence marks that survive sanitizeText() (lib/shared/scoring/text-sanitize.ts).
+ * Everything else (digits, quotes, dashes, brackets, HTML leftovers) is a
+ * violation, not a warning.
  */
 const ALLOWED_CHAR = /^[A-Za-zÄÖÜäöüß ,.:;!?]+$/;
 
@@ -61,17 +62,64 @@ const ALLOWED_CHAR = /^[A-Za-zÄÖÜäöüß ,.:;!?]+$/;
  * Detecting it without a dictionary is impossible in general, so this matches only
  * the cases where the digraph cannot be anything else: not after `q` (Quelle,
  * quer) and not inside a vowel cluster (neue, Treue, Bauer, Aerosol handled via
- * the leading-vowel guard). The residual false positive is a word like `Poesie`;
- * it costs one entry in the gate's lexicon, which is the intended escape hatch.
+ * the leading-vowel guard). The residual false positives are covered by the two
+ * exception lists below; a word they miss costs one entry there.
+ *
+ * Exported because the prose gate (lib/shared/scoring/text-audit.ts) applies the
+ * same rule to pitches and reasoning: one detector, one exception set.
  */
-const UMLAUT_DIGRAPH = /(?<![qQ])(?<![aeiouäöüAEIOUÄÖÜ])([AaOoUu]e)(?![aeiouäöüAEIOUÄÖÜ])/;
+export const UMLAUT_DIGRAPH = /(?<![qQ])(?<![aeiouäöüAEIOUÄÖÜ])([AaOoUu]e)(?![aeiouäöüAEIOUÄÖÜ])/;
 
 /**
- * The short list of German words where the digraph is genuine and not a stand-in
- * for an umlaut. Matched as a word prefix, lowercased. Kept here rather than in
- * the gate's lexicon because this module must stay dependency-free for the app.
+ * German words where the digraph is genuine and not a stand-in for an umlaut.
+ * Matched as a word prefix, lowercased. Kept here rather than in the syllable
+ * lexicon because this module must stay dependency-free for the app.
  */
-const DIGRAPH_OK = ['aero', 'aerob', 'poe', 'koef', 'aloe', 'oboe', 'zoe', 'duell'];
+export const DIGRAPH_OK: readonly string[] = [
+  'aero', 'aerob', 'poe', 'koef', 'aloe', 'oboe', 'zoe', 'duell',
+  'dauer', 'neue', 'quer', 'steuer', 'aktuell', 'unbequem', 'michaela', 'nachbau',
+  'feuer', 'treue', 'bauer', 'mauer', 'trauer',
+  'goethe', 'phoen', 'boeing',
+];
+
+/**
+ * Letter contexts where the digraph is genuine: the `-uell` adjectives (virtuell,
+ * individuell, eventuell), `-uenz`/`-uent` (Kongruenz, Influenz, konstituent),
+ * `-uett` (Duett, Menuett), and as word endings the loanword and Latin forms
+ * (Statue, Revue, Formicidae, Aloe) plus the names on `-ael`/`-oel`/`-uel`
+ * (Raphael, Joel, Samuel). The consonant in front is part of each pattern on
+ * purpose: Fülle, Münze and Hütte typed as Fuelle, Muenze, Huette must still
+ * be caught, and they differ from the genuine words exactly there.
+ */
+const DIGRAPH_OK_CONTEXT = /[dnstx]uell|[lrt]uen[tz]|[dn]uett|(?:ue|ae|oe|.[aou]el)$/;
+
+/**
+ * True when `word` spells an umlaut as ae/oe/ue. Word-level, so a caller can
+ * name the offender; split on spaces (haiku) or letters (prose) beforehand.
+ */
+export function isUmlautDigraphWord(word: string): boolean {
+  if (!UMLAUT_DIGRAPH.test(word)) return false;
+  const w = word.toLowerCase().replace(/[^a-zäöüß]/g, '');
+  return !DIGRAPH_OK.some((ok) => w.startsWith(ok)) && !DIGRAPH_OK_CONTEXT.test(w);
+}
+
+/**
+ * Bringt ein mehrzeilig geschriebenes Haiku in die gespeicherte Form
+ * „a / b / c". Modelle schreiben Haikus gern mit Zeilenumbrüchen; die
+ * Textbereinigung macht aus einem Umbruch ein Leerzeichen, und die Prüfung
+ * verwarf dann ein gutes Haiku als einzeilig (im lokalen Lauf vom 2026-10-27
+ * alle drei Erstversuche, jeder kostete eine Nachforderung mit Effort max).
+ * Leere Zeilen fallen weg. Trägt der Text schon einen Schrägstrich, bleibt er
+ * unverändert: dann ist der Trenner gesetzt, und die Umbrüche sind Beiwerk.
+ */
+export function joinHaikuLines(text: string): string {
+  if (!/[\r\n]/.test(text) || text.includes('/')) return text;
+  return text
+    .split(/\r?\n|\r/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join(HAIKU_SEPARATOR);
+}
 
 /**
  * Split a haiku into its three lines, or null if it is not separated correctly.
@@ -132,9 +180,7 @@ export function checkHaikuStructure(raw: unknown): HaikuIssue[] {
         line,
       });
     }
-    const offender = part
-      .split(' ')
-      .find((w) => UMLAUT_DIGRAPH.test(w) && !DIGRAPH_OK.some((ok) => w.toLowerCase().startsWith(ok)));
+    const offender = part.split(' ').find(isUmlautDigraphWord);
     if (offender) {
       issues.push({
         code: 'umlaut_digraph',

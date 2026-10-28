@@ -12,3 +12,7 @@ ExecStart=/usr/local/bin/oeaw-press-ingest.sh
 # curl inside caps at 2700s; give the unit headroom above that.
 TimeoutStartSec=3000
 Nice=10
+# Uebergabe des Sentry-Check-ins an oeaw-press-score.service: die Datei
+# /run/oeaw-press/checkin-id muss das Ende dieser Unit ueberleben.
+RuntimeDirectory=oeaw-press
+RuntimeDirectoryPreserve=yes

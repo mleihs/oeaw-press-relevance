@@ -14,7 +14,9 @@ Ausrollen bleibt ein bewusster, manueller Schritt.
 
 | Repo | auf der Box | Zweck |
 |------|-------------|-------|
-| `bin/oeaw-press-ingest.sh` | `/usr/local/bin/` | Trigger für `POST /api/ingest/run` + Alarm-Kette (Sentry-Check-in, Sentry-Event, Mail an websites@) |
+| `bin/oeaw-press-ingest.sh` | `/usr/local/bin/` | Trigger für `POST /api/ingest/run` + Alarm-Kette (Sentry-Check-in, Sentry-Event, Mail an websites@); übergibt nach Erfolg den Check-in an die Bewertung |
+| `bin/oeaw-press-score.sh` | `/usr/local/bin/` | Nachtbewertung: `POST /api/scoring/run`, Poll des Journals, schließt den Check-in der Kette, startet danach die Embeddings |
+| `bin/oeaw-press-alerting.sh` | `/usr/local/bin/` | gemeinsame Alarm-Bausteine beider Wrapper (`checkin`, `sentry_event`, `mail_team`, `say`), per `source` geladen |
 | `bin/oeaw-press-embeddings.sh` | `/usr/local/bin/` | SPECTER2-Ähnlichkeits-Embeddings |
 | `sbin/archive-oeaw-exports.sh` | `/usr/local/sbin/` | archiviert die OeAW-Rohexporte gzip-komprimiert, **bevor** der Ingest sie anwendet (90 Tage) |
 | `sbin/backup-oeaw-db.sh` | `/usr/local/sbin/` | nächtliches lokales `pg_dump` |
@@ -22,8 +24,18 @@ Ausrollen bleibt ein bewusster, manueller Schritt.
 | `systemd/*.service`, `systemd/*.timer` | `/etc/systemd/system/` | die zugehörigen Units |
 
 Zeitplan (Europe/Vienna): 02:35 UTC Backup · 03:30 UTC Cloud-Spiegel · 06:15 Archiv ·
-06:30 Ingest · 07:00 Embeddings. Der Ingest liegt bewusst 30 min hinter dem
-04:00-UTC-Reboot der unattended-upgrades.
+06:30 Ingest → Bewertung → Embeddings (verkettet, keine Uhrzeiten) · 12:00
+Embeddings-Netz. Der Ingest liegt bewusst 30 min hinter dem 04:00-UTC-Reboot der
+unattended-upgrades.
+
+Die Kette seit 2026-10-28: `oeaw-press-ingest.sh` öffnet den Sentry-Check-in und
+startet nach einem erfolgreichen Import `oeaw-press-score.service`
+(`systemctl start --no-block`, Check-in-id in `/run/oeaw-press/checkin-id`). Die
+Bewertung läuft in der App über die Message Batches API von Anthropic (halber
+Preis, bis zu 300 min Wartezeit), der Wrapper pollt bis 330 min und schließt den
+Check-in. Der Sentry-Monitor braucht deshalb eine Max Runtime von mindestens
+6 Stunden. Bewertet wurde etwas, startet der Wrapper die Embeddings; der Timer um
+12:00 fängt Nächte ohne Bewertung auf.
 
 ## Secrets
 
@@ -73,5 +85,12 @@ bash infra/metaspots/sync-check.sh
 Ein manueller Lauf ist ungefährlich: beide Feeds sind über
 `(feed, generated_at_timestamp)` idempotent, ein zweiter Lauf am selben Tag endet
 in `skipped`.
+
+Reihenfolge beim Ausrollen der Bewertung: zuerst `oeaw-press-alerting.sh`, dann
+`oeaw-press-score.sh` samt Unit, erst danach den geänderten Ingest-Wrapper und
+seine Unit. Sonst sourct der Ingest eine Datei, die es noch nicht gibt, oder
+startet eine Unit, die systemd nicht kennt. Ein Handlauf der Bewertung
+(`systemctl start oeaw-press-score.service`) öffnet einen eigenen Check-in und
+bewertet, was im Pool steht; das kostet Geld, anders als ein zweiter Ingest.
 
 Fachlicher Ablauf und Alarm-Semantik stehen in [`docs/NIGHTLY_OPS.md`](../../docs/NIGHTLY_OPS.md).

@@ -1,21 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import {
-  runLLMBatch,
-  preflightBalance,
-  type RunLLMBatchOptions,
-} from './llm-batch';
-import { getKeyBalance } from '@/lib/server/llm-client';
+import { runLLMBatch, type RunLLMBatchOptions } from './llm-batch';
 
+// Die Fehlerklassifikation läuft mit dem ECHTEN isFatalLlmError.
 vi.mock('@/lib/server/log', () => ({ log: { error: vi.fn(), warn: vi.fn(), info: vi.fn() } }));
-
-// Keep the REAL isFatalLlmError (the runLLMBatch error-classification tests
-// depend on it); stub only the network-touching getKeyBalance.
-vi.mock('@/lib/server/llm-client', async (orig) => ({
-  ...(await orig<typeof import('@/lib/server/llm-client')>()),
-  getKeyBalance: vi.fn(),
-}));
-
-const mockBalance = vi.mocked(getKeyBalance);
 
 interface Item { id: string }
 interface Res { ok: boolean }
@@ -140,133 +127,97 @@ describe('runLLMBatch', () => {
   });
 });
 
-describe('preflightBalance', () => {
-  // A fully-funded key (the common happy case).
-  const HEALTHY = {
-    limitRemaining: 10,
-    usage: 1,
-    limit: 20,
-    accountBalance: 8,
-    effectiveBudget: 8,
-  };
-
-  type Ev = { type: string; data: Record<string, unknown> };
-  function collectEvents() {
-    const events: Ev[] = [];
-    const emit = vi.fn((type: string, data: unknown) => {
-      events.push({ type, data: data as Record<string, unknown> });
-    });
-    return { events, emit };
-  }
-  const ofType = (events: Ev[], type: string) =>
-    events.filter((e) => e.type === type);
-
+describe('runLLMBatch — Pool, Stopp-Grund, eigene Fatal-Regel, eigener Schnitt', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('emits a single init frame and returns true when funded', async () => {
-    mockBalance.mockResolvedValue(HEALTHY);
-    const { events, emit } = collectEvents();
-
-    const ok = await preflightBalance({
-      apiKey: 'abcdefghijklmnop',
-      total: 7,
-      model: 'deepseek/deepseek-chat',
-      emit,
+  /** analyze-Aufrufe, die erst enden, wenn der Test sie freigibt. */
+  function gatedAnalyze() {
+    const pending: Array<() => void> = [];
+    let open = 0;
+    let peak = 0;
+    const analyze = vi.fn(async (batch: Item[]) => {
+      open++;
+      peak = Math.max(peak, open);
+      await new Promise<void>((r) => pending.push(r));
+      open--;
+      return { results: batch.map(() => ({ ok: true })), tokensUsed: 1, cost: 0.01 };
     });
+    const tick = () => new Promise((r) => setTimeout(r, 0));
+    return { analyze, pending, tick, peak: () => peak };
+  }
 
-    expect(ok).toBe(true);
-    expect(events.map((e) => e.type)).toEqual(['init']);
-    expect(ofType(events, 'init')[0].data).toEqual({
-      total: 7,
-      model: 'deepseek/deepseek-chat',
-      api_key_hint: '...ijklmnop',
-      key_balance: HEALTHY,
-    });
+  it('läuft mit concurrency 2 vier Batches in zwei Wellen', async () => {
+    const g = gatedAnalyze();
+    const run = runLLMBatch(baseOpts({ items: items(8), batchSize: 2, concurrency: 2, analyze: g.analyze }));
+
+    await g.tick();
+    expect(g.analyze).toHaveBeenCalledTimes(2); // erste Welle
+    g.pending.splice(0).forEach((release) => release());
+    await g.tick();
+    await g.tick();
+    expect(g.analyze).toHaveBeenCalledTimes(4); // zweite Welle
+    g.pending.splice(0).forEach((release) => release());
+
+    const r = await run;
+    expect(g.peak()).toBe(2);
+    expect(r).toMatchObject({ processed: 8, successful: 8, failed: 0, stoppedReason: null });
   });
 
-  it('masks a short key as *** in the init frame', async () => {
-    mockBalance.mockResolvedValue(HEALTHY);
-    const { events, emit } = collectEvents();
-    await preflightBalance({ apiKey: 'short', total: 1, model: 'm', emit });
-    expect(ofType(events, 'init')[0].data.api_key_hint).toBe('***');
+  it('endet nach Batch 1, wenn shouldStop einen Grund nennt', async () => {
+    let cost = 0;
+    const opts = baseOpts({
+      items: items(6),
+      batchSize: 2,
+      analyze: vi.fn(async (batch: Item[]) => {
+        cost += 0.05;
+        return { results: batch.map(() => ({ ok: true })), tokensUsed: 1, cost: 0.05 };
+      }),
+      shouldStop: () => (cost >= 0.01 ? 'cost_cap' : null),
+    });
+    const r = await runLLMBatch(opts);
+    expect(r.processed).toBe(2);
+    expect(r.stoppedReason).toBe('cost_cap');
+    expect(r.cancelled).toBe(false);
+    expect(opts.analyze).toHaveBeenCalledTimes(1);
   });
 
-  it('on an exhausted budget emits fatal error + zero complete and returns false', async () => {
-    mockBalance.mockResolvedValue({
-      limitRemaining: 0.002,
-      usage: 5,
-      limit: 5,
-      accountBalance: 0.001,
-      effectiveBudget: 0.001,
+  it('folgt einer eigenen Fatal-Regel und reicht Batch und Fehler an onError', async () => {
+    class Refusal extends Error {}
+    const refusal = new Refusal('abgelehnt');
+    const onError = vi.fn();
+    const opts = baseOpts({
+      analyze: vi.fn(async () => {
+        throw refusal;
+      }),
+      isFatal: (err) => err instanceof Refusal,
+      hooks: { onError },
     });
-    const { events, emit } = collectEvents();
-
-    const ok = await preflightBalance({
-      apiKey: 'abcdefghijklmnop',
-      total: 4,
-      model: 'm',
-      emit,
-    });
-
-    expect(ok).toBe(false);
-    // The exact frame order the analysis/event modals consume.
-    expect(events.map((e) => e.type)).toEqual(['init', 'error', 'complete']);
-
-    const err = ofType(events, 'error')[0].data;
-    expect(err.fatal).toBe(true);
-    expect(err.message).toBe(
-      'OpenRouter-Budget aufgebraucht: $0.0010 verfügbar ' +
-        '(Key-Limit: $0.0020 verbleibend, Account-Guthaben: $0.0010). ' +
-        'Bitte Credits aufladen auf openrouter.ai/settings/credits.',
-    );
-
-    expect(ofType(events, 'complete')[0].data).toEqual({
-      processed: 0,
-      total: 4,
-      successful: 0,
-      failed: 4,
-      tokens_used: 0,
-      cost: 0,
-    });
-  });
-
-  it('omits an absent figure from the budget-exhausted detail', async () => {
-    // Only the key-limit is known (account balance unavailable) -> a single
-    // parenthetical part. With NEITHER known the parenthetical disappears
-    // entirely, which is exactly the legacy event-runner message.
-    mockBalance.mockResolvedValue({
-      limitRemaining: 0.005,
-      usage: 0,
-      limit: 1,
-      accountBalance: null,
-      effectiveBudget: 0.005,
-    });
-    const { events, emit } = collectEvents();
-
-    await preflightBalance({ apiKey: 'k', total: 2, model: 'm', emit });
-
-    expect(ofType(events, 'error')[0].data.message).toBe(
-      'OpenRouter-Budget aufgebraucht: $0.0050 verfügbar ' +
-        '(Key-Limit: $0.0050 verbleibend). ' +
-        'Bitte Credits aufladen auf openrouter.ai/settings/credits.',
+    const r = await runLLMBatch(opts);
+    expect(opts.analyze).toHaveBeenCalledTimes(1);
+    expect(r.failed).toBe(2);
+    expect(onError).toHaveBeenCalledWith(
+      expect.objectContaining({ fatal: true, batchStartIndex: 0, batch: [{ id: 'i0' }, { id: 'i1' }], error: refusal }),
     );
   });
 
-  it('proceeds (returns true) when the budget is unknown (all null)', async () => {
-    // getKeyBalance's unknown state: no budget data at all. We can't prove
-    // exhaustion, so the run is allowed to start (only 'init' fires).
-    mockBalance.mockResolvedValue({
-      limitRemaining: null,
-      usage: 0,
-      limit: null,
-      accountBalance: null,
-      effectiveBudget: null,
+  it('schneidet die Batches nach `partition`, wenn angegeben', async () => {
+    const onBatchStart = vi.fn();
+    const onError = vi.fn();
+    let call = 0;
+    const opts = baseOpts({
+      items: items(5),
+      batchSize: 2,
+      partition: (all) => [all.slice(0, 3), all.slice(3)],
+      analyze: vi.fn(async (batch: Item[]) => {
+        if (++call === 2) throw new Error('OpenRouter API error 500: upstream timeout');
+        return { results: batch.map(() => ({ ok: true })), tokensUsed: 1, cost: 0.01 };
+      }),
+      hooks: { onBatchStart, onError },
     });
-    const { events, emit } = collectEvents();
-
-    const ok = await preflightBalance({ apiKey: 'k', total: 3, model: 'm', emit });
-
-    expect(ok).toBe(true);
-    expect(events.map((e) => e.type)).toEqual(['init']);
+    const r = await runLLMBatch(opts);
+    expect((opts.analyze as ReturnType<typeof vi.fn>).mock.calls.map((c) => (c[0] as Item[]).length)).toEqual([3, 2]);
+    expect(onBatchStart.mock.calls[1][0]).toMatchObject({ batchIndex: 2, totalBatches: 2, processed: 3 });
+    expect(onError).toHaveBeenCalledWith(expect.objectContaining({ batchStartIndex: 3, fatal: false }));
+    expect(r).toMatchObject({ successful: 3, failed: 2 });
   });
 });

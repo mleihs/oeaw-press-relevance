@@ -23,6 +23,11 @@ const ROW = {
   ev_last_status: null,
 };
 
+// Der Lauf-Status kommt aus dem Journal (eigenes Modul, eigene Tests).
+vi.mock('@/lib/server/scoring/status', () => ({
+  getScoringRunStatus: vi.fn(async () => ({ publications: { runState: 'idle' }, events: { runState: 'idle' } })),
+}));
+
 vi.mock('@/lib/server/db', () => ({
   db: {
     execute: vi.fn(async (q: SQL) => {
@@ -80,6 +85,12 @@ describe('getScoringStatus', () => {
     expect(status.publications.oldestUnscoredDays).toBe(3);
     expect(status.publications.lastImportAt).toBe('16.07.2026');
     expect(status.publications.lastImportFailed).toBe(false);
+  });
+
+  it('reicht den Stand der automatischen Bewertung mit', async () => {
+    const status = await getScoringStatus();
+    expect(status.run.publications.runState).toBe('idle');
+    expect(captured).toHaveLength(1);
   });
 
   it('führt für Events keinen Altbestand (event_at >= now begrenzt selbst)', async () => {

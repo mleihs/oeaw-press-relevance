@@ -1,0 +1,42 @@
+{
+  "_konvention": [
+    "Silbenzahl nach Duden-Worttrennung (Me|di|en = 3, Li|nie = 2, Mo|sa|ik = 3).",
+    "Dieses Lexikon schlaegt alle drei Zaehler und ist die Notbremse des Gates:",
+    "steht ein Wort hier, wird nicht mehr abgestimmt. Eintraege nur, wenn die",
+    "Mehrheit nachweislich irrt oder gar keine zustande kommt, Schluessel immer",
+    "kleingeschrieben. Wer eintraegt, prueft die Trennung im Duden nach und",
+    "vermerkt den Anlass in _herkunft."
+  ],
+  "_herkunft": {
+    "lehnwort_hiatus": "ai/ui im Lehnwort ist ein Hiat, einheimisch ein Diphthong. Die Regel kann das nicht trennen, siehe DIPHTHONGS in lib/shared/scoring/haiku-syllables.ts.",
+    "diphthong_ausnahme": "pfui ist das einzige gaengige deutsche Wort mit echtem ui-Diphthong.",
+    "unsicher": "_unsicher listet Lehnwörter, bei denen der Regelzähler bekannt danebenliegt (Code, Team). Gilt nur, wenn der Regelzähler allein zählt (App, Bewertungskern): dann ist ein solches Wort unklar und das Haiku fällt durch. Im CLI stimmen hypher und espeak mit ab, dort entscheidet wie bisher die Mehrheit."
+  },
+  "_unsicher": [
+    "code",
+    "team",
+    "software",
+    "hardware",
+    "online",
+    "update",
+    "interface",
+    "design",
+    "deadline",
+    "feature",
+    "business",
+    "release",
+    "game",
+    "screen",
+    "image",
+    "byte"
+  ],
+  "words": {
+    "mosaik": 3,
+    "mosaike": 4,
+    "mosaiken": 4,
+    "kokain": 3,
+    "archaisch": 3,
+    "etui": 2,
+    "pfui": 1
+  }
+}

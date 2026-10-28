@@ -10,7 +10,33 @@ import {
   publicationsListQuerySchema,
   analyzedExportQuerySchema,
   publicationsStatsQuerySchema,
+  scoringBatchPayloadSchema,
+  scoringRunPayloadSchema,
 } from './schemas';
+
+describe('scoringRunPayloadSchema (Nacht-Route)', () => {
+  it('bewertet ohne Body beide Entitäten, ohne Limit-Override und ohne Trockenlauf', () => {
+    expect(scoringRunPayloadSchema.parse({})).toEqual({ entities: ['publications', 'events'], dryRun: false });
+  });
+
+  it('nimmt eine Teilmenge, dedupliziert und lehnt Unbekanntes ab', () => {
+    expect(scoringRunPayloadSchema.parse({ entities: ['events', 'events'] }).entities).toEqual(['events']);
+    expect(scoringRunPayloadSchema.safeParse({ entities: ['social'] }).success).toBe(false);
+    expect(scoringRunPayloadSchema.safeParse({ entities: [] }).success).toBe(false);
+  });
+
+  it('begrenzt das Limit auf 1..500 und nimmt den Trockenlauf', () => {
+    expect(scoringRunPayloadSchema.parse({ limit: '3', dryRun: true })).toMatchObject({ limit: 3, dryRun: true });
+    expect(scoringRunPayloadSchema.safeParse({ limit: 0 }).success).toBe(false);
+    expect(scoringRunPayloadSchema.safeParse({ limit: 501 }).success).toBe(false);
+  });
+});
+
+describe('scoringBatchPayloadSchema (Bewerten-Knopf)', () => {
+  it('ignoriert eine vom Client gesendete Batchgröße: die legt der Server fest', () => {
+    expect(scoringBatchPayloadSchema.parse({ limit: 200, batchSize: 3 })).toEqual({ limit: 200, forceReanalyze: false });
+  });
+});
 
 describe('gatePayloadSchema', () => {
   it('accepts a non-empty password', () => {

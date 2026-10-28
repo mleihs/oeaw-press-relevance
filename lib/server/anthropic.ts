@@ -7,20 +7,31 @@
 // so stimmen llm_model in der DB, der Modell-Picker und die Live-Preisliste
 // (lib/server/llm-pricing.ts), und der In-Chat-Tag
 // `anthropic/claude-opus-5.5-session` passt dazu. Übersetzt wird nur hier.
+//
+// Request-Body (messageParams) und Abbildung der Antwort (completionOf) teilt
+// sich dieser Transport mit der Batch-API (lib/server/anthropic-batch.ts):
+// ein Aufruf liefert auf beiden Wegen dasselbe oder wirft denselben Fehler.
 
 import Anthropic from '@anthropic-ai/sdk';
-import type { JsonCompletion } from '@/lib/server/llm-types';
+import {
+  LlmMaxTokensError,
+  LlmRefusalError,
+  type JsonCompletion,
+  type TokenUsage,
+} from '@/lib/server/llm-types';
 
 const MODEL_PREFIX = 'anthropic/';
 
 /**
- * Obergrenze je Aufruf. Bei Opus 5.5 ist Thinking immer an und zählt in
- * max_tokens hinein; die 500 Tokens je Publikation, mit denen der
- * OpenRouter-Pfad rechnet, reichen bei Effort max nicht einmal fürs Denken.
- * Bezahlt wird nur, was tatsächlich erzeugt wird. Ein so hoher Wert verlangt
- * Streaming (das SDK verweigert sonst den Aufruf), daher `messages.stream`.
+ * Obergrenze je Aufruf: das dokumentierte Maximum von Opus 5.5 (128K). Bei
+ * Opus 5.5 ist Thinking immer an und zählt in max_tokens hinein, und das
+ * Modell kennt die Grenze nicht; mit Effort max denkt es, bis es fertig ist.
+ * Mit 64K lief das Lektorat im lokalen Lauf vom 2026-10-27 bei Publikationen
+ * und Events im ersten Versuch ab, schon bei drei Datensätzen. Bezahlt wird
+ * nur, was tatsächlich erzeugt wird. Ein so hoher Wert verlangt Streaming
+ * (das SDK verweigert sonst den Aufruf), daher `messages.stream`.
  */
-const MAX_TOKENS = 64_000;
+export const MAX_TOKENS = 128_000;
 
 export type AnthropicEffort = 'low' | 'medium' | 'high' | 'xhigh' | 'max';
 
@@ -40,7 +51,7 @@ export interface MessagesJsonOptions {
 }
 
 /**
- * Ein Aufruf, Antwort als JSON-Text. Kein `temperature` (seit API-Version
+ * Der Request-Body eines Aufrufs. Kein `temperature` (seit API-Version
  * 2026-10-21 auf jedem Modell ein 400) und kein Prefill; das JSON-Format
  * erzwingen die Prompts, geparst wird wie beim OpenRouter-Pfad.
  *
@@ -49,39 +60,53 @@ export interface MessagesJsonOptions {
  * lib/shared/constants.ts). Eine Ablehnung lässt den Batch scheitern; die
  * Einträge bleiben für den nächsten Lauf offen.
  */
-export async function messagesJson(opts: MessagesJsonOptions): Promise<JsonCompletion> {
+export function messageParams(opts: Omit<MessagesJsonOptions, 'apiKey'>): Anthropic.MessageCreateParamsNonStreaming {
   const model = anthropicModelId(opts.model);
   if (!model) throw new Error(`Kein Anthropic-Modell: ${opts.model}`);
+  return {
+    model,
+    max_tokens: MAX_TOKENS,
+    output_config: { effort: opts.effort },
+    system: opts.system,
+    messages: [{ role: 'user', content: opts.user }],
+  };
+}
 
+/**
+ * SDK-Fehler mit vorangestelltem Status, damit isFatalLlmError 401 und leeres
+ * Guthaben erkennt und den Lauf stoppt, statt Batch um Batch weiterzuversuchen.
+ * Andere Fehler unverändert.
+ */
+export function anthropicApiError(err: unknown): unknown {
+  return err instanceof Anthropic.APIError ? new Error(`Anthropic API error ${err.status ?? '?'}: ${err.message}`) : err;
+}
+
+/** Ein Aufruf, Antwort als JSON-Text. */
+export async function messagesJson(opts: MessagesJsonOptions): Promise<JsonCompletion> {
+  const params = messageParams(opts);
   // maxRetries 2 (SDK-Default) wiederholt 429/5xx/Verbindungsfehler selbst.
   const client = new Anthropic({ apiKey: opts.apiKey });
 
   let message: Anthropic.Message;
   try {
-    message = await client.messages
-      .stream({
-        model,
-        max_tokens: MAX_TOKENS,
-        output_config: { effort: opts.effort },
-        system: opts.system,
-        messages: [{ role: 'user', content: opts.user }],
-      })
-      .finalMessage();
+    message = await client.messages.stream(params).finalMessage();
   } catch (err) {
-    // Status voranstellen, damit isFatalLlmError 401 und leeres Guthaben
-    // erkennt und den Lauf stoppt, statt Batch um Batch weiterzuversuchen.
-    if (err instanceof Anthropic.APIError) {
-      throw new Error(`Anthropic API error ${err.status ?? '?'}: ${err.message}`);
-    }
-    throw err;
+    throw anthropicApiError(err);
   }
+  return completionOf(message);
+}
 
+/**
+ * Bildet eine fertige Antwort ab: der Text als JSON-String, oder der passende
+ * Fehler. Abgelehnt oder abgeschnitten ist trotzdem bezahlt: die Nutzung reist
+ * mit dem Fehler, damit die Fassade den Preis daran hängen kann.
+ */
+export function completionOf(message: Anthropic.Message): JsonCompletion {
   if (message.stop_reason === 'refusal') {
-    const category = message.stop_details?.category ?? 'ohne Kategorie';
-    throw new Error(`Anthropic: Anfrage abgelehnt (refusal, ${category})`);
+    throw new LlmRefusalError(message.stop_details?.category ?? 'ohne Kategorie', usageOf(message));
   }
   if (message.stop_reason === 'max_tokens') {
-    throw new Error(`Anthropic: Antwort bei max_tokens=${MAX_TOKENS} abgeschnitten`);
+    throw new LlmMaxTokensError(MAX_TOKENS, usageOf(message));
   }
 
   const content = message.content
@@ -90,14 +115,14 @@ export async function messagesJson(opts: MessagesJsonOptions): Promise<JsonCompl
     .join('');
   if (!content) throw new Error('No content in LLM response');
 
-  // Cache-Tokens zählen als Eingabe; Thinking steckt in output_tokens.
+  return { content, usage: usageOf(message) };
+}
+
+/** Cache-Tokens zählen als Eingabe; Thinking steckt in output_tokens. */
+function usageOf(message: Anthropic.Message): TokenUsage {
   const u = message.usage;
   return {
-    content,
-    usage: {
-      promptTokens:
-        u.input_tokens + (u.cache_creation_input_tokens ?? 0) + (u.cache_read_input_tokens ?? 0),
-      completionTokens: u.output_tokens,
-    },
+    promptTokens: u.input_tokens + (u.cache_creation_input_tokens ?? 0) + (u.cache_read_input_tokens ?? 0),
+    completionTokens: u.output_tokens,
   };
 }

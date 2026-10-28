@@ -1,9 +1,13 @@
 [Unit]
-Description=Daily SPECTER2 embeddings at 07:00 Europe/Vienna (after the 06:30 ingest)
+Description=SPECTER2 embeddings safety net at 12:00 Europe/Vienna (the regular start comes from oeaw-press-score.sh)
 Documentation=https://github.com/mleihs/oeaw-press-relevance
 
 [Timer]
-OnCalendar=*-*-* 07:00:00 Europe/Vienna
+# Seit 2026-10-28 startet oeaw-press-score.sh die Embeddings direkt nach der
+# Nachtbewertung. Dieser Timer ist nur noch das Netz fuer Naechte ohne
+# Bewertung; 12:00 liegt hinter der Batch-Frist der Bewertung (bis ~11:30), damit
+# er einem noch laufenden Bewertungslauf nicht zuvorkommt.
+OnCalendar=*-*-* 12:00:00 Europe/Vienna
 Persistent=true
 RandomizedDelaySec=120
 

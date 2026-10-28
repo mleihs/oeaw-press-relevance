@@ -1,0 +1,18 @@
+[Unit]
+Description=Nightly OeAW scoring (publications + events, Anthropic batch) after the ingest
+Documentation=https://github.com/mleihs/oeaw-press-relevance
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+SyslogIdentifier=oeaw-press-score
+ExecStart=/usr/local/bin/oeaw-press-score.sh
+# Kein Timer: oeaw-press-ingest.sh startet diese Unit nach einem erfolgreichen
+# Import. Die App wartet ueber die Batch-API hoechstens 300 min, der Wrapper
+# pollt bis 330 min; dazu Luft fuer Start und Auswertung.
+TimeoutStartSec=21000
+Nice=10
+# Uebergabe des Sentry-Check-ins aus dem Ingest (/run/oeaw-press/checkin-id).
+RuntimeDirectory=oeaw-press
+RuntimeDirectoryPreserve=yes

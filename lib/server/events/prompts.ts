@@ -1,6 +1,10 @@
 // Prompt builder for event relevance scoring — mirrors lib/server/analysis/
 // prompts.ts but for the Veranstaltungsbetrieb use case: how relevant is an
 // event for the central ÖAW event programme / public event page.
+//
+// Die Textregeln stehen als Bausteine da, weil das Lektorat des Bewertungskerns
+// an denselben Sätzen misst. Der gerenderte Prompt bleibt zeichengleich
+// (lib/server/events/prompts.test.ts).
 
 import { decodeHtmlBlock } from '@/lib/shared/html-utils';
 import type { EventRow } from './to-api';
@@ -36,6 +40,16 @@ export const SYSTEM_PROMPT = `Du bist Veranstaltungs- und Pressereferent:in an d
 
 Leitlinien: Öffentliche Formate (Vorträge, Ausstellungen, Buchpräsentationen, Podien, Lesungen, Aktionstage, Kinderuni), international sichtbare Flaggschiff-Kongresse sowie Veranstaltungen zu gesellschaftlich aktuellen Themen sind in der Regel HOCH relevant, auch wenn sie im Kern wissenschaftlich sind. Rein interne Formate (Fachseminare, Arbeitstreffen, Gremiensitzungen, geschlossene Graduate Schools, reine Calls for Papers) sind in der Regel NIEDRIG relevant. Nutze die volle Skala von 0.0 bis 1.0 und weiche nicht reflexartig in die Mitte aus. Bewerte die vier Dimensionen unabhängig voneinander; sie messen Unterschiedliches und dürfen auseinanderfallen. Bewerte ausschließlich aus dem Inhalt heraus. Antworte ausschließlich mit gültigem JSON.`;
 
+/** Die vier Textfelder (Punkte 5 bis 8), so wie das Modell sie schreibt. Auch
+ *  der Maßstab des Lektorats im Bewertungskern (lib/server/scoring/lektorat.ts). */
+export const EVENT_TEXT_RULES = `5. pitch_suggestion: Ein 2-4 Sätze langer deutscher Teaser, wie er auf der Veranstaltungsseite stehen könnte. Lebendig, zugänglich, fachfremd. Aufhänger, worum es geht, warum es einen Besuch lohnt.
+6. suggested_angle: Ein Satz auf Deutsch, der den Aufhänger / die Bewerbungs-Stoßrichtung beschreibt.
+7. target_audience: Das Zielpublikum (z.B. „breite Öffentlichkeit", „Familien", „Studierende", „Fachpublikum Geschichte"). 1-3 Angaben, kommagetrennt.
+8. reasoning: 2-3 Sätze auf Deutsch, die die Einstufung begründen. Nur lesbarer Fließtext, keine Variablennamen oder Datenbankfelder.`;
+
+/** Typografie aller Textfelder. */
+export const EVENT_TYPOGRAPHY_RULES = `Verwende echte deutsche Umlaute (ä, ö, ü, ß), niemals „ae/oe/ue/ss". Verwende keine Geviert- oder Gedankenstriche (das Zeichen —); formuliere mit Komma, Doppelpunkt oder zwei Sätzen.`;
+
 function wordTruncate(text: string, maxWords: number): string {
   const parts = text.trim().split(/\s+/);
   if (parts.length <= maxWords) return text.trim();
@@ -43,8 +57,9 @@ function wordTruncate(text: string, maxWords: number): string {
 }
 
 /** Best available description: teaser + bodytext + sidebar info, HTML-stripped
- *  and truncated. Falls back to the title alone when nothing else is present. */
-function pickContent(ev: EventForPrompt): string {
+ *  and truncated. Falls back to the title alone when nothing else is present.
+ *  Exportiert für den Bewertungskern (Quelltext des Lektorats). */
+export function pickContent(ev: EventForPrompt): string {
   const parts = [ev.teaser, ev.bodytext, ev.eventInformation]
     .map((p) => decodeHtmlBlock(p).trim())
     .filter(Boolean);
@@ -52,7 +67,28 @@ function pickContent(ev: EventForPrompt): string {
   return joined ? wordTruncate(joined, 350) : '(keine Beschreibung — Bewertung nur anhand Titel/Metadaten)';
 }
 
-export function buildEventEvaluationPrompt(events: EventForPrompt[]): string {
+/**
+ * Hinweis auf Zwillinge im Batch: Sprachversionen oder Kopien desselben
+ * Termins (lib/server/events/scoring-adapter.ts, eventTwinGroups). Ohne ihn
+ * bewertet das Modell beide Anlagen unabhängig, und dieselbe Veranstaltung
+ * bekommt zwei Scores. `twins` sind 1-basierte Positionen je Gruppe; null,
+ * wenn es keine Gruppe gibt.
+ */
+export function eventTwinNote(twins: readonly (readonly number[])[]): string | null {
+  const lines = twins
+    .filter((group) => group.length >= 2)
+    .map((group) => {
+      const listed = `${group.slice(0, -1).join(', ')} und ${group[group.length - 1]}`;
+      return `Hinweis: Die Veranstaltungen ${listed} sind Sprachversionen oder Kopien desselben Termins. Vergib ihnen dieselben vier Dimensionen.`;
+    });
+  return lines.length > 0 ? lines.join('\n') : null;
+}
+
+export function buildEventEvaluationPrompt(
+  events: EventForPrompt[],
+  opts: { twins?: readonly (readonly number[])[] } = {},
+): string {
+  const twinNote = eventTwinNote(opts.twins ?? []);
   const descriptions = events
     .map((ev, idx) => {
       const ort = ev.locationTitle?.trim() || 'N/A';
@@ -84,15 +120,12 @@ Kalibrierung (Archetypen zur Orientierung, nicht wörtlich übernehmen):
 - Veranstaltung zu einem tagesaktuellen gesellschaftlichen Thema (aktueller Konflikt, großes Jubiläum) mit öffentlichem Zugang: timeliness ~0.85, public_appeal ~0.7, reach ~0.6.
 - Geschlossene Graduate School, interner Workshop oder Fachseminar mit Anmeldung und kleinem Teilnehmerkreis: public_appeal ~0.2, scientific_significance ~0.4, reach ~0.15, timeliness ~0.2.
 
-5. pitch_suggestion: Ein 2-4 Sätze langer deutscher Teaser, wie er auf der Veranstaltungsseite stehen könnte. Lebendig, zugänglich, fachfremd. Aufhänger, worum es geht, warum es einen Besuch lohnt.
-6. suggested_angle: Ein Satz auf Deutsch, der den Aufhänger / die Bewerbungs-Stoßrichtung beschreibt.
-7. target_audience: Das Zielpublikum (z.B. „breite Öffentlichkeit", „Familien", „Studierende", „Fachpublikum Geschichte"). 1-3 Angaben, kommagetrennt.
-8. reasoning: 2-3 Sätze auf Deutsch, die die Einstufung begründen. Nur lesbarer Fließtext, keine Variablennamen oder Datenbankfelder.
+${EVENT_TEXT_RULES}
 
-Typografie (alle Textfelder): Verwende echte deutsche Umlaute (ä, ö, ü, ß), niemals „ae/oe/ue/ss". Verwende keine Geviert- oder Gedankenstriche (das Zeichen —); formuliere mit Komma, Doppelpunkt oder zwei Sätzen.
+Typografie (alle Textfelder): ${EVENT_TYPOGRAPHY_RULES}
 
 ${descriptions}
-
+${twinNote ? `\n${twinNote}\n` : ''}
 Antworte AUSSCHLIESSLICH mit gültigem JSON in diesem exakten Format:
 {
   "evaluations": [

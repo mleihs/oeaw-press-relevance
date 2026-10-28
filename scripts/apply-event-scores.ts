@@ -2,8 +2,9 @@
 // Applies manually-produced (in-chat) event relevance scores to the DB. Reads a
 // JSON array of { id, public_appeal, scientific_significance, reach, timeliness,
 // pitch_suggestion, suggested_angle, target_audience, reasoning } and writes
-// each row via the same computeEventScore + column set as the LLM path, so the
-// UI renders them identically. Provenance is tagged as in-chat (cost 0).
+// each row through the same function as the scoring core
+// (lib/server/scoring/persist.ts, writeEventEvaluations), so the UI renders
+// them identically. Provenance is tagged as in-chat (cost 0).
 //
 // Auf dem Sicherheitsniveau von scripts/session-pipeline.ts cmdApply
 // (Härtung 2026-07-21, AP6 des Bewertungs-Splits):
@@ -17,6 +18,9 @@
 //   * Der Provenance-Tag kommt aus lib/shared/event-session-model.json statt
 //     hartkodiert zu sein: auf Prod stehen deshalb drei Tag-Varianten
 //     nebeneinander, was jede Auswertung nach Modell verfälscht.
+//   * Textfelder laufen durch dieselben Gates wie im Bewertungskern
+//     (lib/shared/scoring/text-sanitize.ts + text-audit.ts): Leak, Gedankenstrich
+//     und ae/oe/ue statt Umlaut brechen ab, alles andere ist eine Warnung.
 //
 // Usage:
 //   npm run apply-event-scores -- --file=/tmp/scores.json                  # Dry-run, lokal
@@ -30,6 +34,11 @@ import {
   bootstrapScript, captureScriptError, flushAndExit,
 } from './lib/bootstrap';
 import sessionModel from '@/lib/shared/event-session-model.json';
+import { EVENT_SCORE_DIMENSIONS } from '@/lib/shared/constants';
+import { uuidPattern } from '@/lib/shared/schemas';
+import { evaluationProblems } from '@/lib/shared/scoring/evaluation';
+import { sanitizeText } from '@/lib/shared/scoring/text-sanitize';
+import { auditItem, TEXT_FIELDS, type AuditCode } from '@/lib/shared/scoring/text-audit';
 
 const { target, flags, confirmProd } = bootstrapScript('apply-event-scores');
 
@@ -54,14 +63,8 @@ interface ScoredEvent {
   reasoning?: string;
 }
 
-const DIMS = [
-  'public_appeal',
-  'scientific_significance',
-  'reach',
-  'timeliness',
-] as const;
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** Text-Befunde, die den Lauf abbrechen statt nur zu warnen. */
+const BLOCKING: ReadonlySet<AuditCode> = new Set(['leak', 'em_dash', 'umlaut_digraph']);
 
 /** Harte Validierung. Sammelt ALLE Probleme, damit eine Korrekturrunde reicht. */
 function validate(rows: unknown): ScoredEvent[] {
@@ -74,12 +77,16 @@ function validate(rows: unknown): ScoredEvent[] {
     const r = raw as Record<string, unknown>;
     const id = typeof r?.id === 'string' ? r.id : '';
     const label = id ? id.slice(0, 8) : `#${i}`;
-    if (!UUID.test(id)) problems.push(`${label}: id fehlt oder ist keine UUID`);
-    for (const dim of DIMS) {
-      const v = r?.[dim];
-      if (typeof v !== 'number' || !Number.isFinite(v) || v < 0 || v > 1) {
-        problems.push(`${label}: ${dim}=${JSON.stringify(v)} (erwartet Zahl 0..1)`);
-      }
+    if (!uuidPattern.test(id)) problems.push(`${label}: id fehlt oder ist keine UUID`);
+    for (const p of evaluationProblems(r, { dimensions: EVENT_SCORE_DIMENSIONS })) problems.push(`${label}: ${p}`);
+    for (const field of TEXT_FIELDS) {
+      if (typeof r?.[field] === 'string') r[field] = sanitizeText(r[field]);
+    }
+    const texts = Object.fromEntries(TEXT_FIELDS.map((f) => [f, r?.[f]]).filter(([, v]) => typeof v === 'string'));
+    for (const f of auditItem({ id: label, texts }, { entity: 'events' })) {
+      const line = `${label}: ${f.field} [${f.code}] ${f.detail}`;
+      if (BLOCKING.has(f.code)) problems.push(line);
+      else console.warn(`[apply-event-scores] Warnung ${line}`);
     }
   });
   if (problems.length > 0) {
@@ -95,11 +102,18 @@ async function main(): Promise<void> {
   const rows = validate(JSON.parse(readFileSync(file, 'utf8')));
   if (apply) await confirmProd('apply-event-scores');
 
-  const { db, events } = await import('@/lib/server/db');
-  const { and, eq, isNull, sql } = await import('drizzle-orm');
-  const { computeEventScore } = await import('@/lib/shared/scoring');
-  const { getCurrentEventScoreWeights } = await import('@/lib/server/events/score-weights');
-  const weights = await getCurrentEventScoreWeights();
+  const { eventScores, writeEventEvaluations } = await import('@/lib/server/scoring/persist');
+  // Fehlende Texte bleiben leer und werden als NULL geschrieben, wie bisher.
+  const results = rows.map((r) => ({
+    public_appeal: r.public_appeal,
+    scientific_significance: r.scientific_significance,
+    reach: r.reach,
+    timeliness: r.timeliness,
+    pitch_suggestion: r.pitch_suggestion ?? '',
+    suggested_angle: r.suggested_angle ?? '',
+    target_audience: r.target_audience ?? '',
+    reasoning: r.reasoning ?? '',
+  }));
 
   const mode = apply ? (force ? '[APPLY] [FORCE]' : '[APPLY]') : '[DRY-RUN]';
   console.log(
@@ -107,61 +121,31 @@ async function main(): Promise<void> {
   );
 
   if (!apply) {
-    for (const r of rows.slice(0, 3)) {
-      const dims = Object.fromEntries(DIMS.map((d) => [d, r[d]])) as Record<
-        (typeof DIMS)[number],
-        number
-      >;
+    const scores = await eventScores(results.slice(0, 3));
+    rows.slice(0, 3).forEach((r, i) => {
       console.log(
-        `  id=${r.id.slice(0, 8)}…  event_score=${computeEventScore(dims, weights)}  pitch="${(r.pitch_suggestion ?? '').slice(0, 60)}…"`,
+        `  id=${r.id.slice(0, 8)}…  event_score=${scores[i]}  pitch="${(r.pitch_suggestion ?? '').slice(0, 60)}…"`,
       );
-    }
+    });
     console.log('  Mit --apply tatsächlich schreiben, mit --force auch Bewertetes überschreiben.');
     return;
   }
 
-  let applied = 0;
-  let skipped = 0;
-  for (const r of rows) {
-    const dims = {
-      public_appeal: r.public_appeal,
-      scientific_significance: r.scientific_significance,
-      reach: r.reach,
-      timeliness: r.timeliness,
-    };
-    // Überschreibschutz im WHERE statt im JS: atomar, unabhängig von einem
-    // Vor-SELECT und von der analysis_status/event_score-Invariante. Ein
-    // Update, das nichts trifft, zählt als übersprungen.
-    const where = force
-      ? eq(events.id, r.id)
-      : and(eq(events.id, r.id), isNull(events.eventScore));
-    const res = await db
-      .update(events)
-      .set({
-        analysisStatus: 'analyzed',
-        eventScore: computeEventScore(dims, weights),
-        publicAppeal: dims.public_appeal,
-        scientificSignificance: dims.scientific_significance,
-        reach: dims.reach,
-        timeliness: dims.timeliness,
-        pitchSuggestion: r.pitch_suggestion?.trim() || null,
-        suggestedAngle: r.suggested_angle?.trim() || null,
-        targetAudience: r.target_audience?.trim() || null,
-        reasoning: r.reasoning?.trim() || null,
-        llmModel: sessionModel.tag,
-        analysisCost: 0,
-        analyzedAt: sql`NOW()`,
-      })
-      .where(where)
-      .returning({ id: events.id });
-    if (res.length > 0) applied++;
-    else skipped++;
-  }
+  // Überschreibschutz im WHERE (persist.ts): ein Update, das nichts trifft,
+  // zählt als übersprungen.
+  const written = await writeEventEvaluations(
+    rows.map((r, i) => ({ id: r.id, result: results[i], cost: 0 })),
+    { modelTag: sessionModel.tag, force },
+  );
+  const skipped = rows.length - written.length;
   console.log(
-    `[apply-event-scores] applied ${applied} · skipped ${skipped}${
+    `[apply-event-scores] applied ${written.length} · skipped ${skipped}${
       skipped > 0 && !force ? ' (bereits bewertet oder unbekannte id; --force überschreibt)' : ''
     } · target=${target}`,
   );
+  // Den Drizzle-Pool schließen, sonst hält er den Prozess bis zum Idle-Timeout (20 s) offen.
+  const { db } = await import('@/lib/server/db');
+  await db.$client.end({ timeout: 5 });
 }
 
 main().catch((err: unknown) => {
