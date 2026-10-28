@@ -59,6 +59,8 @@ describe('Bewertungs-Prompt der Veranstaltungen', () => {
       - ab 0.6, Flaggschiffe: große internationale Kongresse mit Publikumsprogramm, Publikumsabende wie die Lange Nacht der Museen, Podien zu tagesaktuellen Konflikten oder großen Jubiläen: 0.66 / 0.61 / 0.61 / 0.57
       Ordne jede Veranstaltung zuerst einem dieser Bereiche zu und weiche nur ab, wo die Ankündigung es begründet; einzelne Flaggschiffe dürfen deutlich darüber liegen. timeliness über 0.3 braucht einen Anlass, den die Ankündigung nennt oder der unmittelbar zum Thema gehört (Jahrestag, laufender Konflikt, Saison); ein allgemein wichtiges Thema ohne Anlass hebt sie nicht.
 
+      Mehrfachanlagen. Bei manchen Veranstaltungen stehen am selben Tag bereits bewertete Termine dabei (Kennung B1, B2 und so fort). Ist die Veranstaltung derselbe Termin wie einer davon, also eine Sprachfassung, eine Neuauflage auf der Zentralseite mit anderem Titel oder eine Kopie, übernimm dessen vier Dimensionen exakt und gib seine Kennung in twin_of an. Ein anderer Vortrag derselben Reihe oder ein anderer Termin am selben Tag ist kein Zwilling: dann twin_of null und eine eigene Bewertung.
+
       5. pitch_suggestion: Ein 2-4 Sätze langer deutscher Teaser, wie er auf der Veranstaltungsseite stehen könnte. Lebendig, zugänglich, fachfremd. Aufhänger, worum es geht, warum es einen Besuch lohnt.
       6. suggested_angle: Ein Satz auf Deutsch, der den Aufhänger / die Bewerbungs-Stoßrichtung beschreibt.
       7. target_audience: Das Zielpublikum (z.B. „breite Öffentlichkeit", „Familien", „Studierende", „Fachpublikum Geschichte"). 1-3 Angaben, kommagetrennt.
@@ -97,6 +99,7 @@ describe('Bewertungs-Prompt der Veranstaltungen', () => {
             "scientific_significance": 0.0,
             "reach": 0.0,
             "timeliness": 0.0,
+            "twin_of": null,
             "pitch_suggestion": "...",
             "suggested_angle": "...",
             "target_audience": "...",
@@ -131,5 +134,34 @@ describe('Zwillingshinweis', () => {
 
   it('lässt den Prompt ohne Zwillinge zeichengleich', () => {
     expect(buildEventEvaluationPrompt([rich, bare], { twins: [] })).toBe(buildEventEvaluationPrompt([rich, bare]));
+  });
+});
+
+describe('Schon bewertete Termine des Tages', () => {
+  const sibling = {
+    id: 'alt',
+    title: 'Balkanforschung: Die Insel Hvar im Wandel der Zeit',
+    eventAt: '2026-11-05T17:00:00+01:00',
+    locationTitle: 'Österreichische Akademie der Wissenschaften',
+    institute: 'OEAW - Home',
+    public_appeal: 0.45,
+    scientific_significance: 0.4,
+    reach: 0.3,
+    timeliness: 0.2,
+  };
+
+  it('stehen mit Kennung, Wiener Uhrzeit, Ort, Institut und Dimensionen unter der Beschreibung', () => {
+    const prompt = buildEventEvaluationPrompt([{ ...rich, scoredSiblings: [sibling] }, bare]);
+    expect(prompt).toContain(
+      'Am selben Tag bereits bewertet (Beginn, Ort, Institut, Titel → public_appeal / scientific_significance / reach / timeliness):\n' +
+        '- B1: 17:00, Österreichische Akademie der Wissenschaften, OEAW - Home, „Balkanforschung: Die Insel Hvar im Wandel der Zeit" → 0.45 / 0.4 / 0.3 / 0.2',
+    );
+    // Nur beim Event mit Geschwistern, und vor der nächsten Veranstaltung.
+    expect(prompt.indexOf('Am selben Tag bereits bewertet')).toBeLessThan(prompt.indexOf('--- Veranstaltung 2 ---'));
+    expect(prompt.split('Am selben Tag bereits bewertet').length).toBe(2);
+  });
+
+  it('lassen den Prompt ohne Geschwister zeichengleich', () => {
+    expect(buildEventEvaluationPrompt([{ ...rich, scoredSiblings: [] }, bare])).toBe(buildEventEvaluationPrompt([rich, bare]));
   });
 });

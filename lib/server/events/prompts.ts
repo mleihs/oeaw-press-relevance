@@ -9,7 +9,25 @@
 import { decodeHtmlBlock } from '@/lib/shared/html-utils';
 import type { EventRow } from './to-api';
 
-/** The event row fields the prompt needs. */
+/**
+ * Ein am selben Wiener Kalendertag schon bewerteter Termin. Der Prompt zeigt
+ * ihn je Event (Kennung B1, B2 …), damit das Modell Mehrfachanlagen über Läufe
+ * hinweg erkennt (EVENT_TWIN_RULE); der Adapter übernimmt dann dessen
+ * Dimensionen (lib/server/events/scoring-adapter.ts, alignTwins).
+ */
+export interface ScoredSibling {
+  id: string;
+  title: string;
+  eventAt: Date | string;
+  locationTitle: string | null;
+  institute: string | null;
+  public_appeal: number;
+  scientific_significance: number;
+  reach: number;
+  timeliness: number;
+}
+
+/** The event row fields the prompt needs, plus the scored siblings of its day. */
 export type EventForPrompt = Pick<
   EventRow,
   | 'title'
@@ -21,7 +39,7 @@ export type EventForPrompt = Pick<
   | 'locationTitle'
   | 'organizerTitle'
   | 'institute'
->;
+> & { scoredSiblings?: readonly ScoredSibling[] };
 
 /** One LLM evaluation per event (the JSON shape the model must return). */
 export interface EventAnalysisResult {
@@ -30,11 +48,16 @@ export interface EventAnalysisResult {
   scientific_significance: number;
   reach: number;
   timeliness: number;
+  /** Kennung (B1, B2 …) des schon bewerteten Zwillings, sonst null. */
+  twin_of?: string | null;
   pitch_suggestion: string;
   suggested_angle: string;
   target_audience: string;
   reasoning: string;
 }
+
+/** Kennung des i-ten schon bewerteten Termins eines Events (0-basiert): B1, B2 … */
+export const siblingLabel = (i: number): string => `B${i + 1}`;
 
 export const SYSTEM_PROMPT = `Du bist Veranstaltungs- und Pressereferent:in an der Österreichischen Akademie der Wissenschaften (ÖAW) und kuratierst das zentrale Veranstaltungsprogramm. Deine Aufgabe ist einzuschätzen, wie relevant eine Veranstaltung für die zentrale Bewerbung auf der ÖAW-Veranstaltungsseite und für die Presse- und Öffentlichkeitsarbeit ist, also für ein breites, überwiegend fachfremdes Publikum.
 
@@ -63,6 +86,31 @@ export const EVENT_CALIBRATION = `Kalibrierung am Bestand. Die Scores müssen mi
 - um 0.46, öffentliche Konferenzen, Abendvorträge und Podien zu breit anschlussfähigen Themen: 0.52 / 0.46 / 0.40 / 0.44
 - ab 0.6, Flaggschiffe: große internationale Kongresse mit Publikumsprogramm, Publikumsabende wie die Lange Nacht der Museen, Podien zu tagesaktuellen Konflikten oder großen Jubiläen: 0.66 / 0.61 / 0.61 / 0.57
 Ordne jede Veranstaltung zuerst einem dieser Bereiche zu und weiche nur ab, wo die Ankündigung es begründet; einzelne Flaggschiffe dürfen deutlich darüber liegen. timeliness über 0.3 braucht einen Anlass, den die Ankündigung nennt oder der unmittelbar zum Thema gehört (Jahrestag, laufender Konflikt, Saison); ein allgemein wichtiges Thema ohne Anlass hebt sie nicht.`;
+
+/**
+ * Mehrfachanlagen über Läufe hinweg (seit 2026-10-28). Dieselbe Veranstaltung
+ * steht oft mehrfach im Export: als Sprachfassung, als Neuauflage auf der
+ * Zentralseite („OEAW - Home") mit neuem Titel, als TYPO3-Kopie. Im selben Lauf
+ * gruppiert eventTwinGroups sie; ist eine Fassung schon bewertet, sieht das
+ * Modell sie je Event und entscheidet wie die In-Chat-Bewertung, ob es derselbe
+ * Termin ist. Eine Textregel träfe die neu betitelten Fassungen der Zentralseite
+ * und die Übersetzungen nicht sicher.
+ */
+export const EVENT_TWIN_RULE = `Mehrfachanlagen. Bei manchen Veranstaltungen stehen am selben Tag bereits bewertete Termine dabei (Kennung B1, B2 und so fort). Ist die Veranstaltung derselbe Termin wie einer davon, also eine Sprachfassung, eine Neuauflage auf der Zentralseite mit anderem Titel oder eine Kopie, übernimm dessen vier Dimensionen exakt und gib seine Kennung in twin_of an. Ein anderer Vortrag derselben Reihe oder ein anderer Termin am selben Tag ist kein Zwilling: dann twin_of null und eine eigene Bewertung.`;
+
+const VIENNA_TIME = new Intl.DateTimeFormat('de-AT', { timeZone: 'Europe/Vienna', hour: '2-digit', minute: '2-digit' });
+
+/** Die schon bewerteten Termine des Tages, als Block unter der Beschreibung (leer ohne). */
+function siblingBlock(siblings: readonly ScoredSibling[] | undefined): string {
+  if (!siblings?.length) return '';
+  const lines = siblings.map(
+    (s, i) =>
+      `- ${siblingLabel(i)}: ${VIENNA_TIME.format(new Date(s.eventAt))}, ${s.locationTitle?.trim() || 'N/A'}, ${
+        s.institute?.trim() || 'N/A'
+      }, „${s.title}" → ${s.public_appeal} / ${s.scientific_significance} / ${s.reach} / ${s.timeliness}`,
+  );
+  return `\nAm selben Tag bereits bewertet (Beginn, Ort, Institut, Titel → public_appeal / scientific_significance / reach / timeliness):\n${lines.join('\n')}`;
+}
 
 /** Typografie aller Textfelder. */
 export const EVENT_TYPOGRAPHY_RULES = `Verwende echte deutsche Umlaute (ä, ö, ü, ß), niemals „ae/oe/ue/ss". Verwende keine Geviert- oder Gedankenstriche (das Zeichen —); formuliere mit Komma, Doppelpunkt oder zwei Sätzen.`;
@@ -117,7 +165,7 @@ Datum: ${ev.eventAt}${ev.eventEndAt ? ` bis ${ev.eventEndAt}` : ''}
 Ort: ${ort}
 Veranstalter: ${veranstalter}
 Institut/Bereich: ${institut}
-Beschreibung: ${pickContent(ev)}`;
+Beschreibung: ${pickContent(ev)}${siblingBlock(ev.scoredSiblings)}`;
     })
     .join('\n\n');
 
@@ -132,6 +180,8 @@ Liefere für JEDE Veranstaltung vier UNABHÄNGIG zu bewertende Dimensionen. Sie 
 4. timeliness (0.0-1.0): aktueller Anlass. Hoch bei Bezug zu laufendem öffentlichem Diskurs, aktuellen Ereignissen und Konflikten, Jahrestagen und Jubiläen, Saison; niedrig ohne aktuellen Aufhänger.
 
 ${EVENT_CALIBRATION}
+
+${EVENT_TWIN_RULE}
 
 ${EVENT_TEXT_RULES}
 
@@ -148,6 +198,7 @@ Antworte AUSSCHLIESSLICH mit gültigem JSON in diesem exakten Format:
       "scientific_significance": 0.0,
       "reach": 0.0,
       "timeliness": 0.0,
+      "twin_of": null,
       "pitch_suggestion": "...",
       "suggested_angle": "...",
       "target_audience": "...",
