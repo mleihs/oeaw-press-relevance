@@ -96,7 +96,7 @@ Ordne jede Veranstaltung zuerst einem dieser Bereiche zu und weiche nur ab, wo d
  * Termin ist. Eine Textregel träfe die neu betitelten Fassungen der Zentralseite
  * und die Übersetzungen nicht sicher.
  */
-export const EVENT_TWIN_RULE = `Mehrfachanlagen. Bei manchen Veranstaltungen stehen am selben Tag bereits bewertete Termine dabei (Kennung B1, B2 und so fort). Ist die Veranstaltung derselbe Termin wie einer davon, also eine Sprachfassung, eine Neuauflage auf der Zentralseite mit anderem Titel oder eine Kopie, übernimm dessen vier Dimensionen exakt und gib seine Kennung in twin_of an. Ein anderer Vortrag derselben Reihe oder ein anderer Termin am selben Tag ist kein Zwilling: dann twin_of null und eine eigene Bewertung.`;
+export const EVENT_TWIN_RULE = `Mehrfachanlagen. Bei manchen Veranstaltungen stehen am selben Tag bereits bewertete Termine dabei (Kennung B1, B2 und so fort). Ist die Veranstaltung derselbe Termin wie einer davon, also eine Sprachfassung, eine Neuauflage auf der Zentralseite mit anderem Titel oder eine Kopie, übernimm dessen vier Dimensionen exakt und gib seine Kennung in twin_of an. Ein anderer Vortrag derselben Reihe oder ein anderer Termin am selben Tag ist kein Zwilling: dann twin_of null und eine eigene Bewertung. Erwähne die Übernahme in keinem Textfeld: Pitch, Angle und Begründung beschreiben die Veranstaltung selbst, nicht ihre Bewertung und nicht ihre andere Fassung.`;
 
 const VIENNA_TIME = new Intl.DateTimeFormat('de-AT', { timeZone: 'Europe/Vienna', hour: '2-digit', minute: '2-digit' });
 

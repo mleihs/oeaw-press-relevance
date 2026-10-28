@@ -35,6 +35,9 @@ describe('auditItem', () => {
     ['leak', { reasoning: 'Da peer_reviewed = true, hoch.' }, { reasoning: 'Begutachtet in einer Fachzeitschrift.' }],
     ['leak', { pitch_suggestion: `${GOOD_PITCH} Die Arbeit ist peer-reviewed.` }, { target_audience: 'peer-reviewed Fachpresse' }],
     ['leak', { suggested_angle: 'Vom Institut pressetauglich markiert.' }, { suggested_angle: 'Vom Institut gemessen.' }],
+    // Der Bewertungsvorgang im Text (übernommene Zwillingsbewertung, Handlauf 28.10.).
+    ['leak', { reasoning: 'Der Vortrag wurde auf der Zentralseite bereits bewertet, daher gilt dieselbe Einstufung.' }, { reasoning: 'Der Vortrag wurde auf der Zentralseite bereits angekündigt.' }],
+    ['leak', { reasoning: 'Deshalb bleibt die Bewertung identisch.' }, { reasoning: 'Die Bewertung der Quellen durch das Team ist neu.' }],
     ['em_dash', { reasoning: 'Der Befund — robust.' }, { reasoning: 'Zeitraum 1975–1980 belegt.' }],
     ['em_dash', { reasoning: 'Der Befund – robust.' }, { reasoning: 'Seiten 12–14.' }],
     ['umlaut_digraph', { reasoning: 'Die Studie zeigt Ueberraschendes.' }, { reasoning: 'Die Studie ist aktuell und virtuell, die Statue bleibt.' }],
