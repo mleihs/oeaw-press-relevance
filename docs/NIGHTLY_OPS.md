@@ -1,7 +1,8 @@
-# Nächtlicher Ingest + Bewertungs-Fallback — Ops-Runbook
+# Nächtlicher Ingest + Bewertung — Ops-Runbook
 
-Stand 2026-08-31 (zuerst 2026-07-16). SSOT für den automatischen Nacht-Import,
-das Auto-Enrichment, die Bewertungs-Status-Kachel und den „Bewerten"-Fallback.
+Stand 2026-10-28 (zuerst 2026-07-16). SSOT für den automatischen Nacht-Import,
+das Auto-Enrichment, die Nachtbewertung, die Bewertungs-Status-Kachel und den
+„Bewerten"-Knopf.
 Die Ops-Dateien der Box sind seit 2026-08-26 in `infra/metaspots/` versioniert
 (Abgleich: `bash infra/metaspots/sync-check.sh`).
 
@@ -17,16 +18,29 @@ Die Ops-Dateien der Box sind seit 2026-08-26 in `infra/metaspots/` versioniert
         ├─ 2. Events              (upsertEvents + ingest_runs-Journal, atomar)
         └─ 3. Enrichment          (CrossRef→OpenAlex→Unpaywall→SemanticScholar→PDF)
                                    reichert ausstehende Pubs an → sie werden bewertbar
-   → KEIN Auto-Scoring. Bewertet wird bevorzugt In-Chat (Opus, €0);
-     der „Bewerten"-Button ist der OpenRouter-Fallback.
+   → nach Erfolg: systemctl start --no-block oeaw-press-score.service
+                  (Sentry-Check-in-id in /run/oeaw-press/checkin-id)
 
-07:00 Wien (separater Timer)
-   └─ SPECTER2-Embeddings für gescorte Pubs (on-box)
+direkt danach (oeaw-press-score.sh, kein Timer)
+   └─ curl POST …/api/scoring/run  → 202 {runs:[{id, entity}]}
+        │  der Bewertungskern (lib/server/scoring/run.ts) rechnet in der App weiter:
+        ├─ 4a. Publikationen   (60-Tage-Fenster, Limit 80)
+        └─ 4b. Events          (künftige, Limit 60)
+             je Chunk à 25: Bewertung (Opus 5.5, Effort max) → Haiku-Gate mit bis
+             zu 2 Nachforderungen (max) → Lektorat (Effort high) → Text-Audit →
+             Schreiben mit Tag anthropic/claude-opus-5.5-auto
+   └─ Poll GET …/api/scoring/runs/<id> alle 30 s, bis keine Zeile mehr running
+   └─ schließt den Check-in der Kette; Alarm nur bei failed
+   └─ bewertet wurde etwas → systemctl start oeaw-press-embeddings.service
+
+12:00 Wien (Timer, nur noch Netz)
+   └─ SPECTER2-Embeddings, falls die Kette sie nicht schon gestartet hat
 ```
 
-**Warum kein Scoring im Cron:** Das In-Chat-Scoring (Redaktion, Opus, kostenlos)
-ist der bevorzugte, kalibrierte Weg. Der Nacht-Cron bereitet nur vor (importieren
-+ anreichern); das Bewerten passiert bei Bedarf.
+**Bewertet wird nachts automatisch** (seit 2026-10-28). Das In-Chat-Bewerten
+(`/bewerten`) wird zur Nachkontrolle: verworfene Haikus nachtragen, Lektorat-
+Hinweise lesen, Zwillinge prüfen. Der Altbestand außerhalb des 60-Tage-Fensters
+läuft nachts bewusst nicht mit.
 
 **Warum Enrichment im Cron:** „Nur enrichen ohne zu bewerten" ergab keinen Sinn —
 Enrichment ist reine Vorstufe zum Scoring (die Kandidaten-View verlangt
@@ -92,12 +106,50 @@ Nächte. Jetzt entscheidet nicht mehr eine einzelne Nacht, sondern:
 Die gezählte Serie steht als `report.empty_streak` im Journal. Längste real
 beobachtete Leerserie: 3 Nächte.
 
+## Nachtbewertung
+
+- **Routen** (Bearer `INGEST_CRON_SECRET`, gate-öffentlich, `csrf:false`):
+  `POST /api/scoring/run` mit Body `{entities?, limit?, dryRun?}` legt je Entität
+  eine Journal-Zeile an und antwortet sofort `202 {model, effort, costCapUsd,
+  transport, runs}`; `dryRun` ruft kein Modell und zählt nur die Kandidaten.
+  `503 {errorClass:'disabled'}` beim Not-Aus, `503` mit Gate-Klasse ohne
+  Anthropic-Key (Vercel-Standby). `GET /api/scoring/runs/<id>` liefert Status,
+  Zähler, Einzeiler, Fehlerklasse; `GET /api/scoring/runs?latest=1` je Entität
+  den letzten und den laufenden Lauf samt Bericht.
+- **Journal** `scoring_runs` (Migration 20261028000001): eine Zeile je Entität und
+  Lauf, `running` → `ok|partial|failed|skipped`, dazu Kosten, Median, Bericht
+  (verworfene Haikus, Lektorat-Hinweise, Batches, Audit vorher/nachher). Eine
+  Zeile, die zu lange `running` steht, meldet die Leseseite als abgebrochen:
+  Knopf nach 120 min, Nacht und CLI nach 330 min.
+- **Transport:** die Nacht über die Message Batches API von Anthropic
+  (`lib/server/anthropic-batch.ts`): gleiches Modell, gleiche Parameter, halber
+  Preis, dafür Minuten Wartezeit je Runde (Bewertung, Haiku-Nachforderung,
+  Lektorat). Frist 300 min je Lauf, danach wird storniert und Fertiges noch
+  abgeholt. `SCORING_TRANSPORT=direct` schaltet zurück auf Einzelaufrufe.
+- **Effort:** Bewertung und Haiku-Nachforderung max (Gate, kein Schalter nach
+  unten), das Lektorat high (`LEKTORAT_EFFORT`, es ändert nur Texte). Mit high
+  bewertet lagen Publikationen am 28.10. im Schnitt 0,08 zu hoch.
+- **Kosten** (gemessen 28.10., Batch-Preise): Bewertung ~0,25 USD je Publikation
+  und ~0,07 je Event, Lektorat ~0,05 je Chunk. Bei ~130 Publikationen und
+  ~110 Events im Monat rund 40 USD. Deckel 25 USD je Nacht; eine Nacht mit
+  großem Zulauf endet `partial`, der Rest kommt in der Folgenacht.
+- **Alarm:** nur `failed` (Check-in error, Sentry-Event `scoring:<error_class>`,
+  Mail „[OeAW Scoring] Nachtbewertung fehlgeschlagen"). `partial` und `skipped`
+  schließen ok und stehen nur im Journal. Der Sentry-Monitor `oeaw-press-ingest`
+  überwacht Ingest und Bewertung zusammen und braucht dafür eine Max Runtime von
+  mindestens 6 Stunden.
+- **Nachkontrolle:** `PROD_DB_TUNNEL=1 npm run scoring-run -- --target=prod
+  --report-latest` zeigt je Entität den letzten Lauf mit verworfenen Haikus und
+  Lektorat-Hinweisen.
+
 ## Alerting (mehrschichtig)
 
 1. **Nachtmail an websites@oeaw.ac.at** (AUSSERHALB der App, via `curl smtps://`
    prossl-Account): der VPS-Wrapper alarmiert bei curl-Fehler / non-200 / `ok:false`.
    Schreit auch, wenn die App selbst tot ist. (AP3, siehe unten.)
-2. **Sentry**: je Feed-Exception ein Event (`seam: ingest_run`).
+2. **Sentry**: je Feed-Exception ein Event (`seam: ingest_run`); je gescheitertem
+   Bewertungslauf eines (`seam: scoring_run` aus der App, `scoring_cron` aus dem
+   Wrapper).
 3. **Dashboard-Kachel „Bewertung"**: `lastImportFailed` → rote Zeile „Letzter Import
    fehlgeschlagen"; steigende „unbewertet"-Zahlen zeigen Rückstau (älteste ≥ 7 Tage → rot).
 4. **Optional Uptime-Kuma Push-Dead-Man** (~25 h Heartbeat).
@@ -108,11 +160,13 @@ beobachtete Leerserie: 3 Nächte.
   `lib/server/ingest/status.ts` (`getScoringStatus`, **ungecacht** — muss nach einem
   Lauf sofort stimmen). Counts kommen aus den kanonischen Views. Schwelle
   „überfällig" = `SCORING_STALE_DANGER_DAYS` (7) in `lib/shared/dashboard.ts`.
-- „Bewerten": gemeinsames `components/scoring-modal.tsx` (entity-parametrisiert,
-  Design = Social-Refresh-Modal). Ruft `/api/analysis/batch` (Pubs) bzw.
-  `/api/events/analyze` (Events). Beide Routen: `requireUser()` + Run-Lock
-  (`lib/server/run-lock.ts`, `pg_try_advisory_lock`) → paralleler Lauf = **409**.
-- Modell-Defaults: Pubs `anthropic/claude-sonnet-4`, Events `deepseek/deepseek-chat`.
+- „Bewerten": gemeinsames `components/scoring-modal.tsx` (entity-parametrisiert).
+  Ruft `/api/analysis/batch` (Pubs) bzw. `/api/events/analyze` (Events); beide
+  laufen über denselben Bewertungskern wie die Nacht (`lib/server/scoring-route.ts`,
+  `lib/server/scoring/button.ts`), aber direkt statt über die Batch-API, weil
+  jemand auf das Ergebnis wartet. `requireUser()`, Run-Lock je Entität; ein
+  paralleler Lauf kommt als SSE-Frame `skipped` (`lock_busy`), nicht mehr als 409.
+- Modell fest: Claude Opus 5.5, Effort max (keine Modellwahl im Modal).
 
 ## Kanonische Kandidaten-Views (eine Wahrheit)
 
@@ -122,8 +176,9 @@ beobachtete Leerserie: 3 Nächte.
   ('enriched','partial','failed') AND is_ita_subtree=false AND GREATEST(len(summaries…)) >= 120`.
 - `event_scoring_candidates`: `event_at >= now() AND event_score IS NULL`.
 
-Konsumenten: `lib/server/analysis/batch.ts` (non-force), `lib/server/events/analyze.ts`
-(non-force), `scripts/session-pipeline.ts` (Default), `scripts/event-candidates.mjs`,
+Konsumenten: `lib/server/analysis/scoring-adapter.ts` (non-force),
+`lib/server/events/scoring-adapter.ts` (non-force), `scripts/session-pipeline.ts`
+(Default), `scripts/event-candidates.mjs`,
 `lib/server/ingest/status.ts`. Parität zur alten In-Chat-Query lokal verifiziert
 (byte-identisch; `is_ita_subtree` == rekursiver ITA-CTE).
 
@@ -162,6 +217,30 @@ Konsumenten: `lib/server/analysis/batch.ts` (non-force), `lib/server/events/anal
    ≠ Coolify-Env. Angleichen. Ein 429 kann seit dem Auth-Reorder vom 2026-08-31
    nicht mehr den legitimen Cron treffen (korrektes Secret gewinnt immer).
 
+### Scoring-Mail bekommen („[OeAW Scoring] …")
+
+Erst `PROD_DB_TUNNEL=1 npm run scoring-run -- --target=prod --report-latest`,
+dann nach Fehlerklasse:
+
+- **`auth` / `credits`**: Anthropic-Key in Coolify ungültig oder Guthaben leer.
+  Key bzw. Guthaben richten; die Einträge bleiben offen und kommen in der
+  Folgenacht.
+- **`refusal`**: mindestens zwei Einzelaufrufe abgelehnt. Die Einträge in
+  `failed_items` ansehen; meist ein Text, der eine Sicherheitsschranke trifft.
+  In-chat bewerten oder liegen lassen.
+- **`transport`**: Anthropic oder die Batch-API nicht erreichbar, oder ein
+  Batch kam bis zur Frist nicht zurück. Selbstheilend in der Folgenacht; bei
+  Wiederholung `SCORING_TRANSPORT=direct` setzen.
+- **`max_tokens`**: zwei abgeschnittene Antworten in Folge. Batchgröße senken
+  (`SCORING_BATCH_SIZE`), Fall melden.
+- **`db`**: Journal oder Schreiben gescheitert; Container-Log und Postgres prüfen.
+- **`scoring:http:…` / `scoring:timeout`** (aus dem Wrapper): die Route war nicht
+  erreichbar oder ein Lauf stand nach 330 min noch `running` (Container-Neustart
+  mitten im Lauf). Journal ansehen, die offenen Einträge kommen in der Folgenacht.
+
+Not-Aus: `SCORING_NIGHTLY_ENABLED=false` in Coolify; der Wrapper schließt den
+Check-in dann ok und meldet `DISABLED`.
+
 ## Env
 
 | Var | Zweck |
@@ -169,6 +248,12 @@ Konsumenten: `lib/server/analysis/batch.ts` (non-force), `lib/server/events/anal
 | `INGEST_CRON_SECRET` | Bearer fürs Cron (min 32; `openssl rand -hex 32`). Unset → Route 503. |
 | `OEAW_EXPORT_ORIGIN_IP` | Cloudflare-Origin-Pin (VPS). Leer → normaler DNS (lokal CF-geblockt). |
 | `INGEST_ENRICH_LIMIT` | Enrichment-Obergrenze je Nacht-Lauf (Default 200). |
+| `ANTHROPIC_API_KEY` | Bewertung über Anthropic; ohne Key verweigern Nacht und Knopf (503). |
+| `SCORING_NIGHTLY_ENABLED` | Not-Aus der Nachtbewertung (Default `true`). |
+| `SCORING_TRANSPORT` | `batch` (Default, halber Preis) oder `direct`. |
+| `SCORING_NIGHTLY_LIMIT_PUBS` / `_EVENTS` | Obergrenze je Lauf (80 / 60). |
+| `SCORING_NIGHTLY_COST_CAP_USD` | Deckel je Nacht, beide Entitäten zusammen (25). |
+| `SCORING_BATCH_SIZE` / `SCORING_CONCURRENCY` | Datensätze je Aufruf (5) / gleichzeitige Aufrufe im direkten Modus (2). |
 
 Der VPS-Wrapper `/usr/local/bin/oeaw-press-ingest.sh` und alle übrigen
 Ops-Dateien der Box sind seit 2026-08-26 in `infra/metaspots/` versioniert;
@@ -178,4 +263,5 @@ Abgleich und Ausroll-Rezept stehen in `infra/metaspots/README.md`.
 
 Seit 2026-07-16 komplett live: Views auf prod, Coolify-Env, `oeaw-press-ingest.timer`
 (inzwischen 06:30, s. o.) + Mail-Wrapper, SPECTER2 + `oeaw-press-embeddings.timer`
-(inzwischen 07:00). Die Unit-/Skript-Wahrheit liegt in `infra/metaspots/`.
+(seit 2026-10-28 nur noch Netz um 12:00; regulär startet die Bewertung die
+Embeddings). Die Unit-/Skript-Wahrheit liegt in `infra/metaspots/`.

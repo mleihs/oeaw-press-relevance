@@ -27,7 +27,7 @@ export const SYSTEM_PROMPT = `${PERSONA} Your expertise is identifying which res
  * Vergleichslaufs (Plan §6).
  */
 export const PITCH_STYLE_RULES = `VERANKERUNG. Das ist der Unterschied zwischen einem Pitch und einer Inhaltsangabe. Eine Redakteurin greift zum Hörer, weil im Text etwas Konkretes steht, das sie zitieren oder nachrecherchieren kann. Nenne deshalb, was das Material hergibt, beim Namen statt in Umschreibungen:
-- Die Einrichtung: „das Gregor Mendel Institut der ÖAW", nicht „ein Forschungsteam". Institut und Autor:innen stehen oben im Datensatz.
+- Die Einrichtung: „das Gregor Mendel Institut der ÖAW", nicht „ein Forschungsteam". Institut und Autor:innen stehen oben im Datensatz. Steht beim Institut N/A, nennst du keine Einrichtung, auch keine allgemeine Formel wie „mit ÖAW-Beteiligung".
 - Die Forschenden, wenn eine Person als lead_author geführt wird: „Forschende um Armin Djamei".
 - Das Publikationsorgan, sofern es aus dem Material hervorgeht.
 - Fachbegriffe nennen und sofort erklären, statt sie wegzuabstrahieren: „ein Schlüsselprotein (Cce1) des Maisbeulenbrand-Pilzes" trägt, „ein Paar von Molekülen" trägt nicht. Dasselbe gilt für Arten, Orte, Verfahren und Zeitstellungen.
@@ -35,6 +35,25 @@ export const PITCH_STYLE_RULES = `VERANKERUNG. Das ist der Unterschied zwischen 
 Was das Material nicht hergibt, erfindest du nicht. Fehlt ein Anker, lass ihn weg und schreibe KÜRZER. Vier magere Sätze sind besser als sechs, von denen zwei nur Länge erzeugen.
 
 NICHT in den Pitch gehören Aussagen darüber, wofür sich der Beitrag eignet: „dankbar für Bildstrecken", „ein wertvoller Baustein", „macht den Standort sichtbar", „eignet sich für ein Feature". Das steht bereits in target_audience und suggested_angle und verdrängt hier die Substanz. Der letzte Satz gehört der Sache oder ihrer Konsequenz, nicht ihrer Verwertbarkeit.`;
+
+/**
+ * Kalibrierung am Bestand (seit 2026-10-28). Ohne sie bewertete der
+ * Bewertungskern im Vergleichslauf (scripts/scoring-compare.ts) im Schnitt
+ * 0.15 höher als die In-Chat-Kohorte, an der sich das Korpus ausrichtet: die
+ * Rubrik nannte je Dimension nur die Skala. Die Werte je Bereich sind die
+ * Mittel der In-Chat-Bewertungen (Opus 5 und 5.5, 316 Publikationen, Stand
+ * 2026-10-28), die Bereiche die Gesamtscores, die sie mit den Gewichten aus
+ * score-weights.json ergeben. In-Chat und Nacht teilen sich diese eine
+ * Kalibrierung; docs/INCHAT_SCORING.md verweist hierher.
+ */
+export const PUBLICATION_CALIBRATION = `KALIBRIERUNG AM BESTAND. Die Scores müssen mit rund achttausend bereits bewerteten Publikationen vergleichbar bleiben. Die meisten Publikationen sind Fachbeiträge für ein Fachpublikum, und die Skala bildet das ab: Im Bestand liegt der Gesamtscore im Median bei 0.26, die Hälfte zwischen 0.19 und 0.35, nur jede zehnte über 0.43; ab 0.55 stehen nur echte Pressethemen. Typische Werte je Bereich, in der Reihenfolge public_accessibility / societal_relevance / novelty_factor / storytelling_potential / media_timeliness:
+- um 0.11, hochspezialisierte Detailstudie ohne Bezug außerhalb des Fachs: 0.10 / 0.05 / 0.16 / 0.08 / 0.05
+- um 0.19, solide Facharbeit mit einem greifbaren Detail: 0.16 / 0.09 / 0.26 / 0.16 / 0.09
+- um 0.26, typischer Fachbeitrag mit vermittelbarem Kern: 0.24 / 0.12 / 0.31 / 0.27 / 0.13
+- um 0.35, gut erzählbares Thema mit mittelbarem Alltagsbezug: 0.39 / 0.22 / 0.34 / 0.39 / 0.22
+- um 0.43, starkes Thema mit klarer Relevanz und einer Erzählfigur: 0.51 / 0.30 / 0.41 / 0.49 / 0.29
+- ab 0.55, echtes Pressethema, das viele Menschen direkt betrifft, überrascht und starke Bilder liefert: 0.63 / 0.54 / 0.50 / 0.61 / 0.49
+Ordne jede Publikation zuerst einem dieser Bereiche zu und weiche nur ab, wo das Material es begründet. Leite jede Dimension aus der Arbeit selbst ab: Ein allgemeines Dauerthema (Klimawandel, Energiewende, künstliche Intelligenz, Weltraumwetter, Polarlichter, Gesundheit) hebt societal_relevance und media_timeliness nur, wenn die Arbeit selbst diesen Bezug herstellt; ein Bezug, den erst du knüpfst, zählt nicht. media_timeliness über 0.3 braucht einen konkreten Anlass: ein Ereignis, einen Jahrestag, eine laufende Debatte oder eine Saison, die das Material nennt oder die unmittelbar zum Thema gehört.`;
 
 /** Die vier Textfelder (Punkte 6 bis 9), so wie das Modell sie schreibt. */
 export const PUBLICATION_TEXT_RULES = `6. pitch_suggestion: Schreibe einen 4-6-sätzigen deutschen Pitch, den ein:e Pressereferent:in beim Anpitchen an Journalist:innen verwenden kann. Inkludiere einen Aufhänger, das Hauptergebnis, warum es für die Öffentlichkeit relevant ist, und was es einzigartig oder zeitgemäß macht. Sprache zugänglich, lebendig, fachfremd.
@@ -142,6 +161,8 @@ Liefere für JEDE Publikation:
 3. novelty_factor (0.0-1.0): Durchbruch? Stellt es bestehende Annahmen in Frage, ist es ein Paradigmenwechsel oder liefert es unerwartete Resultate?
 4. storytelling_potential (0.0-1.0): Können Journalist:innen daraus eine fesselnde Erzählung bauen? Gibt es Human-Interest-Aspekte, visuelle Elemente, lebensnahe Szenarien?
 5. media_timeliness (0.0-1.0): Anschlussfähig an aktuellen öffentlichen Diskurs, jüngste Ereignisse, Trends, saisonale Themen?
+
+${PUBLICATION_CALIBRATION}
 
 ${PUBLICATION_TEXT_RULES}
 

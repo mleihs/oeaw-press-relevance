@@ -6,6 +6,29 @@ keine Kosten, und die Kalibrierung bleibt konsistent mit dem Bestand.
 
 Einstieg: `/bewerten [pubs|events|beides] [Batchgröße]`.
 
+**Seit 2026-10-28 bewertet die Nacht automatisch** (`docs/NIGHTLY_OPS.md`,
+Abschnitt „Nachtbewertung"): derselbe Bewertungskern wie der Knopf, Opus 5.5 mit
+Effort max, Lektorat mit high, Tag `anthropic/claude-opus-5.5-auto`. Das
+In-Chat-Bewerten ist damit vor allem Nachkontrolle:
+
+- `PROD_DB_TUNNEL=1 npm run scoring-run -- --target=prod --report-latest` zeigt
+  je Entität den letzten Lauf mit verworfenen Haikus und Lektorat-Hinweisen.
+- Ein verworfenes Haiku in-chat schreiben und mit `session-pipeline apply --force`
+  nachtragen (Haiku ist Pflicht); Lektorat-Hinweise mit `repitch-apply` nachbessern.
+- Event-Zwillinge prüfen: bekamen Sprachversionen und Kopien dieselben Dimensionen?
+- Eine ganze Nachtkohorte neu bewerten: `npm run scoring-run -- --target=prod
+  --rescore-tag=anthropic/claude-opus-5.5-auto --since=<datum>`.
+
+Wofür In-Chat weiter das Mittel der Wahl ist: Altbestand außerhalb des
+60-Tage-Fensters, Einträge, die die Nacht offen lässt (`failed_items`), und alles,
+was ohne API-Kosten laufen soll.
+
+| Tag | Herkunft |
+|---|---|
+| `anthropic/claude-opus-5.5-session` | In-Chat, Publikationen |
+| `anthropic/claude-opus-5.5 (in-chat)` | In-Chat, Events |
+| `anthropic/claude-opus-5.5-auto` | Bewertungskern: Nacht, Knopf, CLI |
+
 Der Ablauf ist für beide Entitäten derselbe: Kandidaten aus der kanonischen View
 ziehen, gegen die Rubrik bewerten, als JSON ablegen, im Trockenlauf prüfen,
 schreiben. Unterschiedlich sind nur Rubrik, Dimensionen und Skriptname.
@@ -145,8 +168,12 @@ Dazu Freitext auf Deutsch:
   Messungen: `docs/HAIKU_GATE.md`. Bestand prüfen:
   `npm run haiku-audit -- --target=prod`.
 
-**Kalibrierung:** typische Fachpublikationen 0.28–0.43, nischig-technisch
-0.15–0.25, echt pressewürdig 0.5–0.7. Ein dichter Fachblock (GMI-Pflanzenbiologie,
+**Kalibrierung:** steht seit 2026-10-28 in der Rubrik selbst
+(`PUBLICATION_CALIBRATION` in `lib/server/analysis/prompts.ts`): sechs Bereiche
+von der hochspezialisierten Detailstudie (um 0.11) bis zum echten Pressethema
+(ab 0.55), je mit typischen Dimensionswerten, abgeleitet aus der In-Chat-Kohorte
+(Median 0.26). In-Chat und Nacht teilen sich diese eine Kalibrierung; bei
+Abweichungen gewinnt die Rubrik. Ein dichter Fachblock (GMI-Pflanzenbiologie,
 Chromatin, Methodenpapiere) landet erwartungsgemäß bei 0.15–0.31; das ist kein
 Zeichen für zu strenge Bewertung.
 
@@ -275,14 +302,11 @@ Freitext wie bei Publikationen, aber knapper: **pitch_suggestion** 2–4 Sätze
 Teaser für die Veranstaltungsseite, **suggested_angle** 1 Satz,
 **target_audience** 1–3 Angaben, **reasoning** 2–3 Sätze rein inhaltlich.
 
-**Kalibrierung** (aus dem prod-gescorten Bestand, Mittel ~0.23, Spanne 0.0–0.87):
-
-| Bereich | Typ |
-|---|---|
-| 0.0–0.10 | interne/technische Seminare, Workshops, Group Meetings |
-| 0.20–0.40 | spezialisierte öffentliche Vorträge und Kolloquien, enges Thema |
-| 0.55–0.75 | öffentliche Vorträge mit breiter oder aktueller Resonanz |
-| 0.80–0.90 | Flaggschiff-Events zu gesellschaftlichen Hot-Topics |
+**Kalibrierung:** steht seit 2026-10-28 in der Rubrik selbst (`EVENT_CALIBRATION`
+in `lib/server/events/prompts.ts`): fünf Bereiche von internen Seminaren (um
+0.09) bis zu Flaggschiffen (ab 0.6), je mit typischen Dimensionswerten,
+abgeleitet aus der In-Chat-Kohorte (Median 0.26). Sie ersetzt die früheren
+Archetypen der Rubrik, die über der gelebten Praxis lagen.
 
 Viele Kandidaten sind Seminare und Fachvorträge, erwarte also eine linksschiefe
 Verteilung mit mehreren Near-Zero-Items. Ehrlich aus dem Content bewerten.

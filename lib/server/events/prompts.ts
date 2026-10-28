@@ -47,6 +47,23 @@ export const EVENT_TEXT_RULES = `5. pitch_suggestion: Ein 2-4 Sätze langer deut
 7. target_audience: Das Zielpublikum (z.B. „breite Öffentlichkeit", „Familien", „Studierende", „Fachpublikum Geschichte"). 1-3 Angaben, kommagetrennt.
 8. reasoning: 2-3 Sätze auf Deutsch, die die Einstufung begründen. Nur lesbarer Fließtext, keine Variablennamen oder Datenbankfelder.`;
 
+/**
+ * Kalibrierung am Bestand (seit 2026-10-28), ersetzt die früheren Archetypen.
+ * Die lagen über der gelebten Praxis (ein interner Workshop ergab rund 0.25,
+ * in-chat stehen solche Termine bei 0.09), und der Bewertungskern bewertete im
+ * Vergleichslauf im Schnitt 0.14 höher als die In-Chat-Kohorte. Die Werte je
+ * Bereich sind die Mittel der In-Chat-Bewertungen (Opus 4.8 bis 5.5, 468
+ * Veranstaltungen, Stand 2026-10-28). In-Chat und Nacht teilen sich diese
+ * eine Kalibrierung; docs/INCHAT_SCORING.md verweist hierher.
+ */
+export const EVENT_CALIBRATION = `Kalibrierung am Bestand. Die Scores müssen mit den rund 470 bereits bewerteten Veranstaltungen vergleichbar bleiben: Median 0.26, ein Viertel unter 0.13, nur jede zehnte über 0.55. Typische Werte je Bereich, in der Reihenfolge public_appeal / scientific_significance / reach / timeliness:
+- um 0.09, interne oder technische Seminare, Group Meetings, Fachvorträge im engen Kreis: 0.05 / 0.17 / 0.05 / 0.05
+- um 0.19, Fachworkshops, Summer Schools und Symposien für ein Fachpublikum, auch mit Anmeldung: 0.12 / 0.35 / 0.12 / 0.10
+- um 0.32, Kolloquien, Preisverleihungen und öffentliche Vorträge zu einem engeren Thema: 0.32 / 0.42 / 0.24 / 0.23
+- um 0.46, öffentliche Konferenzen, Abendvorträge und Podien zu breit anschlussfähigen Themen: 0.52 / 0.46 / 0.40 / 0.44
+- ab 0.6, Flaggschiffe: große internationale Kongresse mit Publikumsprogramm, Publikumsabende wie die Lange Nacht der Museen, Podien zu tagesaktuellen Konflikten oder großen Jubiläen: 0.66 / 0.61 / 0.61 / 0.57
+Ordne jede Veranstaltung zuerst einem dieser Bereiche zu und weiche nur ab, wo die Ankündigung es begründet; einzelne Flaggschiffe dürfen deutlich darüber liegen. timeliness über 0.3 braucht einen Anlass, den die Ankündigung nennt oder der unmittelbar zum Thema gehört (Jahrestag, laufender Konflikt, Saison); ein allgemein wichtiges Thema ohne Anlass hebt sie nicht.`;
+
 /** Typografie aller Textfelder. */
 export const EVENT_TYPOGRAPHY_RULES = `Verwende echte deutsche Umlaute (ä, ö, ü, ß), niemals „ae/oe/ue/ss". Verwende keine Geviert- oder Gedankenstriche (das Zeichen —); formuliere mit Komma, Doppelpunkt oder zwei Sätzen.`;
 
@@ -114,11 +131,7 @@ Liefere für JEDE Veranstaltung vier UNABHÄNGIG zu bewertende Dimensionen. Sie 
 3. reach (0.0-1.0): tatsächliche Breitenwirkung und Öffnung, das FORMAT-Maß. Hoch bei öffentlich zugänglichen, auf ein großes oder überregionales Publikum angelegten Veranstaltungen (offener Eintritt, Ausstellung, Publikumsprogramm, Medienanschluss, großes Teilnehmerfeld); niedrig bei geschlossenem oder kleinem Fachkreis (Anmeldung, Teilnehmerbegrenzung, CfP). Fällt oft von public_appeal ab: ein breit interessantes Thema im geschlossenen Workshop hat niedrige reach, ein Fachthema als großes öffentliches Festival hohe.
 4. timeliness (0.0-1.0): aktueller Anlass. Hoch bei Bezug zu laufendem öffentlichem Diskurs, aktuellen Ereignissen und Konflikten, Jahrestagen und Jubiläen, Saison; niedrig ohne aktuellen Aufhänger.
 
-Kalibrierung (Archetypen zur Orientierung, nicht wörtlich übernehmen):
-- Internationaler Flaggschiff-Kongress mit öffentlichem Begleitprogramm (Ausstellungen, Stadt-Kooperation, großes Teilnehmerfeld): public_appeal ~0.7, scientific_significance ~0.9, reach ~0.8, timeliness ~0.4.
-- Öffentliche Buchpräsentation oder Abendvortrag zu einem gesellschaftlich-historischen Thema an prominentem Ort, offene Einladung: public_appeal ~0.7, scientific_significance ~0.5, reach ~0.6, timeliness ~0.4.
-- Veranstaltung zu einem tagesaktuellen gesellschaftlichen Thema (aktueller Konflikt, großes Jubiläum) mit öffentlichem Zugang: timeliness ~0.85, public_appeal ~0.7, reach ~0.6.
-- Geschlossene Graduate School, interner Workshop oder Fachseminar mit Anmeldung und kleinem Teilnehmerkreis: public_appeal ~0.2, scientific_significance ~0.4, reach ~0.15, timeliness ~0.2.
+${EVENT_CALIBRATION}
 
 ${EVENT_TEXT_RULES}
 
