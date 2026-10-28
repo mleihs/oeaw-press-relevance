@@ -77,6 +77,12 @@ export const ANGLE_FORM_MIN_ITEMS = 5;
  *  verraten, dass das Modell aus den Metadaten statt aus dem Inhalt schließt. */
 const LEAK_VARIABLE = /(popular_science|peer_reviewed|mahighlight)\s*=/i;
 const LEAK_FLAG_PROSE = /peer-?reviewed|pressetauglich markiert|Highlight des Instituts/i;
+/** Der Bewertungsvorgang selbst (seit 2026-10-28): übernimmt ein Event die
+ *  Dimensionen seines schon bewerteten Zwillings, erklärte das Modell das im
+ *  Text („wurde auf der Zentralseite bereits bewertet, daher gilt dieselbe
+ *  Einstufung"). Die Felder beschreiben die Sache, nicht ihre Bewertung. */
+const LEAK_PROCESS =
+  /\b(?:bereits|schon) (?:bewertet|eingestuft)\b|\bdieselbe (?:Einstufung|Bewertung|Einschätzung)\b|\b(?:Einstufung|Bewertung) (?:bleibt|ist) (?:identisch|gleich|dieselbe)\b|\b(?:bleibt|ist) die (?:Einstufung|Bewertung) (?:identisch|gleich|dieselbe)\b/i;
 const LEAK_FIELDS: readonly TextField[] = ['reasoning', 'pitch_suggestion', 'suggested_angle'];
 
 /** Gedankenstrich: Em-Dash überall, En-Dash nur mit Leerzeichen beidseitig
@@ -113,7 +119,7 @@ export function auditItem(item: AuditItem, opts: AuditOptions): AuditFinding[] {
     if (typeof text !== 'string') continue;
 
     if (LEAK_FIELDS.includes(field)) {
-      const leak = LEAK_VARIABLE.exec(text) ?? LEAK_FLAG_PROSE.exec(text);
+      const leak = LEAK_VARIABLE.exec(text) ?? LEAK_FLAG_PROSE.exec(text) ?? LEAK_PROCESS.exec(text);
       if (leak) add(field, 'leak', leak[0]);
     }
 
