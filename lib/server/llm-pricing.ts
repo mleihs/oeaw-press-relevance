@@ -23,7 +23,7 @@ import { log } from '@/lib/server/log';
  * /api/llm/models offen) und braucht keinen API-Key. Der Marker hätte hier
  * nichts geschützt, aber lib/server/openrouter.ts unbrauchbar gemacht, sobald
  * es die Preise für die Kostenrechnung braucht: der zieht auch in
- * tsx-Skripten (scripts/analyze-events.ts), wo `server-only` schlicht nicht
+ * tsx-Skripten (scripts/scoring-run.ts), wo `server-only` schlicht nicht
  * auflösbar ist. Das Verzeichnis lib/server signalisiert die Absicht.
  */
 

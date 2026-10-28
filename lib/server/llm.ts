@@ -1,6 +1,6 @@
 import 'server-only';
 import { NextRequest } from 'next/server';
-import { DEFAULT_LLM_MODEL, LLM_MODELS } from '@/lib/shared/constants';
+import { LLM_MODELS } from '@/lib/shared/constants';
 import { log } from '@/lib/server/log';
 import { envKeyFor, providerFor } from '@/lib/server/llm-client';
 
@@ -28,10 +28,12 @@ export function getLLMKey(req: NextRequest, model: string): string {
 
 /**
  * Allowlist für den `x-llm-model`-Header: exakt der kuratierte Modell-Picker
- * (LLM_MODELS in lib/shared/constants.ts — dieselbe Quelle, aus der
+ * (LLM_MODELS in lib/shared/constants.ts, dieselbe Quelle, aus der
  * /api/llm/models die Auswahl der UI speist). Der Header ist Client-Input
  * hinter dem geteilten Gate-Cookie; ungeprüft könnte jeder Gate-Inhaber ein
- * beliebiges (teuerstes) OpenRouter-Modell pro Request erzwingen.
+ * beliebiges (teuerstes) Modell pro Request erzwingen. Nur noch der
+ * Social-Refresh sendet ihn; die Bewertung wählt ihr Modell nicht über den
+ * Request (lib/server/scoring-route.ts).
  */
 const HEADER_MODEL_ALLOWLIST = new Set(LLM_MODELS.map((m) => m.value));
 
@@ -46,19 +48,4 @@ export function getRequestedModel(req: NextRequest): string | null {
   if (HEADER_MODEL_ALLOWLIST.has(requested)) return requested;
   log.debug('x-llm-model außerhalb der Modell-Allowlist ignoriert', { requested });
   return null;
-}
-
-/**
- * Model selection. Header wins so users can override per-request from the
- * settings panel (nur Allowlist-Werte, s. getRequestedModel); falls back to
- * LLM_DEFAULT_MODEL env, then DEFAULT_LLM_MODEL
- * (Opus 5.5 — dasselbe Modell wie die In-Chat-Bewertung;
- * Kalibrierungs-Begründung in lib/shared/constants.ts).
- */
-export function getLLMModel(req: NextRequest): string {
-  return (
-    getRequestedModel(req) ||
-    process.env.LLM_DEFAULT_MODEL ||
-    DEFAULT_LLM_MODEL
-  );
 }

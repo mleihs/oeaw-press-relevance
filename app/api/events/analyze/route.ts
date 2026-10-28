@@ -1,70 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
-import {
-  apiError,
-  createSSEStream,
-  errorToApiResponse,
-  sseResponse,
-  validateBody,
-  withApiError,
-} from '@/lib/server/http';
-import { requireUser } from '@/lib/server/auth/require';
-import { acquireRunLock, RunLockBusyError, RUN_LOCK_KEYS } from '@/lib/server/run-lock';
-import { getLLMKey, getLLMModel } from '@/lib/server/llm';
-import {
-  fetchEventsForAnalysis,
-  runEventsAnalysisBatch,
-} from '@/lib/server/events/analyze';
-import { scoringBatchPayloadSchema } from '@/lib/shared/schemas';
+import { createScoringButtonRoute } from '@/lib/server/scoring-route';
 
-// Mirrors app/api/analysis/batch — SSE stream of the event-scoring run. Only
-// needs OpenRouter (no MySQL), so unlike the events SYNC this works in prod.
+// Bewerten-Knopf für Events, Zwilling von app/api/analysis/batch: derselbe
+// Kern, dasselbe Protokoll (lib/server/scoring-route.ts).
 export const maxDuration = 300;
 
-export const POST = withApiError(async (req: NextRequest) => {
-  // Gibt OpenRouter-Guthaben aus → angemeldete Identität Pflicht (vorher nur
-  // Gate-Cookie).
-  await requireUser();
-
-  let apiKey, model;
-  try {
-    model = getLLMModel(req);
-    apiKey = getLLMKey(req, model);
-  } catch (err) {
-    return errorToApiResponse(err, 400, 'Configuration error');
-  }
-
-  const filters = await validateBody(req, scoringBatchPayloadSchema);
-
-  // Siehe app/api/analysis/batch: benannte ids, die die Gates aussortieren,
-  // zählt der Fetcher, statt sie stillschweigend verschwinden zu lassen.
-  const { events, skipped } = await fetchEventsForAnalysis(filters);
-  if (events.length === 0) {
-    return NextResponse.json({ message: 'No events to analyze', skipped });
-  }
-
-  // Run-Lock VOR dem SSE-Stream: laufender Lauf → 409. Freigabe erst im .finally
-  // des Hintergrund-Batches (nicht schon beim Response-Return).
-  let lock;
-  try {
-    lock = await acquireRunLock(RUN_LOCK_KEYS.scoreEvents);
-  } catch (err) {
-    if (err instanceof RunLockBusyError) return apiError(err.message, 409);
-    throw err;
-  }
-
-  const { stream, send, close } = createSSEStream();
-  runEventsAnalysisBatch({
-    events,
-    apiKey,
-    model,
-    batchSize: filters.batchSize,
-    abortSignal: req.signal,
-    emit: send,
-    skipped,
-  }).finally(() => {
-    close();
-    void lock.release();
-  });
-
-  return sseResponse(stream);
-});
+export const POST = createScoringButtonRoute('events');

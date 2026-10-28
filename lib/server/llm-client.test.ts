@@ -4,14 +4,14 @@ import {
   completeJson,
   costFromUsage,
   estimateCost,
-  getKeyBalance,
   isFatalLlmError,
   parseJsonContent,
   providerFor,
 } from './llm-client';
 import { messagesJson } from './anthropic';
-import { chatCompletionJson, checkKeyBalance } from './openrouter';
-import { UNKNOWN_BALANCE } from './llm-types';
+import type { MessageBatcher } from './anthropic-batch';
+import { chatCompletionJson } from './openrouter';
+import { LlmMaxTokensError } from './llm-types';
 
 vi.mock('@/lib/server/log', () => ({
   log: { warn: vi.fn(), error: vi.fn(), info: vi.fn() },
@@ -37,12 +37,10 @@ vi.mock('./anthropic', async (orig) => ({
 }));
 vi.mock('./openrouter', () => ({
   chatCompletionJson: vi.fn(),
-  checkKeyBalance: vi.fn(),
 }));
 
 const mockMessages = vi.mocked(messagesJson);
 const mockChat = vi.mocked(chatCompletionJson);
-const mockBalance = vi.mocked(checkKeyBalance);
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -92,6 +90,20 @@ describe('completeJson', () => {
     expect(mockMessages).toHaveBeenLastCalledWith(expect.objectContaining({ effort: 'max' }));
   });
 
+  it('hängt einer abgeschnittenen Antwort ihren Preis an (bezahlt, aber unbrauchbar)', async () => {
+    vi.stubEnv('ANTHROPIC_API_KEY', 'sk-ant-x');
+    mockMessages.mockRejectedValue(new LlmMaxTokensError(128_000, { promptTokens: 1000, completionTokens: 128_000 }));
+    const err = await completeJson(opts).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(LlmMaxTokensError);
+    expect((err as LlmMaxTokensError).cost).toBeCloseTo((1000 * LIVE_PROMPT + 128_000 * LIVE_COMPLETION) / 1_000_000, 12);
+  });
+
+  it('lässt andere Fehler ohne Preis durch', async () => {
+    vi.stubEnv('ANTHROPIC_API_KEY', 'sk-ant-x');
+    mockMessages.mockRejectedValue(new Error('Anthropic API error 529: Overloaded'));
+    await expect(completeJson(opts)).rejects.toThrow(/529/);
+  });
+
   it('nimmt ohne Anthropic-Key den OpenRouter-Transport', async () => {
     vi.stubEnv('ANTHROPIC_API_KEY', '');
     mockChat.mockResolvedValue({ content: '{"ok":true}', usage });
@@ -101,21 +113,33 @@ describe('completeJson', () => {
     expect(res.content).toBe('{"ok":true}');
     expect(res.tokensUsed).toBe(1000);
   });
-});
 
-describe('getKeyBalance', () => {
-  it('fragt bei Anthropic nichts ab und meldet den Stand als unbekannt', async () => {
+  it('geht mit `batch` über die Batch-Sammlung und rechnet zum halben Preis', async () => {
     vi.stubEnv('ANTHROPIC_API_KEY', 'sk-ant-x');
-    await expect(getKeyBalance('sk-ant-x', OPUS)).resolves.toEqual(UNKNOWN_BALANCE);
-    expect(mockBalance).not.toHaveBeenCalled();
+    const request = vi.fn(async () => ({ content: '{}', usage }));
+    const res = await completeJson({ ...opts, batch: { request } as unknown as MessageBatcher });
+    expect(mockMessages).not.toHaveBeenCalled();
+    expect(request).toHaveBeenCalledWith({ system: 's', user: 'u', model: OPUS, effort: 'max' });
+    expect(res.tokensUsed).toBe(1000);
+    expect(res.cost).toBeCloseTo((800 * LIVE_PROMPT + 200 * LIVE_COMPLETION) / 2_000_000, 12);
   });
 
-  it('fragt bei OpenRouter dessen Guthaben ab', async () => {
+  it('halbiert auch den Preis einer abgeschnittenen Batch-Antwort', async () => {
     vi.stubEnv('ANTHROPIC_API_KEY', 'sk-ant-x');
-    const balance = { ...UNKNOWN_BALANCE, effectiveBudget: 5 };
-    mockBalance.mockResolvedValue(balance);
-    await expect(getKeyBalance('sk-or-x', 'deepseek/deepseek-chat')).resolves.toEqual(balance);
-    expect(mockBalance).toHaveBeenCalledWith('sk-or-x');
+    const request = vi.fn(async () => {
+      throw new LlmMaxTokensError(128_000, { promptTokens: 1000, completionTokens: 128_000 });
+    });
+    const err = await completeJson({ ...opts, batch: { request } as unknown as MessageBatcher }).catch((e: unknown) => e);
+    expect((err as LlmMaxTokensError).cost).toBeCloseTo((1000 * LIVE_PROMPT + 128_000 * LIVE_COMPLETION) / 2_000_000, 12);
+  });
+
+  it('ignoriert `batch` ohne Anthropic-Key (OpenRouter kennt keine Batch-Sammlung)', async () => {
+    vi.stubEnv('ANTHROPIC_API_KEY', '');
+    mockChat.mockResolvedValue({ content: '{}', usage });
+    const request = vi.fn();
+    await completeJson({ ...opts, batch: { request } as unknown as MessageBatcher });
+    expect(request).not.toHaveBeenCalled();
+    expect(mockChat).toHaveBeenCalled();
   });
 });
 

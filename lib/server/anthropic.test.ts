@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { anthropicModelId, messagesJson } from './anthropic';
+import { LlmMaxTokensError, LlmRefusalError } from './llm-types';
 
 // Das SDK wird gestubbt: geprüft wird, was dieser Transport hinschickt und wie
 // er die Antwort abbildet, nicht das SDK selbst.
@@ -86,16 +87,34 @@ describe('messagesJson', () => {
     });
   });
 
-  it('wirft bei einer Ablehnung mit Kategorie', async () => {
+  it('wirft bei einer Ablehnung einen LlmRefusalError mit Kategorie', async () => {
     finalMessage.mockResolvedValue(
       message({ stop_reason: 'refusal', stop_details: { category: 'bio' }, content: [] }),
     );
-    await expect(messagesJson(opts)).rejects.toThrow(/abgelehnt \(refusal, bio\)/);
+    const err = await messagesJson(opts).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(LlmRefusalError);
+    expect(err).toMatchObject({ name: 'LlmRefusalError', category: 'bio' });
+    expect((err as Error).message).toMatch(/abgelehnt \(refusal, bio\)/);
+    // Bezahlt ist auch die Ablehnung: die Nutzung reist mit dem Fehler.
+    expect(err).toMatchObject({ usage: { promptTokens: 800, completionTokens: 3000 } });
   });
 
-  it('wirft bei abgeschnittener Antwort', async () => {
+  it('wirft bei abgeschnittener Antwort einen LlmMaxTokensError samt Nutzung', async () => {
     finalMessage.mockResolvedValue(message({ stop_reason: 'max_tokens' }));
-    await expect(messagesJson(opts)).rejects.toThrow(/abgeschnitten/);
+    const err = await messagesJson(opts).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(LlmMaxTokensError);
+    expect(err).toMatchObject({
+      name: 'LlmMaxTokensError',
+      maxTokens: 128_000,
+      usage: { promptTokens: 800, completionTokens: 3000 },
+    });
+    expect((err as Error).message).toMatch(/abgeschnitten/);
+  });
+
+  it('erlaubt das Maximum von Opus 5.5 (128K), damit Effort max nicht ins Leere denkt', async () => {
+    finalMessage.mockResolvedValue(message());
+    await messagesJson(opts);
+    expect(((stream.mock.calls[0] as unknown[])[0] as { max_tokens: number }).max_tokens).toBe(128_000);
   });
 
   it('wirft ohne Textblock', async () => {

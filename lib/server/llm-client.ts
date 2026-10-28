@@ -5,21 +5,23 @@
 //
 //   providerFor(model)  die eine Weiche: welcher Transport bedient ein Modell
 //   completeJson()      JSON-Aufruf über den passenden Transport, plus Kosten
-//   getKeyBalance()     Guthaben-Pre-flight, soweit der Anbieter einen hat
 //   isFatalLlmError()   Lauf abbrechen (Guthaben/Auth) oder Batch überspringen
 //   parseJsonContent()  gehärteter JSON-Parser für Antworttexte
 //
-// Transporte: lib/server/openrouter.ts und lib/server/anthropic.ts. Sie kennen
-// einander nicht und rechnen keine Kosten; die Typen teilen sie über
+// Transporte: lib/server/openrouter.ts und lib/server/anthropic.ts, dazu für
+// Anthropic die Batch-API (lib/server/anthropic-batch.ts, halber Preis). Sie
+// kennen einander nicht und rechnen keine Kosten; die Typen teilen sie über
 // lib/server/llm-types.ts.
 
 import { fallbackPricingFor, type ModelPricing } from '@/lib/shared/constants';
 import { getLiveModelPricing } from '@/lib/server/llm-pricing';
 import { parseLooseJson } from '@/lib/shared/json';
+import { fatalLlmErrorClass } from '@/lib/shared/llm-errors';
 import { log } from '@/lib/server/log';
 import { anthropicModelId, messagesJson, type AnthropicEffort } from '@/lib/server/anthropic';
-import { chatCompletionJson, checkKeyBalance } from '@/lib/server/openrouter';
-import { UNKNOWN_BALANCE, type KeyBalance, type TokenUsage } from '@/lib/server/llm-types';
+import { BATCH_PRICE_FACTOR, type MessageBatcher } from '@/lib/server/anthropic-batch';
+import { chatCompletionJson } from '@/lib/server/openrouter';
+import { LlmBilledError, type TokenUsage } from '@/lib/server/llm-types';
 
 export type LlmProvider = 'anthropic' | 'openrouter';
 
@@ -90,6 +92,9 @@ export interface CompleteJsonOptions {
   /** Nur Anthropic: Denktiefe für diesen Aufruf statt ANTHROPIC_EFFORT. Für
    *  Extraktion (Social, Orte) `low`; die Bewertung lässt es weg. */
   effort?: AnthropicEffort;
+  /** Nur Anthropic: über diese Batch-Sammlung statt direkt, asynchron und zum
+   *  halben Preis (Nachtbewertung, CLI). OpenRouter-Modelle ignorieren es. */
+  batch?: MessageBatcher;
 }
 
 export interface CompleteJsonResult {
@@ -99,37 +104,40 @@ export interface CompleteJsonResult {
   cost: number;
 }
 
-/** Ein JSON-Aufruf über den Transport, den providerFor(model) wählt. */
-export async function completeJson(opts: CompleteJsonOptions): Promise<CompleteJsonResult> {
-  const { content, usage } =
-    providerFor(opts.model) === 'anthropic'
-      ? await messagesJson({ ...opts, effort: opts.effort ?? anthropicEffort() })
-      : await chatCompletionJson(opts);
-  return {
-    content,
-    tokensUsed: usage.promptTokens + usage.completionTokens,
-    cost: await estimateCost(usage, opts.model),
-  };
-}
-
 /**
- * Guthaben für den Pre-flight. Anthropic hat für normale API-Keys keinen
- * Guthaben-Endpunkt: der Stand bleibt unbekannt, der Lauf startet, und ein
- * leeres Konto stoppt ihn beim ersten Batch (isFatalLlmError).
+ * Ein JSON-Aufruf über den Transport, den providerFor(model) wählt. Eine
+ * abgelehnte oder abgeschnittene Antwort (LlmBilledError) ist bezahlt: der
+ * Fehler bekommt seinen Preis mit, damit Aufrufer mit Kostendeckel ihn
+ * verbuchen können.
  */
-export async function getKeyBalance(apiKey: string, model: string): Promise<KeyBalance> {
-  return providerFor(model) === 'anthropic' ? UNKNOWN_BALANCE : checkKeyBalance(apiKey);
+export async function completeJson(opts: CompleteJsonOptions): Promise<CompleteJsonResult> {
+  const anthropic = providerFor(opts.model) === 'anthropic';
+  const batch = anthropic ? opts.batch : undefined;
+  const factor = batch ? BATCH_PRICE_FACTOR : 1;
+  const effort = opts.effort ?? anthropicEffort();
+  try {
+    const { content, usage } = batch
+      ? await batch.request({ system: opts.system, user: opts.user, model: opts.model, effort })
+      : anthropic
+        ? await messagesJson({ ...opts, effort })
+        : await chatCompletionJson(opts);
+    return {
+      content,
+      tokensUsed: usage.promptTokens + usage.completionTokens,
+      cost: (await estimateCost(usage, opts.model)) * factor,
+    };
+  } catch (err) {
+    if (err instanceof LlmBilledError && err.usage) err.cost = (await estimateCost(err.usage, opts.model)) * factor;
+    throw err;
+  }
 }
 
 /** Fatal (Lauf stoppen, um Guthaben zu sparen) oder vorübergehend (Batch
- *  überspringen, weiter). Eine Regel für alle Pipelines und beide Anbieter. */
+ *  überspringen, weiter). Eine Regel für alle Pipelines und beide Anbieter;
+ *  sie liegt in lib/shared/llm-errors.ts, weil auch die Klassifikation eines
+ *  Bewertungslaufs sie braucht. */
 export function isFatalLlmError(message: string): boolean {
-  return (
-    (/\b402\b/.test(message) && /credits|afford|max_tokens|Budget|Guthaben/i.test(message)) ||
-    // Anthropic meldet ein leeres Konto als 400, nicht als 402.
-    /credit balance is too low/i.test(message) ||
-    (/\b401\b/.test(message) && /unauthorized|invalid/i.test(message))
-  );
+  return fatalLlmErrorClass(message) !== null;
 }
 
 /** Parse a JSON object out of an assistant message via the hardened shared

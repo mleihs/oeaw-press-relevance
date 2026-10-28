@@ -5,7 +5,7 @@ argument-hint: "[pubs|events|beides] [batchgröße, Default 25]"
 
 Bewerte Publikationen und/oder Veranstaltungen **in-chat** — also von dir selbst,
 nicht über OpenRouter. Das ist der kalibrierte Standardweg und kostet nichts; der
-„Bewerten"-Knopf in der App und `npm run analyze-events` sind nur der Fallback.
+„Bewerten"-Knopf in der App und `npm run scoring-run` sind nur der Fallback.
 
 Umfang: `$1` (`pubs`, `events` oder `beides`; ohne Angabe **beides**).
 Batchgröße: `$2` (ohne Angabe **25**).

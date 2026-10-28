@@ -27,7 +27,7 @@ schreiben. Unterschiedlich sind nur Rubrik, Dimensionen und Skriptname.
 - **Jedes Schreibskript ist Dry-run per Default.** Erst ohne `--apply` fahren,
   die Vorschau lesen, dann schreiben. Unter Prod liegt kein Netz.
 - **Kein OpenRouter.** Weder der „Bewerten"-Knopf in der App noch
-  `npm run analyze-events` gehören zu diesem Weg; beides ist der Fallback.
+  `npm run scoring-run` gehören zu diesem Weg; beides ist der Fallback.
 
 ## Schritt 0 — Tunnel
 
@@ -141,7 +141,7 @@ Dazu Freitext auf Deutsch:
   `apply` prüft das seit 2026-09-03 hart und bricht mit Exit 1 ab: Struktur
   und 5-7-5, letzteres über drei unabhängige Zähler mit Mehrheitsentscheid.
   Wo keine Mehrheit zustande kommt, bricht es ebenfalls ab, und das Wort
-  gehört mit Duden-Beleg in `scripts/lib/haiku-lexicon.json`. Aufbau und
+  gehört mit Duden-Beleg in `lib/shared/scoring/haiku-lexicon.json`. Aufbau und
   Messungen: `docs/HAIKU_GATE.md`. Bestand prüfen:
   `npm run haiku-audit -- --target=prod`.
 

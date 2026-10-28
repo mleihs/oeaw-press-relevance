@@ -164,47 +164,39 @@ export interface LLMModel {
 }
 
 /**
- * Der kuratierte Modell-Picker. Bewusst KURZ: jedes zusätzliche Modell ist ein
- * weiteres Kalibrierungs-Regime im selben Korpus, und Scores aus zwei Regimen
- * sind nicht vergleichbar (Befund docs/RESUME_SCORING_SPLIT_REVIEW.md).
+ * Die kuratierte Modell-Liste: genau das Modell, mit dem bewertet wird. Seit
+ * dem Bewertungskern (lib/server/scoring/, Oktober 2026) gibt es für die
+ * Bewertung keine Wahl mehr: jeder Lauf nimmt DEFAULT_LLM_MODEL mit Effort
+ * max, ein neueres Opus kommt nur per Konstanten-Bump plus Vergleichslauf
+ * (lib/server/scoring/gate.ts). Jedes weitere Modell wäre ein zweites
+ * Kalibrierungs-Regime im selben Korpus, und Scores aus zwei Regimen sind
+ * nicht vergleichbar (Befund docs/RESUME_SCORING_SPLIT_REVIEW.md). Den
+ * Modell-Picker zeigt nur noch der Social-Refresh; der `x-llm-model`-Header
+ * lässt nur diese Werte durch (lib/server/llm.ts).
+ *
  * Entfernt am 2026-07-21: google/gemini-2.0-flash-001 (auf OpenRouter 404),
  * meta-llama/llama-3.2-3b-instruct:free (kaputtes JSON), openai/gpt-4o-mini,
- * anthropic/claude-3.5-haiku, anthropic/claude-sonnet-4 (durch Sonnet 5
- * ersetzt); am 2026-10-24 anthropic/claude-opus-4.8 (durch Opus 5.5 ersetzt,
- * seitdem auch das Modell der In-Chat-Bewertung). Historische `llm_model`-Strings in der DB rendern weiter: der
- * ModelBadge in components/publication-table.tsx fällt auf den Teil nach dem
- * Slash zurück.
+ * anthropic/claude-3.5-haiku, anthropic/claude-sonnet-4; am 2026-10-24
+ * anthropic/claude-opus-4.8 (durch Opus 5.5 ersetzt); am 2026-10-27
+ * anthropic/claude-sonnet-5 und deepseek/deepseek-chat (die Bewertung läuft
+ * nur noch mit Opus). Historische `llm_model`-Strings in der DB rendern
+ * weiter: der ModelBadge in components/publication-table.tsx fällt auf den
+ * Teil nach dem Slash zurück.
  *
- * Fallback-Preise: OpenRouter-Live-Check 2026-07-21 (Opus 5.5: 2026-10-24).
+ * Fallback-Preis: OpenRouter-Live-Check 2026-10-24.
  */
 export const LLM_MODELS: LLMModel[] = [
   {
     value: 'anthropic/claude-opus-5.5',
     label: 'Claude Opus 5.5',
     description:
-      'Kalibrierungskonsistent: dasselbe Modell, mit dem das Korpus derzeit in-chat bewertet wird. Läuft direkt über die Anthropic-API mit Effort max. Beste Pitches, teuerste Option.',
+      'Kalibrierungskonsistent: dasselbe Modell, mit dem das Korpus in-chat und automatisch bewertet wird. Läuft direkt über die Anthropic-API.',
     tier: 'recommended',
     fallbackPricing: { promptUsd: 4, completionUsd: 20 },
   },
-  {
-    value: 'anthropic/claude-sonnet-5',
-    label: 'Claude Sonnet 5',
-    description:
-      'Deutlich günstiger als Opus bei guter Textqualität. Kleine Abweichungen zur Opus-Kalibrierung sind möglich.',
-    tier: 'balanced',
-    fallbackPricing: { promptUsd: 2, completionUsd: 10 },
-  },
-  {
-    value: 'deepseek/deepseek-chat',
-    label: 'DeepSeek Chat',
-    description:
-      'Günstigste Option, aber Vorsicht: bewertet deutlich höher als das Opus-kalibrierte Korpus (gemessen rund 0,53 statt 0,25). Die Scores sind dann nicht mehr vergleichbar.',
-    tier: 'budget',
-    fallbackPricing: { promptUsd: 0.20, completionUsd: 0.80 },
-  },
 ];
 
-/** Vorbelegung des Modell-Pickers und Server-Fallback (lib/server/llm.ts). */
+/** Das Bewertungsmodell (lib/server/scoring/) und Vorbelegung der übrigen LLM-Aufrufe. */
 export const DEFAULT_LLM_MODEL = 'anthropic/claude-opus-5.5';
 
 
@@ -217,10 +209,11 @@ export const DEFAULT_LLM_MODEL = 'anthropic/claude-opus-5.5';
 export const UNKNOWN_MODEL_PRICING: ModelPricing = { promptUsd: 5, completionUsd: 5 };
 
 /**
- * Modelle, die wir BENUTZEN, ohne sie im Bewertungs-Picker anzubieten — derzeit
- * nur DeepSeek V4 Flash (bis 2026-10-24 Default des Social-Moduls). Sie gehören nicht in
- * `LLM_MODELS`: dort steht die kuratierte Auswahl fürs Scoring, und jedes
- * zusätzliche Modell dort lädt dazu ein, die Opus-Kalibrierung zu verlassen.
+ * Modelle, die wir BENUTZEN, ohne sie in `LLM_MODELS` zu führen: DeepSeek V4
+ * Flash (bis 2026-10-24 Default des Social-Moduls) und DeepSeek Chat (letzter
+ * Rückfall von scripts/sync-social.ts). Sie gehören nicht in `LLM_MODELS`:
+ * dort steht das Bewertungsmodell, und jedes zusätzliche Modell dort lädt dazu
+ * ein, die Opus-Kalibrierung zu verlassen.
  *
  * Preise brauchen sie trotzdem, und zwar an zwei Stellen: `fallbackPricingFor`
  * unten und die Live-Preisliste (lib/server/llm-pricing.ts holt nur, was hier
@@ -232,6 +225,8 @@ export const UNKNOWN_MODEL_PRICING: ModelPricing = { promptUsd: 5, completionUsd
 export const EXTRA_PRICED_MODELS: Record<string, ModelPricing> = {
   // Bis 2026-10-24 Social-Default; bleibt bepreist für SOCIAL_LLM_MODEL-Overrides.
   'deepseek/deepseek-v4-flash': { promptUsd: 0.088, completionUsd: 0.176 },
+  // Rückfall von scripts/sync-social.ts ohne SOCIAL_LLM_MODEL/LLM_DEFAULT_MODEL.
+  'deepseek/deepseek-chat': { promptUsd: 0.2, completionUsd: 0.8 },
 };
 
 /** Statische Preise eines Modells. Nur Rückfallebene — die Nachkalkulation

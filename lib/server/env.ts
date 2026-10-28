@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { DEFAULT_LLM_MODEL } from '@/lib/shared/constants';
+import { SCORING_DEFAULTS } from '@/lib/server/scoring/config';
 
 /**
  * Boot-time environment validation. Phase 3 left us with a 30-min debug
@@ -71,6 +72,28 @@ const Schema = z.object({
   // ANTHROPIC_EFFORT steuert die Denktiefe; Default max wie beim In-Chat-Bewerten.
   ANTHROPIC_API_KEY: z.string().min(1).optional(),
   ANTHROPIC_EFFORT: z.enum(['low', 'medium', 'high', 'xhigh', 'max']).default('max'),
+
+  // Bewertungskern (lib/server/scoring/): Nacht-Route POST /api/scoring/run und
+  // Bewerten-Knopf. SCORING_NIGHTLY_ENABLED=false ist der Not-Aus der Nacht
+  // (Route antwortet 503, Kachel zeigt `disabled`); der Knopf bleibt nutzbar.
+  // Limits je Lauf und Entität, Kostendeckel je Lauf (beide Entitäten
+  // zusammen), Datensätze je Modellaufruf und gleichzeitige Aufrufe; Defaults
+  // aus SCORING_DEFAULTS (lib/server/scoring/config.ts). Bewusst KEIN Schalter
+  // für das Effort: der Kern bewertet nur mit max, ein anderes
+  // ANTHROPIC_EFFORT lässt ihn mit `effort_gate` scheitern statt leise
+  // schlechter zu bewerten. SCORING_TRANSPORT: die Nacht über die Message
+  // Batches API (`batch`, halber Preis) oder direkt (`direct`, falls die
+  // Batch-API einmal klemmt); der Knopf ruft immer direkt.
+  SCORING_NIGHTLY_ENABLED: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform((v) => v === 'true'),
+  SCORING_NIGHTLY_LIMIT_PUBS: z.coerce.number().int().positive().default(SCORING_DEFAULTS.limit.publications),
+  SCORING_NIGHTLY_LIMIT_EVENTS: z.coerce.number().int().positive().default(SCORING_DEFAULTS.limit.events),
+  SCORING_NIGHTLY_COST_CAP_USD: z.coerce.number().positive().default(SCORING_DEFAULTS.costCapUsd),
+  SCORING_BATCH_SIZE: z.coerce.number().int().min(1).max(5).default(SCORING_DEFAULTS.batchSize),
+  SCORING_CONCURRENCY: z.coerce.number().int().min(1).max(4).default(SCORING_DEFAULTS.concurrency),
+  SCORING_TRANSPORT: z.enum(['batch', 'direct']).default(SCORING_DEFAULTS.transport),
 
   // MeisterTask one-way push (lib/server/meistertask/push.ts). Token +
   // section form a required pair (push has no fallback target); label

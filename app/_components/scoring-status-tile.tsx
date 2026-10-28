@@ -7,6 +7,7 @@ import { buildUrl, FILTER_DEFAULTS } from '@/app/publications/_filters';
 import { InfoBubble } from '@/components/info-bubble';
 import { ScoringModal } from '@/components/scoring-modal';
 import { SCORING_STALE_DANGER_DAYS } from '@/lib/shared/dashboard';
+import type { ScoringEntity } from '@/lib/shared/scoring/entity';
 import { cn } from '@/lib/shared/utils';
 import { Brain, Newspaper, CalendarDays, AlarmClock, Check, AlertCircle } from '@/lib/icons';
 import type { EntityScoringStatus, ScoringStatus } from '@/lib/server/ingest/status';
@@ -15,7 +16,6 @@ import type { EntityScoringStatus, ScoringStatus } from '@/lib/server/ingest/sta
 const CARD =
   'rounded-[14px] border border-line bg-surface shadow-[0_1px_2px_rgba(16,32,46,.05)]';
 
-type Entity = 'publications' | 'events';
 type Tone = 'success' | 'warning' | 'danger';
 
 // Ampel und Zahl rechnen ausschließlich mit den FRISCHEN Kandidaten (Fenster
@@ -58,7 +58,7 @@ const TONE_PILL: Record<Tone, string> = {
  *  in der Board-Mobile-Spalte (kompakter) oder Desktop gerendert wird — Inhalt
  *  identisch, damit die Kachel in beiden Layern „aus einem Guss" ist. */
 export function ScoringStatusTile({ status }: { status: ScoringStatus }) {
-  const [openEntity, setOpenEntity] = useState<Entity | null>(null);
+  const [openEntity, setOpenEntity] = useState<ScoringEntity | null>(null);
 
   const totalUnscored = status.publications.unscoredCount + status.events.unscoredCount;
   const anyDanger =
@@ -213,7 +213,7 @@ function EntityRow({
         onClick={onScore}
         title={
           status.unscoredCount > 0
-            ? 'Über OpenRouter bewerten (Fallback)'
+            ? 'Jetzt bewerten (Anthropic, Effort max)'
             : status.backlogCount > 0
               ? 'Nichts Neues zu bewerten. Der Altbestand läuft über das In-Chat-Scoring.'
               : 'Nichts zu bewerten'

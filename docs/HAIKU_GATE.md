@@ -71,7 +71,7 @@ viel als ein ungeprüftes Haiku in der Datenbank. Im Bestand betrifft das 24 von
 
 ## Das Lexikon
 
-`scripts/lib/haiku-lexicon.json` schlägt alle drei Zähler. Eintragen, wenn die
+`lib/shared/scoring/haiku-lexicon.json` schlägt alle drei Zähler. Eintragen, wenn die
 Mehrheit nachweislich irrt oder gar keine zustande kommt. Konvention:
 **Silbenzahl nach Duden-Worttrennung** (`Me|di|en` = 3, `Li|nie` = 2,
 `Mo|sa|ik` = 3), Schlüssel kleingeschrieben, Anlass in `_herkunft` vermerken.

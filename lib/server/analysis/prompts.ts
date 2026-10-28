@@ -1,12 +1,66 @@
-import 'server-only';
-import { Publication } from '@/lib/shared/types';
+// Bewertungs-Prompt der Publikationen. Ohne `import 'server-only'`: der
+// Bewertungskern (lib/server/scoring/) und das CLI laden dieses Modul unter tsx,
+// wo der Marker nicht auflösbar ist; Client-Schutz über die eslint-boundaries.
+//
+// Die Rubrik ist in Bausteine zerlegt, weil der Kern sie ein zweites Mal
+// braucht: die Haiku-Nachforderung (HAIKU_RULES) und das Lektorat
+// (PUBLICATION_TEXT_RULES, TYPOGRAPHY_RULES) messen an denselben Sätzen, nach
+// denen das Modell geschrieben hat. Der gerenderte Prompt ist dadurch
+// unverändert; lib/server/analysis/prompts.test.ts hält ihn zeichengenau fest,
+// weil die Scores des Korpus gegen genau diesen Text kalibriert sind.
+import type { Publication } from '@/lib/shared/types';
 
 /** A publication enriched with the orgunits join, for use in the LLM prompt. */
 export type PublicationForPrompt = Publication & {
   orgunits?: Array<{ akronym_de: string | null; name_de: string }>;
 };
 
-export const SYSTEM_PROMPT = `You are a senior science communication expert at the Austrian Academy of Sciences (OeAW). Your expertise is identifying which research publications would interest journalists and the general public. You work in the communications department and regularly pitch stories to Austrian media outlets (ORF, Der Standard, Die Presse, APA, Wiener Zeitung, etc.). You evaluate research for its press-worthiness based on accessibility, societal relevance, novelty, storytelling potential, and media timeliness. Form your judgment primarily from the content itself. Structured source signals (peer_reviewed, popular_science) are weak context, not endorsements — popular_science=true means the originating institute marked the publication as potentially press-relevant, but institutes apply this flag inconsistently and self-promotionally, so do not let it drive the scoring. Always respond with valid JSON only.`;
+/** Erster Satz des System-Prompts. Die Haiku-Nachforderung stellt ihn ihrem
+ *  eigenen Auftrag voran, damit dieselbe Stimme schreibt. */
+export const PERSONA = `You are a senior science communication expert at the Austrian Academy of Sciences (OeAW).`;
+
+export const SYSTEM_PROMPT = `${PERSONA} Your expertise is identifying which research publications would interest journalists and the general public. You work in the communications department and regularly pitch stories to Austrian media outlets (ORF, Der Standard, Die Presse, APA, Wiener Zeitung, etc.). You evaluate research for its press-worthiness based on accessibility, societal relevance, novelty, storytelling potential, and media timeliness. Form your judgment primarily from the content itself. Structured source signals (peer_reviewed, popular_science) are weak context, not endorsements — popular_science=true means the originating institute marked the publication as potentially press-relevant, but institutes apply this flag inconsistently and self-promotionally, so do not let it drive the scoring. Always respond with valid JSON only.`;
+
+/**
+ * Stilregeln des Pitches (Punkt 6 der Rubrik): Verankerung und was nicht in
+ * den Pitch gehört. Maßstab auch für das Lektorat und die Sprachprobe des
+ * Vergleichslaufs (Plan §6).
+ */
+export const PITCH_STYLE_RULES = `VERANKERUNG. Das ist der Unterschied zwischen einem Pitch und einer Inhaltsangabe. Eine Redakteurin greift zum Hörer, weil im Text etwas Konkretes steht, das sie zitieren oder nachrecherchieren kann. Nenne deshalb, was das Material hergibt, beim Namen statt in Umschreibungen:
+- Die Einrichtung: „das Gregor Mendel Institut der ÖAW", nicht „ein Forschungsteam". Institut und Autor:innen stehen oben im Datensatz.
+- Die Forschenden, wenn eine Person als lead_author geführt wird: „Forschende um Armin Djamei".
+- Das Publikationsorgan, sofern es aus dem Material hervorgeht.
+- Fachbegriffe nennen und sofort erklären, statt sie wegzuabstrahieren: „ein Schlüsselprotein (Cce1) des Maisbeulenbrand-Pilzes" trägt, „ein Paar von Molekülen" trägt nicht. Dasselbe gilt für Arten, Orte, Verfahren und Zeitstellungen.
+- Größenordnungen aus der Quelle übernehmen: Fallzahl, Zeitraum, Anteil, Alter. Ziffern oder ausgeschrieben, beides ist recht.
+Was das Material nicht hergibt, erfindest du nicht. Fehlt ein Anker, lass ihn weg und schreibe KÜRZER. Vier magere Sätze sind besser als sechs, von denen zwei nur Länge erzeugen.
+
+NICHT in den Pitch gehören Aussagen darüber, wofür sich der Beitrag eignet: „dankbar für Bildstrecken", „ein wertvoller Baustein", „macht den Standort sichtbar", „eignet sich für ein Feature". Das steht bereits in target_audience und suggested_angle und verdrängt hier die Substanz. Der letzte Satz gehört der Sache oder ihrer Konsequenz, nicht ihrer Verwertbarkeit.`;
+
+/** Die vier Textfelder (Punkte 6 bis 9), so wie das Modell sie schreibt. */
+export const PUBLICATION_TEXT_RULES = `6. pitch_suggestion: Schreibe einen 4-6-sätzigen deutschen Pitch, den ein:e Pressereferent:in beim Anpitchen an Journalist:innen verwenden kann. Inkludiere einen Aufhänger, das Hauptergebnis, warum es für die Öffentlichkeit relevant ist, und was es einzigartig oder zeitgemäß macht. Sprache zugänglich, lebendig, fachfremd.
+
+${indent(PITCH_STYLE_RULES, 3)}
+
+7. target_audience: Konkrete österreichische Medienhäuser oder Journalist:innen-Typen (z.B. „Wissenschaftsredaktion ORF", „Der Standard Wissen", „APA Science", „Die Presse Gesundheit"). 2-4 Vorschläge, kommagetrennt.
+
+8. suggested_angle: Ein Satz auf Deutsch — narrative Stoßrichtung für Medienberichterstattung.
+
+9. reasoning: 2-3 Sätze auf Deutsch, die die Bewertung begründen. WICHTIG: nur lesbarer Fließtext, rein inhaltlich (Thema, Befunde, Anschlussfähigkeit, Erzählmaterial). Keine Variablennamen, keine Datenbankfelder, keine Code-Notation. KEINE Erwähnung der institutionellen Selbsteinstufung („pressetauglich markiert", „Highlight des Instituts" o.Ä.) und keine Erwähnung von Peer-Review-Status — diese Flags werden in der UI direkt aus der DB angezeigt und gehören nicht ins Modell-Reasoning.`;
+
+/** Punkt 10: das Haiku. Auch der Auftrag der Haiku-Nachforderung. */
+export const HAIKU_RULES = `Ein deutsches Haiku zum Inhalt der Publikation. Drei Zeilen mit der klassischen Silbenfolge 5-7-5. Verfasst aus dem Inhalt, ohne Eigennamen oder technische Begriffe, die nur im Fachpublikum verständlich sind. Keine Reime erzwingen. Das Haiku soll den Kerngedanken des Beitrags in einem Bild verdichten und der Pressestelle als merkbarer Lesezeichen-Text dienen. Verwende echte deutsche Umlaute (ä, ö, ü, ß), niemals die Ersatzschreibweise „ae/oe/ue/ss" — moderne deutsche Typografie, keine Schreibmaschinen-Optik.`;
+
+/** Punkt 11: Typografie aller Textfelder. */
+export const TYPOGRAPHY_RULES = `Verwende keine Geviertstriche bzw. Gedankenstriche (das Zeichen —). Formuliere stattdessen mit Komma, Doppelpunkt oder zwei Sätzen aus. Solche Striche wirken maschinell und sind projektweit unerwünscht (siehe docs/writing-style.md).`;
+
+/** Rückt jede nicht leere Zeile um `n` Leerzeichen ein (Unterpunkte im Template). */
+function indent(text: string, n: number): string {
+  const pad = ' '.repeat(n);
+  return text
+    .split('\n')
+    .map((line) => (line ? pad + line : line))
+    .join('\n');
+}
 
 function wordTruncate(text: string, maxWords: number): string {
   const parts = text.split(/\s+/);
@@ -18,8 +72,10 @@ function wordTruncate(text: string, maxWords: number): string {
  * Pick the best available content source for a publication. The priority order
  * matters: summary_de is a curated German press-style summary written by
  * domain experts, far better signal than a translated journal abstract.
+ * Exportiert für den Bewertungskern: Haiku-Nachforderung und Lektorat lesen
+ * denselben Quelltext wie die Bewertung.
  */
-function pickContent(pub: Publication): { text: string; kind: string } | null {
+export function pickContent(pub: Publication): { text: string; kind: string } | null {
   if (pub.summary_de?.trim()) {
     return { text: wordTruncate(pub.summary_de.trim(), 500), kind: 'WebDB-Pressezusammenfassung (DE)' };
   }
@@ -87,27 +143,11 @@ Liefere für JEDE Publikation:
 4. storytelling_potential (0.0-1.0): Können Journalist:innen daraus eine fesselnde Erzählung bauen? Gibt es Human-Interest-Aspekte, visuelle Elemente, lebensnahe Szenarien?
 5. media_timeliness (0.0-1.0): Anschlussfähig an aktuellen öffentlichen Diskurs, jüngste Ereignisse, Trends, saisonale Themen?
 
-6. pitch_suggestion: Schreibe einen 4-6-sätzigen deutschen Pitch, den ein:e Pressereferent:in beim Anpitchen an Journalist:innen verwenden kann. Inkludiere einen Aufhänger, das Hauptergebnis, warum es für die Öffentlichkeit relevant ist, und was es einzigartig oder zeitgemäß macht. Sprache zugänglich, lebendig, fachfremd.
+${PUBLICATION_TEXT_RULES}
 
-   VERANKERUNG. Das ist der Unterschied zwischen einem Pitch und einer Inhaltsangabe. Eine Redakteurin greift zum Hörer, weil im Text etwas Konkretes steht, das sie zitieren oder nachrecherchieren kann. Nenne deshalb, was das Material hergibt, beim Namen statt in Umschreibungen:
-   - Die Einrichtung: „das Gregor Mendel Institut der ÖAW", nicht „ein Forschungsteam". Institut und Autor:innen stehen oben im Datensatz.
-   - Die Forschenden, wenn eine Person als lead_author geführt wird: „Forschende um Armin Djamei".
-   - Das Publikationsorgan, sofern es aus dem Material hervorgeht.
-   - Fachbegriffe nennen und sofort erklären, statt sie wegzuabstrahieren: „ein Schlüsselprotein (Cce1) des Maisbeulenbrand-Pilzes" trägt, „ein Paar von Molekülen" trägt nicht. Dasselbe gilt für Arten, Orte, Verfahren und Zeitstellungen.
-   - Größenordnungen aus der Quelle übernehmen: Fallzahl, Zeitraum, Anteil, Alter. Ziffern oder ausgeschrieben, beides ist recht.
-   Was das Material nicht hergibt, erfindest du nicht. Fehlt ein Anker, lass ihn weg und schreibe KÜRZER. Vier magere Sätze sind besser als sechs, von denen zwei nur Länge erzeugen.
+10. haiku: ${HAIKU_RULES}
 
-   NICHT in den Pitch gehören Aussagen darüber, wofür sich der Beitrag eignet: „dankbar für Bildstrecken", „ein wertvoller Baustein", „macht den Standort sichtbar", „eignet sich für ein Feature". Das steht bereits in target_audience und suggested_angle und verdrängt hier die Substanz. Der letzte Satz gehört der Sache oder ihrer Konsequenz, nicht ihrer Verwertbarkeit.
-
-7. target_audience: Konkrete österreichische Medienhäuser oder Journalist:innen-Typen (z.B. „Wissenschaftsredaktion ORF", „Der Standard Wissen", „APA Science", „Die Presse Gesundheit"). 2-4 Vorschläge, kommagetrennt.
-
-8. suggested_angle: Ein Satz auf Deutsch — narrative Stoßrichtung für Medienberichterstattung.
-
-9. reasoning: 2-3 Sätze auf Deutsch, die die Bewertung begründen. WICHTIG: nur lesbarer Fließtext, rein inhaltlich (Thema, Befunde, Anschlussfähigkeit, Erzählmaterial). Keine Variablennamen, keine Datenbankfelder, keine Code-Notation. KEINE Erwähnung der institutionellen Selbsteinstufung („pressetauglich markiert", „Highlight des Instituts" o.Ä.) und keine Erwähnung von Peer-Review-Status — diese Flags werden in der UI direkt aus der DB angezeigt und gehören nicht ins Modell-Reasoning.
-
-10. haiku: Ein deutsches Haiku zum Inhalt der Publikation. Drei Zeilen mit der klassischen Silbenfolge 5-7-5. Verfasst aus dem Inhalt, ohne Eigennamen oder technische Begriffe, die nur im Fachpublikum verständlich sind. Keine Reime erzwingen. Das Haiku soll den Kerngedanken des Beitrags in einem Bild verdichten und der Pressestelle als merkbarer Lesezeichen-Text dienen. Verwende echte deutsche Umlaute (ä, ö, ü, ß), niemals die Ersatzschreibweise „ae/oe/ue/ss" — moderne deutsche Typografie, keine Schreibmaschinen-Optik.
-
-11. Typografie (gilt für alle Textfelder oben): Verwende keine Geviertstriche bzw. Gedankenstriche (das Zeichen —). Formuliere stattdessen mit Komma, Doppelpunkt oder zwei Sätzen aus. Solche Striche wirken maschinell und sind projektweit unerwünscht (siehe docs/writing-style.md).
+11. Typografie (gilt für alle Textfelder oben): ${TYPOGRAPHY_RULES}
 
 ${pubDescriptions}
 

@@ -5,15 +5,10 @@ import { useModelPricing } from '@/lib/client/hooks/use-model-pricing';
 import { cn } from '@/lib/shared/utils';
 
 /**
- * Der kuratierte Modell-Picker mit Live-Preisen. EINE Implementierung für
- * beide Läufe, die OpenRouter-Guthaben kosten: das Bewerten-Modal
- * (components/scoring-modal.tsx) und den Social-Refresh
- * (app/social/_components/refresh-button.tsx).
- *
- * Vorher stand derselbe Block zweimal wortgleich da, inklusive Preisformat und
- * title-Attribut; die Live-Preise von 2026-07-21 mussten deshalb an zwei
- * Stellen nachgezogen werden. Ein Picker, der zwei verschiedene Zahlen für
- * dasselbe Modell zeigen kann, ist schlimmer als gar keine Preisanzeige.
+ * Der kuratierte Modell-Picker mit Live-Preisen, seit Oktober 2026 nur noch im
+ * Social-Refresh (app/social/_components/refresh-button.tsx). Das
+ * Bewerten-Modal zeigt das Modell als feste Zeile: bewertet wird immer mit dem
+ * Modell, gegen das kalibriert ist (LLM_MODELS in lib/shared/constants.ts).
  *
  * `enabled` steuert nur, ob die Preisabfrage laufen soll — die Aufrufer geben
  * `phase === 'idle'` durch, damit während eines Laufs nichts nachgeladen wird.

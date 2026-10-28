@@ -8,16 +8,20 @@
 // What it deliberately does NOT own (kept caller-side, because it differs per
 // feature): the empty-row short-circuit, the LLM call + prompt, result→row
 // pairing + the DB write, and the SSE wire protocol. Callers map the NEUTRAL
-// lifecycle hooks below onto their own event names (publications use
-// init/progress/error/complete/cancelled; social uses
+// lifecycle hooks below onto their own event names (der Bewerten-Knopf in
+// lib/server/scoring/button.ts: init/progress/error/complete/cancelled; social:
 // analyzing/progress/error/cancelled), so existing modals stay byte-compatible.
 //
-// The budget pre-flight (`preflightBalance` below) IS offered here as an opt-in
-// helper, because the publication + event runners emit a byte-identical
-// 'init'/'error'/'complete' gate. Social opts out (no per-run budget gate).
+// Seit dem Bewertungskern (lib/server/scoring/run.ts) kann die Schleife mehr,
+// jeweils als Option mit dem bisherigen Verhalten als Default (Social merkt
+// nichts davon): mehrere Batches gleichzeitig
+// (`concurrency`, Worker-Pool), ein Stopp-Grund von außen (`shouldStop`, etwa
+// der Kostendeckel), eine eigene Fatal-Regel (`isFatal`) und ein eigener
+// Batch-Schnitt (`partition`, damit Zwillings-Events im selben Aufruf landen).
 
-import { getKeyBalance, isFatalLlmError } from '@/lib/server/llm-client';
+import { isFatalLlmError } from '@/lib/server/llm-client';
 import { log } from '@/lib/server/log';
+import { mapPool } from '@/lib/shared/concurrency';
 
 export interface LLMBatchProgress<TItem> {
   /** The rows in the batch about to be analyzed. */
@@ -43,6 +47,8 @@ export interface LLMBatchResult {
   total: number;
   /** True when the loop stopped early because abortSignal fired. */
   cancelled: boolean;
+  /** Grund aus `shouldStop`, wenn die Schleife deshalb vorzeitig endete; sonst null. */
+  stoppedReason: string | null;
 }
 
 export interface RunLLMBatchOptions<TItem, TResult> {
@@ -68,13 +74,40 @@ export interface RunLLMBatchOptions<TItem, TResult> {
   /** Mark a whole batch failed (called when `analyze` throws). */
   markFailed: (batch: TItem[]) => Promise<void>;
   abortSignal?: AbortSignal;
-  /** Delay between batches; default 1000ms. */
+  /** Delay between batches; default 1000ms. Nur bei `concurrency` 1: parallel
+   *  laufende Batches haben keinen Abstand, den man einhalten könnte. */
   batchDelayMs?: number;
+  /** Batches, die gleichzeitig laufen dürfen; default 1 (streng nacheinander). */
+  concurrency?: number;
+  /** Vor jedem neuen Batch gefragt. Ein Grund (statt null) beendet die
+   *  Schleife; laufende Batches enden noch, der Grund steht in `stoppedReason`. */
+  shouldStop?: () => string | null;
+  /** Bricht dieser Fehler den ganzen Lauf ab? Default: isFatalLlmError auf der
+   *  Meldung (Guthaben/Auth). */
+  isFatal?: (err: unknown, batch: TItem[]) => boolean;
+  /** Eigener Batch-Schnitt; default `batchSize` am Stück. */
+  partition?: (items: TItem[]) => TItem[][];
   hooks?: {
     onBatchStart?: (p: LLMBatchProgress<TItem>) => void;
-    onError?: (e: { message: string; fatal: boolean; batchStartIndex: number }) => void;
+    onError?: (e: {
+      message: string;
+      fatal: boolean;
+      batchStartIndex: number;
+      /** Der gescheiterte Batch und der Fehler selbst, für Aufrufer, die nach
+       *  Fehlerart unterscheiden (der Bewertungskern zerlegt Ablehnungen). */
+      batch: TItem[];
+      error: unknown;
+    }) => void;
     onCancelled?: (p: { processed: number; successful: number; failed: number; total: number }) => void;
   };
+}
+
+const messageOf = (err: unknown): string => (err instanceof Error ? err.message : 'Unknown error');
+
+function sliceBatches<T>(items: T[], batchSize: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < items.length; i += batchSize) out.push(items.slice(i, i + batchSize));
+  return out;
 }
 
 export async function runLLMBatch<TItem, TResult>(
@@ -90,26 +123,41 @@ export async function runLLMBatch<TItem, TResult>(
     markFailed,
     abortSignal,
     batchDelayMs = 1000,
+    concurrency = 1,
+    shouldStop,
+    isFatal = (err) => isFatalLlmError(messageOf(err)),
+    partition,
     hooks = {},
   } = opts;
 
+  const batches = partition ? partition(items) : sliceBatches(items, batchSize);
+  // Startposition je Batch in `items`: das Feld `batch_start` der SSE-Frames.
+  const starts = batches.map((_, b) => batches.slice(0, b).reduce((n, x) => n + x.length, 0));
   const total = items.length;
   let successful = 0;
   let failed = 0;
   let tokensUsed = 0;
   let cost = 0;
   let cancelled = false;
+  let fatal = false;
+  let stoppedReason: string | null = null;
+  const halted = () => cancelled || fatal || stoppedReason !== null;
 
-  for (let i = 0; i < items.length; i += batchSize) {
+  // Worker-Pool über die Batches. Jeder Worker prüft vor dem nächsten Batch,
+  // ob die Schleife angehalten wurde (Abbruch, Fatal, Stopp-Grund); was schon
+  // läuft, endet regulär und wird mitgezählt.
+  await mapPool(batches, concurrency, async (batch, b) => {
+    if (halted()) return;
     if (abortSignal?.aborted) {
       cancelled = true;
       hooks.onCancelled?.({ processed: successful + failed, successful, failed, total });
-      break;
+      return;
     }
-
-    const batch = items.slice(i, i + batchSize);
-    const batchIndex = Math.floor(i / batchSize) + 1;
-    const totalBatches = Math.ceil(items.length / batchSize);
+    const reason = shouldStop?.() ?? null;
+    if (reason !== null) {
+      stoppedReason = reason;
+      return;
+    }
 
     hooks.onBatchStart?.({
       batch,
@@ -117,8 +165,8 @@ export async function runLLMBatch<TItem, TResult>(
       successful,
       failed,
       total,
-      batchIndex,
-      totalBatches,
+      batchIndex: b + 1,
+      totalBatches: batches.length,
       tokensUsed,
       cost,
     });
@@ -133,19 +181,19 @@ export async function runLLMBatch<TItem, TResult>(
       // tally (the rows stay untouched and will be retried on the next run).
       failed += batch.length - ok;
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      const fatal = isFatalLlmError(message);
-      log.error('llm_batch_error', { batchStart: i, message, fatal });
-      hooks.onError?.({ message, fatal, batchStartIndex: i });
+      const message = messageOf(err);
+      const isFatalError = isFatal(err, batch);
+      log.error('llm_batch_error', { batchStart: starts[b], message, fatal: isFatalError });
+      hooks.onError?.({ message, fatal: isFatalError, batchStartIndex: starts[b], batch, error: err });
       await markFailed(batch);
       failed += batch.length;
-      if (fatal) break;
+      if (isFatalError) fatal = true;
     }
 
-    if (i + batchSize < items.length) {
+    if (concurrency <= 1 && b < batches.length - 1 && !halted()) {
       await new Promise((r) => setTimeout(r, batchDelayMs));
     }
-  }
+  });
 
   return {
     processed: successful + failed,
@@ -155,123 +203,6 @@ export async function runLLMBatch<TItem, TResult>(
     cost,
     total,
     cancelled,
+    stoppedReason,
   };
-}
-
-type SseEmit = (type: string, data: unknown) => void;
-
-/**
- * The neutral→SSE hook mapping shared verbatim by the publication and event
- * analysis runners: `onBatchStart`→'progress', `onError`→'error',
- * `onCancelled`→'cancelled', with the exact field names the (shared) analysis
- * modal expects. Requires each item to carry a `title` (used for the
- * `current_title` progress label). Pass to `runLLMBatch({ hooks: ... })`.
- */
-export function sseBatchHooks<TItem extends { title: string }>(
-  emit: SseEmit,
-): NonNullable<RunLLMBatchOptions<TItem, unknown>['hooks']> {
-  return {
-    onBatchStart: (p) =>
-      emit('progress', {
-        processed: p.processed,
-        total: p.total,
-        current_title: p.batch[0].title,
-        batch_index: p.batchIndex,
-        total_batches: p.totalBatches,
-        tokens_used: p.tokensUsed,
-        cost: p.cost,
-      }),
-    onError: (e) =>
-      emit('error', { message: e.message, batch_start: e.batchStartIndex, fatal: e.fatal }),
-    onCancelled: (p) =>
-      emit('cancelled', { processed: p.processed, successful: p.successful, total: p.total }),
-  };
-}
-
-/**
- * Emits the terminal 'complete' frame the analysis modal expects — but NOT on
- * abort, where the 'cancelled' frame already fired from `onCancelled`. Shared by
- * the publication and event runners.
- *
- * `skipped` zählt Einträge, die der Aufrufer ausdrücklich benannt hat (ids),
- * die aber an den Bewertbarkeits-Gates hängengeblieben sind. Ohne diese Zahl
- * stünde im Modal „0 bewertet" ohne jeden Grund.
- */
-export function emitBatchComplete(
-  emit: SseEmit,
-  result: LLMBatchResult,
-  extra: { skipped?: number; haikuRejected?: number } = {},
-): void {
-  if (!result.cancelled) {
-    emit('complete', {
-      processed: result.processed,
-      total: result.total,
-      successful: result.successful,
-      failed: result.failed,
-      tokens_used: result.tokensUsed,
-      cost: result.cost,
-      ...(extra.skipped ? { skipped: extra.skipped } : {}),
-      // Vom Haiku-Gate verworfene Zeilen (lib/server/analysis/batch.ts). Nur
-      // gesetzt, wenn es welche gab — sonst bliebe im Modal eine stumme Null.
-      ...(extra.haikuRejected ? { haiku_rejected: extra.haikuRejected } : {}),
-    });
-  }
-}
-
-export interface PreflightBalanceArgs {
-  apiKey: string;
-  /** Row count for the run — drives the 'init' frame and the zero tally. */
-  total: number;
-  model: string;
-  emit: (type: string, data: unknown) => void;
-}
-
-/**
- * Shared budget pre-flight for the publication + event analysis runners.
- * Emits the 'init' frame (masked key + key balance; on Anthropic the balance
- * stays unknown, see getKeyBalance). On an exhausted budget (<$0.01
- * effective) emits a fatal 'error' plus a zero
- * 'complete' and returns false so the caller aborts before spending anything.
- * Returns true to proceed. The error message appends whatever of the key-limit
- * / account-balance figures are known (empty parenthetical when neither is).
- */
-export async function preflightBalance(
-  args: PreflightBalanceArgs,
-): Promise<boolean> {
-  const { apiKey, total, model, emit } = args;
-
-  const maskedKey = apiKey.length > 8 ? '...' + apiKey.slice(-8) : '***';
-  const keyInfo = await getKeyBalance(apiKey, model);
-
-  emit('init', {
-    total,
-    model,
-    api_key_hint: maskedKey,
-    key_balance: keyInfo,
-  });
-
-  if (keyInfo.effectiveBudget !== null && keyInfo.effectiveBudget < 0.01) {
-    const parts: string[] = [];
-    if (keyInfo.limitRemaining !== null) {
-      parts.push(`Key-Limit: $${keyInfo.limitRemaining.toFixed(4)} verbleibend`);
-    }
-    if (keyInfo.accountBalance !== null) {
-      parts.push(`Account-Guthaben: $${keyInfo.accountBalance.toFixed(4)}`);
-    }
-    const detail = parts.length > 0 ? ` (${parts.join(', ')})` : '';
-    emit('error', {
-      message: `OpenRouter-Budget aufgebraucht: $${keyInfo.effectiveBudget.toFixed(4)} verfügbar${detail}. Bitte Credits aufladen auf openrouter.ai/settings/credits.`,
-      fatal: true,
-    });
-    emit('complete', {
-      processed: 0,
-      total,
-      successful: 0,
-      failed: total,
-      tokens_used: 0,
-      cost: 0,
-    });
-    return false;
-  }
-  return true;
 }

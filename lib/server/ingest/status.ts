@@ -2,6 +2,8 @@ import 'server-only';
 import { sql } from 'drizzle-orm';
 import { db } from '@/lib/server/db';
 import { SCORING_RECENT_DAYS } from '@/lib/shared/dashboard';
+import { getScoringRunStatus, type EntityScoringRun } from '@/lib/server/scoring/status';
+import type { ScoringEntity } from '@/lib/server/scoring/types';
 
 // Bewertungs-Status für die Dashboard-Kachel: pro Entität (Publikationen /
 // Events) „zuletzt importiert am X" + „N unbewertet, älteste seit Y Tagen".
@@ -15,6 +17,9 @@ import { SCORING_RECENT_DAYS } from '@/lib/shared/dashboard';
 //
 // BEWUSST kein unstable_cache: die Kachel muss nach einem „Bewerten"-Lauf (der
 // router.refresh() auslöst) sofort die gesunkene Zahl zeigen.
+//
+// Dazu der Stand der automatischen Bewertung (`run`, aus dem Journal
+// scoring_runs): eine zweite, parallele Abfrage, ebenfalls ungecacht.
 
 // Feed-Cursor-Schlüssel — Spiegel von run-publications-delta.ts (DEFAULT_FEED)
 // bzw. run-events-import.ts (EVENTS_FEED). Bewusst inline statt Import, damit die
@@ -48,6 +53,9 @@ export interface EntityScoringStatus {
 export interface ScoringStatus {
   publications: EntityScoringStatus;
   events: EntityScoringStatus;
+  /** Letzter bzw. laufender automatischer Bewertungslauf je Entität (Journal
+   *  scoring_runs, lib/server/scoring/status.ts). */
+  run: Record<ScoringEntity, EntityScoringRun>;
 }
 
 interface StatusRow {
@@ -87,7 +95,7 @@ export async function getScoringStatus(): Promise<ScoringStatus> {
   // 2026-08-31) drei Subselects über publication_scoring_candidates pro
   // Dashboard-Render laufen zu lassen. Semantik und Ergebnis-Shape sind
   // unverändert (min über 0 Zeilen → NULL → oldest_days NULL, wie zuvor).
-  const rows = await db.execute<StatusRow>(sql`
+  const [rows, run] = await Promise.all([db.execute<StatusRow>(sql`
     SELECT
       p.pub_unscored,
       p.pub_backlog,
@@ -122,7 +130,7 @@ export async function getScoringStatus(): Promise<ScoringStatus> {
         floor(extract(epoch FROM now() - min(created_at)) / 86400)::int                        AS ev_oldest_days
       FROM event_scoring_candidates
     ) AS e
-  `);
+  `), getScoringRunStatus()]);
 
   const r = rows[0];
   return {
@@ -144,5 +152,6 @@ export async function getScoringStatus(): Promise<ScoringStatus> {
       backlogCount: 0,
       oldestUnscoredDays: r.ev_oldest_days == null ? null : Number(r.ev_oldest_days),
     },
+    run,
   };
 }

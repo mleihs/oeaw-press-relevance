@@ -4,10 +4,9 @@
 // fällt die Wahl des Anbieters, dort werden Kosten gerechnet und Fehler
 // klassifiziert. Hier liegt nur, was OpenRouter-spezifisch und fragil ist:
 //   - der 402-„can only afford N"-Back-off auf max_tokens,
-//   - der JSON-Mode-Aufruf (response_format) samt Reasoning-Abschaltung,
-//   - die Abfrage von Key-Limit und Account-Guthaben.
+//   - der JSON-Mode-Aufruf (response_format) samt Reasoning-Abschaltung.
 
-import { UNKNOWN_BALANCE, type JsonCompletion, type KeyBalance, type TokenUsage } from '@/lib/server/llm-types';
+import type { JsonCompletion, TokenUsage } from '@/lib/server/llm-types';
 import { log } from '@/lib/server/log';
 
 const COMPLETIONS_URL = 'https://openrouter.ai/api/v1/chat/completions';
@@ -17,49 +16,6 @@ const REQUEST_HEADERS = {
   'HTTP-Referer': 'https://oeaw-press-relevance.vercel.app',
   'X-Title': 'Story Scout',
 };
-
-export async function checkKeyBalance(apiKey: string): Promise<KeyBalance> {
-  const fallback = UNKNOWN_BALANCE;
-  try {
-    const headers = { Authorization: `Bearer ${apiKey}` };
-    const opts = { headers, signal: AbortSignal.timeout(10000) };
-
-    const [keyRes, creditsRes] = await Promise.all([
-      fetch('https://openrouter.ai/api/v1/auth/key', opts),
-      fetch('https://openrouter.ai/api/v1/credits', opts).catch(() => null),
-    ]);
-
-    if (!keyRes.ok) return fallback;
-    const keyData = await keyRes.json();
-
-    const limitRemaining: number | null = keyData.data?.limit_remaining ?? null;
-    const usage: number = keyData.data?.usage ?? 0;
-    const limit: number | null = keyData.data?.limit ?? null;
-
-    let accountBalance: number | null = null;
-    if (creditsRes && creditsRes.ok) {
-      const creditsData = await creditsRes.json();
-      const totalCredits = creditsData.data?.total_credits ?? null;
-      const totalUsage = creditsData.data?.total_usage ?? null;
-      if (totalCredits !== null && totalUsage !== null) {
-        accountBalance = totalCredits - totalUsage;
-      }
-    }
-
-    let effectiveBudget: number | null = null;
-    if (limitRemaining !== null && accountBalance !== null) {
-      effectiveBudget = Math.min(limitRemaining, accountBalance);
-    } else if (accountBalance !== null) {
-      effectiveBudget = accountBalance;
-    } else if (limitRemaining !== null) {
-      effectiveBudget = limitRemaining;
-    }
-
-    return { limitRemaining, usage, limit, accountBalance, effectiveBudget };
-  } catch {
-    return fallback;
-  }
-}
 
 export interface ChatCompletionJsonOptions {
   system: string;

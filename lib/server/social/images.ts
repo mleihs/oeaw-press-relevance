@@ -21,6 +21,7 @@ import { and, eq, isNotNull, isNull } from 'drizzle-orm';
 import { db, socialPosts } from '@/lib/server/db';
 import { deleteObjects, ensureBucket, listKeys, putObject } from '@/lib/server/storage/s3';
 import { log } from '@/lib/server/log';
+import { mapPool } from '@/lib/shared/concurrency';
 
 /** Key prefix for social post images within the project bucket. */
 export const SOCIAL_IMAGE_PREFIX = 'social/posts';
@@ -79,19 +80,6 @@ export async function fetchRemoteImage(url: string): Promise<RemoteImage | null>
 /** Keys present in storage that no live row references — the GC delete set. */
 export function selectOrphanKeys(listed: string[], validKeys: Set<string>): string[] {
   return listed.filter((k) => !validKeys.has(k));
-}
-
-async function mapPool<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
-  const out: R[] = new Array(items.length);
-  let cursor = 0;
-  const worker = async () => {
-    while (cursor < items.length) {
-      const idx = cursor++;
-      out[idx] = await fn(items[idx]);
-    }
-  };
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) || 0 }, worker));
-  return out;
 }
 
 export interface ImageSyncResult {

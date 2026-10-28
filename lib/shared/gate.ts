@@ -16,8 +16,19 @@ export const GATE_COOKIE_NAME = 'gate';
 // /api/ingest/run ist gate-öffentlich, aber NICHT ungeschützt: die Route
 // authentifiziert sich per Bearer INGEST_CRON_SECRET (assertCronSecret). Der
 // Nacht-Cron hat kein Gate-Cookie; das Gate-Cookie allein reicht dort NIE.
-const PUBLIC_PATHS = ['/api/auth/gate', '/api/auth/login', '/api/stats/landing', '/api/ingest/run', '/robots.txt', '/favicon.ico', '/icon.svg'];
-const PUBLIC_PREFIXES = ['/_next/', '/capybara'];
+// Dasselbe gilt für die Nachtbewertung: POST /api/scoring/run und der Poll
+// GET /api/scoring/runs[/<id>] prüfen denselben Bearer.
+const PUBLIC_PATHS = [
+  '/api/auth/gate',
+  '/api/auth/login',
+  '/api/stats/landing',
+  '/api/ingest/run',
+  '/api/scoring/run',
+  '/robots.txt',
+  '/favicon.ico',
+  '/icon.svg',
+];
+const PUBLIC_PREFIXES = ['/_next/', '/capybara', '/api/scoring/runs'];
 
 export function isPublicGatePath(pathname: string): boolean {
   if (PUBLIC_PATHS.includes(pathname)) return true;

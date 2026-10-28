@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { chatCompletionJson, checkKeyBalance } from './openrouter';
+import { chatCompletionJson } from './openrouter';
 
 // Keep the logger quiet + decoupled from env during the back-off tests.
 vi.mock('@/lib/server/log', () => ({
@@ -119,64 +119,5 @@ describe('chatCompletionJson', () => {
     vi.stubGlobal('fetch', fetchMock);
     await expect(chatCompletionJson(baseOpts)).rejects.toThrow(/nach 3 Versuchen/);
     expect(fetchMock).toHaveBeenCalledTimes(3);
-  });
-});
-
-describe('checkKeyBalance', () => {
-  beforeEach(() => vi.restoreAllMocks());
-  afterEach(() => vi.restoreAllMocks());
-
-  function stubBalanceFetch(keyData: unknown, creditsData: unknown | null) {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn((url: string) => {
-        if (url.includes('/auth/key')) return Promise.resolve(mockResponse({ json: keyData }));
-        if (url.includes('/credits')) {
-          return creditsData === null
-            ? Promise.reject(new Error('no credits endpoint'))
-            : Promise.resolve(mockResponse({ json: creditsData }));
-        }
-        return Promise.resolve(mockResponse({ status: 404, ok: false }));
-      }),
-    );
-  }
-
-  it('takes min(limitRemaining, accountBalance) as the effective budget', async () => {
-    stubBalanceFetch(
-      { data: { limit_remaining: 8, usage: 2, limit: 10 } },
-      { data: { total_credits: 20, total_usage: 15 } }, // balance = 5
-    );
-    const r = await checkKeyBalance('k');
-    expect(r.limitRemaining).toBe(8);
-    expect(r.accountBalance).toBe(5);
-    expect(r.effectiveBudget).toBe(5); // min(8, 5)
-  });
-
-  it('falls back to accountBalance when no limit is set', async () => {
-    stubBalanceFetch(
-      { data: { limit_remaining: null, usage: 1, limit: null } },
-      { data: { total_credits: 12, total_usage: 3 } }, // balance = 9
-    );
-    const r = await checkKeyBalance('k');
-    expect(r.effectiveBudget).toBe(9);
-  });
-
-  it('falls back to limitRemaining when the credits endpoint fails', async () => {
-    stubBalanceFetch({ data: { limit_remaining: 4, usage: 1, limit: 5 } }, null);
-    const r = await checkKeyBalance('k');
-    expect(r.accountBalance).toBeNull();
-    expect(r.effectiveBudget).toBe(4);
-  });
-
-  it('returns the null fallback when the key lookup is not ok', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockResponse({ status: 401, ok: false })));
-    const r = await checkKeyBalance('bad');
-    expect(r).toEqual({
-      limitRemaining: null,
-      usage: 0,
-      limit: null,
-      accountBalance: null,
-      effectiveBudget: null,
-    });
   });
 });

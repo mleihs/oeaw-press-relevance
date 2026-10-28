@@ -5,6 +5,8 @@ import {
   splitHaiku,
   HAIKU_PATTERN,
   HAIKU_SEPARATOR,
+  isUmlautDigraphWord,
+  joinHaikuLines,
 } from './haiku';
 
 const codes = (raw: unknown) => checkHaikuStructure(raw).map((i) => i.code);
@@ -58,6 +60,15 @@ describe('checkHaikuStructure', () => {
     expect(codes('Ein Aerosol zieht / die Poesie einer Oboe / der Abend wird still')).toEqual([]);
   });
 
+  it('spares the genuine letter contexts but still catches the umlaut words beside them', () => {
+    for (const w of ['aktuell', 'virtuellen', 'Kongruenz', 'Duett', 'Statue', 'Formicidae', 'Raphael', 'Samuel']) {
+      expect(isUmlautDigraphWord(w), w).toBe(false);
+    }
+    for (const w of ['Ueber', 'Baer', 'Fuelle', 'Muenze', 'Huette', 'schoen']) {
+      expect(isUmlautDigraphWord(w), w).toBe(true);
+    }
+  });
+
   it('flags stray whitespace', () => {
     expect(codes('eins  zwei drei / vier fünf sechs sieben acht / neun zehn elf zwölf')).toContain('whitespace');
     expect(codes(' eins zwei drei / vier fünf sechs sieben acht / neun zehn elf zwölf')).toContain('whitespace');
@@ -66,6 +77,23 @@ describe('checkHaikuStructure', () => {
   it('reports the line a problem belongs to', () => {
     const issues = checkHaikuStructure('alles gut hier / aber 42 stört / und hier ist Ruhe');
     expect(issues[0].line).toBe(2);
+  });
+});
+
+describe('joinHaikuLines', () => {
+  it('macht aus drei Zeilen die gespeicherte Form (Erstversuch von Opus, lokaler Lauf 2026-10-27)', () => {
+    const raw = 'Brücke aus Falten\nzwischen gestern und heute,\nWeisheit oder List';
+    expect(joinHaikuLines(raw)).toBe('Brücke aus Falten / zwischen gestern und heute, / Weisheit oder List');
+    expect(isStructurallyValidHaiku(joinHaikuLines(raw))).toBe(true);
+  });
+
+  it('übergeht leere Zeilen, Windows-Umbrüche und Ränder', () => {
+    expect(joinHaikuLines('  eins  \r\n\r\nzwei\n drei \n')).toBe('eins / zwei / drei');
+  });
+
+  it('lässt Text mit gesetztem Trenner oder ohne Umbruch unverändert', () => {
+    expect(joinHaikuLines('eins / zwei /\ndrei')).toBe('eins / zwei /\ndrei');
+    expect(joinHaikuLines('eins / zwei / drei')).toBe('eins / zwei / drei');
   });
 });
 

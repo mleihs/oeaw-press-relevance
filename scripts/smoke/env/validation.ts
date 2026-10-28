@@ -29,6 +29,7 @@
  *  11  Legacy NEXT_PUBLIC_* fallback satisfies the pair refine
  *  12  Empty-string disables optional features (no false refine fire)
  *  13  Explicit overrides (LLM_DEFAULT_MODEL, NODE_ENV) win over defaults
+ *  14  Scoring knobs (SCORING_*) default to SCORING_DEFAULTS, parse and bound
  */
 
 import { parseEnv } from '../../../lib/server/env';
@@ -182,6 +183,25 @@ const minimalValid: Record<string, string> = {
   });
   ok('13 LLM_DEFAULT_MODEL override wins', r.ok && r.env.LLM_DEFAULT_MODEL === 'custom/model');
   ok('13 NODE_ENV override wins', r.ok && r.env.NODE_ENV === 'production');
+}
+
+// 14
+{
+  const r = parseEnv(minimalValid);
+  ok(
+    '14 scoring defaults from SCORING_DEFAULTS',
+    r.ok &&
+      r.env.SCORING_NIGHTLY_ENABLED === true &&
+      r.env.SCORING_NIGHTLY_LIMIT_PUBS === 80 &&
+      r.env.SCORING_NIGHTLY_LIMIT_EVENTS === 60 &&
+      r.env.SCORING_NIGHTLY_COST_CAP_USD === 25 &&
+      r.env.SCORING_BATCH_SIZE === 5 &&
+      r.env.SCORING_CONCURRENCY === 2,
+  );
+  const off = parseEnv({ ...minimalValid, SCORING_NIGHTLY_ENABLED: 'false', SCORING_NIGHTLY_COST_CAP_USD: '7.5' });
+  ok('14 Not-Aus and cost cap parse', off.ok && off.env.SCORING_NIGHTLY_ENABLED === false && off.env.SCORING_NIGHTLY_COST_CAP_USD === 7.5);
+  const bad = parseEnv({ ...minimalValid, SCORING_BATCH_SIZE: '6' });
+  ok('14 SCORING_BATCH_SIZE > 5 → fail', !bad.ok && bad.errors.some((e) => e.startsWith('SCORING_BATCH_SIZE')));
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);
