@@ -18,7 +18,8 @@
 # Lektorat-Hinweise) und `skipped` schliessen ok; die Einzelheiten stehen im
 # Journal (`npm run scoring-run -- --target=prod --report-latest`).
 #
-# Danach die Embeddings: sobald etwas bewertet wurde, startet dieser Wrapper
+# Danach die Embeddings: sobald Publikationen bewertet wurden (Events haben
+# keine), startet dieser Wrapper
 # oeaw-press-embeddings.service, damit SPECTER2 und press_similarity die
 # Nachtkohorte am selben Morgen aufnehmen (hash-idempotent, ein zweiter Lauf ist
 # billig). Der Embeddings-Timer bleibt als Netz fuer Naechte ohne Bewertung.
@@ -113,7 +114,7 @@ done
 # Auswerten: je Lauf Status und Einzeiler; `failed` alarmiert.
 FAILED=0
 PARTIAL=0
-SCORED=0
+PUBS_SCORED=0
 LINES=""
 for id in $RUN_IDS; do
   f="$BODY_FILE.$id"
@@ -121,15 +122,15 @@ for id in $RUN_IDS; do
   ent=$(jq -r '.entity' < "$f")
   sum=$(jq -r '.summary // ""' < "$f" | tr '\n\r' '  ' | cut -c1-200)
   cls=$(jq -r '.errorClass // empty' < "$f")
-  SCORED=$(( SCORED + $(jq -r '.counts.scored // 0' < "$f") ))
+  [ "$ent" = "publications" ] && PUBS_SCORED=$(jq -r '.counts.scored // 0' < "$f")
   LINES="$LINES $ent=$st${cls:+($cls)}: $sum;"
   [ "$st" = "failed" ] && { FAILED=1; FAIL_CLASS=${cls:-unknown}; FAIL_FILE=$f; }
   [ "$st" = "partial" ] && PARTIAL=1
 done
 
-if [ "$SCORED" -gt 0 ]; then
+if [ "$PUBS_SCORED" -gt 0 ]; then
   systemctl start --no-block oeaw-press-embeddings.service \
-    && say "embeddings: oeaw-press-embeddings.service gestartet ($SCORED neu bewertet)" \
+    && say "embeddings: oeaw-press-embeddings.service gestartet ($PUBS_SCORED Publikationen neu bewertet)" \
     || say "embeddings: Start fehlgeschlagen, der Timer zieht nach"
 fi
 
