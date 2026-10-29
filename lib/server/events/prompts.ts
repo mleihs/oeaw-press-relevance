@@ -64,11 +64,16 @@ export const SYSTEM_PROMPT = `Du bist Veranstaltungs- und Pressereferent:in an d
 Leitlinien: Öffentliche Formate (Vorträge, Ausstellungen, Buchpräsentationen, Podien, Lesungen, Aktionstage, Kinderuni), international sichtbare Flaggschiff-Kongresse sowie Veranstaltungen zu gesellschaftlich aktuellen Themen sind in der Regel HOCH relevant, auch wenn sie im Kern wissenschaftlich sind. Rein interne Formate (Fachseminare, Arbeitstreffen, Gremiensitzungen, geschlossene Graduate Schools, reine Calls for Papers) sind in der Regel NIEDRIG relevant. Nutze die volle Skala von 0.0 bis 1.0 und weiche nicht reflexartig in die Mitte aus. Bewerte die vier Dimensionen unabhängig voneinander; sie messen Unterschiedliches und dürfen auseinanderfallen. Bewerte ausschließlich aus dem Inhalt heraus. Antworte ausschließlich mit gültigem JSON.`;
 
 /** Die vier Textfelder (Punkte 5 bis 8), so wie das Modell sie schreibt. Auch
- *  der Maßstab des Lektorats im Bewertungskern (lib/server/scoring/lektorat.ts). */
+ *  der Maßstab des Lektorats im Bewertungskern (lib/server/scoring/lektorat.ts).
+ *
+ *  Punkt 8 verlangte bis 2026-10-29 Sätze, „die die Einstufung begründen", und
+ *  das Modell nahm das wörtlich: in 12 von 27 Begründungen der ersten Nacht
+ *  stand die Einstufung selbst, oft im Wortlaut der Kalibrierung („zählt damit
+ *  zu den Fachvorträgen im engen Kreis"). Die Gründe gehören der Sache. */
 export const EVENT_TEXT_RULES = `5. pitch_suggestion: Ein 2-4 Sätze langer deutscher Teaser, wie er auf der Veranstaltungsseite stehen könnte. Lebendig, zugänglich, fachfremd. Aufhänger, worum es geht, warum es einen Besuch lohnt.
 6. suggested_angle: Ein Satz auf Deutsch, der den Aufhänger / die Bewerbungs-Stoßrichtung beschreibt.
 7. target_audience: Das Zielpublikum (z.B. „breite Öffentlichkeit", „Familien", „Studierende", „Fachpublikum Geschichte"). 1-3 Angaben, kommagetrennt.
-8. reasoning: 2-3 Sätze auf Deutsch, die die Einstufung begründen. Nur lesbarer Fließtext, keine Variablennamen oder Datenbankfelder.`;
+8. reasoning: 2-3 Sätze auf Deutsch mit den Gründen, aus der Sache heraus: Thema, Format, Zugang und Publikum, Anlass. Die Sätze beschreiben die Veranstaltung, nie ihre Bewertung: keine Einstufung, kein Bereich aus der Kalibrierung, keine Werte, kein Verweis auf eine andere Fassung desselben Termins. Gibt die Ankündigung wenig her, sag, was ihr fehlt („Die Ankündigung nennt weder Vortragende noch Ort."), nicht, wie deshalb bewertet wurde. Nur lesbarer Fließtext, keine Variablennamen oder Datenbankfelder.`;
 
 /**
  * Kalibrierung am Bestand (seit 2026-10-28), ersetzt die früheren Archetypen.
@@ -85,7 +90,7 @@ export const EVENT_CALIBRATION = `Kalibrierung am Bestand. Die Scores müssen mi
 - um 0.32, Kolloquien, Preisverleihungen und öffentliche Vorträge zu einem engeren Thema: 0.32 / 0.42 / 0.24 / 0.23
 - um 0.46, öffentliche Konferenzen, Abendvorträge und Podien zu breit anschlussfähigen Themen: 0.52 / 0.46 / 0.40 / 0.44
 - ab 0.6, Flaggschiffe: große internationale Kongresse mit Publikumsprogramm, Publikumsabende wie die Lange Nacht der Museen, Podien zu tagesaktuellen Konflikten oder großen Jubiläen: 0.66 / 0.61 / 0.61 / 0.57
-Ordne jede Veranstaltung zuerst einem dieser Bereiche zu und weiche nur ab, wo die Ankündigung es begründet; einzelne Flaggschiffe dürfen deutlich darüber liegen. timeliness über 0.3 braucht einen Anlass, den die Ankündigung nennt oder der unmittelbar zum Thema gehört (Jahrestag, laufender Konflikt, Saison); ein allgemein wichtiges Thema ohne Anlass hebt sie nicht.`;
+Ordne jede Veranstaltung zuerst einem dieser Bereiche zu und weiche nur ab, wo die Ankündigung es begründet; einzelne Flaggschiffe dürfen deutlich darüber liegen. Die Zuordnung ist ein Arbeitsschritt für die Zahlen, in den Texten kommen die Bereiche nicht vor. timeliness über 0.3 braucht einen Anlass, den die Ankündigung nennt oder der unmittelbar zum Thema gehört (Jahrestag, laufender Konflikt, Saison); ein allgemein wichtiges Thema ohne Anlass hebt sie nicht.`;
 
 /**
  * Mehrfachanlagen über Läufe hinweg (seit 2026-10-28). Dieselbe Veranstaltung
@@ -124,7 +129,7 @@ function wordTruncate(text: string, maxWords: number): string {
 /** Best available description: teaser + bodytext + sidebar info, HTML-stripped
  *  and truncated. Falls back to the title alone when nothing else is present.
  *  Exportiert für den Bewertungskern (Quelltext des Lektorats). */
-export function pickContent(ev: EventForPrompt): string {
+export function pickContent(ev: Pick<EventForPrompt, 'teaser' | 'bodytext' | 'eventInformation'>): string {
   const parts = [ev.teaser, ev.bodytext, ev.eventInformation]
     .map((p) => decodeHtmlBlock(p).trim())
     .filter(Boolean);

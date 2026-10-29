@@ -12,7 +12,7 @@ import type { CandidateQuery, ScoringAdapter } from '@/lib/server/scoring/types'
 import { SCORE_DIMENSIONS } from '@/lib/shared/constants';
 import { SCORING_RECENT_DAYS } from '@/lib/shared/dashboard';
 import { evaluationProblems } from '@/lib/shared/scoring/evaluation';
-import { TEXT_FIELDS } from '@/lib/shared/scoring/text-audit';
+import { TEXT_FIELDS, type AuditSource } from '@/lib/shared/scoring/text-audit';
 import type { AnalysisResult } from '@/lib/shared/types';
 import { publicationToApi } from '../publications/to-api';
 import { analyzePublications } from './analyze';
@@ -107,6 +107,18 @@ export async function fetchPublicationCandidates(
   return { items, skipped: query.ids ? query.ids.length - items.length : 0 };
 }
 
+/** Was der Prompt über die Publikation zeigt, dazu die vollen Institutsnamen:
+ *  der Prompt nennt das Akronym, der Pitch schreibt den Namen aus. */
+export function publicationAuditSource(pub: PublicationForPrompt): AuditSource {
+  return {
+    text: [pub.title, pub.original_title, pickContent(pub)?.text].filter(Boolean).join('\n'),
+    names: [
+      pub.lead_author,
+      ...(pub.orgunits ?? []).flatMap((o) => [o.akronym_de, o.name_de]),
+    ].filter((n): n is string => Boolean(n?.trim())),
+  };
+}
+
 export const publicationScoringAdapter: ScoringAdapter<PublicationForPrompt, AnalysisResult> = {
   entity: 'publications',
   requiresHaiku: true,
@@ -123,6 +135,7 @@ export const publicationScoringAdapter: ScoringAdapter<PublicationForPrompt, Ana
   }),
   withTexts: (r, texts) => ({ ...r, ...texts }),
   contentOf: (pub) => pickContent(pub)?.text ?? pub.title,
+  auditSourceOf: publicationAuditSource,
   scores: async (results) => results.map(calculatePressScore),
   write: (rows, ctx) =>
     writePublicationEvaluations(

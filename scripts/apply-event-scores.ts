@@ -20,7 +20,10 @@
 //     nebeneinander, was jede Auswertung nach Modell verfälscht.
 //   * Textfelder laufen durch dieselben Gates wie im Bewertungskern
 //     (lib/shared/scoring/text-sanitize.ts + text-audit.ts): Leak, Gedankenstrich
-//     und ae/oe/ue statt Umlaut brechen ab, alles andere ist eine Warnung.
+//     und ae/oe/ue statt Umlaut brechen ab, alles andere ist eine Warnung. Was
+//     wörtlich in Titel, Beschreibung oder Kopfzeilen steht (Namen wie
+//     „Boehringer"), gilt wie im Kern als Material; dafür liest das Skript die
+//     Events vor der Prüfung, geschrieben wird weiterhin erst danach.
 //
 // Usage:
 //   npm run apply-event-scores -- --file=/tmp/scores.json                  # Dry-run, lokal
@@ -38,7 +41,7 @@ import { EVENT_SCORE_DIMENSIONS } from '@/lib/shared/constants';
 import { uuidPattern } from '@/lib/shared/schemas';
 import { evaluationProblems } from '@/lib/shared/scoring/evaluation';
 import { sanitizeText } from '@/lib/shared/scoring/text-sanitize';
-import { auditItem, TEXT_FIELDS, type AuditCode } from '@/lib/shared/scoring/text-audit';
+import { auditItem, TEXT_FIELDS, type AuditCode, type AuditSource } from '@/lib/shared/scoring/text-audit';
 
 const { target, flags, confirmProd } = bootstrapScript('apply-event-scores');
 
@@ -67,7 +70,7 @@ interface ScoredEvent {
 const BLOCKING: ReadonlySet<AuditCode> = new Set(['leak', 'em_dash', 'umlaut_digraph']);
 
 /** Harte Validierung. Sammelt ALLE Probleme, damit eine Korrekturrunde reicht. */
-function validate(rows: unknown): ScoredEvent[] {
+function validate(rows: unknown, sources: ReadonlyMap<string, AuditSource>): ScoredEvent[] {
   if (!Array.isArray(rows)) {
     console.error('[apply-event-scores] Datei enthält kein JSON-Array.');
     process.exit(1);
@@ -83,7 +86,7 @@ function validate(rows: unknown): ScoredEvent[] {
       if (typeof r?.[field] === 'string') r[field] = sanitizeText(r[field]);
     }
     const texts = Object.fromEntries(TEXT_FIELDS.map((f) => [f, r?.[f]]).filter(([, v]) => typeof v === 'string'));
-    for (const f of auditItem({ id: label, texts }, { entity: 'events' })) {
+    for (const f of auditItem({ id: label, texts, source: sources.get(id) }, { entity: 'events' })) {
       const line = `${label}: ${f.field} [${f.code}] ${f.detail}`;
       if (BLOCKING.has(f.code)) problems.push(line);
       else console.warn(`[apply-event-scores] Warnung ${line}`);
@@ -99,7 +102,15 @@ function validate(rows: unknown): ScoredEvent[] {
 }
 
 async function main(): Promise<void> {
-  const rows = validate(JSON.parse(readFileSync(file, 'utf8')));
+  const parsed: unknown = JSON.parse(readFileSync(file, 'utf8'));
+  const ids = Array.isArray(parsed)
+    ? parsed.flatMap((r) => {
+        const id = (r as { id?: unknown } | null)?.id;
+        return typeof id === 'string' && uuidPattern.test(id) ? [id] : [];
+      })
+    : [];
+  const { eventAuditSources } = await import('@/lib/server/events/scoring-adapter');
+  const rows = validate(parsed, await eventAuditSources(ids));
   if (apply) await confirmProd('apply-event-scores');
 
   const { eventScores, writeEventEvaluations } = await import('@/lib/server/scoring/persist');
