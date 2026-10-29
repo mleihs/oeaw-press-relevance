@@ -10,7 +10,7 @@
 
 import { eq, sql } from 'drizzle-orm';
 import { db, socialSettings } from '@/lib/server/db';
-import { ApiValidationError } from '@/lib/server/http';
+import { ApiValidationError } from '@/lib/server/http-errors';
 import {
   checkSocialWindowOrder,
   SOCIAL_WINDOW_DEFAULTS,

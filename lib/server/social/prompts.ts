@@ -4,6 +4,8 @@
 //      currently being covered across the watched channels, plus a short
 //      narrative the press team reads at a glance.
 
+import { clipText } from '@/lib/shared/clip-text';
+
 export const SYSTEM_PROMPT = `Du bist Medienbeobachter:in im Kommunikationsteam der Österreichischen Akademie der Wissenschaften (ÖAW). Du wertest Instagram-Posts von Wissenschafts- und Geschichts-Kanälen aus, um dem Presseteam einen schnellen Überblick zu geben, welche Themen dort gerade behandelt werden. Antworte ausschließlich mit gültigem JSON gemäß dem geforderten Schema. Alle Texte auf Deutsch, sachlich und knapp.`;
 
 export interface PostForPrompt {
@@ -16,7 +18,7 @@ export interface PostForPrompt {
 const MAX_CAPTION_CHARS = 1200;
 
 function clip(s: string, n = MAX_CAPTION_CHARS): string {
-  return s.length > n ? s.slice(0, n) + '…' : s;
+  return clipText(s, n, '…');
 }
 
 /** Per-post topic/keyword/summary extraction. Returns a prompt expecting

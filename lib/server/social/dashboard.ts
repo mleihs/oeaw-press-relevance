@@ -13,6 +13,7 @@ import {
 } from './list';
 import { resolveThemePosts } from './resolve';
 import type { SocialPost } from '@/lib/shared/types';
+import { clipText } from '@/lib/shared/clip-text';
 import { getSocialSettings } from '@/lib/server/social/settings';
 
 export interface SocialDashboardTheme {
@@ -176,7 +177,7 @@ async function computeSocialDashboardData(): Promise<SocialDashboardData | null>
       ? {
           topic:
             top.topic?.trim() ||
-            top.caption?.trim().slice(0, 80) ||
+            (top.caption ? clipText(top.caption.trim(), 80) : '') ||
             'Beliebtester Beitrag',
           handle: `@${topChannel?.handle ?? 'oeaw'}`,
           likes: top.like_count ?? 0,
