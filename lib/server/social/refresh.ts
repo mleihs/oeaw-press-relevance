@@ -4,15 +4,28 @@
 // sync/analyze/snapshot functions; the HTTP route streams `emit`, the CLI
 // passes a no-op emit and reads the returned summary.
 
+import { eq, sql } from 'drizzle-orm';
 import { db, socialRefreshRuns } from '@/lib/server/db';
 import { syncSocialPosts } from './sync';
 import { persistAndReconcilePostImages } from './images';
 import { analyzeSocialPosts, regenerateThemeSnapshot } from './analyze';
-import { getLastCompletedRefreshAt } from './list';
 import { getSocialSettings } from './settings';
 import { log } from '@/lib/server/log';
 
 type Emit = (type: string, data: unknown) => void;
+
+/**
+ * Timestamp of the last successful refresh, for the throttle. Null if none.
+ * Lebt hier statt in ./list: list.ts ist ein RSC-Lesemodul mit `server-only`,
+ * das unter tsx nicht auflösbar ist und scripts/sync-social.ts brach.
+ */
+async function getLastCompletedRefreshAt(): Promise<string | null> {
+  const [row] = await db
+    .select({ at: sql<string | null>`max(${socialRefreshRuns.createdAt})` })
+    .from(socialRefreshRuns)
+    .where(eq(socialRefreshRuns.status, 'complete'));
+  return row?.at ?? null;
+}
 type TriggeredBy = 'ui' | 'cli' | 'cron';
 
 export interface SocialRefreshOptions {

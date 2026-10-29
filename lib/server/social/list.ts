@@ -109,12 +109,3 @@ export async function getRefreshCostSummary(): Promise<SocialCostSummary> {
     last_run_at: agg?.lastRunAt ?? null,
   };
 }
-
-/** Timestamp of the last successful refresh, for the throttle. Null if none. */
-export async function getLastCompletedRefreshAt(): Promise<string | null> {
-  const [row] = await db
-    .select({ at: sql<string | null>`max(${socialRefreshRuns.createdAt})` })
-    .from(socialRefreshRuns)
-    .where(eq(socialRefreshRuns.status, 'complete'));
-  return row?.at ?? null;
-}

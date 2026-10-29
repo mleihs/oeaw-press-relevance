@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import * as Sentry from '@sentry/nextjs';
 import { log, requestLogger } from './log';
+import { ApiValidationError, ApiAuthError } from './http-errors';
 
 /**
  * Uniform JSON error response. Used everywhere route handlers need to
@@ -209,35 +210,10 @@ export function errorToApiResponse(
   return apiError(message, status);
 }
 
-/**
- * Thrown by the validate* helpers when input fails its zod schema.
- * `withApiError` catches it and returns a deterministic 400 (not the 500
- * `route_unhandled_error` path). The message is the first zod issue, which
- * keeps parity with the per-route
- * `apiError(parsed.error.issues[0]?.message ?? '...', 400)` block these
- * helpers replace (ADR 0018).
- */
-export class ApiValidationError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'ApiValidationError';
-  }
-}
-
-/**
- * Thrown by `requireUser()`/`requireAdmin()` (lib/server/auth/require.ts)
- * when a route needs an authenticated Supabase-Auth identity. `withApiError`
- * maps it to a structured 401/403 instead of the 500 fallthrough — the same
- * contract ApiValidationError has for 400s.
- */
-export class ApiAuthError extends Error {
-  readonly status: 401 | 403;
-  constructor(message: string, status: 401 | 403) {
-    super(message);
-    this.name = 'ApiAuthError';
-    this.status = status;
-  }
-}
+// Die Fehlerklassen leben in ./http-errors (ohne `server-only` und NextResponse),
+// damit Domänenmodule wie social/settings.ts sie werfen können, ohne die
+// HTTP-Schicht mitzuziehen; scripts/sync-social.ts lädt sie unter tsx.
+export { ApiValidationError, ApiAuthError } from './http-errors';
 
 function parseOrThrow<S extends z.ZodType>(
   schema: S,

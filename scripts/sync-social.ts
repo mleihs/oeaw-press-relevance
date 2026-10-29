@@ -5,7 +5,11 @@
 // by --target, then dynamic-import the pipeline AFTER the override (Drizzle
 // reads DATABASE_URL at module load). Lets a cron job refresh the social
 // monitor headlessly on either target without dragging in the app's env
-// validator — Apify/OpenRouter config is read from process.env here.
+// validator — Apify- und LLM-Config wird hier aus process.env gelesen.
+// Modell und Key wählt es wie die Route (app/api/social/refresh): SOCIAL_LLM_MODEL,
+// sonst DEFAULT_LLM_MODEL; `anthropic/*` geht mit ANTHROPIC_API_KEY direkt an
+// Anthropic (envKeyFor). Bis 2026-10-29 stand hier fest OPENROUTER_API_KEY mit
+// deepseek-chat als Rückfall, die Umstellung vom 2026-10-24 ging daran vorbei.
 //
 // Usage:
 //   npm run sync-social                          # → local Supabase (.env.local)
@@ -28,9 +32,12 @@ function num(v: string | undefined, fallback: number): number {
 async function main(): Promise<void> {
   await confirmProd('sync-social');
 
-  const apiKey = process.env.OPENROUTER_API_KEY;
+  const { DEFAULT_LLM_MODEL } = await import('@/lib/shared/constants');
+  const { envKeyFor, providerFor } = await import('@/lib/server/llm-client');
+  const model = process.env.SOCIAL_LLM_MODEL || DEFAULT_LLM_MODEL;
+  const apiKey = envKeyFor(model);
   if (!apiKey) {
-    console.error('[sync-social] OPENROUTER_API_KEY fehlt (in .env.local setzen).');
+    console.error(`[sync-social] Kein API-Key für ${model} (ANTHROPIC_API_KEY bzw. OPENROUTER_API_KEY in .env.local setzen).`);
     process.exit(1);
   }
   const apifyToken = process.env.APIFY_TOKEN;
@@ -42,17 +49,14 @@ async function main(): Promise<void> {
   // Dynamic import AFTER the DATABASE_URL override (Drizzle reads it at load).
   const { runSocialRefresh } = await import('@/lib/server/social/refresh');
 
-  console.log(`[sync-social] target=${target} db=${redactedDatabaseUrl()}`);
+  console.log(`[sync-social] target=${target} db=${redactedDatabaseUrl()} model=${model} via ${providerFor(model)}`);
 
   const result = await runSocialRefresh({
     apifyToken,
     actor: process.env.APIFY_INSTAGRAM_ACTOR || 'apify~instagram-scraper',
     resultsLimit: num(process.env.SOCIAL_RESULTS_LIMIT, 12),
     apiKey,
-    model:
-      process.env.SOCIAL_LLM_MODEL ||
-      process.env.LLM_DEFAULT_MODEL ||
-      'deepseek/deepseek-chat',
+    model,
     minRefreshMinutes: num(process.env.SOCIAL_MIN_REFRESH_MINUTES, 30),
     apifyCostPerResult: num(process.env.APIFY_COST_PER_RESULT, 0.0027),
     force: flags.includes('--force'),

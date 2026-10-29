@@ -225,7 +225,7 @@ export const UNKNOWN_MODEL_PRICING: ModelPricing = { promptUsd: 5, completionUsd
 export const EXTRA_PRICED_MODELS: Record<string, ModelPricing> = {
   // Bis 2026-10-24 Social-Default; bleibt bepreist für SOCIAL_LLM_MODEL-Overrides.
   'deepseek/deepseek-v4-flash': { promptUsd: 0.088, completionUsd: 0.176 },
-  // Rückfall von scripts/sync-social.ts ohne SOCIAL_LLM_MODEL/LLM_DEFAULT_MODEL.
+  // Social-Modell bis 2026-09-04; bleibt bepreist für SOCIAL_LLM_MODEL-Overrides.
   'deepseek/deepseek-chat': { promptUsd: 0.2, completionUsd: 0.8 },
 };
 
