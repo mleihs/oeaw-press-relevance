@@ -36,7 +36,7 @@ describe('auditItem', () => {
     ['leak', { pitch_suggestion: `${GOOD_PITCH} Die Arbeit ist peer-reviewed.` }, { target_audience: 'peer-reviewed Fachpresse' }],
     ['leak', { suggested_angle: 'Vom Institut pressetauglich markiert.' }, { suggested_angle: 'Vom Institut gemessen.' }],
     // Der Bewertungsvorgang im Text (übernommene Zwillingsbewertung, Handlauf 28.10.).
-    ['leak', { reasoning: 'Der Vortrag wurde auf der Zentralseite bereits bewertet, daher gilt dieselbe Einstufung.' }, { reasoning: 'Der Vortrag wurde auf der Zentralseite bereits angekündigt.' }],
+    ['leak', { reasoning: 'Der Vortrag wurde auf der Zentralseite bereits bewertet, daher gilt dieselbe Einstufung.' }, { reasoning: 'Der Vortrag wurde im Programmheft bereits angekündigt.' }],
     ['leak', { reasoning: 'Deshalb bleibt die Bewertung identisch.' }, { reasoning: 'Die Bewertung der Quellen durch das Team ist neu.' }],
     ['em_dash', { reasoning: 'Der Befund — robust.' }, { reasoning: 'Zeitraum 1975–1980 belegt.' }],
     ['em_dash', { reasoning: 'Der Befund – robust.' }, { reasoning: 'Seiten 12–14.' }],
@@ -55,6 +55,37 @@ describe('auditItem', () => {
     expect(codesOf(pub(negative))).not.toContain(code);
   });
 
+  // Bewertungssprache, wie sie in der ersten Nacht und im Bestand stand (2026-10-29).
+  // Positiv und negativ je Entität: was bei Events Prozess ist, kann bei
+  // Publikationen Inhalt sein.
+  const process: Array<[string, 'publications' | 'events', boolean]> = [
+    ['Das Seminar zählt damit zu den Fachvorträgen im engen Kreis.', 'events', true],
+    ['Die Werte entsprechen deshalb dem Bereich interner Fachseminare.', 'events', true],
+    ['Das rechtfertigt eine Einstufung klar im Flaggschiff-Bereich.', 'events', true],
+    ['Als Termin einer Fachreihe liegt er im mittleren Bereich.', 'events', true],
+    ['Weil derselbe Termin auch mit ausführlicherem Text angekündigt ist, werden beide Einträge gleich eingestuft.', 'events', true],
+    ['Die Bewertung entspricht daher der englischen Fassung.', 'events', true],
+    ['Englische Fassung des Vortrags.', 'events', true],
+    ['Bewertung unveraendert gegenueber dem ersten Durchgang.', 'events', true],
+    ['Bewusst niedrig bewertet, das Event fällt automatisch in den Pool zurück.', 'events', true],
+    ['Die Bewertung fällt entsprechend sehr niedrig aus.', 'publications', true],
+    ['Deutsche Version des bereits im vorigen Batch bewerteten englischen Dossiers.', 'publications', true],
+    ['Höchster Score in diesem Batch.', 'publications', true],
+    ['Die hohe Novelty rechtfertigt den höheren Novelty-Score.', 'publications', true],
+    ['Wer als chancenarm eingestuft wird, bekommt weniger Weiterbildung.', 'publications', false],
+    ['Die englische Fassung des Dossiers erschien parallel.', 'publications', false],
+    ['Digitale Zwillinge des Herzens und der Apgar-Score der Neugeborenen.', 'publications', false],
+    ['Die Spektren zeigen das Kalium-Dublett, die kalten Seen tragen die höchsten Werte.', 'publications', false],
+    ['Keinerlei Medienrelevanz, niedrigste Werte im Batch.', 'publications', true],
+    ['Die Ankündigung nennt weder Vortragende noch Ort.', 'events', false],
+    ['Ein Fachvortrag für die Arbeitsgruppe, ohne Bezug zur Tagespolitik.', 'events', false],
+    ['Das Podium fragt, wie sich KI-Risiken bewerten lassen.', 'events', false],
+  ];
+
+  it.each(process)('process language: %s (%s) → leak %s', (reasoning, entity, leaks) => {
+    expect(codesOf(pub({ reasoning }), entity).includes('leak')).toBe(leaks);
+  });
+
   it('checks fillers only in publication pitches', () => {
     const texts = { pitch_suggestion: `${GOOD_PITCH} Ein Aufmacher.` };
     expect(codesOf(pub(texts), 'publications')).toContain('filler');
@@ -71,6 +102,17 @@ describe('auditItem', () => {
   it('names the field and the offending text', () => {
     const [f] = auditItem(pub({ reasoning: 'Weil mahighlight=1.' }), { entity: 'publications' });
     expect(f).toEqual({ id: 'p1', field: 'reasoning', code: 'leak', detail: 'mahighlight=' });
+  });
+
+  it('spares names that the source spells with oe/ue', () => {
+    const texts = { reasoning: 'Gefördert von Boehringer Ingelheim, geleitet von Coelho.' };
+    expect(codesOf(pub(texts))).toContain('umlaut_digraph');
+    const source = { text: 'Funded by Boehringer Ingelheim.', names: ['Coelho, Ana'] };
+    expect(codesOf({ id: 'p1', texts, source })).not.toContain('umlaut_digraph');
+    // Ein echter Ersatz neben dem Namen bleibt ein Befund.
+    expect(codesOf({ id: 'p1', texts: { reasoning: `${texts.reasoning} Eine Fuelle von Daten.` }, source })).toContain(
+      'umlaut_digraph',
+    );
   });
 
   it('skips fields that are missing or not strings', () => {
@@ -151,6 +193,31 @@ describe('auditBatch', () => {
       { entity: 'publications' },
     );
     expect(findings.filter((f) => f.code === 'trigram_rep')).toHaveLength(0);
+  });
+
+  it('does not count institute names and source wording as repetition', () => {
+    const pitches = [
+      'Am Institut für Molekulare Biotechnologie der ÖAW wachsen Mini-Gehirne.',
+      'Forschende vom Institut für Molekulare Biotechnologie der ÖAW messen Proteine.',
+      'Das Institut für Molekulare Biotechnologie der ÖAW zeigt neue Nervenzellen.',
+    ];
+    const plain = auditBatch(chunk(pitches), { entity: 'publications' });
+    expect(plain.filter((f) => f.code === 'trigram_rep').length).toBeGreaterThan(0);
+
+    const sourced = chunk(pitches).map((it) => ({
+      ...it,
+      source: { text: 'Abstract.', names: ['IMBA', 'Institut für Molekulare Biotechnologie'] },
+    }));
+    expect(auditBatch(sourced, { entity: 'publications' }).filter((f) => f.code === 'trigram_rep')).toHaveLength(0);
+
+    // Eine Folge aus der eigenen Quelle ist Material, eine fremde bleibt Monotonie.
+    const quoted = chunk(['Die Studie zeigt Moose.', 'Die Studie zeigt Flechten.', 'Die Studie zeigt Farne.']).map(
+      (it, i) => ({ ...it, source: { text: i === 0 ? 'Die Studie zeigt Moose im Hochgebirge.' : 'Abstract.', names: [] } }),
+    );
+    const ids = auditBatch(quoted, { entity: 'publications' })
+      .filter((f) => f.code === 'trigram_rep' && f.detail.includes('die studie zeigt'))
+      .map((f) => f.id);
+    expect(ids).toEqual([]);
   });
 
   it('flags monotonous "Stichwort: Satz" angles above half of at least five', () => {

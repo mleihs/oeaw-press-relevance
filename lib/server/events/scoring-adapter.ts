@@ -14,9 +14,9 @@ import { eventScores, markEventsFailed, writeEventEvaluations } from '@/lib/serv
 import type { CandidateQuery, ScoringAdapter } from '@/lib/server/scoring/types';
 import { EVENT_SCORE_DIMENSIONS } from '@/lib/shared/constants';
 import { evaluationProblems } from '@/lib/shared/scoring/evaluation';
-import { TEXT_FIELDS } from '@/lib/shared/scoring/text-audit';
+import { TEXT_FIELDS, type AuditSource } from '@/lib/shared/scoring/text-audit';
 import { analyzeEvents } from './analyze';
-import { pickContent, siblingLabel, type EventAnalysisResult, type ScoredSibling } from './prompts';
+import { pickContent, siblingLabel, type EventAnalysisResult, type EventForPrompt, type ScoredSibling } from './prompts';
 import type { EventRow } from './to-api';
 
 /** Ein Kandidat samt den am selben Tag schon bewerteten Terminen (Zwillingsabgleich im Prompt). */
@@ -286,6 +286,39 @@ export function alignTwins(
   return out;
 }
 
+type EventSourceFields = Pick<
+  EventForPrompt,
+  'title' | 'teaser' | 'bodytext' | 'eventInformation' | 'organizerTitle' | 'locationTitle' | 'institute'
+>;
+
+/** Was der Prompt über die Veranstaltung zeigt (Kopfzeilen und Beschreibung). */
+export function eventAuditSource(ev: EventSourceFields): AuditSource {
+  return {
+    text: [ev.title, pickContent(ev)].join('\n'),
+    names: [ev.organizerTitle, ev.locationTitle, ev.institute].filter((n): n is string => Boolean(n?.trim())),
+  };
+}
+
+/** Die Audit-Quellen benannter Events, für das In-Chat-Apply (scripts/apply-event-scores.ts):
+ *  dort gelten dieselben Ausnahmen wie im Bewertungskern. */
+export async function eventAuditSources(ids: readonly string[]): Promise<Map<string, AuditSource>> {
+  if (ids.length === 0) return new Map();
+  const rows = await db
+    .select({
+      id: eventsTable.id,
+      title: eventsTable.title,
+      teaser: eventsTable.teaser,
+      bodytext: eventsTable.bodytext,
+      eventInformation: eventsTable.eventInformation,
+      organizerTitle: eventsTable.organizerTitle,
+      locationTitle: eventsTable.locationTitle,
+      institute: eventsTable.institute,
+    })
+    .from(eventsTable)
+    .where(sql`${eventsTable.id} = ANY(${sql.param([...ids])}::uuid[])`);
+  return new Map(rows.map((r) => [r.id, eventAuditSource(r)]));
+}
+
 export const eventScoringAdapter: ScoringAdapter<EventCandidate, EventAnalysisResult> = {
   entity: 'events',
   requiresHaiku: false,
@@ -304,6 +337,7 @@ export const eventScoringAdapter: ScoringAdapter<EventCandidate, EventAnalysisRe
   }),
   withTexts: (r, texts) => ({ ...r, ...texts }),
   contentOf: (ev) => pickContent(ev),
+  auditSourceOf: eventAuditSource,
   twinGroups: eventTwinGroups,
   scores: eventScores,
   write: (rows, ctx) =>

@@ -44,9 +44,24 @@ export interface AuditFinding {
   detail: string;
 }
 
+/**
+ * Was das Modell über den Eintrag las. Was wörtlich darin steht, ist Material,
+ * kein Fehler des Textes: „Boehringer" oder „Coelho" ist kein Umlaut-Ersatz,
+ * „Institut für Molekulare Biotechnologie" in drei IMBA-Pitches keine Floskel
+ * (beides Fehlalarme der ersten Nacht, 2026-10-29).
+ */
+export interface AuditSource {
+  /** Titel und Quelltext. */
+  text: string;
+  /** Eigennamen aus den Kopfzeilen: Personen, Institute, Veranstalter, Ort. */
+  names: readonly string[];
+}
+
 export interface AuditItem {
   id: string;
   texts: Partial<Record<TextField, string | null | undefined>>;
+  /** Ohne Quelle prüft das Audit ohne Ausnahmen (ältere Aufrufer, Tests). */
+  source?: AuditSource;
 }
 
 export interface AuditOptions {
@@ -77,12 +92,48 @@ export const ANGLE_FORM_MIN_ITEMS = 5;
  *  verraten, dass das Modell aus den Metadaten statt aus dem Inhalt schließt. */
 const LEAK_VARIABLE = /(popular_science|peer_reviewed|mahighlight)\s*=/i;
 const LEAK_FLAG_PROSE = /peer-?reviewed|pressetauglich markiert|Highlight des Instituts/i;
-/** Der Bewertungsvorgang selbst (seit 2026-10-28): übernimmt ein Event die
- *  Dimensionen seines schon bewerteten Zwillings, erklärte das Modell das im
- *  Text („wurde auf der Zentralseite bereits bewertet, daher gilt dieselbe
- *  Einstufung"). Die Felder beschreiben die Sache, nicht ihre Bewertung. */
-const LEAK_PROCESS =
-  /\b(?:bereits|schon) (?:bewertet|eingestuft)\b|\bdieselbe (?:Einstufung|Bewertung|Einschätzung)\b|\b(?:Einstufung|Bewertung) (?:bleibt|ist) (?:identisch|gleich|dieselbe)\b|\b(?:bleibt|ist) die (?:Einstufung|Bewertung) (?:identisch|gleich|dieselbe)\b/i;
+/**
+ * Der Bewertungsvorgang selbst. Die Felder beschreiben die Sache, nicht ihre
+ * Bewertung: keine Einstufung, kein Bereich der Kalibrierung, keine Werte, kein
+ * Vergleich mit einer anderen Fassung oder einem früheren Durchgang. Die Rubrik
+ * verbietet das (EVENT_TEXT_RULES, PUBLICATION_TEXT_RULES), das Lektorat tilgt
+ * es; diese Muster sind das Netz dahinter.
+ *
+ * Seit 2026-10-28 für die Zwillingsübernahme, am 2026-10-29 verbreitert, als die
+ * erste Nacht zeigte, dass die Event-Begründungen die Bereiche der Kalibrierung
+ * nacherzählten („zählt damit zu den Fachvorträgen im engen Kreis"). Gemessen am
+ * ganzen Prod-Bestand (520 Events, 8476 Publikationen): jedes Muster trifft dort
+ * nur Prozess-Sätze. Was bei Publikationen auch Inhalt sein kann („als
+ * chancenarm eingestuft", „die englische Fassung des Dossiers", das
+ * Kalium-Dublett), steht nur in der Event-Liste; Werte allein sind bei
+ * Publikationen Messwerte („die höchsten Werte tragen die kalten Seen").
+ */
+const LEAK_PROCESS_SHARED: readonly RegExp[] = [
+  /\b(?:bereits|schon) (?:[\p{L}\p{N}.,]+ ){0,3}(?:bewertet|eingestuft)\p{L}*/iu,
+  /\b(?:dieselbe|gleiche|identische) (?:Einstufung|Bewertung|Einschätzung)\b/iu,
+  /\b(?:Einstufung|Bewertung)(?: \p{L}+){0,2} (?:entspricht|beruht|basiert|stützt|folgt|bleibt|fällt|liegt|orientiert|ergibt)\b/iu,
+  /\b(?:bleibt|ist) die (?:Einstufung|Bewertung) (?:identisch|gleich|dieselbe)\b|\b(?:Einstufung|Bewertung) unver(?:ä|ae)ndert\b/iu,
+  /\b(?:gleich|identisch|ebenso|genauso|bewusst(?: \p{L}+)?) (?:eingestuft|bewertet)\b/iu,
+  /(?:^|[.!?]\s+)Bewertet wird\b/u,
+  /\b(?:eine|die) (?:inhaltliche |fundierte |belastbare )?Bewertung (?:w(?:ä|ae)re|darauf)\b|\bBewertung (?:\p{L}+ )?einschr(?:ä|ae)nkt\b/iu,
+  /\b(?:höchste[rn]?|niedrigste[rn]?|beste[rn]?) (?:Score|Bewertung)\b|\b(?:Novelty|Storytelling|Relevanz|Relevance|Timeliness|Accessibility)-Score\b|\b(?:im|in diesem|im vorigen|in dieser) (?:Batch|Charge|Session|Stapel)\b(?!-)|\bBatch \d+\b|\bgegen(?:ü|ue)ber dem ersten Durchgang\b/iu,
+  /\bMehrfachanlage\p{L}*|\bZentralseite\b|\bdesselben Termins\b|\bBewertungspool\b|\bin den Pool\b|\bin die Bewertung zur(?:ü|ue)ck/iu,
+  /\bnahe an der (?:\p{L}+ )?Bewertung\b|\bh(?:ä|ae)lt (?:\p{L}+ )?die Kalibrierung\b/iu,
+];
+const LEAK_PROCESS: Record<AuditEntity, readonly RegExp[]> = {
+  publications: LEAK_PROCESS_SHARED,
+  events: [
+    ...LEAK_PROCESS_SHARED,
+    /\b(?:eingestuft|einzustufen|einstufen|Einstufung\p{L}*)\b|\bDublett\p{L}*/iu,
+    /\bWerte(?: \p{L}+){0,2} (?:entsprechen|liegen|ergeben|folgen|bleiben)\b/iu,
+    // Die Bereiche aus EVENT_CALIBRATION, nacherzählt.
+    /Fachvortr\p{L}* im engen Kreis|Flaggschiff-?Bereich|\b(?:im|in den|zum) (?:unteren|oberen|mittleren) Bereich\b|\bBereich (?:der|interner|technischer|öffentlicher) (?:\p{L}+ )?(?:Seminar|Fachseminar|Fachveranstaltung|Veranstaltung|Vortr|Workshop|Kolloqui|Konferenz|Flaggschiff)\p{L}*/iu,
+    // Die andere Fassung desselben Termins (EVENT_TWIN_RULE).
+    /\b(?:deutsch|englisch)(?:sprachig)?e[nr]? (?:Sprach)?fassung\b|\bSprachfassung\p{L}*|\bandere[n]? (?:\p{L}+ )?Fassung\b/iu,
+    /\bdenselben (?:Termin|Vortrag|Workshop|Kongress|Abend) wie\b|\b(?:zweite|dritte) (?:Seite|Eintragung|Anlage)\b/iu,
+    /\b(?:niedrig|hoch|höher|niedriger|zurückhaltend)(?:er)? (?:bewertet|eingestuft)\b|\b(?:niedrige|mittlere|hohe|höhere|zurückhaltende) Bewertung\b/iu,
+  ],
+};
 const LEAK_FIELDS: readonly TextField[] = ['reasoning', 'pitch_suggestion', 'suggested_angle'];
 
 /** Gedankenstrich: Em-Dash überall, En-Dash nur mit Leerzeichen beidseitig
@@ -113,20 +164,24 @@ export function auditItem(item: AuditItem, opts: AuditOptions): AuditFinding[] {
   const out: AuditFinding[] = [];
   const add = (field: TextField, code: AuditCode, detail: string) =>
     out.push({ id: item.id, field, code, detail });
+  const exempt = sourceExemptions(item.source);
 
   for (const field of TEXT_FIELDS) {
     const text = item.texts[field];
     if (typeof text !== 'string') continue;
 
     if (LEAK_FIELDS.includes(field)) {
-      const leak = LEAK_VARIABLE.exec(text) ?? LEAK_FLAG_PROSE.exec(text) ?? LEAK_PROCESS.exec(text);
-      if (leak) add(field, 'leak', leak[0]);
+      const leak =
+        LEAK_VARIABLE.exec(text) ??
+        LEAK_FLAG_PROSE.exec(text) ??
+        LEAK_PROCESS[opts.entity].reduce<RegExpExecArray | null>((hit, re) => hit ?? re.exec(text), null);
+      if (leak) add(field, 'leak', leak[0].trim());
     }
 
     const dash = EM_DASH.exec(text);
     if (dash) add(field, 'em_dash', `„${context(text, dash.index)}"`);
 
-    const digraph = wordsIn(text).find(isUmlautDigraphWord);
+    const digraph = wordsIn(text).find((w) => isUmlautDigraphWord(w) && !exempt.words.has(w.toLowerCase()));
     if (digraph) add(field, 'umlaut_digraph', digraph);
 
     if (field === 'pitch_suggestion' && opts.entity === 'publications') {
@@ -149,6 +204,34 @@ export function auditItem(item: AuditItem, opts: AuditOptions): AuditFinding[] {
     }
   }
   return out;
+}
+
+/** Wörter mit vier und mehr Buchstaben, die in Eigennamen nur Füllung sind. */
+const NAME_FILLERS = new Set(['einer', 'eines', 'einem', 'sowie', 'über', 'unter', 'durch', 'with', 'from']);
+
+interface SourceExemptions {
+  /** Alle Wörter der Quelle, klein: so geschrieben, wie die Quelle sie schreibt. */
+  words: ReadonlySet<string>;
+  /** Wörter der Eigennamen: eine Dreierfolge damit ist Verankerung wie ANCHOR_WORDS. */
+  nameWords: ReadonlySet<string>;
+  /** Dreierfolgen, die wörtlich in der Quelle stehen. */
+  trigrams: ReadonlySet<string>;
+}
+
+const NO_EXEMPTIONS: SourceExemptions = { words: new Set(), nameWords: new Set(), trigrams: new Set() };
+
+function sourceExemptions(source: AuditSource | undefined): SourceExemptions {
+  if (!source) return NO_EXEMPTIONS;
+  const all = [source.text, ...source.names].join('\n').toLowerCase();
+  const nameWords = new Set(
+    source.names.flatMap((n) => wordsIn(n.toLowerCase())).filter((w) => w.length >= 4 && !NAME_FILLERS.has(w)),
+  );
+  const trigrams = new Set<string>();
+  for (const part of [source.text, ...source.names]) {
+    const words = wordsIn(part.toLowerCase());
+    for (let i = 0; i + 2 < words.length; i++) trigrams.add(words.slice(i, i + 3).join(' '));
+  }
+  return { words: new Set(wordsIn(all)), nameWords, trigrams };
 }
 
 /** Ausschnitt um eine Fundstelle, für lesbare Befunde. */
@@ -183,11 +266,13 @@ export const ANGLE_COLON_FORM = /^[^:]{2,40}:\s/;
  */
 export function auditBatch(items: AuditItem[], _opts: AuditOptions): AuditFinding[] {
   const out: AuditFinding[] = [];
+  const exemptions = new Map(items.map((it) => [it.id, sourceExemptions(it.source)]));
+  const exemptOf = (it: AuditItem): SourceExemptions => exemptions.get(it.id) ?? NO_EXEMPTIONS;
 
   for (const field of CHUNK_FIELDS) {
     const present = items.flatMap((it) => {
       const text = it.texts[field];
-      return typeof text === 'string' && text.trim() !== '' ? [{ id: it.id, text }] : [];
+      return typeof text === 'string' && text.trim() !== '' ? [{ id: it.id, text, exempt: exemptOf(it) }] : [];
     });
 
     // Gleiches Schluss-Bigramm im letzten Satz.
@@ -204,8 +289,8 @@ export function auditBatch(items: AuditItem[], _opts: AuditOptions): AuditFindin
 
     // Wiederkehrende Dreierfolgen. Je Datensatz zählt eine Folge einmal.
     const byTrigram = new Map<string, string[]>();
-    for (const { id, text } of present) {
-      for (const tri of trigramsOf(text)) {
+    for (const { id, text, exempt } of present) {
+      for (const tri of trigramsOf(text, exempt)) {
         const ids = byTrigram.get(tri) ?? [];
         ids.push(id);
         byTrigram.set(tri, ids);
@@ -251,14 +336,16 @@ function idsByKey(
   return map;
 }
 
-/** Eindeutige Wort-Dreierfolgen eines Textes, klein geschrieben, ohne Verankerung. */
-function trigramsOf(text: string): Set<string> {
+/** Eindeutige Wort-Dreierfolgen eines Textes, klein geschrieben, ohne Verankerung
+ *  und ohne Folgen, die der Eintrag aus seiner eigenen Quelle übernimmt. */
+function trigramsOf(text: string, exempt: SourceExemptions): Set<string> {
   const words = wordsIn(text.toLowerCase());
   const out = new Set<string>();
   for (let i = 0; i + 2 < words.length; i++) {
     const tri = words.slice(i, i + 3);
-    if (tri.some((w) => ANCHOR_WORDS.has(w))) continue;
-    out.add(tri.join(' '));
+    if (tri.some((w) => ANCHOR_WORDS.has(w) || exempt.nameWords.has(w))) continue;
+    const key = tri.join(' ');
+    if (!exempt.trigrams.has(key)) out.add(key);
   }
   return out;
 }

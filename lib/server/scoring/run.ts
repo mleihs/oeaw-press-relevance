@@ -448,7 +448,7 @@ async function scoreChunk(s: EntityState, chunk: Item[], groups: string[][]): Pr
 
   const entity = adapter.entity;
   const audit = (list: Working[]): AuditFinding[] => {
-    const auditItems = list.map((r) => ({ id: r.item.id, texts: r.texts }));
+    const auditItems = list.map((r) => ({ id: r.item.id, texts: r.texts, source: adapter.auditSourceOf(r.item) }));
     return [
       ...auditItems.flatMap((a) => auditItem(a, { entity })),
       ...auditBatch(oneOfEachGroup(auditItems, groups), { entity }),

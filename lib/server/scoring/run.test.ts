@@ -96,6 +96,7 @@ function adapter(over: Partial<ScoringAdapter<TItem, TResult>> = {}, count = 7):
     }),
     withTexts: (r: TResult, t) => ({ ...r, ...t }),
     contentOf: (item: TItem) => `Inhalt von ${item.title}`,
+    auditSourceOf: (item: TItem) => ({ text: `Inhalt von ${item.title}`, names: [] }),
     scores: async (results: TResult[]) => results.map((r) => r.a),
     write: vi.fn(async (rows: Array<ScoredRow<TItem, TResult>>) => rows.map((r) => r.item.id)),
     markFailed: vi.fn(async () => {}),

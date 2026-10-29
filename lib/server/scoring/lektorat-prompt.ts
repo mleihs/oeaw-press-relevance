@@ -6,7 +6,9 @@
 // dazu die Regeln, die beim In-Chat-Bewerten von Hand galten (Memory
 // inchat-scoring-sprachqualitaet): Satzbau, kein unklares „Es", keine
 // Rückfall-Floskeln, keine gleichen Schlüsse quer über den Stapel, gemischte
-// Winkel-Formen. Nie der Bestand als Vorbild.
+// Winkel-Formen, keine Bewertungssprache in den Texten (seit 2026-10-29: die
+// erste Nacht ließ „zählt damit zu den Fachvorträgen im engen Kreis" stehen,
+// weil die Regel fehlte). Nie der Bestand als Vorbild.
 
 import { PUBLICATION_TEXT_RULES, TYPOGRAPHY_RULES } from '@/lib/server/analysis/prompts';
 import { EVENT_TEXT_RULES, EVENT_TYPOGRAPHY_RULES } from '@/lib/server/events/prompts';
@@ -30,10 +32,11 @@ export const LEKTORAT_RULES = `WAS DU TUST
 - Wiederholungen: Dasselbe Wort oder derselbe Gedanke zweimal in einem Text wird gestrichen oder ersetzt. Dieselbe Wortfolge in mehreren Texten des Stapels wird variiert.
 - Schlüsse: Kein Text eines Feldes endet mit derselben Wendung (den letzten zwei Wörtern des letzten Satzes) wie ein anderer Text desselben Feldes im Stapel oder wie eine Wendung der Sperrliste. Der letzte Satz gehört der Sache oder ihrer Konsequenz.
 - Rückfall-Floskeln vermeiden: „aktueller Anlass", „für Laien", „breites Publikum", „bleibt abstrakt", „schwer zu vermitteln", „ein Thema für", „verlangt Erklärung", „erschien bereits im". Sag stattdessen, was an der Sache konkret anschlussfähig oder sperrig ist.
+- Bewertungssprache tilgen: Die Texte beschreiben die Sache, nie ihre Bewertung. Sätze über Einstufung, Werte oder Scores, über die Bereiche der Kalibrierung, über eine andere Fassung desselben Eintrags oder über den Bewertungsvorgang („wird gleich eingestuft", „zählt damit zu den Fachvorträgen im engen Kreis", „die Bewertung fällt niedrig aus") ersetzt du durch den Grund in der Sache (Thema, Format, Zugang, Publikum, Anlass) oder streichst sie. Gibt die Quelle wenig her, sagt der Text, was ihr fehlt.
 - Winkel (suggested_angle): Formen mischen. Aussage, Frage und die Form „Stichwort: Satz" wechseln sich ab; die Doppelpunkt-Form steht höchstens bei jedem zweiten Winkel.
 - Verankerung: Konkretes (Institut, Forschende, Publikationsorgan, Fachbegriff mit Erklärung, Größenordnung) bleibt stehen. Gibt der Quelltext einen Anker her, der im Text fehlt, darf er hinein.
 - Personen: Nennt der Quelltext für eine Person kein Pronomen, schreibe neutral (Namen wiederholen, „die Forschenden", „das Team"). Leite nie ein Pronomen aus einem Vornamen ab.
-- Umlaute: immer ä, ö, ü, ß, nie ae, oe, ue oder ss als Ersatz.
+- Umlaute: immer ä, ö, ü, ß, nie ae, oe, ue oder ss als Ersatz. Eigennamen bleiben, wie die Quelle sie schreibt (Boehringer, Coelho).
 
 GEDANKENSTRICHE
 ${DASH_TECHNIQUES}

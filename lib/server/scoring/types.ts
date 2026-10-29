@@ -7,7 +7,7 @@
 import type { MessageBatchInfo, MessageBatcher } from '@/lib/server/anthropic-batch';
 import type { RunLLMBatchOptions } from '@/lib/server/llm-batch';
 import type { ScoringEntity } from '@/lib/shared/scoring/entity';
-import type { AuditCode, TextField } from '@/lib/shared/scoring/text-audit';
+import type { AuditCode, AuditSource, TextField } from '@/lib/shared/scoring/text-audit';
 import type {
   ScoringErrorClass,
   ScoringRunCounts,
@@ -96,6 +96,9 @@ export interface ScoringAdapter<TItem extends { id: string; title: string }, TRe
   withTexts(result: TResult, texts: Partial<ScoredText>): TResult;
   /** Quelltext des Eintrags, für Haiku-Nachforderung und Lektorat. */
   contentOf(item: TItem): string;
+  /** Was das Modell über den Eintrag las, für die Ausnahmen des Text-Audits
+   *  (Namen und Wortfolgen aus der Quelle sind Material, kein Fehler). */
+  auditSourceOf(item: TItem): AuditSource;
   /** Gruppen von ids, die denselben Termin meinen (nur Events). */
   twinGroups?(items: TItem[]): string[][];
   /** Score je Bewertung, wie ihn write speichern würde (für Median und Vergleichslauf). */

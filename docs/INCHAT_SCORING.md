@@ -153,8 +153,9 @@ Dazu Freitext auf Deutsch:
 - **target_audience** — kurze Angabe(n).
 - **suggested_angle** — 1 Satz Aufhänger.
 - **reasoning** — 2–3 Sätze, **nur aus dem Inhalt**. Nie `peer_reviewed`,
-  `popular_science` oder `mahighlight` benennen; `apply` bricht darauf mit
-  Exit 1 ab.
+  `popular_science` oder `mahighlight` benennen, und nie die Bewertung selbst
+  („die Bewertung fällt niedrig aus", „gleich bewertet wie die deutsche
+  Fassung", „höchster Score im Batch"); `apply` bricht auf beides mit Exit 1 ab.
 - **haiku** — **Pflicht**, Deutsch 5-7-5, Trenner `" / "` (zwei davon).
   Silben wirklich zählen (`Sa-tel-li-ten-blick` = 5, `Na-tur-park` = 3). Keine
   Anführungszeichen, keine Gedankenstriche, keine Ziffern, echte Umlaute. Es
@@ -300,7 +301,11 @@ Relevant ist das nur, wenn jemand einen Score von Hand gegenrechnet.
 
 Freitext wie bei Publikationen, aber knapper: **pitch_suggestion** 2–4 Sätze
 Teaser für die Veranstaltungsseite, **suggested_angle** 1 Satz,
-**target_audience** 1–3 Angaben, **reasoning** 2–3 Sätze rein inhaltlich.
+**target_audience** 1–3 Angaben, **reasoning** 2–3 Sätze rein inhaltlich:
+Thema, Format, Zugang, Anlass. Nie die Einstufung, die Bereiche der
+Kalibrierung, Werte oder die andere Fassung eines Zwillings; gibt die
+Ankündigung wenig her, steht da, was ihr fehlt. `apply-event-scores` bricht auf
+solche Sätze ab (`leak`, Muster in `lib/shared/scoring/text-audit.ts`).
 
 **Kalibrierung:** steht seit 2026-10-28 in der Rubrik selbst (`EVENT_CALIBRATION`
 in `lib/server/events/prompts.ts`): fünf Bereiche von internen Seminaren (um
