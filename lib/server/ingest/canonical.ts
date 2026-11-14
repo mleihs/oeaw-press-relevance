@@ -321,5 +321,5 @@ export const PUBLICATION_ANALYSIS_COLUMNS = [
   'llmModel', 'analysisCost', 'importBatch', 'csvUid', 'haiku',
   'meistertaskTaskId', 'meistertaskTaskToken', 'isItaSubtree', 'decision',
   'decidedAt', 'decidedBy', 'decisionRationale', 'snoozeUntil', 'flagNotes',
-  'decidedInSession', 'pressSimilarity',
+  'decidedInSession', 'pressSimilarity', 'crossrefDateParts',
 ] as const;

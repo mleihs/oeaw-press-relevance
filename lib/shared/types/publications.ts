@@ -5,6 +5,7 @@
 import type { Decision, FlagNote } from './core';
 import type { PressRelease } from './press-releases';
 import type { Person, Project } from './people';
+import type { PubDatePrecision } from '@/lib/shared/format-pub-date';
 
 export interface Publication {
   id: string;
@@ -21,6 +22,8 @@ export interface Publication {
   doi: string | null;
   doi_link: string | null;
   published_at: string | null;
+  /** Genauigkeit von published_at (generierte DB-Spalte); null ohne Datum. */
+  published_at_precision: PubDatePrecision | null;
   publication_type: string | null;
   publication_type_id: string | null;
   open_access: boolean;
@@ -193,6 +196,9 @@ export interface EnrichmentResult {
   pdf_url?: string;
   /** ISO 8601 date string (YYYY-MM-DD) extracted from source API */
   published_at?: string;
+  /** CrossRef date-parts (published-print, published-online, issued). Only
+   *  populated by enrichFromCrossRef; feeds publications.crossref_date_parts. */
+  date_parts?: number[][];
   /** Paper title from the API. Used by orphan-enrich; ignored by publications-
    *  enrichment (which keeps WebDB-title as source-of-truth). */
   title?: string;

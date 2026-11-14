@@ -18,6 +18,7 @@ function makePub(overrides: Partial<Publication> = {}): Publication {
     doi: '10.1234/qsens.2026',
     doi_link: null,
     published_at: '2026-03-15',
+    published_at_precision: 'month',
     publication_type: null,
     publication_type_id: null,
     open_access: false,

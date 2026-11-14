@@ -31,6 +31,7 @@
     "recompute-press-scores": "tsx scripts/recompute-press-scores.ts",
     "sync-social": "tsx scripts/sync-social.ts",
     "backfill-social-images": "tsx scripts/backfill-social-images.ts",
+    "backfill-crossref-dates": "tsx scripts/backfill-crossref-dates.ts",
     "webdb-import:v2": "tsx scripts/webdb-import-v2.ts",
     "backfill-venue": "tsx scripts/backfill-venue.ts",
     "enrich-all": "tsx scripts/enrich-all.ts",

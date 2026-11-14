@@ -166,6 +166,7 @@ interface EnrichmentAccumulator {
   snippet: string | undefined;
   wordCount: number;
   publishedAt: string | undefined;
+  crossrefDateParts: number[][] | undefined;
   apiPdfUrl: string | undefined;
   sourcesUsed: string[];
 }
@@ -210,6 +211,9 @@ function mergeEnrichmentResult(
   }
   if (!acc.publishedAt && result.published_at) {
     acc.publishedAt = result.published_at;
+  }
+  if (!acc.crossrefDateParts && result.date_parts) {
+    acc.crossrefDateParts = result.date_parts;
   }
 }
 
@@ -322,6 +326,9 @@ async function writeEnrichment(
   if (!pub.published_at && acc.publishedAt) {
     setObj.publishedAt = acc.publishedAt;
   }
+  // Nur überschreiben, wenn CrossRef geantwortet hat: ein Lauf ohne DOI oder mit
+  // CrossRef-Ausfall soll die Datumsbestätigung eines früheren nicht löschen.
+  if (acc.crossrefDateParts) setObj.crossrefDateParts = acc.crossrefDateParts;
   await db.update(publications).set(setObj).where(eq(publications.id, pub.id));
 }
 
@@ -551,6 +558,7 @@ export async function runEnrichmentBatch(
       snippet: undefined,
       wordCount: 0,
       publishedAt: undefined,
+      crossrefDateParts: undefined,
       apiPdfUrl: undefined,
       sourcesUsed: [],
     };

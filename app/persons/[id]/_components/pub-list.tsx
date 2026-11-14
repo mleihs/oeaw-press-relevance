@@ -6,6 +6,7 @@ import { Star } from '@/lib/icons';
 import { InfoBubble } from '@/components/info-bubble';
 import { EmptyState } from '@/components/empty-state';
 import { displayTitle } from '@/lib/shared/publication-display';
+import { formatPubDate } from '@/lib/shared/format-pub-date';
 import type { PersonPublicationRow } from '@/lib/shared/researchers';
 
 interface PubListProps {
@@ -50,7 +51,7 @@ export function PubList({ publications }: PubListProps) {
                   {displayTitle(p.title, p.citation)}
                 </p>
                 <p className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
-                  <span>{p.published_at}</span>
+                  <span>{formatPubDate(p.published_at)}</span>
                   {p.authorship && (
                     <span className="text-muted-foreground/70">{p.authorship}</span>
                   )}
