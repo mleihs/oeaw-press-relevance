@@ -121,6 +121,7 @@ function makePub(overrides: Partial<Publication> = {}): Publication {
     doi: null,
     doi_link: null,
     published_at: null,
+    published_at_precision: null,
     publication_type: null,
     publication_type_id: null,
     open_access: false,
@@ -493,6 +494,33 @@ describe('runEnrichmentBatch — DOI cascade', () => {
     });
     expect(h.updateSets[0]).not.toHaveProperty('publishedAt');
     expect(ofType(events, 'pub_done')[0]?.data.date_filled).toBe(false);
+  });
+
+  it('stores CrossRef date-parts, even when published_at is already set', async () => {
+    mockCrossRef.mockResolvedValue({
+      abstract: 'A',
+      source: 'crossref',
+      published_at: '2026-10-15',
+      date_parts: [[2026, 10], [2026, 10, 15]],
+    });
+    const { emit } = collectEvents();
+    await runEnrichmentBatch({
+      pubs: [makePub({ id: 'p1', doi: '10.1/x', published_at: '2026-10-15' })],
+      abortSignal: new AbortController().signal,
+      emit,
+    });
+    expect(h.updateSets[0].crossrefDateParts).toEqual([[2026, 10], [2026, 10, 15]]);
+  });
+
+  it('leaves crossref_date_parts untouched when CrossRef gave none', async () => {
+    mockCrossRef.mockResolvedValue({ abstract: 'A', source: 'crossref' });
+    const { emit } = collectEvents();
+    await runEnrichmentBatch({
+      pubs: [makePub({ id: 'p1', doi: '10.1/x', published_at: '2020-06-15' })],
+      abortSignal: new AbortController().signal,
+      emit,
+    });
+    expect(h.updateSets[0]).not.toHaveProperty('crossrefDateParts');
   });
 
   it('falls back to an API-discovered PDF url when still abstract-less', async () => {

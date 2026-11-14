@@ -46,6 +46,7 @@ export function publicationToApi(
     doi: row.doi,
     doi_link: row.doiLink,
     published_at: row.publishedAt,
+    published_at_precision: row.publishedAtPrecision ?? null,
     publication_type: row.publicationType,
     publication_type_id: row.publicationTypeId,
     open_access: row.openAccess ?? false,

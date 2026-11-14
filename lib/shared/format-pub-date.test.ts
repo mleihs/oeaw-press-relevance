@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { pubDatePrecision, formatPubDate, pubDateTitle } from './format-pub-date';
+import { pubDatePrecision, formatPubDate, formatPubDateLong, pubDateTitle } from './format-pub-date';
 
 describe('pubDatePrecision', () => {
   it('treats a real day-of-month as day-precise', () => {
@@ -37,5 +37,26 @@ describe('pubDateTitle', () => {
     expect(pubDateTitle('2026-06-15')).toBe('Erschienen im Juni 2026 (Tag nicht überliefert)');
     expect(pubDateTitle('2026-01-01')).toBe('Erschienen 2026 (nur Jahr überliefert)');
     expect(pubDateTitle(null)).toBeUndefined();
+  });
+});
+
+describe('stored precision (publications.published_at_precision)', () => {
+  it('wins over the 1st/15th heuristic', () => {
+    expect(formatPubDate('2026-10-15', 'day')).toBe('15. Okt. 2026');
+    expect(pubDateTitle('2026-10-15', 'day')).toBe('Erschienen am 15. Oktober 2026');
+    expect(formatPubDate('2015-01-01', 'month')).toBe('Jan. 2015');
+  });
+
+  it('falls back to the heuristic without one', () => {
+    expect(formatPubDate('2026-10-15', null)).toBe(formatPubDate('2026-10-15'));
+  });
+});
+
+describe('formatPubDateLong', () => {
+  it('writes the month out at the defensible precision', () => {
+    expect(formatPubDateLong('2026-10-15', 'day')).toBe('15. Oktober 2026');
+    expect(formatPubDateLong('2026-10-01')).toBe('Oktober 2026');
+    expect(formatPubDateLong('2026-01-01')).toBe('2026');
+    expect(formatPubDateLong(null)).toBe('–');
   });
 });

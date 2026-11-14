@@ -13,6 +13,7 @@ import {
   NEW_BADGE_DAYS,
 } from '@/lib/shared/publication-display';
 import { doiToUrl } from '@/lib/shared/doi-utils';
+import { formatPubDateLong, pubDateTitle } from '@/lib/shared/format-pub-date';
 import {
   STATUS_LABELS,
   STATUS_BADGE_VARIANTS,
@@ -131,10 +132,8 @@ export function DetailHeader({ pub, titleForDisplay, hasAnalysis }: DetailHeader
         {pub.published_at && (
           <>
             {pub.lead_author && <span className="text-muted-foreground/50">|</span>}
-            <span>
-              {new Date(pub.published_at).toLocaleDateString('de-AT', {
-                day: 'numeric', month: 'long', year: 'numeric',
-              })}
+            <span title={pubDateTitle(pub.published_at, pub.published_at_precision)}>
+              {formatPubDateLong(pub.published_at, pub.published_at_precision)}
             </span>
           </>
         )}

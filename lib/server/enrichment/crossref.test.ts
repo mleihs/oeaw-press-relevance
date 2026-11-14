@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { enrichFromCrossRef } from './crossref';
+import { crossRefDateParts, enrichFromCrossRef } from './crossref';
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -45,5 +45,20 @@ describe('enrichFromCrossRef', () => {
     expect(r?.title).toBe('Bare Paper');
     expect(r?.authors).toBeUndefined();
     expect(r?.abstract).toBeUndefined();
+  });
+});
+
+describe('crossRefDateParts', () => {
+  it('keeps every CrossRef date with its own precision', () => {
+    expect(crossRefDateParts({
+      'published-print': { 'date-parts': [[2026, 10]] },
+      'published-online': { 'date-parts': [[2026, 10, 15]] },
+      issued: { 'date-parts': [[2026, 10]] },
+    })).toEqual([[2026, 10], [2026, 10, 15], [2026, 10]]);
+  });
+
+  it('drops empty and null date-parts', () => {
+    expect(crossRefDateParts({ issued: { 'date-parts': [[null]] } })).toBeUndefined();
+    expect(crossRefDateParts({})).toBeUndefined();
   });
 });

@@ -4,11 +4,14 @@ import { de } from 'date-fns/locale';
 export type PubDatePrecision = 'day' | 'month' | 'year';
 
 /**
- * Infer the *trustworthy* display precision of a stored publication date.
+ * Fallback heuristic for the display precision of a stored publication date.
  *
- * `publications.published_at` is a single `date` with NO precision column, and
- * the corpus pads unknown components inconsistently, so the value has to be read
- * defensively:
+ * Seit 2026-10-29 liefert die DB die Genauigkeit selbst
+ * (`publications.published_at_precision`, generiert aus RIS und CrossRef, Regeln
+ * in supabase/migrations/20261029000001_published_at_precision.sql). Diese
+ * Heuristik ist deren letzte Regel und greift nur noch, wenn ein Aufrufer keine
+ * Genauigkeit mitgibt. Hintergrund: `published_at` is a single `date`, and
+ * the corpus pads unknown components inconsistently:
  *   - Enrichment (CrossRef/OpenAlex/Semantic Scholar/Unpaywall) pads a missing
  *     day OR month to `01` (see lib/server/enrichment/*.ts); the SQL backfill
  *     `backfill_published_at_from_text()` writes `make_date(year, 1, 1)` for
@@ -42,23 +45,38 @@ function parseDateOnly(iso: string): Date {
 }
 
 /** Honest, German-locale publication-date label at the precision we can defend. */
-export function formatPubDate(iso: string | null | undefined): string {
+export function formatPubDate(
+  iso: string | null | undefined,
+  stored?: PubDatePrecision | null,
+): string {
   if (!iso) return '–';
-  const precision = pubDatePrecision(iso);
+  const precision = stored ?? pubDatePrecision(iso);
   if (precision === 'day') return format(parseDateOnly(iso), 'd. MMM yyyy', { locale: de });
   if (precision === 'month') return format(parseDateOnly(iso), 'MMM yyyy', { locale: de });
   return iso.slice(0, 4);
 }
 
+/** Ausgeschriebene Form („15. Oktober 2026“, „Oktober 2026“, „2026“) für Detailansichten. */
+export function formatPubDateLong(
+  iso: string | null | undefined,
+  stored?: PubDatePrecision | null,
+): string {
+  if (!iso) return '–';
+  const precision = stored ?? pubDatePrecision(iso);
+  if (precision === 'day') return format(parseDateOnly(iso), 'd. MMMM yyyy', { locale: de });
+  if (precision === 'month') return format(parseDateOnly(iso), 'MMMM yyyy', { locale: de });
+  return iso.slice(0, 4);
+}
+
 /** Tooltip text that states the date AND how precise it actually is. */
-export function pubDateTitle(iso: string | null | undefined): string | undefined {
+export function pubDateTitle(
+  iso: string | null | undefined,
+  stored?: PubDatePrecision | null,
+): string | undefined {
   if (!iso) return undefined;
-  const precision = pubDatePrecision(iso);
-  if (precision === 'day') {
-    return `Erschienen am ${format(parseDateOnly(iso), 'd. MMMM yyyy', { locale: de })}`;
-  }
-  if (precision === 'month') {
-    return `Erschienen im ${format(parseDateOnly(iso), 'MMMM yyyy', { locale: de })} (Tag nicht überliefert)`;
-  }
-  return `Erschienen ${iso.slice(0, 4)} (nur Jahr überliefert)`;
+  const precision = stored ?? pubDatePrecision(iso);
+  const label = formatPubDateLong(iso, precision);
+  if (precision === 'day') return `Erschienen am ${label}`;
+  if (precision === 'month') return `Erschienen im ${label} (Tag nicht überliefert)`;
+  return `Erschienen ${label} (nur Jahr überliefert)`;
 }

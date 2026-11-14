@@ -112,6 +112,12 @@ export const publications = pgTable("publications", {
 	flagNotes: jsonb("flag_notes").default([]).notNull(),
 	decidedInSession: uuid("decided_in_session"),
 	pressSimilarity: doublePrecision("press_similarity"),
+	// CrossRef date-parts der Anreicherung; published_at_precision leitet die
+	// DB daraus, aus published_at und aus ris ab (Migration 20261029000001).
+	crossrefDateParts: jsonb("crossref_date_parts").$type<number[][]>(),
+	publishedAtPrecision: text("published_at_precision")
+		.$type<'day' | 'month' | 'year'>()
+		.generatedAlwaysAs(sql`pub_date_precision(published_at, ris, crossref_date_parts)`),
 }, (table) => [
 	index("idx_pub_analysis").using("btree", table.analysisStatus.asc().nullsLast().op("text_ops")),
 	index("idx_pub_analysis_score").using("btree", table.analysisStatus.asc().nullsLast().op("text_ops"), table.pressScore.desc().nullsLast().op("float8_ops")),

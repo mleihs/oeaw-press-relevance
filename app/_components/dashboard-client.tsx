@@ -293,9 +293,9 @@ export function DashboardClient({ data, period, sortBy, boardCards, socialData, 
                         {pub.published_at && (
                           <span
                             className="font-mono text-2xs text-ink-muted"
-                            title={pubDateTitle(pub.published_at)}
+                            title={pubDateTitle(pub.published_at, pub.published_at_precision)}
                           >
-                            {formatPubDate(pub.published_at)}
+                            {formatPubDate(pub.published_at, pub.published_at_precision)}
                           </span>
                         )}
                       </div>

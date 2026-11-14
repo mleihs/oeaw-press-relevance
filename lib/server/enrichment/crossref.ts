@@ -16,6 +16,22 @@ function extractCrossRefDate(dateObj: { 'date-parts'?: number[][] } | undefined)
   return `${year}-${month}-${day}`;
 }
 
+/**
+ * Alle date-parts (published-print, published-online, issued) unverändert, für
+ * publications.crossref_date_parts. Die DB erkennt daran, ob ein 1. oder 15. ein
+ * echter Tag ist (pub_date_precision, Migration 20261029000001).
+ */
+export function crossRefDateParts(work: Record<string, unknown>): number[][] | undefined {
+  const out: number[][] = [];
+  for (const key of ['published-print', 'published-online', 'issued']) {
+    const parts = (work[key] as { 'date-parts'?: unknown[][] } | undefined)?.['date-parts']?.[0];
+    if (!Array.isArray(parts)) continue;
+    const nums = parts.filter((n): n is number => Number.isInteger(n));
+    if (nums.length > 0 && nums.length === parts.length) out.push(nums);
+  }
+  return out.length > 0 ? out : undefined;
+}
+
 export async function enrichFromCrossRef(rawDoi: string): Promise<EnrichmentResult | null> {
   const doi = cleanDoi(rawDoi);
   if (!doi) return null;
@@ -63,6 +79,7 @@ export async function enrichFromCrossRef(rawDoi: string): Promise<EnrichmentResu
     full_text_snippet: snippet,
     word_count: snippet ? snippet.split(/\s+/).length : 0,
     published_at: publishedAt,
+    date_parts: crossRefDateParts(work),
     title,
     authors: authors.length > 0 ? authors : undefined,
   };
