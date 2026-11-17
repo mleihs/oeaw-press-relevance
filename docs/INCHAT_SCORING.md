@@ -417,6 +417,28 @@ ein CLI-Lauf über OpenRouter für 25–40 USD.
 
 ## Historie
 
+- **2026-11-17:** Neun 2026er aus dem Vollabzug desselben Tages. Die neuen
+  Zeilen des Abzugs stehen bewusst auf `analysis_status` NULL statt `pending`,
+  damit die Nacht sie nicht per API bewertet; die neun bewertbaren wurden
+  gezielt angereichert und in einem Batch geschrieben. `apply` erfasst auch
+  NULL-Zeilen, weil seine Wache nur `press_score IS NULL` prüft, danach stehen
+  sie auf `analyzed`. Median 0.29, Mittel 0.2691, Spanne 0.0745–0.386. Oben die
+  Kriegsmuseen in Kroatien und Bosnien-Herzegowina, die über ihre Objekte
+  heroisieren oder viktimisieren (IKW, Radonić, 0.386; der Fall von Vukovar
+  jährt sich im November 2026 zum 35. Mal), die KI-Richtlinien von 17
+  öffentlich-rechtlichen Medienhäusern aus Deutschland, Österreich und der
+  Schweiz (CMC, 0.3405) und zwei Alltagsdinge in japanischen Kriegsmuseen (IKW,
+  0.338). Unten eine Zenodo-Notiz des ESI, die nur auf die zugehörige Studie
+  verweist (0.0745), und ein Editorial zur psychischen Gesundheit ohne eigene
+  Befunde (CMC, 0.143). Fünf Arbeiten stammen aus dem Gedächtnis-Schwerpunkt
+  des IKW (0.2535–0.386) und liegen damit rubrikgemäß unter den Ankern
+  derselben Gruppe aus der unkalibrierten Kohorte 4.7 (0.33–0.6). Journale nur
+  dort genannt, wo der Inhalt sie nennt; wo die Personen-Verknüpfung fehlt
+  (Export-Lücke) und mehrere Autor:innen in Frage kommen, nennt der Pitch das
+  Institut statt einer Person am Institut. `haiku-audit` Kohorte 251/251,
+  Invariante 0/0. Pools danach 0/1 (das Event des Tages wartet auf die Nacht),
+  Altbestand 4.718 unverändert, NULL-Zeilen 4.926 → 4.917; die übrigen 22 aus
+  2026 haben keine 120 Zeichen Inhalt.
 - **2026-10-22** — 26 Publikationen in zwei Batches (24/2), Median 0.2863, Spanne
   0.1925–0.52, Mittel 0.3146; `haiku-audit` über die ganze Kohorte
   `opus-5.5-session` 144/144 sauber. **Batch 1 wurde komplett neu bewertet:**
