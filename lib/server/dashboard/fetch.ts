@@ -17,8 +17,18 @@ import {
   type SortBy,
 } from '@/lib/shared/dashboard';
 
-function publishedAfter(period: DashboardPeriod): string | null {
+/** Zeitfenster eines Dashboard-Reiters als ISO-Daten (inklusive), null für 'all'.
+ *  Die Obergrenze ist heute (Europe/Vienna): Pubs mit Jahrespräzision stehen auf
+ *  dem 1.1., angekündigte Bände auf ihrem künftigen Datum. Ohne Deckel landeten
+ *  sie in jedem Fenster, das ihr Datum nach unten nicht ausschließt; am
+ *  2026-11-26 bestand „2 Wochen“ nur aus Pubs von Dez. 2026 bis Feb. 2027. */
+function publishedWindow(period: DashboardPeriod): { from: string; to: string } | null {
   if (period === 'all') return null;
+  const to = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Vienna' });
+  return { from: publishedAfter(period), to };
+}
+
+function publishedAfter(period: Exclude<DashboardPeriod, 'all'>): string {
   const d = new Date();
   // The 'week' bucket covers the trailing two weeks. Publications usually
   // reach the WebDB, and get scored, days to weeks after their publication
@@ -99,8 +109,11 @@ async function getTopPubs(
     exclude_ita: 'true',
     popular_science: 'false',
   });
-  const after = publishedAfter(period);
-  if (after) params.set('published_after', after);
+  const range = publishedWindow(period);
+  if (range) {
+    params.set('published_after', range.from);
+    params.set('to', range.to);
+  }
   const res = await listPublications(params);
   return { pubs: res.publications, total: res.total };
 }

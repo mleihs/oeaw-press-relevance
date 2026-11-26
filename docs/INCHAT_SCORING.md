@@ -417,6 +417,52 @@ ein CLI-Lauf über OpenRouter für 25–40 USD.
 
 ## Historie
 
+- **2026-11-23 bis 2026-11-26:** 58 Publikationen in drei Batches (25/25/8),
+  Median 0.1733, Mittel 0.1974, Spanne 0.0745–0.3705, kein Eintrag über 0.5.
+  Den tiefen Median erklärt die Zusammensetzung: ein dichter Fachblock aus ESI
+  und IWF, darunter Instrumenten- und Methodenpapiere. Oben die Jahre guten
+  Lebens gegen Ressourcenverbrauch in rund 110 Ländern von 1990 bis 2019 (VID,
+  0.3705), die Magnetopause, die der Satellit Arase im Sonnensturm vom Mai 2024
+  bei knapp fünf Erdradien querte (IWF, 0.3545), ein Sammelband des IKW zu den
+  Erzählungen der Donau, der Ende Jänner 2027 erscheint (0.353), und
+  Bildungspaare und zweite Geburten in Österreich (VID, 0.3465). Unten die
+  Dokumentation eines Fragebogens ohne Daten (VID, 0.0745), die
+  Zeitschriftenbeschreibung von Archaeologia Austriaca 110 (0.0885) und ein
+  Review zu Laserschocks (ESI, 0.1045). Der Donau-Band war eine zurückgehaltene
+  NULL-Zeile aus dem Vollabzug vom 17.11. und kam auf Freigabe dazu
+  (NULL-Zeilen 4.917 → 4.916). Sechs Zwillinge übernahmen die Dimensionen der
+  schon bewerteten Zeile (gleicher Inhalt, die alte Zeile archiviert). Wo die
+  Erstautor:in nicht als ÖAW-Person verknüpft ist, nennt der Pitch die
+  verknüpfte Mitautor:in am Institut; Journale nur dort, wo der Inhalt sie
+  nennt. `haiku-audit` Kohorte 309/309, Invariante 0/0, alle 8.302 Scores
+  stimmen mit ihren Dimensionen überein. Die kanonische Zählung, die Titelscreen
+  und Dashboard anzeigen, steht danach bei 7.684 bewerteten Publikationen.
+  Histogramm, „Ø %“, „hohes Story-Potenzial“ und Dimensionsmittel des
+  Dashboards zählen seit demselben Tag dieselbe Sicht (vorher 8.590 Scores,
+  Ø 0.2537, 171 ab 0.6; jetzt Ø 0.2435, 106 ab 0.6). Pools 0/23: die künftigen Events sind auf
+  Wunsch zurückgestellt, Altbestand 4.718 unverändert.
+- **2026-11-17:** Neun 2026er aus dem Vollabzug desselben Tages. Die neuen
+  Zeilen des Abzugs stehen bewusst auf `analysis_status` NULL statt `pending`,
+  damit die Nacht sie nicht per API bewertet; die neun bewertbaren wurden
+  gezielt angereichert und in einem Batch geschrieben. `apply` erfasst auch
+  NULL-Zeilen, weil seine Wache nur `press_score IS NULL` prüft, danach stehen
+  sie auf `analyzed`. Median 0.29, Mittel 0.2691, Spanne 0.0745–0.386. Oben die
+  Kriegsmuseen in Kroatien und Bosnien-Herzegowina, die über ihre Objekte
+  heroisieren oder viktimisieren (IKW, Radonić, 0.386; der Fall von Vukovar
+  jährt sich im November 2026 zum 35. Mal), die KI-Richtlinien von 17
+  öffentlich-rechtlichen Medienhäusern aus Deutschland, Österreich und der
+  Schweiz (CMC, 0.3405) und zwei Alltagsdinge in japanischen Kriegsmuseen (IKW,
+  0.338). Unten eine Zenodo-Notiz des ESI, die nur auf die zugehörige Studie
+  verweist (0.0745), und ein Editorial zur psychischen Gesundheit ohne eigene
+  Befunde (CMC, 0.143). Fünf Arbeiten stammen aus dem Gedächtnis-Schwerpunkt
+  des IKW (0.2535–0.386) und liegen damit rubrikgemäß unter den Ankern
+  derselben Gruppe aus der unkalibrierten Kohorte 4.7 (0.33–0.6). Journale nur
+  dort genannt, wo der Inhalt sie nennt; wo die Personen-Verknüpfung fehlt
+  (Export-Lücke) und mehrere Autor:innen in Frage kommen, nennt der Pitch das
+  Institut statt einer Person am Institut. `haiku-audit` Kohorte 251/251,
+  Invariante 0/0. Pools danach 0/1 (das Event des Tages wartet auf die Nacht),
+  Altbestand 4.718 unverändert, NULL-Zeilen 4.926 → 4.917; die übrigen 22 aus
+  2026 haben keine 120 Zeichen Inhalt.
 - **2026-10-22** — 26 Publikationen in zwei Batches (24/2), Median 0.2863, Spanne
   0.1925–0.52, Mittel 0.3146; `haiku-audit` über die ganze Kohorte
   `opus-5.5-session` 144/144 sauber. **Batch 1 wurde komplett neu bewertet:**
