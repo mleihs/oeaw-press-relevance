@@ -72,6 +72,31 @@ export interface BridgeDraftResponse {
   cached: boolean;
 }
 
+/** POST /api/typo3-bridge/news/assist (News-Wizard, Vertrag v2), Aufgabe `texts`. */
+export interface BridgeNewsTextSuggestions {
+  title: string | null;
+  category_title: string | null;
+  category_subtitle: string | null;
+  teaser: string | null;
+  seo_description: string | null;
+  alternative_title: string | null;
+  keywords: string | null;
+}
+
+/** POST /api/typo3-bridge/news/assist, Aufgabe `image`. */
+export interface BridgeNewsImageSuggestions {
+  alt_text: string | null;
+  caption: string | null;
+}
+
+/** POST /api/typo3-bridge/news/assist. Zustandslos: nichts wird gespeichert. */
+export interface BridgeNewsAssistResponse {
+  suggestions: BridgeNewsTextSuggestions | BridgeNewsImageSuggestions;
+  notes: string[];
+  model: string;
+  generated_at: string;
+}
+
 /** Postgres-Zeitstempel → ISO 8601 in UTC, ohne `.000` bei vollen Sekunden
  *  (`2026-12-16T17:00:00Z` wie im Vertrag). */
 export function toIso(ts: string): string;

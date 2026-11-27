@@ -1,10 +1,12 @@
 # TYPO3-Bridge
 
 Schnittstelle des PR-Tools für die Chrome-Extension „ÖAW TYPO3 Toolkit“
-(Event-Assistent, ab 1.7.0). Die Redakteurin legt im ÖAW-TYPO3 einen
-News-Datensatz an, das Panel zeigt die anstehenden Events aus `events`, holt
-hier einen Claude-Entwurf und füllt das Formular feldweise. Gespeichert wird
-nur in TYPO3, von Hand. In `events` schreibt die Bridge nie.
+(Event-Assistent, ab 1.7.0; News-Wizard, Vertrag v2). Die Redakteurin legt im
+ÖAW-TYPO3 einen News-Datensatz an, das Panel zeigt die anstehenden Events aus
+`events`, holt hier einen Claude-Entwurf und füllt das Formular feldweise. Der
+News-Wizard holt für einen selbst geschriebenen Beitrag Vorschläge für Titel,
+Dachzeilen, Teaser, SEO-Felder sowie Alt-Text und Bildunterschrift. Gespeichert
+wird nur in TYPO3, von Hand. In `events` schreibt die Bridge nie.
 
 **Vertrag (verbindlich):** `typo3-browser-extension/docs/typo3-bridge-contract.md`
 (Repo `mleihs/typo3-browser-extension`). Kurzfassung:
@@ -15,6 +17,7 @@ nur in TYPO3, von Hand. In `events` schreibt die Bridge nie.
 | `GET /api/typo3-bridge/events/:id` | ein Event mit `bodytext` und `event_information` |
 | `GET /api/typo3-bridge/events/:id/draft` | gespeicherter Entwurf, **nie** Claude; 404, solange keiner da ist |
 | `POST /api/typo3-bridge/events/:id/draft` | `{ refresh?, instructions? }` → Claude-Entwurf, gespeichert |
+| `POST /api/typo3-bridge/news/assist` | News-Wizard: `task` `texts` (≥ 200 Zeichen Text) oder `image` (Zuschnitt als base64, ≤ 1,5 MB, sonst 413); zustandslos, jede Anfrage ist ein Claude-Aufruf |
 
 Fehler: `{ "error": "<deutscher Satz>" }`, den das Panel so anzeigt.
 
@@ -22,9 +25,11 @@ Fehler: `{ "error": "<deutscher Satz>" }`, den das Panel so anzeigt.
 
 - **Env `TYPO3_BRIDGE_TOKEN`** (≥ 32 Zeichen, `openssl rand -hex 32`): ein
   gemeinsames Bearer-Token. Fehlt es, sind alle Routen aus (503) und berühren
-  die DB nicht. Sperren = Token tauschen und neu deployen.
-- **Env `ANTHROPIC_API_KEY`**: nur für POST …/draft. Fehlt er, antwortet nur
-  der neue Entwurf mit 503; Liste, Detail und gespeicherte Entwürfe gehen.
+  die DB nicht. Sperren = Token tauschen und neu deployen. Wer es bekommt und
+  wann es getauscht wird, regelt „Token-Politik“ unten.
+- **Env `ANTHROPIC_API_KEY`**: nur für POST …/draft und POST …/news/assist.
+  Fehlt er, antworten nur diese mit 503; Liste, Detail und gespeicherte
+  Entwürfe gehen.
   Auf der Box (Coolify) gesetzt, auf Vercel nicht.
 - **Migration** `supabase/migrations/20261127000001_event_typo3_drafts.sql`
   (Tabelle `event_typo3_drafts`, ein Entwurf je Event, mit Tokens und Kosten).
@@ -36,8 +41,40 @@ Fehler: `{ "error": "<deutscher Satz>" }`, den das Panel so anzeigt.
 - **Laufzeit:** Opus 5.5, Effort `high`, ein Wiederholversuch, 240 s Timeout.
   Vor der Box trennt Cloudflare nach rund 100 s (524); der Entwurf wird dann
   trotzdem fertig und gespeichert, das Panel lädt ihn beim nächsten Öffnen.
+- **News-Wizard:** Opus 5.5, Effort `high` (texts) bzw. `medium` (image),
+  kein Wiederholversuch, Timeout 85 s bzw. 55 s (das Panel wartet 90 s bzw.
+  60 s). Harte Längengrenzen (Titel 100, Dachzeilen 30, Teaser 250, SEO 160,
+  alternativer Titel 60, Alt-Text 150, Bildunterschrift 200) prüft der Code
+  nach; darüber wird gekürzt, und `notes` sagt es. Nichts wird gespeichert.
 - **Kosten** je Entwurf: `event_typo3_drafts.cost_usd` (Live-Preise über
-  `estimateCost`).
+  `estimateCost`). Der News-Wizard speichert nichts; Tokens und Kosten stehen
+  je Aufruf im Log (`typo3_bridge_news_assist`).
+
+## Token-Politik (Entscheidung 2026-11-27)
+
+- Die Bridge hat **ein** gemeinsames `TYPO3_BRIDGE_TOKEN`, so wie das PR-Tool
+  ein gemeinsames Gate-Passwort hat (`GATE_TOKEN`, `lib/server/gate.ts`).
+- Das Token bekommen dieselben Personen wie das Gate-Passwort, nicht mehr und
+  nicht weniger.
+- Verlässt jemand das Team, werden Gate-Passwort und Token **gemeinsam**
+  getauscht: neue Werte in Coolify setzen, neu deployen, das Token im Panel
+  der Extension neu eintragen.
+
+**Merkposten: persönliche Tokens.** Sobald das gemeinsame Gate-Passwort
+abgelöst wird und alle mit persönlichem Login arbeiten, stellt auch die Bridge
+auf persönliche Tokens um.
+- Ein Token je Person.
+- Der Name der Person steht in den Kosten-Logs (`typo3_bridge_*`).
+- Ein Zugang lässt sich einzeln sperren, ohne die anderen zu tauschen.
+- Die Extension bleibt gleich; jede Person trägt ihr eigenes Token im Panel ein.
+
+Persönliche Konten gibt es schon: Supabase Auth mit `public.users`, Rolle und
+`disabled_at` (`lib/server/auth/require.ts`, `docs/BOARD_PLAN.md` §3.1). Sie
+liefern bisher nur die Identität fürs Board; das Gate bleibt davor. Naheliegend
+ist deshalb, das Token an die `users`-Zeile zu hängen (nur ein Hash wird
+gespeichert, `disabled_at` sperrt mit). Hinweise auf diesen Merkposten stehen
+in `lib/server/gate.ts`, `lib/server/auth/require.ts` und
+`lib/server/typo3-bridge/http.ts`; suchen nach `MERKPOSTEN TYPO3-Bridge`.
 
 ## Panel verbinden
 
@@ -49,6 +86,7 @@ Zugriff auf genau diesen Host.
 
 ```
 app/api/typo3-bridge/events/…        Routen (dünn)
+app/api/typo3-bridge/news/assist/    News-Wizard: Eingangsprüfung (400/413), Aufruf, Log
 lib/server/typo3-bridge/
   http.ts          Bearer-Guard, CORS auf jeder Antwort, Routen-Rahmen
   contract.ts      Antwort-Typen des Vertrags
@@ -57,6 +95,8 @@ lib/server/typo3-bridge/
   draft.ts         Claude-Aufruf, HTML-Bereinigung, Nachbearbeitung
   draft-store.ts   event_typo3_drafts lesen/schreiben
   draft-service.ts wann gespeichert, wann neu geschrieben wird
+  news-assist-prompt.ts  News-Wizard: Anfrage-Schema, Grenzen, Prompts, Schemas
+  news-assist.ts         News-Wizard: Claude-Aufruf (Text bzw. Bild-Block), Kürzen, Hinweise
   errors.ts        Claude-Fehler → HTTP (nie 401/403, 503 nur ohne Key)
 lib/server/bearer-auth.ts            gemeinsamer Bearer-Guard (auch Nacht-Cron)
 ```

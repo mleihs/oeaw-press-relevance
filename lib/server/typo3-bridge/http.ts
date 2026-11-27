@@ -10,6 +10,10 @@ import { withApiError } from '@/lib/server/http';
 // Auth: Bearer TYPO3_BRIDGE_TOKEN, nicht das Gate-Cookie (die Routen liegen in
 // lib/shared/gate.ts unter PUBLIC_PREFIXES). Env unset → 503, die Bridge ist
 // dann aus. Vergleich und Fehlversuchs-Limiter: lib/server/bearer-auth.ts.
+// MERKPOSTEN TYPO3-Bridge (2026-11-27): bewusst EIN gemeinsames Token für den
+// Personenkreis des Gate-Passworts; Tausch gemeinsam mit dem Gate. Persönliche
+// Tokens (Name im Kosten-Log typo3_bridge_*, einzeln sperrbar), sobald das Gate
+// abgelöst wird: docs/TYPO3_BRIDGE.md, „Token-Politik".
 //
 // CORS: Die Extension ruft mit host_permissions und braucht CORS dann nicht.
 // Lehnt die Redakteurin den Host-Zugriff ab, fällt sie auf normales CORS

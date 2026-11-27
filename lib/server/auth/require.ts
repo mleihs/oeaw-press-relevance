@@ -19,6 +19,11 @@ import { getSupabaseAuthClient } from './client';
  * gültige Alt-JWTs sofort blockt.
  */
 
+// MERKPOSTEN TYPO3-Bridge (2026-11-27): Die TYPO3-Bridge kennt noch keine
+// Personen, nur ein gemeinsames Token. Wenn persönliche Logins das Gate
+// ablösen, bekommt sie persönliche Tokens; naheliegend an dieser users-Zeile
+// (Hash gespeichert, disabled_at sperrt mit). docs/TYPO3_BRIDGE.md, „Token-Politik".
+
 type UserRow = typeof users.$inferSelect;
 
 export type AuthGateResult =
