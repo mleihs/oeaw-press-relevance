@@ -1,5 +1,6 @@
 import 'server-only';
 import { z } from 'zod';
+import { formatEckdaten, parseEckdaten } from '@/lib/server/events/eckdaten';
 import { sanitizeEventInformation } from '@/lib/server/events/html-utils';
 import { DASH_TECHNIQUES } from '@/lib/server/scoring/lektorat-prompt';
 import { toIso } from './contract';
@@ -93,6 +94,16 @@ Die Felder:
 - language_en: true, wenn die Veranstaltung auf Englisch stattfindet: Datensatzsprache en, oder die Quelle sagt es ausdrücklich. Sonst false.
 - notes: kurze Hinweise an die Redaktion, je ein Satz: fehlende Angaben, Widersprüche, Stellen zum Prüfen. Beginn und Ende übernimmt das System selbst aus den Quelldaten; dazu keine Hinweise. Keine Hinweise ohne Befund.
 
+Eckdaten statt Fließtext: Bei den Instituten des Vienna BioCenter (GMI, IMBA, IMP, Max Perutz Labs) enthält der Datensatz oft keinen Ankündigungstext, sondern nur Eckdaten. Sie stehen dann im Block <eckdaten>, eine Angabe je Zeile; „(leer)" heißt: keine Angabe.
+- Date, Time: der Termin laut Eckdaten. Beginn und Ende kommen trotzdem aus den strukturierten Feldern; weicht das Datum ab, nennt notes den Widerspruch.
+- Speaker: die vortragende Person, bei mehreren durch Semikolon getrennt. Nachnamen in Großbuchstaben mit der Arbeitsgruppe in Klammern („KRAVVARITI Konstantina (Clausen)") schreibst du in üblicher Form („Konstantina Kravvariti"); die Arbeitsgruppe nennst du nur, wenn sie für das Verständnis nötig ist.
+- Location: der Ort laut Eckdaten. Ist „Ort (strukturiert)" leer, übernimm ihn für location und vermerke das in notes.
+- Type: Reihe oder Format, etwa „VBC Regular Seminar", „Monday Seminar" oder ein Vortrag einer Forschungsgruppe.
+- Institute: meist die Institution, von der die vortragende Person kommt, nicht der Veranstalter. Steht dort ein Zugangshinweis wie „Open only to IMP/IMBA/GMI/Max Perutz Labs", gehört er als Angabe zum Publikum in den Text, und notes nennt die Zugangsbeschränkung.
+- Host: wer einlädt, eine Person oder Einrichtung des Hauses; die Person trägt nicht vor.
+Aus Eckdaten entsteht ein kurzer Text: wer in welcher Reihe spricht, woher die Person kommt, wer einlädt und worum es laut Titel geht. Über den Titel hinaus erfindest du nichts zum Inhalt: kein Abstract, keine Forschungsfragen, keine Bedeutung des Themas. Ein oder zwei knappe Absätze sind hier richtig, und notes vermerkt, dass ein Abstract fehlt.
+Ist der Titel ein Platzhalter („Title to be announced", „TBA", „Titel folgt"), schreibst du nichts zum Thema. title bildest du dann aus Reihe und Person (etwa „SFB "Meiosis" Talk: Chloe Girard"), und notes sagt, dass Vortragstitel und Abstract noch fehlen.
+
 Stil: sachlich, genau und zugänglich für ein breites, überwiegend fachfremdes Publikum. Aktive Verben, konkrete Inhalte, keine Werbefloskeln und keine Superlative, die die Quelle nicht belegt. Personen bezeichnest du so, wie die Quelle sie nennt; gibt sie nichts vor, formuliere geschlechtsneutral. Verwende echte Umlaute (ä, ö, ü, ß), niemals „ae/oe/ue/ss".
 ${DASH_TECHNIQUES}`;
 
@@ -122,6 +133,13 @@ function htmlBlock(label: string, html: string | null): string {
   return `<${label}>\n${clean || '(leer)'}\n</${label}>`;
 }
 
+/** Der Fließtext als HTML-Block, oder die Eckdaten als eigener Block, wenn der
+ *  bodytext nur aus Eckdaten besteht (lib/server/events/eckdaten.ts). */
+function sourceTextBlock(bodytext: string | null): string {
+  const eckdaten = parseEckdaten(bodytext);
+  return eckdaten ? `<eckdaten>\n${formatEckdaten(eckdaten)}\n</eckdaten>` : htmlBlock('fliesstext', bodytext);
+}
+
 /** Die Nutzernachricht: strukturierte Felder, Quelltexte, optional der Wunsch. */
 export function buildDraftUserMessage(source: DraftSource, instructions: string | null): string {
   const parts = [
@@ -137,8 +155,8 @@ export function buildDraftUserMessage(source: DraftSource, instructions: string 
     field('Vorhandene Sprachfassungen', source.availableLangs.join(', ')),
     field('Originalseite', source.url),
     '',
-    'Quelltexte (HTML aus TYPO3):',
-    htmlBlock('fliesstext', source.bodytext),
+    'Quelltexte aus TYPO3:',
+    sourceTextBlock(source.bodytext),
     htmlBlock('veranstaltungsinformationen', source.eventInformation),
   ];
   if (instructions) {

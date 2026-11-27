@@ -19,6 +19,8 @@
 //   npm run import-events-json -- --file=./ev.json      # local file instead of the URL
 //   npm run import-events-json -- --url=https://…       # override the source URL
 //   npm run import-events-json -- --target=prod --yes   # → prod (unattended)
+//   npm run import-events-json -- --file=./ev.json --reapply
+//       # einen schon angewandten Export noch einmal anwenden (neuer Adapter)
 
 import { readFileSync } from 'node:fs';
 // Gemeinsame Präambel: Flags → .env.local → Sentry → DATABASE_URL-Override.
@@ -32,6 +34,7 @@ const { target, flags, confirmProd } = bootstrapScript('import-events-json');
 const DEFAULT_URL =
   'https://www.oeaw.ac.at/fileadmin/exports/event_news_grouped.json';
 const dryRun = flags.includes('--dry-run');
+const reapply = flags.includes('--reapply');
 const flagValue = (name: string): string | undefined =>
   flags.find((f) => f.startsWith(`${name}=`))?.slice(name.length + 1);
 const fileArg = flagValue('--file');
@@ -52,7 +55,7 @@ async function main(): Promise<void> {
     ? { json: JSON.parse(readFileSync(fileArg, 'utf-8')) as unknown }
     : { url: urlArg ?? DEFAULT_URL };
 
-  const result = await runEventsImport({ ...source, sourceLabel, dryRun });
+  const result = await runEventsImport({ ...source, sourceLabel, dryRun, reapply });
 
   console.log(
     `[import-events-json] export generated_at=${result.generatedAt ?? '?'} ` +
@@ -66,7 +69,8 @@ async function main(): Promise<void> {
     `[import-events-json] ${result.status} in ${result.durationMs}ms: ` +
       `imported=${result.imported} updated=${result.updated}` +
       (result.reason ? ` (${result.reason})` : '') +
-      (dryRun ? ' [--dry-run, no write]' : ''),
+      (dryRun ? ' [--dry-run, no write]' : '') +
+      (reapply && !dryRun ? ' [--reapply]' : ''),
   );
 }
 

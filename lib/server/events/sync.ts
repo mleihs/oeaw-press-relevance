@@ -9,7 +9,7 @@
 // The two `db` writes below have one consumer each, so they stay inline
 // here in the feature layer.
 
-import { and, gte, notInArray, sql } from 'drizzle-orm';
+import { and, gte, notInArray, sql, type SQL } from 'drizzle-orm';
 import { db, events as eventsTable } from '@/lib/server/db';
 import {
   fetchTypo3Events,
@@ -89,10 +89,43 @@ export type EventsDbExecutor =
   | typeof db
   | Parameters<Parameters<typeof db.transaction>[0]>[0];
 
+/** Vergleichsform des Beschreibungstexts: ohne Tags, Leerraum zusammengefasst,
+ *  leer → NULL. Der Dump speichert z. B. „ Date: …, Speaker: … “ mit Leerzeichen
+ *  am Rand, der Feed liefert denselben Text getrimmt; das ist keine Änderung. */
+const bodyKey = (expr: SQL) =>
+  sql`NULLIF(btrim(regexp_replace(regexp_replace(${expr}, '<[^>]*>', ' ', 'g'), '[[:space:]]+', ' ', 'g')), '')`;
+
+/** Wann eine Änderung am Beschreibungstext eine Bewertung neu auslöst.
+ *  - 'never': nie. Der Text wird übernommen, Score und Begründung bleiben.
+ *  - 'changed': bei echter Textänderung (Vergleichsform bodyKey); ein erster
+ *    Text, wo vorher keiner war, zählt nicht.
+ *  - 'changed_or_first': auch beim ersten Text.
+ *  Titel, Teaser, Information und Beginn lösen unabhängig davon aus. */
+export type BodytextRescore = 'never' | 'changed' | 'changed_or_first';
+
+/** Nutzerentscheidung 2026-11-27: „keine neue Bewertung einstweilen“. Der
+ *  Export liefert seitdem bodytext und ersetzt damit Dump-Texte; die 167
+ *  bewerteten künftigen Events sollen ihre Bewertung behalten. Später
+ *  zuschalten: hier 'changed' oder 'changed_or_first' setzen
+ *  (docs/EVENTS_FEATURE.md, „Neubewertung“). */
+export const BODYTEXT_RESCORE: BodytextRescore = 'never';
+
+export interface UpsertEventsOptions {
+  /** Überschreibt BODYTEXT_RESCORE, für Tests. */
+  bodytextRescore?: BodytextRescore;
+}
+
 /** Bulk INSERT … ON CONFLICT (webdb_uid) DO UPDATE in a single round-trip.
  *  The maintainer columns (decision, decided_at, flag_notes, created_at) are
  *  omitted from the SET list by construction, so a re-sync from ANY source
  *  never overwrites triage progress.
+ *
+ *  BESTANDSSCHUTZ (source 'feed'): the JSON export carries no url/lang/
+ *  available_langs and, until 2026-11-27, no bodytext. A value the feed leaves
+ *  empty therefore means "unknown", never "cleared": it keeps the stored value
+ *  (from a WebDB dump). A feed bodytext that differs from the stored one only
+ *  in form (bodyKey) keeps the stored one too. The dump stays authoritative for
+ *  all four columns, as before.
  *
  *  RE-SCORE ON CONTENT CHANGE: the LLM scoring columns are normally preserved
  *  too, BUT when a re-sync brings genuinely different scoring-relevant content
@@ -103,6 +136,10 @@ export type EventsDbExecutor =
  *  >= NOW()` guard means a past event that gets edited never loses its historical
  *  score (past events are never re-scored). An idempotent re-sync (identical
  *  content) is a no-op via IS DISTINCT FROM, so scores survive normal re-syncs.
+ *  bodytext is compared in its bodyKey form, so a change of form only (spaces,
+ *  tags) never re-scores. Whether a real bodytext change re-scores at all is
+ *  BODYTEXT_RESCORE (currently 'never'). A feed value that is kept
+ *  (BESTANDSSCHUTZ) never counts as a change.
  *
  *  `xmax = 0` is Postgres' canonical inserted-vs-updated marker on UPSERT — a
  *  freshly inserted row has xmax = 0, a row updated by the ON CONFLICT branch
@@ -116,15 +153,29 @@ export async function upsertEvents(
   normalized: NormalizedEvent[],
   executor: EventsDbExecutor = db,
   source: EventSource = 'feed',
+  { bodytextRescore = BODYTEXT_RESCORE }: UpsertEventsOptions = {},
 ): Promise<EventsUpsertResult> {
   if (normalized.length === 0) return { imported: 0, updated: 0 };
+  const feed = source === 'feed';
+  // Der Wert, den bodytext nach dem Update hat (siehe BESTANDSSCHUTZ).
+  const newBodytext = feed
+    ? sql`CASE WHEN excluded.bodytext IS NULL OR ${bodyKey(sql`${eventsTable.bodytext}`)} IS NOT DISTINCT FROM ${bodyKey(sql`excluded.bodytext`)} THEN ${eventsTable.bodytext} ELSE excluded.bodytext END`
+    : sql`excluded.bodytext`;
+  // Löst der Text eine Neubewertung aus? Siehe BODYTEXT_RESCORE.
+  const oldKey = bodyKey(sql`${eventsTable.bodytext}`);
+  const bodytextChanged =
+    bodytextRescore === 'never'
+      ? sql`FALSE`
+      : bodytextRescore === 'changed'
+        ? sql`(${oldKey} IS DISTINCT FROM ${bodyKey(newBodytext)} AND ${oldKey} IS NOT NULL)`
+        : sql`(${oldKey} IS DISTINCT FROM ${bodyKey(newBodytext)})`;
   // TRUE when this re-sync changes scoring-relevant content of an upcoming event
   // → its cached analysis is stale and must be recomputed.
   const rescore = sql`(
     excluded.event_at >= NOW() AND (
       ${eventsTable.title} IS DISTINCT FROM excluded.title OR
       ${eventsTable.teaser} IS DISTINCT FROM excluded.teaser OR
-      ${eventsTable.bodytext} IS DISTINCT FROM excluded.bodytext OR
+      ${bodytextChanged} OR
       ${eventsTable.eventInformation} IS DISTINCT FROM excluded.event_information OR
       ${eventsTable.eventAt} IS DISTINCT FROM excluded.event_at
     )
@@ -137,16 +188,18 @@ export async function upsertEvents(
       set: {
         title: sql`excluded.title`,
         teaser: sql`excluded.teaser`,
-        bodytext: sql`excluded.bodytext`,
+        bodytext: newBodytext,
         eventInformation: sql`excluded.event_information`,
         eventAt: sql`excluded.event_at`,
         eventEndAt: sql`excluded.event_end_at`,
         locationTitle: sql`excluded.location_title`,
         organizerTitle: sql`excluded.organizer_title`,
         institute: sql`excluded.institute`,
-        url: sql`excluded.url`,
-        lang: sql`excluded.lang`,
-        availableLangs: sql`excluded.available_langs`,
+        url: feed ? sql`COALESCE(excluded.url, ${eventsTable.url})` : sql`excluded.url`,
+        lang: feed ? sql`COALESCE(excluded.lang, ${eventsTable.lang})` : sql`excluded.lang`,
+        availableLangs: feed
+          ? sql`CASE WHEN cardinality(excluded.available_langs) > 0 THEN excluded.available_langs ELSE ${eventsTable.availableLangs} END`
+          : sql`excluded.available_langs`,
         // Siehe EventSource: nur der Feed schreibt hier, ein Dump-Import lässt
         // den bestehenden Marker unangetastet.
         discoveredVia:

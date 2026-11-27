@@ -130,6 +130,11 @@ Bewertung. Real selten (der JSON-Feed wiederholt uids laut 28-Tage-Beleg nie),
 aber ein `updated`-Zähler existiert, der Fall ist also vorgesehen. Prüfen:
 COALESCE für Felder, die die jeweilige Quelle nicht führt, oder Quellen-Tag je
 Zeile.
+*Behoben 2026-11-27 (Branch `claude/events-feed-bodytext`):* Für `source 'feed'`
+löscht ein leerer Wert `url`/`lang`/`available_langs`/`bodytext` nicht mehr, und
+`bodytext` wird in einer Vergleichsform ohne Tags und Randleerzeichen verglichen.
+Belegt in `lib/server/events/sync-smoke.test.ts` gegen Postgres. Der Dump bleibt
+maßgeblich. Real seit 16.07.: 3 Läufe mit `updated > 0`, 13 Zeilen.
 
 **B3 — Publications-Upsert ohne Key-Presence-Semantik**
 (`apply_publications_delta` (e), Adapter `normalizePublication`). Der

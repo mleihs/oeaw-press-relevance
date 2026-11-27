@@ -50,6 +50,11 @@ export interface EventsImportRunOptions {
   sourceLabel?: string;
   /** Parsen + normalisieren, KEIN DB-Write und KEIN Journal. */
   dryRun?: boolean;
+  /** Einen schon angewandten Export noch einmal anwenden (Nachimport mit einem
+   *  neueren Adapter, z. B. für ein neues Exportfeld). Überspringt nur den
+   *  Idempotenz-Skip; der Journal-Eintrag wird überschrieben und trägt
+   *  `reapplied: true`. Nur über die CLI, nie im Nachtlauf. */
+  reapply?: boolean;
 }
 
 export interface EventsImportResult {
@@ -123,7 +128,7 @@ export async function runEventsImport(
     // Idempotenz: bereits angewandtes (feed, generated_at_timestamp) → Skip.
     // Nur prüfbar, wenn der Feed einen Zeitstempel trägt; die UNIQUE-Constraint
     // ist der eigentliche Race-Schutz beim Journal-Insert unten.
-    if (generatedAtTimestamp != null) {
+    if (generatedAtTimestamp != null && !opts.reapply) {
       const existing = await tx
         .select({ id: ingestRuns.id })
         .from(ingestRuns)
@@ -195,6 +200,7 @@ export async function runEventsImport(
         dropped_no_start: skipped,
         duplicates,
         institutes,
+        ...(opts.reapply ? { reapplied: true } : {}),
       },
     });
     return finish({

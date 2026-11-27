@@ -49,7 +49,9 @@ vi.mock('@/lib/server/db', async () => {
   };
 });
 
-import { upsertEvents } from './sync';
+import { PgDialect } from 'drizzle-orm/pg-core';
+import type { SQL } from 'drizzle-orm';
+import { BODYTEXT_RESCORE, upsertEvents } from './sync';
 import { db, events } from '@/lib/server/db';
 
 const insertSpy = vi.mocked(db.insert);
@@ -209,6 +211,41 @@ describe('upsertEvents — maintainer/score-column protection', () => {
     // einen bestehenden 'feed'-Wert unangetastet.
     expect(chunks(h.captured.set?.discoveredVia)).toContain('discovered_via');
     expect(chunks(h.captured.set?.discoveredVia)).not.toContain("'feed'");
+  });
+
+  // Bestandsschutz: der Feed liefert url/lang/available_langs nie und bodytext
+  // erst seit 27.11.; ein leerer Feed-Wert darf den Dump-Wert nicht löschen.
+  // Die Semantik prüft sync-smoke.test.ts gegen echtes Postgres; hier nur,
+  // dass die beiden Quellen verschiedene SET-Ausdrücke bekommen.
+  it('Feed behält gespeicherte url/lang/available_langs/bodytext, der Dump bleibt maßgeblich', async () => {
+    const dialect = new PgDialect();
+    const render = (v: unknown) => dialect.sqlToQuery(v as SQL).sql;
+
+    h.setReturning([{ inserted: false }]);
+    await upsertEvents([makeEvent()], undefined, 'feed');
+    const feedSet = { ...(h.captured.set as Record<string, unknown>) };
+    expect(render(feedSet.url)).toBe('COALESCE(excluded.url, "events"."url")');
+    expect(render(feedSet.lang)).toBe('COALESCE(excluded.lang, "events"."lang")');
+    expect(render(feedSet.availableLangs)).toContain('ELSE "events"."available_langs"');
+    expect(render(feedSet.bodytext)).toMatch(/^CASE WHEN excluded\.bodytext IS NULL OR .* THEN "events"\."bodytext" ELSE excluded\.bodytext END$/);
+
+    h.setReturning([{ inserted: false }]);
+    await upsertEvents([makeEvent()], undefined, 'webdb_dump');
+    const dumpSet = h.captured.set as Record<string, unknown>;
+    for (const [key, col] of [['url', 'url'], ['lang', 'lang'], ['availableLangs', 'available_langs'], ['bodytext', 'bodytext']]) {
+      expect(render(dumpSet[key])).toBe(`excluded.${col}`);
+    }
+  });
+
+  it('bodytext löst vorläufig keine Neubewertung aus (BODYTEXT_RESCORE)', async () => {
+    expect(BODYTEXT_RESCORE).toBe('never');
+    const rescoreSql = async (opts?: Parameters<typeof upsertEvents>[3]) => {
+      h.setReturning([{ inserted: false }]);
+      await upsertEvents([makeEvent()], undefined, 'feed', opts);
+      return new PgDialect().sqlToQuery((h.captured.set as Record<string, unknown>).eventScore as SQL).sql;
+    };
+    expect(await rescoreSql()).not.toContain('bodytext');
+    expect(await rescoreSql({ bodytextRescore: 'changed' })).toContain('bodytext');
   });
 
   it('resolves the conflict on the webdb_uid unique key', async () => {

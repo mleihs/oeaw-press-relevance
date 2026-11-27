@@ -180,6 +180,17 @@ describe('runEventsImport', () => {
     expect(h.journalInserts).toHaveLength(0);
   });
 
+  it('reapply wendet einen schon angewandten Export noch einmal an und vermerkt das', async () => {
+    h.setExisting([{ id: 'existing-run' }]);
+
+    const r = await runEventsImport({ json: exportJson(), reapply: true });
+
+    expect(r.status).toBe('applied');
+    expect(upsertMock).toHaveBeenCalledOnce();
+    expect(h.journalInserts).toHaveLength(1);
+    expect(h.journalInserts[0].report).toMatchObject({ reapplied: true });
+  });
+
   // KERN-REGRESSION zum Befund vom 2026-08-26. Beide Formen bedeuten fuer
   // diesen Feed dasselbe: „heute nichts Neues". `data: []` liefert TYPO3 real
   // an jedem Tag ohne Neuzugang; `data: {GMI:{events:[]}}` ist die Variante, die

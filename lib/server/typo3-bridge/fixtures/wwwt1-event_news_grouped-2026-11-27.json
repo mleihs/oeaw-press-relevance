@@ -1,0 +1,63 @@
+{
+    "meta": {
+        "generated_at_timestamp": 1795744809,
+        "generated_at_readable": "2026-11-27 03:00:09"
+    },
+    "data": {
+        "GMI": {
+            "events": [
+                {
+                    "uid": 40267,
+                    "pid": 11130,
+                    "title": "PRDM9, Small RNAs, and the Evolutionary Control of Meiotic Recombination",
+                    "datetime": 1796121000,
+                    "event_end": 0,
+                    "full_day": 0,
+                    "organizer_simple": "Linda Odenthal-Hesse,",
+                    "location_simple": "Max Perutz Labs SR 1 (6.501)",
+                    "teaser": null,
+                    "bodytext": " Date: 2026-12-01, Time: 11:30:00, Speaker: Linda Odenthal-Hesse,, Location: Max Perutz Labs SR 1 (6.501), Type: SFB \"Meiosis\" Talk, Institute: Max-Planck-Institut für Evolutionsbiologie, Host: Irene Thiemann-Boege ",
+                    "path_segment": "prdm9-small-rnas-and-the-evolutionary-control-of-meiotic-recombination",
+                    "event_information": null,
+                    "suggest_for_oeaw_web_calendar": 0,
+                    "deleted": 0,
+                    "hidden": 0
+                },
+                {
+                    "uid": 40268,
+                    "pid": 11130,
+                    "title": "How to Safely Break the Genome",
+                    "datetime": 1797935400,
+                    "event_end": 0,
+                    "full_day": 0,
+                    "organizer_simple": "Andreas Hochwagen",
+                    "location_simple": "Max Perutz Labs SR 1 (6.501)",
+                    "teaser": null,
+                    "bodytext": " Date: 2026-12-22, Time: 11:30:00, Speaker: Andreas Hochwagen, Location: Max Perutz Labs SR 1 (6.501), Type: SFB \"Meiosis\" Talk, Institute: New York University, Host: Peter Schlögelhofer ",
+                    "path_segment": "how-to-safely-break-the-genome",
+                    "event_information": null,
+                    "suggest_for_oeaw_web_calendar": 0,
+                    "deleted": 0,
+                    "hidden": 0
+                },
+                {
+                    "uid": 40269,
+                    "pid": 11130,
+                    "title": "Title to be announced",
+                    "datetime": 1800354600,
+                    "event_end": 0,
+                    "full_day": 0,
+                    "organizer_simple": "Chloe Girard",
+                    "location_simple": "Max Perutz Labs SR 1 (6.501)",
+                    "teaser": null,
+                    "bodytext": " Date: 2027-01-19, Time: 11:30:00, Speaker: Chloe Girard, Location: Max Perutz Labs SR 1 (6.501), Type: SFB \"Meiosis\" Talk, Institute: Universite Paris-Saclay, Host: Joao Matos ",
+                    "path_segment": "title-to-be-announced-1b31ffcf4ee1119f451d032312c5764d",
+                    "event_information": null,
+                    "suggest_for_oeaw_web_calendar": 0,
+                    "deleted": 0,
+                    "hidden": 0
+                }
+            ]
+        }
+    }
+}
