@@ -145,8 +145,12 @@ Veranstalter fast immer die vortragende Person (Prod 27.11.: 120 von 123
 Eckdaten-Events, die übrigen 3 ohne Veranstalter). `organizerIsSpeaker`
 (`lib/server/events/eckdaten.ts`) erkennt das, auch bei mehreren Personen mit
 `<br>` und bei Komma am Ende. Der Entwurf bekommt den Veranstalter dann leer, und
-`organizer` kommt nach der bestehenden Regel aus dem Institut. Bei Fließtext
-wird nie verglichen.
+`organizer` kommt nach der bestehenden Regel aus dem Institut. GMI-Events ganz
+ohne Text (Prod 27.11.: 94, davon 53 künftig) lassen sich nicht vergleichen;
+dort gilt die Hauskonvention: die Person geht als eigene Angabe „Vortragende
+Person (TYPO3-Feld Veranstalter)" hinein, Claude setzt sie als `speaker`, und
+die Hinweise nennen die Herkunft (`readOrganizer` in `draft-prompt.ts`, Liste
+`ORGANIZER_FIELD_HOLDS_SPEAKER`). Andere Institute bleiben unverändert.
 
 Tests: `npx vitest run lib/server/typo3-bridge app/api/typo3-bridge`
 (Claude gemockt, keine DB). Die Extension hat eigene End-to-End-Tests gegen

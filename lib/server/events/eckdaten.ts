@@ -59,9 +59,10 @@ export function parseEckdaten(bodytext: string | null | undefined): Eckdaten | n
   return out;
 }
 
-/** Personen aus einer Namensangabe, zum Vergleichen: getrennt an `<br>` und
- *  `;`, ohne Tags, Leerraum und Satzzeichen am Rand, klein geschrieben. */
-function personKeys(s: string): string[] {
+/** Personen aus einer Namensangabe wie in TYPO3 („A<br>B", „A; B",
+ *  „Linda Odenthal-Hesse,"): getrennt an `<br>` und `;`, ohne Tags, Leerraum
+ *  und Satzzeichen am Rand. */
+export function personList(s: string): string[] {
   return s
     .split(/<br\s*\/?>|;/i)
     .map((p) =>
@@ -70,10 +71,13 @@ function personKeys(s: string): string[] {
         .replace(/&nbsp;/g, ' ')
         .replace(/\s+/g, ' ')
         .replace(/^[\s,;]+|[\s,;]+$/g, '')
-        .normalize('NFC')
-        .toLowerCase(),
+        .normalize('NFC'),
     )
     .filter(Boolean);
+}
+
+function personKeys(s: string): string[] {
+  return personList(s).map((p) => p.toLowerCase());
 }
 
 /**
