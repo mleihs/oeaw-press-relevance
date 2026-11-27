@@ -40,7 +40,7 @@ and `20260526000003_events_information.sql` (TYPO3 sidebar block).
 | `id` UUID PK | App-side row identifier (`gen_random_uuid()`). |
 | `webdb_uid` INT UNIQUE | `tx_news_domain_model_news.uid` — natural key for UPSERT. |
 | `title`, `teaser`, `url`, `lang` | Editorial fields from TYPO3. `url` is the cascade result `externalurl → tx_heborssnewsimporter_externalid → internalurl → null` (no fake oeaw.ac.at fallback). |
-| `bodytext` TEXT | Full TYPO3 RTE output. Rich-text (often HTML). Rendered only on the detail page — list queries never select it. The detail page strips HTML to plain text via `stripHtml()`. |
+| `bodytext` TEXT | Full TYPO3 RTE output. Rich-text (often HTML). Rendered only on the detail page — list queries never select it. The detail page strips HTML to plain text via `stripHtml()`. Since the export of 2026-11-27 (first on wwwt1) the JSON feed carries it too, trimmed by the adapter. For GMI talks it is a "Date: …, Speaker: …, Host: …" summary in both sources. The feed never clears it and never replaces it with the same text in another form; a re-score fires only on a real text change (`upsertEvents`, `RESCORE_ON_FIRST_BODYTEXT`). |
 | `event_information` TEXT | TYPO3 sidebar block (`tx_news_domain_model_news.event_information`). Often contains canonical address, Zoom link, organiser, contact email, invitation-download link. Rendered on the detail page after server-side sanitisation via `lib/server/events/sanitize-event-info.ts` (a safelist of `<a>`, `<p>`, `<br>`, `<h3-6>`, `<ul>`, `<ol>`, `<li>`, `<strong>`, `<em>` — links forced to `target=_blank rel=noopener`). |
 | `event_at` TIMESTAMPTZ | From `tx_news_domain_model_news.datetime` (UNIX seconds → TIMESTAMPTZ). |
 | `event_end_at` TIMESTAMPTZ | From `event_end`; null when 0. |

@@ -75,6 +75,46 @@ describe('normalizeJsonEvent', () => {
   });
 });
 
+describe('normalizeJsonEvent: bodytext (Export ab 2026-11-27, zuerst wwwt1)', () => {
+  // Echtes Beispiel aus https://wwwt1.oeaw.ac.at/fileadmin/exports/event_news_grouped.json
+  // vom 2026-11-27 03:00:09: reiner Text, Leerzeichen am Rand, das doppelte
+  // Komma kommt so aus TYPO3.
+  const WWWT1_BODY =
+    ' Date: 2026-12-01, Time: 11:30:00, Speaker: Linda Odenthal-Hesse,, Location: Max Perutz Labs SR 1 (6.501), Type: SFB "Meiosis" Talk, Institute: Max-Planck-Institut für Evolutionsbiologie, Host: Irene Thiemann-Boege ';
+
+  it('übernimmt den Text getrimmt, sonst unverändert', () => {
+    const n = normalizeJsonEvent(
+      raw({ uid: 40267, title: 'PRDM9, Small RNAs, and the Evolutionary Control of Meiotic Recombination', bodytext: WWWT1_BODY }),
+      'GMI',
+    );
+    expect(n!.bodytext).toBe(WWWT1_BODY.trim());
+    expect(n!.bodytext!.startsWith('Date: 2026-12-01')).toBe(true);
+    expect(n!.bodytext).toContain('Linda Odenthal-Hesse,, Location');
+  });
+
+  it('fehlendes Feld (www bis heute), null und Leerraum werden null', () => {
+    expect(normalizeJsonEvent(raw(), 'GMI')!.bodytext).toBeNull();
+    expect(normalizeJsonEvent(raw({ bodytext: null }), 'GMI')!.bodytext).toBeNull();
+    expect(normalizeJsonEvent(raw({ bodytext: '  \n ' }), 'GMI')!.bodytext).toBeNull();
+  });
+
+  it('parst den wwwt1-Export mit 15 Feldern wie bisher', () => {
+    const ev = (uid: number, datetime: number) => ({
+      ...raw({ uid, datetime, bodytext: WWWT1_BODY }),
+      deleted: 0,
+      hidden: 0,
+      suggest_for_oeaw_web_calendar: 0,
+    });
+    const r = parseEventNewsGrouped({
+      meta: { generated_at_timestamp: 1795744809, generated_at_readable: '2026-11-27 03:00:09' },
+      data: { GMI: { events: [ev(40267, 1796121000), ev(40268, 1797935400), ev(40269, 1800354600)] } },
+    } as EventNewsGroupedExport);
+    expect(r.events).toHaveLength(3);
+    expect(r.events.every((e) => e.bodytext === WWWT1_BODY.trim())).toBe(true);
+    expect(r.generatedAtTimestamp).toBe(1795744809);
+  });
+});
+
 describe('parseEventNewsGrouped', () => {
   const exp = (data: EventNewsGroupedExport['data']): EventNewsGroupedExport => ({
     meta: { generated_at_readable: '2026-06-26 03:05:58' },
