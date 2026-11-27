@@ -22,7 +22,8 @@ Fehler: `{ "error": "<deutscher Satz>" }`, den das Panel so anzeigt.
 
 - **Env `TYPO3_BRIDGE_TOKEN`** (≥ 32 Zeichen, `openssl rand -hex 32`): ein
   gemeinsames Bearer-Token. Fehlt es, sind alle Routen aus (503) und berühren
-  die DB nicht. Sperren = Token tauschen und neu deployen.
+  die DB nicht. Sperren = Token tauschen und neu deployen. Wer es bekommt und
+  wann es getauscht wird, regelt „Token-Politik“ unten.
 - **Env `ANTHROPIC_API_KEY`**: nur für POST …/draft. Fehlt er, antwortet nur
   der neue Entwurf mit 503; Liste, Detail und gespeicherte Entwürfe gehen.
   Auf der Box (Coolify) gesetzt, auf Vercel nicht.
@@ -38,6 +39,32 @@ Fehler: `{ "error": "<deutscher Satz>" }`, den das Panel so anzeigt.
   trotzdem fertig und gespeichert, das Panel lädt ihn beim nächsten Öffnen.
 - **Kosten** je Entwurf: `event_typo3_drafts.cost_usd` (Live-Preise über
   `estimateCost`).
+
+## Token-Politik (Entscheidung 2026-11-27)
+
+- Die Bridge hat **ein** gemeinsames `TYPO3_BRIDGE_TOKEN`, so wie das PR-Tool
+  ein gemeinsames Gate-Passwort hat (`GATE_TOKEN`, `lib/server/gate.ts`).
+- Das Token bekommen dieselben Personen wie das Gate-Passwort, nicht mehr und
+  nicht weniger.
+- Verlässt jemand das Team, werden Gate-Passwort und Token **gemeinsam**
+  getauscht: neue Werte in Coolify setzen, neu deployen, das Token im Panel
+  der Extension neu eintragen.
+
+**Merkposten: persönliche Tokens.** Sobald das gemeinsame Gate-Passwort
+abgelöst wird und alle mit persönlichem Login arbeiten, stellt auch die Bridge
+auf persönliche Tokens um.
+- Ein Token je Person.
+- Der Name der Person steht in den Kosten-Logs (`typo3_bridge_*`).
+- Ein Zugang lässt sich einzeln sperren, ohne die anderen zu tauschen.
+- Die Extension bleibt gleich; jede Person trägt ihr eigenes Token im Panel ein.
+
+Persönliche Konten gibt es schon: Supabase Auth mit `public.users`, Rolle und
+`disabled_at` (`lib/server/auth/require.ts`, `docs/BOARD_PLAN.md` §3.1). Sie
+liefern bisher nur die Identität fürs Board; das Gate bleibt davor. Naheliegend
+ist deshalb, das Token an die `users`-Zeile zu hängen (nur ein Hash wird
+gespeichert, `disabled_at` sperrt mit). Hinweise auf diesen Merkposten stehen
+in `lib/server/gate.ts`, `lib/server/auth/require.ts` und
+`lib/server/typo3-bridge/http.ts`; suchen nach `MERKPOSTEN TYPO3-Bridge`.
 
 ## Panel verbinden
 

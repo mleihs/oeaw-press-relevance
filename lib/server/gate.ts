@@ -6,6 +6,12 @@
 import 'server-only';
 import { createHash, timingSafeEqual } from 'crypto';
 
+// MERKPOSTEN TYPO3-Bridge (2026-11-27): Die TYPO3-Bridge hat wie das Gate EIN
+// gemeinsames Token (TYPO3_BRIDGE_TOKEN), für denselben Personenkreis. Wer das
+// Gate-Passwort tauscht, tauscht das Token mit. Wird das Gate abgelöst, stellt
+// die Bridge auf persönliche Tokens um (Name im Kosten-Log, einzeln sperrbar).
+// Details: docs/TYPO3_BRIDGE.md, „Token-Politik".
+
 /** Cookie-Attribute des Gate-Cookies — geteilt zwischen /api/auth/gate und
  *  /api/auth/login (ein persönlicher Login ist strikt stärker als das
  *  gemeinsame Übergangs-Passwort und setzt das Gate-Cookie deshalb mit).
