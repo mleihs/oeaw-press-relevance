@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { vi } from 'vitest';
 import type Anthropic from '@anthropic-ai/sdk';
 import type { DraftClient } from './draft';
@@ -38,6 +40,31 @@ export const OUTPUT: DraftOutput = {
   language_en: false,
   notes: [],
 };
+
+/** Die drei GMI-Events aus dem wwwt1-Export vom 2026-11-27
+ *  (fixtures/wwwt1-event_news_grouped-2026-11-27.json): bodytext nur Eckdaten,
+ *  40269 mit Platzhaltertitel. Musterfall für den Entwurf aus Eckdaten. Die
+ *  uids gelten nur auf wwwt1; in Prod gehört 40269 zu einem anderen Event. */
+export const WWWT1_SOURCES: DraftSource[] = (
+  JSON.parse(readFileSync(path.join(__dirname, 'fixtures/wwwt1-event_news_grouped-2026-11-27.json'), 'utf8')) as {
+    data: Record<string, { events: Array<{ uid: number; title: string; datetime: number; location_simple: string | null; organizer_simple: string | null; bodytext: string }> }>;
+  }
+).data.GMI!.events.map((e) => ({
+  id: `00000000-0000-4000-8000-0000000${e.uid}`,
+  webdbUid: e.uid,
+  title: e.title,
+  teaser: null,
+  bodytext: e.bodytext.trim(),
+  eventInformation: null,
+  eventAt: new Date(e.datetime * 1000).toISOString(),
+  eventEndAt: null,
+  locationTitle: e.location_simple,
+  organizerTitle: e.organizer_simple,
+  institute: 'GMI',
+  url: null,
+  lang: null,
+  availableLangs: [],
+}));
 
 type FakeMessage = Partial<Anthropic.Message> & { parsed_output?: DraftOutput | null };
 
