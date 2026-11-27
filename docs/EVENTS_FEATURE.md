@@ -40,7 +40,7 @@ and `20260526000003_events_information.sql` (TYPO3 sidebar block).
 | `id` UUID PK | App-side row identifier (`gen_random_uuid()`). |
 | `webdb_uid` INT UNIQUE | `tx_news_domain_model_news.uid` — natural key for UPSERT. |
 | `title`, `teaser`, `url`, `lang` | Editorial fields from TYPO3. `url` is the cascade result `externalurl → tx_heborssnewsimporter_externalid → internalurl → null` (no fake oeaw.ac.at fallback). |
-| `bodytext` TEXT | Full TYPO3 RTE output. Rich-text (often HTML). Rendered only on the detail page — list queries never select it. The detail page strips HTML to plain text via `stripHtml()`. Since the export of 2026-11-27 (first on wwwt1) the JSON feed carries it too, trimmed by the adapter. For GMI talks it is a "Date: …, Speaker: …, Host: …" summary in both sources. The feed never clears it and never replaces it with the same text in another form; a re-score fires only on a real text change (`upsertEvents`, `RESCORE_ON_FIRST_BODYTEXT`). |
+| `bodytext` TEXT | Full TYPO3 RTE output. Rich-text (often HTML). Rendered only on the detail page — list queries never select it. The detail page strips HTML to plain text via `stripHtml()`. Since the export of 2026-11-27 (first on wwwt1) the JSON feed carries it too, trimmed by the adapter. For GMI talks it is a "Date: …, Speaker: …, Host: …" summary in both sources. The feed replaces a dump text with its own (user decision 2026-11-27), but never clears it and never replaces it with the same text in another form. A bodytext change does **not** re-score for now, see "Re-scoring on bodytext". |
 | `event_information` TEXT | TYPO3 sidebar block (`tx_news_domain_model_news.event_information`). Often contains canonical address, Zoom link, organiser, contact email, invitation-download link. Rendered on the detail page after server-side sanitisation via `lib/server/events/sanitize-event-info.ts` (a safelist of `<a>`, `<p>`, `<br>`, `<h3-6>`, `<ul>`, `<ol>`, `<li>`, `<strong>`, `<em>` — links forced to `target=_blank rel=noopener`). |
 | `event_at` TIMESTAMPTZ | From `tx_news_domain_model_news.datetime` (UNIX seconds → TIMESTAMPTZ). |
 | `event_end_at` TIMESTAMPTZ | From `event_end`; null when 0. |
@@ -126,6 +126,36 @@ The UPSERT `SET`-list **does not** include `decision`, `decided_at`,
 `flag_notes`, or `created_at`. That's the contract that makes re-syncs
 safe to run as often as the maintainer wants: WebDB-sourced columns
 refresh, maintainer state survives.
+
+### Feed vs. dump (Bestandsschutz)
+
+`upsertEvents(rows, executor, source)` serves both the nightly JSON feed
+(`source 'feed'`) and WebDB dumps (`'webdb_dump'`). The feed carries no
+`url`/`lang`/`available_langs`, and `bodytext` only since the export of
+2026-11-27. For the feed an empty value therefore means "unknown": it keeps
+the stored value. A feed `bodytext` replaces the stored one only if it differs
+in its comparison form (`bodyKey`: tags removed, whitespace collapsed). Same
+text with other spaces or tags keeps the stored form. The dump stays
+authoritative and overwrites all four columns.
+
+### Re-scoring on bodytext
+
+A real change to title, teaser, `event_information` or start of an upcoming
+event resets its score (see the `rescore` predicate in `upsertEvents`).
+`bodytext` does **not**, for now. User decision 2026-11-27: "keine neue
+Bewertung einstweilen". The switch is `BODYTEXT_RESCORE` in
+`lib/server/events/sync.ts`:
+
+| Value | Effect |
+|---|---|
+| `'never'` (current) | Text is taken over, score and reasoning stay. |
+| `'changed'` | Re-score on a real text change; a first text (none before) does not count. |
+| `'changed_or_first'` | Re-score on a first text too. |
+
+Turning it on later affects only rows the import touches from then on. Events
+whose text was replaced while it was `'never'` keep their old score until they
+are re-scored by hand (`/bewerten`, `apply --force`). `sync-smoke.test.ts`
+covers all three values against Postgres.
 
 ## Maintainer workflow
 

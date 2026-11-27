@@ -51,7 +51,7 @@ vi.mock('@/lib/server/db', async () => {
 
 import { PgDialect } from 'drizzle-orm/pg-core';
 import type { SQL } from 'drizzle-orm';
-import { RESCORE_ON_FIRST_BODYTEXT, upsertEvents } from './sync';
+import { BODYTEXT_RESCORE, upsertEvents } from './sync';
 import { db, events } from '@/lib/server/db';
 
 const insertSpy = vi.mocked(db.insert);
@@ -237,13 +237,15 @@ describe('upsertEvents — maintainer/score-column protection', () => {
     }
   });
 
-  it('löst die Neubewertung nicht über einen ersten Beschreibungstext aus (RESCORE_ON_FIRST_BODYTEXT)', async () => {
-    expect(RESCORE_ON_FIRST_BODYTEXT).toBe(false);
-    h.setReturning([{ inserted: false }]);
-    await upsertEvents([makeEvent()], undefined, 'feed');
-    const rescoreSql = new PgDialect().sqlToQuery((h.captured.set as Record<string, unknown>).eventScore as SQL).sql;
-    expect(rescoreSql).toContain('IS NOT NULL');
-    expect(rescoreSql).not.toContain('"events"."bodytext" IS DISTINCT FROM excluded.bodytext');
+  it('bodytext löst vorläufig keine Neubewertung aus (BODYTEXT_RESCORE)', async () => {
+    expect(BODYTEXT_RESCORE).toBe('never');
+    const rescoreSql = async (opts?: Parameters<typeof upsertEvents>[3]) => {
+      h.setReturning([{ inserted: false }]);
+      await upsertEvents([makeEvent()], undefined, 'feed', opts);
+      return new PgDialect().sqlToQuery((h.captured.set as Record<string, unknown>).eventScore as SQL).sql;
+    };
+    expect(await rescoreSql()).not.toContain('bodytext');
+    expect(await rescoreSql({ bodytextRescore: 'changed' })).toContain('bodytext');
   });
 
   it('resolves the conflict on the webdb_uid unique key', async () => {

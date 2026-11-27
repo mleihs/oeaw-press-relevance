@@ -120,10 +120,10 @@ describe.skipIf(!isLocal)('upsertEvents gegen Postgres (lokaler Stack)', () => {
       const r = await read(tx, [1, 2, 3, 4, 5, 6, 7]);
       // 1: Text bleibt wie gespeichert, Bewertung bleibt.
       expect(r.get(1)).toMatchObject({ bodytext: ` ${GMI_BODY} `, status: 'analyzed', score: 0.42 });
-      // 2: Text kommt dazu, Bewertung bleibt (RESCORE_ON_FIRST_BODYTEXT aus).
+      // 2: Text kommt dazu, Bewertung bleibt.
       expect(r.get(2)).toMatchObject({ bodytext: GMI_BODY, status: 'analyzed', score: 0.42, reasoning: 'in-chat' });
-      // 3: neuer Text, Bewertung zurückgesetzt.
-      expect(r.get(3)).toMatchObject({ bodytext: 'Neuer Text.', status: 'pending', score: null, reasoning: null });
+      // 3: neuer Text ersetzt den alten, Bewertung bleibt (BODYTEXT_RESCORE 'never').
+      expect(r.get(3)).toMatchObject({ bodytext: 'Neuer Text.', status: 'analyzed', score: 0.42, reasoning: 'in-chat' });
       // 4: nichts gelöscht, Bewertung bleibt.
       expect(r.get(4)).toMatchObject({
         bodytext: '<p>Text aus dem Dump.</p>',
@@ -179,10 +179,30 @@ describe.skipIf(!isLocal)('upsertEvents gegen Postgres (lokaler Stack)', () => {
         'webdb_dump',
       );
       const r = await read(tx, [21, 22, 23]);
-      // Nur die Form ändert sich: Dump-Wert gilt, keine Neubewertung.
+      // Dump-Werte gelten; keine Neubewertung (BODYTEXT_RESCORE 'never').
       expect(r.get(21)).toMatchObject({ bodytext: GMI_BODY, url: null, lang: null, availableLangs: [], status: 'analyzed', score: 0.42 });
-      expect(r.get(22)).toMatchObject({ bodytext: 'Ganz anderer Text.', status: 'pending', score: null });
+      expect(r.get(22)).toMatchObject({ bodytext: 'Ganz anderer Text.', status: 'analyzed', score: 0.42 });
       expect(r.get(23)).toMatchObject({ bodytext: 'Erster Text aus dem Dump.', status: 'analyzed', score: 0.42 });
+    });
+  });
+
+  // Zuschaltbar für später: dieselben Fälle mit den beiden anderen Stufen.
+  it.each([
+    ['changed', { first: 'analyzed', changed: 'pending', form: 'analyzed' }],
+    ['changed_or_first', { first: 'pending', changed: 'pending', form: 'analyzed' }],
+  ] as const)('BODYTEXT_RESCORE %s: erster Text, neuer Text, nur andere Form', async (mode, expected) => {
+    await inRollback(async (tx) => {
+      await seed(tx, [ev(31), ev(32, { bodytext: 'Alter Text.' }), ev(33, { bodytext: ` ${GMI_BODY} ` })]);
+      await upsertEvents(
+        [ev(31, { bodytext: GMI_BODY }), ev(32, { bodytext: 'Neuer Text.' }), ev(33, { bodytext: GMI_BODY })],
+        tx,
+        'feed',
+        { bodytextRescore: mode },
+      );
+      const r = await read(tx, [31, 32, 33]);
+      expect(r.get(31)!.status).toBe(expected.first);
+      expect(r.get(32)!.status).toBe(expected.changed);
+      expect(r.get(33)!.status).toBe(expected.form);
     });
   });
 });

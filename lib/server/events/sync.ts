@@ -95,12 +95,25 @@ export type EventsDbExecutor =
 const bodyKey = (expr: SQL) =>
   sql`NULLIF(btrim(regexp_replace(regexp_replace(${expr}, '<[^>]*>', ' ', 'g'), '[[:space:]]+', ' ', 'g')), '')`;
 
-/** Soll der erste Beschreibungstext (vorher keiner) eine Bewertung neu
- *  auslösen? Bewusst nein, bis der Nutzer anders entscheidet: 107 bewertete
- *  künftige Events haben keinen Text, und jede Neubewertung ist Handarbeit
- *  in-chat bzw. ab 13.12. ein bezahlter Nachtlauf. Ein geänderter Text löst
- *  weiterhin aus. */
-export const RESCORE_ON_FIRST_BODYTEXT = false;
+/** Wann eine Änderung am Beschreibungstext eine Bewertung neu auslöst.
+ *  - 'never': nie. Der Text wird übernommen, Score und Begründung bleiben.
+ *  - 'changed': bei echter Textänderung (Vergleichsform bodyKey); ein erster
+ *    Text, wo vorher keiner war, zählt nicht.
+ *  - 'changed_or_first': auch beim ersten Text.
+ *  Titel, Teaser, Information und Beginn lösen unabhängig davon aus. */
+export type BodytextRescore = 'never' | 'changed' | 'changed_or_first';
+
+/** Nutzerentscheidung 2026-11-27: „keine neue Bewertung einstweilen“. Der
+ *  Export liefert seitdem bodytext und ersetzt damit Dump-Texte; die 167
+ *  bewerteten künftigen Events sollen ihre Bewertung behalten. Später
+ *  zuschalten: hier 'changed' oder 'changed_or_first' setzen
+ *  (docs/EVENTS_FEATURE.md, „Neubewertung“). */
+export const BODYTEXT_RESCORE: BodytextRescore = 'never';
+
+export interface UpsertEventsOptions {
+  /** Überschreibt BODYTEXT_RESCORE, für Tests. */
+  bodytextRescore?: BodytextRescore;
+}
 
 /** Bulk INSERT … ON CONFLICT (webdb_uid) DO UPDATE in a single round-trip.
  *  The maintainer columns (decision, decided_at, flag_notes, created_at) are
@@ -124,9 +137,9 @@ export const RESCORE_ON_FIRST_BODYTEXT = false;
  *  score (past events are never re-scored). An idempotent re-sync (identical
  *  content) is a no-op via IS DISTINCT FROM, so scores survive normal re-syncs.
  *  bodytext is compared in its bodyKey form, so a change of form only (spaces,
- *  tags) never re-scores, and a first text does so only with
- *  RESCORE_ON_FIRST_BODYTEXT. A feed value that is kept (BESTANDSSCHUTZ) never
- *  counts as a change.
+ *  tags) never re-scores. Whether a real bodytext change re-scores at all is
+ *  BODYTEXT_RESCORE (currently 'never'). A feed value that is kept
+ *  (BESTANDSSCHUTZ) never counts as a change.
  *
  *  `xmax = 0` is Postgres' canonical inserted-vs-updated marker on UPSERT — a
  *  freshly inserted row has xmax = 0, a row updated by the ON CONFLICT branch
@@ -140,6 +153,7 @@ export async function upsertEvents(
   normalized: NormalizedEvent[],
   executor: EventsDbExecutor = db,
   source: EventSource = 'feed',
+  { bodytextRescore = BODYTEXT_RESCORE }: UpsertEventsOptions = {},
 ): Promise<EventsUpsertResult> {
   if (normalized.length === 0) return { imported: 0, updated: 0 };
   const feed = source === 'feed';
@@ -147,11 +161,14 @@ export async function upsertEvents(
   const newBodytext = feed
     ? sql`CASE WHEN excluded.bodytext IS NULL OR ${bodyKey(sql`${eventsTable.bodytext}`)} IS NOT DISTINCT FROM ${bodyKey(sql`excluded.bodytext`)} THEN ${eventsTable.bodytext} ELSE excluded.bodytext END`
     : sql`excluded.bodytext`;
-  // Text geändert: in der Vergleichsform verschieden, und (solange
-  // RESCORE_ON_FIRST_BODYTEXT aus ist) vorher schon ein Text vorhanden.
-  const bodytextChanged = sql`(${bodyKey(sql`${eventsTable.bodytext}`)} IS DISTINCT FROM ${bodyKey(newBodytext)}${
-    RESCORE_ON_FIRST_BODYTEXT ? sql`` : sql` AND ${bodyKey(sql`${eventsTable.bodytext}`)} IS NOT NULL`
-  })`;
+  // Löst der Text eine Neubewertung aus? Siehe BODYTEXT_RESCORE.
+  const oldKey = bodyKey(sql`${eventsTable.bodytext}`);
+  const bodytextChanged =
+    bodytextRescore === 'never'
+      ? sql`FALSE`
+      : bodytextRescore === 'changed'
+        ? sql`(${oldKey} IS DISTINCT FROM ${bodyKey(newBodytext)} AND ${oldKey} IS NOT NULL)`
+        : sql`(${oldKey} IS DISTINCT FROM ${bodyKey(newBodytext)})`;
   // TRUE when this re-sync changes scoring-relevant content of an upcoming event
   // → its cached analysis is stale and must be recomputed.
   const rescore = sql`(
