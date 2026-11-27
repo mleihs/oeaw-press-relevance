@@ -32,6 +32,16 @@ describe('proxy (Edge-Gate)', () => {
     expect(isPassThrough(res)).toBe(true);
   });
 
+  it('lässt die TYPO3-Bridge ohne Cookie durch (sie prüft ihren Bearer selbst)', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('GATE_TOKEN', TOKEN);
+    for (const path of ['/api/typo3-bridge/events', '/api/typo3-bridge/events/x/draft']) {
+      expect(isPassThrough(await proxy(mkReq(path)))).toBe(true);
+    }
+    // Nur das Präfix mit Schrägstrich, kein Namensvetter.
+    expect((await proxy(mkReq('/api/typo3-bridgeX'))).status).toBe(401);
+  });
+
   it('lässt in development alles durch (Dev-Bypass)', async () => {
     vi.stubEnv('NODE_ENV', 'development');
     vi.stubEnv('GATE_TOKEN', TOKEN);

@@ -23,7 +23,9 @@ const VALID_ANALYSIS_STATUS = new Set(['pending', 'analyzed', 'failed']);
 
 const VALID_LANGS = new Set<EventLang>(['de', 'en', 'mul']);
 
-function narrowLang(v: string | null): EventLang | null {
+/** Datensatzsprache auf die bekannten Werte eingeengt, sonst null. Auch die
+ *  TYPO3-Bridge nutzt sie (lib/server/typo3-bridge/events.ts). */
+export function narrowLang(v: string | null): EventLang | null {
   return v && VALID_LANGS.has(v as EventLang) ? (v as EventLang) : null;
 }
 

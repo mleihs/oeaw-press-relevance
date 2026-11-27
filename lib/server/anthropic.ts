@@ -118,8 +118,9 @@ export function completionOf(message: Anthropic.Message): JsonCompletion {
   return { content, usage: usageOf(message) };
 }
 
-/** Cache-Tokens zählen als Eingabe; Thinking steckt in output_tokens. */
-function usageOf(message: Anthropic.Message): TokenUsage {
+/** Cache-Tokens zählen als Eingabe; Thinking steckt in output_tokens. Auch der
+ *  TYPO3-Entwurf rechnet damit (lib/server/typo3-bridge/draft.ts). */
+export function usageOf(message: Anthropic.Message): TokenUsage {
   const u = message.usage;
   return {
     promptTokens: u.input_tokens + (u.cache_creation_input_tokens ?? 0) + (u.cache_read_input_tokens ?? 0),

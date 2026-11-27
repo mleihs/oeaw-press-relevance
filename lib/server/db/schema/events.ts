@@ -1,6 +1,6 @@
 // Events (Veranstaltungsbetrieb): TYPO3-Mirror + LLM-Analyse-Spalten und die
 // append-only Score-Gewichtungs-Historie.
-import { pgTable, index, unique, check, uuid, text, timestamp, integer, doublePrecision, jsonb, bigserial } from "drizzle-orm/pg-core"
+import { pgTable, index, unique, check, uuid, text, timestamp, integer, doublePrecision, jsonb, bigserial, numeric, foreignKey } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 
 // Local mirror of upcoming TYPO3 events. Populated from MySQL via
@@ -77,4 +77,29 @@ export const eventScoreWeights = pgTable("event_score_weights", {
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 }, (table) => [
 	index("idx_event_score_weights_created_at").on(table.createdAt.desc()),
+]);
+
+// KI-Entwurf je Event für die Übernahme ins ÖAW-TYPO3 (TYPO3-Bridge, Chrome-
+// Extension „ÖAW TYPO3 Toolkit"). Hand-gespiegelt aus supabase/migrations/
+// 20261127000001_event_typo3_drafts.sql, Quelle der Wahrheit bleibt die
+// Migration. Eine Zeile je Event; ein neuer Entwurf überschreibt den alten.
+export const eventTypo3Drafts = pgTable("event_typo3_drafts", {
+	eventId: uuid("event_id").primaryKey().notNull(),
+	webdbUid: integer("webdb_uid").notNull(),
+	draft: jsonb().notNull(),
+	notes: jsonb().default([]).notNull(),
+	model: text().notNull(),
+	effort: text().notNull(),
+	instructions: text(),
+	sourceHash: text("source_hash").notNull(),
+	inputTokens: integer("input_tokens").default(0).notNull(),
+	outputTokens: integer("output_tokens").default(0).notNull(),
+	costUsd: numeric("cost_usd", { precision: 10, scale: 4, mode: 'number' }).default(0).notNull(),
+	generatedAt: timestamp("generated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+	foreignKey({
+		columns: [table.eventId],
+		foreignColumns: [events.id],
+		name: "event_typo3_drafts_event_id_fkey",
+	}).onDelete("cascade"),
 ]);

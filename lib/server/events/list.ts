@@ -58,8 +58,9 @@ function mainNewsExclusion(): SQL {
 }
 
 /** Escapes ILIKE wildcards in user input so a literal `%`/`_` matches itself
- *  (mirrors the publications search layer). */
-function likeEscape(s: string): string {
+ *  (mirrors the publications search layer). Also used by the TYPO3 bridge's
+ *  event search (lib/server/typo3-bridge/events.ts). */
+export function likeEscape(s: string): string {
   return s.replace(/[\\%_]/g, (m) => '\\' + m);
 }
 

@@ -110,6 +110,12 @@ const Schema = z.object({
   // Zeichen; `openssl rand -hex 32`), sonst bricht der Boot mit klarer Meldung.
   INGEST_CRON_SECRET: z.string().min(32, 'INGEST_CRON_SECRET muss ≥ 32 Zeichen haben (openssl rand -hex 32)').optional(),
 
+  // TYPO3-Bridge für die Chrome-Extension „ÖAW TYPO3 Toolkit" (/api/typo3-
+  // bridge/*). Wie INGEST_CRON_SECRET: nicht gesetzt → die Routen antworten 503
+  // (Bridge aus), die App bootet ohne. Gesetzt → min. 32 Zeichen
+  // (`openssl rand -hex 32`); denselben Wert trägt die Redakteurin im Panel ein.
+  TYPO3_BRIDGE_TOKEN: z.string().min(32, 'TYPO3_BRIDGE_TOKEN muss ≥ 32 Zeichen haben (openssl rand -hex 32)').optional(),
+
   // Obergrenze für das automatische Enrichment je Nacht-Ingest-Lauf (Vorstufe
   // zum Bewerten). Bounded, damit ein großer Rückstau die Route nicht stundenlang
   // belegt; der Rest drainiert über Folgenächte. Default 200 (im Runner).
