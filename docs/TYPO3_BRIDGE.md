@@ -98,8 +98,20 @@ lib/server/typo3-bridge/
   news-assist-prompt.ts  News-Wizard: Anfrage-Schema, Grenzen, Prompts, Schemas
   news-assist.ts         News-Wizard: Claude-Aufruf (Text bzw. Bild-Block), Kürzen, Hinweise
   errors.ts        Claude-Fehler → HTTP (nie 401/403, 503 nur ohne Key)
+  fixtures/        wwwt1-Export 27.11. (3 GMI-Events, nur Eckdaten) für Tests
+lib/server/events/eckdaten.ts        Eckdaten statt Fließtext (VBC-Institute)
 lib/server/bearer-auth.ts            gemeinsamer Bearer-Guard (auch Nacht-Cron)
 ```
+
+**Eckdaten statt Fließtext.** Bei GMI, IMBA, IMP und Max Perutz Labs ist der
+bodytext oft nur eine Zeile `Date: …, Time: …, Speaker: …, Location: …, Type: …,
+Institute: …, Host: …` (Stand 27.11.: 123 Events in Prod). Der Entwurf gibt sie
+Claude als eigenen Block `<eckdaten>`, bereinigt (doppelte Kommas, „None",
+Sekunden, mehrere Vortragende mit `<br />`). Der Prompt sagt, wie die Angaben zu
+lesen sind, und verbietet Inhalt über den Titel hinaus. Bei einem
+Platzhaltertitel („Title to be announced") entsteht der Titel aus Reihe und
+Person, und die Hinweise melden fehlenden Titel und Abstract. Musterfall sind
+die drei GMI-Events aus `fixtures/` (wwwt1-uids, in Prod nicht vorhanden).
 
 Tests: `npx vitest run lib/server/typo3-bridge app/api/typo3-bridge`
 (Claude gemockt, keine DB). Die Extension hat eigene End-to-End-Tests gegen

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type Anthropic from '@anthropic-ai/sdk';
-import { message, mockClient, OUTPUT, SOURCE } from './test-fixtures';
-import { buildDraftUserMessage } from './draft-prompt';
+import { message, mockClient, OUTPUT, SOURCE, WWWT1_SOURCES } from './test-fixtures';
+import { buildDraftUserMessage, DRAFT_SYSTEM_PROMPT } from './draft-prompt';
 import {
   clipAtWord,
   DRAFT_EFFORT,
@@ -131,7 +131,57 @@ describe('Prompt und Quell-Hash', () => {
     expect(sourceHashOf({ ...SOURCE, eventAt: '2026-12-16 18:00:00+00' })).not.toBe(a);
   });
 
-  it('clipAtWord lässt kurze Texte stehen', () => {
+});
+
+describe('Entwurf aus Eckdaten (wwwt1-Fixture)', () => {
+  const [prdm9, , tba] = WWWT1_SOURCES;
+
+  it('gibt Eckdaten als eigenen Block statt als Fließtext, bereinigt', () => {
+    const user = buildDraftUserMessage(prdm9!, null);
+    expect(user).toContain(
+      '<eckdaten>\nDate: 2026-12-01\nTime: 11:30\nSpeaker: Linda Odenthal-Hesse\nLocation: Max Perutz Labs SR 1 (6.501)\nType: SFB "Meiosis" Talk\nInstitute: Max-Planck-Institut für Evolutionsbiologie\nHost: Irene Thiemann-Boege\n</eckdaten>',
+    );
+    expect(user).not.toContain('<fliesstext>');
+    expect(user).not.toContain(',,');
+    // Der Termin kommt weiter aus event_at.
+    expect(user).toContain('Beginn: Dienstag, 1. Dezember 2026 um 11:30 Uhr');
+  });
+
+  it('nennt den Platzhaltertitel unverändert; der Prompt regelt ihn', () => {
+    expect(tba!.title).toBe('Title to be announced');
+    expect(buildDraftUserMessage(tba!, null)).toContain('Titel: Title to be announced');
+    expect(DRAFT_SYSTEM_PROMPT).toContain('Ist der Titel ein Platzhalter („Title to be announced"');
+    expect(DRAFT_SYSTEM_PROMPT).toContain('Über den Titel hinaus erfindest du nichts zum Inhalt');
+    expect(DRAFT_SYSTEM_PROMPT).toContain('Institute: meist die Institution, von der die vortragende Person kommt, nicht der Veranstalter');
+  });
+
+  it('läuft mit gemocktem Client durch: Hinweise zu Abstract und Titel bleiben erhalten', async () => {
+    const out = {
+      ...OUTPUT,
+      title: 'SFB "Meiosis" Talk: Chloe Girard',
+      teaser: 'Chloe Girard (Université Paris-Saclay) spricht in der SFB-Reihe „Meiosis".',
+      bodytext_html: '<p>Chloe Girard von der Université Paris-Saclay hält einen Vortrag in der Reihe SFB „Meiosis". Gastgeber ist Joao Matos.</p>',
+      speaker: 'Chloe Girard',
+      location: 'Max Perutz Labs SR 1 (6.501)',
+      organizer: 'GMI',
+      notes: ['Vortragstitel und Abstract fehlen noch.'],
+    };
+    const { client, stream } = mockClient(message({ parsed_output: out }));
+    const res = await generateDraft(tba!, null, client);
+    const user = ((stream.mock.calls[0] as unknown[])[0] as Anthropic.MessageCreateParams).messages[0]!.content as string;
+    expect(user).toContain('Speaker: Chloe Girard');
+    expect(res.draft.title).toBe('SFB "Meiosis" Talk: Chloe Girard');
+    expect(res.draft.event_start).toBe('2027-01-19T10:30:00Z');
+    expect(res.notes).toContain('Vortragstitel und Abstract fehlen noch.');
+  });
+
+  it('der Hash reagiert auf die Eckdaten wie auf jeden Fließtext', () => {
+    expect(sourceHashOf(prdm9!)).not.toBe(sourceHashOf({ ...prdm9!, bodytext: prdm9!.bodytext!.replace('11:30:00', '12:00:00') }));
+  });
+});
+
+describe('clipAtWord', () => {
+  it('lässt kurze Texte stehen', () => {
     expect(clipAtWord('kurz', 10)).toBe('kurz');
   });
 });
