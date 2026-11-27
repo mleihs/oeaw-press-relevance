@@ -1,6 +1,6 @@
 import 'server-only';
 import { z } from 'zod';
-import { formatEckdaten, parseEckdaten } from '@/lib/server/events/eckdaten';
+import { type Eckdaten, formatEckdaten, organizerIsSpeaker, parseEckdaten, personList } from '@/lib/server/events/eckdaten';
 import { sanitizeEventInformation } from '@/lib/server/events/html-utils';
 import { DASH_TECHNIQUES } from '@/lib/server/scoring/lektorat-prompt';
 import { toIso } from './contract';
@@ -89,7 +89,7 @@ Die Felder:
 - keywords: drei bis acht Schlagwörter aus dem Inhalt, durch Komma und Leerzeichen getrennt, in der Sprache der Veranstaltung.
 - location: aus „Ort (strukturiert)". Du darfst die Angabe lesbar kürzen (Saal, Gebäude oder Adresse, Stadt), aber nichts ergänzen. Ist das Feld leer und nennen die Veranstaltungsinformationen den Ort ausdrücklich unter einer eigenen Angabe („Ort", „Location", „Venue"), übernimm ihn und vermerke das in notes. Sonst null.
 - organizer: aus „Veranstalter (strukturiert)", sonst aus „Institut (strukturiert)". Gängige ÖAW-Abkürzungen darfst du ausschreiben (ÖAW: Österreichische Akademie der Wissenschaften). Die Institutsangabe „OEAW - Home" bezeichnet die zentrale ÖAW-Website, kein Institut. Ohne beide Angaben null.
-- speaker: nur Personen, die die Quelle ausdrücklich als Vortragende, Diskutierende oder Moderation nennt, mit Titeln wie in der Quelle, durch Komma getrennt. Sonst null.
+- speaker: nur Personen, die die Quelle ausdrücklich als Vortragende, Diskutierende oder Moderation nennt, mit Titeln wie in der Quelle, durch Komma getrennt. Steht unter den strukturierten Angaben „Vortragende Person (TYPO3-Feld Veranstalter)", führt das Institut dort die vortragende Person: übernimm sie für speaker in üblicher Schreibweise, und notes vermerkt in einem Satz, dass die Angabe aus dem Veranstalter-Feld stammt. Sonst null.
 - full_day: true nur, wenn die Quelle die Veranstaltung ausdrücklich als ganztägig beschreibt oder der Beginn in Wiener Zeit 00:00 ist und die Quelle keine Uhrzeit nennt. Sonst false.
 - language_en: true, wenn die Veranstaltung auf Englisch stattfindet: Datensatzsprache en, oder die Quelle sagt es ausdrücklich. Sonst false.
 - notes: kurze Hinweise an die Redaktion, je ein Satz: fehlende Angaben, Widersprüche, Stellen zum Prüfen. Beginn und Ende übernimmt das System selbst aus den Quelldaten; dazu keine Hinweise. Keine Hinweise ohne Befund.
@@ -135,13 +135,46 @@ function htmlBlock(label: string, html: string | null): string {
 
 /** Der Fließtext als HTML-Block, oder die Eckdaten als eigener Block, wenn der
  *  bodytext nur aus Eckdaten besteht (lib/server/events/eckdaten.ts). */
-function sourceTextBlock(bodytext: string | null): string {
-  const eckdaten = parseEckdaten(bodytext);
+function sourceTextBlock(bodytext: string | null, eckdaten: Eckdaten | null): string {
   return eckdaten ? `<eckdaten>\n${formatEckdaten(eckdaten)}\n</eckdaten>` : htmlBlock('fliesstext', bodytext);
+}
+
+/** Institute, deren TYPO3 im Feld Veranstalter die vortragende Person führt.
+ *  Prod 27.11.: bei GMI in 120 von 123 prüfbaren Events (Eckdaten mit
+ *  Speaker), die übrigen 3 ohne Veranstalter, kein Gegenbeispiel. */
+const ORGANIZER_FIELD_HOLDS_SPEAKER = new Set(['GMI']);
+
+export interface OrganizerReading {
+  /** Was als „Veranstalter (strukturiert)" hineingeht. */
+  organizer: string | null;
+  /** Die vortragende Person aus dem Veranstalter-Feld, als eigene Angabe. */
+  speakerFromOrganizer: string | null;
+}
+
+/**
+ * Wie das Veranstalter-Feld zu lesen ist.
+ *   - Mit Eckdaten wird verglichen: ist es nur die vortragende Person
+ *     (organizerIsSpeaker), geht es leer hinein; sie steht ja unter Speaker.
+ *   - Ohne Eckdaten gilt bei den Instituten oben die Hauskonvention: die
+ *     Person geht als „Vortragende Person (TYPO3-Feld Veranstalter)" hinein.
+ *   - Sonst bleibt das Feld, wie es ist.
+ * In beiden ersten Fällen kommt organizer nach der Regel im Systemprompt aus
+ * „Institut (strukturiert)".
+ */
+export function readOrganizer(source: DraftSource, eckdaten: Eckdaten | null): OrganizerReading {
+  const raw = source.organizerTitle?.trim() || null;
+  if (!raw) return { organizer: null, speakerFromOrganizer: null };
+  if (eckdaten) return { organizer: organizerIsSpeaker(raw, eckdaten) ? null : raw, speakerFromOrganizer: null };
+  if (source.institute && ORGANIZER_FIELD_HOLDS_SPEAKER.has(source.institute)) {
+    return { organizer: null, speakerFromOrganizer: personList(raw).join('; ') || null };
+  }
+  return { organizer: raw, speakerFromOrganizer: null };
 }
 
 /** Die Nutzernachricht: strukturierte Felder, Quelltexte, optional der Wunsch. */
 export function buildDraftUserMessage(source: DraftSource, instructions: string | null): string {
+  const eckdaten = parseEckdaten(source.bodytext);
+  const { organizer, speakerFromOrganizer } = readOrganizer(source, eckdaten);
   const parts = [
     'Strukturierte Angaben des Datensatzes:',
     field('Titel', source.title),
@@ -149,14 +182,15 @@ export function buildDraftUserMessage(source: DraftSource, instructions: string 
     field('Beginn', viennaTime(source.eventAt)),
     field('Ende', source.eventEndAt ? viennaTime(source.eventEndAt) : null),
     field('Ort (strukturiert)', source.locationTitle),
-    field('Veranstalter (strukturiert)', source.organizerTitle),
+    field('Veranstalter (strukturiert)', organizer),
+    ...(speakerFromOrganizer ? [field('Vortragende Person (TYPO3-Feld Veranstalter)', speakerFromOrganizer)] : []),
     field('Institut (strukturiert)', source.institute),
     field('Datensatzsprache', source.lang),
     field('Vorhandene Sprachfassungen', source.availableLangs.join(', ')),
     field('Originalseite', source.url),
     '',
     'Quelltexte aus TYPO3:',
-    sourceTextBlock(source.bodytext),
+    sourceTextBlock(source.bodytext, eckdaten),
     htmlBlock('veranstaltungsinformationen', source.eventInformation),
   ];
   if (instructions) {
