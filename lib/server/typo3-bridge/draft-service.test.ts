@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { generateDraft, sourceHashOf } from './draft';
 import type { DraftSource } from './draft-prompt';
-import { getOrCreateDraft, STALE_SOURCE_NOTE, type DraftDeps } from './draft-service';
+import { getOrCreateDraft, readStoredDraft, STALE_SOURCE_NOTE, type DraftDeps } from './draft-service';
 import type { NewDraftRow, StoredDraft } from './draft-store';
 import { message, mockClient, SOURCE } from './test-fixtures';
 
@@ -108,5 +108,35 @@ describe('getOrCreateDraft', () => {
     vi.mocked(failing.deps.generate).mockRejectedValueOnce(new Error('weg'));
     await expect(getOrCreateDraft(ID, {}, failing.deps)).rejects.toThrow('weg');
     expect(failing.saved).toHaveLength(0);
+  });
+});
+
+describe('readStoredDraft (GET)', () => {
+  it('liefert den gespeicherten Entwurf als cached, ohne Claude', async () => {
+    const t = setup();
+    const created = await getOrCreateDraft(ID, {}, t.deps);
+    const read = await readStoredDraft(ID, t.deps);
+    expect(read).toEqual({ draft: { ...created, cached: true } });
+    expect(t.stream).toHaveBeenCalledOnce();
+  });
+
+  it('meldet „noch kein Entwurf" und ruft dabei nie Claude', async () => {
+    const t = setup();
+    expect(await readStoredDraft(ID, t.deps)).toEqual({ draft: null });
+    expect(t.deps.generate).not.toHaveBeenCalled();
+    expect(t.deps.save).not.toHaveBeenCalled();
+  });
+
+  it('weist auch beim Lesen auf geänderte Quelldaten hin', async () => {
+    const t = setup();
+    await getOrCreateDraft(ID, {}, t.deps);
+    vi.mocked(t.deps.loadSource).mockResolvedValueOnce({ ...SOURCE, teaser: 'Neuer Teaser' });
+    expect((await readStoredDraft(ID, t.deps))?.draft?.notes).toContain(STALE_SOURCE_NOTE);
+  });
+
+  it('gibt null für ein unbekanntes Event', async () => {
+    const u = setup(null);
+    expect(await readStoredDraft(ID, u.deps)).toBeNull();
+    expect(u.deps.loadStored).not.toHaveBeenCalled();
   });
 });

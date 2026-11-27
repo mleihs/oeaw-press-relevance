@@ -12,8 +12,9 @@ import {
   type StoredDraft,
 } from './draft-store';
 
-// Ablauf von POST /api/typo3-bridge/events/:id/draft: gespeicherten Entwurf
-// zurückgeben oder einen neuen schreiben lassen und speichern. DB (./draft-
+// Ablauf von /api/typo3-bridge/events/:id/draft. GET liest nur den
+// gespeicherten Entwurf; POST gibt ihn zurück oder lässt einen neuen
+// schreiben und speichert ihn. DB (./draft-
 // store.ts) und Claude (./draft.ts) kommen als `deps`, damit der Test den
 // Ablauf ohne DB und ohne kostenpflichtigen Aufruf prüft.
 //
@@ -56,7 +57,29 @@ export function normalizeInstructions(raw: string | undefined): string | null {
   return t ? t : null;
 }
 
-/** null, wenn das Event unbekannt ist (Route: 404). */
+/** Antwort aus einem gespeicherten Entwurf, mit Hinweis, falls die
+ *  Quelldaten seither anders aussehen. */
+function storedResponse(stored: StoredDraft, source: DraftSource): BridgeDraftResponse {
+  const notes = stored.sourceHash === sourceHashOf(source) ? stored.notes : [...stored.notes, STALE_SOURCE_NOTE];
+  return { draft: stored.draft, notes, model: stored.model, generated_at: stored.generatedAt, cached: true };
+}
+
+/**
+ * GET: nur der gespeicherte Entwurf, nie ein Claude-Aufruf. Das Panel lädt
+ * ihn beim Öffnen eines Events, das `has_draft` trägt; Öffnen kostet so nie
+ * etwas. null: Event unbekannt; `{ draft: null }`: noch kein Entwurf.
+ */
+export async function readStoredDraft(
+  eventId: string,
+  deps: Pick<DraftDeps, 'loadSource' | 'loadStored'> = dbDraftDeps,
+): Promise<{ draft: BridgeDraftResponse | null } | null> {
+  const source = await deps.loadSource(eventId);
+  if (!source) return null;
+  const stored = await deps.loadStored(eventId);
+  return { draft: stored ? storedResponse(stored, source) : null };
+}
+
+/** POST. null, wenn das Event unbekannt ist (Route: 404). */
 export async function getOrCreateDraft(
   eventId: string,
   req: BridgeDraftRequest,
@@ -65,13 +88,11 @@ export async function getOrCreateDraft(
   const source = await deps.loadSource(eventId);
   if (!source) return null;
 
-  const hash = sourceHashOf(source);
   const instructions = normalizeInstructions(req.instructions);
   const stored = await deps.loadStored(eventId);
 
   if (stored && !req.refresh && (instructions === null || instructions === stored.instructions)) {
-    const notes = stored.sourceHash === hash ? stored.notes : [...stored.notes, STALE_SOURCE_NOTE];
-    return { draft: stored.draft, notes, model: stored.model, generated_at: stored.generatedAt, cached: true };
+    return storedResponse(stored, source);
   }
 
   const generated = await deps.generate(source, instructions);
@@ -81,7 +102,7 @@ export async function getOrCreateDraft(
     webdbUid: source.webdbUid,
     generated,
     instructions,
-    sourceHash: hash,
+    sourceHash: sourceHashOf(source),
     costUsd,
   });
   return {

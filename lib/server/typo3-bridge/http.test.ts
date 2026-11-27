@@ -60,7 +60,10 @@ describe('bridgeRoute: Bearer-Grenze', () => {
   it('bremst nach 5 Fehlversuchen derselben IP (429), das richtige Token kommt trotzdem durch', async () => {
     const ip = '198.51.100.7';
     for (let i = 0; i < 5; i++) expect((await route(req({ auth: 'Bearer x', ip }))).status).toBe(401);
-    expect((await route(req({ auth: 'Bearer x', ip }))).status).toBe(429);
+    const limited = await route(req({ auth: 'Bearer x', ip }));
+    expect(limited.status).toBe(429);
+    // Das Panel zeigt den Text der Redakteurin: deutsch, nicht der Cron-Text.
+    expect((await limited.json()).error).toMatch(/Zu viele Versuche/);
     expect((await route(req({ auth: `Bearer ${TOKEN}`, ip }))).status).toBe(200);
   });
 

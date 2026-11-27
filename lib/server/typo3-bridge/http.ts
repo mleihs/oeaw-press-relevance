@@ -21,6 +21,7 @@ import { withApiError } from '@/lib/server/http';
 const guard = createBearerGuard({
   secret: () => process.env.TYPO3_BRIDGE_TOKEN,
   notConfigured: 'TYPO3-Bridge ist nicht konfiguriert (TYPO3_BRIDGE_TOKEN fehlt).',
+  rateLimited: 'Zu viele Versuche mit falschem Token. Bitte in 15 Minuten noch einmal.',
 });
 
 /** Test-Hook: Limiter-State zwischen Vitest-Fällen leeren. */

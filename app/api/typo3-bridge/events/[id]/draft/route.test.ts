@@ -9,11 +9,13 @@ import { DraftNotConfiguredError, DraftRefusedError, DraftUnusableError } from '
 // Cache-Ablauf mit gemocktem SDK-Client prüft draft-service.test.ts.
 
 const getOrCreateDraft = vi.fn();
+const readStoredDraft = vi.fn();
 vi.mock('@/lib/server/typo3-bridge/draft-service', () => ({
   getOrCreateDraft: (...a: unknown[]) => getOrCreateDraft(...a),
+  readStoredDraft: (...a: unknown[]) => readStoredDraft(...a),
 }));
 
-const { POST } = await import('./route');
+const { GET, POST } = await import('./route');
 const { _resetBridgeRateLimiter } = await import('@/lib/server/typo3-bridge/http');
 
 const TOKEN = 'c'.repeat(64);
@@ -35,6 +37,15 @@ function post(id: string, body?: unknown) {
   );
 }
 
+function get(id: string, token = TOKEN) {
+  return GET(
+    new Request(`http://localhost:3000/api/typo3-bridge/events/${id}/draft`, {
+      headers: { authorization: `Bearer ${token}` },
+    }),
+    { params: Promise.resolve({ id }) },
+  );
+}
+
 const apiError = (status: number) => Anthropic.APIError.generate(status, { type: 'error' }, `status ${status}`, new Headers());
 
 beforeEach(() => {
@@ -42,6 +53,7 @@ beforeEach(() => {
   _resetBridgeRateLimiter();
   vi.stubEnv('TYPO3_BRIDGE_TOKEN', TOKEN);
   getOrCreateDraft.mockResolvedValue(RESULT);
+  readStoredDraft.mockResolvedValue({ draft: { ...RESULT, cached: true } });
 });
 afterEach(() => vi.unstubAllEnvs());
 
@@ -92,5 +104,32 @@ describe('POST /api/typo3-bridge/events/:id/draft', () => {
   it('lässt unbekannte Fehler als 500 durch', async () => {
     getOrCreateDraft.mockRejectedValueOnce(new Error('DB weg'));
     expect((await post(ID, {})).status).toBe(500);
+  });
+});
+
+describe('GET /api/typo3-bridge/events/:id/draft', () => {
+  it('liefert den gespeicherten Entwurf und schreibt nie einen neuen', async () => {
+    const res = await get(ID);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ...RESULT, cached: true });
+    expect(readStoredDraft).toHaveBeenCalledWith(ID);
+    expect(getOrCreateDraft).not.toHaveBeenCalled();
+  });
+
+  it('unterscheidet „Event unbekannt" von „noch kein Entwurf", beides 404', async () => {
+    readStoredDraft.mockResolvedValueOnce(null);
+    const unknown = await get(ID);
+    expect(unknown.status).toBe(404);
+    expect((await unknown.json()).error).toBe('Event nicht gefunden.');
+    readStoredDraft.mockResolvedValueOnce({ draft: null });
+    const none = await get(ID);
+    expect(none.status).toBe(404);
+    expect((await none.json()).error).toMatch(/noch kein Entwurf/);
+    expect((await get('40455')).status).toBe(404);
+  });
+
+  it('verlangt das Token', async () => {
+    expect((await get(ID, 'falsch')).status).toBe(401);
+    expect(readStoredDraft).not.toHaveBeenCalled();
   });
 });

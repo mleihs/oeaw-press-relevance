@@ -6,7 +6,7 @@ import { createRateLimiter, getClientIp } from '@/lib/server/rate-limit';
 // Bearer-Prüfung gegen ein Secret aus der Env, für Maschinen- und Werkzeug-
 // Zugänge ohne Gate-Cookie: den Nacht-Cron (INGEST_CRON_SECRET, lib/server/
 // ingest/cron-auth.ts) und die TYPO3-Bridge der Chrome-Extension
-// (TYPO3_BRIDGE_TOKEN, lib/server/typo3-bridge/auth.ts). Beide Routen liegen
+// (TYPO3_BRIDGE_TOKEN, lib/server/typo3-bridge/http.ts). Beide Routen liegen
 // gate-öffentlich in lib/shared/gate.ts; das Secret IST die Grenze.
 //
 // Konstante-Zeit-Vergleich: beide Seiten werden auf SHA-256 gehasht (feste
@@ -19,6 +19,9 @@ export interface BearerGuardOptions {
   secret: () => string | undefined;
   /** Text der 503-Antwort, wenn das Secret fehlt. */
   notConfigured: string;
+  /** Text der 429-Antwort nach zu vielen Fehlversuchen. Die Bridge zeigt ihn
+   *  der Redakteurin im Panel an, der Cron braucht ihn nur fürs Log. */
+  rateLimited?: string;
 }
 
 export interface BearerGuard {
@@ -68,7 +71,7 @@ export function createBearerGuard(opts: BearerGuardOptions): BearerGuard {
 
       const ip = getClientIp(req);
       if (limiter.isBlocked(ip)) {
-        return apiError('Too many attempts. Try again later.', 429);
+        return apiError(opts.rateLimited ?? 'Too many attempts. Try again later.', 429);
       }
       limiter.recordFailure(ip);
       return apiError('Unauthorized.', 401);
