@@ -11,10 +11,17 @@
 // events.institute TEXT column — no orgunit FK.
 //
 // Compared to the MySQL adapter the export is "thinner": it carries no
-// sys_language_uid (→ lang/availableLangs unknown), no externalurl/internalurl
+// sys_language_uid (→ lang/availableLangs unknown) and no externalurl/internalurl
 // (→ url null; see typo3-events.buildUrl for why path_segment is NOT faked into
-// a URL), and no bodytext. Those become null/[] here and can be enriched once
-// the export grows. No DB, no network, no clock — trivially unit-testable.
+// a URL). Those become null/[] here; upsertEvents never lets the feed clear a
+// stored value for them (Bestandsschutz, lib/server/events/sync.ts).
+//
+// `bodytext` is new (first seen 2026-11-27 on the test instance wwwt1; www
+// still exports 14 fields without it). It is the same TYPO3 column the dump
+// path reads: for GMI talks both deliver the identical "Date: …, Time: …,
+// Speaker: …" summary with surrounding spaces. Trimmed here; a missing or
+// blank value becomes null, which upsertEvents treats as "unknown", not as
+// "cleared". No DB, no network, no clock — trivially unit-testable.
 
 import { tsTimestamp, nullIfEmpty } from './webdb-normalize';
 import {
@@ -36,6 +43,8 @@ export interface RawJsonEvent {
   teaser?: string | null;
   path_segment?: string | null;
   event_information?: string | null;
+  /** Seit dem Export vom 2026-11-27 (zuerst auf wwwt1). Fehlt in älteren Exporten. */
+  bodytext?: string | null;
 }
 
 /** Either `{ events: [...] }` (current shape) or a bare array — tolerated so a
@@ -65,6 +74,12 @@ export interface ParsedEventExport {
   generatedAtTimestamp: number | null;
 }
 
+/** Getrimmt, leer → null. Der Export liefert den Text mit Leerzeichen am Rand. */
+function trimmedOrNull(s: string | null | undefined): string | null {
+  const t = s?.trim();
+  return t ? t : null;
+}
+
 /** Pure transform of one raw export event. Returns null when the row has no
  *  usable start (`datetime <= 0`), mirroring normalizeTypo3Event so callers
  *  count it as `skipped` rather than failing the whole import. */
@@ -79,7 +94,7 @@ export function normalizeJsonEvent(
     webdbUid: raw.uid,
     title: raw.title,
     teaser: nullIfEmpty(raw.teaser ?? null),
-    bodytext: null, // not present in the export
+    bodytext: trimmedOrNull(raw.bodytext),
     eventInformation,
     eventAt,
     eventEndAt: tsTimestamp(raw.event_end ?? null),
