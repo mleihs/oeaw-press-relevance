@@ -18,6 +18,10 @@ export const GATE_COOKIE_NAME = 'gate';
 // Nacht-Cron hat kein Gate-Cookie; das Gate-Cookie allein reicht dort NIE.
 // Dasselbe gilt für die Nachtbewertung: POST /api/scoring/run und der Poll
 // GET /api/scoring/runs[/<id>] prüfen denselben Bearer.
+// /api/typo3-bridge/* ist gate-öffentlich, aber NICHT ungeschützt: die Chrome-
+// Extension „ÖAW TYPO3 Toolkit" schickt Bearer TYPO3_BRIDGE_TOKEN, jede Route
+// prüft ihn (lib/server/typo3-bridge/http.ts, bridgeRoute). Ein Gate-Cookie
+// hat die Extension nicht, und es reicht dort auch nie.
 const PUBLIC_PATHS = [
   '/api/auth/gate',
   '/api/auth/login',
@@ -28,7 +32,7 @@ const PUBLIC_PATHS = [
   '/favicon.ico',
   '/icon.svg',
 ];
-const PUBLIC_PREFIXES = ['/_next/', '/capybara', '/api/scoring/runs'];
+const PUBLIC_PREFIXES = ['/_next/', '/capybara', '/api/scoring/runs', '/api/typo3-bridge/'];
 
 export function isPublicGatePath(pathname: string): boolean {
   if (PUBLIC_PATHS.includes(pathname)) return true;

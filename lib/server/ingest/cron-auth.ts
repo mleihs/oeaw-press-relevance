@@ -1,24 +1,17 @@
 import 'server-only';
-import { createHash, timingSafeEqual } from 'node:crypto';
-import { apiError } from '@/lib/server/http';
-import { createRateLimiter, getClientIp } from '@/lib/server/rate-limit';
+import { createBearerGuard } from '@/lib/server/bearer-auth';
 
-// Bearer-Auth für die unbeaufsichtigte Ingest-Route (POST /api/ingest/run).
+// Bearer-Auth für die unbeaufsichtigte Ingest-Route (POST /api/ingest/run) und
+// die Nachtbewertung (POST /api/scoring/run, GET /api/scoring/runs[/<id>]).
 // Der Nacht-Cron auf dem VPS schickt `Authorization: Bearer <INGEST_CRON_SECRET>`.
 // Das ist eine Maschine-zu-Maschine-Grenze — KEIN requireUser() (kein Login),
 // KEIN Gate-Cookie (die Route liegt in PUBLIC_PATHS). Das Secret IST die Grenze.
-//
-// Konstante-Zeit-Vergleich: beide Seiten werden auf SHA-256 gehasht (feste
-// 32-Byte-Länge) und mit timingSafeEqual verglichen, damit weder Länge noch
-// Inhalt des Secrets über die Antwortzeit durchsickern.
+// Vergleich, Limiter und Reihenfolge: lib/server/bearer-auth.ts.
 
-// 5 Fehlversuche / 15 min pro IP → 429. Bremst wiederholte FEHLversuche gegen
-// das Secret; der Erfolgspfad konsultiert den Limiter nie (Reihenfolge unten).
-const limiter = createRateLimiter({ maxAttempts: 5, windowMs: 15 * 60_000 });
-
-function sha256(s: string): Buffer {
-  return createHash('sha256').update(s, 'utf8').digest();
-}
+const guard = createBearerGuard({
+  secret: () => process.env.INGEST_CRON_SECRET,
+  notConfigured: 'Ingest cron is not configured (INGEST_CRON_SECRET unset).',
+});
 
 /**
  * Prüft das Bearer-Token gegen INGEST_CRON_SECRET.
@@ -29,35 +22,10 @@ function sha256(s: string): Buffer {
  *   - fehlend/falsch        → 401
  */
 export function assertCronSecret(req: Request): Response | null {
-  const secret = process.env.INGEST_CRON_SECRET?.trim();
-  if (!secret) {
-    return apiError('Ingest cron is not configured (INGEST_CRON_SECRET unset).', 503);
-  }
-
-  const header = req.headers.get('authorization') ?? '';
-  const presented = /^Bearer\s+(.+)$/i.exec(header.trim())?.[1]?.trim() ?? '';
-
-  // sha256 gibt beidseitig 32 Byte → timingSafeEqual wirft nie an der Länge.
-  const ok = presented.length > 0 && timingSafeEqual(sha256(presented), sha256(secret));
-
-  // Secret ZUERST prüfen, Limiter erst danach: getClientIp liest den ersten
-  // X-Forwarded-For-Eintrag, und den bestimmt der CLIENT (Proxies hängen nur
-  // an). Stünde der Limiter vor der Prüfung, könnte ein Außenstehender mit
-  // 5 Fehlversuchen unter gefälschtem XFF der Cron-IP den echten Nacht-Cron
-  // aussperren (429 trotz korrektem Secret → Fehlalarm + ausgefallener
-  // Import). Wer das Secret hat, kommt deshalb IMMER durch; der Limiter
-  // bremst nur wiederholte Fehlversuche und wird vom Erfolg nie berührt.
-  if (ok) return null;
-
-  const ip = getClientIp(req);
-  if (limiter.isBlocked(ip)) {
-    return apiError('Too many attempts. Try again later.', 429);
-  }
-  limiter.recordFailure(ip);
-  return apiError('Unauthorized.', 401);
+  return guard.assert(req);
 }
 
 /** Test-Hook: Limiter-State zwischen Vitest-Fällen leeren. */
 export function _resetCronRateLimiter(): void {
-  limiter.clear();
+  guard.reset();
 }
