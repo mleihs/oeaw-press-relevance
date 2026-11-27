@@ -4,7 +4,7 @@ import { apiError, validateBody } from '@/lib/server/http';
 import { log } from '@/lib/server/log';
 import type { BridgeNewsAssistResponse } from '@/lib/server/typo3-bridge/contract';
 import { DRAFT_APP_MODEL } from '@/lib/server/typo3-bridge/draft';
-import { draftErrorResponse } from '@/lib/server/typo3-bridge/errors';
+import { draftErrorResponse, NEWS_ASSIST_REFUSED_MESSAGE } from '@/lib/server/typo3-bridge/errors';
 import { bridgeOptions, bridgeRoute } from '@/lib/server/typo3-bridge/http';
 import {
   base64Bytes,
@@ -70,7 +70,7 @@ export const POST = bridgeRoute(async (req: Request) => {
     });
     return NextResponse.json<BridgeNewsAssistResponse>(generated.response);
   } catch (err) {
-    const mapped = draftErrorResponse(err);
+    const mapped = draftErrorResponse(err, NEWS_ASSIST_REFUSED_MESSAGE);
     if (mapped) return mapped;
     throw err;
   }

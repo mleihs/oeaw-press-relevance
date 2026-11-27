@@ -19,12 +19,19 @@ import { DraftNotConfiguredError, DraftRefusedError, DraftUnusableError } from '
 //   unbrauchbare Antwort            → 502
 // Unbekannte Fehler gibt die Funktion nicht ab (null): sie fallen in
 // withApiError als 500 und landen in Sentry.
+//
+// Nur die Ablehnung spricht vom Gegenstand: beim Event-Assistenten ist es ein
+// Entwurf, im News-Wizard heißen so lokale Zwischenstände, dort lehnt Claude
+// Vorschläge ab.
 
-export function draftErrorResponse(err: unknown): Response | null {
+export const DRAFT_REFUSED_MESSAGE = 'Claude hat diesen Entwurf abgelehnt. Bitte den Text von Hand anlegen.';
+export const NEWS_ASSIST_REFUSED_MESSAGE = 'Claude hat Vorschläge zu diesem Beitrag abgelehnt. Bitte die Felder von Hand ausfüllen.';
+
+export function draftErrorResponse(err: unknown, refusedMessage: string = DRAFT_REFUSED_MESSAGE): Response | null {
   if (err instanceof DraftNotConfiguredError) return apiError(err.message, 503);
   if (err instanceof DraftRefusedError) {
     log.warn('typo3_bridge_draft_refused', { category: err.category });
-    return apiError('Claude hat diesen Entwurf abgelehnt. Bitte den Text von Hand anlegen.', 422);
+    return apiError(refusedMessage, 422);
   }
   if (err instanceof DraftUnusableError) {
     log.warn('typo3_bridge_draft_unusable', { message: err.message });

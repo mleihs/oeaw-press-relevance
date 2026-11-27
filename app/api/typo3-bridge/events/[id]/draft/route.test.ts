@@ -101,6 +101,11 @@ describe('POST /api/typo3-bridge/events/:id/draft', () => {
     expect(res.headers.get('access-control-allow-origin')).toMatch(/^chrome-extension:\/\//);
   });
 
+  it('Ablehnung spricht vom Entwurf', async () => {
+    getOrCreateDraft.mockRejectedValueOnce(new DraftRefusedError('cyber'));
+    expect((await (await post(ID, {})).json()).error).toBe('Claude hat diesen Entwurf abgelehnt. Bitte den Text von Hand anlegen.');
+  });
+
   it('lässt unbekannte Fehler als 500 durch', async () => {
     getOrCreateDraft.mockRejectedValueOnce(new Error('DB weg'));
     expect((await post(ID, {})).status).toBe(500);

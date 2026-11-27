@@ -156,6 +156,13 @@ describe('POST /api/typo3-bridge/news/assist: Claude-Fehler', () => {
     expect(res.headers.get('access-control-allow-origin')).toBe(ORIGIN);
   });
 
+  it('Ablehnung spricht von Vorschlägen, nicht vom Entwurf', async () => {
+    generateNewsAssist.mockRejectedValueOnce(new DraftRefusedError('cyber'));
+    const res = await post({ task: 'texts', bodytext_html: TEXT });
+    expect(res.status).toBe(422);
+    expect((await res.json()).error).toBe('Claude hat Vorschläge zu diesem Beitrag abgelehnt. Bitte die Felder von Hand ausfüllen.');
+  });
+
   it('fehlender Key schon beim Client: 503', async () => {
     createNewsAssistClient.mockImplementationOnce(() => {
       throw new DraftNotConfiguredError();
