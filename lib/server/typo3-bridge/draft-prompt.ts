@@ -1,6 +1,6 @@
 import 'server-only';
 import { z } from 'zod';
-import { formatEckdaten, parseEckdaten } from '@/lib/server/events/eckdaten';
+import { type Eckdaten, formatEckdaten, organizerIsSpeaker, parseEckdaten } from '@/lib/server/events/eckdaten';
 import { sanitizeEventInformation } from '@/lib/server/events/html-utils';
 import { DASH_TECHNIQUES } from '@/lib/server/scoring/lektorat-prompt';
 import { toIso } from './contract';
@@ -135,13 +135,18 @@ function htmlBlock(label: string, html: string | null): string {
 
 /** Der Fließtext als HTML-Block, oder die Eckdaten als eigener Block, wenn der
  *  bodytext nur aus Eckdaten besteht (lib/server/events/eckdaten.ts). */
-function sourceTextBlock(bodytext: string | null): string {
-  const eckdaten = parseEckdaten(bodytext);
+function sourceTextBlock(bodytext: string | null, eckdaten: Eckdaten | null): string {
   return eckdaten ? `<eckdaten>\n${formatEckdaten(eckdaten)}\n</eckdaten>` : htmlBlock('fliesstext', bodytext);
 }
 
 /** Die Nutzernachricht: strukturierte Felder, Quelltexte, optional der Wunsch. */
 export function buildDraftUserMessage(source: DraftSource, instructions: string | null): string {
+  const eckdaten = parseEckdaten(source.bodytext);
+  // Ist der Veranstalter nur die vortragende Person (VBC-Institute, siehe
+  // organizerIsSpeaker), geht er als leer hinein: organizer kommt dann nach
+  // der Regel im Systemprompt aus „Institut (strukturiert)", und die Person
+  // steht ohnehin unter Speaker.
+  const organizer = eckdaten && organizerIsSpeaker(source.organizerTitle, eckdaten) ? null : source.organizerTitle;
   const parts = [
     'Strukturierte Angaben des Datensatzes:',
     field('Titel', source.title),
@@ -149,14 +154,14 @@ export function buildDraftUserMessage(source: DraftSource, instructions: string 
     field('Beginn', viennaTime(source.eventAt)),
     field('Ende', source.eventEndAt ? viennaTime(source.eventEndAt) : null),
     field('Ort (strukturiert)', source.locationTitle),
-    field('Veranstalter (strukturiert)', source.organizerTitle),
+    field('Veranstalter (strukturiert)', organizer),
     field('Institut (strukturiert)', source.institute),
     field('Datensatzsprache', source.lang),
     field('Vorhandene Sprachfassungen', source.availableLangs.join(', ')),
     field('Originalseite', source.url),
     '',
     'Quelltexte aus TYPO3:',
-    sourceTextBlock(source.bodytext),
+    sourceTextBlock(source.bodytext, eckdaten),
     htmlBlock('veranstaltungsinformationen', source.eventInformation),
   ];
   if (instructions) {

@@ -175,6 +175,24 @@ describe('Entwurf aus Eckdaten (wwwt1-Fixture)', () => {
     expect(res.notes).toContain('Vortragstitel und Abstract fehlen noch.');
   });
 
+  it('Veranstalter = vortragende Person: geht leer hinein, die Person bleibt unter Speaker', () => {
+    // Alle drei wwwt1-Events haben organizer_simple = Speaker (wie Prod bei GMI).
+    for (const src of WWWT1_SOURCES) {
+      const user = buildDraftUserMessage(src, null);
+      expect(user).toContain('Veranstalter (strukturiert): (leer)');
+      expect(user).toContain('Institut (strukturiert): GMI');
+    }
+    expect(buildDraftUserMessage(prdm9!, null)).toContain('Speaker: Linda Odenthal-Hesse');
+  });
+
+  it('echter Veranstalter neben Eckdaten bleibt stehen; ohne Eckdaten wird nie verglichen', () => {
+    expect(buildDraftUserMessage({ ...prdm9!, organizerTitle: 'Max Perutz Labs' }, null)).toContain('Veranstalter (strukturiert): Max Perutz Labs');
+    // Fließtext: auch wenn der Name im Text vorkommt, bleibt das Feld unangetastet.
+    expect(buildDraftUserMessage({ ...SOURCE, organizerTitle: 'Linda Odenthal-Hesse', bodytext: '<p>Speaker: Linda Odenthal-Hesse</p>' }, null)).toContain(
+      'Veranstalter (strukturiert): Linda Odenthal-Hesse',
+    );
+  });
+
   it('der Hash reagiert auf die Eckdaten wie auf jeden Fließtext', () => {
     expect(sourceHashOf(prdm9!)).not.toBe(sourceHashOf({ ...prdm9!, bodytext: prdm9!.bodytext!.replace('11:30:00', '12:00:00') }));
   });

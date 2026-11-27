@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { formatEckdaten, parseEckdaten } from './eckdaten';
+import { formatEckdaten, organizerIsSpeaker, parseEckdaten } from './eckdaten';
 
 // Eckdaten-Format der Vienna-BioCenter-Events. Fixture: der wwwt1-Export vom
 // 2026-11-27 (3 GMI-Events); dazu Varianten aus dem Prod-Bestand (27.11.).
@@ -56,5 +56,40 @@ describe('parseEckdaten', () => {
     expect(formatEckdaten(e)).toBe(
       'Date: 2026-06-17\nTime: 09:00\nSpeaker: (leer)\nLocation: IMP Lecture Hall\nType: Symposium\nInstitute: (leer)\nHost: (leer)',
     );
+  });
+});
+
+describe('organizerIsSpeaker', () => {
+  const e = (bodytext: string) => parseEckdaten(bodytext)!;
+  const ONE = 'Date: 2026-12-03, Time: 11:00:00, Speaker: Liam Holt, Location: IMBA/GMI Lecture Hall, Type: VBC Regular Seminar, Institute: NYU Grossman School of Medicine, Host: Alwin Köhler';
+  const MANY =
+    'Date: 2026-12-04, Time: 13:00:00, Speaker: COSTANTINI Elena (Tanaka)<br />RUSNAK Byron (Ma)<br />WULF Paul Oliver (Tessmar), Location: IMP Lecture Hall, Type: Monday Seminar, Institute: GMI, Host: None';
+
+  it('erkennt den Prod-Fall 36901: Veranstalter = Speaker', () => {
+    expect(organizerIsSpeaker('Liam Holt', e(ONE))).toBe(true);
+    expect(organizerIsSpeaker('  liam  holt ', e(ONE))).toBe(true);
+  });
+
+  it('erkennt mehrere Personen mit <br> gegen <br /> im Speaker', () => {
+    expect(organizerIsSpeaker('COSTANTINI Elena (Tanaka)<br>RUSNAK Byron (Ma)<br>WULF Paul Oliver (Tessmar)', e(MANY))).toBe(true);
+    // Eine Teilmenge der Vortragenden ist ebenfalls kein Veranstalter.
+    expect(organizerIsSpeaker('RUSNAK Byron (Ma)', e(MANY))).toBe(true);
+  });
+
+  it('erkennt das wwwt1-Beispiel mit Komma am Ende („Linda Odenthal-Hesse,")', () => {
+    expect(organizerIsSpeaker('Linda Odenthal-Hesse,', e(body(40267)))).toBe(true);
+  });
+
+  it('lässt echte Veranstalter stehen', () => {
+    expect(organizerIsSpeaker('GMI', e(ONE))).toBe(false);
+    expect(organizerIsSpeaker('Alwin Köhler', e(ONE))).toBe(false);
+    expect(organizerIsSpeaker('Liam Holt; Alwin Köhler', e(ONE))).toBe(false);
+    expect(organizerIsSpeaker(null, e(ONE))).toBe(false);
+    expect(organizerIsSpeaker('', e(ONE))).toBe(false);
+  });
+
+  it('ohne Speaker nie', () => {
+    const noSpeaker = e('Date: 2026-12-03, Time: 11:00:00, Location: IMBA/GMI Lecture Hall, Type: VBC Regular Seminar, Host: Alwin Köhler');
+    expect(organizerIsSpeaker('Liam Holt', noSpeaker)).toBe(false);
   });
 });

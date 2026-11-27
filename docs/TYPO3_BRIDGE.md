@@ -140,6 +140,14 @@ Platzhaltertitel („Title to be announced") entsteht der Titel aus Reihe und
 Person, und die Hinweise melden fehlenden Titel und Abstract. Musterfall sind
 die drei GMI-Events aus `fixtures/` (wwwt1-uids, in Prod nicht vorhanden).
 
+**Veranstalter = vortragende Person.** Bei GMI steht im TYPO3-Feld
+Veranstalter fast immer die vortragende Person (Prod 27.11.: 120 von 123
+Eckdaten-Events, die übrigen 3 ohne Veranstalter). `organizerIsSpeaker`
+(`lib/server/events/eckdaten.ts`) erkennt das, auch bei mehreren Personen mit
+`<br>` und bei Komma am Ende. Der Entwurf bekommt den Veranstalter dann leer, und
+`organizer` kommt nach der bestehenden Regel aus dem Institut. Bei Fließtext
+wird nie verglichen.
+
 Tests: `npx vitest run lib/server/typo3-bridge app/api/typo3-bridge`
 (Claude gemockt, keine DB). Die Extension hat eigene End-to-End-Tests gegen
 Nachbauten (`tests/event-assistant/run.mjs` dort).
