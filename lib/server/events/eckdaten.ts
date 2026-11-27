@@ -59,6 +59,40 @@ export function parseEckdaten(bodytext: string | null | undefined): Eckdaten | n
   return out;
 }
 
+/** Personen aus einer Namensangabe wie in TYPO3 („A<br>B", „A; B",
+ *  „Linda Odenthal-Hesse,"): getrennt an `<br>` und `;`, ohne Tags, Leerraum
+ *  und Satzzeichen am Rand. */
+export function personList(s: string): string[] {
+  return s
+    .split(/<br\s*\/?>|;/i)
+    .map((p) =>
+      p
+        .replace(/<[^>]*>/g, ' ')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/\s+/g, ' ')
+        .replace(/^[\s,;]+|[\s,;]+$/g, '')
+        .normalize('NFC'),
+    )
+    .filter(Boolean);
+}
+
+function personKeys(s: string): string[] {
+  return personList(s).map((p) => p.toLowerCase());
+}
+
+/**
+ * Steht im Veranstalter-Feld nur die vortragende Person? Bei den VBC-Instituten
+ * füllt TYPO3 `organizer` mit dem Speaker (Prod 27.11.: bei GMI praktisch jedes
+ * Eckdaten-Event, auch „Linda Odenthal-Hesse," mit Komma und mehrere Personen
+ * mit `<br>`). True, wenn jede Person des Veranstalters auch unter Speaker steht.
+ */
+export function organizerIsSpeaker(organizer: string | null | undefined, e: Eckdaten): boolean {
+  if (!organizer || !e.Speaker) return false;
+  const speakers = new Set(personKeys(e.Speaker));
+  const org = personKeys(organizer);
+  return org.length > 0 && org.every((p) => speakers.has(p));
+}
+
 /** Eine Zeile je Angabe, fehlende als „(leer)". */
 export function formatEckdaten(e: Eckdaten): string {
   return ECKDATEN_LABELS.map((l) => `${l}: ${e[l] ?? '(leer)'}`).join('\n');

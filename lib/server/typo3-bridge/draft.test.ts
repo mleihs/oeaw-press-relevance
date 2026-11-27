@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type Anthropic from '@anthropic-ai/sdk';
 import { message, mockClient, OUTPUT, SOURCE, WWWT1_SOURCES } from './test-fixtures';
-import { buildDraftUserMessage, DRAFT_SYSTEM_PROMPT } from './draft-prompt';
+import { buildDraftUserMessage, DRAFT_SYSTEM_PROMPT, readOrganizer } from './draft-prompt';
 import {
   clipAtWord,
   DRAFT_EFFORT,
@@ -173,6 +173,42 @@ describe('Entwurf aus Eckdaten (wwwt1-Fixture)', () => {
     expect(res.draft.title).toBe('SFB "Meiosis" Talk: Chloe Girard');
     expect(res.draft.event_start).toBe('2027-01-19T10:30:00Z');
     expect(res.notes).toContain('Vortragstitel und Abstract fehlen noch.');
+  });
+
+  it('Veranstalter = vortragende Person: geht leer hinein, die Person bleibt unter Speaker', () => {
+    // Alle drei wwwt1-Events haben organizer_simple = Speaker (wie Prod bei GMI).
+    for (const src of WWWT1_SOURCES) {
+      const user = buildDraftUserMessage(src, null);
+      expect(user).toContain('Veranstalter (strukturiert): (leer)');
+      expect(user).toContain('Institut (strukturiert): GMI');
+    }
+    expect(buildDraftUserMessage(prdm9!, null)).toContain('Speaker: Linda Odenthal-Hesse');
+  });
+
+  it('echter Veranstalter neben Eckdaten bleibt stehen; ohne Eckdaten wird nie verglichen', () => {
+    expect(buildDraftUserMessage({ ...prdm9!, organizerTitle: 'Max Perutz Labs' }, null)).toContain('Veranstalter (strukturiert): Max Perutz Labs');
+    // Fließtext: auch wenn der Name im Text vorkommt, bleibt das Feld unangetastet.
+    expect(buildDraftUserMessage({ ...SOURCE, organizerTitle: 'Linda Odenthal-Hesse', bodytext: '<p>Speaker: Linda Odenthal-Hesse</p>' }, null)).toContain(
+      'Veranstalter (strukturiert): Linda Odenthal-Hesse',
+    );
+  });
+
+  it('GMI ohne Eckdaten (Prod 40350, 40755): Veranstalter geht als vortragende Person hinein', () => {
+    const noText = { ...prdm9!, bodytext: null };
+    const user = buildDraftUserMessage(noText, null);
+    expect(user).toContain('Veranstalter (strukturiert): (leer)');
+    // Komma am Ende wie im Export weg.
+    expect(user).toContain('Vortragende Person (TYPO3-Feld Veranstalter): Linda Odenthal-Hesse\n');
+    expect(readOrganizer({ ...noText, organizerTitle: 'A B<br>C D' }, null)).toEqual({ organizer: null, speakerFromOrganizer: 'A B; C D' });
+    expect(DRAFT_SYSTEM_PROMPT).toContain('dass die Angabe aus dem Veranstalter-Feld stammt');
+  });
+
+  it('andere Institute ohne Eckdaten: Veranstalter bleibt, keine Zusatzzeile', () => {
+    const user = buildDraftUserMessage({ ...prdm9!, bodytext: null, institute: 'IHB' }, null);
+    expect(user).toContain('Veranstalter (strukturiert): Linda Odenthal-Hesse,');
+    expect(user).not.toContain('TYPO3-Feld Veranstalter');
+    // Mit Eckdaten nie die Zusatzzeile: die Person steht unter Speaker.
+    expect(buildDraftUserMessage(prdm9!, null)).not.toContain('TYPO3-Feld Veranstalter');
   });
 
   it('der Hash reagiert auf die Eckdaten wie auf jeden Fließtext', () => {
