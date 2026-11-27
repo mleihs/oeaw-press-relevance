@@ -1,19 +1,28 @@
 import 'server-only';
+import { AsyncLocalStorage } from 'node:async_hooks';
 import { createBearerGuard } from '@/lib/server/bearer-auth';
 import { z } from 'zod';
 import { withApiError } from '@/lib/server/http';
+import { log } from '@/lib/server/log';
+import { bridgeTokensFrom } from './tokens';
 
 // HTTP-Rahmen der TYPO3-Bridge (/api/typo3-bridge/*). Gegenüber steht die
 // Chrome-Extension „ÖAW TYPO3 Toolkit" (Event-Assistent). Vertrag:
 // docs/TYPO3_BRIDGE.md.
 //
-// Auth: Bearer TYPO3_BRIDGE_TOKEN, nicht das Gate-Cookie (die Routen liegen in
-// lib/shared/gate.ts unter PUBLIC_PREFIXES). Env unset → 503, die Bridge ist
-// dann aus. Vergleich und Fehlversuchs-Limiter: lib/server/bearer-auth.ts.
-// MERKPOSTEN TYPO3-Bridge (2026-11-27): bewusst EIN gemeinsames Token für den
-// Personenkreis des Gate-Passworts; Tausch gemeinsam mit dem Gate. Persönliche
-// Tokens (Name im Kosten-Log typo3_bridge_*, einzeln sperrbar), sobald das Gate
-// abgelöst wird: docs/TYPO3_BRIDGE.md, „Token-Politik".
+// Auth: Bearer-Token, nicht das Gate-Cookie (die Routen liegen in
+// lib/shared/gate.ts unter PUBLIC_PREFIXES). Gültig sind TYPO3_BRIDGE_TOKEN
+// („gemeinsam“) und die benannten aus TYPO3_BRIDGE_TOKENS (./tokens.ts); ist
+// keins gesetzt → 503, die Bridge ist dann aus. Jede angenommene Anfrage steht
+// mit dem Namen ihres Tokens im Log (typo3_bridge_request). Vergleich und
+// Fehlversuchs-Limiter: lib/server/bearer-auth.ts. Formfehler in
+// TYPO3_BRIDGE_TOKENS hält env.ts schon beim Booten auf; käme doch einer
+// durch, wirft bridgeTokensFrom und die Route antwortet 500 (zu, nicht offen).
+// MERKPOSTEN TYPO3-Bridge (2026-11-27): ein gemeinsames Token für den
+// Personenkreis des Gate-Passworts (Tausch gemeinsam mit dem Gate) und
+// benannte Tokens für Weitergaben nach außen, einzeln sperrbar. Persönliche
+// Tokens je Person, sobald das Gate abgelöst wird: docs/TYPO3_BRIDGE.md,
+// „Token-Politik".
 //
 // CORS: Die Extension ruft mit host_permissions und braucht CORS dann nicht.
 // Lehnt die Redakteurin den Host-Zugriff ab, fällt sie auf normales CORS
@@ -23,10 +32,23 @@ import { withApiError } from '@/lib/server/http';
 // Cookies auswertet: ohne Token kommt keine Seite an Daten, egal von wo.
 
 const guard = createBearerGuard({
-  secret: () => process.env.TYPO3_BRIDGE_TOKEN,
-  notConfigured: 'TYPO3-Bridge ist nicht konfiguriert (TYPO3_BRIDGE_TOKEN fehlt).',
+  secrets: () =>
+    bridgeTokensFrom({
+      TYPO3_BRIDGE_TOKEN: process.env.TYPO3_BRIDGE_TOKEN,
+      TYPO3_BRIDGE_TOKENS: process.env.TYPO3_BRIDGE_TOKENS,
+    }),
+  notConfigured: 'TYPO3-Bridge ist nicht konfiguriert (TYPO3_BRIDGE_TOKEN und TYPO3_BRIDGE_TOKENS fehlen).',
   rateLimited: 'Zu viele Versuche mit falschem Token. Bitte in 15 Minuten noch einmal.',
 });
+
+/** Name des Tokens der laufenden Anfrage, gesetzt von bridgeRoute. */
+const requestToken = new AsyncLocalStorage<string>();
+
+/** Name des Tokens, mit dem die laufende Bridge-Anfrage kam („gemeinsam“,
+ *  „extern-1“ …); außerhalb einer Bridge-Route null. Für die Kosten-Logs. */
+export function bridgeTokenLabel(): string | null {
+  return requestToken.getStore() ?? null;
+}
 
 /** Test-Hook: Limiter-State zwischen Vitest-Fällen leeren. */
 export function _resetBridgeRateLimiter(): void {
@@ -59,8 +81,10 @@ export function bridgeOptions(req: Request): Response {
 }
 
 /**
- * Rahmen jeder Bridge-Route: Token prüfen, Handler ausführen, unerwartete
- * Fehler als 500 `{ error }` (withApiError), und auf allem die CORS-Header.
+ * Rahmen jeder Bridge-Route: Token prüfen, Anfrage mit dem Namen des Tokens
+ * loggen, Handler ausführen (bridgeTokenLabel() kennt dort den Namen),
+ * unerwartete Fehler als 500 `{ error }` (withApiError), und auf allem die
+ * CORS-Header.
  * csrf:false wie beim Nacht-Cron: die Extension authentifiziert per Bearer,
  * nicht per Ambient-Cookie, und schickt als Origin `chrome-extension://…`,
  * das die Same-Origin-Prüfung sonst als fremd abwiese.
@@ -69,7 +93,12 @@ export function bridgeRoute<Ctx extends unknown[]>(
   handler: (req: Request, ...ctx: Ctx) => Promise<Response> | Response,
 ): (req: Request, ...ctx: Ctx) => Promise<Response> {
   const inner = withApiError(
-    async (req: Request, ...ctx: Ctx) => guard.assert(req) ?? handler(req, ...ctx),
+    async (req: Request, ...ctx: Ctx) => {
+      const auth = guard.check(req);
+      if (!auth.ok) return auth.response;
+      log.info('typo3_bridge_request', { token: auth.label, method: req.method, path: new URL(req.url).pathname });
+      return requestToken.run(auth.label, () => handler(req, ...ctx));
+    },
     { csrf: false },
   );
   return async (req: Request, ...ctx: Ctx) => withCors(req, await inner(req, ...ctx));

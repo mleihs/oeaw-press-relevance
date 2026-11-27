@@ -22,9 +22,10 @@ export const GATE_COOKIE_NAME = 'gate';
 // Extension „ÖAW TYPO3 Toolkit" schickt Bearer TYPO3_BRIDGE_TOKEN, jede Route
 // prüft ihn (lib/server/typo3-bridge/http.ts, bridgeRoute). Ein Gate-Cookie
 // hat die Extension nicht, und es reicht dort auch nie.
-// MERKPOSTEN TYPO3-Bridge (2026-11-27): ein gemeinsames Token wie das Gate,
-// Tausch gemeinsam; bei Ablösung des Gates persönliche Tokens
-// (docs/TYPO3_BRIDGE.md, „Token-Politik").
+// MERKPOSTEN TYPO3-Bridge (2026-11-27): ein gemeinsames Token wie das Gate
+// (Tausch gemeinsam) plus benannte Tokens für Weitergaben, einzeln sperrbar;
+// bei Ablösung des Gates persönliche Tokens (docs/TYPO3_BRIDGE.md,
+// „Token-Politik").
 const PUBLIC_PATHS = [
   '/api/auth/gate',
   '/api/auth/login',

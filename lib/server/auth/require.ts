@@ -20,9 +20,11 @@ import { getSupabaseAuthClient } from './client';
  */
 
 // MERKPOSTEN TYPO3-Bridge (2026-11-27): Die TYPO3-Bridge kennt noch keine
-// Personen, nur ein gemeinsames Token. Wenn persönliche Logins das Gate
-// ablösen, bekommt sie persönliche Tokens; naheliegend an dieser users-Zeile
-// (Hash gespeichert, disabled_at sperrt mit). docs/TYPO3_BRIDGE.md, „Token-Politik".
+// Personen, nur ein gemeinsames Token und benannte aus der Env
+// (TYPO3_BRIDGE_TOKENS, Name im Log, Sperren per Redeploy). Wenn persönliche
+// Logins das Gate ablösen, bekommt sie persönliche Tokens; naheliegend an
+// dieser users-Zeile (Hash gespeichert, disabled_at sperrt ohne Redeploy).
+// docs/TYPO3_BRIDGE.md, „Token-Politik".
 
 type UserRow = typeof users.$inferSelect;
 
