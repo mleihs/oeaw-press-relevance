@@ -23,10 +23,19 @@ Fehler: `{ "error": "<deutscher Satz>" }`, den das Panel so anzeigt.
 
 ## Betrieb
 
-- **Env `TYPO3_BRIDGE_TOKEN`** (≥ 32 Zeichen, `openssl rand -hex 32`): ein
-  gemeinsames Bearer-Token. Fehlt es, sind alle Routen aus (503) und berühren
-  die DB nicht. Sperren = Token tauschen und neu deployen. Wer es bekommt und
-  wann es getauscht wird, regelt „Token-Politik“ unten.
+- **Env `TYPO3_BRIDGE_TOKEN`** (≥ 32 Zeichen, `openssl rand -hex 32`): das
+  gemeinsame Bearer-Token, im Log `gemeinsam`.
+- **Env `TYPO3_BRIDGE_TOKENS`**: benannte Tokens, einzeln sperrbar, als
+  `name:token`-Paare, getrennt durch Komma oder Zeilenumbruch
+  (`extern-1:<64 hex>,extern-2:<64 hex>`). Namen aus `a–z`, `0–9`, `-`,
+  höchstens 40 Zeichen; Tokens ≥ 32 Zeichen, kein Name und kein Token doppelt,
+  auch nicht gegenüber dem gemeinsamen. Formfehler halten den Server beim
+  Booten an (`lib/server/env.ts`); die Meldung nennt nie ein Token.
+- Ist keins der beiden gesetzt, sind alle Routen aus (503) und berühren die DB
+  nicht. Jede angenommene Anfrage steht mit dem Namen ihres Tokens im Log
+  (`typo3_bridge_request`: `token`, `method`, `path`), der News-Wizard
+  zusätzlich in `typo3_bridge_news_assist`. Wer welches Token bekommt und wie
+  gesperrt wird, regelt „Token-Politik“ unten.
 - **Env `ANTHROPIC_API_KEY`**: nur für POST …/draft und POST …/news/assist.
   Fehlt er, antworten nur diese mit 503; Liste, Detail und gespeicherte
   Entwürfe gehen.
@@ -50,22 +59,39 @@ Fehler: `{ "error": "<deutscher Satz>" }`, den das Panel so anzeigt.
   `estimateCost`). Der News-Wizard speichert nichts; Tokens und Kosten stehen
   je Aufruf im Log (`typo3_bridge_news_assist`).
 
-## Token-Politik (Entscheidung 2026-11-27)
+## Token-Politik (Entscheidungen 2026-11-27)
 
-- Die Bridge hat **ein** gemeinsames `TYPO3_BRIDGE_TOKEN`, so wie das PR-Tool
-  ein gemeinsames Gate-Passwort hat (`GATE_TOKEN`, `lib/server/gate.ts`).
-- Das Token bekommen dieselben Personen wie das Gate-Passwort, nicht mehr und
-  nicht weniger.
-- Verlässt jemand das Team, werden Gate-Passwort und Token **gemeinsam**
-  getauscht: neue Werte in Coolify setzen, neu deployen, das Token im Panel
-  der Extension neu eintragen.
+**Gemeinsames Token.**
+- `TYPO3_BRIDGE_TOKEN` ist das gemeinsame Token, so wie das PR-Tool ein
+  gemeinsames Gate-Passwort hat (`GATE_TOKEN`, `lib/server/gate.ts`).
+- Es bekommen dieselben Personen wie das Gate-Passwort, nicht mehr und nicht
+  weniger.
+- Verlässt jemand das Team, werden Gate-Passwort und gemeinsames Token
+  **gemeinsam** getauscht: neue Werte in Coolify setzen, neu deployen, das
+  Token im Panel der Extension neu eintragen.
+
+**Benannte Tokens für Weitergaben** (nachmittags, zur Weitergabe der
+Extension 1.11.2).
+- Wer die Extension außerhalb dieses Kreises bekommt, bekommt ein eigenes
+  benanntes Token aus `TYPO3_BRIDGE_TOKENS`, nie das gemeinsame.
+- Seit 27.11.: `extern-1` und `extern-2`. Die Namen sind bewusst neutral; wer
+  welches hat, steht nicht im Repo.
+- Die Tokens liegen auf dem Mac des Betreibers unter
+  `~/.config/oeaw-press-release/typo3-bridge-token-<name>` (chmod 600) und
+  stehen in keinem Chat und keinem Commit.
+- **Sperren:** den Eintrag aus `TYPO3_BRIDGE_TOKENS` in Coolify nehmen und neu
+  deployen. Die anderen Tokens bleiben gültig, auch das gemeinsame.
+- **Neues Token:** `openssl rand -hex 32`, als `name:token` anhängen, neu
+  deployen.
+- Ein Tausch des Gate-Passworts berührt die benannten Tokens nicht.
 
 **Merkposten: persönliche Tokens.** Sobald das gemeinsame Gate-Passwort
 abgelöst wird und alle mit persönlichem Login arbeiten, stellt auch die Bridge
 auf persönliche Tokens um.
 - Ein Token je Person.
-- Der Name der Person steht in den Kosten-Logs (`typo3_bridge_*`).
-- Ein Zugang lässt sich einzeln sperren, ohne die anderen zu tauschen.
+- Der Name der Person steht in den Logs (`typo3_bridge_*`); das geht heute
+  schon für die benannten Tokens.
+- Sperren ohne Redeploy (heute: Env-Eintrag entfernen und neu deployen).
 - Die Extension bleibt gleich; jede Person trägt ihr eigenes Token im Panel ein.
 
 Persönliche Konten gibt es schon: Supabase Auth mit `public.users`, Rolle und
@@ -88,7 +114,8 @@ Zugriff auf genau diesen Host.
 app/api/typo3-bridge/events/…        Routen (dünn)
 app/api/typo3-bridge/news/assist/    News-Wizard: Eingangsprüfung (400/413), Aufruf, Log
 lib/server/typo3-bridge/
-  http.ts          Bearer-Guard, CORS auf jeder Antwort, Routen-Rahmen
+  http.ts          Bearer-Guard, Token-Name je Anfrage (Log), CORS, Routen-Rahmen
+  tokens.ts        gemeinsames + benannte Tokens aus der Env lesen und prüfen
   contract.ts      Antwort-Typen des Vertrags
   events.ts        Liste/Detail (Filter, has_bodytext, has_draft)
   draft-prompt.ts  Systemprompt, Ausgabe-Schema, Nutzernachricht
@@ -100,7 +127,7 @@ lib/server/typo3-bridge/
   errors.ts        Claude-Fehler → HTTP (nie 401/403, 503 nur ohne Key)
   fixtures/        wwwt1-Export 27.11. (3 GMI-Events, nur Eckdaten) für Tests
 lib/server/events/eckdaten.ts        Eckdaten statt Fließtext (VBC-Institute)
-lib/server/bearer-auth.ts            gemeinsamer Bearer-Guard (auch Nacht-Cron)
+lib/server/bearer-auth.ts            gemeinsamer Bearer-Guard (auch Nacht-Cron), ein oder mehrere benannte Secrets
 ```
 
 **Eckdaten statt Fließtext.** Bei GMI, IMBA, IMP und Max Perutz Labs ist der

@@ -1,6 +1,14 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { NextResponse } from 'next/server';
-import { _resetBridgeRateLimiter, bridgeOptions, bridgeRoute, corsHeaders, isBridgeEventId } from './http';
+import { log } from '@/lib/server/log';
+import {
+  _resetBridgeRateLimiter,
+  bridgeOptions,
+  bridgeRoute,
+  bridgeTokenLabel,
+  corsHeaders,
+  isBridgeEventId,
+} from './http';
 
 // Der HTTP-Rahmen der TYPO3-Bridge: Bearer-Grenze (503/401/429), CORS auf
 // JEDER Antwort, Preflight ohne Token, und kein CSRF-Abweis für den
@@ -24,10 +32,12 @@ beforeEach(() => {
   vi.clearAllMocks();
   _resetBridgeRateLimiter();
   vi.stubEnv('TYPO3_BRIDGE_TOKEN', TOKEN);
+  vi.stubEnv('TYPO3_BRIDGE_TOKENS', '');
 });
 
 afterEach(() => {
   vi.unstubAllEnvs();
+  vi.restoreAllMocks();
 });
 
 describe('bridgeRoute: Bearer-Grenze', () => {
@@ -77,6 +87,60 @@ describe('bridgeRoute: Bearer-Grenze', () => {
     const res = await route(req({ auth: `Bearer ${TOKEN}`, origin: EXT_ORIGIN }));
     expect(res.status).toBe(500);
     expect(res.headers.get('access-control-allow-origin')).toBe(EXT_ORIGIN);
+  });
+});
+
+describe('bridgeRoute: benannte Tokens (TYPO3_BRIDGE_TOKENS)', () => {
+  const EXT1 = '1'.repeat(64);
+  const EXT2 = '2'.repeat(64);
+  // Handler, der den Namen des Tokens zurückgibt, wie ihn die Kosten-Logs lesen.
+  const labelRoute = bridgeRoute(async () => NextResponse.json({ token: bridgeTokenLabel() }));
+
+  beforeEach(() => {
+    vi.stubEnv('TYPO3_BRIDGE_TOKENS', `extern-1:${EXT1},extern-2:${EXT2}`);
+  });
+
+  it('nimmt jedes benannte Token und das gemeinsame, mit dem richtigen Namen', async () => {
+    const info = vi.spyOn(log, 'info');
+    for (const [token, label] of [
+      [EXT1, 'extern-1'],
+      [EXT2, 'extern-2'],
+      [TOKEN, 'gemeinsam'],
+    ]) {
+      const res = await labelRoute(req({ auth: `Bearer ${token}` }));
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({ token: label });
+      expect(info).toHaveBeenLastCalledWith('typo3_bridge_request', {
+        token: label,
+        method: 'GET',
+        path: '/api/typo3-bridge/events',
+      });
+    }
+    // Nie das Token selbst im Log.
+    expect(JSON.stringify(info.mock.calls)).not.toMatch(/1{64}|2{64}|t{64}/);
+  });
+
+  it('gesperrt = aus der Liste genommen: 401, die anderen gehen weiter', async () => {
+    vi.stubEnv('TYPO3_BRIDGE_TOKENS', `extern-2:${EXT2}`);
+    expect((await labelRoute(req({ auth: `Bearer ${EXT1}` }))).status).toBe(401);
+    expect((await labelRoute(req({ auth: `Bearer ${EXT2}` }))).status).toBe(200);
+    expect((await labelRoute(req({ auth: `Bearer ${TOKEN}` }))).status).toBe(200);
+  });
+
+  it('geht auch ohne gemeinsames Token, nur mit benannten', async () => {
+    vi.stubEnv('TYPO3_BRIDGE_TOKEN', '');
+    expect((await labelRoute(req({ auth: `Bearer ${EXT1}` }))).status).toBe(200);
+    expect((await labelRoute(req({ auth: `Bearer ${TOKEN}` }))).status).toBe(401);
+  });
+
+  it('kaputte TYPO3_BRIDGE_TOKENS: 500, kein Durchlass', async () => {
+    vi.stubEnv('TYPO3_BRIDGE_TOKENS', 'ohne-doppelpunkt');
+    const res = await labelRoute(req({ auth: `Bearer ${TOKEN}` }));
+    expect(res.status).toBe(500);
+  });
+
+  it('bridgeTokenLabel außerhalb einer Bridge-Route: null', () => {
+    expect(bridgeTokenLabel()).toBeNull();
   });
 });
 

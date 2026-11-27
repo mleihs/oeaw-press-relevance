@@ -5,7 +5,7 @@ import { log } from '@/lib/server/log';
 import type { BridgeNewsAssistResponse } from '@/lib/server/typo3-bridge/contract';
 import { DRAFT_APP_MODEL } from '@/lib/server/typo3-bridge/draft';
 import { draftErrorResponse, NEWS_ASSIST_REFUSED_MESSAGE } from '@/lib/server/typo3-bridge/errors';
-import { bridgeOptions, bridgeRoute } from '@/lib/server/typo3-bridge/http';
+import { bridgeOptions, bridgeRoute, bridgeTokenLabel } from '@/lib/server/typo3-bridge/http';
 import {
   base64Bytes,
   createNewsAssistClient,
@@ -61,6 +61,7 @@ export const POST = bridgeRoute(async (req: Request) => {
     const generated = await generateNewsAssist(body, createNewsAssistClient(body.task));
     const costUsd = await estimateCost(generated.usage, DRAFT_APP_MODEL);
     log.info('typo3_bridge_news_assist', {
+      token: bridgeTokenLabel(),
       task: body.task,
       kind: body.kind,
       effort: generated.effort,
