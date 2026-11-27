@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { DEFAULT_LLM_MODEL } from '@/lib/shared/constants';
 import { SCORING_DEFAULTS } from '@/lib/server/scoring/config';
+import { bridgeTokensFrom } from '@/lib/server/typo3-bridge/tokens';
 
 /**
  * Boot-time environment validation. Phase 3 left us with a 30-min debug
@@ -115,6 +116,10 @@ const Schema = z.object({
   // (Bridge aus), die App bootet ohne. Gesetzt → min. 32 Zeichen
   // (`openssl rand -hex 32`); denselben Wert trägt die Redakteurin im Panel ein.
   TYPO3_BRIDGE_TOKEN: z.string().min(32, 'TYPO3_BRIDGE_TOKEN muss ≥ 32 Zeichen haben (openssl rand -hex 32)').optional(),
+  // Benannte Bridge-Tokens, einzeln sperrbar: „name:token“, getrennt durch
+  // Komma oder Zeilenumbruch. Format und Eindeutigkeit prüft
+  // runConditionalChecks über lib/server/typo3-bridge/tokens.ts.
+  TYPO3_BRIDGE_TOKENS: z.string().optional(),
 
   // Obergrenze für das automatische Enrichment je Nacht-Ingest-Lauf (Vorstufe
   // zum Bewerten). Bounded, damit ein großer Rückstau die Route nicht stundenlang
@@ -221,6 +226,13 @@ const Schema = z.object({
 type Normalized = Record<string, string | undefined>;
 
 function runConditionalChecks(env: Normalized, errors: string[]): void {
+  if (env.TYPO3_BRIDGE_TOKENS) {
+    try {
+      bridgeTokensFrom(env);
+    } catch (e) {
+      errors.push(`TYPO3_BRIDGE_TOKENS — ${(e as Error).message}`);
+    }
+  }
   if (!env.SUPABASE_URL && !env.NEXT_PUBLIC_SUPABASE_URL) {
     errors.push('SUPABASE_URL — required (or set NEXT_PUBLIC_SUPABASE_URL as the legacy fallback)');
   }

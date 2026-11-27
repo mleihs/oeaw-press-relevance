@@ -30,6 +30,7 @@
  *  12  Empty-string disables optional features (no false refine fire)
  *  13  Explicit overrides (LLM_DEFAULT_MODEL, NODE_ENV) win over defaults
  *  14  Scoring knobs (SCORING_*) default to SCORING_DEFAULTS, parse and bound
+ *  15  TYPO3_BRIDGE_TOKENS: valid pairs pass, malformed fail without echoing a token
  */
 
 import { parseEnv } from '../../../lib/server/env';
@@ -202,6 +203,21 @@ const minimalValid: Record<string, string> = {
   ok('14 Not-Aus and cost cap parse', off.ok && off.env.SCORING_NIGHTLY_ENABLED === false && off.env.SCORING_NIGHTLY_COST_CAP_USD === 7.5);
   const bad = parseEnv({ ...minimalValid, SCORING_BATCH_SIZE: '6' });
   ok('14 SCORING_BATCH_SIZE > 5 → fail', !bad.ok && bad.errors.some((e) => e.startsWith('SCORING_BATCH_SIZE')));
+}
+
+// 15
+{
+  const a = 'a'.repeat(64);
+  const b = 'b'.repeat(64);
+  const good = parseEnv({ ...minimalValid, TYPO3_BRIDGE_TOKEN: 'c'.repeat(64), TYPO3_BRIDGE_TOKENS: `extern-1:${a},extern-2:${b}` });
+  ok('15 TYPO3_BRIDGE_TOKENS valid pairs pass', good.ok);
+  const swapped = parseEnv({ ...minimalValid, TYPO3_BRIDGE_TOKENS: `${a}:extern-1` });
+  ok(
+    '15 swapped name/token → fail, token not in message',
+    !swapped.ok && swapped.errors.some((e) => e.startsWith('TYPO3_BRIDGE_TOKENS')) && !swapped.errors.join(' ').includes(a),
+  );
+  const dup = parseEnv({ ...minimalValid, TYPO3_BRIDGE_TOKEN: a, TYPO3_BRIDGE_TOKENS: `extern-1:${a}` });
+  ok('15 token equal to the shared one → fail', !dup.ok && dup.errors.some((e) => e.startsWith('TYPO3_BRIDGE_TOKENS')));
 }
 
 console.log(`\n${passed} passed, ${failed} failed`);
